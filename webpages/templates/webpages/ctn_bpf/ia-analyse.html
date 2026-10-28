@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPERAPLUS | ERP & MEAL Intelligence</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-light: #3b82f6;
+            --emerald: #059669;
+            --erp-bg: #f1f5f9;
+            --erp-surface: #ffffff;
+            --erp-border: #cbd5e1;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--erp-bg);
+            color: #0f172a; 
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Style ERP : Panneaux structurés, bordures nettes, peu de flou artistique */
+        .erp-panel {
+            background: var(--erp-surface);
+            border: 1px solid var(--erp-border);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .erp-table-header {
+            background-color: #f8fafc;
+            border-bottom: 2px solid var(--erp-border);
+        }
+
+        .fade-in-up {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #chat-box::-webkit-scrollbar, #history-list::-webkit-scrollbar, .erp-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        #chat-box::-webkit-scrollbar-thumb, #history-list::-webkit-scrollbar-thumb, .erp-scroll::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 2px;
+        }
+
+        .user-bubble {
+            background: #1e3a8a;
+            color: white;
+            border: 1px solid #1e40af;
+        }
+
+        .ai-bubble {
+            background: #ffffff;
+            color: #0f172a;
+            border: 1px solid var(--erp-border);
+            border-left: 4px solid var(--primary-light);
+        }
+
+        .history-item:hover {
+            background: #e2e8f0;
+            border-color: #94a3b8;
+        }
+
+        .typing-dot {
+            width: 5px; height: 5px; background: var(--primary);
+            border-radius: 50%; animation: blink 1.4s infinite both;
+        }
+        @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+
+        /* Arrière-plan technique discret type grille de CAO/ERP */
+        #globe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.08;
+        }
+    </style>
+</head>
+<body class="flex flex-col lg:flex-row">
+
+    <canvas id="globe"></canvas>
+
+    <!-- Sidebar Style ERP (Navigation Module / Menu Latéral Rigide) -->
+    <aside class="w-72 bg-slate-900 text-slate-300 border-r border-slate-800 flex flex-col hidden lg:flex z-10 shadow-lg">
+        <div class="p-4 border-b border-slate-800 bg-slate-950/60">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                   <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center font-bold text-white shadow-sm overflow-hidden">
+                        {% if actual_institution.img %}
+                            <img src="{{actual_institution.img.url}}" alt="{{actual_institution.nom}}" class="w-full h-full object-cover">
+                        {% else %}
+                            <span>OP</span>
+                        {% endif %}
+                    </div> 
+                    <div>
+                        <h1 class="font-bold text-sm tracking-tight text-white uppercase">{{actual_institution.sigle|default:"OPERAPLUS"}}</h1>
+                        <p class="text-[9px] text-slate-400 mono">ERP MODULE v4.2</p>
+                    </div>
+                </div>
+                <button class="text-slate-400 hover:text-white transition"><i data-lucide="sliders" class="w-4 h-4"></i></button>
+            </div>
+            
+            <button onclick="window.location.reload()" class="mt-4 w-full flex items-center justify-center gap-2 py-2 bg-blue-600 hover:bg-blue-700 rounded text-xs font-semibold text-white transition shadow-sm">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Nouvelle Requête SQL/AI
+            </button>
+        </div>
+
+        <div class="flex-1 flex flex-col overflow-hidden px-3 py-4">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Journaux / Historique</p>
+                <span id="count" class="text-[10px] bg-slate-800 text-blue-400 font-mono px-1.5 py-0.5 rounded">0</span>
+            </div>
+            <div id="history-list" class="flex-1 overflow-y-auto space-y-1">
+                <div id="empty-history" class="text-center py-12 text-slate-500">
+                    <i data-lucide="database" class="w-6 h-6 mx-auto mb-1 stroke-[1.5]"></i>
+                    <p class="text-[11px]">Aucun journal actif</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-3 border-t border-slate-800 bg-slate-950">
+            <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold text-[10px]">
+                    {{ request.user.personnel.nom|slice:":2"|upper|default:"AD" }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-medium truncate text-white">USR_{{request.user.personnel.nom|default:"Admin"}}</p>
+                    <p class="text-[9px] text-emerald-400 font-mono uppercase">{{request.user.personnel.fonction|default:"OPERATOR"}}</p>
+                </div>
+                <a href="/log/1/" class="text-slate-400 hover:text-red-400 transition p-1 rounded hover:bg-slate-800" title="Déconnexion"><i data-lucide="power" class="w-3.5 h-3.5"></i></a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Container ERP Dashboard -->
+    <main class="flex-1 flex flex-col min-w-0 relative z-10 bg-slate-100">
+        
+        <!-- Top Toolbar ERP -->
+        <header class="h-14 flex items-center justify-between px-6 bg-white border-b border-slate-300 z-20 shadow-xs">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                    <i data-lucide="layers" class="w-4 h-4 text-blue-600"></i>
+                    <span>MODULE : ANALYSE STRATÉGIQUE & MEAL</span>
+                </div>
+                <div id="connection-status" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-50 border border-emerald-200 text-[10px] font-semibold text-emerald-700">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>BASE: {{request.user.personnel.actual_institution.nom|default:"PRODUCTION_DB"}}</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="px-3 py-1.5 rounded border border-slate-300 bg-white hover:bg-slate-50 transition text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs" title="Export Données">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i> Export CSV
+                </button>
+                <button class="px-3 py-1.5 rounded border border-slate-300 bg-white hover:bg-slate-50 transition text-xs font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs" title="Paramètres ERP">
+                    <i data-lucide="settings" class="w-3.5 h-3.5 text-slate-500"></i> Paramètres
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat / Workspace Area -->
+        <div id="chat-box" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+            
+            <!-- Welcome Matrix / KPI Quick Panels -->
+            <div id="welcome-screen" class="max-w-4xl mx-auto space-y-6">
+                <div class="erp-panel p-6 rounded-lg bg-white border-l-4 border-blue-600">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="text-[10px] font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">SYSTÈME OPÉRATIONNEL ACTIF</span>
+                            <h2 class="text-xl font-bold tracking-tight text-slate-900 mt-2">Tableau de bord décisionnel, <span class="text-blue-600">Expert MEAL</span></h2>
+                            <p class="text-slate-600 text-xs mt-1 leading-relaxed">Sélectionnez une action rapide ci-dessous ou saisissez votre requête paramétrique pour interroger les bases de données institutionnelles.</p>
+                        </div>
+                        <i data-lucide="server" class="w-8 h-8 text-slate-300 hidden sm:block"></i>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button onclick="quickAction('Uploader un fichier de collecte (Kobo/ODK)')" class="erp-panel p-4 rounded-lg bg-white hover:border-blue-500 transition text-left group">
+                        <div class="flex items-center justify-between mb-2">
+                            <i data-lucide="upload-cloud" class="w-5 h-5 text-blue-600"></i>
+                            <span class="text-[9px] font-mono text-slate-400">MOD-01</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-800">Importer Données Kobo</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">Charger les flux de collecte</p>
+                    </button>
+                    
+                    <button onclick="quickAction('Générer les KPIs du cadre logique')" class="erp-panel p-4 rounded-lg bg-white hover:border-emerald-500 transition text-left group">
+                        <div class="flex items-center justify-between mb-2">
+                            <i data-lucide="pie-chart" class="w-5 h-5 text-emerald-600"></i>
+                            <span class="text-[9px] font-mono text-slate-400">MOD-02</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-800">KPIs Cadre Logique</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">Indicateurs de performance</p>
+                    </button>
+                    
+                    <button onclick="quickAction('Vérifier la redevabilité (Feedbacks)')" class="erp-panel p-4 rounded-lg bg-white hover:border-amber-500 transition text-left group">
+                        <div class="flex items-center justify-between mb-2">
+                            <i data-lucide="users" class="w-5 h-5 text-amber-600"></i>
+                            <span class="text-[9px] font-mono text-slate-400">MOD-03</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-800">Registre Redevabilité</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">Suivi des réclamations</p>
+                    </button>
+                </div>
+            </div>
+
+            <div id="messages-container" class="max-w-4xl mx-auto space-y-4"></div>
+        </div>
+
+        <!-- Footer / Input Form Style ERP Console -->
+        <footer class="p-4 bg-white border-t border-slate-300">
+            <div class="max-w-4xl mx-auto space-y-2">
+                <div id="file-preview" class="hidden flex gap-2 overflow-x-auto pb-1"></div>
+                
+                <form id="chat-form" class="erp-panel rounded-lg p-1.5 flex items-end gap-2 bg-slate-50 focus-within:ring-1 ring-blue-600 transition-all">
+                    <label class="p-2.5 cursor-pointer hover:bg-slate-200 rounded transition text-slate-600" title="Joindre un fichier">
+                        <input type="file" class="hidden" id="file-input" multiple>
+                        <i data-lucide="paperclip" class="w-4 h-4"></i>
+                    </label>
+                    <input type="hidden" name="indicateur_id" value="{{indicateurs.id}}">
+                    
+                    <textarea id="user-input" rows="1" 
+                        placeholder="Entrez votre commande ou requête d'analyse ERP..." 
+                        class="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 px-1 text-xs text-slate-800 placeholder:text-slate-400 mono max-h-32"></textarea>
+                    
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded text-xs font-semibold text-white transition shadow-2xs flex items-center gap-1.5">
+                        <span>Exécuter</span>
+                        <i data-lucide="corner-down-left" class="w-3.5 h-3.5"></i>
+                    </button>
+                </form>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const container = document.getElementById('messages-container');
+        const historyList = document.getElementById('history-list');
+        const chatForm = document.getElementById('chat-form');
+        const input = document.getElementById('user-input');
+        const fileInput = document.getElementById('file-input');
+        const countEl = document.getElementById('count');
+        let requestCount = 0;
+
+        lucide.createIcons();
+
+        input.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        function addToHistory(text) {
+            const empty = document.getElementById('empty-history');
+            if (empty) empty.remove();
+            
+            requestCount++;
+            countEl.innerText = requestCount;
+
+            const item = document.createElement('div');
+            item.className = "history-item p-2 rounded cursor-pointer flex items-center justify-between group fade-in-up border border-transparent text-slate-300 transition";
+            const truncated = text.length > 28 ? text.substring(0, 28) + "..." : text;
+            
+            item.innerHTML = `
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <i data-lucide="terminal" class="w-3 h-3 text-blue-400 shrink-0"></i>
+                    <span class="text-[11px] truncate mono">${truncated}</span>
+                </div>
+                <i data-lucide="chevron-right" class="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition"></i>
+            `;
+            
+            item.onclick = () => { input.value = text; chatForm.dispatchEvent(new Event('submit')); };
+            historyList.prepend(item);
+            lucide.createIcons();
+        }
+
+        function formatMarkdown(text) {
+            let formatted = text.replace(/\*\*(.*?)\*\*/g, '<b class="text-slate-900 font-bold">$1</b>');
+            formatted = formatted.replace(/^\s*[\-\*]\s+(.*)/gm, '<div class="flex gap-2 mt-2 items-start"><div class="w-1.5 h-1.5 bg-blue-600 mt-1.5 shrink-0"></div><span class="text-slate-700">$1</span></div>');
+            if (text.includes('|')) {
+                formatted = `<div class="bg-slate-50 rounded p-3 my-2 border border-slate-300 overflow-x-auto text-[11px] mono text-slate-800">${formatted}</div>`;
+            }
+            return formatted;
+        }
+
+        function addMessage(content, isUser = false) {
+            const welcomeScreen = document.getElementById('welcome-screen');
+            if (welcomeScreen) welcomeScreen.style.display = 'none';
+            
+            const div = document.createElement('div');
+            div.className = `flex ${isUser ? 'justify-end' : 'justify-start'} fade-in-up`;
+
+            const icon = isUser ? 'user' : 'database';
+            const label = isUser ? 'USR_EXEC' : 'ERP_CORE_RESPONSE';
+            const bubbleStyle = isUser ? 'user-bubble' : 'ai-bubble shadow-2xs';
+
+            div.innerHTML = `
+                <div class="flex gap-3 max-w-[90%] md:max-w-[80%] ${isUser ? 'flex-row-reverse' : ''}">
+                    <div class="shrink-0 mt-auto">
+                        <div class="w-7 h-7 rounded border border-slate-300 ${isUser ? 'bg-blue-900 text-white' : 'bg-white text-blue-600'} flex items-center justify-center text-[10px] font-mono shadow-2xs">
+                            <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
+                        </div>
+                    </div>
+                    <div class="flex flex-col ${isUser ? 'items-end' : 'items-start'}">
+                        <div class="flex items-center gap-2 mb-1 px-0.5">
+                            <span class="text-[9px] font-mono font-bold text-slate-500 uppercase">${label}</span>
+                        </div>
+                        <div class="${bubbleStyle} px-4 py-3 rounded-lg text-xs break-words leading-relaxed">${formatMarkdown(content)}</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            lucide.createIcons();
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = input.value.trim();
+            if (!message) return;
+
+            const indicateurIdInput = chatForm.querySelector('input[name="indicateur_id"]');
+            const indicateurId = indicateurIdInput ? indicateurIdInput.value : null;
+
+            addMessage(message, true);
+            addToHistory(message);
+            input.value = '';
+            input.style.height = 'auto';
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'flex justify-start fade-in-up';
+            typingDiv.innerHTML = `
+                <div class="flex gap-3 max-w-[90%] md:max-w-[80%]">
+                    <div class="shrink-0 mt-auto">
+                        <div class="w-7 h-7 rounded border border-slate-300 bg-white text-blue-600 flex items-center justify-center text-[10px] font-mono shadow-2xs">
+                            <i data-lucide="database" class="w-3.5 h-3.5"></i>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-start">
+                        <div class="ai-bubble px-4 py-3 rounded-lg shadow-2xs">
+                            <div class="flex gap-1.5 items-center">
+                                <span class="typing-dot"></span>
+                                <span class="typing-dot" style="animation-delay: 0.2s"></span>
+                                <span class="typing-dot" style="animation-delay: 0.4s"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            container.appendChild(typingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            lucide.createIcons();
+
+            try {
+                const res = await fetch('/api/chat/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: message, 
+                        indicateur_id: indicateurId 
+                    })
+                });
+                const data = await res.json();
+                typingDiv.remove();
+                addMessage(data.reply || "Erreur: pas de réponse du serveur ERP");
+            } catch(err) {
+                typingDiv.remove();
+                addMessage("Erreur de communication avec le serveur principal.", false);
+                console.error(err);
+            }
+        });
+
+        fileInput.addEventListener('change', e => {
+            const files = e.target.files;
+            const preview = document.getElementById('file-preview');
+            preview.innerHTML = '';
+            if(files.length > 0) preview.classList.remove('hidden');
+            Array.from(files).forEach(file => {
+                const fdiv = document.createElement('div');
+                fdiv.className = 'px-2 py-1 bg-blue-50 border border-blue-200 rounded text-[10px] text-blue-700 font-mono flex items-center gap-1';
+                fdiv.innerHTML = `<i data-lucide="file" class="w-3 h-3"></i> ${file.name}`;
+                preview.appendChild(fdiv);
+            });
+            lucide.createIcons();
+        });
+
+        function quickAction(text) { 
+            input.value = text; 
+            chatForm.dispatchEvent(new Event('submit')); 
+        }
+
+        // --- Grille Technique Subtile (Effet ERP CAD) ---
+        const canvas = document.getElementById('globe');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.position.z = 2.5;
+
+        const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+        const material = new THREE.MeshBasicMaterial({ color: 0x3b82f6, wireframe: true, opacity: 0.08, transparent: true });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            cube.rotation.x += 0.001;
+            cube.rotation.y += 0.0015;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

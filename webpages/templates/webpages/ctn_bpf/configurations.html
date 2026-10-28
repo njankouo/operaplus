@@ -1,0 +1,435 @@
+{% extends './index.html' %} 
+{% load static %} 
+
+{% block main %}
+<div class="w-full max-w-7xl mx-auto px-4 py-6 space-y-6  min-h-screen text-slate-800" style="padding: 0px; margin: 0px; width: 100%;">
+    
+   
+
+    <div class="px-4">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Configuration Initiale</h4>
+            <div class="space-y-3">
+                <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
+                    <input id="default_operation" type="checkbox" {% if actual_institution.operation_defaulted %}checked{% endif %}
+                           class="w-4 h-4 mt-0.5 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500/30 focus:ring-offset-0">
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">Configuration des Options minimale</span>
+                </label>
+                
+                <label class="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
+                    <input id="default_financial" type="checkbox" {% if actual_institution.finan_options != None %}checked{% endif %}
+                           class="w-4 h-4 mt-0.5 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500/30 focus:ring-offset-0"
+                           onchange="toggleFinancialDevise(this)">
+                    <span class="text-sm font-semibold text-slate-700 group-hover:text-slate-900 transition-colors">Implementation Financiere ( Rapport Financier )</span>
+                </label>
+
+                <div id="devise_financial" {% if actual_institution.finan_options != None %}style="display:none;"{% endif %} class="mt-2 pl-10 max-w-xs">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5"><small>Devise</small></label>
+                    <select id="devise_select" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                        <option value="Franc CFA">Franc CFA</option>
+                        <option value="Euro">Euro</option>
+                        <option value="Dollar">Dollar</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-slate-100 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <h5 class="text-xs font-black uppercase tracking-widest mb-0">Logique des Tâches</h5>
+                    <span class="px-2 py-0.5 text-[9px] font-bold uppercase bg-emerald-500/20 text-emerald-400 rounded-md tracking-wider">Quoi ?</span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/10 transition-all active:scale-[0.98]" onclick="monModalP.showModal()">
+                        <i class="fas fa-plus-circle"></i> Ajouter une Entité
+                    </button>
+                    <a class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-sm transition-all active:scale-[0.98]" href="/edit_institution/{{actual_institution.id}}/">
+                        <i class="fas fa-building text-slate-400"></i> Modifier Institution
+                    </a>
+                </div>
+            </div>
+
+            <div class="p-6 bg-slate-50/50">
+                <div class="relative space-y-3">
+                    
+                    {% for entity in actual_institution.get_entities %}
+                    <div class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 border-l-4 border-l-emerald-500" 
+                         style="margin-left: {{ forloop.counter0|add:forloop.counter0 }}rem; max-width: calc(100% - {{ forloop.counter0|add:forloop.counter0 }}rem);">
+                        
+                        <div class="flex items-center gap-4">
+                            <span class="font-mono text-lg font-black text-slate-200">{{ forloop.counter }}</span>
+                            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm">
+                                <i class="fas fa-layer-group text-xs"></i>
+                            </div>
+                            <div>
+                                <span class="block text-sm font-bold text-slate-800">{{ entity }}</span>
+                                <span class="block text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Entité Logique</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-100 shadow-inner">
+                            <a href="/edit-dynamic/{{entity.id}}/" class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-emerald-600 hover:bg-white rounded-md transition-all" title="Modifier">
+                                <i class="fas fa-pen text-xs"></i>
+                            </a>
+                            {% if entity.m_entity_type.is_tache == False %}
+                            <a href="/delete-page/{{entity.id}}/" class="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-white rounded-md transition-all" title="Supprimer">
+                                <i class="fas fa-trash text-xs"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                 {% with op_info=actual_institution.operations_name %}
+<div {% if actual_institution.operation_defaulted %} style="display:none;" {% endif %} id="operation_DIV" class="pt-2">
+    <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm transition-all duration-300 hover:shadow-md"
+         style="margin-left: {{ actual_institution.get_entities|length|add:actual_institution.get_entities|length }}rem; border-left: 6px solid {{ request.user.personnel.color_fond }};">
+        
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center" 
+                 style="background-color: {{ request.user.personnel.color_fond }}15; color: {{ request.user.personnel.color_fond }};">
+                <i class="fas fa-terminal"></i>
+            </div>
+            <div>
+                <span class="block text-sm font-bold text-slate-700">{{ op_info.nom }}</span>
+                <span class="block text-[10px] font-bold uppercase tracking-wider mt-0.5" 
+                      style="color: {{ request.user.personnel.color_fond }};">Configuration Active</span>
+            </div>
+        </div>
+
+        <div class="flex gap-2">
+            <a href="/fields-institution/" 
+               class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white rounded-lg shadow-sm transition-all hover:opacity-90 active:scale-[0.98]"
+               style="background-color: {{ request.user.personnel.color_fond }};">
+                <i class="fas fa-cog mr-1"></i> Réglages
+            </a>
+            
+            <button onclick="document.getElementById('LogicModal2').classList.remove('hidden')"
+                    class="px-4 py-2 text-xs font-bold uppercase tracking-wider bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-sm transition-all active:scale-[0.98] border border-slate-200">
+                <i class="fas fa-pen mr-1"></i> Modifier
+            </button>
+        </div>
+    </div>
+</div>
+{% endwith %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+<div id="LogicModal2" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/50 backdrop-blur-sm">
+    <div class="flex min-h-screen items-center justify-center p-4">
+        <div class="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl">
+            <form onsubmit='saveOperation()' action="/save_entity/" method="post" class="p-6">
+                {% csrf_token %}
+                <input type="hidden" name="ope_aggregate" value="0">
+                    <input type="hidden" name="aggregate_fields_name" id="aggregate_fields_name" value="">
+                    <input type="hidden" name="aggregate_fields_type" id="aggregate_fields_type" value="">
+                    <input type="hidden" name="aggregate_rap_fields_name" id="aggregate_rap_fields_name" value="">
+                    <input type="hidden" name="aggregate_rap_fields_type" id="aggregate_rap_fields_type" value="">
+                    <input type="hidden" name="institution" value="{{actual_institution.id}}">
+                    <input type="hidden" name="edit_or_create_O" value="c">
+                <div class="mb-6 border-b pb-4">
+                    <h2 class="text-xl font-bold text-slate-800">
+                        Logique de l'Institution : <span class='text-green-600'>Opération</span>
+                    </h2>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="p-3 text-center text-slate-600 bg-slate-50 rounded-lg">
+                        Il s'agit de l'Entité Elementaire de Traitement, vous pouvez la renommer ou manipuler directement les Add-ons.
+                    </div>
+
+                    <div class="flex justify-center">
+                        <div class="w-full lg:w-1/2">
+                            <label class="block text-sm font-medium mb-1">Nom de l'Entité</label>
+                            <input value="{{actual_institution.operations_name.nom}}" type='text' class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-amber-500 outline-none" name="aggregate_name">
+
+                        </div>
+                    </div>
+                  <div class="space-y-2">
+                 
+                </div>
+                 
+                </div>
+
+                <div class="mt-8 flex justify-end gap-3 border-t pt-4">
+                    <button type="button" onclick="document.getElementById('LogicModal2').classList.add('hidden')" class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">Annuler</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Confirmer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+    {% include "./partials/periode-institution.html" %}
+
+    <div class="px-4">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 bg-slate-50">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-0">FICHES D'INDICATEURS</label>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/60 border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            <th class="p-4">Entite</th>
+                            <th class="p-4">Champs d'Informations</th>
+                            <th class="p-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-xs">
+                        {% for e in get_entities %}
+                        <tr class="hover:bg-slate-50/40 transition-colors">
+                            <td class="p-4 font-bold text-slate-800">{{e}}</td>
+                            <td class="p-4">
+                                {% if e.m_entity_type.indicateur_fields == "" or e.m_entity_type.indicateurs == None %}
+                                <span class="text-slate-400 font-medium italic">Informations par Defaut</span>
+                                {% else %}
+                                <div class="flex flex-wrap gap-1.5">
+                                    {% for e2 in e.m_entity_type.indicateurs %}
+                                    <div class="inline-flex items-center border border-slate-150 rounded-lg overflow-hidden bg-white shadow-sm font-medium">
+                                        <span class="px-2.5 py-1 text-slate-700 bg-slate-50 border-r border-slate-100">{{e2.label}}</span>
+                                        <span class="px-2.5 py-1 text-indigo-600 bg-indigo-50/50 font-bold">{{e2.type}}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="p-4">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <button data-toggle="modal" data-target="#indiModal" data-contain="{{e.m_entity_type.indicateur_fields}}" data-ent_name="{{e}}" data-ent_id="{{e.id}}" onclick="editIndi(this)" 
+                                            class="p-2 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors focus:outline-none" title="Modifier">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <button data-toggle="modal" data-ent_name="{{e}}" data-ent_id="{{e.id}}" data-target="#indiModal" onclick="lauIndi(this)" 
+                                            class="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors focus:outline-none" title="Ajouter">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div class="space-y-1">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-800">Roles et Fonctions <span class="text-emerald-500 font-black">[ Qui ? ]</span></div>
+                </div>
+                
+                <div class="flex flex-col md:flex-row items-stretch md:items-center gap-4 flex-grow max-w-4xl justify-end">
+                    <form method="POST" action="/save_gestion/" class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 border border-slate-100 rounded-xl flex-grow max-w-xl">
+                        {% csrf_token %}
+                        <input type="hidden" name="edit_or_create" value="c">
+                        <input type="hidden" name="generator" value="str">
+                        
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-2 whitespace-nowrap">Désignation Organe Logique :</label>
+                        <input type="text" value="{{actual_institution.default_struc_name}}" class="flex-grow min-w-[140px] rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-inner focus:border-indigo-500 focus:outline-none" name="value">
+                        <button type="submit" class="px-4 py-1.5 text-xs font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors">
+                            Enregistrer
+                        </button>
+                    </form>
+
+                    <div class="flex items-center gap-1.5">
+                        <a class="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-sm transition-colors whitespace-nowrap" href="/personnels/ "> 
+                            <i class="fas fa-users text-slate-400 mr-1"></i> Gestion des Fonctions
+                        </a>
+                        <a class="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-sm transition-colors whitespace-nowrap" href="/roles/"> 
+                            <i class="fas fa-user-shield text-slate-400 mr-1"></i> Gestion des Rôles
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4">
+        <div class="bg-gradient-to-r from-red-50/60 to-orange-50/40 rounded-2xl border border-red-100 p-6 space-y-3">
+            <div class="text-red-700 font-bold text-xs uppercase tracking-wider flex items-center gap-2"> 
+                <i class="fas fa-clock text-sm"></i> Retards et Delais 
+            </div>
+            <p class="text-xs text-slate-600 font-medium leading-relaxed max-w-3xl">
+                Cette Interface est prevu pour la Gestion des Taches qui ne se feront pas dans les delais/echeances prevus
+            </p>
+            <div class="inline-flex flex-wrap items-center gap-2 bg-white border border-red-100 px-4 py-2.5 rounded-xl shadow-sm">
+                <span class="text-red-500 fas fa-check-circle text-sm"></span>
+                <span class="text-xs font-bold text-slate-700">Gestion par Defaut</span>
+                <span class="text-[10px] text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-100/50 ml-2">
+                    Il est conseille de Laisser la gestion des Delais comme prevu par le Systeme Opera, a moins d'avoir une bonne expertise en RH
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-4 mb-6">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+            <div class="border-b border-slate-100 pb-3">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-800 block"> Gestion {{actual_institution.default_struc_name}} </label>
+                <span class="text-[11px] text-slate-400 font-semibold block mt-0.5">Hierachie des Structures</span>
+            </div>
+            
+            <div class="flex flex-wrap items-end gap-4 p-4 bg-slate-50/50 border border-slate-100 rounded-xl">
+                {% for h2 in actual_institution.Structure_Hierachy %}
+                    {% if h2 != None %}
+                        {% for h in h2.get_levels %}
+                        <div class="flex items-center gap-2">
+                            <div class="space-y-1.5">
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{h.field}}</label>
+                                <select onchange="loadselectHIERA({{forloop.counter}})" data-hierachy="{{forloop.counter}}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm min-w-[140px] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    {% for g in h.values %}
+                                    <option value="{{g}}">{{g}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="pt-6 text-slate-300">
+                                <i class="fa-solid fa-chevron-right text-[10px] mx-1"></i>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="pt-2">
+                <a class="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-sm transition-all active:scale-[0.98]" href="/structures/">
+                    <i class="fas fa-sitemap text-slate-400"></i> Liste des Structures
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+<dialog id="monModalP" class="p-0 rounded-none shadow-xl w-full max-w-4xl border border-slate-400 overflow-hidden outline-none bg-slate-50">
+    <div class="px-4 py-3 bg-slate-800 text-white flex justify-between items-center">
+        <h2 class="text-xs font-bold uppercase tracking-widest">Ajouter Une Entit&eacute;</h2>
+        <button onclick="document.getElementById('monModalP').close()" class="text-slate-300 hover:text-white font-bold text-[10px] uppercase transition">
+            Fermer [Esc]
+        </button>
+    </div>
+
+    <div class="p-4 max-h-[80vh] overflow-y-auto custom-scrollbar" id="addActionModal">
+        <form onsubmit="saveEntity()" action="/save_entity/" method="post" class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+    {% csrf_token %}
+    
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <h3 class="text-lg font-bold text-slate-800">
+            Logique de l'Institution : 
+            <span class="text-emerald-600 font-semibold italic">Nouvelle Entité</span>
+        </h3>
+    </div>
+
+    <div class="p-6 space-y-6">
+        <input type="hidden" name="institution" value="{{actual_institution.id}}">
+        <input type="hidden" id="edit_or_create" name="edit_or_create" value="c">
+        <input type="hidden" name="fields_name" id="fields_name">
+        <input type="hidden" name="fields_type" id="fields_type">
+        <input type="hidden" name="fields_name2" id="fields_name2">
+        <input type="hidden" name="fields_type2" id="fields_type2">
+        <input type="hidden" value="0" name="entity_image">
+        <input type="hidden" name="enum_fields" id="enum_fields">
+        <input type="hidden" name="enum_rapp_fields" id="enum_rapp_fields">
+        <input type="hidden" name="indicateurs_field" id="indicateurs_field" value="indicateurs_field">
+        <input type="hidden" name="edit_id" value="" class="logic_editer">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Nom de l'Entité</label>
+                <input type="text" required 
+                       class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none logic_editer" 
+                       name="entity_nom" placeholder="Entrez le nom...">
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">Arborescence</label>
+                <select class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none logic_editer" 
+                        name="entity_hierachy">
+                    <option selected value="-1">Entité Source</option>
+                    {% for entity in actual_institution.get_entities.reverse %}
+                        {% if not entity.m_entity_type.is_tache %}
+                            <option value="{{entity.m_hierachie}}">{{entity}}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div id="modal-fields" class="space-y-4">
+            </div>
+
+        <div class="flex items-center p-4 bg-slate-50 rounded-lg border border-slate-100">
+            <input id="add_img_cvr" type="checkbox" name="entity_image" 
+                   class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" checked>
+            <label for="add_img_cvr" class="ml-3 text-sm font-medium text-slate-700 cursor-pointer">
+                Ajouter une Image de couverture
+            </label>
+        </div>
+    </div>
+
+    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+        <button type="button" data-dismiss="modal" 
+                class="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 transition-colors">
+            Annuler
+        </button>
+        <button type="submit" 
+                class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all focus:ring-4 focus:ring-blue-500/30">
+            Confirmer
+        </button>
+    </div>
+</form>
+    </div>
+</dialog>
+<script>
+    // Alterne l'affichage du menu Devise si l'implémentation financière est active
+    function toggleFinancialDevise(checkbox) {
+        const container = document.getElementById('devise_financial');
+        container.style.display = checkbox.checked ? 'none' : 'block';
+    }
+
+    // Gestion de l'affichage de l'accordéon Licence sans dépendances Bootstrap
+    function toggleLicenceAccordion() {
+        const body = document.getElementById('accordionOne');
+        const chevron = document.getElementById('licenceChevron');
+        
+        if (body.classList.contains('hidden')) {
+            body.classList.remove('hidden');
+            chevron.style.transform = 'rotate(0deg)';
+        } else {
+            body.classList.add('hidden');
+            chevron.style.transform = 'rotate(-90deg)';
+        }
+    }
+</script>
+<script>
+  const modal = document.getElementById('monModalP');
+
+  // Fermeture en cliquant sur le fond
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModalP();
+    }
+  });
+
+  // Fonction de fermeture avec délai pour laisser passer l'animation
+  function closeModalP() {
+    modal.style.opacity = '0';
+    modal.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      modal.close();
+      modal.style.opacity = '';
+      modal.style.transform = '';
+    }, 300); // 300ms correspond à la durée de l'animation CSS
+  }
+
+  // Si vous avez un bouton "Fermer" à l'intérieur, remplacez son onclick par :
+  // onclick="closeModal()"
+</script>
+{%endblock%}

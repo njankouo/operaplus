@@ -1,0 +1,462 @@
+{% extends './index.html'%}
+{% load static %}
+{% load humanize %}
+{% block main %}
+<div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 border-b border-slate-200 pb-6">
+    <!-- Section Titre -->
+    <div class="relative">
+        <h1 class="text-3xl font-black tracking-tight bg-gradient-to-r from-blue-600 via-green-500 to-orange-500 bg-clip-text text-transparent">
+         Edition   Tâches planifiées
+        </h1>
+        
+        <!-- Séparateur Mixte : Pointillé -> Solide -->
+        <div class="flex items-center mt-3 w-full max-w-sm">
+            <!-- Partie pointillée (début) -->
+            <div class="h-[2px] w-1/3 border-t-2 border-dashed border-slate-300"></div>
+            <!-- Partie solide gradient (fin) -->
+            <div class="h-1 flex-grow rounded-r-full bg-gradient-to-r from-blue-500 via-green-500 to-orange-500"></div>
+        </div>
+        
+        <p class="text-slate-500 mt-3 text-sm font-medium">
+            Modifiez La Tâche {{operation.nom}}.
+        </p>
+    </div>
+    
+   
+</div>
+ <div id="canvas-wrapper"></div>
+<div class="p-6 max-w-7xl mx-auto">
+    <form method="POST" action="/add_cat_nat/{{ operation.id }}/" class="space-y-6">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex flex-col gap-6">
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                        <h6 class="font-bold text-slate-800 m-0">Modification {{operation.nom}}</h6>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="form-group">
+                            <label class="font-bold block mb-2 text-sm">Nom</label>
+                            <input type="text" class="w-full px-4 py-2 border rounded-lg" name="nom" id="nomAct" required value="{{operation.nom}}">
+                        </div>
+                        <div class="form-group">
+                            <label class="font-bold block mb-2 text-sm">Entité / Tache</label>
+                            <select name="tache_change" class="w-full px-4 py-2 border rounded-lg" required>
+                                <option value="" disabled>Sélectionner l'entité responsable...</option>
+                                {% for entity in task_entities %}
+                                    <option value="{{ entity.id }}" {% if entity.id == operation.tache.id %}selected{% endif %}>
+                                        {{ entity.m_nom|default:entity }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="entite_tache" value="{{operation.tache.id}}">
+
+                <div id="delais-container" class="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
+<div class="relative group">
+
+    <div id="lock-message" class="hidden group-hover:flex absolute inset-0 z-10 bg-slate-50/80 backdrop-blur-[2px] items-center justify-center cursor-not-allowed">
+        <div class="bg-white px-4 py-2 rounded-full border border-amber-200 text-amber-700 text-sm font-semibold shadow-sm flex items-center gap-2">
+            <span>🔒 Modification verrouillée</span>
+        </div>
+    </div>
+
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <h6 class="font-bold text-slate-800 m-0">Délais & Fréquence</h6>
+    </div>
+    
+    <div class="p-6 space-y-4">
+        <div class="form-group">
+            <label class="font-bold block mb-2 text-sm">Jours pour la réalisation</label>
+            <div class="flex items-center gap-2">
+                <button class="px-3 py-2 border rounded" type="button" id="btn-minus">-</button>
+                <input type="number" class="w-full px-3 py-2 border rounded text-center" min="1" max="365" id="days-input" name="nombre_jour" value="{{operation.nombre_jour}}">
+                <button class="px-3 py-2 border rounded" type="button" id="btn-plus">+</button>
+            </div>
+        </div>
+
+       <div class="grid grid-cols-2 gap-4">
+            <div class="form-group">
+                <label class="font-bold block mb-2 text-sm">Date de début</label>
+                <input type="date" class="w-full px-3 py-2 border rounded" name="date_debut" value="{{operation.date_debut|date:'Y-m-d'}}">
+            </div>
+            <div class="form-group">
+                <label class="font-bold block mb-2 text-sm">Date de fin</label>
+                <input type="date" class="w-full px-3 py-2 border rounded" name="date_fin" value="{{operation.date_echeance|date:'Y-m-d'}}">
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                        <h6 class="font-bold text-slate-800 m-0">Informations complémentaires</h6>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-1 gap-4">
+                            {% if actual_institution.nature != False %}
+                            <div class="form-group">
+                                <label class="font-bold block mb-2 text-sm">Nature</label>
+                                <select name="nature" class="w-full px-3 py-2 border rounded" id="natureSelect">
+                                    <option value=""></option>
+                                    {% for natures in nature %}
+                                    <option value="{{ natures.id }}" {% if natures.id == operation.nature_operation_id %}selected{% endif %}>{{natures.intitule}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+                            <div class="form-group">
+                                <label class="font-bold block mb-2 text-sm">Catégorie</label>
+                                <select name="categorie" class="w-full px-3 py-2 border rounded" id="categorieSelect">
+                                    <option value=""></option>
+                                    {% for categorie_operations in categorie_operation %}
+                                    <option value="{{ categorie_operations.id }}" {% if categorie_operations.id == operation.categorie_id %}selected{% endif %}>{{categorie_operations.intitule}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="font-bold block mb-2 text-sm">Mode de notification</label>
+                                <select name="notification" class="w-full px-3 py-2 border rounded">
+                                    <option value="2">SMS & Email</option>
+                                    <option value="1">Adresse Mail</option>
+                                    <option value="0">SMS</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-6">
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <h6 class="font-bold text-slate-800 m-0">Gestion des Responsabilités (RACI)</h6>
+    </div>
+    <div class="p-6 space-y-4">
+        <div class="form-group">
+            <label class="block mb-2 text-sm font-bold text-emerald-600">
+                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs mr-2">R</span>Principal Responsable
+            </label>
+            <select name="personnel" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                <option value=""></option>
+                {% for personnes in personne %}
+                <option value="{{ personnes.id }}" {% if operation.personnel_id == personnes.id %}selected{% endif %}>
+                    {{personnes.nom}} - {{personnes.prenom}}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="block mb-2 text-sm font-bold text-red-600">
+                <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs mr-2">A</span>Accountable
+            </label>
+            <select name="accountable" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none">
+                <option value=""></option>
+                {% for personnes in personne %}
+                <option value="{{ personnes.id }}" {% if operation.accountable_id == personnes.id %}selected{% endif %}>
+                    {{personnes.nom}} - {{personnes.prenom}}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="block mb-2 text-sm font-bold text-amber-600">
+                <span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs mr-2">C</span>Consulted
+            </label>
+            <select name="consulted" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none">
+                <option value=""></option>
+                {% for personnes in personne %}
+                <option value="{{ personnes.id }}" {% if operation.consulted_id == personnes.id %}selected{% endif %}>
+                    {{personnes.nom}} - {{personnes.prenom}}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="block mb-2 text-sm font-bold text-sky-600">
+                <span class="px-2 py-0.5 bg-sky-100 text-sky-700 rounded text-xs mr-2">I</span>Informed
+            </label>
+            <select name="informed" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
+                <option value=""></option>
+                {% for personnes in personne %}
+                <option value="{{ personnes.id }}" {% if operation.informed_id == personnes.id %}selected{% endif %}>
+                    {{personnes.nom}} - {{personnes.prenom}}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="block mb-2 text-sm font-bold text-slate-600">
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs mr-2">I</span>Manager
+            </label>
+            <select name="participant" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none">
+                <option value=""></option>
+                {% for personnes in personne %}
+                <option value="{{ personnes.id }}" {% if operation.participant_id == personnes.id %}selected{% endif %}>
+                    {{personnes.nom}} - {{personnes.prenom}}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+             
+<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/70 flex justify-between items-center">
+        <h6 class="font-semibold text-slate-800 m-0 flex items-center gap-2">
+            Plan de Financement
+        </h6>
+        <span id="sources-count" class="text-xs font-medium text-slate-400 bg-slate-200/60 px-2.5 py-1 rounded-full">
+            0 sélectionnée(s)
+        </span>
+    </div>
+    
+    <div class="p-6 space-y-4">
+        {% for item in finances_globales %}
+        <div id="card_{{ item.id }}" class="finance-card group relative bg-slate-50/30 hover:bg-slate-50 p-3.5 rounded-xl border border-slate-100 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            
+            <div class="flex items-center gap-3">
+                <input 
+                    type="checkbox" 
+                    id="checkbox_{{ item.id }}" 
+                    data-id="{{ item.id }}"
+                    class="finance-checker h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    {% if item.is_linked %}checked{% endif %}
+                >
+                <label for="checkbox_{{ item.id }}" class="text-sm font-medium text-slate-700 cursor-pointer select-none">
+                    {{ item.nom }}
+                </label>
+            </div>
+            
+            <div class="relative rounded-lg shadow-sm w-full md:w-64">
+                <input 
+                    type="number" 
+                    id="finance_{{ item.id }}"
+                    name="finance_{{ item.id }}" 
+                    data-id="{{ item.id }}"
+                    class="finance-input block w-full rounded-lg border-slate-200 pr-10 pl-3 py-2 text-sm text-right text-slate-900 focus:border-indigo-500 focus:ring-indigo-500 transition-colors disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                    min="0" 
+                    step="0.01"
+                    placeholder="0.00"
+                    value="{% if item.montant > 0 %}{{ item.montant|floatformat:'2' }}{% endif %}"
+                    {% if not item.is_linked %}disabled{% endif %}
+                >
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span class="text-xs font-semibold text-slate-400">{{actual_institution.devise.symbole}}</span>
+                </div>
+            </div>
+
+        </div>
+        {% empty %}
+        <div class="text-center py-6">
+            <p class="text-sm text-slate-500">Aucune source de financement disponible.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+        <span class="text-sm font-semibold tracking-wide uppercase text-slate-400">Total Plan de Financement</span>
+        <div class="flex items-center gap-2">
+            <input type="text" id="total-global-display" class="bg-transparent border-none p-0 text-right text-2xl font-bold text-white focus:ring-0 select-all" readonly value="0" style="width: 50px;" name="montant_total_source_financement">
+            <span class="text-xl font-bold text-slate-400">{{actual_institution.devise.symbole}}</span>
+            <input type="hidden" id="total-global-value" name="total_global" value="0.00">
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4 p-6 bg-slate-50 rounded-2xl border">
+            <a class="px-6 py-2 border rounded-lg font-bold" href="/taches/{{operation.tache.id}}/">Annuler</a>
+            <button type="submit" class="px-6 py-2 bg-slate-900 text-white rounded-lg font-bold">Enregistrer</button>
+        </div>
+
+        <input type="hidden" name="redirect" {% if detail_g_v == True %} value="{{base_val.id}}" {% else %} value="-1" {% endif %}>
+        <input type="hidden" name="RACI_hidden" id="RACI_hidden">
+        <input type="hidden" name="RACI_hidden_roles" id="RACI_hidden_roles">
+        <input type="hidden" name="edit_or_create" value="c">
+        <input type="hidden" name="edit_id" id="edit_id">
+        <input type="hidden" name="generator" value="o">
+        <input type="hidden" name="tache" value="{{base_val.id}}">
+        <input type="hidden" name="who_assign" id="who_assign" value="0">
+        <input type="hidden" id="chronogr" name="chronogr">
+
+    </form>
+</div>
+
+
+
+ <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sélection des éléments du DOM
+      const daysInput = document.getElementById('days-input');
+      const startDateInput = document.getElementById('date_debut');
+      const endDateInput = document.getElementById('date_fin');
+      const btnMinus = document.getElementById('btn-minus');
+      const btnPlus = document.getElementById('btn-plus');
+
+      /**
+       * Calcule et met à jour la date de fin en fonction de la date de début
+       * et du nombre de jours saisis.
+       */
+      const updateEndDate = () => {
+          const startDate = startDateInput.valueAsDate;
+          const daysToAdd = parseInt(daysInput.value, 10);
+
+          // S'assure que les valeurs sont valides
+          if (!startDate || isNaN(daysToAdd)) {
+              endDateInput.value = '';
+              return;
+          }
+
+          const endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + daysToAdd);
+          endDateInput.valueAsDate = endDate;
+      };
+
+      /**
+       * Met à jour le nombre de jours en fonction de la date de début et de fin.
+       */
+      const updateDaysFromDates = () => {
+          const startDate = startDateInput.valueAsDate;
+          const endDate = endDateInput.valueAsDate;
+
+          // S'assure que les valeurs sont valides
+          if (!startDate || !endDate || endDate < startDate) {
+              daysInput.value = '';
+              return;
+          }
+
+          const timeDifference = endDate.getTime() - startDate.getTime();
+          const dayDifference = Math.ceil(timeDifference / (1000 * 3600 * 24));
+          daysInput.value = dayDifference;
+      };
+
+      /**
+       * Met à jour le nombre de jours et recalcule la date de fin.
+       * @param {number} delta - La valeur à ajouter ou soustraire (1 ou -1).
+       */
+      const updateDays = (delta) => {
+          let currentValue = parseInt(daysInput.value, 10);
+          const min = parseInt(daysInput.min, 10) || 1;
+          const max = parseInt(daysInput.max, 10) || 365;
+
+          currentValue += delta;
+
+          // Limite la valeur entre min et max
+          if (currentValue >= min && currentValue <= max) {
+              daysInput.value = currentValue;
+              updateEndDate();
+          }
+      };
+
+      // Écouteurs d'événements pour les boutons
+      btnMinus.addEventListener('click', () => updateDays(-1));
+      btnPlus.addEventListener('click', () => updateDays(1));
+
+      // Écouteurs pour les champs de saisie
+      const relevantInputs = [daysInput, startDateInput];
+      relevantInputs.forEach(input => input.addEventListener('change', updateEndDate));
+      daysInput.addEventListener('input', updateEndDate);
+
+      // Nouvel écouteur pour mettre à jour le nombre de jours lorsque la date de fin change
+      endDateInput.addEventListener('change', updateDaysFromDates);
+
+
+      // Initialisation
+      startDateInput.valueAsDate = new Date();
+      updateEndDate();
+    });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.finance-input');
+    const checkboxes = document.querySelectorAll('.finance-checker');
+    const displayTotal = document.getElementById('total-global-display');
+    const hiddenTotal = document.getElementById('total-global-value');
+    const sourcesCount = document.getElementById('sources-count');
+
+    function calculateTotal() {
+        let total = 0;
+        let checkedCount = 0;
+        
+        inputs.forEach(input => {
+            const id = input.dataset.id;
+            const checkbox = document.getElementById('checkbox_' + id);
+            const card = document.getElementById('card_' + id);
+            
+            if (checkbox && checkbox.checked) {
+                checkedCount++;
+                const val = parseFloat(input.value) || 0;
+                total += val;
+                
+                // Style visuel de la ligne sélectionnée (Vert)
+                if (card) {
+                    card.classList.add('border-emerald-200', 'bg-emerald-50/30');
+                    card.classList.remove('bg-slate-50/30', 'border-slate-100');
+                }
+            } else {
+                // Style visuel de la ligne non sélectionnée (Neutre)
+                if (card) {
+                    card.classList.remove('border-emerald-200', 'bg-emerald-50/30');
+                    card.classList.add('bg-slate-50/30', 'border-slate-100');
+                }
+            }
+        });
+        
+        // Mettre à jour le compteur dans l'en-tête
+        if (sourcesCount) {
+            sourcesCount.textContent = `${checkedCount} sélectionnée(s)`;
+        }
+        
+        // Mettre à jour les totaux
+        hiddenTotal.value = total.toFixed(2);
+        displayTotal.value = new Intl.NumberFormat('fr-FR', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(total);
+
+        // Ajuster la largeur de l'affichage
+        displayTotal.style.width = ((displayTotal.value.length + 1) * 15) + 'px';
+    }
+
+    // Gestion du clic sur les cases à cocher
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const id = this.dataset.id;
+            const input = document.getElementById('finance_' + id);
+            
+            if (input) {
+                input.disabled = !this.checked; // Active/Désactive l'input
+                if (!this.checked) {
+                    input.value = ''; // Vide la valeur si décoché
+                } else {
+                    input.focus(); // Met le focus directement si coché
+                }
+            }
+            calculateTotal();
+        });
+    });
+
+    // Événements sur les inputs de montant
+    inputs.forEach(input => {
+        input.addEventListener('input', calculateTotal);
+        input.addEventListener('focus', function() { this.select(); });
+    });
+
+    // Initialisation au chargement
+    calculateTotal();
+});
+</script>
+
+
+{%endblock%}

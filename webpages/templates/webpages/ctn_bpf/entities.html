@@ -1,0 +1,972 @@
+{% extends './index.html' %}
+{% block main %}
+{%block table%}
+{% block add_title %}
+<div class="flex items-center gap-3">
+    {% if base_val %}
+        
+        <h1 class="text-lg font-extrabold text-slate-900 tracking-tight truncate">
+            {{ base_val.m_nom }} 
+        </h1>
+        <span class="px-2 py-0.5 rounded-full bg-indigo-900/50 border border-slate-700 text-indigo-300 text-[10px] font-bold uppercase shrink-0">
+            Actif
+        </span>
+    {% else %}
+        <div class="flex items-center gap-2 text-slate-200">
+            <i class="fas fa-chart-line text-slate-900 text-sm"></i>
+            <h1 class="text-slate-900 font-semibold">Gestionnaire - {{ entity.m_nom }}</h1>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+<style>
+   #canvas-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    pointer-events: none;
+    mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+}
+/* Animation douce pour l'apparition/disparition des cartes lors de la recherche */
+.entity-card {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+</style>
+ <div id="canvas-wrapper"></div>
+
+<!-- Fil d'ariane (Breadcrumb) -->
+
+
+<!-- ==================== BARRE D'OUTILS DESIGN HAUT DE GAMME (GLASSMORPHISM) ==================== -->
+<div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 p-4 bg-white/70 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 sticky top-4 z-20">
+  
+  <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+    <div class="relative w-full sm:w-80">
+      <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+        <i class="fas fa-search text-xs"></i>
+      </span>
+      <input 
+        type="text" 
+        id="search-entity-input" 
+        placeholder="Rechercher une entité..." 
+        class="w-full pl-10 pr-4 py-2.5 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-blue-500 focus:ring-blue-100 transition-all duration-200 placeholder-gray-400"
+      >
+    </div>
+    <span id="entity-counter" class="inline-flex items-center justify-center px-3 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg border border-gray-200 whitespace-nowrap">
+      Chargement...
+    </span>
+  </div>
+ 
+  <div class="flex items-center gap-2 w-full md:w-auto">
+    <button 
+        type="button" onclick="monModalPonderation.showModal()"
+        class="flex items-center justify-center px-5 py-2.5 bg-white border border-slate-200 hover:border-emerald-500 text-slate-600 hover:text-emerald-600 rounded-xl text-sm font-bold shadow-sm transition-all duration-300 gap-2"
+    >
+        <i class="fas fa-balance-scale-left text-xs"></i>
+        <span>Valider pondération</span>
+    </button>
+
+    <button 
+        type="button"
+        onclick="monModal.showModal()"
+        class="group flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md shadow-blue-500/10 transition-all duration-300 gap-2"
+    >
+        <i class="fas fa-plus text-xs group-hover:rotate-90 transition-transform duration-300"></i>
+        <span>Nouvelle {% if sub_entity %}{{ sub_entity.m_nom }}{% else %}{{ entity.m_nom }}{% endif %}</span>
+    </button>
+  </div>
+
+</div>
+
+
+
+<dialog id="monModalPonderation" class="p-0 rounded-2xl shadow-2xl w-full max-w-2xl border-0 backdrop:bg-slate-900/50">
+    <form action="/add_ponderation/" method="post">
+        {% csrf_token %}
+        
+        <div class="px-6 py-4 flex items-center justify-between text-white" style="background-color: {{request.user.personnel.color}};">
+            <h5 class="font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
+                <i class="fas fa-percentage"></i> Ponderation {% if sub_entity %}{{ sub_entity.m_nom }}{% else %}{{ entity.m_nom }}{% endif %}
+            </h5>
+            <button type="button" onclick="monModalPonderation.close()" class="hover:opacity-75 transition-opacity">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-6">
+    <div class="border border-slate-200 rounded-xl overflow-hidden">
+        <div class="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-50">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 shadow-sm">
+                    <tr>
+                        <th class="p-4 text-xs font-bold text-slate-500 uppercase">Nom</th>
+                        <th class="p-4 text-xs font-bold text-slate-500 uppercase">Pondération</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for entity in pages_o %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-4 font-bold text-slate-800 text-sm">{{ entity.m_nom }}</td>
+                        <td class="p-4">
+                            <div class="flex items-center border border-slate-200 rounded-full overflow-hidden focus-within:ring-2 transition-all" style="border-color: {{request.user.personnel.color}};">
+                                <input type="number" name="ponderation_{{ entity.id }}"
+                                       value="{{ entity.ponderation|default_if_none:'0' }}"
+                                       class="ponderation-input w-full h-10 px-4 outline-none text-sm font-bold text-slate-700"
+                                       min="0" step="0.1" required>
+                                <span class="px-3 bg-slate-100 text-slate-500 text-xs font-bold">%</span>
+                            </div>
+                        </td>
+                        <input type="hidden" name="entity_ids" value="{{ entity.id }}">
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="bg-slate-900 px-4 py-3 flex items-center justify-between">
+            <span class="text-white font-bold text-sm uppercase">Total</span>
+            <input type="text" id="total-ponderation"
+                   class="w-32 h-8 px-3 font-black text-sm rounded-lg outline-none text-center bg-white"
+                   value="{{ total_ponderation|default:'0' }}" readonly>
+        </div>
+    </div>
+</div>
+
+        <div class="px-6 py-4 bg-slate-50 flex justify-end gap-3">
+            <button type="button" onclick="monModalPonderation.close()" class="px-5 py-2 text-xs font-bold text-slate-600 uppercase hover:bg-slate-200 rounded-lg transition-all">Annuler</button>
+            <button type="submit" id="verify" class="px-5 py-2 bg-blue-700 text-white text-xs font-bold uppercase rounded-lg hover:bg-blue-800 transition-all shadow-lg shadow-blue-700/20">Enregistrer</button>
+        </div>
+    </form>
+</dialog>
+<style>
+  /* Scrollbar ultra-légère pour navigateurs webkit */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 20px;
+}
+</style>
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.ponderation-input');
+    const totalField = document.getElementById('total-ponderation');
+    const verify = document.getElementById('verify');
+
+    function calculateTotal() {
+      let total = 0;
+      inputs.forEach(input => {
+        total += parseFloat(input.value) || 0;
+      });
+
+      totalField.value = total.toFixed(1) + "%";
+
+      // Logique de couleur Tailwind
+      if (Math.abs(total - 100) < 0.1) {
+        totalField.className = "w-full h-10 px-4 font-black text-lg rounded-full outline-none text-center text-emerald-600 bg-emerald-50";
+        verify.disabled = false;
+      } else if (total > 100) {
+        totalField.className = "w-full h-10 px-4 font-black text-lg rounded-full outline-none text-center text-red-600 bg-red-50";
+        verify.disabled = true;
+      } else {
+        totalField.className = "w-full h-10 px-4 font-black text-lg rounded-full outline-none text-center text-amber-600 bg-amber-50";
+        verify.disabled = false;
+      }
+    }
+
+    inputs.forEach(input => {
+      input.addEventListener('input', calculateTotal);
+    });
+
+    calculateTotal();
+  });
+</script>
+
+<!-- ========================================================================================= -->
+
+<dialog id="monModal" class="p-0 rounded-lg shadow-2xl w-full max-w-4xl border border-slate-300 overflow-hidden outline-none bg-white">
+    <div class="px-6 py-4 bg-slate-100 border-b border-slate-300 flex justify-between items-center">
+        <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wide">
+            Nouvelle {% if sub_entity %}{{ sub_entity.m_nom }}{% else %}{{ entity.m_nom }}{% endif %}
+        </h2>
+        <button onclick="monModal.close()" class="text-slate-500 hover:text-slate-900 font-bold text-xs uppercase">Fermer [Esc]</button>
+    </div>
+<div class="max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-50">
+        
+   <form action="/save_entity_value/" onsubmit='return getFieldValues(this);' enctype="multipart/form-data" method="post" class="bg-white overflow-y-auto flex-1">
+        {% csrf_token %}
+        <input type="hidden" name="base_val" {% if base_val != None %} value="{{base_val.id}}{% else %}0{% endif %}">
+        <input type="hidden" name="edit_or_create" id="edit_or_create" value="c">
+        <input type="hidden" name="edit_id" id="edit_id">
+        <input type='hidden' name='generator' value='p'>
+        <input type='hidden' name='institution' value='{{actual_institution.id}}'>
+        <input type='hidden' name='hierachie' value='{{hierachy}}'>
+        <input type='hidden' value='{% if is_tache == True or is_sub_tache == True %}True{% else %}False{% endif %}' name='is_tache'>
+        <input type='hidden' id='fields' required name='fields' value=''>
+
+        {% if is_tache or is_sub_tache == True %}
+            <input type="hidden" required name="structures_list" id="structures_list">
+            <input type="hidden" required name="structures_roles" id="structures_roles">
+            <input type="hidden" name="detail_g_v" {% if detail_g_v == True %} value="{{base_val.id}}" {% else %} value="-1" {% endif %}>
+        {% endif %}
+
+        <div class="p-6 space-y-6">
+            <div class="grid grid-cols-12 gap-x-6 gap-y-4">
+                <div class="col-span-12">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Désignation</label>
+                    <input type='text' id="nom" name='nom' class='w-full px-2 py-1.5 border border-slate-300 text-sm focus:border-blue-600 outline-none transition-colors'>
+                </div>
+
+                <div class="col-span-6">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Objectif</label>
+                    <textarea name='objectif' rows="2" class='w-full px-2 py-1.5 border border-slate-300 text-sm focus:border-blue-600 outline-none'></textarea>
+                </div>
+                <div class="col-span-6">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Observation</label>
+                    <textarea name='observation' rows="2" class='w-full px-2 py-1.5 border border-slate-300 text-sm focus:border-blue-600 outline-none'></textarea>
+                </div>
+            </div>
+
+            {% include './partials/forms_dynamic.html' %}
+
+            {% for search in searches %}
+            {% if search.m_entity_type %}
+                <div class="col-span-12 sm:col-span-9 mb-4">
+                    <label for="search{{forloop.counter}}" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        {{ search.m_entity_type }}
+                    </label>
+                    <select required data-code='{{ search.code }}' id='search{{forloop.counter}}' name='sup_entity' class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition-all shadow-sm">
+                        {% for v in search.m_entity_type.lines %}
+                            <option value="{{ v.id }}" {% if v.id == base_val.id %} selected="selected" {% endif %}>{{ v.m_nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+            {% endfor %}
+
+            <div class="border-t border-slate-200 pt-4">
+                <h3 class="text-[11px] font-bold text-blue-800 uppercase mb-3">Matrice RACI</h3>
+                <table class="w-full text-left border-collapse border border-slate-200">
+                    <thead>
+                        <tr class="bg-slate-50">
+                            <th class="p-2 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase w-1/4">Réalisateur (R)</th>
+                            <th class="p-2 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase w-1/4">Responsable (A)</th>
+                            <th class="p-2 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase w-1/4">Consulté (C)</th>
+                            <th class="p-2 border border-slate-200 text-[10px] font-bold text-slate-500 uppercase w-1/4">Informé (I)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border border-slate-200"><select name="perso" class="w-full text-sm p-1.5 border-none outline-none"><option value="0">---</option>{% for perso in structure_raci %}<option value="{{perso.id}}">{{perso.nom}}</option>{% endfor %}</select></td>
+                            <td class="border border-slate-200"><select name="accountable" class="w-full text-sm p-1.5 border-none outline-none"><option value="0">---</option>{% for perso in structure_raci %}<option value="{{perso.id}}">{{perso.nom}}</option>{% endfor %}</select></td>
+                            <td class="border border-slate-200"><select name="consulted" class="w-full text-sm p-1.5 border-none outline-none"><option value="0">---</option>{% for perso in structure_raci %}<option value="{{perso.id}}">{{perso.nom}}</option>{% endfor %}</select></td>
+                            <td class="border border-slate-200"><select name="informed" class="w-full text-sm p-1.5 border-none outline-none"><option value="0">---</option>{% for perso in structure_raci %}<option value="{{perso.id}}">{{perso.nom}}</option>{% endfor %}</select></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+            <button type="button" onclick="monModal.close()" class="px-4 py-1.5 border border-slate-300 text-sm font-bold text-slate-600 bg-white hover:bg-slate-100 uppercase">Annuler</button>
+            <button type="submit" class="px-4 py-1.5 bg-blue-700 text-white text-sm font-bold hover:bg-blue-800 uppercase">Enregistrer</button>
+        </div>
+    </form>
+</div>
+</dialog>
+<style>
+  /* Animation d'entrée/sortie fluide */
+dialog[open] {
+    animation: modalAppear 0.3s ease-out;
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    transition: backdrop-filter 0.3s;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+</style>
+
+<script>
+  const modal = document.getElementById('monModalPonderation');
+
+  // Fermeture en cliquant sur le fond
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModalPonderation();
+    }
+  });
+
+  // Fonction de fermeture avec délai pour laisser passer l'animation
+  function closeModalPonderation() {
+    modal.style.opacity = '0';
+    modal.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      modal.close();
+      modal.style.opacity = '';
+      modal.style.transform = '';
+    }, 300); // 300ms correspond à la durée de l'animation CSS
+  }
+
+
+</script>
+
+<script>
+  const modal = document.getElementById('monModal');
+
+  // Fermeture en cliquant sur le fond
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+
+  // Fonction de fermeture avec délai pour laisser passer l'animation
+  function closeModal() {
+    modal.style.opacity = '0';
+    modal.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      modal.close();
+      modal.style.opacity = '';
+      modal.style.transform = '';
+    }, 300); // 300ms correspond à la durée de l'animation CSS
+  }
+
+
+</script>
+<!-- Conteneur des cartes d'entités -->
+<div id="entities-grid" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+  {% for entity in pages_o %}
+
+    <!-- Modal RACI -->
+    <div id="exampleModal_structure_entity{{entity.id}}" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden">
+        <form method="POST" action="/edit_structure_raci/{{entity.id}}/">
+          {% csrf_token %}
+          
+          <div class="flex items-center justify-between p-4 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-gray-900">EDITION DES RESPONSABILIT&Eacute;S RACI {{entity}}</h3>
+            <button type="button" onclick="document.getElementById('exampleModal_structure_entity{{entity.id}}').classList.add('hidden')" class="text-gray-400 hover:text-gray-500 text-2xl font-semibold">&times;</button>
+          </div>
+
+          <div class="p-6 space-y-6">
+            <div class="p-4 rounded-lg text-white" style="background-color: {{request.user.personnel.color_fond}};">
+              <h5 class="flex items-center font-bold uppercase tracking-wider text-sm">
+                <i class="fas fa-sitemap mr-3"></i> 
+                Responsable, Accountable, Consulted, Informed des Structures
+              </h5>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-4 border border-gray-200 rounded-lg shadow-sm bg-gray-50 flex flex-col justify-between">
+                <label class="flex items-center space-x-2 font-bold text-purple-700 mb-2">
+                  <i class="fas fa-crown text-xl"></i>
+                  <span class="px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full">R</span>
+                  <span class="text-gray-700">Principal Responsable</span>
+                </label>
+                <select name="perso" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-purple-500 focus:ring-purple-500 bg-white p-2 border">
+                  {% for perso in structure_raci %}
+                    <option value="{{perso.id}}" {% if entity.structure_responsable_id == perso.id %}selected{% endif %}>{{perso.nom}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="p-4 border border-gray-200 rounded-lg shadow-sm bg-gray-50 flex flex-col justify-between">
+                <label class="flex items-center space-x-2 font-bold text-orange-600 mb-2">
+                  <i class="fas fa-balance-scale text-xl"></i>
+                  <span class="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 rounded-full">A</span>
+                  <span class="text-gray-700">Accountable</span>
+                </label>
+                <select name="accountable" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-orange-500 focus:ring-orange-500 bg-white p-2 border">
+                  <option value="0">Non Défini</option>
+                  {% for perso in structure_raci %}
+                    <option value="{{perso.id}}" {% if entity.structure_accountable_id == perso.id %}selected{% endif %}>{{perso.nom}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="p-4 border border-gray-200 rounded-lg shadow-sm bg-gray-50 flex flex-col justify-between">
+                <label class="flex items-center space-x-2 font-bold text-cyan-600 mb-2">
+                  <i class="fas fa-lightbulb text-xl"></i>
+                  <span class="px-2 py-0.5 text-xs bg-cyan-100 text-cyan-800 rounded-full">C</span>
+                  <span class="text-gray-700">Consulted</span>
+                </label>
+                <select name="consulted" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-cyan-500 focus:ring-cyan-500 bg-white p-2 border">
+                  <option value="0">Non Défini</option>
+                  {% for perso in structure_raci %}
+                    <option value="{{perso.id}}" {% if entity.structure_consulted_id == perso.id %}selected{% endif %}>{{perso.nom}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="p-4 border border-gray-200 rounded-lg shadow-sm bg-gray-50 flex flex-col justify-between">
+                <label class="flex items-center space-x-2 font-bold text-gray-600 mb-2">
+                  <i class="fas fa-satellite-dish text-xl"></i>
+                  <span class="px-2 py-0.5 text-xs bg-gray-200 text-gray-800 rounded-full">I</span>
+                  <span class="text-gray-700">Informed</span>
+                </label>
+                <select name="informed" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm focus:border-gray-500 focus:ring-gray-500 bg-white p-2 border">
+                  <option value="0">Non Défini</option>
+                  {% for perso in structure_raci %}
+                    <option value="{{perso.id}}" {% if entity.structure_informed_id == perso.id %}selected{% endif %}>{{perso.nom}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-4 border-t border-gray-200 flex justify-end space-x-2 bg-gray-50">
+            <button type="button" onclick="document.getElementById('exampleModal_structure_entity{{entity.id}}').classList.add('hidden')" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-sm font-medium shadow-sm transition">Fermer</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium shadow-sm transition">Modifier</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Plus d'informations -->
+    <div id="staticBackdrop{{ entity.id }}" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden my-8">
+        <div class="flex items-center justify-between p-6 bg-gradient-to-r from-gray-800 to-gray-900 text-white">
+          <div class="flex items-center space-x-4">
+            <div class="p-3 bg-white text-gray-900 rounded-xl shadow-inner">
+              <i class="bi bi-layers-fill text-xl"></i>
+            </div>
+            <div>
+              <h5 class="text-lg font-bold">Détails de l'entité</h5>
+              <p class="text-xs text-gray-400 font-mono">ID: #{{ entity.id }} — {{ entity.m_nom }}</p>
+            </div>
+          </div>
+          <button type="button" onclick="document.getElementById('staticBackdrop{{ entity.id }}').classList.add('hidden')" class="text-gray-400 hover:text-white text-2xl font-semibold">&times;</button>
+        </div>
+
+        <div class="p-6 space-y-6 max-h-[calc(100vh-15rem)] overflow-y-auto">
+          <div>
+            <span class="inline-block px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold uppercase rounded-full mb-3">Informations Générales</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="text-xs text-gray-500 font-bold uppercase">Nom complet</label>
+                <div class="mt-1 p-3 bg-gray-50 rounded-lg border-l-4 border-blue-500 shadow-sm font-medium text-gray-900">
+                  {{ entity.m_nom }}
+                </div>
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 font-bold uppercase">Observation</label>
+                <div class="mt-1 p-3 bg-gray-50 rounded-lg border-l-4 border-cyan-500 shadow-sm font-medium text-gray-900">
+                  {{ entity.observation|default:'Aucune observation' }}
+                </div>
+              </div>
+              <div class="md:col-span-2">
+                <label class="text-xs text-gray-500 font-bold uppercase">Description</label>
+                <div class="mt-1 p-3 bg-gray-50 rounded-lg shadow-sm text-gray-600 text-sm">
+                  {{ entity.objectif|default:'Aucune description' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <span class="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-xs font-bold uppercase rounded-full mb-3">Détails complémentaires</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {% for champvalues in champvalue %}
+                {% if entity.id == champvalues.entities_id %}
+                  <div class="flex items-center justify-between p-3 border border-gray-100 rounded-xl bg-white hover:shadow-md transition">
+                    <div class="flex items-center space-x-2">
+                      <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                      <span class="text-xs font-medium text-gray-500">{{ champvalues.champ.name }}</span>
+                    </div>
+                    <span class="text-sm font-bold text-gray-900">{{ champvalues.value|default:'---------' }}</span>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+          <button type="button" onclick="document.getElementById('staticBackdrop{{ entity.id }}').classList.add('hidden')" class="px-6 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-full text-sm font-bold shadow transition">
+            Fermer la vue
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== CARTES RE-STYLISÉES AVEC EFFET HOVER AVANCÉ ==================== -->
+    <div class="entity-card bg-white/95 rounded-2xl shadow-md hover:shadow-xl border transition-all duration-300 hover:-translate-y-1 overflow-hidden" 
+         data-name="{% if entity.m_nom %}{{ entity.m_nom|lower }}{% else %}{{ entity|lower }}{% endif %}"
+         style="border-color: {{request.user.personnel.color_fond}}15;">
+      <div class="grid grid-cols-1 md:grid-cols-2 h-100">
+        
+        <div class="p-6 flex flex-col justify-between space-y-4">
+          
+          <div class="flex justify-between items-start">
+            <div>
+              {% if entity.resultat_niveau_execution > 80 %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 animate-pulse"></span> Excellent
+                </span>
+              {% elif entity.resultat_niveau_execution > 50 %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5 animate-pulse"></span> Moyen
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5 animate-pulse"></span> Critique
+                </span>
+              {% endif %}
+            </div>
+            
+            <div class="relative">
+              <img src="{% if entity.m_type_entity.is_pic_represented %}{% if entity.m_pic_represented.url != None %}{{entity.m_pic_represented.url}}{% else %}{{actual_institution.img.url}}{% endif %}{% else %}{{base_img_val}}{% endif %}"
+                   class="w-16 h-16 rounded-full object-cover shadow-md border-2"
+                   onerror="this.src='{{base_img_val}}'" style="border-color: {{request.user.personnel.color_fond}};">
+              <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs shadow-sm" style="background-color: {{request.user.personnel.color_fond}};">
+                <i class="bi bi-{{entity.icon|default:'building'}}"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center md:text-left">
+           <h5 class="entity-title text-xs font-bold flex items-center justify-center md:justify-start flex-wrap gap-2">
+              <a href="/gestionnaire/{{hierachy}}/{{entity.id}}/" 
+                 class="group flex items-center gap-1.5 hover:text-opacity-70 transition-all duration-300 cursor-pointer" 
+                 style="color: {{request.user.personnel.color_fond}};">
+                 
+                <span class="hover:underline decoration-2 underline-offset-4">
+                    {% if entity.m_nom %}{{entity.m_nom}}{% else %}{{entity}}{% endif %}
+                </span>
+
+                <svg class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </a>
+            </h5>
+          </div>
+
+          <div class="space-y-2">
+            {% if request.user.personnel.is_process %}
+              <div class="p-3 rounded-xl text-white flex justify-between items-center text-sm shadow-sm" style="background-color: {{request.user.personnel.color_fond}};">
+                <span class="flex items-center font-medium opacity-90"><i class="fa fa-chart-line mr-2"></i>Pondération</span>
+                <span class="font-bold text-base">{{entity.ponderation}}%</span>
+              </div>
+            {% elif request.user.personnel.is_finance %}
+              <div class="p-3 rounded-xl text-white flex justify-between items-center text-sm shadow-sm" style="background-color: {{request.user.personnel.color_fond}};">
+                <span class="flex items-center font-medium opacity-90"><i class="bi bi-bar-chart-line mr-2"></i>TEF Valid&eacute;</span>
+                <span class="font-bold text-base">{{entity.taux_financier_valide|floatformat:'-2'}}%</span>
+              </div>
+            {% endif %}
+
+            <div class="p-3 rounded-xl text-white flex justify-between items-center text-sm shadow-sm" style="background-color: {{request.user.personnel.color_fond}};">
+              {% if request.user.personnel.is_process %}
+                <span class="flex items-center font-medium opacity-90"><i class="bi bi-speedometer2 mr-2"></i>Exécution</span>
+                <span class="font-bold text-base">{{entity.resultat_niveau_execution_valide}}%</span>
+              {% elif request.user.personnel.is_finance %}
+                <span class="flex items-center font-medium opacity-90"><i class="fa fa-bar-chart mr-2"></i>TEF Declar&eacute;</span>
+                <span class="font-bold text-base">{{entity.taux_financier|floatformat:'-2'}}%</span>
+              {% endif %}
+            </div>
+
+            {% if request.user.personnel.is_finance %}
+              <button type="button" class="w-full py-2 px-4 rounded-xl text-white font-medium text-sm flex items-center justify-center shadow hover:opacity-90 transition" style="background-color: {{request.user.personnel.color_fond}};">
+                <i class="fa fa-coins mr-2"></i> Détail Financement
+              </button>
+            {% endif %}
+          </div>
+
+          <div class="border border-gray-100 rounded-xl overflow-hidden shadow-sm bg-white">
+            <details class="group">
+              <summary class="flex justify-between items-center p-3 font-medium cursor-pointer list-none bg-gray-50 hover:bg-gray-100 transition">
+                <span class="flex items-center text-xs uppercase font-bold tracking-wider text-gray-700">
+                  <i class="fas fa-fingerprint mr-2 text-blue-500"></i> Matrice (RACI)
+                </span>
+                <span class="transition group-open:rotate-180 text-gray-400">
+                  <svg fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
+                </span>
+              </summary>
+              <div class="p-3 border-t border-gray-100 bg-white space-y-2">
+                
+                <div class="flex items-center p-2 bg-gray-50 rounded-lg border-l-4 border-amber-400 text-xs">
+                  <div class="w-5 h-5 bg-amber-400 text-white font-bold rounded flex items-center justify-center shrink-0">R</div>
+                  <div class="ml-3">
+                    <p class="text-[10px] font-bold text-amber-500 uppercase tracking-tight">Responsible</p>
+                    <p class="text-gray-800 font-medium">{% if entity.structure_responsable %}{{ entity.structure_responsable.nom }}{% else %}Non Défini{% endif %}</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center p-2 bg-gray-50 rounded-lg border-l-4 border-purple-500 text-xs">
+                  <div class="w-5 h-5 bg-purple-500 text-white font-bold rounded flex items-center justify-center shrink-0">A</div>
+                  <div class="ml-3">
+                    <p class="text-[10px] font-bold text-purple-500 uppercase tracking-tight">Accountable</p>
+                    <p class="text-gray-800 font-medium">{% if entity.structure_accountable %}{{ entity.structure_accountable.nom }}{% else %}Non Défini{% endif %}</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center p-2 bg-gray-50 rounded-lg border-l-4 border-cyan-500 text-xs">
+                  <div class="w-5 h-5 bg-cyan-500 text-white font-bold rounded flex items-center justify-center shrink-0">C</div>
+                  <div class="ml-3">
+                    <p class="text-[10px] font-bold text-cyan-500 uppercase tracking-tight">Consulted</p>
+                    <p class="text-gray-800 font-medium">{% if entity.structure_consulted %}{{ entity.structure_consulted.nom }}{% else %}Non Défini{% endif %}</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center p-2 bg-gray-50 rounded-lg border-l-4 border-gray-400 text-xs">
+                  <div class="w-5 h-5 bg-gray-400 text-white font-bold rounded flex items-center justify-center shrink-0">I</div>
+                  <div class="ml-3">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-tight">Informed</p>
+                    <p class="text-gray-800 font-medium">{% if entity.structure_informed %}{{ entity.structure_informed.nom }}{% else %}Non Défini{% endif %}</p>
+                  </div>
+                </div>
+
+                <button type="button" onclick="document.getElementById('exampleModal_structure_entity{{entity.id}}').classList.remove('hidden')" class="w-full mt-2 py-1.5 px-3 border border-blue-500 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-50 transition flex items-center justify-center">
+                  <i class="fa fa-edit mr-2"></i> ÉDITION RACI
+                </button>
+              </div>
+            </details>
+          </div>
+
+          <button type="button" onclick="document.getElementById('staticBackdrop{{entity.id}}').classList.remove('hidden')" class="w-full py-2 px-4 border border-gray-900 rounded-full text-gray-900 font-bold text-sm hover:bg-gray-900 hover:text-white transition shadow-sm flex items-center justify-center">
+            <i class="fa fa-info-circle mr-2"></i> Plus d'informations
+          </button>
+
+          <!-- Zone d'action éditée pour un look plus UI Dashboard -->
+          <div class="pt-3 border-t border-gray-100 flex items-center justify-center space-x-3">
+            <a class="flex items-center px-3 py-1.5 border border-blue-600 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white text-xs font-semibold transition duration-200" href="/Update-Entities/{{entity.id}}/">
+              <svg class="mr-1.5" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+              </svg>
+              Éditer
+            </a>
+
+            <a href="/delete_entities/{{entity.id}}/" class="flex items-center px-3 py-1.5 border border-red-200 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-lg text-xs font-semibold transition duration-200" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette entité?');">
+              <svg class="mr-1.5" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+              </svg>
+              Supprimer
+            </a>
+          </div>
+        </div>
+
+        <div class="p-4 flex flex-col justify-start" style="background-color: {{request.user.personnel.color_fond}};">
+          <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+            {% for tache in entity.sub_entities %}
+  <div class="p-4 bg-white bg-opacity-10 rounded-xl border border-white border-opacity-20 hover:bg-opacity-15 transition">
+    <div class="mb-2">
+        <a href="/gestionnaire/{{next_hierachy}}/{{tache.id}}/" 
+   class="text-white font-bold text-xs hover:underline tracking-wide block group flex items-center gap-2">
+    
+    <span class="break-words">
+        {% if tache.m_nom %}{{tache.m_nom}}{% else %}{{tache}}{% endif %}
+    </span>
+
+    <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        &rarr;
+    </span>
+</a>
+    </div>                
+
+    {% if request.user.personnel.is_process %}
+      <div class="mt-2">
+        <div class="flex justify-between text-white text-xs mb-1 opacity-90">
+          <span>Exécution</span>
+          <span class="font-bold 
+            {% if tache.resultat_niveau_execution_valide < 50 %}text-red-400
+            {% elif tache.resultat_niveau_execution_valide < 80 %}text-amber-400
+            {% else %}text-emerald-400{% endif %}">
+            {{tache.resultat_niveau_execution_valide|default:"0"}}%
+          </span>
+        </div>
+        <div class="w-full bg-white bg-opacity-20 rounded-full h-1.5 overflow-hidden">
+          <div class="h-1.5 rounded-full transition-all duration-500 
+            {% if tache.resultat_niveau_execution < 50 %}bg-red-500
+            {% elif tache.resultat_niveau_execution < 80 %}bg-amber-500
+            {% else %}bg-emerald-500{% endif %}" 
+            style="width: {{tache.resultat_niveau_execution|default:'0'}}%;">
+          </div>
+        </div>
+      </div>
+
+    {% elif request.user.personnel.is_finance %}
+      <div class="text-white text-xs space-y-1 opacity-90">
+        <div class="flex justify-between"><span>Montant Planifié :</span><span class="font-bold">{{tache.montant_planifiee|floatformat:'2'}} </span></div>
+        <div class="flex justify-between"><span>Montant Déclaré :</span><span class="font-bold">{{tache.montant_declare|floatformat:'2'}}</span></div>
+        <div class="flex justify-between"><span>Montant Validé :</span><span class="font-bold">{{tache.montant_valide|floatformat:'2'}}</span></div>
+        
+        <div class="flex justify-between">
+            <span>TEF Déclaré :</span>
+            <span class="font-bold 
+                {% if tache.taux_financier < 50 %}text-red-400
+                {% elif tache.taux_financier < 80 %}text-amber-400
+                {% else %}text-emerald-400{% endif %}">
+                {{tache.taux_financier|floatformat:'-2'|default:"0"}}%
+            </span>
+        </div>
+        <div class="flex justify-between border-t border-white border-opacity-20 pt-1 mt-1">
+            <span>TEF Validé :</span>
+            <span class="font-bold text-sm 
+                {% if tache.taux_financier_valide < 50 %}text-red-400
+                {% elif tache.taux_financier_valide < 80 %}text-amber-400
+                {% else %}text-emerald-400{% endif %}">
+                {{tache.taux_financier_valide|floatformat:'-2'|default:"0"}}%
+            </span>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% empty %}
+  <div class="text-center py-12 text-white opacity-70 space-y-3">
+    <i class="fas fa-database text-4xl"></i>
+    <h5 class="text-sm font-bold">Aucune donnée disponible</h5>
+    <p class="text-xs">Aucune planification pour le moment.</p>
+  </div>
+{% endfor %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  {% endfor %}
+</div>
+{% if num_pages > 1 %}
+<nav class="flex justify-center items-center gap-2 mt-8" aria-label="Pagination">
+    
+    {% if pages.has_previous %}
+    <a href="?page={{ pages.previous_page_number }}" 
+       class="px-4 py-2 text-sm font-bold text-blue-600 bg-white border border-blue-200 rounded-full hover:bg-blue-50 transition-all duration-200">
+        &laquo; Précédent
+    </a>
+    {% endif %}
+
+    <ul class="flex items-center gap-1">
+        {% for num in page_range %}
+        <li>
+            <a href="?page={{ num }}" 
+               class="flex items-center justify-center w-9 h-9 text-sm font-bold rounded-full transition-all duration-200 
+               {% if pages.number == num %}
+                   bg-blue-600 text-white shadow-md shadow-blue-200
+               {% else %}
+                   text-slate-600 hover:bg-slate-100
+               {% endif %}">
+                {{ num }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    {% if pages.has_next %}
+    <a href="?page={{ pages.next_page_number }}" 
+       class="px-4 py-2 text-sm font-bold text-blue-600 bg-white border border-blue-200 rounded-full hover:bg-blue-50 transition-all duration-200">
+        Suivant &raquo;
+    </a>
+    {% endif %}
+</nav>
+{% endif %}
+  <style>
+    /* Personnalisation de la scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px; /* Fine */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1); /* Fond léger */
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3); /* Couleur de la barre */
+    border-radius: 10px;
+    transition: background 0.3s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5); /* Plus visible au survol */
+}
+  </style>
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- SCRIPT DU GLOBE THREE.JS -->
+<script>
+    (function() {
+        function initGlobe() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            if (!wrapper) return; 
+
+            if (typeof THREE === 'undefined') {
+                console.warn("Three.js n'est pas chargé sur cette page.");
+                return;
+            }
+
+            let scene, camera, renderer, globeGroup, pointsMesh;
+            let time = 0;
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 1, 1000);
+            camera.position.z = 250; 
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+            wrapper.appendChild(renderer.domElement);
+
+            globeGroup = new THREE.Group();
+            scene.add(globeGroup);
+
+            const radius = 75;
+            const dotCount = 3000;
+            const positions = [], colors = [], directions = [];
+
+            for (let i = 0; i < dotCount; i++) {
+                const phi = Math.acos(-1 + (2 * i) / dotCount);
+                const theta = Math.sqrt(dotCount * Math.PI) * phi;
+                const x = radius * Math.sin(phi) * Math.cos(theta);
+                const y = radius * Math.sin(phi) * Math.sin(theta);
+                const z = radius * Math.cos(phi);
+
+                const lat = (phi * 180 / Math.PI) - 90;
+                const lon = (theta * 180 / Math.PI) % 360 - 180;
+                const isLand = (lon > -22 && lon < 52 && lat > -35 && lat < 70) || (lon >= 52 && lon < 145 && lat > -12 && lat < 75) || (lon > -120 && lon < -34 && lat > -55 && lat < 18);
+
+                if (isLand) {
+                    positions.push(x, y, z);
+                    const norm = Math.sqrt(x*x + y*y + z*z);
+                    directions.push(x/norm, y/norm, z/norm);
+                    const isAmber = (lon > -12 && lon < 45 && lat > -30 && lat < 35);
+                    colors.push(isAmber ? 0.96 : 0.06, isAmber ? 0.62 : 0.72, isAmber ? 0.04 : 0.50);
+                }
+            }
+
+            const dotGeometry = new THREE.BufferGeometry();
+            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            dotGeometry.setAttribute('originalPosition', new THREE.Float32BufferAttribute(positions, 3));
+            dotGeometry.setAttribute('direction', new THREE.Float32BufferAttribute(directions, 3));
+
+            pointsMesh = new THREE.Points(dotGeometry, new THREE.PointsMaterial({ 
+                size: 1.8, vertexColors: true, transparent: true, opacity: 0.8 
+            }));
+            globeGroup.add(pointsMesh);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                time += 0.01;
+                const progress = (Math.sin(time * 0.5) + 1) / 2; 
+                const explosionForce = progress * 60;
+
+                const pos = pointsMesh.geometry.attributes.position;
+                const orig = pointsMesh.geometry.attributes.originalPosition;
+                const dir = pointsMesh.geometry.attributes.direction;
+
+                for (let i = 0; i < pos.count; i++) {
+                    pos.setX(i, orig.getX(i) + dir.getX(i) * explosionForce);
+                    pos.setY(i, orig.getY(i) + dir.getY(i) * explosionForce);
+                    pos.setZ(i, orig.getZ(i) + dir.getZ(i) * explosionForce);
+                }
+                pos.needsUpdate = true;
+                globeGroup.rotation.y += 0.005;
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        window.addEventListener("DOMContentLoaded", initGlobe);
+    })();
+</script>
+
+<!-- ==================== SCRIPT DE RECHERCHE + COMPTEUR MIS À JOUR ==================== -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-entity-input');
+    const counterBadge = document.getElementById('entity-counter');
+    const cards = document.querySelectorAll('.entity-card');
+
+    function updateCounter() {
+      if(!counterBadge) return;
+      const visibleCards = Array.from(cards).filter(card => card.style.display !== 'none').length;
+      
+      if(visibleCards === 0) {
+        counterBadge.innerHTML = `<span class="text-red-500 font-bold">Aucune entité trouvée</span>`;
+      } else if (visibleCards === 1) {
+        counterBadge.innerHTML = `1 entité trouvée`;
+      } else {
+        counterBadge.innerHTML = `${visibleCards} entités`;
+      }
+    }
+
+    // Initialisation du compteur au premier chargement
+    updateCounter();
+
+    if(searchInput) {
+      searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase().trim();
+        
+        cards.forEach(card => {
+          const entityName = card.getAttribute('data-name') || '';
+          if (entityName.includes(query)) {
+            card.style.display = ''; 
+            card.style.opacity = '1';
+            card.style.transform = 'scale(1)';
+          } else {
+            card.style.display = 'none';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.95)';
+          }
+        });
+        
+        // Mettre à jour le compteur à chaque saisie
+        updateCounter();
+      });
+    }
+  });
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const messages = [
+        {% for message in messages %}
+        {
+            text: "{{ message|escapejs }}",
+            type: "{{ message.tags|default:'info' }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    messages.forEach((msg) => {
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: msg.type === 'success' || msg.type === 'error' || msg.type === 'warning' ? msg.type : 'info',
+            title: msg.text,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: "#1f2937",
+            color: "#fff",
+            showClass: { popup: 'animate__animated animate__fadeInRight' },
+            hideClass: { popup: 'animate__animated animate__fadeOutRight' }
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

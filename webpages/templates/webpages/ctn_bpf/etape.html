@@ -1,0 +1,27 @@
+{% for etape in etapes %}
+<tr id="etape-{{ etape.id }}">
+    <td>{{etape.numero_ordre}}</td>
+    <td>{{ etape.intitule }}</td>
+    <td>{{ etape.progression }}%</td>
+    <td>{{ etape.duree_faible }} Jours</td>
+    <td>{{ etape.duree_moyenne }} Jours</td>
+    <td>{{ etape.duree_grande }} Jours</td>
+    <td>{{ etape.nature.intitule }}</td>
+    <td>{{ etape.description }}</td>
+    <td>
+        <button class="btn btn-sm btn-outline-info me-1" 
+                hx-get="/get-etape-form/{{ etape.id }}/" 
+                hx-target="#etape-{{ etape.id }}" 
+                hx-swap="outerHTML">
+            <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger" 
+                hx-delete="/delete_etape/{{ etape.id }}/" 
+                hx-confirm="Voulez Vous Vraiment Supprimer?" 
+                hx-target="#etape-{{ etape.id }}" 
+                hx-swap="outerHTML swap:0.5s">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    </td>
+</tr>
+{% endfor %}

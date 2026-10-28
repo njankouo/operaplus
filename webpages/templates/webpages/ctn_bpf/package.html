@@ -1,0 +1,196 @@
+{% extends './presentation.html' %}
+
+{% block content %}
+<header id="mainHeader" class="fixed top-0 left-0 w-full z-[50] transition-all duration-500 py-20 px-6">
+    <div class="max-w-7xl mx-auto text-center">
+        <h2 id="miniTitle" class="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-2 transition-all duration-500">
+            Tarification
+        </h2>
+        <h1 id="mainTitle" class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight transition-all duration-500">
+            L'offre qui propulse votre <span class="text-orange-600">performance</span>
+        </h1>
+        <p id="subTitle" class="text-slate-400 text-sm mt-3 font-medium tracking-wide uppercase transition-all duration-500 overflow-hidden">
+            Infrastructure S&E agile & moderne
+        </p>
+    </div>
+</header>
+
+<section class="min-h-screen pt-48 pb-20 px-6 bg-slate-50 overflow-hidden">
+    <div class="max-w-7xl mx-auto">
+        <div class="swiper myPricingSwiper">
+            <div class="swiper-wrapper">
+                {% for p in package %}
+                <div class="swiper-slide">
+                    <div class="pricing-card flex flex-col h-full p-10 rounded-[2.5rem] bg-white transition-all duration-500">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">
+                                <i class="fa-solid fa-bolt text-orange-500 text-xl"></i>
+                            </div>
+                            {% if p.est_populaire %}
+                            <span class="text-[10px] font-black text-white uppercase tracking-widest bg-orange-500 px-3 py-1 rounded-full shadow-lg shadow-orange-500/30">
+                                Populaire
+                            </span>
+                            {% else %}
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 px-3 py-1 rounded-full">
+                                Standard
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-6">
+                            <h3 class="text-xl font-bold text-slate-800 inline-block border-b-2 border-orange-500 pb-1">
+                                {{ p.get_nom_display }}
+                            </h3>
+                        </div>
+                        
+                        <div class="mb-8">
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-4xl font-black text-slate-950 tabular-nums">
+                                    {{ p.prix|floatformat:"0" }}
+                                </span>
+                                <span class="text-lg font-medium text-slate-400">FCFA</span>
+                                <span class="text-sm font-semibold text-slate-400">/ mois</span>
+                            </div>
+                            <div class="text-sm font-semibold text-orange-500 mt-2 opacity-80">
+                                ≈ {{ p.prix_eur }} EUR / mois
+                            </div>
+                        </div>
+
+                        <div class="options-container flex-grow space-y-3 mb-8">
+                            {% for opt in p.options.all %}
+                                <div class="flex items-center text-slate-600 text-sm transition-all duration-300 hover:translate-x-1">
+                                    <span class="mr-3 text-orange-500">
+                                        <i class="fa-solid fa-check text-[10px]"></i>
+                                    </span>
+                                    <span class="font-medium">{{ opt.libelle }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <a href="/checkout/{{p.slug}}/" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl text-center hover:bg-orange-600 transition-all active:scale-95 shadow-lg shadow-slate-900/20">
+                            Choisir
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="swiper-pagination mt-10"></div>
+        </div>
+    </div>
+</section>
+
+<style>
+ /* --- HEADER ET SCROLL --- */
+#mainHeader {
+    /* La clé : permet de traverser le header pour cliquer sur le contenu */
+    pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Réactive les clics sur les enfants du header uniquement */
+#mainHeader > div {
+    pointer-events: auto;
+}
+
+/* État réduit au scroll */
+.header-scrolled {
+    pointer-events: auto !important; /* On réactive les clics sur le header réduit */
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    background: rgba(248, 250, 252, 0.9) !important;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.header-scrolled #mainTitle { font-size: 1.25rem !important; }
+.header-scrolled #miniTitle, 
+.header-scrolled #subTitle { 
+    opacity: 0; 
+    height: 0; 
+    margin: 0; 
+    padding: 0;
+    pointer-events: none; 
+}
+
+/* --- CARDS PRICING --- */
+.swiper-slide { 
+    width: 350px !important; 
+    display: flex; 
+    max-width: 90vw; 
+}
+
+.myPricingSwiper { 
+    padding-bottom: 50px !important; 
+}
+
+.pricing-card {
+    width: 100%;
+    /* Bordure dégradée avec background white au centre */
+    background: linear-gradient(#fff, #fff) padding-box,
+                linear-gradient(135deg, #f97316, #fb923c, #fef3c7) border-box;
+    border: 3px solid transparent;
+    border-radius: 2.5rem;
+    box-shadow: 0 20px 40px -10px rgba(249, 115, 22, 0.15);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.pricing-card:hover { 
+    transform: translateY(-15px) scale(1.02); 
+    box-shadow: 0 30px 60px -12px rgba(249, 115, 22, 0.3); 
+}
+
+/* Style spécifique pour la carte populaire */
+.pricing-card:has(.bg-orange-500) { 
+    border: 3px solid #f97316; 
+}
+
+/* --- SWIPER PAGINATION --- */
+.swiper-pagination-bullet { 
+    background: #94a3b8 !important; 
+    opacity: 0.5; 
+    transition: all 0.3s !important; 
+}
+
+.swiper-pagination-bullet-active { 
+    background: #f97316 !important; 
+    opacity: 1; 
+    width: 24px; 
+    border-radius: 8px; 
+}
+
+/* --- UTILS --- */
+.tabular-nums {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Nettoyage du focus pour un look pro */
+button:focus, a:focus {
+    outline: none;
+}
+</style>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        new Swiper(".myPricingSwiper", {
+            effect: "coverflow",
+            grabCursor: true,
+            centeredSlides: true,
+            slidesPerView: "auto",
+            loop: true,
+            autoplay: { delay: 9000, disableOnInteraction: false },
+            coverflowEffect: { rotate: 20, stretch: 0, depth: 200, modifier: 1, slideShadows: true },
+            pagination: { el: ".swiper-pagination", clickable: true },
+        });
+
+        const header = document.getElementById('mainHeader');
+        window.addEventListener('scroll', () => {
+            header.classList.toggle('header-scrolled', window.scrollY > 50);
+        });
+    });
+</script>
+{% endblock %}

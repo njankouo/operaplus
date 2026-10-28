@@ -1,0 +1,42 @@
+<div class="mb-6 flex items-baseline gap-3">
+    <h2 class="text-xl font-bold text-slate-800">{{ sous_cat.nom }}</h2>
+    <span class="text-sm text-slate-400 font-medium">
+        ({{ archives.count }} document{% if archives.count > 1 %}s{% endif %})
+    </span>
+</div>
+
+<div class="grid grid-cols-1 gap-3">
+    {% for archive in archives %}
+    <div class="doc-card group bg-custom-primary/10 backdrop-blur-sm p-3 sm:p-4 rounded-xl border border-custom-primary/20 flex flex-col sm:flex-row sm:items-center justify-between cursor-pointer" 
+         hx-get="{% url 'detail_archive' archive.id %}" 
+         hx-target="#sidebar-details-content"
+         onclick="openDetailsSidebar()">
+        
+        <div class="flex items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto">
+            <input type="checkbox" class="w-4 h-4 rounded text-custom-primary border-slate-300 focus:ring-custom-primary/30 shrink-0 cursor-pointer" onclick="event.stopPropagation()">
+            
+            <div class="w-10 h-10 flex items-center justify-center text-lg text-indigo-500 bg-white/90 border border-indigo-100 shadow-sm rounded-xl shrink-0">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            
+            <div class="truncate flex-1">
+                <p class="text-sm font-semibold text-slate-800 truncate">{{ archive.titre }}</p>
+                <p class="text-[11px] text-slate-500 truncate">
+                    {{ archive.taille }} {{ archive.unite|default:"MB" }} • Modifié le {{ archive.date_modification|date:"d/m/Y" }}
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-3 sm:mt-0">
+            <span class="px-2.5 py-0.5 bg-emerald-100/90 text-emerald-700 rounded-full text-[10px] font-bold border border-emerald-200/60">
+                Validé
+            </span>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-20 border-2 border-dashed border-slate-200 rounded-xl">
+        <i class="fas fa-folder-open text-4xl text-slate-300 mb-2"></i>
+        <p class="text-slate-500">Aucun document dans cette sous-catégorie.</p>
+    </div>
+    {% endfor %}
+</div>

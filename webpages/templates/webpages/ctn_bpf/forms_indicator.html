@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPERAPLUS | Config Indicateur</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        #variableList::-webkit-scrollbar { width: 5px; }
+        #variableList::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .formula-glow:focus-within {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
+        }
+
+        /* Animation pour l'ajout de variable */
+        @keyframes pulse-blue {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.98); }
+            100% { transform: scale(1); }
+        }
+        .click-feedback:active { animation: pulse-blue 0.2s ease; }
+    </style>
+</head>
+<body class="p-4 md:p-8 text-slate-900">
+
+    <!-- TOP NAVIGATION / BREADCRUMB -->
+    <header class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+                <a href="#" class="hover:text-blue-600">Configuration</a>
+                <i class="ri-arrow-right-s-line"></i>
+                <span class="text-slate-900">Nouvel Indicateur</span>
+            </nav>
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Paramétrage de l'Indicateur</h1>
+        </div>
+        <div class="flex gap-3">
+            <a href="/evaluer/0/0/" class="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-all">
+                RETOUR
+            </a>
+        </div>
+    </header>
+
+    <form action="/save_indicateur/" method="post" class="max-w-7xl mx-auto">
+        {% csrf_token %}
+        <input type="hidden" name="indi_adds" id="indi_adds">
+        <input type="hidden" name="entity_id" value="{{entity.id}}">
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- SECTION GAUCHE : ÉDITION -->
+            <div class="lg:col-span-8 space-y-8">
+                
+                <!-- CARTE 1 : MÉTADONNÉES -->
+                <section class="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-3 mb-8">
+                        <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                            <i class="ri-list-settings-line text-xl"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800">Propriétés de l'indicateur</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <div class="space-y-2">
+                            <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Nom Technique (Unique)</label>
+                            <input type="text" required name="nature_indicateur" 
+                                   placeholder="IND_MORTALITE_01"
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono text-sm">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Nom d'affichage</label>
+                            <input type="text" required name="nom" placeholder="Ex: Taux de mortalité globale" 
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all font-semibold">
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Agrégation Temporelle</label>
+                            <div class="relative">
+                                <select name="aggregation_type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer">
+                                   <option value="Somme">Somme (SUM)</option>
+                                    <option value="Moyenne">Moyenne (AVG)</option>
+                                    <option value="Count">Nombre (COUNT)</option>
+                                    <option value="Max">Maximum (MAX)</option>
+                                    <option value="Min">Minimum (MIN)</option>
+                                </select>
+                                <i class="ri-arrow-down-s-line absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"></i>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider">NiceName</label>
+                            <input type="text" name="nicename" placeholder="NiceName" 
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Niveau de la pyramide</label>
+                            <select class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500" name="niveau_pyramide">
+                                <option value="Impact">Impact</option>
+                                <option value="Effet">Effet</option>
+                                <option value="Produit">Produit</option>
+                                <option value="Activité">Activité</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Cible contractuelle</label>
+                            <input type="number" class="w-full border border-slate-200 rounded-lg p-3 text-sm" placeholder="Ex: 100" name="cible">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Fréquence de collecte</label>
+                            <select name="frequence" class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500">
+                            <option value="Mensuelle">Mensuelle</option>
+                            <option value="Hebdomadaire">Hebdomadaire</option>
+                            <option value="Trimestrielle">Trimestrielle</option>
+                            <option value="Annuelle">Annuelle</option>
+                            <option value="Journalière">Journalière</option>
+                            <option value="Semestrielle">Semestrielle</option>
+                        </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Source de données</label>
+                            <input type="text" class="w-full border border-slate-200 rounded-lg p-3 text-sm" placeholder="Ex: Base de données interne" name="source">
+                        </div>
+                        <label for="mecanisme_verification" class="block text-xs font-bold text-slate-400 uppercase mb-2">
+                            Mécanisme de vérification
+                        </label>
+                        <textarea 
+                            name="mecanisme_verification" 
+                            id="mecanisme_verification"
+                            class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500" 
+                            rows="3" 
+                            placeholder="Décrivez comment l'indicateur sera vérifié..."></textarea>
+                    </div>
+                </section>
+
+                <!-- CARTE 2 : LE BUILDER DE FORMULE -->
+                <section class="bg-slate-900 rounded-3xl shadow-2xl overflow-hidden formula-glow transition-all">
+                    <div class="bg-slate-800/50 px-8 py-5 border-b border-slate-800 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-2 w-2 rounded-full bg-blue-500"></span>
+                            <span class="text-xs font-black text-white tracking-widest uppercase">Éditeur de Calcul</span>
+                        </div>
+                        
+                        <!-- Opérateurs stylisés -->
+                        <div class="flex gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                            <button type="button" onclick="insertOp('+')" class="w-9 h-9 flex items-center justify-center hover:bg-blue-600 rounded-lg text-white transition-all font-bold">+</button>
+                            <button type="button" onclick="insertOp('-')" class="w-9 h-9 flex items-center justify-center hover:bg-blue-600 rounded-lg text-white transition-all font-bold">-</button>
+                            <button type="button" onclick="insertOp('*')" class="w-9 h-9 flex items-center justify-center hover:bg-blue-600 rounded-lg text-white transition-all font-bold">×</button>
+                            <button type="button" onclick="insertOp('/')" class="w-9 h-9 flex items-center justify-center hover:bg-blue-600 rounded-lg text-white transition-all font-bold">÷</button>
+                            <div class="w-[1px] bg-slate-800 mx-1"></div>
+                            <button type="button" onclick="insertOp('(')" class="w-9 h-9 flex items-center justify-center hover:bg-slate-700 rounded-lg text-white transition-all font-bold">(</button>
+                            <button type="button" onclick="insertOp(')')" class="w-9 h-9 flex items-center justify-center hover:bg-slate-700 rounded-lg text-white transition-all font-bold">)</button>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <textarea id="num_div" name="numerateur" rows="5" 
+                                  placeholder="Sélectionnez des variables à droite..."
+                                  class="w-full bg-slate-950 border-none p-10 font-mono text-4xl text-blue-400 placeholder:text-slate-800 focus:ring-0 outline-none resize-none leading-relaxed"></textarea>
+                    </div>
+
+                    <div class="bg-slate-950/50 px-8 py-4 border-t border-slate-800 flex justify-between items-center">
+                        <p class="text-[10px] text-slate-500 font-medium">
+                            ASTUCE : Utilisez les parenthèses pour gérer les priorités de calcul.
+                        </p>
+                        <button type="button" onclick="document.getElementById('num_div').value = ''" 
+                                class="flex items-center gap-2 text-[10px] text-red-400 hover:text-red-300 font-black uppercase transition-colors">
+                            <i class="ri-delete-bin-7-line"></i> Effacer tout
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- SECTION DROITE : CATALOGUE DE VARIABLES -->
+            <div class="lg:col-span-4">
+                <aside class="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col h-[740px] sticky top-8">
+                    <div class="p-6 border-b border-slate-100">
+                        <h3 class="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest">Dictionnaire de données</h3>
+                        <div class="relative group">
+                            <i class="ri-search-line absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                            <input type="text" id="filter" placeholder="Rechercher une donnée..." 
+                                   class="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-4 py-3.5 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all">
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-4 space-y-3" id="variableList">
+                        <!-- Item Variable -->
+                        {% for d in dataelts %}
+                        <div class="var-item click-feedback group flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl cursor-pointer hover:border-blue-200 hover:shadow-md hover:shadow-blue-500/5 transition-all"
+                             onclick="insertVar('{{d.id}}')">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{{d}}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="px-2 py-0.5 bg-slate-100 text-[9px] font-mono text-slate-500 rounded uppercase">ID: {{d.id}}</span>
+                                </div>
+                            </div>
+                            <div class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 group-hover:bg-blue-600 group-hover:text-white text-slate-400 transition-all">
+                                <i class="ri-add-fill text-lg"></i>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="p-6 bg-slate-50 rounded-b-3xl border-t border-slate-100">
+                        <p class="text-[11px] text-slate-400 leading-relaxed text-center">
+                            Cliquez sur une variable pour l'ajouter automatiquement à votre formule à l'endroit du curseur.
+                        </p>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- BARRE D'ACTION FLOTTANTE OU FIXE -->
+        <div class="flex items-center justify-between mt-12 pt-8 border-t border-slate-200">
+            <a href="/evaluer/0/" class="flex items-center gap-2 text-slate-400 hover:text-slate-600 font-bold transition-all">
+                <i class="ri-arrow-left-line"></i> Retourner à la liste
+            </a>
+            
+            <div class="flex gap-4">
+                <button type="submit" class="px-10 py-4 bg-slate-900 hover:bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-slate-900/10 transition-all flex items-center gap-3 transform hover:-translate-y-1">
+                    <i class="ri-save-3-fill"></i> CRÉER L'INDICATEUR
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        // Logique d'insertion identique mais optimisée pour l'UX
+        function insertVar(id) {
+            const textarea = document.getElementById('num_div');
+            const varFormat = `$${id}$`; 
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            
+            textarea.value = text.substring(0, start) + varFormat + text.substring(end);
+            textarea.focus();
+            
+            // On place le curseur après la variable insérée
+            const newPos = start + varFormat.length;
+            textarea.setSelectionRange(newPos, newPos);
+        }
+
+        function insertOp(op) {
+            const textarea = document.getElementById('num_div');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            
+            // Ajout d'espaces autour des opérateurs pour la lisibilité
+            const formattedOp = ` ${op} `;
+            
+            textarea.value = text.substring(0, start) + formattedOp + text.substring(end);
+            textarea.focus();
+            
+            const newPos = start + formattedOp.length;
+            textarea.setSelectionRange(newPos, newPos);
+        }
+
+        // Filtre de recherche fluide
+        document.getElementById('filter').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            const items = document.querySelectorAll('.var-item');
+            
+            items.forEach(item => {
+                const isVisible = item.innerText.toLowerCase().includes(term);
+                item.style.display = isVisible ? 'flex' : 'none';
+                if(isVisible) {
+                    item.classList.add('animate-in', 'fade-in', 'duration-300');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+{% extends '../presentation.html' %}
+{% load static %}
+
+{% block content %}
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<section 
+    x-data="{ 
+        shown: false,
+        users: 0, projects: 0, countries: 0,
+        animateNumbers() {
+            this.animateValue('users', 0, {{members}}, 2000);
+            this.animateValue('projects', 0, {{institution_count}}, 1500);
+            this.animateValue('countries', 0, {{total_countries}}, 1200);
+        },
+        animateValue(prop, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                this[prop] = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+    }" 
+    x-init="
+        setTimeout(() => shown = true, 100);
+        $watch('shown', value => { if(value) setTimeout(() => animateNumbers(), 800) });
+    "
+    class="relative min-h-screen bg-[#04060a] font-['Inter',_sans-serif] pt-16 pb-24 px-6 overflow-hidden"
+>
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div class="absolute -top-[10%] -right-[5%] w-[600px] h-[600px] bg-blue-950/20 rounded-full blur-[120px] opacity-50"></div>
+        <div class="absolute bottom-[10%] -left-[10%] w-[500px] h-[500px] bg-orange-950/10 rounded-full blur-[120px] opacity-30"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto relative z-10">
+        
+        <div class="mb-8 text-center lg:text-left">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-2 tracking-tight leading-tight relative inline-block">
+                Qui sommes-<span class="text-transparent bg-clip-text bg-gradient-to-br from-blue-400 via-indigo-300 to-purple-400">nous ?</span>
+                <svg class="absolute -bottom-2 left-0 w-full h-3" viewBox="0 0 200 20" preserveAspectRatio="none">
+                    <path d="M0,10 C50,20 150,0 200,10" stroke="#f97316" stroke-width="3" fill="transparent"/>
+                </svg>
+            </h1>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-12 items-start">
+            
+            <div 
+                class="order-2 lg:order-1 space-y-8"
+                x-show="shown"
+                x-transition:enter="transition ease-out duration-1000 delay-300"
+                x-transition:enter-start="opacity-0 -translate-x-10"
+                x-transition:enter-end="opacity-100 translate-x-0"
+            >
+                <div class="prose prose-xl max-w-none">
+                    <p class="text-2xl sm:text-3xl font-semibold leading-tight text-slate-100">
+                        <span class="text-blue-400 font-extrabold text-shadow-blue">MEAL Afrique</span> est le catalyseur de l'excellence en 
+                        <span class="relative inline-block text-white">
+                            <span class="relative z-10 italic font-bold">Suivi & Évaluation</span>
+                            <span class="absolute bottom-1 left-0 w-full h-3 bg-orange-500/30 -z-10 rounded-sm blur-sm"></span>
+                        </span>
+                    </p>
+                    <p class="text-base sm:text-lg text-slate-300 leading-relaxed mt-4">
+                        Nous formons un écosystème dynamique où l'expertise rencontre l'innovation. En connectant les acteurs du développement, nous transformons les données en décisions stratégiques.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-6 pt-2">
+                    <div class="relative group">
+                        <div class="text-4xl sm:text-5xl font-black text-white tracking-tighter flex items-center">
+                            <span x-text="users">0</span><span class="text-blue-500 ml-1">+</span>
+                        </div>
+                        <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mt-1 group-hover:text-blue-400 transition-colors">Utilisateurs</p>
+                        <div class="absolute -bottom-1 left-0 w-8 h-0.5 bg-blue-500/50 rounded-full"></div>
+                    </div>
+                    <div class="relative group">
+                        <div class="text-4xl sm:text-5xl font-black text-white tracking-tighter flex items-center">
+                            <span x-text="projects">0</span><span class="text-orange-500 ml-1">+</span>
+                        </div>
+                        <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mt-1 group-hover:text-orange-400 transition-colors">Projets</p>
+                        <div class="absolute -bottom-1 left-0 w-8 h-0.5 bg-orange-500/50 rounded-full"></div>
+                    </div>
+                    <div class="relative group col-span-2 sm:col-span-1">
+                        <div class="text-4xl sm:text-5xl font-black text-white tracking-tighter flex items-center">
+                            <span x-text="countries">0</span><span class="text-purple-500 ml-1">+</span>
+                        </div>
+                        <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mt-1 group-hover:text-purple-400 transition-colors">Pays</p>
+                        <div class="absolute -bottom-1 left-0 w-8 h-0.5 bg-purple-500/50 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div 
+                class="order-1 lg:order-2 relative lg:-mt-12 perspective-container"
+                x-show="shown"
+                x-transition:enter="transition ease-out duration-1000 delay-500"
+                x-transition:enter-start="opacity-0 translate-y-10"
+                x-transition:enter-end="opacity-100 translate-y-0"
+            >
+                <div 
+                    x-data="{ 
+                        rotateX: -15, rotateY: -25, glareX: 30, glareY: 30, glareOpacity: 0.4,
+                        activeSlide: 0,
+                        slides: [
+                            {icon: 'synergy', title: 'Synergie', text: 'Connecter les experts pour démultiplier l\'impact.'},
+                            {icon: 'agility', title: 'Agilité', text: 'Adapter les méthodes aux réalités du terrain.'},
+                            {icon: 'impact', title: 'Impact', text: 'Transformer les données en décisions durables.'}
+                        ],
+                        updateMouse(e) {
+                            const rect = $el.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+                            this.rotateY = -25 + (x - rect.width/2) / 12; 
+                            this.rotateX = -15 + (y - rect.height/2) / -12;
+                            this.glareX = (x / rect.width) * 100;
+                            this.glareY = (y / rect.height) * 100;
+                        },
+                        resetMouse() {
+                            this.rotateX = -15; this.rotateY = -25;
+                            this.glareOpacity = 0.4; this.glareX = 30; this.glareY = 30;
+                        }
+                    }"
+                    x-init="setInterval(() => activeSlide = (activeSlide + 1) % slides.length, 5000)"
+                    @mousemove="updateMouse($event); glareOpacity = 0.7"
+                    @mouseleave="resetMouse()"
+                    :style="`transform: rotateX(${rotateX}deg) rotateY(${rotateY}deg);`"
+                    class="relative z-20 w-full max-w-[340px] lg:max-w-md mx-auto aspect-square rounded-[2.5rem] transition-transform duration-300 ease-out 3d-tilted-card-left cursor-pointer"
+                >
+                    <div class="absolute inset-[-2px] rounded-[2.6rem] overflow-hidden z-0 anime-aura-blur opacity-80 pointer-events-none">
+                        <div class="anime-aura-gradient"></div>
+                    </div>
+
+                    <div class="absolute inset-0 rounded-[2.5rem] bg-white/[0.03] backdrop-blur-[40px] border border-white/20 shadow-2xl z-10 overflow-hidden win11-glass-effect">
+                        <div class="absolute inset-0 z-20 pointer-events-none transition-opacity duration-300"
+                            :style="`opacity: ${glareOpacity}; background: radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 65%);`"
+                        ></div>
+
+                        <div class="relative z-30 h-full w-full overflow-hidden p-8 lg:p-12 transform-style-3d flex items-center justify-center">
+                            <template x-for="(slide, index) in slides" :key="index">
+                                <div 
+                                    class="absolute flex flex-col items-center justify-center text-center transition-all duration-1000 ease-in-out h-full"
+                                    x-show="activeSlide === index"
+                                    x-transition:enter="transition ease-out duration-1000"
+                                    x-transition:enter-start="opacity-0 translate-y-12 scale-95"
+                                    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                    x-transition:leave="transition ease-in duration-800"
+                                    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                                    x-transition:leave-end="opacity-0 -translate-y-12 scale-95"
+                                >
+                                    <div class="mb-6 inline-block p-5 rounded-3xl backdrop-blur-md bg-white/5 border border-white/10 translateZ-40 shadow-inner group overflow-hidden relative">
+                                        <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                        
+                                        <svg x-show="slide.icon === 'synergy'" class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="url(#iconGradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                        
+                                        <svg x-show="slide.icon === 'agility'" class="w-12 h-12 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="url(#iconGradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                        
+                                        <svg x-show="slide.icon === 'impact'" class="w-12 h-12 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="url(#iconGradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                    </div>
+
+                                    <h4 class="text-3xl lg:text-4xl font-extrabold tracking-tight mb-3 glass-text-premium translateZ-50" :data-text="slide.title" x-text="slide.title"></h4>
+                                    
+                                    <p class="text-sm lg:text-base text-slate-200 font-medium tracking-wide glass-subtext translateZ-30 px-4" x-text="slide.text"></p>
+                                </div>
+                            </template>
+
+                            <div class="absolute bottom-6 left-0 w-full flex justify-center gap-2 z-40 translateZ-20">
+                                <template x-for="(slide, index) in slides" :key="index">
+                                    <button 
+                                        @click="activeSlide = index"
+                                        class="h-1.5 rounded-full transition-all duration-300"
+                                        :class="activeSlide === index ? 'w-6 bg-white' : 'w-2 bg-white/30 hover:bg-white/60'"
+                                    ></button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-4/5 h-8 bg-black/80 rounded-full blur-3xl z-0 3d-shadow-cast-left"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<svg width="0" height="0" class="absolute">
+    <defs>
+        <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8" />
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0.2" />
+        </linearGradient>
+    </defs>
+</svg>
+
+<style>
+    .perspective-container { perspective: 2000px; }
+    .transform-style-3d { transform-style: preserve-3d; }
+    .3d-tilted-card-left { transform-style: preserve-3d; will-change: transform; }
+    
+    /* Profondeur des éléments enfants pour l'effet parallaxe */
+    .translateZ-20 { transform: translateZ(20px); }
+    .translateZ-30 { transform: translateZ(30px); }
+    .translateZ-40 { transform: translateZ(40px); }
+    .translateZ-50 { transform: translateZ(50px); }
+
+    .anime-aura-blur { filter: blur(50px); transform: translateZ(-10px); }
+    .anime-aura-gradient {
+        width: 150%; height: 150%; position: absolute; top: -25%; left: -25%;
+        background: conic-gradient(from 0deg, #ff4500, #00e5ff, #7000ff, #ff0055, #ff4500);
+        animation: rotateAura 10s linear infinite;
+    }
+    @keyframes rotateAura { 100% { transform: rotate(360deg); } }
+
+    .win11-glass-effect { background-image: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%); }
+    
+    /* Texte style verre poli premium */
+    .glass-text-premium {
+        background: linear-gradient(135deg, #ffffff 20%, #dbeafe 70%, #a5b4fc 100%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        position: relative;
+    }
+    /* Lueur diffuse derrière le texte pour effet de réfraction */
+    .glass-text-premium::after {
+        content: attr(data-text); position: absolute; left: 0; top: 0; z-index: -1;
+        color: white; filter: blur(15px); opacity: 0.4;
+    }
+    
+    .glass-subtext { text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .3d-shadow-cast-left { transform: translateZ(-80px) rotateX(90deg) scaleY(0.3) translateX(5%); opacity: 0.6; }
+    .text-shadow-blue { text-shadow: 0 0 25px rgba(59, 130, 246, 0.5); }
+    
+    [x-cloak] { display: none !important; }
+</style>
+{% endblock %}

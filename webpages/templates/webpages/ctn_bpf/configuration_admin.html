@@ -1,0 +1,2288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Suivi-Évaluation</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Animate.css -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.min.js" integrity="sha512-nKXmKvJyiGQy343jatQlzDprflyB5c+tKCzGP3Uq67v+lmzfnZUi/ZT+fc6ITZfSC5HhaBKUIvr/nTLCV+7F+Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+      <meta name="csrf-token" content="{{ csrf_token }}">
+
+    <style>
+        :root {
+            --primary: {{request.user.personnel.color_fond}};
+            --primary-light: {{request.user.personnel.color_fond}};
+            --secondary: {{request.user.personnel.color_fond}};
+            --accent: {{request.user.personnel.color_fond}};
+            --dark: {{request.user.personnel.color_fond}};
+            --light: {{request.user.personnel.color_fond}};
+            --transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #dfe6f0 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .config-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .config-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: var(--transition);
+            transform-style: preserve-3d;
+            position: relative;
+            border: none;
+        }
+
+        .config-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(0,184,148,0.05) 100%);
+            z-index: -1;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .config-card:hover {
+            transform: translateY(-10px) rotateY(5deg);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .config-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            border-bottom: none;
+        }
+
+        .card-header::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
+            transition: var(--transition);
+        }
+
+        .config-card:hover .card-header::after {
+            transform: rotate(45deg) translateY(-20px);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: inline-flex;
+            background: rgba(255, 255, 255, 0.2);
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .config-card:hover .card-icon {
+            transform: rotate(15deg) scale(1.1);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .card-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 40px;
+            height: 4px;
+            background: var(--accent);
+            transition: var(--transition);
+            border-radius: 2px;
+        }
+
+        .config-card:hover .card-title::after {
+            width: 100%;
+            background: white;
+        }
+
+        .card-body {
+            padding: 2rem;
+            position: relative;
+        }
+
+        .card-body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .config-card:hover .card-body::before {
+            opacity: 1;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .setting-item:hover {
+            transform: translateX(10px);
+            border-bottom-color: var(--primary-light);
+        }
+
+        .setting-label {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+
+        .setting-label i {
+            margin-right: 12px;
+            color: var(--primary);
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.25rem rgba(108, 92, 231, 0.25);
+        }
+
+        .config-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.8rem 1.8rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: var(--transition);
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .config-btn i {
+            margin-right: 8px;
+            transition: var(--transition);
+        }
+
+        .config-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(108, 92, 231, 0.3);
+            color: white;
+        }
+
+        .config-btn:hover i {
+            transform: translateX(5px);
+        }
+
+        .config-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .config-btn:hover::after {
+            left: 100%;
+        }
+
+        /* Animation spécifique pour la pondération */
+        .ponderation-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            background: rgba(108, 92, 231, 0.05);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            transition: var(--transition);
+        }
+
+        .ponderation-item:hover {
+            background: rgba(108, 92, 231, 0.1);
+            transform: translateX(5px);
+        }
+
+        .ponderation-label {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .ponderation-input {
+            width: 80px;
+            text-align: center;
+        }
+
+        /* Animation de période */
+        .periode-timeline {
+            position: relative;
+            padding-left: 30px;
+            margin: 1.5rem 0;
+        }
+
+        .periode-timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--primary-light);
+        }
+
+        .periode-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+            transition: var(--transition);
+        }
+
+        .periode-item:hover {
+            transform: translateX(10px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .periode-item::before {
+            content: '';
+            position: absolute;
+            left: -28px;
+            top: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid white;
+        }
+
+        /* Animation de fond */
+        .floating-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .floating-shapes li {
+            position: absolute;
+            display: block;
+            list-style: none;
+            animation: float 25s linear infinite;
+            bottom: -150px;
+            opacity: 0.5;
+        }
+
+        .floating-shapes li:nth-child(1) {
+            left: 25%;
+            width: 80px;
+            height: 80px;
+            background: rgba(108, 92, 231, 0.1);
+            border-radius: 20px;
+            animation-delay: 0s;
+        }
+
+        .floating-shapes li:nth-child(2) {
+            left: 10%;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 184, 148, 0.1);
+            border-radius: 50%;
+            animation-delay: 2s;
+            animation-duration: 20s;
+        }
+
+        .floating-shapes li:nth-child(3) {
+            left: 70%;
+            width: 100px;
+            height: 100px;
+            background: rgba(253, 121, 168, 0.1);
+            border-radius: 10px;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateY(-1000px) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .config-container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+        }
+
+.float{
+    position:fixed;
+    width:60px;
+    height:60px;
+    bottom:40px;
+    right:40px;
+    background-color:{{request.user.personnel.color_fond}};
+    color:#FFF;
+    border-radius:50px;
+    text-align:center;
+    box-shadow: 2px 2px 3px #999;
+}
+
+.my-float{
+    margin-top:22px;
+}
+    </style>
+
+<!-- ===================== NOUVEAU DESIGN DE LA PAGE DE CONFIGURATION (ajout) ===================== -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --cfg-dom: {{ request.user.personnel.color_fond|default:'#1e293b' }};      /* dominante 60 % */
+        --cfg-acc: {{ request.user.personnel.color|default:'#4361ee' }};           /* accent 30 %    */
+        --cfg-tch: {{ request.user.personnel.color_tiers|default:'#FACC15' }};     /* touche 10 %    */
+        --cfg-ink: #fff; --cfg-acc-ink: #fff;
+        --cfg-bg: color-mix(in srgb, var(--cfg-dom) 5%, #f6f7f9);
+        --cfg-line: #e6e8ec; --cfg-soft: #f4f5f7; --cfg-text: #0f172a; --cfg-muted: #667085;
+        --cfg-shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px -16px rgba(15,23,42,.22);
+    }
+    body { font-family: 'Inter', system-ui, sans-serif !important; background: var(--cfg-bg) !important; color: var(--cfg-text) !important; text-align: left; }
+    .floating-shapes { display: none !important; }
+    body > .container { max-width: 1240px; padding: 24px 20px 60px !important; }
+    html.cfg-ready body > .container > .config-container,
+    html.cfg-ready body > .container > .text-left.mb-4 { display: none !important; }
+
+    /* ================= En-tête compact ================= */
+    body > .container > header {
+        background-color: var(--cfg-dom) !important; color: var(--cfg-ink) !important; border-radius: 22px !important;
+        padding: 22px 28px !important; margin-bottom: 22px !important; border-bottom: 4px solid var(--cfg-tch);
+        box-shadow: 0 18px 40px -28px var(--cfg-dom) !important;
+    }
+    body > .container > header .container-fluid { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 20px; padding: 0; }
+    body > .container > header h1 { grid-column: 1; font-size: 1.6rem !important; font-weight: 800 !important; letter-spacing: -.02em; margin: 0 !important; color: var(--cfg-ink) !important; }
+    body > .container > header h1 i { display: none; }
+    body > .container > header p { grid-column: 1; margin: 0 !important; font-size: .95rem !important; opacity: .8 !important; color: var(--cfg-ink) !important; }
+    body > .container > header .cfg-crumb { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: .85rem; font-weight: 600; opacity: .9; margin-bottom: 6px; }
+    body > .container > header .cfg-crumb span { opacity: .6; }
+    .cfg-hd-right { grid-column: 2; grid-row: 2 / span 2; display: flex; align-items: center; gap: 10px; }
+    .cfg-mode { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 12px; font-size: .85rem; font-weight: 700;
+                background: color-mix(in srgb, var(--cfg-ink) 14%, transparent); color: var(--cfg-ink); }
+    a.float { position: static !important; width: auto !important; height: auto !important; padding: 0 !important; margin: 0 !important; background: none !important;
+              box-shadow: none !important; border: 0 !important; color: inherit !important; display: inline-flex !important; align-items: center; gap: 6px;
+              text-decoration: none; font-weight: 700; }
+    a.float .my-float { margin: 0 !important; font-size: .8rem; }
+    a.float::after { content: "Tableau de bord"; }
+    a.float:hover { text-decoration: underline; }
+
+    /* ================= Mise en page 2 colonnes ================= */
+    #cfgApp { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 28px; align-items: start; }
+    .cfg-nav { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 4px; }
+    .cfg-search { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; margin-bottom: 12px; background: #fff;
+                  border: 1px solid var(--cfg-line); border-radius: 12px; }
+    .cfg-search:focus-within { border-color: var(--cfg-dom); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cfg-dom) 12%, transparent); }
+    .cfg-search i { color: #98a2b3; font-size: .9rem; }
+    .cfg-search input { flex: 1; min-width: 0; border: 0; outline: 0 !important; background: transparent; font-size: .9rem; color: var(--cfg-text); }
+    .cfg-search kbd { font: 600 11px Inter, sans-serif; color: var(--cfg-muted); background: var(--cfg-soft); border-radius: 6px; padding: 2px 6px; }
+    .cfg-nav-label { font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #98a2b3; margin: 14px 12px 4px; }
+    .cfg-nav a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: #344054; font-weight: 600; font-size: .92rem;
+                 text-decoration: none; transition: background .15s, color .15s; position: relative; }
+    .cfg-nav a i { width: 18px; text-align: center; color: #98a2b3; transition: color .15s; }
+    .cfg-nav a:hover { background: #fff; color: var(--cfg-text); }
+    .cfg-nav a.is-on { background: #fff; color: var(--cfg-text); box-shadow: var(--cfg-shadow); }
+    .cfg-nav a.is-on i { color: var(--cfg-dom); }
+    html.cfg-light-dom .cfg-nav a.is-on i { color: color-mix(in srgb, var(--cfg-dom) 40%, #111); }
+    .cfg-nav a.is-on::before { content: ""; position: absolute; left: -10px; top: 9px; bottom: 9px; width: 3px; border-radius: 3px; background: var(--cfg-tch); }
+    .cfg-nav a.cfg-nav-danger { color: #b42318; } .cfg-nav a.cfg-nav-danger i { color: #f04438; }
+    .cfg-nav .cfg-count { margin-left: auto; font-size: .72rem; font-weight: 700; color: var(--cfg-muted); background: var(--cfg-soft); border-radius: 999px; padding: 1px 8px; }
+
+    .cfg-main { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+
+    /* ================= Vue d'ensemble ================= */
+    .cfg-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .cfg-stat { background: #fff; border: 1px solid var(--cfg-line); border-radius: 16px; padding: 16px 18px; box-shadow: var(--cfg-shadow); display: flex; flex-direction: column; gap: 6px; }
+    .cfg-stat-k { display: flex; align-items: center; gap: 8px; font-size: .8rem; font-weight: 700; color: var(--cfg-muted); }
+    .cfg-stat-k i { color: var(--cfg-dom); }
+    .cfg-stat-v { font-size: 1.35rem; font-weight: 800; letter-spacing: -.01em; }
+    .cfg-stat-s { font-size: .8rem; color: var(--cfg-muted); }
+    .cfg-progress { grid-column: 1 / -1; background: #fff; border: 1px solid var(--cfg-line); border-radius: 16px; padding: 16px 18px; box-shadow: var(--cfg-shadow); }
+    .cfg-progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+    .cfg-progress-top b { font-size: .95rem; } .cfg-progress-top span { font-size: .85rem; color: var(--cfg-muted); font-weight: 600; }
+    .cfg-bar { height: 8px; border-radius: 999px; background: var(--cfg-soft); overflow: hidden; }
+    .cfg-bar span { display: block; height: 100%; border-radius: 999px; background: var(--cfg-dom); transition: width .8s ease; }
+    .cfg-steps { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; }
+    .cfg-step { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; font-weight: 600; color: #344054; text-decoration: none; }
+    .cfg-step i { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;
+                  background: var(--cfg-soft); color: #98a2b3; border: 1px solid var(--cfg-line); }
+    .cfg-step.ok i { background: var(--cfg-dom); color: var(--cfg-ink); border-color: var(--cfg-dom); }
+
+    /* ================= Sections ================= */
+    .cfg-section { background: #fff; border: 1px solid var(--cfg-line); border-radius: 20px; box-shadow: var(--cfg-shadow); scroll-margin-top: 20px; overflow: hidden; }
+    .cfg-section-hd { display: flex; align-items: flex-start; gap: 14px; padding: 20px 24px; border-bottom: 1px solid var(--cfg-line); }
+    .cfg-section-ico { width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+                       background: var(--cfg-dom); color: var(--cfg-ink); font-size: 16px; }
+    .cfg-section-hd h2 { font-size: 1.1rem; font-weight: 800; margin: 0; letter-spacing: -.01em; color: var(--cfg-text); }
+    .cfg-section-hd p { margin: 3px 0 0; font-size: .88rem; color: var(--cfg-muted); }
+    .cfg-section-bd { padding: 6px 12px 12px; }
+    .cfg-section.is-hidden { display: none; }
+    .cfg-section-danger .cfg-section-ico { background: #fef3f2; color: #d92d20; }
+    .cfg-section-danger { border-color: #fecdca; }
+
+    /* ---- Lignes de réglage ---- */
+    .setting-item { display: flex; align-items: center; gap: 14px; padding: 14px 12px !important; border-radius: 12px; border-bottom: 1px solid var(--cfg-soft) !important;
+                    transform: none !important; }
+    .cfg-section-bd > .setting-item:last-child, #status-form .setting-item { border-bottom: 0 !important; }
+    .setting-item.cfg-link { cursor: pointer; }
+    .setting-item.cfg-link:hover { background: color-mix(in srgb, var(--cfg-dom) 5%, #fff); }
+    .setting-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; font-weight: 600 !important; color: var(--cfg-text); }
+    .setting-label > i { display: none !important; }
+    .cfg-ico { width: 38px; height: 38px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+               background: var(--cfg-soft); color: #475467; font-size: 15px; transition: background .15s, color .15s; }
+    .setting-item.cfg-link:hover .cfg-ico { background: var(--cfg-dom); color: var(--cfg-ink); }
+    .cfg-txt { display: flex; flex-direction: column; min-width: 0; }
+    .cfg-txt > span:first-child { font-size: .95rem; }
+    .cfg-desc { font-size: .83rem; font-weight: 500; color: var(--cfg-muted); margin-top: 1px; }
+    .setting-item .btn, .cfg-action { border-radius: 10px !important; font-weight: 700 !important; padding: 7px 14px !important; font-size: .85rem !important;
+        border: 1px solid var(--cfg-line) !important; background: #fff !important; color: var(--cfg-text) !important; white-space: nowrap; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 6px; }
+    .setting-item.cfg-link:hover .btn, .setting-item.cfg-link:hover .cfg-action { background: var(--cfg-acc) !important; border-color: var(--cfg-acc) !important; color: var(--cfg-acc-ink) !important; }
+    .cfg-chev { color: #98a2b3; font-size: .8rem; }
+
+    /* ---- Planification ---- */
+    #status-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px 12px 6px; margin: 0; background: none; border: 0; }
+    #status-form .setting-item { flex-direction: column; align-items: flex-start; gap: 12px; padding: 18px !important; border: 2px solid var(--cfg-line) !important;
+                                 border-radius: 16px; cursor: pointer; position: relative; background: #fff; }
+    #status-form .setting-item:hover { border-color: #cbd5e1 !important; }
+    #status-form .setting-item.cfg-on { border-color: var(--cfg-dom) !important; background: color-mix(in srgb, var(--cfg-dom) 4%, #fff); }
+    #status-form .setting-item .switch { position: absolute; top: 16px; right: 16px; }
+    #status-form .setting-label { padding-right: 56px; }
+    #status-form .cfg-choice-tag { align-self: flex-start; margin-bottom: 4px; }
+    #status-form .cfg-choice-tag { display: none; font-size: .72rem; font-weight: 800; color: var(--cfg-ink); background: var(--cfg-dom); border-radius: 999px; padding: 2px 10px; }
+    #status-form .setting-item.cfg-on .cfg-choice-tag { display: inline-block; }
+    #status-form > .mt-4 { grid-column: 1 / -1; margin-top: 2px !important; text-align: right !important; }
+    #status-form .config-btn { width: auto; }
+    .cfg-hint { grid-column: 1 / -1; font-size: .85rem; color: var(--cfg-muted); margin: 0 4px; }
+
+    /* ---- Interrupteurs ---- */
+    .switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; margin: 0; cursor: pointer; }
+    .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+    .switch .slider { position: absolute; inset: 0; border-radius: 999px; background-color: #d0d5dd; transition: background-color .2s; }
+    .switch .slider::before { content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; border-radius: 50%; background: #fff;
+                              box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+    .switch input:checked + .slider { background-color: var(--cfg-dom); }
+    .switch input:checked + .slider::before { transform: translateX(20px); }
+    .switch input:focus-visible + .slider { outline: 3px solid var(--cfg-tch); outline-offset: 2px; }
+
+    /* ---- Boutons principaux ---- */
+    .config-btn { display: inline-flex !important; align-items: center; gap: 8px; background: var(--cfg-acc) !important; color: var(--cfg-acc-ink) !important;
+                  border: 0 !important; border-radius: 10px !important; font-weight: 700 !important; box-shadow: none !important; padding: 10px 18px !important;
+                  transform: none !important; text-decoration: none !important; font-size: .9rem !important; }
+    .config-btn:hover { filter: brightness(.93); }
+
+    /* ---- Périodes ---- */
+    .cfg-periods { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; padding: 12px; }
+    .cfg-periods .periode-timeline { display: contents; }
+    .cfg-periods .periode-timeline::before { display: none !important; }
+    .periode-item { margin: 0 !important; padding: 14px 16px !important; border-radius: 14px !important; background: var(--cfg-soft) !important;
+                    border: 1px solid var(--cfg-line) !important; border-left: 4px solid var(--cfg-tch) !important; box-shadow: none !important; }
+    .periode-item::before, .periode-item::after { display: none !important; }
+    .periode-item h6 { font-weight: 800; margin: 0 0 6px; }
+    .periode-item .periode-details { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .periode-item .badge { background: #fff !important; color: #344054 !important; border: 1px solid var(--cfg-line); font-weight: 700; }
+    .cfg-section-ft { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 24px 18px; border-top: 1px solid var(--cfg-soft); }
+
+    /* ---- Zone de danger ---- */
+    .cfg-section-danger .card.border-danger { border: 0 !important; box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
+    .cfg-section-danger .card.border-danger > .card-header { display: none; }
+    .cfg-section-danger .card.border-danger > .card-body { padding: 16px 12px !important; }
+    .cfg-section-danger .card.border-danger .card-title { font-size: 1rem !important; color: var(--cfg-text) !important; }
+    .cfg-section-danger .card.border-danger .card-title::after { display: none !important; }
+    .cfg-section-danger .card.border-danger > .card-footer { background: #fffbfa !important; border-top: 1px solid #fee4e2 !important; color: #b42318; }
+    .cfg-section-danger .btn-danger { background: #fff !important; color: #d92d20 !important; border: 1px solid #fda29b !important; box-shadow: none !important; border-radius: 10px; }
+    .cfg-section-danger .btn-danger:hover { background: #d92d20 !important; color: #fff !important; }
+
+    /* ---- Fenêtres (modales) uniformes ---- */
+    .modal-content { border: 0 !important; border-radius: 20px !important; overflow: hidden; }
+    .modal-header { background: var(--cfg-dom) !important; color: var(--cfg-ink) !important; border-bottom: 4px solid var(--cfg-tch) !important; padding: 18px 24px !important; }
+    .modal-header .modal-title, .modal-header h1, .modal-header h5, .modal-header small, .modal-header .text-dark, .modal-header .text-muted { color: var(--cfg-ink) !important; }
+    .modal-header .bg-primary-subtle { background: color-mix(in srgb, var(--cfg-ink) 16%, transparent) !important; color: var(--cfg-ink) !important; }
+    html:not(.cfg-light-dom) .modal-header .btn-close { filter: invert(1) grayscale(1) brightness(2); }
+    .modal .nav-tabs .nav-link.active { color: var(--cfg-dom) !important; border-bottom: 3px solid var(--cfg-tch) !important; font-weight: 700; }
+    .modal .btn-primary, .modal .submit-btn { background: var(--cfg-acc) !important; border-color: var(--cfg-acc) !important; color: var(--cfg-acc-ink) !important; }
+
+    .cfg-empty { display: none; text-align: center; padding: 40px 20px; color: var(--cfg-muted); background: #fff; border-radius: 20px; border: 1px dashed var(--cfg-line); }
+    a:focus-visible, button:focus-visible, .setting-item:focus-visible, .cfg-nav a:focus-visible { outline: 3px solid var(--cfg-tch) !important; outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .animate__animated { animation: none !important; } * { scroll-behavior: auto !important; } }
+    html { scroll-behavior: smooth; }
+
+    /* ---- Tablette et mobile ---- */
+    @media (max-width: 991px) {
+        #cfgApp { grid-template-columns: 1fr; gap: 16px; }
+        .cfg-nav { position: sticky; top: 0; z-index: 20; flex-direction: row; overflow-x: auto; gap: 6px; padding: 10px 0; background: var(--cfg-bg); scrollbar-width: none; }
+        .cfg-nav .cfg-search { flex: 0 0 220px; margin: 0; }
+        .cfg-nav-label { display: none; }
+        .cfg-nav a { flex: 0 0 auto; background: #fff; border: 1px solid var(--cfg-line); }
+        .cfg-nav a.is-on::before { display: none; }
+        .cfg-nav a.is-on { border-color: var(--cfg-dom); }
+        .cfg-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .cfg-stat { padding: 12px; } .cfg-stat-v { font-size: 1.05rem; } .cfg-stat-s { display: none; }
+        .cfg-stat-k { font-size: .72rem; }
+        .cfg-section-hd { padding: 16px; } .cfg-section-bd { padding: 4px 6px 8px; }
+        #status-form { grid-template-columns: 1fr; }
+        body > .container > header .container-fluid { grid-template-columns: 1fr; }
+        .cfg-hd-right { grid-column: 1; grid-row: auto; }
+    }
+</style>
+<!-- ===================== FIN NOUVEAU DESIGN (styles) ===================== -->
+</head>
+<body>
+    <!-- Animation de fond -->
+    <ul class="floating-shapes">
+        <li></li>
+        <li></li>
+        <li></li>
+    </ul>
+
+    <div class="py-5 container">
+      
+
+
+         <header class="shadow-lg mb-5 p-4 rounded-4 text-white" 
+        style="background-color: {{request.user.personnel.color_fond}};">
+    
+    <div class="container-fluid">
+        <h1 class="mb-1 fs-2 fw-bolder">
+            <i class="me-2 text-white-50 bx bxs-cog"></i>
+            Configurations des elements de suivi evaluation
+        </h1>
+        <p class="opacity-75 mb-0 lead">
+            Gérez les formulaires, Natures et catégories des tâches, etc.
+        </p>
+    </div>
+</header>
+<div class="text-left mb-4">
+    <a href="/admin_institution" class="d-inline-flex align-items-center text-decoration-none border rounded-pill p-1 pe-4 shadow-sm bg-white transition-all hover-shadow-lg" style="transition: all 0.3s ease; border-color: #dee2e6;">
+        
+        <!-- Cercle icône avec fond vert doux -->
+        <div class="rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success me-3" style="width: 48px; height: 48px;">
+            <i class="bi bi-plus-lg fs-4"></i> <!-- Assure-toi d'avoir Bootstrap Icons -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+            </svg>
+        </div>
+
+        <!-- Texte avec hiérarchie -->
+        <div class="d-flex flex-column">
+            <span class="fw-bold text-dark mb-0" style="line-height: 1.2;">Ajouter une Institution</span>
+            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.05rem;">Configuration Système</small>
+        </div>
+
+        <!-- Petite flèche discrète pour l'appel à l'action -->
+        <i class="bi bi-chevron-right ms-3 text-secondary opacity-50"></i>
+    </a>
+
+
+       <a href="/dupliquer-institution/" class="d-inline-flex align-items-center text-decoration-none border rounded-pill p-1 pe-4 shadow-sm bg-white transition-all hover-shadow-lg" style="transition: all 0.3s ease; border-color: #dee2e6;">
+        
+        <!-- Cercle icône avec fond vert doux -->
+        <div class="rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success me-3" style="width: 48px; height: 48px;">
+            <i class="bi bi-plus-lg fs-4"></i> <!-- Assure-toi d'avoir Bootstrap Icons -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+            </svg>
+        </div>
+
+        <!-- Texte avec hiérarchie -->
+        <div class="d-flex flex-column">
+            <span class="fw-bold text-dark mb-0" style="line-height: 1.2;">Dupliquer Cette Institution</span>
+            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.05rem;">
+                {{actual_institution.nom}}
+            </small>
+        </div>
+
+        <!-- Petite flèche discrète pour l'appel à l'action -->
+        <i class="bi bi-chevron-right ms-3 text-secondary opacity-50"></i>
+    </a>
+
+
+
+      <a href="/roles_personnels/" class="d-inline-flex align-items-center text-decoration-none border rounded-pill p-1 pe-4 shadow-sm bg-white transition-all hover-shadow-lg" style="transition: all 0.3s ease; border-color: #dee2e6;">
+        
+        <!-- Cercle icône avec fond vert doux -->
+        <div class="rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success me-3" style="width: 48px; height: 48px;">
+            <i class="bi bi-plus-lg fs-4"></i> <!-- Assure-toi d'avoir Bootstrap Icons -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
+                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+            </svg>
+        </div>
+
+        <!-- Texte avec hiérarchie -->
+        <div class="d-flex flex-column">
+            <span class="fw-bold text-dark mb-0" style="line-height: 1.2;">Configurer les roles</span>
+            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.05rem;">
+                Roles
+            </small>
+        </div>
+
+        <!-- Petite flèche discrète pour l'appel à l'action -->
+        <i class="bi bi-chevron-right ms-3 text-secondary opacity-50"></i>
+    </a>
+</div>
+
+<style>
+    /* Petit effet de survol pour l'intuition sans charger le CSS */
+    .hover-shadow-lg:hover {
+        box-shadow: 0 1rem 3rem rgba(0,0,0,.1) !important;
+        transform: translateY(-2px);
+        border-color: #198754 !important; /* Couleur Success de Bootstrap */
+    }
+    .hover-shadow-lg:hover .bg-success {
+        background-color: #198754 !important;
+        color: white !important;
+    }
+</style>
+        <div class="config-container">
+            <!-- Module 1: Formulaire de données -->
+            <div class="config-card animate__animated animate__fadeInUp">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class='bx bx-edit-alt'></i>
+                    </div>
+                    <h3 class="card-title">Configurer Une Institution</h3>
+                </div>
+                <div class="card-body">
+                     <div class="setting-item">
+                        <span class="setting-label"><i class='bx bx-data'></i> Gestion des Groupes D'elements</span>
+                        <a class="btn-outline-primary btn btn-sm" href="/data_element/group/">Gérer</a>
+                    </div>
+
+                     <div class="setting-item">
+                        <span class="setting-label"><i class='bx bx-data'></i> Gestion des Groupes D'indicateurs</span>
+                        <a class="btn-outline-primary btn btn-sm" href="/data_element/group/">Gérer</a>
+                    </div>
+                  <form action='/changeStatus/' method="POST" id="status-form">
+    {% csrf_token %}
+    <div class="setting-item">
+        <span class="setting-label"><i class='fa fa-shape-circle'></i> Planification échelonnée</span>
+        <label class="switch">
+            <input type="checkbox" name="is_step" id="is_step_checkbox" {% if actual_institution.is_step %} checked {% endif %}>
+            <span class="slider round"></span>
+        </label>
+    </div>
+
+    <div class="setting-item">
+        <span class="setting-label"><i class='fa fa-layer'></i> Planification périodique</span>
+        <label class="switch">
+            <input type="checkbox" name="is_frequency" id="is_frequency_checkbox" {% if actual_institution.is_frequency %} checked {% endif %}>
+            <span class="slider round"></span>
+        </label>
+    </div>
+
+    <div class="mt-4 text-center">
+        <button type='submit' class="config-btn">
+            <i class='bx bx-save'></i> Appliquer
+        </button>
+    </div>
+</form>
+
+<script>
+    // Récupérer les éléments de la page
+    const isStepCheckbox = document.getElementById('is_step_checkbox');
+    const isFrequencyCheckbox = document.getElementById('is_frequency_checkbox');
+    const form = document.getElementById('status-form');
+
+    // Fonction pour gérer la logique de désactivation
+    function handleCheckboxChange(event) {
+        const checkboxChanged = event.target;
+        
+        if (checkboxChanged.id === 'is_step_checkbox') {
+            if (checkboxChanged.checked) {
+                isFrequencyCheckbox.checked = false;
+            }
+        } else if (checkboxChanged.id === 'is_frequency_checkbox') {
+            if (checkboxChanged.checked) {
+                isStepCheckbox.checked = false;
+            }
+        }
+    }
+
+    // Ajouter des écouteurs d'événements
+    isStepCheckbox.addEventListener('change', handleCheckboxChange);
+    isFrequencyCheckbox.addEventListener('change', handleCheckboxChange);
+
+</script>
+                </div>
+            </div>
+            <a href="/" class="float">
+                <i class="fa-chevron-left my-float fa"></i>
+                </a>
+  <div class="modal fade" id="exampleModal_dataform" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            
+            <div class="modal-header bg-white border-bottom py-3">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary-subtle p-2 rounded me-3 text-primary">
+                        <i class="fas fa-layer-group fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0">Gestion des Formulaires</h5>
+                        <small class="text-muted">Configuration et paramétrage des datasets</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-0 bg-light-subtle">
+                <div class="d-flex justify-content-between align-items-center p-3 bg-white border-bottom">
+                    <div class="nav nav-pills gap-2">
+                        <button class="nav-link active fw-medium" id="btn-list" onclick="switchTab('list')">
+                            <i class="fas fa-list me-2"></i>Vue Liste
+                        </button>
+                        <button class="nav-link fw-medium" id="btn-add" onclick="switchTab('add')">
+                            <i class="fas fa-plus me-2"></i>Nouveau
+                        </button>
+                    </div>
+                    
+                    <div class="input-group w-25" id="searchContainer">
+                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" id="erpSearchInput" class="form-control border-start-0 ps-0" placeholder="Filtrer par nom..." onkeyup="filterTable()">
+                    </div>
+                </div>
+
+                <div id="view-list" class="erp-view">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 bg-white" id="erpTable">
+                            <thead class="bg-light">
+                                <tr class="text-uppercase small fw-bolder text-muted">
+                                    <th class="ps-4">Formulaire</th>
+                                    <th>Périodicité</th>
+                                    <th>Date Création</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for datasets in dataset %}
+                                <tr>
+                                    <td class="ps-4 fw-bold text-dark search-target">{{ datasets.m_name }}</td>
+                                    <td><span class="badge bg-info-subtle text-info border border-info-subtle">{{ datasets.periodicite.m_value }}</span></td>
+                                    <td class="text-muted">{{ datasets.m_start_date }}</td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/data_sets_edit/{{datasets.id}}/" class="btn btn-light border" title="Modifier"><i class="fas fa-pen text-primary"></i></a>
+                                            <a href="/duplicate_dataset/{{datasets.id}}/" class="btn btn-light border" title="Dupliquer"><i class="fas fa-copy text-secondary"></i></a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="view-add" class="erp-view d-none p-4">
+                    <div class="card border-0 shadow-sm mx-auto" style="max-width: 800px;">
+                        <div class="card-body p-4 text-center">
+                            <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+                            <h4>Interface de Création</h4>
+                            <p class="text-muted">Redirection vers le module de configuration...</p>
+                            <a href="/data_sets/0/" class="btn btn-primary px-5">Ouvrir l'éditeur</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-white py-2">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 1. LOGIQUE DE BASCULEMENT (TOGGLE)
+function switchTab(view) {
+    const list = document.getElementById('view-list');
+    const add = document.getElementById('view-add');
+    const btnList = document.getElementById('btn-list');
+    const btnAdd = document.getElementById('btn-add');
+    const search = document.getElementById('searchContainer');
+
+    if (view === 'list') {
+        list.classList.remove('d-none');
+        add.classList.add('d-none');
+        btnList.classList.add('active');
+        btnAdd.classList.remove('active');
+        search.classList.remove('invisible');
+    } else {
+        list.classList.add('d-none');
+        add.classList.remove('d-none');
+        btnList.classList.remove('active');
+        btnAdd.classList.add('active');
+        search.classList.add('invisible');
+    }
+}
+
+// 2. LOGIQUE DE FILTRAGE
+function filterTable() {
+    const input = document.getElementById("erpSearchInput");
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById("erpTable");
+    const tr = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < tr.length; i++) { // On commence à 1 pour sauter le header
+        const td = tr[i].getElementsByClassName("search-target")[0];
+        if (td) {
+            const txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+</script>
+
+<style>
+/* Style spécifique pour l'aspect bouton d'onglet ERP */
+.nav-pills .nav-link {
+    color: #6c757d;
+    border-radius: 6px;
+    padding: 8px 16px;
+    transition: all 0.2s;
+}
+.nav-pills .nav-link.active {
+    background-color: #f0f7ff;
+    color: #0d6efd;
+    border: 1px solid #cfe2ff;
+}
+.nav-link:not(.active):hover {
+    background-color: #f8f9fa;
+}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+    .htmx-request .spinner-border {
+    display: inline-block;
+}
+.htmx-request button {
+    opacity: 0.7;
+}
+</style>
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModal">
+            <i class="me-2 bi bi-tags-fill"></i> Gestion des Catégories & Natures
+        </h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+
+      <div class="p-4 modal-body">
+        
+        <ul class="nav nav-tabs nav-justified" id="myTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories" type="button" role="tab" aria-controls="categories" aria-selected="true">
+                <i class="me-2 bi bi-folder-fill"></i> Catégories
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="natures-tab" data-bs-toggle="tab" data-bs-target="#natures" type="button" role="tab" aria-controls="natures" aria-selected="false">
+                <i class="me-2 bi bi-basket-fill"></i> Natures
+            </button>
+          </li>
+        </ul>
+
+        <div class="pt-4 tab-content">
+          
+          <div class="tab-pane fade show active" id="categories" role="tabpanel" aria-labelledby="categories-tab">
+            <div class="shadow-sm card">
+                <div class="card-body">
+                    <h5 class="mb-3 card-title">Nouvelle Catégorie</h5>
+                    <form hx-post="/add_categorie_operation/" hx-target="#list-categories tbody" hx-swap="beforeend" hx-on::after-request="this.reset()">
+                        {% csrf_token %}
+                        <input type="hidden" name="institution" value="{{ actual_institution.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="intituleCategorie" class="form-label"><strong>Intitulé</strong></label>
+                            <input type="text" id="intituleCategorie" name="intitule" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="descriptionCategorie" class="form-label">Description</label>
+                            <textarea id="descriptionCategorie" name="description" class="form-control"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="d-flex align-items-center btn btn-primary">
+                            <i class="me-2 bi bi-plus-lg"></i> Enregistrer
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="shadow-sm mt-4 card">
+                <div class="card-body">
+                    <h5 class="card-title">Liste des Catégories</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0" id="list-categories">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% include 'list_categories.html' %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+          </div>
+          
+          <div class="tab-pane fade" id="natures" role="tabpanel" aria-labelledby="natures-tab">
+            <div class="shadow-sm card">
+                <div class="card-body">
+                    <h5 class="mb-3 card-title">Nouvelle Nature</h5>
+                    <form hx-post="/add_nature_operation/" hx-target="#list-natures" hx-swap="beforeend" hx-on::after-request="this.reset()">
+                        {% csrf_token %}
+                        <input type="hidden" name="institution" value="{{ actual_institution.id }}">
+                        
+                        <div class="mb-3">
+                            <label for="intituleNature" class="form-label"><strong>Intitulé</strong></label>
+                            <input type="text" id="intituleNature" class="form-control" placeholder="Ex: Achat de fournitures" name="intitule" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="descriptionNature" class="form-label">Description</label>
+                            <textarea id="descriptionNature" class="form-control" name="description"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="d-flex align-items-center btn btn-success">
+                            <i class="me-2 bi bi-plus-lg"></i> Valider
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="shadow-sm mt-4 card">
+                <div class="card-body">
+                    <h5 class="card-title">Liste des Natures</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-natures">
+                                {% include 'list_natures.html' %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+      </div>
+      
+    </div>
+  </div>
+</div>  
+
+            
+
+           
+            <!-- Module 5: Période -->
+            <div class="config-card animate__animated animate__fadeInUp animate__delay-4s">
+      <div class="card-header">
+          <div class="card-icon">
+              <i class='bx bx-calendar'></i>
+          </div>
+          <h3 class="card-title">Période d'Évaluation</h3>
+      </div>
+      <div class="card-body">
+          <div class="periode-timeline">
+              {% for periode_oks in periode_ok|slice:":3" %}
+              <div class="periode-item">
+                  <h6>{{ periode_oks.nom }}</h6>
+                  <div class="periode-details">
+                      <small>{{ periode_oks.annee }}</small>
+                      <span class="bg-primary badge">Numero d'ordre: {{ periode_oks.numero_ordre }}</span>
+                  </div>
+              </div>
+              {% endfor %}
+          </div>
+          <div class="mt-3 text-center">
+              <a href="#" class="config-btn" data-bs-toggle="modal" data-bs-target="#exampleModals">
+                  <i class='bx-dots-horizontal-rounded bx'></i> Plus d'options
+              </a>
+          </div>
+      </div>
+  </div>
+              <div class="config-card animate__animated animate__fadeInUp animate__delay-5s">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class='bx bx-cog'></i>
+                    </div>
+                    <h3 class="card-title">Autres Paramètres</h3>
+                </div>
+                <div class="card-body">
+                    <div class="setting-item">
+                        <span class="setting-label"><i class='bx bx-data'></i> Nature / Categories Des Operations</span>
+                        <a class="btn-outline-primary btn btn-sm" href="#"  data-bs-toggle="modal" data-bs-target="#exampleModal">Gérer</a>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label"><i class='bx bx-data'></i> Gestion des Formulaires</span>
+                        <a class="btn-outline-primary btn btn-sm" href="#" data-bs-toggle="modal" data-bs-target="#exampleModal_dataform">Gérer</a>
+                    </div>
+                     <div class="setting-item">
+                        <span class="setting-label"><i class='fa fa-coins'></i> Sources De Financement</span>
+                        <button class="btn-outline-primary btn btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal_sourcefinancement">Gérer</button>
+                    </div>
+
+                     <div class="setting-item">
+                        <span class="setting-label"><i class='fa fa-cog'></i> Echelonnage</span>
+                        <button class="btn-outline-primary btn btn-sm"  data-bs-toggle="modal" data-bs-target="#exampleModal_etape">Gérer</button>
+                    </div>
+
+
+                     <div class="setting-item">
+                        <span class="setting-label"><i class='fa-layer-group fa'></i> Gestion des devises</span>
+                        <button class="btn-outline-primary btn btn-sm"  data-bs-toggle="modal" data-bs-target="#exampleModal_devise">Gérer</button>
+                    </div>
+                   <div class="mt-4 text-center">
+                        <a href="{%url 'notifications-system'%}" class="config-btn">
+                            <i class='bx-dots-horizontal-rounded bx'></i> Configurer les notifications
+                        </a>
+                    </div> 
+                </div>
+            </div>
+        
+
+    <style>
+        .hidden {
+            display: none;
+        }
+
+        .visible {
+            display: block;
+        }
+
+        .toggle-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #0d6efd;
+            width: fit-content;
+        }
+
+        .toggle-btn {
+            border-radius: 0;
+            margin: 0;
+            border: none;
+        }
+
+        .action-buttons {
+            white-space: nowrap;
+        }
+
+        .action-btn {
+            padding: 0.25rem 0.5rem;
+            margin: 0 2px;
+        }
+
+        .submit-btn {
+            background-color: #0d6efd;
+        }
+
+        .submit-btn:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal_sourcefinancement" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color:{{request.user.personnel.color_fond}}">
+        <h1 class="text-light modal-title fs-5" id="exampleModalLabel">Sources de Financements</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+
+        <div class="toggle-buttons">
+            <button id="showTableBtn" class="toggle-btn btn btn-primary active">
+                <i class="fa-table me-2 fas"></i>Afficher le Tableau
+            </button>
+            <button id="showFormBtn" class="btn-outline-primary toggle-btn btn">
+                <i class="me-2 fas fa-plus"></i>Afficher le Formulaire
+            </button>
+        </div>
+
+        <div class="content-section">
+            <!-- Section du tableau -->
+            <div id="tableSection" class="visible table-container">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h3>Liste des Sources de Financement</h3>
+                    <button id="addNewBtn" class="btn-outline-primary btn btn-sm">
+                        <i class="me-1 fas fa-plus"></i>Ajouter
+                    </button>
+                </div>
+
+                <table class="table table-hover table-striped">
+                    <thead>
+                        <tr>
+
+                            <th scope="col">Code</th>
+                            <th scope="col">Libellé</th>
+                             <th scope="col">Montant</th>
+                            <th scope="col">Description</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="table-group-divider">
+                    {%for source_financements in source_financement%}
+                        <tr>
+
+                            <td>{{source_financements.sigle}}</td>
+                            <td>{{source_financements.nom}}</td>
+                             <td>{{source_financements.montant}}</td>
+                            <td>{{source_financements.description}}</td>
+                            <td class="action-buttons">
+                                <a href="/edit_source_fincement/{{source_financements.id}}/" class="btn-outline-primary btn btn-sm action-btn">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="/delete_source_financement/{{source_financements.id}}/" class="btn-outline-danger btn btn-sm action-btn">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    {%endfor%}
+
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Section du formulaire -->
+            <div id="formSection" class="hidden form-container">
+                <h3 class="mb-4" id="formTitle">Ajouter une Source de Financement</h3>
+
+                <form id="financeForm">
+                    <div class="mb-3 row">
+                        <div class="col-md-6">
+                            <label for="code" class="form-label">Code</label>
+                            <input type="text" class="form-control" id="code" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="libelle" class="form-label">Libellé</label>
+                            <input type="text" class="form-control" id="libelle" required>
+                        </div>
+
+                    </div>
+                    <div class="mb-4">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-3">
+
+                        <button type="button" class="text-white btn submit-btn" onclick="SubmitForm()">
+                            <i class="me-2 fas fa-save"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.rawgit.com/alertifyjs/alertify.js/v1.0.11/dist/js/alertify.js"></script>
+
+<script src="https://cdn.rawgit.com/alertifyjs/alertify.js/v1.0.11/dist/js/ngAlertify.js"></script>
+<!-- Bootstrap & jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function SubmitForm(){
+
+    // 1. Récupération des éléments du formulaire
+    const form = document.getElementById('financeForm');
+    const code = document.getElementById('code').value;
+    const libelle = document.getElementById('libelle').value;
+    const description = document.getElementById('description').value;
+
+
+    // 2. Préparation des données pour l'envoi
+    const formData = new FormData();
+    formData.append('code', code);
+    formData.append('libelle', libelle);
+    formData.append('description', description);
+
+
+    const url = '/save_source_financement/';
+
+
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        }
+    })
+    .then(response => {
+
+        if (!response.ok) {
+            throw new Error('Erreur réseau ou réponse non valide');
+        }
+        return response.json();
+    })
+    .then(data => {
+
+        console.log('Succès:', data);
+ alertify.success("You've clicked 'OK'");
+
+        // Réinitialisation du formulaire
+        form.reset();
+
+
+
+        if (typeof showTable === 'function') {
+            showTable();
+        }
+    })
+    .catch(error => {
+
+    });
+}
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const showTableBtn = document.getElementById('showTableBtn');
+        const showFormBtn = document.getElementById('showFormBtn');
+        const addNewBtn = document.getElementById('addNewBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const tableSection = document.getElementById('tableSection');
+        const formSection = document.getElementById('formSection');
+        const formTitle = document.getElementById('formTitle');
+        const financeForm = document.getElementById('financeForm');
+
+        // Fonction pour afficher le tableau et masquer le formulaire
+        function showTable() {
+            tableSection.classList.remove('hidden');
+            tableSection.classList.add('visible');
+
+            formSection.classList.remove('visible');
+            formSection.classList.add('hidden');
+
+            showTableBtn.classList.remove('btn-outline-primary');
+            showTableBtn.classList.add('btn-primary');
+
+            showFormBtn.classList.remove('btn-primary');
+            showFormBtn.classList.add('btn-outline-primary');
+        }
+
+        // Fonction pour afficher le formulaire et masquer le tableau
+        function showForm() {
+            formSection.classList.remove('hidden');
+            formSection.classList.add('visible');
+
+            tableSection.classList.remove('visible');
+            tableSection.classList.add('hidden');
+
+            showFormBtn.classList.remove('btn-outline-primary');
+            showFormBtn.classList.add('btn-primary');
+
+            showTableBtn.classList.remove('btn-primary');
+            showTableBtn.classList.add('btn-outline-primary');
+
+            // Réinitialiser le formulaire
+            financeForm.reset();
+            formTitle.textContent = "Ajouter une Source de Financement";
+        }
+
+        // Événements pour les boutons
+        showTableBtn.addEventListener('click', showTable);
+        showFormBtn.addEventListener('click', showForm);
+        addNewBtn.addEventListener('click', showForm);
+        cancelBtn.addEventListener('click', showTable);
+
+
+
+        // Initialisation pour s'assurer que le tableau est visible au chargement
+        showTable();
+    });
+</script>
+
+
+<div class="modal fade" id="exampleModals" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color:{{request.user.personnel.color_fond}}">
+        <h1 class="text-light modal-title fs-5" id="exampleModalLabel">Periodes De Planification</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+          <div class="py-4 container">
+        <div class="mb-4 row">
+            <div class="col">
+                <h2 class="section-title">Gestion des Périodes</h2>
+            </div>
+        </div>
+
+        <div class="mb-4 row">
+            <div class="col">
+                <button class="btn btn-success" id="toggleButton">
+                    <i class='me-2 bx bx-plus'></i>
+                    <span>Nouvelle Période</span>
+                </button>
+                <a href="/import-periode/" class="btn btn-success">
+                    <i class='me-2 bx bx-plus'></i>
+                    <span>Importer Les Période</span>
+                </a>
+            </div>
+            
+        </div>
+
+        <div class="toggle-section" id="periodesSection">
+            <div class="row">
+                <div class="col">
+                  {%include "./partials/periode.html"%}
+                </div>
+                <a href="/Details-periodes/" class="btn btn">Tous</a>
+            </div>
+        </div>
+    <style>
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        table {
+            margin-bottom: 0;
+        }
+        thead {
+            background-color: #f8f9fa;
+        }
+        th {
+            font-weight: 600;
+            color: #495057;
+            border-top: none;
+        }
+        .btn-success {
+            background-color: #198754;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-success:hover {
+            background-color: #0f6848;
+            transform: translateY(-2px);
+        }
+        .action-dropdown .dropdown-menu {
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .action-dropdown .dropdown-item {
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin: 3px 8px;
+            width: auto;
+        }
+        .action-dropdown .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+        .form-container {
+            padding: 25px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+        .form-label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.2);
+            border-color: #198754;
+        }
+        .section-title {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .toggle-section {
+            transition: all 0.4s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+    </style>
+        <div class="toggle-section fade-in" id="addSection" style="display:none">
+            <div class="row">
+                <div class="col">
+                    <div class="card">
+                        <div class="bg-white py-3 card-header">
+                            <h5 class="mb-0">Ajouter une nouvelle période</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="/add_periode/">
+                                {% csrf_token %}
+                                <div class="mb-3 row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Nom</label>
+                                        <input type="text" class="form-control" placeholder="Nom de la période" name="nom" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Année</label>
+                                        <input type="text" class="form-control" placeholder="Ex: 2023" name="annee" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3 row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Périodicité</label>
+                                        <select class="form-select" name="periodicite" required>
+                                            <option value="" selected disabled>Sélectionnez une périodicité</option>
+                                            {% for periodes in periode %}
+                                            <option value="{{ periodes.id }}">{{ periodes.m_value }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Numéro d'ordre</label>
+                                        <input type="number" class="form-control" name="numero" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">NiceName</label>
+                                        <input type="text" class="form-control" name="nicename" required>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+
+                                    <div>
+                                        <label class="label">Période Début</label>
+                                        <input type="date" name="date_debut"
+                                              
+                                               class="form-control">
+                                    </div>
+
+                                    <div>
+                                        <label class="label">Période Fin</label>
+                                        <input type="date" name="date_fin"
+                                              
+                                               class="form-control">
+                                    </div>
+
+                                </div>
+
+                                <div class="d-flex justify-content-end mt-4">
+                                    <button type="button" class="me-2 btn-outline-secondary btn" id="cancelButton">Annuler</button>
+                                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+</div>
+
+
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleButton = document.getElementById('toggleButton');
+            const cancelButton = document.getElementById('cancelButton');
+            const periodesSection = document.getElementById('periodesSection');
+            const addSection = document.getElementById('addSection');
+
+            function toggleSections() {
+                if (periodesSection.style.display === 'block' || periodesSection.style.display === '') {
+                    periodesSection.style.display = 'none';
+                    addSection.style.display = 'block';
+                    toggleButton.querySelector('span').textContent = 'Voir les périodes';
+                    toggleButton.querySelector('i').className = 'bx bx-list-ul me-2';
+                } else {
+                    periodesSection.style.display = 'block';
+                    addSection.style.display = 'none';
+                    toggleButton.querySelector('span').textContent = 'Nouvelle Période';
+                    toggleButton.querySelector('i').className = 'bx bx-plus me-2';
+                }
+            }
+
+            if (toggleButton && periodesSection && addSection) {
+                toggleButton.addEventListener('click', toggleSections);
+
+                if (cancelButton) {
+                    cancelButton.addEventListener('click', function() {
+                        periodesSection.style.display = 'block';
+                        addSection.style.display = 'none';
+                        toggleButton.querySelector('span').textContent = 'Nouvelle Période';
+                        toggleButton.querySelector('i').className = 'bx bx-plus me-2';
+                    });
+                }
+            }
+
+            // Tooltip initialization
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+
+            <!-- Module 6: Autres Paramètres -->
+
+        </div>
+    </div>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+        </div>
+
+<!-- Lien stylisé comme une action rapide -->
+
+ <!-- Ajout de border-2 pour une bordure plus visible et une ombre légère rouge -->
+<div class="card border-danger border-2 mt-5 shadow-sm" style="border-style: solid;">
+  
+  <div class="card-header bg-danger text-white fw-bold py-3">
+    <i class="bi bi-exclamation-octagon-fill me-2"></i> ZONE DE DANGER : ACTION IRRÉVERSIBLE
+  </div>
+  
+  <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 bg-white">
+    <div>
+      <h6 class="card-title mb-1 fw-bold text-danger">Supprimer définitivement l'institution</h6>
+      <p class="card-text text-muted small mb-0">
+        Attention : Cette opération supprimera toutes les données, accès et historiques liés à cette institution.
+      </p>
+    </div>
+    
+    <!-- Bouton avec une ombre rouge pour attirer l'attention -->
+    <a href="/delete_institution/{{line.id}}/" class="btn btn-danger px-4 fw-bold shadow">
+      <i class="bi bi-trash-fill me-1"></i> Supprimer l'institution
+    </a>
+  </div>
+
+  <!-- Footer avec un fond rouge très clair (subtle) pour rester lisible mais rester dans le thème -->
+  <div class="card-footer bg-danger-subtle border-top border-danger py-2">
+    <small class="text-danger fw-semibold">
+      <i class="bi bi-info-circle-fill me-1"></i> 
+      Note importante : Les rapports exportés précédemment ne seront plus valides après cette action.
+    </small>
+  </div>
+</div>
+<div class="modal fade" id="exampleModal_etape" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl"> <div class="modal-content">
+      <div class="text-light modal-header" style="background-color:{{request.user.personnel.color_fond}}">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">GESTION DES ETAPES</h1>
+        <button type="button" class="text-light text-light btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="etape-form-and-table-container">
+          <form hx-post="/save_etape/" 
+      hx-target="#etape-table-body" 
+      hx-swap="beforeend show:#etape-form-and-table-container:top"
+      hx-on::after-request="this.reset()">
+                {%csrf_token%}
+                <div class="align-items-end row g-3"> <div class="col-md-4">
+                <label for="intitule" class="form-label">
+                  <i class="me-1 fas fa-heading"></i> Intitulé
+                </label>
+                <input type="text" class="form-control" id="intitule" name="intitule" required>
+              </div>
+              <div class="col-md-4">
+                <label for="progression" class="form-label">
+                  <i class="me-1 fas fa-tasks"></i> Progression (%)
+                </label>
+                <input type="number" class="form-control" id="progression" name="progression" min="0" max="100" required>
+              </div>
+              <div class="col-md-4">
+                <label for="nature" class="form-label">
+                  <i class="me-1 fas fa-tag"></i> Nature
+                </label>
+                <select class="form-control" name="nature">
+                    {%for natures in nature%}
+                        <option value="{{natures.id}}">{{natures.intitule}}</option>
+
+                    {%endfor%}
+                    
+                </select>
+              </div>
+                    
+            </div>
+
+            <div class="align-items-end mt-3 row g-3">
+              <div class="col-md-3">
+                <label for="duree_faible" class="form-label">
+                  <i class="me-1 fas fa-hourglass-start"></i> Durée Faible (jours)
+                </label>
+                <input type="number" class="form-control" id="duree_faible" name="duree_faible" min="0">
+              </div>
+              <div class="col-md-3">
+                <label for="duree_moyenne" class="form-label">
+                  <i class="me-1 fas fa-hourglass-half"></i> Durée Moyenne (jours)
+                </label>
+                <input type="number" class="form-control" id="duree_moyenne" name="duree_moyenne" min="0">
+              </div>
+              <div class="col-md-3">
+                <label for="duree_grande" class="form-label">
+                  <i class="me-1 fas fa-hourglass-end"></i> Durée Grande (jours)
+                </label>
+                <input type="number" class="form-control" id="duree_grande" name="duree_grande" min="0">
+              </div>
+               <div class="col-md-3">
+                <label for="numero_ordre" class="form-label">
+                  <i class="me-1 fas fa-numeric"></i>Numero D'ordre
+                </label>
+                <input type="number" class="form-control" id="numero_ordre" name="numero_ordre" min="0" required>
+              </div>
+              <input type="hidden" name="institution" value="{{actual_institution.id}}">
+                <div class="col-md-12">
+                <label for="description" class="form-label">
+                    description
+                </label>
+
+                <textarea name="description" class="form-control"></textarea>
+            </div>
+              <div class="d-flex align-items-end col-md-3">
+                <button type="submit" class="w-100 btn btn-primary">
+                  <i class="me-1 fas fa-save"></i> Enregistrer
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <hr class="my-4" style="background-color: {{request.user.personnel.color_fond}}">
+
+          <h2 class="mt-4 mb-3"><i class="me-2 fa-list-alt fas"></i>Étapes enregistrées</h2>
+          <div class="table-responsive">
+            <table class="table table-hover table-striped mt-3" id="etape-table">
+              <thead class="table table-responsive" >
+                <tr>
+                 <th>Ordre</th>
+                  <th scope="col">Intitulé</th>
+                  <th scope="col">Progression</th>
+                  <th scope="col">Durée Faible</th>
+                  <th scope="col">Durée Moyenne</th>
+                  <th scope="col">Durée Grande</th>
+                  <th scope="col">Nature</th>
+                  <th>Description</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+               <tbody id="etape-table-body">
+             {%include 'etape.html'%}
+             </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+     
+      </div>
+    </div>
+  </div>
+</div>
+ <!-- ⭐ STYLES (à mettre UNE SEULE FOIS dans le <head>) -->
+<style>
+.card-soft {
+  border: none;
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.05);
+  transition: .2s;
+}
+.card-soft:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0,0,0,.12);
+}
+.badge-soft {
+  background:#eef3ff;
+  color:#2954d1;
+  border-radius:12px;
+  padding:6px 10px;
+}
+</style>
+
+
+<!-- 💱 MODAL GESTION DEVISES -->
+<div class="modal fade" id="exampleModal_devise" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+
+      <!-- HEADER -->
+      <div class="modal-header" style='background-color:{{request.user.personnel.color_fond}}, color:white'>
+        <h5 class="modal-title">💱 Gérer les devises financières</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <!-- BODY -->
+      <div class="modal-body">
+
+        <!-- TABS --> {% if message %}
+                    <div class="alert alert-success py-1 px-2 mb-0">
+                    {{ message }}
+                    </div>
+                {% endif %}
+        <ul class="mb-4 nav nav-tabs" id="deviseTabs">
+          <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#form">
+              ➕ Ajouter Devise
+            </button>
+          </li>
+
+          <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#list">
+              📋 Liste des Devises
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+
+          <!-- 📝 FORMULAIRE -->
+          <div class="tab-pane fade show active" id="form">
+
+            <form id="deviseForm"
+                  class="p-3 border rounded bg-light"
+                  hx-post="{% url 'devise_create' %}" 
+                  hx-target="#listeDevises" 
+                  hx-swap="beforeend"
+                  hx-indicator="#savingIndicator"
+                  hx-on::after-request="if(event.detail.successful){ this.reset(); document.querySelector('#list-tab').click(); }">
+
+              {% csrf_token %}
+
+              <div class="row g-3">
+
+                <div class="col-md-4">
+                  <label class="form-label">Code ISO</label>
+                  <input class="form-control" name="code" maxlength="3" placeholder="USD" required>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Symbole</label>
+                  <input class="form-control" name="symbole" placeholder="$" required>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Nom</label>
+                  <input class="form-control" name="nom" placeholder="Dollar Américain" required>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Taux de change</label>
+                  <input type="number" step="0.0001" class="form-control" name="taux" value="1.0" required>
+                </div>
+
+              </div>
+
+              <button class="mt-3 btn btn-primary">
+                ➕ Ajouter la devise
+              </button>
+
+            </form>
+          </div>
+
+          <!-- 📋 LISTE -->
+          <div class="tab-pane fade" id="list">
+
+            <div class="row g-3 mt-2" id="listeDevises">
+
+              {% for devises in devise %}
+              <div class="col-md-4">
+                <div class="card card-soft h-100">
+                  <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+                      <h6 class="fw-bold mb-1">
+                        {{ devises.code }} — {{ devises.nom }}
+                      </h6>
+
+                      <span class="badge-soft">{{ devises.symbole }}</span>
+                    </div>
+
+                    <small class="text-muted">
+                      Taux : <b>{{ devises.taux_change|floatformat:"2" }}</b>
+                    </small>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                      
+
+                     <div class="form-check form-switch"
+                      
+                        {%include 'partials/devise_switch.html' with devises=devises%}
+
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+</section>
+
+
+    <script>
+        document.body.addEventListener('htmx:configRequest', (event) => {
+            if (event.detail.method !== 'get') {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                event.detail.headers['X-CSRFToken'] = csrfToken;
+            }
+        });
+    </script>
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Animation 3D des cartes au survol
+        document.querySelectorAll('.config-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const x = e.clientX - card.getBoundingClientRect().left;
+                const y = e.clientY - card.getBoundingClientRect().top;
+
+                const centerX = card.offsetWidth / 2;
+                const centerY = card.offsetHeight / 2;
+
+                const angleX = (y - centerY) / 20;
+                const angleY = (centerX - x) / 20;
+
+                card.style.transform = `translateY(-10px) rotateX(${angleX}deg) rotateY(${angleY}deg)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(-10px) rotateY(5deg)';
+            });
+        });
+
+        // Validation des pondérations
+        document.querySelectorAll('.ponderation-input').forEach(input => {
+            input.addEventListener('change', function() {
+                let total = 0;
+                document.querySelectorAll('.ponderation-input').forEach(i => {
+                    total += parseInt(i.value) || 0;
+                });
+
+                if(total !== 100) {
+                    this.style.borderColor = '#fd79a8';
+                    setTimeout(() => {
+                        this.style.borderColor = '#e0e0e0';
+                    }, 2000);
+                }
+            });
+        });
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Inclure le JS de DataTables -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+
+    {% for message in messages %}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+     {% if message.tags == 'success' %}
+
+    <script type="text/javascript">
+     Swal.fire({
+     position: "top-end",
+     icon: "success",
+     title: "{{message}}",
+     showConfirmButton: false,
+     timer: 2000
+    });
+    </script>
+    {%endif%}
+    {%endfor%}
+    </script>
+    {% for message in messages %}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+     {% if message.tags == 'error' %}
+
+    <script type="text/javascript">
+     Swal.fire({
+     position: "top-end",
+     icon: "error",
+     title: "{{message}}",
+     showConfirmButton: false,
+     timer: 5000
+    });
+    </script>
+    {%endif%}
+    {%endfor%}
+
+<!-- ===================== NOUVEAU DESIGN : script (ajout) ===================== -->
+<script>
+(function () {
+    var root = document.documentElement;
+    function ink(hex) {
+        var h = String(hex || '#000').trim().replace('#', ''); if (h.length === 3) h = h.replace(/./g, '$&$&');
+        var c = [0, 2, 4].map(function (i) { var v = parseInt(h.substr(i, 2), 16) / 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+        return (.2126 * c[0] + .7152 * c[1] + .0722 * c[2]) > .42 ? '#111111' : '#FFFFFF';
+    }
+    var cs = getComputedStyle(root);
+    root.style.setProperty('--cfg-ink', ink(cs.getPropertyValue('--cfg-dom')));
+    root.style.setProperty('--cfg-acc-ink', ink(cs.getPropertyValue('--cfg-acc')));
+    root.classList.toggle('cfg-light-dom', ink(cs.getPropertyValue('--cfg-dom')) === '#111111');
+
+    var container = document.querySelector('body > .container');
+    var grid = container && container.querySelector(':scope > .config-container');
+    if (!container || !grid) return;
+
+    /* Les fenêtres (modales) placées dans la grille sont remontées dans <body> pour rester utilisables */
+    grid.querySelectorAll('.modal').forEach(function (m) { document.body.appendChild(m); });
+
+    function norm(x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+    function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+
+    /* ---------- Repérer vos éléments existants ---------- */
+    var cards = [].slice.call(grid.querySelectorAll('.config-card'));
+    function cardBy(re) { return cards.filter(function (c) { return re.test(norm((c.querySelector('.card-title') || {}).textContent)); })[0]; }
+    var cInst = cardBy(/configurer une institution/), cPer = cardBy(/periode/), cAutre = cardBy(/autres parametres/);
+    var statusForm = document.getElementById('status-form');
+    var actions = [].slice.call(container.querySelectorAll(':scope > .text-left.mb-4 > a'));
+    var danger = document.querySelector('.card.border-danger');
+    var back = document.querySelector('a.float');
+
+    /* ---------- Icônes et descriptions des paramètres ---------- */
+    var INFO = [
+        [/groupes d.?elements/, 'fa-diagram-project', 'Regrouper les éléments de données collectés'],
+        [/groupes d.?indicateurs/, 'fa-bullseye', 'Organiser les indicateurs par thème'],
+        [/planification echelonnee/, 'fa-stairs', 'Les activités avancent par étapes successives'],
+        [/planification periodique/, 'fa-calendar-week', 'Les activités sont suivies par période : mois, trimestres…'],
+        [/nature|categorie/, 'fa-tags', 'Types et catégories des opérations'],
+        [/formulaire/, 'fa-file-lines', 'Formulaires de collecte des données'],
+        [/financement/, 'fa-hand-holding-dollar', 'Bailleurs et lignes de financement'],
+        [/echelonnage/, 'fa-list-ol', "Étapes utilisées pour l'échelonnage"],
+        [/devise/, 'fa-coins', 'Monnaies utilisées dans les budgets']
+    ];
+    function decorate(row) {
+        var label = row.querySelector('.setting-label'); if (!label || row.__cfg) return; row.__cfg = true;
+        var text = label.textContent.trim(), n = norm(text), info = ['', 'fa-sliders', ''];
+        for (var i = 0; i < INFO.length; i++) if (INFO[i][0].test(n)) { info = INFO[i]; break; }
+        label.innerHTML = '<span class="cfg-ico"><i class="fa-solid ' + info[1] + '" aria-hidden="true"></i></span>' +
+            '<span class="cfg-txt"><span>' + text + '</span>' + (info[2] ? '<span class="cfg-desc">' + info[2] + '</span>' : '') + '</span>';
+        var btn = row.querySelector('.btn, .cfg-action');
+        if (btn) {
+            row.classList.add('cfg-link'); row.tabIndex = 0; row.setAttribute('role', 'button'); row.setAttribute('aria-label', text);
+            if (!btn.querySelector('.cfg-chev')) btn.insertAdjacentHTML('beforeend', ' <i class="fa-solid fa-chevron-right cfg-chev" aria-hidden="true"></i>');
+            row.addEventListener('click', function (e) { if (!e.target.closest('.btn, .cfg-action')) btn.click(); });
+            row.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); } });
+        }
+    }
+    /* Ligne fabriquée à partir d'un lien (actions rapides, notifications) */
+    function rowFromLink(a, title, desc, icon) {
+        var row = el('div', 'setting-item');
+        row.appendChild(el('span', 'setting-label', title));
+        a.classList.add('cfg-action'); a.classList.remove('config-btn');
+        a.innerHTML = '<span>Ouvrir</span>';
+        row.appendChild(a);
+        INFO.push([new RegExp('^' + norm(title).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'), icon, desc]);
+        decorate(row);
+        return row;
+    }
+
+    /* ---------- Construire la nouvelle page ---------- */
+    var app = el('div'); app.id = 'cfgApp';
+    var nav = el('nav', 'cfg-nav'); nav.setAttribute('aria-label', 'Sections de la configuration');
+    var main = el('div', 'cfg-main');
+    app.appendChild(nav); app.appendChild(main);
+    grid.parentNode.insertBefore(app, grid);
+
+    nav.innerHTML = '<label class="cfg-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>' +
+        '<input type="search" placeholder="Rechercher un réglage" aria-label="Rechercher un réglage"><kbd>/</kbd></label>';
+
+    var SECTIONS = [];
+    function section(id, icon, title, desc, group, cls) {
+        var sec = el('section', 'cfg-section' + (cls ? ' ' + cls : '')); sec.id = 'cfg-' + id; sec.setAttribute('aria-labelledby', 'cfg-' + id + '-t');
+        sec.innerHTML = '<div class="cfg-section-hd"><span class="cfg-section-ico"><i class="fa-solid ' + icon + '" aria-hidden="true"></i></span>' +
+            '<div><h2 id="cfg-' + id + '-t">' + title + '</h2><p>' + desc + '</p></div></div><div class="cfg-section-bd"></div>';
+        main.appendChild(sec);
+        if (group) nav.appendChild(el('div', 'cfg-nav-label', group));
+        var link = el('a', cls === 'cfg-section-danger' ? 'cfg-nav-danger' : '', '<i class="fa-solid ' + icon + '" aria-hidden="true"></i>' + title);
+        link.href = '#cfg-' + id; nav.appendChild(link);
+        SECTIONS.push({ sec: sec, link: link });
+        return sec.querySelector('.cfg-section-bd');
+    }
+
+    /* Vue d'ensemble */
+    var ov = el('section', 'cfg-overview'); ov.id = 'cfg-overview'; ov.style.scrollMarginTop = '20px';
+    main.appendChild(ov);
+    nav.appendChild(el('div', 'cfg-nav-label', 'Général'));
+    var ovLink = el('a', '', '<i class="fa-solid fa-house" aria-hidden="true"></i>Vue d\'ensemble'); ovLink.href = '#cfg-overview';
+    nav.appendChild(ovLink); SECTIONS.push({ sec: ov, link: ovLink });
+
+    /* 1. Structure des données */
+    var bStruct = section('structure', 'fa-diagram-project', 'Structure des données', 'Comment vos données et indicateurs sont organisés.', 'Configuration');
+    if (cInst) [].slice.call(cInst.querySelectorAll('.card-body > .setting-item')).forEach(function (r) { decorate(r); bStruct.appendChild(r); });
+
+    /* 2. Planification */
+    var bPlan = section('planification', 'fa-calendar-check', 'Mode de planification', 'Choisissez comment les activités sont planifiées. Un seul mode à la fois.');
+    if (statusForm) {
+        bPlan.appendChild(statusForm);
+        statusForm.querySelectorAll('.setting-item').forEach(function (r) {
+            decorate(r);
+            var txt = r.querySelector('.cfg-txt'); if (txt) txt.insertAdjacentHTML('afterbegin', '<span class="cfg-choice-tag">Mode actif</span>');
+        });
+    }
+
+    /* 3. Périodes */
+    var bPer = section('periodes', 'fa-calendar-days', "Périodes d'évaluation", 'Les périodes de suivi actuellement configurées.');
+    if (cPer) {
+        var tl = cPer.querySelector('.periode-timeline'), more = cPer.querySelector('.config-btn');
+        var wrap = el('div', 'cfg-periods'); if (tl) wrap.appendChild(tl); bPer.appendChild(wrap);
+        if (!tl || !tl.querySelector('.periode-item')) wrap.innerHTML = '<p class="cfg-desc" style="padding:8px">Aucune période configurée pour l\'instant.</p>';
+        if (more) { more.innerHTML = '<i class="fa-solid fa-gear" aria-hidden="true"></i> Gérer les périodes'; var ft = el('div', 'cfg-section-ft'); ft.appendChild(more); bPer.parentNode.appendChild(ft); }
+    }
+
+    /* 4. Référentiels */
+    var bRef = section('referentiels', 'fa-book', 'Référentiels', 'Listes de valeurs utilisées dans tout le système.');
+    var notif = null;
+    if (cAutre) {
+        [].slice.call(cAutre.querySelectorAll('.card-body > .setting-item')).forEach(function (r) { decorate(r); bRef.appendChild(r); });
+        notif = cAutre.querySelector('.card-body .config-btn');
+    }
+
+    /* 5. Notifications */
+    if (notif) {
+        var bNot = section('notifications', 'fa-bell', 'Notifications', 'Quand et comment les membres sont prévenus.');
+        bNot.appendChild(rowFromLink(notif, 'Règles de notification', 'Alertes de retard, validations, rappels', 'fa-bell'));
+    }
+
+    /* 6. Administration (vos 3 actions rapides) */
+    if (actions.length) {
+        var bAdm = section('administration', 'fa-building', 'Institution et accès', 'Créer, dupliquer une institution et gérer les rôles.', 'Administration');
+        var ADM = { '/admin_institution': ['Ajouter une institution', 'Créer une nouvelle institution', 'fa-building-circle-check'],
+                    '/dupliquer-institution/': ['Dupliquer cette institution', 'Copier toute la configuration actuelle', 'fa-clone'],
+                    '/roles_personnels/': ['Rôles et permissions', 'Qui peut voir, saisir et valider', 'fa-user-shield'] };
+        actions.forEach(function (a) {
+            var k = ADM[a.getAttribute('href')] || [a.textContent.trim(), '', 'fa-arrow-right'];
+            bAdm.appendChild(rowFromLink(a, k[0], k[1], k[2]));
+        });
+    }
+
+    /* 7. Zone de danger */
+    if (danger) {
+        var bDan = section('danger', 'fa-triangle-exclamation', 'Zone de danger', 'Actions irréversibles. À utiliser avec précaution.', null, 'cfg-section-danger');
+        bDan.appendChild(danger);
+    }
+
+    var empty = el('div', 'cfg-empty', 'Aucun réglage ne correspond à votre recherche.'); main.appendChild(empty);
+
+    /* ---------- Vue d'ensemble : chiffres et progression ---------- */
+    var step = document.getElementById('is_step_checkbox'), freq = document.getElementById('is_frequency_checkbox');
+    var nPer = main.querySelectorAll('.periode-item').length, nRef = bRef.querySelectorAll('.setting-item').length;
+    function modeName() { return step && step.checked ? 'Échelonnée' : freq && freq.checked ? 'Périodique' : 'Non défini'; }
+    function renderOverview() {
+        var checks = [
+            ['Structure', !!bStruct.querySelector('.setting-item'), '#cfg-structure'],
+            ['Mode de planification', modeName() !== 'Non défini', '#cfg-planification'],
+            ['Périodes', nPer > 0, '#cfg-periodes'],
+            ['Référentiels', nRef > 0, '#cfg-referentiels']
+        ];
+        var done = checks.filter(function (c) { return c[1]; }).length, pct = Math.round(done / checks.length * 100);
+        ov.innerHTML =
+            '<div class="cfg-stat"><span class="cfg-stat-k"><i class="fa-solid fa-calendar-check"></i>Planification</span><span class="cfg-stat-v">' + modeName() + '</span><span class="cfg-stat-s">Mode actuel</span></div>' +
+            '<div class="cfg-stat"><span class="cfg-stat-k"><i class="fa-solid fa-calendar-days"></i>Périodes</span><span class="cfg-stat-v">' + nPer + '</span><span class="cfg-stat-s">' + (nPer > 1 ? 'périodes affichées' : 'période affichée') + '</span></div>' +
+            '<div class="cfg-stat"><span class="cfg-stat-k"><i class="fa-solid fa-book"></i>Référentiels</span><span class="cfg-stat-v">' + nRef + '</span><span class="cfg-stat-s">listes à tenir à jour</span></div>' +
+            '<div class="cfg-progress"><div class="cfg-progress-top"><b>Mise en route de l\'institution</b><span>' + done + ' sur ' + checks.length + ' étapes</span></div>' +
+            '<div class="cfg-bar"><span style="width:' + pct + '%"></span></div><div class="cfg-steps">' +
+            checks.map(function (c) { return '<a class="cfg-step' + (c[1] ? ' ok' : '') + '" href="' + c[2] + '"><i class="fa-solid ' + (c[1] ? 'fa-check' : 'fa-minus') + '"></i>' + c[0] + '</a>'; }).join('') +
+            '</div></div>';
+    }
+
+    /* ---------- En-tête : fil d'Ariane, mode actif ---------- */
+    var hd = container.querySelector(':scope > header .container-fluid');
+    var modeChip = el('span', 'cfg-mode');
+    if (hd) {
+        var crumb = el('div', 'cfg-crumb');
+        if (back) { back.setAttribute('aria-label', 'Retour au tableau de bord'); crumb.appendChild(back); crumb.appendChild(el('span', '', '/')); }
+        crumb.appendChild(el('b', '', 'Configuration'));
+        hd.insertBefore(crumb, hd.firstChild);
+        var right = el('div', 'cfg-hd-right'); right.appendChild(modeChip); hd.appendChild(right);
+    }
+    function syncMode() {
+        modeChip.innerHTML = '<i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Planification ' + modeName().toLowerCase();
+        [step, freq].forEach(function (c) { if (c) { var r = c.closest('.setting-item'); if (r) r.classList.toggle('cfg-on', c.checked); } });
+        renderOverview();
+    }
+    [step, freq].forEach(function (c) {
+        if (!c) return;
+        c.addEventListener('change', function () { setTimeout(syncMode, 0); });
+        var r = c.closest('.setting-item');
+        if (r) r.addEventListener('click', function (e) { if (e.target.closest('label.switch')) return; c.checked = !c.checked; c.dispatchEvent(new Event('change', { bubbles: true })); });
+    });
+    syncMode();
+
+    /* ---------- Recherche ---------- */
+    var input = nav.querySelector('input');
+    input.addEventListener('input', function () {
+        var q = norm(input.value), any = false;
+        SECTIONS.forEach(function (s) {
+            if (s.sec === ov) { s.sec.style.display = q ? 'none' : ''; s.link.style.display = q ? 'none' : ''; return; }
+            var head = norm(s.sec.querySelector('.cfg-section-hd').textContent), rows = s.sec.querySelectorAll('.cfg-section-bd .setting-item'), hit = !q || head.indexOf(q) > -1, rowHit = false;
+            rows.forEach(function (r) { var ok = !q || hit || norm(r.textContent).indexOf(q) > -1; r.style.display = ok ? '' : 'none'; rowHit = rowHit || ok; });
+            var show = !q || hit || rowHit || (!rows.length && norm(s.sec.textContent).indexOf(q) > -1);
+            s.sec.classList.toggle('is-hidden', !show); s.link.style.display = show ? '' : 'none'; any = any || show;
+        });
+        empty.style.display = any ? 'none' : 'block';
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === '/' && !/input|textarea|select/i.test((document.activeElement || {}).tagName) && !document.querySelector('.modal.show')) { e.preventDefault(); input.focus(); }
+    });
+
+    /* ---------- Section active dans la navigation ---------- */
+    function setActive(link) { SECTIONS.forEach(function (s) { s.link.classList.toggle('is-on', s.link === link); s.link.setAttribute('aria-current', s.link === link ? 'true' : 'false'); }); }
+    setActive(ovLink);
+    if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) { if (en.isIntersecting) { var s = SECTIONS.filter(function (x) { return x.sec === en.target; })[0]; if (s) setActive(s.link); } });
+        }, { rootMargin: '-30% 0px -60% 0px' });
+        SECTIONS.forEach(function (s) { io.observe(s.sec); });
+    }
+    nav.addEventListener('click', function (e) { var a = e.target.closest('a[href^="#cfg-"]'); if (a) setActive(a); });
+
+    /* Compteurs dans la navigation */
+    [['#cfg-referentiels', nRef], ['#cfg-periodes', nPer]].forEach(function (c) {
+        var a = nav.querySelector('a[href="' + c[0] + '"]'); if (a && c[1]) a.insertAdjacentHTML('beforeend', '<span class="cfg-count">' + c[1] + '</span>');
+    });
+
+    root.classList.add('cfg-ready');
+})();
+</script>
+<!-- ===================== FIN NOUVEAU DESIGN (script) ===================== -->
+</body>
+</html>

@@ -1,0 +1,79 @@
+{% extends './index.html' %}
+{% block main %}
+
+<div class="max-w-5xl mx-auto py-6">
+  
+  <div class="mb-8">
+    <div class="flex items-center gap-4">
+      <h2 class="text-xl font-extrabold text-slate-800 tracking-tight">TRANSACTIONS EN ATTENTE DE VALIDATION</h2>
+      <div class="h-10 w-px bg-slate-300"></div>
+      <p class="text-slate-800 text-sm hidden md:block">
+        Gérez l'ensemble des transactions en attente de validation soumises par les institutions.
+      </p>
+    </div>
+  </div>
+
+  <div class="space-y-4">
+    {% for operation_transactions in transaction_valide %}
+      {% if operation_transactions.personnel == operation_transactions.operation.accountable %}
+        
+        <div class="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+          <div class="p-4">
+            <div class="flex items-center gap-4">
+              
+              <div class="shrink-0">
+                <div class="bg-slate-50 rounded-xl p-1.5">
+                  <img src="{{ operation_transactions.institution.img.url }}" 
+                       alt="Logo" 
+                       class="w-12 h-12 rounded-full border border-slate-100 shadow-sm">
+                </div>
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <p class="mb-1 font-bold text-slate-800 flex items-center gap-2">
+                  <span class="truncate" title="{{ operation_transactions.operation.nom }}">
+                    {{ operation_transactions.operation.nom }}
+                  </span>
+                  <span class="bg-indigo-50 text-indigo-600 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wide">
+                    Niveau: {{ operation_transactions.valeur|floatformat:'0' }}%
+                  </span>
+                </p>
+                <div class="flex items-center text-slate-400 text-xs">
+                  <i class="fas fa-user-tie mr-1.5"></i>
+                  <span class="truncate mr-4">{{ operation_transactions.personnel }}</span>
+                  <i class="fas fa-calendar-day mr-1.5"></i>
+                  <span>{{ operation_transactions.date_enregistrement|date:"d/m/Y" }}</span>
+                </div>
+              </div>
+
+              <div class="shrink-0">
+                <a href="/transaction/{{ operation_transactions.id }}/" 
+                   class="flex items-center gap-2 bg-slate-900 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm">
+                  <i class="fas fa-check-circle"></i> Valider
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          <div class="h-1 w-full bg-slate-100">
+            <div class="h-full bg-indigo-500 transition-all duration-1000" 
+                 style="width: {{ operation_transactions.valeur|floatformat:'0' }}%;">
+            </div>
+          </div>
+        </div>
+
+      {% endif %}
+    {% empty %}
+      <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+        <div class="mb-4 text-slate-300">
+          <i class="fas fa-clipboard-check fa-3x"></i>
+        </div>
+        <h4 class="text-slate-600 font-bold">Aucune transaction</h4>
+        <p class="text-slate-400 text-sm mt-1">Aucune opération n'est en attente de validation pour le moment.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+{% endblock %}

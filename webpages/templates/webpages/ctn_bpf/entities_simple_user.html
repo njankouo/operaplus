@@ -1,0 +1,4692 @@
+{% extends './index.html' %}
+{% load static %}
+
+
+
+{% block add_title %}
+{% if base_val == None %}
+Gestionnaire - {{entity}}
+
+{% else %}
+{{base_val}}
+{% endif %}
+
+{% endblock %}
+
+{% block extra_header %}
+
+{% endblock %}
+
+
+{% block main %}
+
+{% if permissions > 0 or menu == 'i' or menu == 'h' or auto_simple == 1 or autoE == 1 or menu == 'x' %}
+
+
+{% block search_doc %}
+{% if base_val == None %}
+{% endif %}
+<form action="/delete_mul/" method="POST" onsubmit="get_multi_values_del()">
+	{% csrf_token %}
+	<input type="hidden" value="{{g_v}}" name="g_v">
+	<input type="hidden" value="" name="multi_values" id="multi_values">
+	<input type="hidden" name="hierachy" value="{{hierachy}}">
+	{% if base_val != None %}
+	<input type="hidden" name="g_v_2" value="{{base_val.id}}">
+	{% endif %}
+	<div id="suppr_mul" style="display:none;" class="text-danger p-3">
+		<input type="submit" value="Supprimer" class="btn btn-danger">
+		{% block t_dup %}
+		{% endblock %}
+	</div>
+</form>
+
+
+{% endblock %}
+
+{% block search_filters %}
+
+
+{% if base_val == None %}
+
+
+{% else %}
+{% block entity_head_title %}
+<div class="d-flex flex-wrap text-secondary">
+	{% for s in sup_hierachy %}
+	<div class="px-1"> <a class='tree_link' data-id="{{s.id}}" href="#"><small>
+    {%if s.m_nom%}
+    {{s.m_nom}}
+    {%else%}
+    {{s}}
+    {%endif%}
+    
+    </small> <small class="text-secondary"> > </small> </a> </div>
+	{% endfor %}
+</div>
+
+<div class="mt-4 mb-5">
+    <div class="d-flex align-items-center" style="gap: 15px;">
+        <!-- Badge de Progression -->
+        <div class="position-relative">
+            <span class="badge-progress-label">TAUX D'EXECUTIONS</span>
+            <div class="progress-badge">
+
+                <span class="progress-value">
+									{%if request.user.personnel.is_process%}
+										{{base_val.resultat_niveau_execution}}%
+									{%elif request.user.personnel.is_finance%}
+									{{base_val.taux_financier_valide}}%
+
+									{%endif%}
+
+								</span>
+                
+            </div>
+        </div>
+
+        <!-- Lien Objectifs -->
+        <a {% if hierachie != None %} href="/evaluer_detail/{{base_val.id}}/" {% else %} href="/evaluer_detail/{{base_val.id}}/" {% endif %} class="objectives-link">
+            
+            <span class="objectives-text">Objectifs & Indicateurs</span>
+            <div class="link-underline"></div>
+        </a>
+    </div>
+</div>
+
+<style>
+    /* Style général */
+    .badge-progress-label {
+        display: block;
+        font-size: 0.7rem;
+        color: #6c757d;
+        margin-bottom: 3px;
+        font-weight: 500;
+    }
+
+    /* Badge de progression */
+    .progress-badge {
+        position: relative;
+        display: inline-block;
+        padding: 8px 15px;
+        border-radius: 50px;
+        background: rgba(40, 167, 69, 0.1);
+        overflow: hidden;
+        font-weight: 600;chartsub
+        color: #28a745;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+
+    .progress-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.2);
+    }
+
+    .progress-value {
+        position: relative;
+        z-index: 2;
+    }
+
+    .progress-wave {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: calc(var(--progress) * 1%);
+        background: linear-gradient(90deg, rgba(40, 167, 69, 0.15), rgba(40, 167, 69, 0.3));
+        border-radius: 50px;
+        transition: width 1s ease-out;
+    }
+
+    /* Lien Objectifs */
+    .objectives-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        padding: 8px 15px;
+        border-radius: 50px;
+        color: #2575fc;
+        font-weight: 500;
+        position: relative;
+        overflow: hidden;
+        background: rgba(37, 117, 252, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .objectives-link:hover {
+        color: #1a5dc8;
+        background: rgba(37, 117, 252, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .objectives-icon {
+        font-size: 1rem;
+    }
+
+    .objectives-text {
+        font-size: 0.85rem;
+    }
+
+    .link-underline {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 2px;
+        background: #2575fc;
+        transition: width 0.3s ease;
+    }
+
+    .objectives-link:hover .link-underline {
+        width: calc(100% - 30px);
+    }
+</style>
+
+<!-- <div class="alert alert-primary alert-dismissible" role="alert">
+	<h4 class="alert-heading d-flex align-items-center"><span class="alert-icon rounded-circle"><i class="bx bx-coffee"></i></span>Well done :)</h4>
+	<hr>
+	<p class="mb-0">
+		Vous N'avez Aucun Formulaire Associ&eacute; A L'entit&eacute; {{base_val.get_name}} Pour L'instant
+	</p>
+	<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
+	</button>
+  </div> -->
+
+  <!-- <h5 style="font-weight: bold;">Liste Des Formulaires:</h5>
+{%for all_datasets in dataset_settings%}
+<button type="button" class="btn btn-primary">
+	<i class="tf-icons bx bxl-file bx-18px me-2"></i> {{all_datasets.m_name}}
+  </button>
+{%empty%}
+
+<h5>Aucune Valeur</h5>
+{%endfor%} -->
+
+{% endblock %}
+{% block chartsub %}
+<!-- Styles -->
+<!-- Styles -->
+<style>
+    .chart-container {
+        height: 300px;
+        width: 100%;
+        margin: 0 auto;
+    }
+    .card {
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border-radius: 12px;
+        overflow: hidden;
+        border: none;
+    }
+    .card-header {
+        background: {{request.user.personnel.color_fond}};
+        color: white;
+        border-bottom: none;
+        font-weight: 600;
+        padding: 1rem;
+    }
+    .card-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.5em 0.75em;
+        border-radius: 50px;
+        font-weight: 500;
+    }
+    .value-display {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2575fc;
+        margin-top: 0.5rem;
+    }
+</style>
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Configurations des Suivis</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="/gest_dashboard_data/">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="containers">
+            <h2>Sélectionnez un suivi pour le mettre en œuvre :</h2>
+            <ul>
+              <li>
+                <input type="radio" id="suivi-process" name="selector" value="process" {%if request.user.personnel.is_process%} checked {%endif%}>
+                <label for="suivi-process">SUIVI DES PROCESS</label>
+                <div class="check"></div>
+              </li>
+              <li>
+                <input type="radio" id="suivi-technics" name="selector" value="technics" {%if request.user.personnel.is_technic%} checked {%endif%}>
+                <label for="suivi-technics">SUIVI DES TECHNICS</label>
+                <div class="check"></div>
+              </li>
+              <li>
+                <input type="radio" id="suivi-finances" name="selector" value="financial" {%if request.user.personnel.is_finance%} checked {%endif%}>
+                <label for="suivi-finances">SUIVI DES FINANCES</label>
+                <div class="check"></div>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+          <button type="submit" class="btn btn-primary">Appliquer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- HTML Structure -->
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-12 col-lg-12">
+            <div class="card modern-card">
+    <div class="card-header compact-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-buttons">
+                    <button class="btn btn-primary {%if request.user.personnel.is_process%}active{%endif%}"  data-bs-toggle="modal" data-bs-target="#exampleModal">   {%if request.user.personnel.is_process%}<i class="fa fa-star"></i>{%endif%}PROCESS</button>
+                    <button class="btn btn-primary {%if request.user.personnel.is_technic%} active {%endif%}"  data-bs-toggle="modal" data-bs-target="#exampleModal">   {%if request.user.personnel.is_technic%}<i class="fa fa-star"></i>{%endif%}TECHNIC</button>
+                    <button class="btn btn-secondary {%if request.user.personnel.is_finance%} active {%endif%}"  data-bs-toggle="modal" data-bs-target="#exampleModal">
+
+                        {%if request.user.personnel.is_finance%}<i class="fa fa-star"></i>{%endif%}FINANCE</button>
+                </div>
+                <div class="entity-info">
+                    <div class="entity-name">
+                    {%if base_val.m_nom%}  {{base_val.m_nom}} {%else%} {{base_val}} {%endif%}
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="progress-item">
+                    <div class="progress-label">Déclaré</div>
+                    <div class="progress-value primary-value">
+                        {%if request.user.personnel.is_process%}{{base_val.resultat_niveau_execution|default:"0"}}{%elif request.user.personnel.is_finance%} {{base_val.taux_financier|default:"0"}} {%endif%}%
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-label">Validé</div>
+                    <div class="progress-value success-value">
+                        {%if request.user.personnel.is_process%}{{base_val.resultat_niveau_execution_valide|default:"0"}}{%elif request.user.personnel.is_finance%}{{base_val.taux_financier_valide|default:"0"}} {%endif%}%
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="row">
+        <div class="col-md-8">
+            {%if request.user.personnel.is_process%}
+            <h5 style="font-weight:bold; text-align:center" class="my-2">Taux D'execution pysique valid&eacute;</h5>
+
+            <div id="chartdivs" class="chart-container"></div>
+            {%elif request.user.personnel.is_finance%}
+            <h5 class="chart-title">Taux D'execution physique validé</h5>
+            <div id="chart_finance_valide" class="chart-container" style=" width: 100%;
+
+height: 310px;"></div>
+            {%endif%}
+        </div>
+        <div class="col-md-4">
+            {%if request.user.personnel.is_process%}
+             <h5 class="chart-title">Taux D'execution Physique déclaré</h5>
+            <div id="chartdiv" class="chart-container"></div>
+            {%elif request.user.personnel.is_finance%}
+             <h5 class="chart-title">Taux D'execution Financier déclaré</h5>
+            <div id="chart_finance_declare" class="chart-container" style=" width: 100%;
+
+height: 310px;"></div>
+           
+
+            {%endif%}
+        </div>
+    </div>
+
+    <div class="card-footer modern-footer">
+        <div class="progress-legend">
+            <div class="legend-item"><span class="badge badge-danger"></span>0-50%</div>
+            <div class="legend-item"><span class="badge badge-warning"></span>50-80%</div>
+            <div class="legend-item"><span class="badge badge-success"></span>80-100%</div>
+        </div>
+    </div>
+</div>
+</div>
+
+        </div>
+    </div>
+</div>
+
+
+
+{% if base_val.progression > 0 %}
+<div class=" mb-4 flex-wrap d-none">
+	<div class="col-lg-7">
+		<canvas style="width:100%;min-height:250px;" id='myChart5'></canvas>
+	</div>
+	<div class="col-lg-5">
+		<canvas style="width:100%;min-height:200px;" id='myChart_repaStru'></canvas>
+	</div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% endif %}
+
+
+{% if base_val == None %}
+{% if permissions > 0 %}
+<div class="d-flex flex-wrap pl-3" style=' padding-bottom:5px;'>
+	{% if not_add == None %}
+	<button type="button" onclick="restoreAdd()" class=" waves-effect waves-light pr-3 btn btn-info my-2"data-toggle="modal" data-target="#addActionModal">
+
+		Ajouter {{entity}}
+
+	</button>
+
+
+
+	<button type="button" class=" waves-effect waves-light pr-3 btn btn-primary my-2 mx-3" data-toggle="modal"  data-target="#exampleModal{{entity.id}}">
+
+		Valider Pond&eacute;ration {{entity}}
+
+	</button>
+
+	<div class="modal fade" id="exampleModal{{entity.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	  <div class="modal-dialog modal-lg" role="document">
+	    <form action="/add_ponderation/" method="post">
+	      {% csrf_token %}
+	      <div class="modal-content border-0 shadow-lg">
+	        <!-- En-tête amélioré -->
+	        <div class="modal-header bg-gradient-primary text-white">
+	          <h5 class="modal-title font-weight-bold text-light" id="exampleModalLabel">
+	            <i class="fas fa-percentage mr-2"></i>Gestion des pondérations pour {{entity}}
+	          </h5>
+	          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+	            <span aria-hidden="true">&times;</span>
+	          </button>
+	        </div>
+
+	        <!-- Corps de la modal -->
+	        <div class="modal-body p-0">
+	          <div class="card border-0">
+	            <div class="card-body p-4">
+	              <div class="table-responsive">
+	                <table class="table  table-borderless table-responsive">
+	                  <thead style="background:{{request.user.personnel.color}}">
+	                    <tr>
+	                      <th class="border-0 text-light" style="border-radius: 10px 0 0 0,width: 75%">
+	                        <i class="fas fa-tag mr-2"></i>Nom
+	                      </th>
+	                      <th class="border-0 text-white" style="width: 25%">
+	                        <i class="fas fa-weight-hanging mr-2"></i>Pondération
+	                      </th>
+												<th class="border-0 text-white">
+
+												</th>
+	                    </tr>
+	                  </thead>
+	                  <tbody>
+	                    {% for entity in pages_o %}
+	                    <tr class="hover-shadow">
+	                      <td class="align-middle font-weight-bold text-dark">
+	                        {{ entity }}
+	                      </td>
+	                      <td>
+	                        <div class="input-group">
+	                          <input type="number"
+	                                 name="ponderation_{{ entity.id }}"
+	                                 value="{{ entity.ponderation|default_if_none:'0' }}"
+	                                 class="form-control ponderation-input border-0 shadow-sm"
+	                                 min="0"
+	                                 step="0.1"
+	                                 style="border-radius: 20px; height: 40px,border:solid {{request.user.personnel.color}} 1px"
+	                                 required>
+	                          <div class="input-group-append">
+	                            <span class="input-group-text bg-white border-0">%</span>
+	                          </div>
+	                        </div>
+	                      </td>
+	                      <td class="align-middle">
+	                        <input type="hidden" name="entity_ids" value="{{ entity.id }}">
+	                      </td>
+	                    </tr>
+	                    {% endfor %}
+	                  </tbody>
+	                  <tfoot>
+	                    <tr class="bg-light">
+	                      <th class="border-0 font-weight-bold text-dark" style="border-radius: 0 0 0 10px">
+	                        <i class="fas fa-calculator mr-2"></i>Total
+	                      </th>
+	                      <td class="border-0">
+	                        <div class="input-group">
+	                          <input type="text"
+	                                 id="total-ponderation"
+	                                 class="form-control font-weight-bold border-0 bg-white shadow-sm"
+	                                 value="{{ total_ponderation|default:'0' }}"
+	                                 style="border-radius: 20px; height: 40px"
+	                                 readonly>
+	                          <div class="input-group-append">
+	                            <span class="input-group-text bg-white border-0">%</span>
+	                          </div>
+	                        </div>
+	                      </td>
+	                      <td class="border-0"></td>
+	                    </tr>
+	                  </tfoot>
+	                </table>
+	              </div>
+	            </div>
+	          </div>
+	        </div>
+
+	        <!-- Pied de page amélioré -->
+	        <div class="modal-footer bg-light">
+	          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-dismiss="modal">
+	            <i class="fas fa-times mr-2"></i>Annuler
+	          </button>
+	          <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm" id="verify">
+	            <i class="fas fa-save mr-2"></i>Enregistrer
+	          </button>
+	        </div>
+	      </div>
+	    </form>
+	  </div>
+	</div>
+
+<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function() {
+	  const inputs = document.querySelectorAll('.ponderation-input');
+	  const totalField = document.getElementById('total-ponderation');
+	  const verify = document.getElementById('verify');
+
+	  // Fonction pour calculer le total avec animation
+	  function calculateTotal() {
+	    let total = 0;
+	    inputs.forEach(input => {
+	      const value = parseFloat(input.value) || 0;
+	      total += value;
+	    });
+
+	    // Animation du changement de valeur
+	    const startValue = parseFloat(totalField.value) || 0;
+	    const duration = 500; // 0.5 seconde
+	    const startTime = performance.now();
+
+	    function animate(currentTime) {
+	      const elapsedTime = currentTime - startTime;
+	      const progress = Math.min(elapsedTime / duration, 1);
+	      const currentValue = startValue + (total - startValue) * progress;
+
+	      totalField.value = currentValue.toFixed(2);
+
+	      // Activer/désactiver le bouton verify en fonction du total
+	      verify.disabled = Math.abs(currentValue - 100) >= 0.1;
+
+	      // Changement de couleur en fonction du total
+	      if (Math.abs(currentValue - 100) < 0.1) {
+	        totalField.classList.remove('text-danger', 'text-warning');
+	        totalField.classList.add('text-success');
+	      } else if (currentValue > 100) {
+	        totalField.classList.remove('text-success', 'text-warning');
+	        totalField.classList.add('text-danger');
+	      } else {
+	        totalField.classList.remove('text-success', 'text-danger');
+	        totalField.classList.add('text-warning');
+	      }
+
+	      if (progress < 1) {
+	        requestAnimationFrame(animate);
+	      }
+	    }
+
+	    requestAnimationFrame(animate);
+	  }
+
+	  // Calcul initial
+	  calculateTotal();
+
+	  // Écoute les changements avec délai pour éviter les calculs trop fréquents
+	  let timeout;
+	  inputs.forEach(input => {
+	    input.addEventListener('input', () => {
+	      clearTimeout(timeout);
+	      timeout = setTimeout(calculateTotal, 300);
+	    });
+	  });
+
+	  // Effet visuel sur le focus
+	  inputs.forEach(input => {
+	    input.addEventListener('focus', function() {
+	      this.parentElement.parentElement.classList.add('bg-light-blue', 'bg-opacity-10');
+	    });
+	    input.addEventListener('blur', function() {
+	      this.parentElement.parentElement.classList.remove('bg-light-blue', 'bg-opacity-10');
+	    });
+	  });
+	});
+</script>
+
+	<style>
+	  .bg-gradient-primary {
+	    background: {{request.user.personnel.color}};
+	    border-radius: 0;
+	  }
+
+	  .bg-light-blue {
+	    background-color: #4b6cb7;
+	  }
+
+	  .hover-shadow:hover {
+	    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+	    transform: translateY(-2px);
+	    transition: all 0.3s ease;
+	  }
+
+	  .table-borderless td, .table-borderless th {
+	    border: none;
+	  }
+
+	  .modal-content {
+	    border-radius: 15px;
+	    overflow: hidden;
+	  }
+
+	  .rounded-pill {
+	    padding: 8px 20px;
+	  }
+
+	  .shadow-sm {
+	    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+	  }
+	</style>
+	<div>&nbsp;</div>
+	{% endif %}
+	{% if is_tache or is_sub_tache == True %}
+				<!-- <div onclick="tacheTable(1,this)" class="pr-3 pl-3">
+					<span class="btn btn-info fas fa-table"></span>
+					<span class="TTB btn btn-info text-white">G&eacute;n&eacute;ralit&eacute;s</span>
+				</div>
+				<div onclick="tacheTable(3,this)" class="pr-3">
+					<span class="btn btn-info fas fa-clock"></span>
+					<span class="TTB btn btn-light text-info">Chronogramme</span>
+				</div>-->
+				{% if permissions >= 0 %}
+				<!--
+				<div onclick="tacheTable(2,this)" class="pr-3">
+					<span class="btn btn-info fas fa-users"></span>
+					<span class="TTB btn btn-light text-info">R&eacute;partition</span>
+				</div>
+			-->
+			{% endif %}
+			{% endif %}
+		</div>
+		{% endif %}
+		{% else %}
+
+
+		{% if no_simple_user or permissions > 0 %}
+		<div class="technic_section" style="display:none;">
+			<div class="h5 title_div" style="width:99%;border-bottom:1px solid #aaa;color:#aaa;"> Performance Technique</div>
+			<div style="width:100%;" class=" py-3 col-lg-12 d-flex flex-wrap justify-content-center">
+				<div class="col-lg-5 col-12">
+					<canvas style="width:100%;" id="indi_chart"> </canvas>
+				</div>
+				{% if is_tache == False %}
+				<div id="indi_chart2DIV" class="col-lg-7 col-12">
+					<canvas style="width:100%;min-height:270px;" id="indi_chart2"></canvas>
+				</div>
+				{% endif %}
+			</div>
+		</div>
+
+
+		{% if finan_options != None %}
+		{% if permissions > 0 or entity_manage != None %}
+		<div class="budget_section" style="display: none;">
+			<div class="h5 title_div"  id="title2" style="width:99%;border-bottom:1Px solid #aaa;color:#aaa;"> Execution Budget </div>
+			<div style="width:100%;" class=" py-3 col-lg-12 d-flex flex-wrap justify-content-center">
+				<div class="col-lg-6">
+					<canvas style="width:100%;max-height:270px;" id="budget_chart"> </canvas>
+				</div>
+				{% if is_tache == False %}
+				<div class="col-lg-6">
+					<canvas style="width:100%;max-height:270px;" id="budget_chart2"> </canvas>
+				</div>
+				{% endif %}
+			</div>
+		</div>
+		{% endif %}
+		{% endif %}
+		{%if actual_institution.ponderation%}
+
+		{%else%}
+		<div class="h5 title_div" style="width:99%;border-bottom:1px solid #aaa;color:#aaa;"> Fiche d'Information  </div>
+		{%endif%}
+		<div class="mb-3 col-12">
+			<div class="mb-2 d-flex">
+				<!-- <div class="px-3 text-success"> <a href="/gestionnaire/{{gest_val}}/">Modifier</a> </div> -->
+				<!-- <div class="text-secondary text-center" style="cursor:pointer;" onclick="printInfos()"> Imprimer</div> -->
+			</div>
+			{%if actual_institution.ponderation%}
+
+			{%else%}
+			<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-body">
+
+        <table class="table table-responsive table-hover " style="width: 100%">  <thead style="font-weight: bold;text-transform: uppercase; width: 100%" class="text-danger h3">
+            <tr>
+              <th style="width: 60%">Champs</th>
+              <th style="width: 100%">Informations</th>
+              <th></th>
+               </tr>
+          </thead>
+          <tbody>
+
+            {% for elt in base_val.global_values %}
+            <tr>
+              <th style="width: 60%">{{ elt.name }}</th>
+              <td class="t_cell replace_n value_liner">{{ elt.value }}</td>
+              <td colspan="2"></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{%endif%}
+
+
+
+
+			<div id="fichwInfo" style="width:100%;" class="d-flex flex-wrap">
+
+				{% block semaines_operations %}
+
+				{% endblock %}
+			</div>
+		</div>
+
+		{% endif %}
+
+		<div class="h5  title_div" style="width:99%;border-bottom:1Px solid #aaa;color:#aaa;"> Liste des {{sub_entity}}s </div>
+		<div class="mt-3">
+			<div style='display:flex;flex-wrap:wrap;'>
+				{% for d in desc %}
+				<div class="col-md-6  mb-3">
+					<label style="text-transform: uppercase;">{{d.label}}</label>
+					<div class="text-success">{{d.value}}</div>
+				</div>
+				{% endfor %}
+			</div>
+		</div>
+		<div style=' padding-bottom:5px;'>
+			{% if permissions > 0 %}
+			{% endif %}
+		</div>
+		<div class="d-flex flex-wrap" style=' padding-bottom:5px;'>
+			{% if not_add == None and permissions > 0 %}
+			<button type="button"  onclick="restoreAdd({% if is_tache %}'Op&eacute;ration','0'{% endif %});" class=" mx-6 waves-effect waves-light btn btn-info" data-toggle="modal" data-target="#addActionModal">
+
+				Ajouter {{sub_entity}}
+			</button>
+			{%if sub_entity.is_tache %}
+			{%else%}
+
+			<button type="button" class=" waves-effect waves-light pr-3 btn btn-primary my-2 mx-3" {%if sub_entity.id%}  data-bs-toggle="modal" data-bs-target="#exampleModal{{sub_entity.id}}"  {%else%} data-bs-toggle="modal" data-bs-target="#staticBackdrop" {%endif%}>
+
+				Valider Pond&eacute;ration  {{sub_entity}}
+
+			</button>
+			{%endif%}
+	           {%include './notifications/success.html'%}
+					<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRight" aria-labelledby="offcanvasRightLabel">
+
+					  <div class="offcanvas-header">
+					    <h5 class="offcanvas-title" id="offcanvasTopLabel" style='font-weight:bold'>Traitement  Des {{sub_entity}} par lot</h5>
+
+
+					    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+					  </div>
+					  <div class="offcanvas-body">
+							<div class="alert alert-primary d-flex align-items-center" role="alert" style="border-left: 5px solid #0d6efd; border-radius: 8px;">
+							  <div class="flex-grow-1 ms-3">
+							    <i class="bi bi-file-earmark-text-fill me-2" style="font-size: 1.5rem;"></i>
+							    <span class="fw-bold">Document de référence disponible !</span> Téléchargez notre guide pour elaborer la liste de vos taches
+							  </div>
+							  <a class="btn btn-success ms-3 download-btn" style="animation: pulse 2s infinite;"href='{%static "reference.xlsx"%}'>
+							    <i class="bi bi-cloud-arrow-down-fill me-2" ></i>Télécharger
+							  </a>
+							</div>
+
+							<style>
+							  @keyframes pulse {
+							    0% { transform: scale(1); }
+							    50% { transform: scale(1.05); box-shadow: 0 0 15px rgba(25, 135, 84, 0.5); }
+							    100% { transform: scale(1); }
+							  }
+
+							  .download-btn {
+							    transition: all 0.3s ease;
+							    border-radius: 50px;
+							    padding: 8px 20px;
+							    font-weight: 600;
+							  }
+
+							  .download-btn:hover {
+							    transform: translateY(-2px);
+							    box-shadow: 0 5px 15px rgba(25, 135, 84, 0.3);
+							  }
+
+							  .alert {
+							    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.1);
+							  }
+							</style>
+							<div class="upload-container">
+								<form class="" action="/upload/entity/" method="post" enctype="multipart/form-data">
+
+					 			 {%csrf_token%}
+
+								 <div class="upload-container">
+						   <div class="upload-body">
+						     <div class="file-drop-zone" id="dropZone">
+						       <input type="hidden" name="tache" value='{{base_val.id}}'>
+						       <input type="file" id="excelUpload" name="file" accept=".xlsx, .xls, .csv" class="upload-input">
+						       <label for="excelUpload" class="upload-label">
+						         <div class="upload-icon">
+						           <i class="fas fa-cloud-upload-alt"></i>
+						         </div>
+						         <h4>Glissez-déposez votre fichier Excel ici</h4>
+						         <p>ou</p>
+						         <button type="button" class="btn-browse">Parcourir les fichiers</button>
+						         <p class="file-requirements">Formats supportés: .xlsx, .xls, .csv (Max 10MB)</p>
+						       </label>
+						       <div class="file-preview" id="filePreview"></div>
+						     </div>
+						   </div>
+						 </div>
+               }
+
+   <div class="upload-footer mx-6">
+     <button type="submit" class="btn btn-success upload-btn">
+       <i class="fas fa-upload"></i> Téléverser
+     </button>
+   </div>
+ </div>
+ </form>
+ <style>
+	 .upload-container {
+   max-width: 600px;
+   border-radius: 8px;
+   box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+   overflow: hidden;
+   font-family: 'Segoe UI', sans-serif;
+ }
+
+ .upload-body {
+   padding: 2rem;
+   background: #f8f9fa;
+ }
+
+ .file-drop-zone {
+   border: 2px dashed #ced4da;
+   border-radius: 6px;
+   padding: 2rem;
+   text-align: center;
+   transition: all 0.3s ease;
+   background: white;
+   position: relative;
+   min-height: 200px;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+ }
+
+ .file-drop-zone:hover {
+   border-color: #3498db;
+   transform: translateY(-2px);
+ }
+
+ .file-drop-zone.dragover {
+   background-color: #f0f7ff;
+   border-color: #3498db;
+   box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2);
+ }
+
+ .upload-input {
+   display: none;
+ }
+
+ .upload-label {
+   cursor: pointer;
+   transition: all 0.3s ease;
+ }
+
+ .upload-icon {
+   font-size: 3rem;
+   color: #3498db;
+   margin-bottom: 1rem;
+   transition: all 0.3s ease;
+ }
+
+ .file-drop-zone.dragover .upload-icon {
+   transform: scale(1.1);
+   color: #2980b9;
+ }
+
+ .btn-browse {
+   background: #3498db;
+   color: white;
+   border: none;
+   padding: 0.5rem 1.5rem;
+   border-radius: 4px;
+   font-size: 0.9rem;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   margin: 0.5rem 0;
+ }
+
+ .btn-browse:hover {
+   background: #2980b9;
+   transform: translateY(-1px);
+ }
+
+ .file-requirements {
+   color: #6c757d;
+   font-size: 0.9rem;
+   margin-top: 1rem;
+ }
+
+ .file-preview {
+   margin-top: 1.5rem;
+   padding: 1rem;
+   background: #f8f9fa;
+   border-radius: 4px;
+   border-left: 4px solid #3498db;
+   display: none;
+   animation: fadeIn 0.3s ease;
+ }
+
+ .file-preview.show {
+   display: block;
+ }
+
+ .file-info {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+ }
+
+ .file-icon {
+   color: #27ae60;
+   font-size: 1.5rem;
+ }
+
+ .file-name {
+   font-weight: 500;
+   flex-grow: 1;
+   text-align: left;
+   word-break: break-all;
+ }
+
+ .file-remove {
+   color: #e74c3c;
+   cursor: pointer;
+   transition: all 0.2s;
+ }
+
+ .file-remove:hover {
+   transform: scale(1.2);
+ }
+
+ @keyframes fadeIn {
+   from { opacity: 0; transform: translateY(10px); }
+   to { opacity: 1; transform: translateY(0); }
+ }
+ </style>
+
+ <script>
+ document.addEventListener('DOMContentLoaded', function() {
+   const dropZone = document.getElementById('dropZone');
+   const fileInput = document.getElementById('excelUpload');
+   const filePreview = document.getElementById('filePreview');
+   const uploadLabel = document.querySelector('.upload-label');
+
+   // Gestion du drag and drop
+   ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+     dropZone.addEventListener(eventName, preventDefaults, false);
+   });
+
+   function preventDefaults(e) {
+     e.preventDefault();
+     e.stopPropagation();
+   }
+
+   ['dragenter', 'dragover'].forEach(eventName => {
+     dropZone.addEventListener(eventName, highlight, false);
+   });
+
+   ['dragleave', 'drop'].forEach(eventName => {
+     dropZone.addEventListener(eventName, unhighlight, false);
+   });
+
+   function highlight() {
+     dropZone.classList.add('dragover');
+     uploadLabel.style.opacity = '0.5';
+   }
+
+   function unhighlight() {
+     dropZone.classList.remove('dragover');
+     uploadLabel.style.opacity = '1';
+   }
+
+   dropZone.addEventListener('drop', handleDrop, false);
+
+   function handleDrop(e) {
+     const dt = e.dataTransfer;
+     const files = dt.files;
+     fileInput.files = files;
+     handleFiles(files);
+   }
+
+   // Gestion de la sélection via parcourir
+   fileInput.addEventListener('change', function() {
+     handleFiles(this.files);
+   });
+
+   // Affichage du fichier sélectionné
+   function handleFiles(files) {
+     if (files.length) {
+       const file = files[0];
+
+       // Vérification de la taille
+       if (file.size > 10 * 1024 * 1024) {
+         alert('Le fichier est trop volumineux (max 10MB)');
+         return;
+       }
+
+       // Vérification de l'extension
+       const validExtensions = ['.xlsx', '.xls', '.csv'];
+       const fileName = file.name.toLowerCase();
+       const isValid = validExtensions.some(ext => fileName.endsWith(ext));
+
+       if (!isValid) {
+         alert('Format de fichier non supporté');
+         return;
+       }
+
+       // Affichage du fichier
+       filePreview.innerHTML = `
+         <div class="file-info">
+           <i class="fas fa-file-excel file-icon"></i>
+           <span class="file-name">${file.name}</span>
+           <i class="fas fa-times file-remove" title="Supprimer"></i>
+         </div>
+       `;
+
+       filePreview.classList.add('show');
+
+       // Bouton de suppression
+       document.querySelector('.file-remove').addEventListener('click', function() {
+         fileInput.value = '';
+         filePreview.classList.remove('show');
+       });
+     }
+   }
+ });
+ </script>
+
+					  </div>
+					</div>
+			{% endif %}
+			{% if is_tache or is_sub_tache == True %}
+				<!-- <div onclick="tacheTable(1,this)" class="pr-3">
+					<span class="btn btn-info fas fa-table"></span>
+					<span class="TTB btn btn-info text-white">GÃ©nÃ©ralitÃ©s</span>
+				</div>
+				<div onclick="tacheTable(3,this)" class="pr-3">
+					<span class="btn btn-info fas fa-clock"></span>
+					<span class="TTB btn btn-light text-info">Chronogramme</span>
+				</div> -->
+				{% if permissions >= 0 %}
+				<!--
+				<div onclick="tacheTable(2,this)" class="pr-3">
+					<span class="btn btn-info fas fa-users"></span>
+					<span class="TTB btn btn-light text-info">RÃ©partition</span>
+				</div>
+			-->
+			{% endif %}
+
+			{% endif %}
+		</div>
+		{% endif %}
+		<form action="/filter_entity/" method="POST">
+			{% csrf_token %}
+			<input type="hidden" name="institution" value="{{actual_institution.id}}">
+			<input type="hidden" name="hierachie" value="{{hierachy}}">
+			<input type="hidden" name="sub_value" value="{% if base_val == None %}0{% else %}1{% endif %}">
+
+			<div>
+
+			</div>
+
+		</form>
+			{% endblock %}
+
+		{% block table %}
+		{% if menu != 'g' or is_tache or is_sub_tache   %}
+
+
+		{% block div_bar %}
+
+		<button type="button" name="button" class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight{{entity.id}}" aria-controls="offcanvasRight">validation Ponderation(s)</button>
+
+		<div class="mb-4" style="border-bottom:1px solid #ddd;">
+		
+
+			<div id='print_check' style="display:none;" class="my-3 justify-content-between flex-wrap">
+
+			</div>
+		</div>
+		{% endblock %}
+		<div class="card">
+			<div class="card-body">
+
+
+			<div class="" id='tbody_tache'>
+				{% block lines_table %}
+				<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRight{{entity.id}}" aria-labelledby="offcanvasRightLabel"  style="background:{{request.user.personnel.color_fond}}">
+    <div class="offcanvas-header  text-light" style="background:{{request.user.personnel.color_fond}}">
+        <h5 class="mb-0 fw-semibold text-light">Définition des pondérations</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <form method="post" action="/add_ponderation/" class="h-100">
+        {% csrf_token %}
+        <div class="offcanvas-body d-flex flex-column p-0">
+            <!-- En-tête -->
+            <div class="d-flex bg-light px-3 py-2 sticky-top border-bottom">
+                <div class="flex-grow-1 fw-medium text-light">
+									<h5>
+									Élément
+									</h5>
+
+								</div>
+                <div class="flex-grow-1 fw-medium text-light">
+										<h5>
+									Pondération
+									</h5>
+								</div>
+            </div>
+
+            <!-- Liste des éléments -->
+            <div class="flex-grow-1 overflow-auto" style="height: 900vh;">
+                {% for line in pages_o %}
+                <div class=" px-3 py-2 border-bottom hover-bg transition-all">
+                    <div class="flex-grow-1">
+											<h6 class="text-light">
+											
+                      {%if line.m_nom%}
+                        {{line.m_nom}}
+                      {%else%}
+                        {{line}}
+                      {%endif%}
+											</h6>
+										</div>
+                    <div class="flex-grow-1">
+                        <div class="input-group input-group-sm" style="max-width: 250px;">
+                            <input type="number"
+                                   name="ponderation_{{ line.id }}"
+                                   value="{{ line.ponderation|default_if_none:'0' }}"
+                                   class="form-control border-primary ponderation-input text-light"
+                                   min="0"
+                                   max="100"
+                                   step="0.1"
+                                   required>
+                            <span class="input-group-text bg-white">%</span>
+                        </div>
+                    </div>
+                    <input type="hidden" name="entity_ids" value="{{ line.id }}">
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Zone de total et validation -->
+            <div class="border-top p-3 sticky-bottom" style="background:{{request.user.personnel.color_fond}}">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="fw-medium">Total des pondérations :</span>
+                    <div class="d-flex align-items-center">
+                        <div id="totalDisplay" class="fw-bold fs-5 text-end" style="width: 80px;">0.0</div>
+                        <span class="ms-2">%</span>
+                    </div>
+                </div>
+                <div id="totalAlert" class="alert alert-danger py-2 mb-3 animate__animated animate__fadeIn d-none" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Le total doit être exactement 100%
+                </div>
+                <div id="successAlert" class="alert alert-success py-2 mb-3 animate__animated animate__fadeIn d-none" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>Total valide !
+                </div>
+                <button type="submit" class="btn btn-primary w-100 fw-medium position-relative overflow-hidden" id="tache_verify">
+                    <span class="submit-content">
+                        <i class="bi bi-check-circle me-2"></i>Valider les pondérations
+                    </span>
+                    <span class="submit-loader position-absolute top-50 start-50 translate-middle d-none">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    .hover-bg:hover {
+
+        transform: translateX(2px);
+    }
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+    .ponderation-input:focus {
+        border-color: #0d6efd;
+
+    }
+    #totalDisplay {
+        color: #0d6efd;
+        transition: color 0.3s ease;
+    }
+    .valid-total {
+        color: #198754 !important;
+    }
+    .invalid-total {
+        color: #dc3545 !important;
+    }
+    .btn-primary {
+        transition: all 0.3s ease;
+    }
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<script>
+    // Détection automatique des changements
+    document.addEventListener('DOMContentLoaded', function() {
+        const observer = new MutationObserver(updateTotal);
+
+        document.querySelectorAll('.ponderation-input').forEach(input => {
+            // Observer les changements de valeur
+            input.addEventListener('input', updateTotal);
+
+            // Observer aussi les changements via les flèches
+            input.addEventListener('change', updateTotal);
+
+            // Observer les mutations pour les cas où la valeur serait changée par code
+            observer.observe(input, { attributes: true, attributeFilter: ['value'] });
+        });
+
+        updateTotal();
+    });
+
+    function updateTotal() {
+        let total = 0;
+        let isValid = true;
+
+        document.querySelectorAll('.ponderation-input').forEach(input => {
+            const value = parseFloat(input.value) || 0;
+            total += value;
+
+            // Validation individuelle
+            if (value < 0 || value > 100) {
+                isValid = false;
+                input.classList.add('is-invalid');
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        const totalDisplay = document.getElementById('totalDisplay');
+        const totalAlert = document.getElementById('totalAlert');
+        const successAlert = document.getElementById('successAlert');
+
+        totalDisplay.textContent = total.toFixed(1);
+
+        if (total === 100 && isValid) {
+            totalDisplay.classList.add('valid-total');
+            totalDisplay.classList.remove('invalid-total');
+            totalAlert.classList.add('d-none');
+            successAlert.classList.remove('d-none');
+        } else {
+            totalDisplay.classList.add('invalid-total');
+            totalDisplay.classList.remove('valid-total');
+            totalAlert.classList.remove('d-none');
+            successAlert.classList.add('d-none');
+        }
+    }
+
+    // Animation de soumission
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const total = parseFloat(document.getElementById('totalDisplay').textContent);
+        if (total !== 100) {
+            e.preventDefault();
+            document.getElementById('totalAlert').classList.add('animate__shakeX');
+            setTimeout(() => {
+                document.getElementById('totalAlert').classList.remove('animate__shakeX');
+            }, 1000);
+            return;
+        }
+
+        const tache_verify = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.querySelector('.submit-content').classList.add('d-none');
+        btn.querySelector('.submit-loader').classList.remove('d-none');
+    });
+</script>
+				<style>
+    /* Variables pour une cohérence des styles */
+    :root {
+        --primary-color: #4361ee;
+        --secondary-color: #3f37c9;
+        --accent-color: #4895ef;
+        --success-color: #4cc9f0;
+        --light-bg: #f0f4f7;
+        --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        --card-shadow-hover: 0 15px 45px rgba(0, 0, 0, 0.12);
+        --transition-slow: 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        --transition-fast: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    /* Styles personnalisés pour un design UI/UX moderne */
+    .card-modern {
+        border: none;
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+        transition: all var(--transition-fast);
+        overflow: hidden;
+        background: white;
+        position: relative;
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+        animation: cardEntrance 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+    }
+
+    .card-modern:nth-child(1) { animation-delay: 0.1s; }
+    .card-modern:nth-child(2) { animation-delay: 0.2s; }
+    .card-modern:nth-child(3) { animation-delay: 0.3s; }
+    .card-modern:nth-child(4) { animation-delay: 0.4s; }
+    .card-modern:nth-child(5) { animation-delay: 0.5s; }
+
+    @keyframes cardEntrance {
+        0% {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .card-modern:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: var(--card-shadow-hover);
+    }
+
+    .card-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 5px;
+        background: {{request.user.personnel.color_fond}};
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--transition-fast);
+    }
+
+    .card-modern:hover::before {
+        transform: scaleX(1);
+    }
+
+    .card-header-modern {
+        background: {{request.user.personnel.color_fond}};
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-header-modern::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: {{request.user.personnel.color_fond}};
+    }
+
+    .profile-image-container {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        flex-shrink: 0;
+    }
+
+    .profile-image {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #fff;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: all var(--transition-fast);
+        position: relative;
+        z-index: 2;
+    }
+
+    .profile-image-container::before {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        border-radius: 50%;
+        z-index: 1;
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+    }
+
+    .profile-image-container:hover::before {
+        opacity: 1;
+    }
+
+    .profile-image-container:hover .profile-image {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-title a {
+        color: var(--primary-color);
+        text-decoration: none;
+        transition: all var(--transition-fast);
+        position: relative;
+        display: inline-block;
+    }
+
+    .card-title a::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: var(--accent-color);
+        transition: width var(--transition-fast);
+    }
+
+    .card-title a:hover {
+        color: var(--secondary-color);
+    }
+
+    .card-title a:hover::after {
+        width: 100%;
+    }
+
+    .card-body-modern {
+        padding: 1.5rem;
+        position: relative;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #555;
+        margin-bottom: 0.75rem;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: all var(--transition-fast);
+    }
+
+    .info-item:hover {
+        background-color: rgba(67, 97, 238, 0.05);
+        transform: translateX(5px);
+    }
+
+    .info-item i {
+        color: var(--primary-color);
+        font-size: 1.2em;
+        transition: transform var(--transition-fast);
+    }
+
+    .info-item:hover i {
+        transform: scale(1.2);
+    }
+
+    .progress-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .badge-modern {
+        font-size: 0.85em;
+        font-weight: 600;
+        padding: 0.5em 1em;
+        border-radius: 50px;
+        transition: all var(--transition-fast);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .badge-modern::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transition: left 0.7s ease;
+    }
+
+    .badge-modern:hover::before {
+        left: 100%;
+    }
+
+    .badge-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .card-footer-modern {
+        background-color: #fbfcfe;
+        border-top: 1px solid #eef1f4;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .action-dropdown .dropdown-toggle::after {
+        display: none;
+    }
+
+    /* Animation pour les éléments de formulaire */
+    .form-check-input {
+        transition: all var(--transition-fast);
+    }
+
+    .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        transform: scale(1.1);
+    }
+
+    /* Boutons avec animations */
+    .btn {
+        transition: all var(--transition-fast);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1, 1) translate(-50%);
+        transform-origin: 50% 50%;
+    }
+
+    .btn:focus:not(:active)::after {
+        animation: ripple 1s ease-out;
+    }
+
+    @keyframes ripple {
+        0% {
+            transform: scale(0, 0);
+            opacity: 1;
+        }
+        20% {
+            transform: scale(20, 20);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(50, 50);
+            opacity: 0;
+        }
+    }
+
+    /* Animation pour le dropdown */
+    .dropdown-menu {
+        animation: dropdownAnimation 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        transform-origin: top right;
+        opacity: 0;
+        transform: scale(0.9) translateY(-10px);
+    }
+
+    @keyframes dropdownAnimation {
+        0% {
+            opacity: 0;
+            transform: scale(0.9) translateY(-10px);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    /* Effet de flottement subtil pour les cartes */
+    @keyframes float {
+        0% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+        100% {
+            transform: translateY(0);
+        }
+    }
+
+
+</style>
+<style>
+    /* Variables CSS pour un thème sombre cohérent */
+    :root {
+        --bg-color: {{request.user.personnel.color_fond}};
+        --card-bg: #1e293b; /* Fond de carte légèrement plus clair */
+        --border-color: rgba(255, 255, 255, 0.1);
+        --text-color: #e2e8f0;
+        --secondary-text: #94a3b8;
+        --accent-blue: #3b82f6;
+        --accent-yellow: #f59e0b;
+        --accent-green: #10b981;
+        --shadow: rgba(0, 0, 0, 0.2);
+    }
+
+    body {
+        background-color: {{request.user.personnel.color_fond}};
+        font-family: 'Inter', sans-serif;
+        color: var(--text-color);
+    }
+
+    /* Styles pour la carte principale */
+    .data-card {
+        background-color: {{request.user.personnel.color_fond}};
+        border: 1px solid {{request.user.personnel.color_fond}};
+        border-radius: 12px;
+        box-shadow: 0 4px 15px var(--shadow);
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+    .data-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px var(--shadow);
+    }
+
+    /* Section de l'en-tête */
+    .card-header-main {
+        display: flex;
+        align-items: center;
+        padding: 20px;
+        background-color: {{request.user.personnel.color_fond}};
+        border-bottom: 1px solid {{request.user.personnel.color_fond}};
+    }
+
+    .profile-image-container {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid var(--accent-blue);
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+
+    .profile-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .card-title-main {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .card-subtitle {
+        font-size: 0.9rem;
+        color: var(--secondary-text);
+        margin-top: 5px;
+    }
+
+    /* Section du corps de la carte */
+    .card-body-main {
+        padding: 20px;
+    }
+
+    .info-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.95rem;
+        color: var(--secondary-text);
+    }
+
+    .info-item i {
+        font-size: 1.25rem;
+        color: var(--accent-blue);
+    }
+
+    .info-value {
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    /* Badge de progression */
+    .progress-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .badge-main {
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+
+    .badge-ponderation {
+        background-color: var(--accent-yellow);
+        color: #1e293b;
+    }
+
+    .badge-execution {
+        background-color: var(--accent-green);
+        color: #1e293b;
+    }
+
+    /* Section financière améliorée */
+    .financial-section {
+        background: {{request.user.personnel.color_fond}};
+        padding: 20px;
+        color: var(--text-color);
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .financial-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    .financial-item {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 15px;
+    }
+
+    .financial-item h6 {
+        margin: 0 0 5px;
+        font-size: 0.9rem;
+        color: var(--secondary-text);
+    }
+
+    .financial-item .value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+
+    /* Barres de progression */
+    .progress-bar-container {
+        height: 8px;
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 5px;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background-color: var(--accent-blue);
+        transition: width 0.5s ease-in-out;
+    }
+
+    .progress-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        margin-top: 5px;
+        color: var(--secondary-text);
+    }
+
+    /* Pied de carte */
+    .card-footer-main {
+        padding: 15px 20px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .action-dropdown .btn-secondary {
+        background-color: transparent;
+        border-color: var(--border-color);
+        color: var(--secondary-text);
+    }
+
+    .dropdown-menu {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+    }
+
+    .dropdown-item {
+        color: var(--text-color);
+    }
+
+    .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<div class="row">
+    {% for line in pages_o %}
+    
+    <div class="col-md-6">
+        <div class="data-card">
+
+            <div class="card-header-main">
+                <div class="profile-image-container">
+                    {% if entity.is_pic_represented and line.m_pic_represented.url != None %}
+                        <img src="{{ line.m_pic_represented.url }}" alt="Profile Picture" class="profile-image">
+                    {% else%}
+                        <img src="{{ actual_institution.img.url }}" alt="Profile Picture" class="profile-image">
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="card-title-main">
+                       <a href="{% if is_sub_tache == None or is_sub_tache == False %}/gestionnaire/{{ hierachy }}/{{ line.id }}/{% else %}/taches/{{ line.id }}/{% endif %}" class="text-decoration-none text-light">
+                          {%if line.m_nom%}      {{ line.m_nom }} {%else%} {{line}} {%endif%}
+                            </a>
+                       
+                    </h5>
+                    {% for val in line.values %}{% if forloop.first == False %}
+                        <p class="card-subtitle">{{ val }}</p>
+                    {% endif %}{% endfor %}
+                </div>
+            </div>
+          
+
+            {%if request.user.personnel.is_finance%}
+            <div class="financial-section">
+                <div class="financial-grid">
+                    <div class="financial-item">
+                        <h6>Montant Planifié</h6>
+                        <span class="value">{{line.montant_planifiee}}</span>
+                    </div>
+                    <div class="financial-item">
+                        <h6>Montant Déclaré</h6>
+                        <span class="value">{{line.montant_declare}}</span>
+                    </div>
+                    <div class="financial-item">
+                        <h6>Montant Validé</h6>
+                        <span class="value">{{line.montant_valide}}</span>
+                    </div>
+                </div>
+                <div class="financial-grid">
+                    <div class="financial-item">
+                        <h6>Taux Financier Déclaré</h6>
+                        <span class="value">{{line.taux_financier}} %</span>
+                    </div>
+                    <div class="financial-item">
+                        <h6>Taux Financier Validé</h6>
+                        <span class="value">{{line.taux_financier_valide}} %</span>
+                    </div>
+                </div>
+            </div>
+            {%endif%}
+
+            <div class="card-body-main">
+                {% if finan_options != None %}
+                    <div class="info-item">
+                        <i class="bx bx-dollar-circle"></i>
+                        <span>
+                            <strong>Montant Prévu:</strong>
+                            <span class="info-value">
+                                {% if line.montant != None %}{{ line.montant }} {{ finan_options }}{% else %}Non spécifié{% endif %}
+                            </span>
+                        </span>
+                    </div>
+                {% endif %}
+
+                {% if request.user.personnel.is_process %}
+                    <div class="progress-badges">
+                        <span class="badge-main badge-ponderation">
+                            <i class="bx bx-tachometer me-1"></i> Pondération: {{ line.ponderation }}%
+                        </span>
+                        <span class="badge-main badge-execution">
+                            <i class="bx bx-trending-up me-1"></i> Taux d'Exécution: {{ line.resultat_niveau_execution }}
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+           <div class="card mb-4 shadow-sm border-0">
+    <div class="card-header d-flex justify-content-between align-items-center bg-white border-bottom-0 pt-3 pb-2 px-3">
+        <h2 class="h6 mb-0 fw-bold text-uppercase text-muted">Responsabilités RACI</h2>
+        
+        <a href="#" data-bs-toggle="modal" data-bs-target="#exampleModal_structure{{line.id}}"
+           class="text-primary icon-edit-minimal" 
+           aria-label="Modifier les responsabilités">
+             <i class="fas fa-edit fa-sm"></i>
+             Modifier RACI
+        </a>
+    </div>
+   
+    <div class="card-body p-3"> 
+        <div class="row g-3">
+
+            <div class="col-lg-6 col-md-6 col-12">
+                <a href="" class="text-decoration-none d-block card-raci-minimal border-start border-warning" data-raci="R">
+                    <div class="d-flex align-items-center p-2">
+                        <i class="fas fa-balance-scale fa-sm me-3 text-warning"></i>
+                        <div>
+                            <small class="text-warning fw-bold text-uppercase">RESPONSIBLE</small>
+                            <small class="mb-0 text-dark">
+                                {%if line.structure_responsable%}{{line.structure_responsable.nom}}{%else%}Non Defini{%endif%}
+                            </small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-6 col-md-6 col-12">
+                <a href="" class="text-decoration-none d-block card-raci-minimal border-start border-purple" data-raci="A">
+                    <div class="d-flex align-items-center p-2">
+                        <i class="fas fa-crown fa-sm me-3 text-purple"></i>
+                        <div>
+                            <small class="fw-bold text-uppercase text-purple">ACCOUNTABLE</small>
+                            <small class="mb-0 text-dark">
+                                {%if line.structure_accountable%}{{line.structure_accountable.nom}}{%else%}Non Defini{%endif%}
+                            </small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-6 col-md-6 col-12">
+                <a href="" class="text-decoration-none d-block card-raci-minimal border-start border-info" data-raci="C">
+                    <div class="d-flex align-items-center p-2">
+                        <i class="fas fa-lightbulb fa-sm me-3 text-info"></i>
+                        <div>
+                            <small class="text-info fw-bold text-uppercase">CONSULTED</small>
+                            <small class="mb-0 text-dark">
+                                {%if line.structure_consulted%}{{line.structure_consulted.nom}}{%else%}Non Defini{%endif%}
+                            </small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-lg-6 col-md-6 col-12">
+                <a href="" class="text-decoration-none d-block card-raci-minimal border-start border-secondary" data-raci="I">
+                    <div class="d-flex align-items-center p-2">
+                        <i class="fas fa-satellite-dish fa-sm me-3 text-secondary"></i>
+                        <div>
+                            <small class="text-secondary fw-bold text-uppercase">INFORMED</small>
+                            <small class="mb-0 text-dark">
+                                {%if line.structure_informed%}{{line.structure_informed.nom}}{%else%}Non Defini{%endif%}
+                            </small>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% if permissions > 0 and not_add != 1 %}
+    <div class="d-flex justify-content-end align-items-center card-actions-styled">
+        
+        <a class="btn btn-outline-primary btn-action-rounded me-2 edit-btn" 
+           type="button" 
+           href="/Update-Entities/{{line.id}}/" 
+           aria-label="Modifier l'élément">
+            <i class="bx bx-edit me-1"></i> Modifier
+        </a>
+    
+      
+        
+        <a class="btn btn-outline-danger btn-action-rounded delete-btn" 
+           type="button" 
+           href="/delete_entities_operations/{{ line.id }}/"
+          >
+            <i class="bx bx-trash me-1"></i> Supprimer
+        </a>
+        
+    </div>
+{% endif %}
+        </div>
+    </div>
+</div>
+  
+        </div>
+    </div>
+ <div class="modal fade" id="exampleModal_structure{{line.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+            <form method="POST" action="/edit_structure_raci/{{line.id}}/">
+        {%csrf_token%}
+        
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">EDITION DES RESPONSABILIT&Eacute;S RACI {{line}}</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+               <div class="row g-4">
+                                         <div class="card-header text-light p-3" style="background-color: {{request.user.personnel.color_fond}};">
+        <h5 class="mb-0 text-uppercase text-light">
+            <i class="fas fa-sitemap me-2 text-light"></i> 
+            Responsable, Accountable, Consulted, Informed des Structures
+        </h5>
+    </div>
+  
+  
+    <div class="col-md-6 col-lg-6">
+        <div class="p-3 border rounded shadow-sm h-100 bg-light">
+            <label class="d-flex align-items-center mb-2 fw-bold text-primary">
+                <i class="fas fa-crown fa-2x me-2 text-purple"></i>
+                <span class="badge rounded-pill bg-purple-light text-purple me-2 fs-6">R</span>
+                <span class="text-dark">Principal Responsable</span>
+            </label>
+
+            <select name="perso" class="form-control form-control-sm">
+                {% for perso in structure_raci %}
+                {%if line.structure_responsable_id == perso.id%}
+                <option value="{{perso.id}}" selected>{{perso.nom}}</option>
+                {%else%}
+                <option value="{{perso.id}}" >{{perso.nom}}</option>
+                {%endif%}
+                {% endfor %}
+              
+            </select>
+
+            <div class="d-none mt-2 text-end">
+                <button type="button" data-launch='1' class="assiLAUNCH btn btn-sm btn-outline-purple">
+                    <i class="fas fa-code-branch me-1"></i> Rôle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-6">
+        <div class="p-3 border rounded shadow-sm h-100 bg-light">
+            <label class="d-flex align-items-center mb-2 fw-bold text-danger">
+                <i class="fas fa-balance-scale fa-2x me-2 text-orange"></i>
+                <span class="badge rounded-pill bg-orange-light text-orange me-2 fs-6">A</span>
+                <span class="text-dark">Accountable</span>
+            </label>
+
+            <select name="accountable" class="accounted_selector form-control form-control-sm">
+                <option value="0">Non Défini</option>
+                {% for perso in structure_raci %}
+                 {%if line.structure_accountable_id == perso.id%}
+                <option value="{{perso.id}}" selected>{{perso.nom}}</option>
+                
+                {%else%}
+                  <option value="{{perso.id}}">{{perso.nom}}</option>
+                {%endif%}
+                {% endfor %}
+            </select>
+            <div class="d-none mt-2 text-end">
+                <button type="button" data-launch='1' class="assiLAUNCH btn btn-sm btn-outline-orange">
+                    <i class="fas fa-code-branch me-1"></i> Rôle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-6">
+        <div class="p-3 border rounded shadow-sm h-100 bg-light">
+            <label class="d-flex align-items-center mb-2 fw-bold text-warning">
+                <i class="fas fa-lightbulb fa-2x me-2 text-cyan"></i>
+                <span class="badge rounded-pill bg-cyan-light text-cyan me-2 fs-6">C</span>
+                <span class="text-dark">Consulted</span>
+            </label>
+
+            <select name="consulted" class="consulted_selector form-control form-control-sm">
+                <option value="0">Non Défini</option>
+                {% for perso in structure_raci %}
+                    {%if line.structure_consulted_id == perso.id%}
+                <option value="{{perso.id}}" selected>{{perso.nom}}</option>
+                {%else%}
+                  <option value="{{perso.id}}" >{{perso.nom}}</option>
+                  {%endif%}
+                {% endfor %}
+            </select>
+            <div class="d-none mt-2 text-end">
+                <button type="button" data-launch='1' class="assiLAUNCH btn btn-sm btn-outline-cyan">
+                    <i class="fas fa-code-branch me-1"></i> Rôle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-6">
+        <div class="p-3 border rounded shadow-sm h-100 bg-light">
+            <label class="d-flex align-items-center mb-2 fw-bold text-info">
+                <i class="fas fa-satellite-dish fa-2x me-2 text-secondary"></i>
+                <span class="badge rounded-pill bg-secondary-light text-secondary me-2 fs-6">I</span>
+                <span class="text-dark">Informed</span>
+            </label>
+
+            <select name="informed" class="informed_selector form-control form-control-sm">
+                <option value="0">Non Défini</option>
+                {% for perso in structure_raci %}
+                 {%if line.structure_informed_id == perso.id%}
+                <option value="{{perso.id}}" selected> {{perso.nom}}</option>
+                {%else%}
+                  <option value="{{perso.id}}" > {{perso.nom}}</option>
+
+                  {%endif%}
+                {% endfor %}
+            </select>
+            <div class="d-none mt-2 text-end">
+                <button type="button" data-launch='1' class="assiLAUNCH btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-code-branch me-1"></i> Rôle
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            <button type="submit" class="btn btn-primary">Modifier</button>
+          </div>
+   
+        </div>
+
+    </form>
+      </div>
+    </div>
+
+    {% endfor %}
+</div>
+			{% endblock %}
+
+</div>
+</div>
+	{% else %}
+
+<p class="demo-inline-spacing">
+
+
+<div class="row g-4">
+  {% for entity in pages_o %}
+
+  <div class="modal fade" id="exampleModal_structure_entity{{entity.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+            <form method="POST" action="/edit_structure_raci/{{entity.id}}/">
+        {%csrf_token%}
+        
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">EDITION DES RESPONSABILIT&Eacute;S RACI {{entity}}</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+               <div class="row g-4">
+                                         <div class="card-header text-light p-3" style="background-color: {{request.user.personnel.color_fond}};">
+        <h5 class="mb-0 text-uppercase text-light">
+            <i class="fas fa-sitemap me-2 text-light"></i> 
+            Responsable, Accountable, Consulted, Informed des Structures
+        </h5>
+    </div>
+  
+  
+    <div class="col-md-6 col-lg-6">
+        <div class="p-3 border rounded shadow-sm h-100 bg-light">
+            <label class="d-flex align-items-center mb-2 fw-bold text-primary">
+                <i class="fas fa-crown fa-2x me-2 text-purple"></i>
+                <span class="badge rounded-pill bg-purple-light text-purple me-2 fs-6">R</span>
+                <span class="text-dark">Principal Responsable</span>
+            </label>
+
+            <select name="perso" class="form-control form-control-sm">
+                {% for perso in structure_raci %}
+                {%if entity.structure_responsable_id == perso.id%}
+                <option value="{{perso.id}}" selected>{{perso.nom}}</option>
+                {%else%}
+                <option value="{{perso.id}}" >{{perso.nom}}</option>
+                {%endif%}
+                {% endfor %}
+              
+            </select>
+
+            <div class="d-none mt-2 text-end">
+                <button type="button" data-launch='1' class="assiLAUNCH btn btn-sm btn-outentity-purple">
+                    <i class="fas fa-code-branch me-1"></i> Rôle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-6">
+        <div class="p-3 border rounded shadow-sm h-100 bg-light">
+            <label class="d-flex align-items-center mb-2 fw-bold text-danger">
+                <i class="fas fa-balance-scale fa-2x me-2 text-orange"></i>
+                <span class="badge rounded-pill bg-orange-light text-orange me-2 fs-6">A</span>
+                <span class="text-dark">Accountable</span>
+            </label>
+
+            <select name="accountable" class="accounted_selector form-control form-control-sm">
+                <option value="0">Non Défini</option>
+                {% for perso in structure_raci %}
+                 {%if entity.structure_accountable_id == perso.id%}
+                <option value="{{perso.id}}" selected>{{perso.nom}}</option>
+                
+                {%else%}
+                  <option value="{{perso.id}}">{{perso.nom}}</option>
+                {%endif%}
+                {% endfor %}
+            </select>
+            <div class="d-none mt-2 text-end">
+                <button type="button" data-launch='1' class="assiLAUNCH btn btn-sm btn-outentity-orange">
+                    <i class="fas fa-code-branch me-1"></i> Rôle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-6">
+        <div class="p-3 border rounded shadow-sm h-100 bg-light">
+            <label class="d-flex align-items-center mb-2 fw-bold text-warning">
+                <i class="fas fa-lightbulb fa-2x me-2 text-cyan"></i>
+                <span class="badge rounded-pill bg-cyan-light text-cyan me-2 fs-6">C</span>
+                <span class="text-dark">Consulted</span>
+            </label>
+
+            <select name="consulted" class="consulted_selector form-control form-control-sm">
+                <option value="0">Non Défini</option>
+                {% for perso in structure_raci %}
+                    {%if entity.structure_consulted_id == perso.id%}
+                <option value="{{perso.id}}" selected>{{perso.nom}}</option>
+                {%else%}
+                  <option value="{{perso.id}}" >{{perso.nom}}</option>
+                  {%endif%}
+                {% endfor %}
+            </select>
+            <div class="d-none mt-2 text-end">
+                <button type="button" data-launch='1' class="assiLAUNCH btn btn-sm btn-outentity-cyan">
+                    <i class="fas fa-code-branch me-1"></i> Rôle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-6">
+        <div class="p-3 border rounded shadow-sm h-100 bg-light">
+            <label class="d-flex align-items-center mb-2 fw-bold text-info">
+                <i class="fas fa-satellite-dish fa-2x me-2 text-secondary"></i>
+                <span class="badge rounded-pill bg-secondary-light text-secondary me-2 fs-6">I</span>
+                <span class="text-dark">Informed</span>
+            </label>
+
+            <select name="informed" class="informed_selector form-control form-control-sm">
+                <option value="0">Non Défini</option>
+                {% for perso in structure_raci %}
+                 {%if entity.structure_informed_id == perso.id%}
+                <option value="{{perso.id}}" selected> {{perso.nom}}</option>
+                {%else%}
+                  <option value="{{perso.id}}" > {{perso.nom}}</option>
+
+                  {%endif%}
+                {% endfor %}
+            </select>
+            <div class="d-none mt-2 text-end">
+                <button type="button" data-launch='1' class="assiLAUNCH btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-code-branch me-1"></i> Rôle
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            <button type="submit" class="btn btn-primary">Modifier</button>
+          </div>
+   
+        </div>
+
+    </form>
+      </div>
+    </div>
+<div class="modal fade" id="staticBackdrop{{ entity.id }}" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-2xl rounded-4">
+      
+      <div class="modal-header border-0 bg-gradient-dark text-white p-4 rounded-top-4">
+        <div class="d-flex align-items-center">
+          <div class="icon-shape bg-white text-dark rounded-3 me-3 shadow-sm">
+            <i class="bi bi-layers-fill fs-4"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold mb-0" id="modalLabel{{ entity.id }}">Détails de l'entité</h5>
+            <small class="opacity-75 text-dark">ID: #{{ entity.id }} — {{ entity.m_nom }}</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <div class="section-title mb-3">
+            <span class="badge bg-primary-subtle text-primary text-uppercase px-3 py-2 rounded-pill">Informations Générales</span>
+        </div>
+
+        <div class="row g-4 mb-5">
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-bold">Nom complet</label>
+            <div class="p-3 bg-light rounded-3 border-start border-primary border-4 shadow-sm">
+              <span class="d-block fw-semibold text-dark">{{ entity.m_nom }}</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted small fw-bold">Observation</label>
+            <div class="p-3 bg-light rounded-3 border-start border-info border-4 shadow-sm">
+              <span class="d-block fw-semibold text-dark">{{ entity.observation|default:'Aucune observation' }}</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label text-muted small fw-bold">Description</label>
+            <div class="p-3 bg-light rounded-3 shadow-sm text-secondary">
+              {{ entity.objectif|default:'Aucune description' }}
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title mb-3">
+            <span class="badge bg-dark-subtle text-dark text-uppercase px-3 py-2 rounded-pill">Détails complémentaires</span>
+        </div>
+
+        <div class="row g-2">
+          {% for champvalues in champvalue %}
+            {% if entity.id == champvalues.entities_id %}
+              <div class="col-md-6">
+                <div class="dynamic-card d-flex align-items-center justify-content-between p-3 border rounded-3 hover-shadow">
+                  <div class="d-flex align-items-center">
+                    <div class="mini-icon me-3 text-primary bg-primary-light rounded-circle">
+                        <i class="bi bi-dot"></i>
+                    </div>
+                    <span class="text-muted small fw-medium">{{ champvalues.champ.name }}</span>
+                  </div>
+                  <span class="fw-bold text-dark">{{ champvalues.value|default:'---------' }}</span>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="modal-footer border-0 p-4 bg-light rounded-bottom-4">
+        <button type="button" class="btn btn-dark px-5 py-2 rounded-pill fw-bold shadow-sm" data-bs-dismiss="modal">
+          Fermer la vue
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+	<div class="col-6 col-lg-6 mb-4">
+    <div class="card shadow-lg dark entity-card" style="border:  {{request.user.personnel.color_fond}};">
+      <div class="row g-0 h-100">
+        <!-- Carte principale de l'entité -->
+        <div class="col-md-6 p-4 d-flex flex-column" style="border-color: {{request.user.personnel.color_fond}}; border-radius: 12px 0 0 12px;">
+          <!-- En-tête avec badge de statut et avatar -->
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="entity-status-badge">
+              <span class="badge bg-{% if entity.resultat_niveau_execution > 80 %}success{% elif entity.resultat_niveau_execution > 50 %}warning{% else %}danger{% endif %} bg-opacity-10 text-{% if entity.resultat_niveau_execution > 80 %}success{% elif entity.resultat_niveau_execution > 50 %}warning{% else %}danger{% endif %}">
+                <i class="bi bi-{% if entity.resultat_niveau_execution > 80 %}check-circle{% elif entity.resultat_niveau_execution > 50 %}exclamation-circle{% else %}x-circle{% endif %} me-1"></i>
+                {% if entity.resultat_niveau_execution > 80 %}Excellent{% elif entity.resultat_niveau_execution > 50 %}Moyen{% else %}Critique{% endif %}
+              </span>
+            </div>
+            <div class="entity-avatar mx-auto position-relative">
+              <img src="{% if entity.m_type_entity.is_pic_represented %}{% if entity.m_pic_represented.url != None %}{{entity.m_pic_represented.url}}{% else %}{{actual_institution.img.url}}{% endif %}{% else %}{{base_img_val}}{% endif %}"
+                   class="rounded-circle shadow border border-3  entity-avatar-img"
+                   onerror="this.src='{{base_img_val}}'" style="border:  {{request.user.personnel.color_fond}};">
+              <div class="entity-avatar-badge " style="background: {{request.user.personnel.color_fond}};">
+                <i class="bi bi-{{entity.icon|default:'building'}} text-light"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Corps de la carte -->
+          <div class="card-body p-0 flex-grow-1 d-flex flex-column">
+            <h5 class="card-title text-center mb-3">
+              <a href="/gestionnaire/{{hierachy}}/{{entity.id}}" class="text-decoration-none  fw-bold entity-title" data-bs-toggle="tooltip" data-bs-placement="top" title="Voir les détails" style="color:  {{request.user.personnel.color_fond}};">
+                {%if entity.m_nom%}
+                {{entity.m_nom}}
+                {%else%}
+
+                {{entity}}
+                {%endif%}
+              </a>
+             
+
+              {% if entity.is_priority %}
+              <span class="badge bg-danger ms-2 pulse" style="font-size: 0.6rem;">PRIORITAIRE</span>
+              {% endif %}
+            </h5>
+
+            <!-- Métriques et indicateurs -->
+            <div class="entity-metrics mb-3">
+              <div class="row g-2">
+               
+                <div class="col-12">
+                    {%if request.user.personnel.is_process%}
+                  <div class="metric-card p-3 rounded" style="background:  {{request.user.personnel.color_fond}};"> 
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="metric-label"><i class="fa fa-chart-line me-2"></i>Pondération</span>
+                      <span class="metric-value  text-light">{{entity.ponderation}}%</span>
+                    </div>
+                  
+                  </div>
+                  {%elif request.user.personnel.is_finance %}
+                   <div class="metric-card p-3 rounded" style="background: {{request.user.personnel.color_fond}};">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="metric-label"><i class="bi bi-bar-chart-line me-2"></i>TEF Valid&eacute;</span>
+                      <span class="metric-value  text-light">{{entity.taux_financier_valide|floatformat:'-2'}}%</span>
+                    </div>
+                  
+                  </div>
+
+                  {%endif%}
+                </div>
+
+                <div class="col-12">
+                  <div class="metric-card p-3 rounded" style="background:  {{request.user.personnel.color_fond}};">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        {%if request.user.personnel.is_process%}
+                      <span class="metric-label"><i class="bi bi-speedometer2 me-2"></i>Exécution</span>
+                      <span class="metric-value text-light">{{entity.resultat_niveau_execution_valide}}%</span>
+                      {%elif request.user.personnel.is_finance%}
+                      <span class="metric-label"><i class="fa fa-bar-chart me-2"></i>TEF Declar&eacute;</span>
+                      <span class="metric-value text-light">{{entity.taux_financier|floatformat:'-2'}}%</span>
+
+
+                      {%endif%}
+
+                    </div>
+                  </div>
+                </div>
+                 {% if request.user.personnel.is_finance %}
+                 <button type="button" class="btn btn" data-bs-toggle="modal" data-bs-target="#exampleModal{{entity.id}}"
+
+                 style="background-color: {{request.user.personnel.color_fond}};">
+                   <i class="fa fa-coins"></i>   Detail Financement
+                 </button>
+                   
+                {% endif %}
+
+           
+           <div class="card shadow-sm h-100">
+       
+    <div class="accordion cyber-accordion" id="accordionRACI{{entity.id}}">
+    <div class="accordion-item border-0 bg-transparent">
+        <h2 class="accordion-header" id="headingRACI{{entity.id}}">
+            <button class="accordion-button collapsed cyber-acc-btn" type="button" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#collapseRACI{{entity.id}}" 
+                    aria-expanded="false" 
+                    aria-controls="collapseRACI{{entity.id}}">
+                <div class="d-flex align-items-center w-100">
+                    <i class="fas fa-fingerprint me-2 text-primary"></i>
+                    <span class="fw-bold small text-uppercase tracking-wider">Matrice (RACI)</span>
+                    
+                </div>
+            </button>
+        </h2>
+
+        <div id="collapseRACI{{entity.id}}" class="accordion-collapse collapse" 
+             aria-labelledby="headingRACI{{entity.id}}" 
+             data-bs-parent="#accordionRACI{{entity.id}}">
+            <div class="accordion-body p-2 bg-white border border-top-0 rounded-bottom shadow-sm">
+                
+                <div class="row g-2">
+                    <div class="col-12">
+                        <div class="raci-mini-item border-start-warning">
+                            <div class="raci-tag bg-warning text-white">R</div>
+                            <div class="ms-2">
+                                <div class="raci-role text-warning">RESPONSIBLE</div>
+                                <div class="raci-name">{% if entity.structure_responsable %}{{ entity.structure_responsable.nom }}{% else %}Non Défini{% endif %}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="raci-mini-item border-start-purple">
+                            <div class="raci-tag bg-purple text-white">A</div>
+                            <div class="ms-2">
+                                <div class="raci-role text-purple">ACCOUNTABLE</div>
+                                <div class="raci-name">{% if entity.structure_accountable %}{{ entity.structure_accountable.nom }}{% else %}Non Défini{% endif %}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="raci-mini-item border-start-info">
+                            <div class="raci-tag bg-info text-white">C</div>
+                            <div class="ms-2">
+                                <div class="raci-role text-info">CONSULTED</div>
+                                <div class="raci-name">{% if entity.structure_consulted %}{{ entity.structure_consulted.nom }}{% else %}Non Défini{% endif %}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="raci-mini-item border-start-secondary">
+                            <div class="raci-tag bg-secondary text-white">I</div>
+                            <div class="ms-2">
+                                <div class="raci-role text-secondary">INFORMED</div>
+                                <div class="raci-name">{% if entity.structure_informed %}{{ entity.structure_informed.nom }}{% else %}Non Défini{% endif %}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="#" 
+                  data-bs-toggle="modal" 
+                  data-bs-target="#exampleModal_structure_entity{{entity.id}}"
+                  class="btn btn-outline-primary btn-sm d-inline-flex align-items-center">
+                    
+                    <i class="fa fa-edit me-2"></i>
+                    ÉDITION RACI
+                </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+ <button class="btn btn-outline-dark rounded-pill px-4 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#staticBackdrop{{entity.id}}">
+                <i class="fa fa-info-circle me-2"></i>
+                Plus d'informations
+              </button>
+            
+
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-auto">
+							<div class="btn-group w-100" role="group">
+
+
+							
+
+			<div  class="d-flex justify-content-center">
+								<div class="p-2" style="border-color: {{request.user.personnel.color_fond}}; border-radius: 12px 0 0 12px;">
+
+									{% if entity.m_type_entity.is_pic_represented == True %}
+									<div class="d-none">
+										{% if entity.m_pic_represented.url != None %}
+										<img src="{{entity.m_pic_represented.url}}" style="width:40px;height:40px;border-radius:100%;">
+										{% else %}
+										Image par D&eacute;faut
+										{% endif %}
+									</div>
+									{% elif entity.is_pic_represented == True %}
+									<div class="d-none">Aucune Image d&eacute;finie</div>
+									{% else %}
+									{% endif %}
+									{% for val in entity.values %}<div class="d-none">{{val}}</div>{% endfor %}
+									<div class="d-none" data-id='{{entity.sup_entity.id}}'>{{entity.sup_entity.id}}</div>
+
+									<a class="btn btn-action btn-edit" href="/Update-Entities/{{entity.id}}/">
+												
+												
+									 <svg class="icon-edit" width="20" height="20" viewBox="0 0 24 24">
+										 <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/>
+									 </svg>
+									 <span class="btn-action-text">Éditer</span>
+                  </a>
+								</div>
+
+								<a href="/delete_entities/{{entity.id}}/" class="btn btn-action btn-delete confirm-action mx-2"
+ 					 	     data-confirm-text="Êtes-vous sûr de vouloir supprimer cette entité?">
+ 					 	    <svg class="icon-trash" width="20" height="20" viewBox="0 0 24 24">
+ 					 	      <path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+ 					 	    </svg>
+ 					 	    <span class="btn-action-text">Supprimer</span>
+ 					 	  </a>
+							</div>
+	</div>
+
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Liste des sous-entités -->
+        <div class="col-md-6">
+          <div class="h-100" style="background-color: {{request.user.personnel.color_fond}}">
+
+
+            <div class="sub-entities-list" style="max-height: 800px; overflow-y: auto;">
+		{% for tache in entity.sub_entities %}
+	                <div class="sub-entity-item" >
+	                  <div class="sub-entity-content">
+	                    <div class="sub-entity-header">
+	                      <a href="/gestionnaire/{{next_hierachy}}/{{tache.id}}/" class="sub-entity-title text-light" >
+                          {%if tache.m_nom%}
+													{{tache.m_nom}}
+                          {%else%}
+                          {{tache}}
+
+                          {%endif%}
+												</a>
+	                      <!-- <span class="sub-entity-badge" style="background-color: {{tache.color|default:'#6c757d'}}20; color: white;">
+	                        {{tache.ponderation}}%
+	                      </span> -->
+	                    </div>
+                        {%if request.user.personnel.is_process%}
+	                    <div class="sub-entity-progress" >
+	                      <div class="progress-info" style="color:white">
+	                        <small>Exécution</small>
+	                        <small>{{tache.resultat_niveau_execution_valide}}%</small>
+	                      </div>
+	                      <div class="progress bg-light">
+	                        <div class="progress-bar"
+	                             style="width: {{tache.resultat_niveau_execution}}%; background-color: white;"></div>
+	                      </div>
+	                    </div>
+                        {%elif request.user.personnel.is_finance%}
+
+
+                           <div class="sub-entity-progress">
+                          <div class="progress-info" style="color:white">
+                            <small>Montant Planifi&eacute;</small>
+                            <small>{{tache.montant_planifiee|floatformat:'-2'}} </small>
+                          </div>
+                         
+                        </div>
+
+                          <div class="sub-entity-progress">
+                          <div class="progress-info" style="color:white">
+                            <small>Montant Declar&eacute;</small>
+                            <small>{{tache.montant_declare|floatformat:'-2'}} </small>
+                          </div>
+                         
+                        </div>
+
+                        <div class="sub-entity-progress">
+                          <div class="progress-info" style="color:white">
+                            <small>Montant valid&eacute;</small>
+                            <small>{{tache.montant_valide|floatformat:'-2'}} </small>
+                          </div>
+                         
+                        </div>
+
+                         <div class="sub-entity-progress">
+                          <div class="progress-info" style="color:white">
+                            <small>Taux D'execution Financier Declar&eacute;(TEF)</small>
+                            <small>{{tache.taux_financier|floatformat:'-2'}}%</small>
+                          </div>
+                         
+                        </div>
+
+                           <div class="sub-entity-progress">
+                          <div class="progress-info" style="color:white">
+                            <small>Taux D'execution Financier valid&eacute; (TEF)</small>
+                            <small>{{tache.taux_financier_valide|floatformat:'-2'}}% </small>
+                          </div>
+                         
+                        </div>
+                        {%endif%}
+
+
+
+
+	                  </div>
+	                </div>
+                    {%empty%}
+                    <div class="empty-state">
+                        <div class="text-center py-5">
+                          <div class="empty-state-icon mb-4">
+                            <i class="fas fa-database fa-4x" style="color: white;"></i>
+                          </div>
+                          <h4 class="text-muted mb-3 fw-bold">Aucune donnée disponible</h4>
+                          <p class="text-muted mb-4">
+                            Aucune planification pour le moment.
+                          </p>
+                          <div class="d-flex justify-content-center">
+                            <div class="pulse-animation"></div>
+                          </div>
+                        </div>
+                      </div>
+	                {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+ <div class="modal fade" id="exampleModal{{entity.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="exampleModalLabel">DETAILS DES SOURCES DE FINANCEMENT {{entity}}</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                             <div class="col-12">
+                  <div class="metric-card p-3 rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="metric-label"><i class="bi bi-speedometer2 me-2"></i>TEF (TAUX D'EXECUTION FINANCIER PLANIFI&Eacute;</span>
+                      <span class="metric-value text-light">{{entity.taux_financier}}%</span>
+                    </div>
+                                        <div class="progress progress-thin">
+                                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{entity.taux_financier|floatformat:'-2'}}%"></div>
+                                        </div>
+                  </div>
+                </div>
+
+
+                 <div class="col-12">
+                  <div class="metric-card p-3 rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="metric-label"><i class="bi bi-speedometer2 me-2"></i>TEF (TAUX D'EXECUTION FINANCIER VALID&Eacute;</span>
+                      <span class="metric-value text-light">{{entity.taux_financier_valide}}%</span>
+                    </div>
+                                        <div class="progress progress-thin">
+                                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{entity.taux_financier_valide|floatformat:'-2'}}%"></div>
+                                        </div>
+                  </div>
+                </div>
+
+
+                 <div class="col-12">
+                  <div class="metric-card p-3 rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="metric-label"><i class="bi bi-speedometer2 me-2"></i>Montant D'execution Planifi&eacute;</span>
+                      <span class="metric-value text-dark">{{entity.montant_planifiee|floatformat:'-2'}}</span>
+                    </div>
+                                       
+                  </div>
+                </div>
+
+                   <div class="col-12">
+                  <div class="metric-card p-3 rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="metric-label"><i class="bi bi-speedometer2 me-2"></i>Montant D'execution declar&eacute;</span>
+                      <span class="metric-value text-dark">{{entity.montant_declare|floatformat:'-2'}}</span>
+                    </div>
+                                       
+                  </div>
+                </div>
+
+                  <div class="col-12">
+                  <div class="metric-card p-3 rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="metric-label"><i class="bi bi-speedometer2 me-2"></i>Montant D'execution valid&eacute;</span>
+                      <span class="metric-value text-dark">{{entity.montant_valide|floatformat:'-2'}}</span>
+                    </div>
+                                       
+                  </div>
+                </div>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                           
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+  {% endfor %}
+</div>
+
+
+<div class="modal fade" id="exampleModal{{sub_entity.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">{{sub_entity}}</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+
+				<div class="card">
+				  <div class="card-body">
+				    <form action="/add_ponderation/" method="post" class="ponderation-form">
+				      {%csrf_token%}
+
+				      <div class="table-container">
+				        <table class="table table-hover ponderation-table">
+				          <thead>
+				            <tr class="header-row">
+				              <th class="task-col">{{sub_entity}}</th>
+				              <th class="current-col">Pondération actuelle</th>
+				              <th class="new-col">Nouvelle pondération</th>
+				            </tr>
+				          </thead>
+				          <tbody>
+				            {% for entitys in pages_o %}
+										{%if sub_entity.id == entitys.m_type_entity.id%}
+				            <tr class="entity-row animate__animated animate__fadeIn">
+				              <td class="text-light" style='font-weight:bold; font-size:15px'>{{ entitys }}</td>
+				              <td class="current-ponderation">{{ entitys.ponderation|default:"0" }}%</td>
+				              <td class="new-ponderation">
+				                <div class="input-group">
+				                  <input type="number"
+				                         name="ponderation_{{ entitys.id }}"
+				                         value="{{ entitys.ponderation|default:'0' }}"
+				                         class="form-control ponderation-input"
+				                         min="0" max="100" step="1"
+				                         oninput="calculateTotals()">
+				                  <span class="input-group-text ">%</span>
+				                </div>
+				                <div class="ponderation-slider">
+				                  <input type="range"
+				                         min="0" max="100"
+				                         value="{{ entitys.ponderation|default:'0' }}"
+				                         class="form-range"
+				                         oninput="this.previousElementSibling.querySelector('input').value=this.value; calculateTotals()">
+				                </div>
+				              </td>
+				              <input type="hidden" name="entity_ids" value="{{entitys.id}}">
+				            </tr>
+										{%endif%}
+				            {% endfor %}
+				          </tbody>
+				          <tfoot>
+				            <tr class="total-row animate__animated">
+				              <th colspan="2" >Total</th>
+				              <td>
+				                <div class="total-display">
+				                  <input type="text" id="totalPonderations"
+				                         class="form-control total-input"
+				                         name="total" readonly>
+				                  <div id="totalAlert" class="alert-message"></div>
+				                </div>
+				              </td>
+				            </tr>
+				          </tfoot>
+				        </table>
+				      </div>
+
+				      <div class="form-actions animate__animated animate__fadeInUp" tyle="background:{{user.request.personnel.color}}">
+				        <button type="submit" id="validatePonderation" class="btn submit-btn" style="background:{{request.user.personnel.color}}">
+				          <span class="btn-text">Valider</span>
+				          <span class="btn-icon">✓</span>
+				        </button>
+				      </div>
+				    </form>
+				  </div>
+
+				  <!-- Animate.css for animations -->
+				  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+				  <style>
+
+
+				    .ponderation-form {
+				      max-width: 900px;
+				      margin: 0 auto;
+				    }
+
+				    .table-container {
+				      max-height: 100vh;
+				      overflow-y: auto;
+				      border-radius: 10px;
+				      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+				      margin-bottom: 2rem;
+				      background: {{request.user.personnel.color}};
+				    }
+
+				    .ponderation-table {
+				      margin: 0;
+				      color: var(--text-light);
+				      border-collapse: separate;
+				      border-spacing: 0;
+				    }
+
+				    .ponderation-table thead {
+				      position: sticky;
+				      top: 0;
+				      z-index: 10;
+				    }
+
+				    .ponderation-table th {
+				      background: var(--primary-color);
+				      color: white;
+				      font-weight: 500;
+				      padding: 1rem;
+				      text-transform: uppercase;
+				      font-size: 0.8rem;
+				      letter-spacing: 1px;
+				      border: none;
+				    }
+
+				    .ponderation-table td {
+				      padding: 1rem;
+				      vertical-align: middle;
+				      background: var(--card-bg);
+				      border-bottom: 1px solid {{request.user.personnel.color}};
+				      transition: all var(--transition-speed) ease;
+				    }
+
+				    .ponderation-table tr:hover td {
+				      background: rgba(67, 97, 238, 0.1);
+				      transform: translateX(5px);
+				    }
+
+				    .ponderation-table tfoot td {
+				      background: {{request.user.personnel.color_fond}};
+				      font-weight: bold;
+				    }
+
+				    .ponderation-input {
+				      background: white;
+				      border: 1px solid rgba(255, 255, 255, 0.1);
+				      color: dark;
+				      text-align: center;
+				      transition: all var(--transition-speed) ease;
+				    }
+
+				    .ponderation-input:focus {
+				      background: white;
+				      border-color: var(--primary-color);
+				      box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
+				      transform: scale(1.05);
+				    }
+
+				    .ponderation-slider {
+				      margin-top: 0.5rem;
+				    }
+
+				    .ponderation-slider input[type="range"] {
+				      width: 100%;
+				      height: 6px;
+				      -webkit-appearance: none;
+				      background: rgba(255, 255, 255, 0.1);
+				      border-radius: 3px;
+				      outline: none;
+				    }
+
+				    .ponderation-slider input[type="range"]::-webkit-slider-thumb {
+				      -webkit-appearance: none;
+				      width: 18px;
+				      height: 18px;
+				      background: var(--primary-color);
+				      border-radius: 50%;
+				      cursor: pointer;
+				      transition: all var(--transition-speed) ease;
+				    }
+
+				    .ponderation-slider input[type="range"]::-webkit-slider-thumb:hover {
+				      transform: scale(1.2);
+				      background: var(--success-color);
+				    }
+
+				    .total-input {
+				      font-weight: bold;
+				      text-align: center;
+				      font-size: 1.1rem;
+				      background: rgba(0, 0, 0, 0.3);
+				      border: none;
+				      color: white;
+				    }
+
+				    .is-valid {
+				      color: var(--success-color) !important;
+				      background: rgba(76, 201, 240, 0.1) !important;
+				      border-left: 4px solid var(--success-color) !important;
+				    }
+
+				    .is-invalid {
+				      color: var(--error-color) !important;
+				      background: rgba(247, 37, 133, 0.1) !important;
+				      border-left: 4px solid var(--error-color) !important;
+				    }
+
+				    .alert-message {
+				      font-size: 0.8rem;
+				      margin-top: 0.5rem;
+				      padding: 0.3rem;
+				      border-radius: 4px;
+				      text-align: center;
+				      opacity: 0;
+				      transform: translateY(-10px);
+				      transition: all var(--transition-speed) ease;
+				    }
+
+				    .alert-message.show {
+				      opacity: 1;
+				      transform: translateY(0);
+				    }
+
+				    .text-success {
+				      color: var(--success-color) !important;
+				    }
+
+				    .text-danger {
+				      color: var(--error-color) !important;
+				    }
+
+				    .form-actions {
+				      text-align: center;
+				      margin-top: 2rem;
+				    }
+
+				    .submit-btn {
+				      position: relative;
+				      overflow: hidden;
+				      border: none;
+				      border-radius: 50px;
+				      padding: 12px 30px;
+				      font-weight: 600;
+				      letter-spacing: 1px;
+				      text-transform: uppercase;
+				      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+				      transition: all 0.3s ease;
+				    }
+
+				    .submit-btn:hover {
+				      transform: translateY(-3px);
+				      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+				    }
+
+				    .submit-btn:active {
+				      transform: translateY(1px);
+				    }
+
+				    .submit-btn .btn-icon {
+				      position: absolute;
+				      right: -30px;
+				      top: 50%;
+				      transform: translateY(-50%);
+				      opacity: 0;
+				      transition: all 0.3s ease;
+				    }
+
+				    .submit-btn:hover .btn-text {
+				      transform: translateX(-10px);
+				    }
+
+				    .submit-btn:hover .btn-icon {
+				      right: 20px;
+				      opacity: 1;
+				    }
+
+				    /* Custom scrollbar */
+				    ::-webkit-scrollbar {
+				      width: 8px;
+				    }
+
+				    ::-webkit-scrollbar-track {
+				      background: rgba(255, 255, 255, 0.05);
+				      border-radius: 10px;
+				    }
+
+				    ::-webkit-scrollbar-thumb {
+				      background: var(--primary-color);
+				      border-radius: 10px;
+				    }
+
+				    ::-webkit-scrollbar-thumb:hover {
+				      background: #3a56e8;
+				    }
+
+				    /* Animations */
+				    @keyframes pulse {
+				      0% { transform: scale(1); }
+				      50% { transform: scale(1.05); }
+				      100% { transform: scale(1); }
+				    }
+
+				    .pulse-animation {
+				      animation: pulse 1.5s infinite;
+				    }
+				  </style>
+
+				  <script>
+				    function calculateTotals() {
+				      let inputs = document.getElementsByClassName('ponderation-input');
+				      let total = 0;
+				      let allValid = true;
+
+				      // Animate each input change
+				      for (let input of inputs) {
+				        let value = parseInt(input.value) || 0;
+				        total += value;
+
+				        // Validate individual inputs
+				        if (value < 0 || value > 100) {
+				          input.classList.add('is-invalid');
+				          allValid = false;
+				        } else {
+				          input.classList.remove('is-invalid');
+				        }
+				      }
+
+				      let totalInput = document.getElementById('totalPonderations');
+				      let alertDiv = document.getElementById('totalAlert');
+				      let submitBtn = document.getElementById('validatePonderation');
+
+				      totalInput.value = total + "%";
+
+				      if (total === 100 && allValid) {
+				        totalInput.classList.remove('is-invalid');
+				        totalInput.classList.add('is-valid');
+				        alertDiv.innerHTML = '<span class="text-success">Total valide ✓</span>';
+				        alertDiv.classList.add('show');
+				        submitBtn.disabled = false;
+
+				        // Add celebration effect
+				        totalInput.classList.add('pulse-animation');
+				        setTimeout(() => {
+				          totalInput.classList.remove('pulse-animation');
+				        }, 1500);
+				      } else {
+				        totalInput.classList.remove('is-valid');
+				        totalInput.classList.add('is-invalid');
+
+				        if (!allValid) {
+				          alertDiv.innerHTML = '<span class="text-danger">Certaines valeurs sont invalides</span>';
+				        } else {
+				          alertDiv.innerHTML = `<span class="text-danger">Le total doit être 100% (actuellement ${total}%)</span>`;
+				        }
+
+				        alertDiv.classList.add('show');
+				        submitBtn.disabled = true;
+				      }
+				    }
+
+				    // Initialize on load
+				    document.addEventListener('DOMContentLoaded', function() {
+				      calculateTotals();
+
+				      // Add animation to rows with delay
+				      const rows = document.querySelectorAll('.entity-row');
+				      rows.forEach((row, index) => {
+				        row.style.animationDelay = `${index * 0.1}s`;
+				      });
+
+				      // Animate total row after all others
+				      const totalRow = document.querySelector('.total-row');
+				      totalRow.style.animationDelay = `${rows.length * 0.1 + 0.2}s`;
+				      totalRow.classList.add('animate__fadeInUp');
+				    });
+
+				    // Sync range sliders with number inputs
+				    document.querySelectorAll('.ponderation-slider input[type="range"]').forEach(slider => {
+				      const numberInput = slider.previousElementSibling.querySelector('input[type="number"]');
+				      slider.addEventListener('input', () => {
+				        numberInput.value = slider.value;
+				        // Trigger animation on the input
+				        numberInput.classList.add('animate__animated', 'animate__pulse');
+				        setTimeout(() => {
+				          numberInput.classList.remove('animate__animated', 'animate__pulse');
+				        }, 500);
+				      });
+				    });
+				  </script>
+
+
+      </div>
+
+    </div>
+  </div>
+</div>
+<style>
+  /* Styles de base améliorés */
+  .entity-card {
+    border: none;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    height: 100%;
+  }
+
+  .entity-card:hover {
+    box-shadow: 0 14px 28px rgba(0,0,0,0.1), 0 10px 10px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+
+  /* Avatar amélioré */
+  .entity-avatar {
+    width: 100px;
+    height: 100px;
+    position: relative;
+  }
+
+  .entity-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: all 0.3s ease;
+  }
+
+  .entity-avatar-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+  }
+
+  /* Titre */
+  .entity-title {
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .entity-title:hover {
+    color: var(--bs-primary) !important;
+  }
+
+  .entity-title:after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--bs-primary);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+  }
+
+  .entity-title:hover:after {
+    width: 100%;
+  }
+
+  /* Métriques */
+  .metric-card {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    transition: all 0.3s ease;
+  }
+
+  .metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  }
+
+  .metric-label {
+    font-size: 0.8rem;
+
+  }
+
+  .metric-value {
+    font-weight: 600;
+    color: white
+  }
+
+  .metric-value-big {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--bs-primary);
+    display: block;
+    line-height: 1.2;
+  }
+
+  .progress-thin {
+    height: 6px;
+    border-radius: 3px;
+  }
+
+  /* Boutons d'action */
+  .btn-action {
+    border-radius: 0;
+    border: none;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-edit {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: var(--bs-primary);
+  }
+
+  .btn-edit:hover {
+    background-color: var(--bs-primary);
+    color: white;
+  }
+
+  .btn-quickview {
+    background-color: rgba(108, 117, 125, 0.1);
+    color: var(--bs-secondary);
+  }
+
+  .btn-quickview:hover {
+    background-color: var(--bs-secondary);
+    color: white;
+  }
+
+  .btn-delete {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--bs-danger);
+  }
+
+  .btn-delete:hover {
+    background-color: var(--bs-danger);
+    color: white;
+  }
+
+  /* Liste des sous-entités */
+  .sub-entities-list {
+    height: calc(100% - 56px);
+    overflow-y: auto;
+
+  }
+
+  .sub-entity-item {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+  }
+
+  .sub-entity-item:hover {
+    background-color: rgba(0,0,0,0.02);
+    transform: translateX(2px);
+  }
+
+  .sub-entity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .sub-entity-title {
+    font-weight: 600;
+    color: var(--bs-dark);
+    text-decoration: none;
+
+    margin-right: 0.5rem;
+  }
+
+  .sub-entity-title:hover {
+    color: var(--bs-primary);
+  }
+
+  .sub-entity-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50px;
+    font-weight: 600;
+  }
+
+  .sub-entity-progress {
+    margin-bottom: 0.5rem;
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+  }
+
+  /* État vide */
+  .sub-entity-empty {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .empty-state i {
+    font-size: 3rem;
+    color: rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h5 {
+    font-size: 1.2rem;
+    color: var(--bs-dark);
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Animation de badge prioritaire */
+  .pulse {
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+  }
+
+  /* Barre de défilement personnalisée */
+  .sub-entities-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sub-entities-list::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.02);
+    border-radius: 3px;
+  }
+
+  .sub-entities-list::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.1);
+    border-radius: 3px;
+  }
+
+  .sub-entities-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.2);
+  }
+</style>
+
+<script>
+// Initialisation des tooltips
+document.addEventListener('DOMContentLoaded', function() {
+  // Tooltips
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+
+  // Confirmation de suppression
+  document.querySelectorAll('.confirm-action').forEach(item => {
+    item.addEventListener('click', event => {
+      if (!confirm(item.dataset.confirmText || 'Êtes-vous sûr de vouloir effectuer cette action ?')) {
+        event.preventDefault();
+      }
+    });
+  });
+});
+</script>
+	{% endif %}
+
+	{% if is_tache or is_sub_tache == True %}
+	<table style="display:none;max-width:100%;overflow:auto;" class="main-table table">
+		<thead class="table_head_1">
+			<th class="t_cell">
+        {%if entity.m_nom%}
+				{{entity.m_nom}}
+        {%else%}
+        {{entity}}
+
+        {%endif%}
+			</th>
+			{% for struc in insti_structures %}
+			<th class="t_cell">{{struc}}</th>
+			{% endfor %}
+		</thead>
+		<tbody class="table_body_1">
+			{% for tache in pages_o %}
+			<tr class="tr_bod">
+				<td style="cursor:pointer;" onclick="document.location='/taches/{{tache.id}}/'"  class="replace_n t_cell text-success">{{tache}}</td>
+
+
+				{% for r in insti_structures %}
+				{% if r in tache.structures_names %}
+				{% for t in tache.structures.filter %}
+				{% if t.m_structure == r %}
+				<td  style="cursor:pointer;" onclick="document.location='/taches/{{tache.id}}/'" class="replace_n t_cell">{% for s in t.clean_roles %}<span class="btn text-white" style="background:{{s.color}}">{{s.letter}}</span>&nbsp;&nbsp;{% endfor %}</td>
+				{% endif %}
+				{% endfor %}
+				{% else %}
+				<td style="cursor:pointer;" onclick="document.location='/taches/{{tache.id}}/'" class="replace_n t_cell"></td>
+				{% endif %}
+				{% endfor %}
+
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+
+	<!-- Chronogramme des DiffÃ©rentes Taches -->
+	<table style="display:none;max-width:100%;overflow:auto;" class="main-table table">
+		<thead class="table_head_2">
+			<th class="t_cell ">
+				{{entity}}
+			</th>
+			<th class="t_cell text-center">Plannification</th>
+		</thead>
+		<tbody class="table_body_2">
+			{% for tache in pages_o %}
+			<tr class="tr_bod"> <!-- Get the index -->
+				<td class="t_cell text-success" style="cursor:pointer;" onclick="document.location='/taches/{{tache.id}}/'">{{tache}} </td0>
+					<td class="d-flex justify-content-center flex-wrap" style="cursor:pointer;" onclick="document.location='/taches/{{tache.id}}/'"><div>{% for t in tache.plan_months %} <i class="fas fa-clock"></i> <span class="">{{t}}</span> <div>{% endfor %}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+
+			{% endif %}
+
+			{% endblock %}
+
+
+{% if num_pages > 1 %}
+<nav aria-label="Page navigation">
+  <ul class="pagination justify-content-center">
+    {% if pages.has_previous %}
+    <li class="page-item">
+      <a class="btn btn-outline-primary rounded-pill fw-bold" href="?page={{ pages.previous_page_number }}" aria-label="Page précédente">
+        &laquo; Précédent
+      </a>
+    </li>
+    {% endif %}
+
+    {% for num in page_range %}
+    <li class="page-item {% if pages.number == num %}active{% endif %}">
+      <a class="btn {% if pages.number == num %}btn-primary{% else %}btn-light text-secondary{% endif %} rounded-pill fw-bold" href="?page={{ num }}">{{ num }}</a>
+    </li>
+    {% endfor %}
+
+    {% if pages.has_next %}
+    <li class="page-item">
+      <a class="btn btn-outline-primary rounded-pill fw-bold" href="?page={{ pages.next_page_number }}" aria-label="Page suivante">
+        Suivant &raquo;
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+
+			<!--div class="modal fade bd-example-modal-xl" id="addModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" -->
+
+			{% else %}
+			<div class="p-5">
+				<div class="h2 text-center"> Vous n'avez pas encore les permissions requises </div>
+				<div class="text-center d-flex justify-content-center"><a style="width:270px;" class="p-2 text-center text-white card bg-success btn-rounded rounded" href="/"> Retourner au Tableau de Bord </a></div>
+			</div>
+			{% endif %}
+
+			{% endblock %}
+
+			{% block modals %}
+            <div class="modal fade" id="configOptionsModal">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title"> Configuration des Champs et Libelles </h4>
+                        </div>
+                        <div class="modal-body">
+                            <div>
+                                <div > <small class="btn btn-success" id="configOp_name"></small>&nbsp;  <small class="btn btn-primary"> {{actual_institution.operations_name}} </small></div>
+                                <div ></div>
+                                <form method="POST" action="/save_gestion/">
+                                	{% csrf_token %}
+                                	<input type="hidden" id="configOp_id" name="configOp_id">
+                                	<input type="hidden" name="generator" value="cOi">
+                                	<input type="hidden" name="edit_or_create" value="c">
+                                    <div class="pt-4">
+                                        {% if actual_institution.default_options == False %}
+                                        <div class="mb-2"> Champs d'Informations </div>
+                                        {% for th in actual_institution.operations_modules.fields %}
+                                        <div class="d-flex justify-content-around">
+                                            <div style="">
+                                                <div><label> Actuel Champs </label></div>
+                                               <div class="form-control">{{th}}</div>
+
+                                            </div>
+                                            <div>
+                                                <label>Nouveau Nom</label>
+                                                <div>
+                                                    <input type="text" class="form-control" name="fiel1{{forloop.counter}}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="my-2 text-primary"> Champs a Recolter</div>
+                                    <div class="text-primary py-2">
+
+                                        <div>
+                                           {% for th in actual_institution.operations_modules.fill_fields_rapp %}
+                                           <div class="d-flex justify-content-around">
+                                            <div class="" style="">
+                                                <label> Actuel Champs </label>
+                                                <input type="text" class="form-control" readonly="" name="" value="{{th.field}}">
+                                            </div>
+                                            <div>
+                                                <label>Nouveau Nom</label>
+                                                <div>
+                                                    <input type="text" class="form-control" name="fiel2{{forloop.counter}}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                        <div class="py-4">
+                                            <input type="submit" class="btn btn-success" value="Enregistrer" name="">
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+			<div class="modal fade" id="dupliqModal" tabindex="-1" role="dialog" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<form class="form-horizontal bordered-row" action="/duplicate/"  method="POST">
+							{% csrf_token %}
+							<div class="modal-body">
+								<input type="hidden" name="generator_d" {% if g_v == 'o' %} value="o" {% else %} value="e" {% endif %}>
+								<input type="hidden" class="entity_id form-control">
+								<input type="hidden" name="hierachy" value="{{hierachy}}">
+								<h5 style="text-transform:uppercase;">Dupliquer <span class="dup_name text-primary h5"></span>?  </h5>
+								<div> <input type="checkbox" value="0" data-show="0" id="rename_dup" name="new_dup"> <label for="rename_dup"> Dupliquer mais renommer ?</label>  </div>
+								<div class="my-2" style="display:none;" id="rename_div"> <input placeholder="Nouveau Nom" type="text" class="form-control" name="nom_dup"></div>
+								{% if g_v != 'o' %}
+								<div> <input type="checkbox" value="1" data-show="0" id="relogic_dup" name="relogic_dup"> <label for="relogic_dup"> Dupliquer et Conserver la Logique </label>  </div>
+								{% else %}
+								<div> <input type="checkbox" value="1" onchange="showRACI_dup(this)" data-show="0" id="reraci_dup" name="reraci_dup"> <label for="reraci_dup"> Dupliquer mais modifier le RACI</label>  </div>
+								<div id="raci_block_dup" style="display:none;">
+									<div>
+										<div class="assiDIV form-group">
+											Principal Responsable
+											<select name="perso" class="form-control">
+												{% for perso in personnels %}
+												<option value="{{perso.id}}">{{perso.get_structure}} - {{perso}}</option>
+												{% endfor %}
+												<option value="0">Non D&eacute;fini</option>
+											</select>
+										</div>
+									</div>
+									<div class="form-group">
+										Accountable
+										<div class="justify-content-around">
+											<select name="accountable" class="form-control">
+												<option value="0">Non D&eacute;fini</option>
+												{% for perso in personnels %}
+												<option value="{{perso.id}}">{{perso}}</option>
+												{% endfor %}
+											</select>
+										</div>
+									</div>
+									<div class="form-group">
+										Consulted
+										<div class="justify-content-around">
+											<select name="consulted" class="form-control">
+												<option value="0">Non D&eacute;fini</option>
+												{% for perso in personnels %}
+												<option value="{{perso.id}}">{{perso}}</option>
+												{% endfor %}
+											</select>
+										</div>
+									</div>
+									<div class="form-group">
+										Informed
+										<div class="justify-content-around">
+											<select name="informed" class="form-control">
+												<option value="0">Non D&eacute;fini</option>
+												{% for perso in personnels %}
+												<option value="{{perso.id}}">{{perso}}</option>
+												{% endfor %}
+											</select>
+										</div>
+									</div>
+								</div>
+								{% endif %}
+							</div>
+							<div class="modal-footer">
+								<input type="hidden" class="dup_id" name="dup_id">
+								<input type="hidden" name="link" value="{{request.path}}">
+								<button type="button" class="btn btn-danger" data-dismiss="modal"> Annuler</button>
+								<button type="submit" class="btn btn-primary"> Confirmer</button>
+							</div>
+						</form>
+
+					</div>
+				</div>
+			</div>
+			{% block add_modals %}
+
+			{% endblock %}
+
+			{% block add_modal %}
+			<div class="modal fade bd-example-modal-lg" id="evaluateModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+				<div class="modal-dialog modal-lg">
+					<div class="modal-content">
+						<div class="modal-header">
+							Evaluation
+						</div>
+						<div>
+							<canvas id='evaluate_canvas'>
+
+							</canvas>
+						</div>
+					</div>
+				</div>
+			</div>
+
+						<div class="modal fade" id="addActionModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" style="font-family:MaPolicePerso; text-color: light">
+							<div class="modal-dialog modal-xl" role="document">
+							  <div class="modal-content">
+								<div class="modal-header" style="background-color: {{request.user.personnel.color_fond}};">
+								  <h5 class="modal-title text-light" id="exampleModalLabel">Ajouter  {% if base_val == None %} {{entity}} {% else %} {{sub_entity}} {% endif %} </h5>
+								  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+									</button>
+								</div>
+						<div id='addEntityBody' class="modal-body">
+							<form class="form-horizontal bordered-row" action="/save_entity_value/" id="addFormAction" onsubmit='return getFieldValues(this);' data-toggle="validator" enctype="multipart/form-data" role="form" method="post">
+								{% csrf_token %}
+             
+								<input type="hidden" name="base_val" {% if base_val != None %} value="{{base_val.id}}{% else %}0{% endif %}">
+
+								<input type="hidden" name="edit_or_create" id="edit_or_create" value="c">
+								<input type="hidden" name="edit_id" id="edit_id">
+								<input type='hidden' name='generator' value='p'>
+								<input type='hidden' name='institution' value='{{actual_institution.id}}'>
+								<input type='hidden' name='hierachie' value='{{hierachy}}'>
+								<input type='hidden' value='{% if is_tache == True or is_sub_tache == True %}True{% else %}False{% endif %}' name='is_tache'>
+								<input type='hidden' id='fields' required name='fields' value=''>
+								
+								<div class="" id="main_infos_section">
+								<div class="row d-flex justify-content-center">
+                 
+									{% if sub_entity == None %}
+									{% if entity.is_pic_represented %}
+									<div class="col-sm-6 col-10 col-md-9 mb-3">
+										<label> Image de Couverture </label>
+										<input type="file" name="cover_img" class="form-control">
+
+									</div>
+									{% endif %}
+									{% else %}
+									{% if sub_entity.is_pic_represented %}
+									<div class="col-sm-6 col-10 col-md-9 mb-3">
+										<label> Image de Couverture </label>
+										<input type="file" class="form-control" name="cover_img">
+									</div>
+									{% endif %}
+									{% endif %}
+                    	<div class="row justify-content-center">
+              <div class="col-12 mb-4">
+                  
+                  <div class="card shadow-sm border-0">
+                      <div class="card-body">
+                          <label id='nom'>Nom</label>
+                        <input type='text' 
+                                id="nom" 
+                                class=' form-control form-control-lg ' name='nom'>
+
+                            <label id='Objectif'>Objectif</label>
+                              <textarea id="Objectif" 
+                                    class=' form-control' 
+                                    rows="4" 
+                                    placeholder="Saisissez les détails..." name="objectif"></textarea>
+                              
+                                    <label for="Observation">Observation</label>
+                              <textarea id="Observation" 
+                                    class=' form-control' 
+                                    rows="4" 
+                                    placeholder="Saisissez les détails..." name="observation"></textarea>
+
+                        
+
+                            </div>
+                        </div>
+                        </div>
+                </div>
+            {% if is_tache or is_sub_tache %}
+								<div class="d-flex py-1">
+									<div class="px-2"><div class="badge badge-primary">Infos Generales</div></div>
+									<div class="px-2"><div class="badge">Repartition des Roles et Structures</div></div>
+									<div class="px-2"><div class="badge ">Plannification </div></div>
+
+								</div>
+								{% endif %}
+							
+                  <div class="section-champs mt-4">
+    <h5 class="mb-4">
+        <i class="fas fa-list-alt me-2"></i>
+        Champs à renseigner
+    </h5>
+   
+
+         {% comment %} <input  type='text' value='{%if base_val == None%}   {{entity.id}} {%else%} {{sub_entity.id}} {%endif%}' name='entity_required'/> {% endcomment %}
+    {% if base_val == None %}
+        {# Utilise entity pour les champs #}
+     
+        {% if champs_rapportes %}
+            {% for champ in champs_rapportes %}
+                {% if entity.id == champ.entity.id %}
+                    <div class="form-group d-flex justify-content-between align-items-start mb-4 p-4 border rounded-3 bg-light shadow-sm hover-shadow transition-all">
+                        <div class="flex-grow-1 me-3">
+                            <label class="form-label fw-bold mb-2 fs-6" for="champ_{{ champ.id }}">
+                                {{ champ.name }}
+                                {% if champ.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            
+                            {# Logique des champs (identique à avant) #}
+                            {% if champ.type == 'Text' %}
+                                <textarea class="form-control form-control-lg" 
+                                        id="champ_{{ champ.id }}"
+                                        rows="4"
+                                        placeholder="Texte libre..." 
+                                        data-champ="{{ champ.name }}"
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                        name='champ_{{ champ.id }}'
+                                        data-context="entity"></textarea>
+                            {% elif champ.type == 'number' %}
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-hashtag"></i>
+                                    </span>
+                                    <input type="number" class="form-control form-control-lg" 
+                                        id="champ_{{ champ.id }}"
+                                        placeholder="0" step="any"
+                                        data-champ="{{ champ.name }}"
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="entity">
+                                </div>
+                            {% elif champ.type == 'date' %}
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </span>
+                                    <input type="date" class="form-control form-control-lg" 
+                                        id="champ_{{ champ.id }}"
+                                        data-champ="{{ champ.name }}"
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="entity">
+                                </div>
+                            {% elif champ.type == 'boolean' %}
+                                <div class="form-check form-switch form-switch-lg">
+                                    <input class="form-check-input" type="checkbox"
+                                        id="champ_{{ champ.id }}"
+                                        data-champ="{{ champ.name }}"
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="entity">
+                                    <label class="form-check-label fw-semibold" for="champ_{{ champ.id }}">
+                                        {{ champ.name }}
+                                    </label>
+                                </div>
+                            {% elif champ.type == 'select' %}
+                                <select class="form-select form-select-lg" 
+                                        id="champ_{{ champ.id }}"
+                                        data-champ="{{ champ.name }}" 
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="entity">
+                                    <option value="">Choisir une option...</option>
+                                    {% for option in champ.options %}
+                                        <option value="{{ option.value }}">{{ option.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-secondary">
+                                        {{ champ.type|slice:":3"|title }}
+                                    </span>
+                                    <input type="text" class="form-control form-control-lg" 
+                                        id="champ_{{ champ.id }}"
+                                        placeholder="Type: {{ champ.type }}"
+                                        data-champ="{{ champ.name }}"
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="entity">
+                                </div>
+                            {% endif %}
+                            
+                            {% if champ.description %}
+                                <div class="form-text mt-2">{{ champ.description }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-end ms-3 flex-shrink-0">
+                            <span class="badge bg-primary fs-6 px-3 py-2 mb-2 d-block">
+                                <i class="fas fa-cube me-1"></i>{{ champ.type|title }}
+                            </span>
+                            {% if champ.indicateur %}
+                                <span class="badge bg-success fs-6 px-3 py-2">
+                                    <i class="fas fa-chart-line me-1"></i>Indicateur
+                                </span>
+                            {% endif %}
+                            {% if champ.required %}
+                                <span class="badge bg-danger fs-6 px-3 py-2 mt-1 d-block">
+                                    <i class="fas fa-asterisk me-1"></i>Obligatoire
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted mb-0">Aucun champ à renseigner pour {{ entity.name|default:"cette entité" }}</p>
+            </div>
+        {% endif %}
+        
+    {% else %}
+        {# Utilise sub_entity pour les champs #}
+        {% if champs_rapportes %}
+            {% for champ in champs_rapportes %}
+                {% if sub_entity.id == champ.entity.id %}
+                
+                    <div class="form-group d-flex justify-content-between align-items-start mb-4 p-4 border-warning rounded-3 bg-warning-subtle shadow-sm hover-shadow transition-all">
+                        <div class="flex-grow-1 me-3">
+                            <label class="form-label fw-bold mb-2 fs-6 text-warning" for="champ_{{ champ.id }}">
+                                <i class="fas fa-layer-group me-1 opacity-75"></i>
+                                {{ champ.name }}
+                                {% if champ.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            
+                            {# Même logique des champs #}
+                            {% if champ.type == 'Text' %}
+                                <textarea class="form-control form-control-lg" 
+                                        id="champ_{{ champ.id }}"
+                                        rows="4"
+                                        placeholder="Texte libre..." 
+                                        data-champ="{{ champ.name }}"
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="sub_entity"></textarea>
+                            {% elif champ.type == 'number' %}
+                                <div class="input-group">
+                                    <span class="input-group-text text-warning">
+                                        <i class="fas fa-hashtag"></i>
+                                    </span>
+                                    <input type="number" class="form-control form-control-lg" 
+                                        id="champ_{{ champ.id }}"
+                                        placeholder="0" step="any"
+                                        data-champ="{{ champ.name }}"
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="sub_entity">
+                                </div>
+                            {% elif champ.type == 'date' %}
+                                <div class="input-group">
+                                    <span class="input-group-text text-warning">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </span>
+                                    <input type="date" class="form-control form-control-lg" 
+                                        id="champ_{{ champ.id }}"
+                                        data-champ="{{ champ.name }}"
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="sub_entity">
+                                </div>
+                            {% elif champ.type == 'boolean' %}
+                                <div class="form-check form-switch form-switch-lg">
+                                    <input class="form-check-input" type="checkbox"
+                                        id="champ_{{ champ.id }}"
+                                        data-champ="{{ champ.name }}"
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="sub_entity">
+                                    <label class="form-check-label fw-semibold" for="champ_{{ champ.id }}">
+                                        {{ champ.name }}
+                                    </label>
+                                </div>
+                            {% elif champ.type == 'select' %}
+                                <select class="form-select form-select-lg" 
+                                        id="champ_{{ champ.id }}"
+                                        data-champ="{{ champ.name }}" 
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="sub_entity">
+                                    <option value="">Choisir une option...</option>
+                                    {% for option in champ.options %}
+                                        <option value="{{ option.value }}">{{ option.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                <div class="input-group">
+                                    <span class="input-group-text bg-warning text-dark">
+                                        {{ champ.type|slice:":3"|title }}
+                                    </span>
+                                    <input type="text" class="form-control form-control-lg" 
+                                        id="champ_{{ champ.id }}"
+                                        placeholder="Type: {{ champ.type }}"
+                                        data-champ="{{ champ.name }}"
+                                        data-type="{{ champ.type }}"
+                                        data-id="{{ champ.id }}"
+                                           name='champ_{{ champ.id }}'
+                                        data-context="sub_entity">
+                                </div>
+                            {% endif %}
+                            
+                            {% if champ.description %}
+                                <div class="form-text mt-2">{{ champ.description }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-end ms-3 flex-shrink-0">
+                            <span class="badge bg-warning fs-6 px-3 py-2 mb-2 d-block text-dark">
+                                <i class="fas fa-layer-group me-1"></i>{{ champ.type|title }}
+                            </span>
+                            {% if champ.indicateur %}
+                                <span class="badge bg-success fs-6 px-3 py-2">
+                                    <i class="fas fa-chart-line me-1"></i>Indicateur
+                                </span>
+                            {% endif %}
+                            {% if champ.required %}
+                                <span class="badge bg-danger fs-6 px-3 py-2 mt-1 d-block">
+                                    <i class="fas fa-asterisk me-1"></i>Obligatoire
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted mb-0">Aucun champ à renseigner pour {{ sub_entity.name|default:"cette sous-entité" }}</p>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+
+									{%if actual_institution.ponderation%}
+									<div class="col-sm-6 col-10 col-md-9 d-none">
+										<div class="form-group">
+											<div class=""><span>Ponderation</span></div>
+											<input type="number" name="ponderation" class='form-control'>
+
+											<div class="d-none">
+											<div class=""><span>Process</span></div>
+											<select class="form-control" name="process">
+												<<option value="process">Process</option>
+											</select>
+
+											<div class=""><span>Technic</span></div>
+											<select class="form-control" name="technic">
+												<option value="technic">Technic</option>
+											</select>
+
+											<div class=""><span>Finance</span></div>
+											<select class="form-control" name="finance">
+												<option value="finance">Finance</option>
+											</select>
+											</div>
+											</div>
+											</div>
+											{%endif%}
+
+          <div class="row g-4 mt-2">
+    <div class="col-12">
+        <div class="cyber-header-bar d-flex align-items-center justify-content-between p-3 mb-2" 
+             style="background: linear-gradient(90deg, {{request.user.personnel.color_fond}}, transparent);">
+            <h5 class="mb-0 text-uppercase fw-black text-white tracking-widest">
+                <i class="fas fa-project-diagram me-3"></i> Matrice de Gouvernance RACI
+            </h5>
+            <div class="header-status-tag">SYSTEM_READY</div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="raci-card raci-r h-100 p-3">
+            <div class="raci-badge-top">ROLE_01</div>
+            <label class="d-flex align-items-center mb-3">
+                <div class="raci-icon-box bg-purple-soft"><i class="fas fa-crown text-purple"></i></div>
+                <div class="ms-3">
+                    <span class="raci-letter text-purple">R</span>
+                    <span class="raci-label">RESPONSIBLE</span>
+                </div>
+            </label>
+            
+            <div class="select-wrapper">
+                <select name="perso" class="cyber-select responsable_selector" id="responsable">
+                    <option value="0" class="text-muted">--- Sélectionner Agent ---</option>
+                    {% for perso in structure_raci %}
+                    <option value="{{perso.id}}">{{perso.nom}}</option>
+                    {% endfor %}
+                </select>
+                <i class="fas fa-caret-down select-arrow"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="raci-card raci-a h-100 p-3">
+            <div class="raci-badge-top">ROLE_02</div>
+            <label class="d-flex align-items-center mb-3">
+                <div class="raci-icon-box bg-orange-soft"><i class="fas fa-balance-scale text-orange"></i></div>
+                <div class="ms-3">
+                    <span class="raci-letter text-orange">A</span>
+                    <span class="raci-label">ACCOUNTABLE</span>
+                </div>
+            </label>
+            
+            <div class="select-wrapper">
+                <select name="accountable" class="cyber-select accounted_selector">
+                    <option value="0">--- Sélectionner Agent ---</option>
+                    {% for perso in structure_raci %}
+                    <option value="{{perso.id}}">{{perso.nom}}</option>
+                    {% endfor %}
+                </select>
+                <i class="fas fa-caret-down select-arrow"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="raci-card raci-c h-100 p-3">
+            <div class="raci-badge-top">ROLE_03</div>
+            <label class="d-flex align-items-center mb-3">
+                <div class="raci-icon-box bg-cyan-soft"><i class="fas fa-comment-dots text-cyan"></i></div>
+                <div class="ms-3">
+                    <span class="raci-letter text-cyan">C</span>
+                    <span class="raci-label">CONSULTED</span>
+                </div>
+            </label>
+            
+            <div class="select-wrapper">
+                <select name="consulted" class="cyber-select consulted_selector">
+                    <option value="0">--- Sélectionner Agent ---</option>
+                    {% for perso in structure_raci %}
+                    <option value="{{perso.id}}">{{perso.nom}}</option>
+                    {% endfor %}
+                </select>
+                <i class="fas fa-caret-down select-arrow"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+        <div class="raci-card raci-i h-100 p-3">
+            <div class="raci-badge-top">ROLE_04</div>
+            <label class="d-flex align-items-center mb-3">
+                <div class="raci-icon-box bg-gray-soft"><i class="fas fa-satellite-dish text-secondary"></i></div>
+                <div class="ms-3">
+                    <span class="raci-letter text-secondary">I</span>
+                    <span class="raci-label">INFORMED</span>
+                </div>
+            </label>
+            
+            <div class="select-wrapper">
+                <select name="informed" class="cyber-select informed_selector">
+                    <option value="0">--- Sélectionner Agent ---</option>
+                    {% for perso in structure_raci %}
+                    <option value="{{perso.id}}">{{perso.nom}}</option>
+                    {% endfor %}
+                </select>
+                <i class="fas fa-caret-down select-arrow"></i>
+            </div>
+        </div>
+    </div>
+</div>
+<div style='display:none;' class="row mt-4">
+    <div class="col-12">
+        <div class="assiDIV p-3 border rounded bg-white">
+            <label class="fw-bold">Rôle d'Assignation</label>
+            <div class="d-flex align-items-center">
+                <select name="role" class="form-control me-3">
+                    {% for role in roles %}
+                    <option value="{{role.id}}">{{role}}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" data-launch='0' class="assiLAUNCH btn btn-primary flex-shrink-0">
+                    <i class="fas fa-user-tie me-1"></i> Assign. Personnel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+  /* Couleurs RACI */
+:root {
+    --purple: #8e44ad; --purple-soft: rgba(142, 68, 173, 0.1);
+    --orange: #e67e22; --orange-soft: rgba(230, 126, 34, 0.1);
+    --cyan: #16a085;   --cyan-soft: rgba(22, 160, 133, 0.1);
+    --gray-soft: rgba(108, 117, 125, 0.1);
+}
+
+/* Header */
+.cyber-header-bar {
+    border-left: 6px solid #fff;
+    clip-path: polygon(0 0, 100% 0, 98% 100%, 0% 100%);
+}
+
+.header-status-tag {
+    font-size: 0.6rem;
+    color: white;
+    background: rgba(255,255,255,0.2);
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Cartes RACI */
+.raci-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    border-radius: 0; /* Aspect géométrique */
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.raci-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+}
+
+.raci-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; width: 100%; height: 3px;
+}
+
+.raci-r::after { background: var(--purple); }
+.raci-a::after { background: var(--orange); }
+.raci-c::after { background: var(--cyan); }
+.raci-i::after { background: var(--secondary); }
+
+/* Éléments internes */
+.raci-icon-box {
+    width: 50px; height: 50px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    clip-path: polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%);
+}
+
+.raci-letter {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 1.4rem;
+    margin-right: 8px;
+}
+
+.raci-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #4a5568;
+    letter-spacing: 1px;
+}
+
+.raci-badge-top {
+    position: absolute;
+    top: 5px; right: 10px;
+    font-size: 0.55rem;
+    color: #cbd5e0;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom Select */
+.select-wrapper { position: relative; }
+
+.cyber-select {
+    width: 100%;
+    padding: 10px 15px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2d3748;
+    appearance: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.cyber-select:focus {
+    background: #fff;
+    border-color: #3182ce;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.select-arrow {
+    position: absolute;
+    right: 15px; top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+    pointer-events: none;
+}
+    /* Couleurs Vives et Modernes */
+.text-purple { color: #8A2BE2 !important; } /* Violet Vif (R - Responsible/Crown) */
+.bg-purple-light { background-color: #E6D2FF !important; }
+
+.text-orange { color: #FF7F50 !important; } /* Orange Corail (A - Accountable/Balance) */
+.bg-orange-light { background-color: #FFE5D9 !important; }
+
+.text-cyan { color: #00CED1 !important; } /* Bleu-Vert (C - Consulted/Lightbulb) */
+.bg-cyan-light { background-color: #D6FFFE !important; }
+
+/* Boutons (pour les outlines) */
+.btn-outline-purple {
+    color: #8A2BE2;
+    border-color: #8A2BE2;
+}
+.btn-outline-purple:hover {
+    color: #fff;
+    background-color: #8A2BE2;
+}
+
+.btn-outline-orange {
+    color: #FF7F50;
+    border-color: #FF7F50;
+}
+.btn-outline-orange:hover {
+    color: #fff;
+    background-color: #FF7F50;
+}
+
+.btn-outline-cyan {
+    color: #00CED1;
+    border-color: #00CED1;
+}
+.btn-outline-cyan:hover {
+    color: #fff;
+    background-color: #00CED1;
+}
+/* Le bouton 'secondary' peut utiliser la classe Bootstrap par défaut. */
+</style>
+									<div class="dataset-selection-container">
+    <div class="grid-layout">
+        {% for datasets in dataset_settings %}
+        <div class="dataset-item">
+            <input type="checkbox" name="dataset_id" value="{{ datasets.id }}" 
+                   class="dataset-checkbox-hidden" id="check_{{ datasets.id }}">
+            
+            <label for="check_{{ datasets.id }}" class="dataset-card">
+                <div class="card-content">
+                    <!-- Icone dynamique ou générique -->
+                    <div class="dataset-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    </div>
+                    <div class="dataset-info">
+                        <span class="dataset-name">{{ datasets.m_name }}</span>
+                        <span class="dataset-status">Inclure dans le clone</span>
+                    </div>
+                    <!-- Indicateur de sélection -->
+                    <div class="selection-indicator">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                </div>
+            </label>
+        </div>
+        {% empty %}
+        <div class="col-span-full p-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+            <p class="text-slate-400 font-medium">Aucun dataset disponible pour cette configuration.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+/* --- Container Layout --- */
+.dataset-selection-container {
+    padding: 1rem 0;
+}
+
+.grid-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+
+/* --- Hidden Native Checkbox --- */
+.dataset-checkbox-hidden {
+    display: none;
+}
+
+/* --- Custom Card Style --- */
+.dataset-card {
+    display: block;
+    cursor: pointer;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 1rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    user-select: none;
+}
+
+.card-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dataset-icon {
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 10px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.dataset-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dataset-name {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dataset-status {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* --- Selection Indicator (Checkmark) --- */
+.selection-indicator {
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    background: #e2e8f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+/* --- Hover State --- */
+.dataset-card:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* --- Checked State (Active) --- */
+.dataset-checkbox-hidden:checked + .dataset-card {
+    border-color: #4f46e5;
+    background: #f5f3ff;
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.1);
+}
+
+.dataset-checkbox-hidden:checked + .dataset-card .dataset-icon {
+    background: #4f46e5;
+    color: white;
+}
+
+.dataset-checkbox-hidden:checked + .dataset-card .dataset-name {
+    color: #4f46e5;
+}
+
+.dataset-checkbox-hidden:checked + .dataset-card .selection-indicator {
+    background: #10b981;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.dataset-checkbox-hidden:checked + .dataset-card .dataset-status {
+    color: #818cf8;
+}
+</style>
+									{% if actual_institution.finan_options != None and is_tache or actual_institution.finan_options != None and is_sub_tache %}
+									<div class="col-sm-6 col-10 col-md-9 mb-2 d-none">
+										<label class="text-success">Montant Alloue</label>
+										<input type="number" class="form-control" name="finances">
+									</div>
+									{% endif %}
+
+									{% for search in searches %}
+									{% if search.m_entity_type != None %}
+									<div class="col-sm-9">
+										<div class="form-group">
+											<label for="exampleFormControlSelect1">{{search.m_entity_type}}</label>
+											<select required data-code='{{search.code}}' id='search{{forloop.counter}}' name='sup_entity' class="form-control searcher supesea" value="{{base_val.id}}">
+												{% for v in search.m_entity_type.lines %}<option {% if v.id == base_val.id %} selected="true" {% endif %} value="{{v.id}}">{{v.m_nom}}</option>{% endfor %}
+											</select>
+										</div>
+									</div>
+									{% endif %}
+									{% endfor %}
+									<!-- Try Div Cutter -->
+									</div>
+								</div>
+
+								<div id="structures_main_section">
+									{% if is_tache or is_sub_tache == True %}
+									<input type="hidden" required name="structures_list" id="structures_list">
+									<input type="hidden" required name="structures_roles" id="structures_roles">
+
+									<div class="d-flex flex-wrap justify-content-between col-sm-12 d-none">
+										<div id='struc_grp_div' class="col-sm-12 d-flex flex-wrap">
+											<div class="col-sm-6 col-md-4 form-group">
+												<label for="exampleFormControlSelect1">{{actual_institution.default_struc_name}}</label>
+												<select onchange="getStruc_lines()" name='Structure' class="form-control searcher stru_cho">
+													{% for v in actual_institution.structures %}<option value="{{v.id}}">{{v.nom}}</option>{% endfor %}
+												</select>
+											</div>
+										</div>
+										<div class="col-sm-11 d-flex flex-wrap mb-3">
+											<div onclick="addStructure_Gp();" style="cursor:pointer;"><i style="cursor:pointer;" class="fas fa-plus text-success"></i> <span>Ajouter {{actual_institution.default_struc_name}}</span></div>
+											<div class="pl-4" onclick="rmvStructure_Gp();" style="cursor:pointer;"><i style="cursor:pointer;" class="fas fa-times text-danger"></i> <span>Enlever {{actual_institution.default_struc_name}}</span></div>
+										</div>
+    									
+                                        <input type="hidden" name="detail_g_v" {% if detail_g_v == True %} value="{{base_val.id}}" {% else %} value="-1" {% endif %}>
+									</div>
+								</div>
+                                    <button type="submit" id='despBTN2' class="submitBTN btn btn-primary">Enregistrer
+                                </button>
+                        </form>
+								<!-- Section Cutter -->
+								<!-- <div id="periods_main_section">
+									<div class="d-none">
+										<div class="text-left">
+											<input type="checkbox" name="">
+											<label class="">Dupliquer pour chaque {{actual_institution.default_period}}</label>
+										</div>
+									</div>
+									<div class="text-center col-12 d-flex justify-content-center h6 my-3">
+										<div>Organisation {{entity}} : </div>
+										<div class="px-3 text-danger">Configuration Annuelle</div>
+									</div>
+									<div class="col-12 col-md-4 pl-3 d-flex">
+										<div class="p-2"><label>Ann&eacute;e </label></div>
+										<div><input id='year_plan' type="number" class="form-control" name=""></div>
+									</div>
+									
+									<input type="hidden" required name="calendar_selected" id='calendar_selected'>
+									<input type="hidden" name="calendar_periode" value="{{actual_institution.default_period.id}}">
+									{% endif %}
+
+								</div>
+
+								<div class="p-4">
+								<input type="hidden" name="detail_g_v" {% if detail_g_v == True %} value="{{base_val.id}}" {% else %} value="-1" {% endif %}>
+								<button type="submit" id='despBTN2' class="submitBTN btn btn-primary">Enregistrer
+								</button>
+								</div>
+							</form>
+							{% endblock %}
+
+						</div>
+												<!--div class="modal-footer">
+													<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+													<button type="submit" class="btn btn-primary">Save changes</button>
+												</div-->
+
+											</div>
+										</div>
+									</div>
+
+									<div class="modal fade " id="editActionModal" tabindex="-1" role="dialog" aria-hidden="true">
+										<div style='max-width:450px;' class="modal-dialog">
+											<div class="modal-content">
+												<div class="modal-header">
+													<!--button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button-->
+													<h4 class="modal-title">Modifications</h4>
+													<button type="button" class="close waves-effect waves-light" data-dismiss="modal" aria-label="Close">
+														<span aria-hidden="true">x</span>
+													</button>
+												</div>
+												<div class="modal-body">
+													<form onsubmit='disableSubmit(this);' class="form-horizontal bordered-row" action="/modify/" id="editFormAction" data-toggle="validator" role="form" method="post">
+														{% csrf_token %}
+														<input type='hidden' name='generator' value='{{g_v}}'>
+
+														<div class="row">
+															<div class="col-sm-12">
+																<div class="form-group">
+																	Nom
+																	<input type="text" class="form-control" name="nom"  required="">
+																</div>
+															</div>
+															<div class="col-sm-12">
+																<div class="form-group">
+																	D&eacute;signation
+																	<input type="text" class="form-control" name="designation" irequired="">
+																</div>
+															</div>
+															{% for s in searches %}
+															<div class="col-sm-12">
+																<div class="form-group">
+																	{{s.label}}
+																	<select name="{{s.label}}" class="form-control">
+																		{% for val in s.values %}
+																		<option value="{{val.id}}">{{val}}</option>
+																		{% endfor %}
+																	</select>
+																</div>
+															</div>
+															{% endfor %}
+														</div>
+														<button type="submit" class="submitBTN btn btn-primary">Enregistrer
+														</button>
+													</form>
+												</div>
+											</div>
+										</div>
+									</div>
+
+
+
+
+									{% endblock %}
+
+
+								</div>
+
+							</div>
+						</div>
+
+
+
+					</div> <!-- container-fluid -->
+				</div>
+			
+
+
+
+
+
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ {% if message.tags == 'info' %}
+
+<script type="text/javascript">
+ Swal.fire({
+ position: "top-end",
+ icon: "info",
+ title: "{{message}}",
+ showConfirmButton: false,
+ timer: 9000
+});
+</script>
+{%endif%}
+{%endfor%}
+
+
+

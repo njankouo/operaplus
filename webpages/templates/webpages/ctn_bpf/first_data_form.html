@@ -1,0 +1,796 @@
+<style type="text/css">
+	body {
+    background-color: #f7f6f6
+}
+
+.card {
+
+    border: none;
+    box-shadow: 5px 6px 6px 2px #e9ecef;
+    border-radius: 4px;
+}
+
+
+.dots{
+
+    height: 4px;
+  width: 4px;
+  margin-bottom: 2px;
+  background-color: #bbb;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.badge{
+
+        padding: 7px;
+        padding-right: 9px;
+    padding-left: 16px;
+    box-shadow: 5px 6px 6px 2px #e9ecef;
+}
+
+.user-img{
+
+    margin-top: 4px;
+}
+
+.check-icon{
+
+    font-size: 17px;
+    color: #c3bfbf;
+    top: 1px;
+    position: relative;
+    margin-left: 3px;
+}
+
+.form-check-input{
+    margin-top: 6px;
+    margin-left: -24px !important;
+    cursor: pointer;
+}
+
+
+.form-check-input:focus{
+    box-shadow: none;
+}
+
+
+.icons i{
+
+    margin-left: 8px;
+}
+.reply{
+
+    margin-left: 12px;
+}
+
+.reply small{
+
+    color: #b7b4b4;
+
+}
+
+
+.reply small:hover{
+
+    color: green;
+    cursor: pointer;
+
+}
+
+.flexcard {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    max-width: 400px; /* Limite la largeur maximale de la flexcard */
+    height: auto; /* Ajuste la hauteur automatiquement en fonction du contenu */
+    border-radius: 20px;
+    margin: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Ajoute une ombre pour un effet visuel */
+    background-color: #f9f9f9; /* Couleur de fond */
+}
+
+
+  .flexcardNumber {
+    width: 70%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50px;
+    margin: 10px 0px;
+    border-radius: 0px 50px 50px 0px;
+    font-family: 'Jost', sans-serif;
+    color: white;
+    text-shadow: 0px 3px 5px black;
+    font-weight: 500;
+    font-size: 15px;
+    position: relative;
+  }
+
+  .flexcardTitle {
+    font-family: 'Jost', sans-serif;
+    text-transform: uppercase;
+    font-size: 26px;
+    font-weight: 400;
+  }
+
+  .flexcardText {
+    font-family: 'Jost', sans-serif;
+    text-align: center;
+    font-weight: 300;
+  }
+
+  .flexcardNumber:before {
+    content: '';
+    width: 34px;
+    height: 90px;
+    position: absolute;
+    left: -33px;
+    top: 0px;
+    border-radius: 50px 0px 0px 50px;
+    z-index: -1;
+  /* background: #95B7A2; *//* background: -webkit-linear-gradient(bottom, #95B7A2, #AED2BC); */
+    background: -moz-linear-gradient(bottom, #95B7A2, #AED2BC);
+  /* background: linear-gradient(to top, #95B7A2, #AED2BC); */;
+  }
+
+  .flexcardNumber:after {
+    content: '';
+    width: 25px;
+    height: 40px;
+    position: absolute;
+    left: -25px;
+    bottom: -40px;
+    border-radius: 50px 0px 0px 50px;
+    z-index: -1;
+  }
+
+  .flex {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 10px auto;
+  }
+
+  img.flexcardimgItem {
+    width: 50%;
+  }
+
+  /* GREEN CARD */
+
+  .flexcardGreen {
+    background: #f9fbfa;
+    box-shadow: 4px 4px 4px #AED2BC;
+  }
+
+  .flexcardNumberGreen {
+    background: #FCFCFC;
+    background: -webkit-linear-gradient(right, #FCFCFC, #AED2BC);
+    background: -moz-linear-gradient(right, #FCFCFC, #AED2BC);
+    background: linear-gradient(to left, #FCFCFC, #AED2BC);
+    box-shadow: 0px 2px 2px #AED2BC;
+  }
+
+  .flexcardNumberGreen:before {
+    background: #AED2BC;
+  }
+
+  .flexcardNumberGreen:after {
+    background: #95b7a2;
+  }
+
+
+  /*flex card red*/
+  .flexcardNumberred {
+    background: #dc3545;
+    background: #dc3545;
+    background: #dc3545;
+    background: #dc3545;
+    box-shadow: 0px 2px 2px #dc3545;
+  }
+
+  .flexcardNumberred:before {
+    background: #dc3545;
+  }
+
+  .flexcardNumberred:after {
+    background: #dc3545;
+  }
+
+  /* BLUE CARD */
+
+  .flexcardBlue {
+    background: #f7ffff;
+   box-shadow: 4px 8px 1px #92E8EB;
+  }
+
+  .flexcardNumberBlue {
+    background: #FDFFFE;
+    background: -webkit-linear-gradient(right, #FDFFFE, #92E8EB);
+    background: -moz-linear-gradient(right, #FDFFFE, #92E8EB);
+    background: linear-gradient(to left, #FDFFFE, #92E8EB);
+    box-shadow: 0px 2px 2px #92E8EB;
+  }
+
+  .flexcardNumberBlue:before {
+    background: #92E8EB;
+  }
+
+  .flexcardNumberBlue:after {
+    background: #71bdbf;
+  }
+
+  /* ORANGE CARD */
+
+  .flexcardOrange {
+    background: #fdf8f3;
+   box-shadow: 4px -2px 1px #F68404;
+  }
+
+  .flexcardNumberOrange {
+    background: #FDFFFE;
+    background: -webkit-linear-gradient(right, #FDFFFE, #F68404);
+    background: -moz-linear-gradient(right, #FDFFFE, #F68404);
+    background: linear-gradient(to left, #FDFFFE, #F68404);
+    box-shadow: 0px 2px 2px #F68404;
+  }
+
+  .flexcardNumberOrange:before {
+    background: #F68404;
+  }
+
+  .flexcardNumberOrange:after {
+    background: #d06f02;
+  }
+
+  /* PİNK CARD */
+
+  .flexcardPink {
+    background: #fffafd;
+    position: relative;
+      box-shadow: 2px 2px 1px #F34EAE ;
+      border-radius: 20px 20px 0px 20px;
+  }
+  .flexcardPink:before {
+      content: '';
+      width: 0px;
+      height: 50px;
+      /* background: red; */
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      border-left: 100px solid transparent;
+      border-bottom: 90px solid #F34EAE;
+  }
+  .flexcardNumberPink {
+    background: #FDFFFE;
+    background: -webkit-linear-gradient(right, #FDFFFE, #F34EAE);
+    background: -moz-linear-gradient(right, #FDFFFE, #F34EAE);
+    background: linear-gradient(to left, #FDFFFE, #F34EAE);
+    box-shadow: 0px 2px 2px #F34EAE;
+  }
+
+  .flexcardNumberPink:before {
+    background: #F34EAE;
+  }
+
+  .flexcardNumberPink:after {
+    background: #d24095;
+  }
+
+  /* RESPONSİVE */
+
+  @media only screen and (max-width: 800px) {
+
+    .flexcard {
+      width: 35%;
+      margin-top: 20px;
+    }
+
+    img.flexcardimgItem {
+      width: 30%;
+    }
+
+  }
+
+  @media only screen and (max-width: 500px) {
+
+    .flexcard {
+      width: 70%;
+    }
+
+
+
+
+
+</style>
+
+{% extends './evaluer.html' %}
+{% load static %}
+
+{% block add_title %}
+Formulaires de Données
+{% if element != None %}
+- {{element}}
+{% endif %}
+
+{% endblock %}
+
+{% block style %}
+<style type="text/css">
+.deleteSBM{
+	display: none;
+}
+</style>
+{% endblock %}
+
+{% block search_filters %}
+
+<!-- <span class="h3 text-success">{{element}}</span> -->
+{% endblock %}
+
+{% block table %}
+<div>
+
+</div>
+<h6 style="font-weight:bold;text-transform:uppercase;" class="text-center"> Liste des formulaires de l'institution <b class="text-danger">{{actual_institution.nom}}</b>
+  </h6>
+
+<div class="row">
+<div class="col-md-12">
+<div class="card p-1">
+<div card-title>
+<h5 class="text-primary my-2 text-center" style="font-weight:bold">
+Criteres De Recherche
+</h5>
+</div>
+<div class="card-body">
+<div class="row">
+<div class="col-md-4">
+<label style="font-weight:bold">Nom Formulaire</label>
+<input type="search" class="form-control p-2 my-2" id="search" placeholder="recherchez Vos Formulaires">
+</div>
+<div class="col-md-4">
+<label style="font-weight:bold">Structures</label>
+<select class="form-control my-2" id="filter_structure">
+<option>Selectionnez La structure</option>
+{% for l in pages_o %}
+{% for v in l.m_structures.filter %}
+
+<option>{{v}}</option>
+{%endfor%}
+{%endfor%}
+</select>
+</div>
+<div class="col-md-4">
+<label style="font-weight:bold">Roles</label>
+<select class="form-control my-2" id="filter_roles">
+<option>Selectionnez Le role</option>
+{% for l in pages_o %}
+{% for v in l.m_roles.filter %}
+<option>{{v}}</option>
+{%endfor%}
+{%endfor%}
+</select>
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+
+<div class="pt-4 col-12 d-flex w-100">
+
+	<div class="col-lg-12">
+		{% if permissions > 0 %}
+		<div class="text-success p-2">
+
+		</div>
+		{% endif %}
+	</div>
+</div>
+
+
+
+
+
+<a href="/data_sets/0/" class="btn btn-primary">Nouveau Formulaire</a>
+		<div class="row">
+			{% for l in pages_o %}
+
+	<div class="col-md-4">
+
+		                   <div class="card p-3 card-filter" style="margin: 2px;">
+
+		                       <div class="d-flex justify-content-between align-items-center">
+
+		                     <div class="user d-flex flex-row align-items-center">
+
+		                       <img src="{{actual_institution.img.url}}" width="30" class="user-img rounded-circle mr-2">
+		                       <span><small class="font-weight-bold "></small><br/> <small class="font-weight-bold">
+														 <a href="/data_form/{{l.id}}/0/" class="btn btn">
+														 {{l}}
+														 </a>
+													 </small></span>
+		                       <br/>
+
+
+		                     </div>
+
+		                     </div>
+
+
+		                     <div class="action d-flex justify-content-between mt-2 align-items-center">
+
+		                       <div class="reply px-4">
+														<span class="dots text-primary"></span>
+		                           <small class="text-primary">R&ocirc;les Concern&eacute;s:&nbsp;{% for v in l.m_roles.filter %} {{v}}{% endfor %}</small>
+															 <span class="dots"></span>
+		                           <small class="text-danger">Structures Associ&eacute;es:&nbsp;: {% for v in l.m_structures.filter %} {{v}}{% endfor %}</small>
+		                           <span class="dots"></span>
+		                         <!-- 	<small>Archiver</small>
+		                           <span class="dots"></span> -->
+															 <span>
+		                           <small>
+																 <a href="" class="btn btn-danger rounded"  data-target="#deleteModal" onclick="merde(this)" data-id="{{l.id}}" data-toggle="modal">Supprimer</a>
+																 <a href="/data_sets_edit/{{l.id}}/" class="btn btn-primary rounded">modifier</a>
+		                           </small>
+															 </span>
+		                       </div>
+
+
+		                     </div>
+
+
+
+		                   </div>
+											 </div>
+{%endfor%}
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="formDataModal" tabindex="-1" role="dialog" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<form class="form-horizontal bordered-row" action="/save_gestion/" method="post">
+				{% csrf_token %}
+				<div class="modal-header">
+					<h5> Renseigner des Donnees </h5>
+				</div>
+				<div class="modal-body">
+					<input type="hidden" id="edit_or_create" name="edit_or_create" value="c">
+					<input type="hidden" id='generator' name="generator" value="i3">
+					<input type="hidden" class="entity_id form-control" name="id_entity">
+					<input type="hidden" name="hierachy" value="{{hierachy}}">
+					<h5 class="text-info">Indicateur <span class="h5" id="indi_name"></span></h5>
+					<input type="hidden" name="indi_id_hidden" id="indi_id_hidden">
+					<input type="hidden" name="nb_dataE" id="nb_dataE">
+					<input type="hidden" name="u1" value="{{nature}}">
+					<input type="hidden" name="u2" value="{{elt_id}}">
+					<div id='indicaBody'>
+
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-danger" data-dismiss="modal"> Annuler</button>
+					<button type="submit" class="btn btn-primary"> Enregistrer</button>
+				</div>
+			</form>
+
+		</div>
+	</div>
+</div>
+
+	<div class="modal fade" id="dataFormModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-body">
+					<div id="dF_Div">
+						<div class="text-center"> Recuperation des Information</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+function loadIndi(indi_id,arg_elt){
+elt = arg_elt;
+$.ajax({
+	url: '/get_indi_data/',
+	data: {
+		'indi_id':indi_id,
+	},
+	dataType: 'json',
+	success: function (data) {
+		indi_name = document.getElementById("indi_name");
+		indi_name.textContent = data.nom;
+		indicaBody = document.getElementById("indicaBody");
+		indicaBody.innerHTML = "<div>";
+		indicaBody.innerHTML = "<div> Entite : <label class='text-success'> "+elt+"</label> </div>";
+		indicaBody.innerHTML += "<div class='my-3'>";
+		indicaBody.innerHTML += "<div class='text-danger'> Periode de Saisie </div>";
+		indicaBody.innerHTML += "<div class='d-flex'> <div class='px-2'> <input name='tmp_per1' class='form-control' value='2023'> </div> <div class='px-2'> <select name='tmp_per2' class='form-control'> <option value='2'>Janvier </option> </select> </div> </div>"
+		indicaBody.innerHTML += "</div></div><div>"
+
+		indi_id_hidden = document.getElementById("indi_id_hidden");
+		indi_id_hidden.value = indi_id;
+		nb_dataE = document.getElementById("nb_dataE");
+		nb_dataE.value = data.nums.length;
+		indicaBody.innerHTML += "<div class='mt-3 mb-2 pt-3'><small> Renseignement des Donnees </small></div>"
+		for (var i=0;i<data.nums.length;i++){
+			indicaBody.innerHTML += "<div><label>"+data.nums[i]+"</label></div>"
+			indicaBody.innerHTML += "<input type='hidden' name='indiID"+i+"' value='"+data.ids[i]+"''>"
+			indicaBody.innerHTML += "<div style='width:250px;'><input class='form-control' type='text' name='indiVal"+i+"'></div>";
+		}
+		indicaBody.innerHTML += "</div>";
+
+
+	},
+	error: function(data){
+		alert("error")
+	}
+});
+}
+
+period_cell = document.getElementsByClassName("period_cell");
+for (var i=0;i<period_cell.length;i++){
+	months = ["Jan","Fev","Mars","Avril","Mai","Juin","Juillet","Aout","Septembre","Octobre","Novembre","Decembre"];
+	tmp =  period_cell[i].textContent.split("#");
+	period_cell[i].textContent = months[parseInt(tmp[1])] + " "+tmp[0]
+}
+// Rattacher la Periode pourt la Validation
+// Afficher les Periodes de Suivi
+
+actual_month = new Date().getMonth();
+function LaunchFormData(indi_id,Idiv="dF_Div"){
+	months = ["Janvier","Fevrier","Mars","Avril","Mai","Juin","Juillet","Aout","Septembre","Octobre","Novembre","Decembre"]
+	$.ajax({
+		url: '/ajax_form/',
+		data: {
+			'id_dataset':indi_id,
+		},
+		dataType: 'json',
+		success: function (data) {
+			dF_Div = document.getElementById(Idiv);
+			tmp = "<div id='saisie_period' class='my-2'> Periode de Saisie </div>"
+			if (data.periode == "0"){//data.periode == "0"
+				tmp += "<div style='border-bottom:1px solid #aaa;' class='py-2 col-12 d-flex'> <div class='col-6 px-3'> <label> Année </label>  <div>  <input class='form-control' name='period1_saisie' value='2023' type='number'> </div> </div>"
+		}
+		if (data.periode == "1"){
+			tmp += "<div> <label> Mois </label> <div> <select name='period1_saisie' class='form-control'>"
+				for (var j=0;j<months.length;j++){
+					tmp += "<option value='"+months[j]+"' ";
+					if (j == actual_month){
+							tmp += " selected ";
+					}
+					tmp +=">"+months[j]+"</option>";
+				}
+				tmp += "</select> </div> <div> </div> </div> ";
+				}
+				if(data.periode == "2"){
+					tmp += "<div> <label> Hebdomadaire </label> <div> <select name='period1_saisie' class='form-control'>";
+						for (var i = 1; i <= 52; i++) {
+						  tmp += "<option value='Semaine " + i + "'>Semaine " + i + "</option>";
+						}
+
+  						tmp += "</select> </div> <div> </div> </div>";
+				}
+
+				if (data.periode == "3") {
+					tmp += "<div> <label> Journalière </label> <div> <select name='period2_saisie' class='form-control'>";
+					for (var i = 1; i <= 31; i++) {
+					  tmp += "<option value='Jour " + i + "'>Jour " + i + "</option>";
+					}
+					tmp += "</select> </div> <div> </div> </div>";
+				  }
+
+
+
+
+				if (data.subperiode == "Mensuelle"){//data.subperiode == "Mensuelle"
+
+				tmp += "<div> <label> Mois </label> <div> <select name='period2_saisie' class='form-control'>"
+				for (var j=0;j<months.length;j++){
+					tmp += "<option value='"+months[j]+"' ";
+					if (j == actual_month){
+							tmp += " selected ";
+					}
+					tmp +=">"+months[j]+"</option>";
+				}
+				tmp += "</select> </div> <div> </div> </div> ";
+				}if (data.subperiode == "Hebdomadaire") {
+					// Code HTML pour la période hebdomadaire
+					var currentWeek = Math.ceil(new Date().getDate() / 7); // Déterminez la semaine actuelle
+					tmp += "<div> <label> Hebdomadaire </label> <div> <select name='period2_saisie' class='form-control'>";
+
+					for (var i = 1; i <= 52; i++) {
+						tmp += "<option value='Semaine " + i + "'";
+						if (i == currentWeek) {
+							tmp += " selected"; // Sélectionner la semaine actuelle
+						}
+						tmp += ">Semaine " + i + "</option>";
+					}
+					tmp += "</select> </div> <div> </div> </div>";
+				}
+
+				if (data.subperiode == "Trimestriel") {
+					tmp += "<div> <label> Trimestrielle </label> <div> <select name='period2_saisie' class='form-control'>";
+
+					// Code HTML pour la période trimestrielle
+					//var tmp = "<div> <label> Trimestrielle </label> <div> <select name='period2_saisie' class='form-control'>";
+					for (var i = 1; i <= 4; i++) {
+						var currentMonth = new Date().getMonth() + 1; // Obtenez le mois actuel
+						var currentTrimester = Math.ceil(currentMonth / 3); // Déterminez le trimestre actuel
+
+						tmp += "<option value='Trimestre " + i + "'";
+						if (i == currentTrimester) {
+							tmp += " selected"; // Sélectionner le trimestre actuel
+						}
+						tmp += ">Trimestre " + i + "</option>";
+					}
+					tmp += "</select> </div> <div> </div> </div>";
+				}
+
+				if(data.subperiode == "Semestriel"){
+					tmp += "<div> <label> Semestrielle </label> <div> <select name='period2_saisie' class='form-control'>";
+						for (var i = 1; i <= 2; i++) {
+						  var currentSemester = (new Date().getMonth() < 6) ? 1 : 2; // Déterminer le semestre actuel
+						  tmp += "<option value='Semestre " + i + "'";
+						  if (i == currentSemester) {
+							tmp += " selected"; // Sélectionner le semestre actuel
+						  }
+						  tmp += ">Semestre " + i + "</option>";
+						}
+						tmp += "</select> </div> <div> </div> </div>";
+
+				}
+				if (data.subperiode == "journaliere") {
+					tmp += "<div> <label> Journalière </label>";
+					for (var i = 1; i <= 31; i++) { // Boucle pour les jours du mois
+					  var currentDate = new Date().getDate(); // Récupérer le jour actuel
+					  tmp += "<div style='display: inline-block; margin-right: 10px;'> <input type='radio' id='jour" + i + "' name='period2_saisie' value='Jour " + i + "'";
+					  if (i == currentDate) {
+						tmp += " checked"; // Cocher le jour actuel
+					  }
+					  tmp += "> <label for='jour" + i + "'>Jour " + i + "</label> </div>";
+					}
+					tmp += "</div>";
+				  }
+
+
+			tmp +=  "</div>";
+
+
+			tmp2 = "<div class='my-2'> Strucures concernees </div> <div id='saisie_structures' style='border-bottom:1px solid #aaa;' Class='py-2 d-flex'>"
+			for (var i=0;i<data.structures.length;i++){
+				tmp2 += "<div class='px-2'><input type='radio' name='struc_selec' value='"+data.structures_id[i]+"'  class='mr-2'>"+data.structures[i]+" </div>"
+			}
+			tmp2 += "</div>";
+
+			tmp3 = " <div class='pt-2'>";
+			tmp3 += data.form;
+			tmp3 += "</div>";
+
+			dF_Div.innerHTML = tmp+tmp2+tmp3
+		},
+		error: function(data){
+
+		}
+	});
+}
+
+
+function submitForm(){
+	// Recuperation des Variables
+	variables = document.getElementsByClassName("variableSelector");
+	variables_value = document.getElementById("variables_value");
+	variables_names = document.getElementById("variables_names");
+
+	tmp = "";
+	tmp2 = "";
+	for (var i=0;i<variables.length;i++){
+		input = variables[i].getElementsByTagName("input")[0];
+		if (input.value != "")
+		{tmp += input.value + "#";
+		tmp2 += input.getAttribute("name")+ "#";}
+	}
+	variables_value.value = tmp;
+	variables_names.value = tmp2
+
+
+	// Recuperation des Structures
+	saisie_structures = document.getElementById("saisie_structures")
+	structures_value = document.getElementById("structures_value");
+	tmp = "";
+	inputs = saisie_structures.getElementsByTagName("input")
+	for (var i=0;i<inputs.length;i++){
+		if (inputs[i].checked == true){
+			tmp += inputs[i].value + "#"
+		}
+	}
+	structures_value.value = tmp
+
+	// Recuperation des Periodes
+}
+
+</script>
+<script type="text/javascript">
+	// Récupérer les éléments du formulaire
+const searchInput = document.getElementById('search');
+const filterStructure = document.getElementById('filter_structure');
+const filterRoles = document.getElementById('filter_roles');
+const cards = document.querySelectorAll('.glassmorphic-container');
+
+// Ajouter un événement d'écoute sur l'input de recherche
+searchInput.addEventListener('input', function() {
+    const searchTerm = searchInput.value.toLowerCase();
+
+    cards.forEach(card => {
+        const cardName = card.querySelector('.username').innerText.toLowerCase();
+
+        if (cardName.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+
+// Ajouter des événements d'écoute sur les sélecteurs de filtre
+filterStructure.addEventListener('change', function() {
+    const selectedStructure = filterStructure.value;
+
+    cards.forEach(card => {
+        const structures = card.querySelector('.skill-name').innerText.toLowerCase();
+
+        if (structures.includes(selectedStructure) || selectedStructure === 'Selectionnez La structure') {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+
+filterRoles.addEventListener('change', function() {
+    const selectedRole = filterRoles.value;
+
+    cards.forEach(card => {
+        const roles = card.querySelector('.skill-name').innerText.toLowerCase();
+
+        if (roles.includes(selectedRole) || selectedRole === 'Selectionnez Le role') {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+
+// Trier les cartes en fonction du nom "{{l}}"
+const sortedCards = Array.from(cards).sort((a, b) => {
+    const nameA = a.querySelector('.username').innerText.toLowerCase();
+    const nameB = b.querySelector('.username').innerText.toLowerCase();
+    return nameA.localeCompare(nameB);
+});
+
+// Mettre à jour l'affichage des cartes triées
+const container = document.querySelector('.container');
+container.innerHTML = '';
+sortedCards.forEach(card => {
+    container.appendChild(card);
+});
+</script>
+{% block add_script %}
+
+{% endblock %}
+
+{% endblock %}

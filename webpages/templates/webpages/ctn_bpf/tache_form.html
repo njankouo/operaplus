@@ -1,0 +1,767 @@
+{%extends './index.html'%}
+{%block content%}
+
+
+   <form class="form-horizontal" enctype="multipart/form-data" id="FormTask">
+        {% csrf_token %}
+
+        <div class="row">
+            <div class="col-md-6 d-flex flex-column">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0 font-weight-bold">Détails de l'activité</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="font-weight-bold">Nom {{sub_entity}}</label>
+                            <input type="text" class="form-control form-control-lg" name="nom" id="nomAct" required>
+                        </div>
+                         <label class="font-weight-bold">Structure</label>
+                                    <select name="structure" class="form-control select2" required>
+                                        <option value=""></option>
+                                        {% for structures in structure %}
+                                        <option value="{{ structures.id }}">{{ structures.nom }}</option>
+                                        {% endfor %}
+                                    </select>
+                                     <label class="font-weight-bold">Catégorie</label>
+                                    <select name="categorie" class="form-control select2">
+                                        <option value=""></option>
+                                        {% for categorie_operations in categorie_operation %}
+                                        <option value="{{ categorie_operations.id }}">{{categorie_operations.intitule}}</option>
+                                        {% endfor %}
+                                    </select>
+                                      {% if actual_institution.nature != False %}
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Nature</label>
+                                   <select id="nature-select" name="nature" class="form-control select2" hx-get='/search_etape/' hx-target='#list-step' hx-trigger="change">
+     
+                                        <option value=""></option>
+                                        {% for natures in nature %}
+                                        <option value="{{ natures.id }}">{{natures.intitule}}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                {% endif %}
+                                 {%if actual_institution.is_step%}
+                         <div class="form-group">
+                           <label class="font-weight-bold">Intensit&eacute;s </label>
+                          <select id="intensite-select" name="intensite" class="form-control" hx-get='/search_etape/' hx-target='#list-step' hx-trigger="change" hx-vals='js:{nature: document.getElementById("nature-select").value}'>
+      
+                               <option>Non Defini</option>
+                               <option value="FAIBLE">Faible</option>
+                               <option value="MOYENNE">Moyenne</option>
+                               <option value="GRANDE">Grande</option>
+                           </select>
+                        </div>
+                       
+                        {%endif%}
+                        {% if actual_institution.default_options != True %}
+                        <input type="hidden" name="operation_aggregates" id="operation_aggregates">
+                        {% for th in actual_institution.operations_modules.fill_fields %}
+                        <div class="form-group">
+                            <label class="font-weight-bold">{{th.field}}</label>
+                            {% if th.type == 'string' or th.type == 'text' or th.type == 'char' %}
+                            <input type="text" class="form-control agg1">
+                            {% elif th.type == 'int' or th.type == 'number' %}
+                            <input type="number" class="form-control agg1">
+                            {% elif th.type == 'choix' %}
+                            <div class="mb-2"><small class="text-muted">Les valeurs doivent être séparées par des sauts de ligne</small></div>
+                            <textarea class="form-control agg1" rows="3"></textarea>
+                            {% elif th.type == 'file' or th.type == 'image' %}
+                            <input type="file" name="{{th.field}}_nam" class="form-control-file agg1">
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0 font-weight-bold">Délais & Fréquence</h6>
+                    </div>
+                    <div class="card-body">
+                         <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Date de début</label>
+                                    <input type="date" name="date_debut" class="form-control "  id="date_debut" oninput="window.calculateCascade()">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Date d'échéance</label>
+                                    <input type="date" name="date_echeance" class="form-control flatpickr" id='date_fin'>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-bold">Jours pour la réalisation</label>
+                            <div class="input-group mb-3 custom-input-group">
+                                <button class="btn btn-outline-secondary" type="button" id="btn-minus">-</button>
+                                <input type="number" class="form-control text-center custom-input" value="{{duration}}" min="1" max="365" aria-label="Nombre de jours" id="days-input" name="nombre_jour" value="{{total_duration}}">
+
+                                
+                                <button class="btn btn-outline-secondary" type="button" id="btn-plus">+</button>
+                            </div>
+                        </div>
+                        {%if actual_institution.is_frequency%}
+                         <div class="form-group">
+                           <label class="font-weight-bold">Fréquence de suivi (jours)</label>
+                           <input type="number" name="frequence" class="form-control">
+                        </div>
+                        {%endif%}
+                        <div class="form-group">
+                              
+
+
+                               
+
+                                <div class="form-group ">
+                                    <label class="font-weight-bold">Priorité</label>
+                                    <select name="priorite" class="form-control select2">
+                                        <option value="Normale" selected>Normale</option>
+                                        <option value="Basse">Basse</option>
+                                        <option value="Haute">Haute</option>
+                                    </select>
+                                </div>
+                            </div>
+                       
+
+                    </div>
+                </div>
+              
+                
+            </div>
+
+            <style>
+
+.checkbox.style-h {
+  display: block;
+  position: relative;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.checkbox.style-h input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+.checkbox.style-h input:checked ~ .checkbox__checkmark {
+  background-color: #f7cb15;
+}
+.checkbox.style-h input:checked ~ .checkbox__checkmark:after {
+  opacity: 1;
+  top: -3px;
+}
+.checkbox.style-h input:checked ~ .checkbox__body {
+  background-position: 0 0;
+  color: #fff;
+}
+.checkbox.style-h:hover input ~ .checkbox__checkmark {
+  background-color: #f7cb15;
+}
+.checkbox.style-h:hover input:checked ~ .checkbox__checkmark {
+  background-color: #f7cb15;
+}
+.checkbox.style-h:hover .checkbox__body {
+  box-shadow: 5px 5px 10px rgba(0,0,0,0.2);
+}
+.checkbox.style-h .checkbox__checkmark {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 15px;
+  height: 22px;
+  width: 22px;
+  background-color: {{request.user.personnel.color_fond}};
+  transition: background-color 0.25s ease;
+  border-radius: 4px;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -2px -2px 4px {{request.user.personnel.color_fond}};
+}
+.checkbox.style-h .checkbox__checkmark:after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: -15px;
+  width: 10px;
+  height: 20px;
+  border: solid #fff;
+  border-width: 0 4px 4px 0;
+  transform: rotate(45deg);
+  opacity: 0;
+  transition: opacity 0.25s ease, top 0.25s ease;
+}
+.checkbox.style-h .checkbox__body {
+  color: #fff;
+  line-height: 1.4;
+  font-size: 16px;
+  transition: font-weight 0.25s ease;
+  font-weight: bold;
+  color: yellow;
+  background: {{request.user.personnel.color_fond}};
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  padding: 15px;
+  padding-left: 52px;
+  border-radius: 10px;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+  transition: box-shadow 0.25s ease, background 1s ease, color 0.25s ease;
+}
+            </style>
+            <div class="col-md-6 d-flex flex-column">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0 font-weight-bold">Gestion des Responsabilités (RACI)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="raci-label text-success">
+                                <span class="badge badge-success">R</span> Principal Responsable (exécute la tâche) 
+                            </label>
+                            <select name="perso" class="form-control select2">
+                                <option value="0">Non Défini</option>
+                                {% for perso in personnels %}
+                                <option value="{{perso.id}}">{{perso}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="raci-label text-danger">
+                                <span class="badge badge-danger">A</span> Accountable  (responsable final) 
+                            </label>
+                            <select name="accountable" class="form-control select2">
+                                <option value="0">Non Défini</option>
+                                {% for perso in personnels %}
+                                <option value="{{perso.id}}">{{perso}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="raci-label text-warning">
+                                <span class="badge badge-warning">C</span> Consulted  (apporte expertise) 
+                            </label>
+                            <select name="consulted" class="form-control select2">
+                                <option value="0">Non Défini</option>
+                                {% for perso in personnels %}
+                                <option value="{{perso.id}}">{{perso}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="raci-label text-info">
+                                <span class="badge badge-info">I</span> Informed (reçoit mises à jour) 
+                            </label>
+                            <select name="informed" class="form-control select2">
+                                <option value="0">Non Défini</option>
+                                {% for perso in personnels %}
+                                <option value="{{perso.id}}">{{perso}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="raci-label text-dark">
+                                <span class="badge badge-dark">M</span> Manager
+                            </label>
+                            <select name="participant" class="form-control select2">
+                                <option value="0">Non Défini</option>
+                                {% for perso in personnels %}
+                                <option value="{{perso.id}}">{{perso}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                    <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"></script>
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0 font-weight-bold">Informations complémentaires</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            
+                            <div class="col-md-12">
+
+                                <div class="form-group">
+                                   
+                                    <label class="font-weight-bold d-none">Mode de notification</label>
+                                    <select name="notification" class="form-control select2 d-none">
+                                        <option value="2">SMS & Email</option>
+                                        <option value="1">Adresse Mail</option>
+                                        <option value="0">SMS</option>
+                                    </select>
+                                </div>
+
+                                
+
+                                <div class="form-group d-none">
+                                    <label class="font-weight-bold">Pondération</label>
+                                    <input type="number" class="form-control" name="ponderation">
+
+                                </div>
+                            </div>
+                            <div class="card mb-4 shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0 font-weight-bold">Mode De Financement</h6>
+                    </div>
+                    <div class="card-body">
+                         <div class="col-md-12">
+                                <div class="form-group d-none">
+                                    <label class="font-weight-bold">Montant</label>
+                                    <input type="number" class="form-control" name="montant" value="0">
+                                </div>
+                             <div class="row">
+                                 <label class="font-weight-bold">Source de Financement</label>
+                               {% for source_financements in source_financement %}
+                                  <div class="col-md-6 mb-3">
+                                    <div class="checkboxes__item">
+                                      <label class="checkbox style-h">
+                                        <input type="checkbox" name="source_financement" value="{{ source_financements.id }}" data-id="{{ source_financements.id }}" data-nom="{{ source_financements.nom }}"/>
+                                        <div class="checkbox__checkmark"></div>
+                                        <div class="checkbox__body">{{ source_financements.nom }}</div>
+                                      </label>
+                                    </div>
+                                    <div class="mt-2" id="montant-container-{{ source_financements.id }}" style="display: none;">
+                                      <label for="montant-{{ source_financements.id }}" class="form-label">Montant pour {{ source_financements.nom }}</label>
+                                      <input type="number" class="form-control montant-input" id="montant-{{ source_financements.id }}"  name="montant_source_{{ source_financements.id }}" placeholder="Montant" step="0.01">
+                                    </div>
+                                  </div>
+                                {% empty %}
+                                  <div class="empty-state">
+                                   <div class="text-center py-5">
+                                       <div class="empty-state-icon mb-4">
+                                           <i class="fas fa-database fa-4x" style="color: {{request.user.personnel.color_fond}};"></i>
+                                       </div>
+                                       <h4 class="text-muted mb-3 fw-bold">Aucune donnée disponible</h4>
+                                       <p class="text-muted mb-4">
+                                           Aucune Source de financement disponible pour le moment.
+                                       </p>
+                                       <div class="d-flex justify-content-center">
+                                           <div class="pulse-animation" style="width: 120px; height: 4px; background: {{request.user.personnel.color_fond}}; border-radius: 2px;"></div>
+                                       </div>
+                                   </div>
+                                </div>
+                                {% endfor %}
+                                <div class="row mt-3">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="montant-total" class="form-label font-weight-bold">Montant Total</label>
+                                        <input type="number" class="form-control montant-special" name="total_financement" id="montant-total" readonly placeholder="Total">
+                                    </div>
+                                </div>
+                                 <style>
+                                     .montant-special {
+    /* Base style */
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #34495e; /* Darker text color */
+    border: 1px solid #dfe6e9; /* Light border */
+    border-radius: 8px; /* Softer corners */
+    padding: 1rem 1.25rem; /* Larger padding */
+    transition: all 0.3s ease-in-out; /* Smooth transitions */
+
+    /* Custom shadow */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+/* Focus state for a dynamic effect */
+.montant-special:focus {
+    outline: none;
+    border-color: #3498db; /* Blue border on focus */
+    box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2); /* Soft blue glow */
+    background-color: #f7f9fc; /* Slight background change on focus */
+}
+
+/* Read-only state for total */
+#montant-total.montant-special {
+    background-color: #ecf0f1; /* Light gray background */
+    cursor: not-allowed;
+    color: #95a5a6; /* Lighter text color */
+}
+                                 </style>
+                                 <script>
+   document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const totalInput = document.getElementById('montant-total');
+
+    // Fonction pour calculer et mettre à jour le total
+    function calculateTotal() {
+        let total = 0;
+        // Sélectionnez tous les champs de montant visibles
+        const amountInputs = document.querySelectorAll('.montant-input');
+        amountInputs.forEach(input => {
+            // Vérifiez si le champ est visible avant d'ajouter sa valeur
+            if (input.closest('div').style.display !== 'none') {
+                 const value = parseFloat(input.value);
+                 if (!isNaN(value)) {
+                     total += value;
+                 }
+            }
+        });
+        totalInput.value = total.toFixed(2);
+    }
+
+    // Écouteur d'événement sur chaque checkbox
+    checkboxes.forEach(checkbox => {
+        const sourceId = checkbox.dataset.id;
+        const montantContainer = document.getElementById(`montant-container-${sourceId}`);
+        const montantInput = document.getElementById(`montant-${sourceId}`);
+
+        // Gérer la visibilité du champ de montant
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                montantContainer.style.display = 'block';
+                montantInput.addEventListener('input', calculateTotal);
+            } else {
+                montantContainer.style.display = 'none';
+                montantInput.removeEventListener('input', calculateTotal);
+                // Réinitialiser la valeur du champ masqué
+                montantInput.value = '';
+            }
+            // Recalculer le total après un changement
+            calculateTotal();
+        });
+
+        // Ajouter un écouteur initial pour les champs de montant déjà affichés
+        if (montantInput) {
+            montantInput.addEventListener('input', calculateTotal);
+        }
+    });
+
+    // Calcul initial au chargement de la page
+    calculateTotal();
+});
+                                 </script>
+                             </div>
+                        </div>
+
+                          </div>
+               </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+         <div class="col-md-12">
+                                       <div id="list-step" name='search_etape'>
+                                 
+                                    {%include 'webpages/ctn_bpf/etape_nature.html'%}
+                                </div>
+                            </div>
+        <input type='hidden' name='matrice'/>
+       <div class="container my-4">
+        <div class="accordion shadow-sm" id="formulairesAccordeon">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingFormulaires">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapseFormulaires" aria-expanded="false"
+                            aria-controls="collapseFormulaires">
+                        <h6 class="mb-0 font-weight-bold">Formulaires de saisie associés</h6>
+                    </button>
+                </h2>
+                <div id="collapseFormulaires" class="accordion-collapse collapse"
+                     aria-labelledby="headingFormulaires" data-bs-parent="#formulairesAccordeon">
+                    <div class="accordion-body">
+                        {% if actual_institution.formulaire != False %}
+                        <div class="form-group">
+                            <label class="font-weight-bold">Formulaires</label>
+                            <div class="d-flex flex-wrap">
+                                {% for datasets in dataset %}
+                                <div class="custom-control custom-checkbox mr-4 mb-2">
+                                    <input type="checkbox" name="dataset[]" value="{{ datasets.id }}" class="custom-control-input" id="dataset-{{ datasets.id }}">
+                                    <label class="custom-control-label" for="dataset-{{ datasets.id }}">{{datasets.m_name}}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="row">
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Année</label>
+                                    <select name="annee" class="form-control select2">
+                                        <option value=""></option>
+                                        {% for periode in period %}
+                                        <option value="{{ periode.annee }}">{{ periode.annee }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Mois</label>
+                                    <select name="mois" class="form-control select2">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal -->
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialiser Select2
+            $('.select2').select2({
+                placeholder: "Sélectionnez une option",
+                allowClear: true
+            });
+        });
+    </script>
+
+        <input type="hidden" name="redirect" {% if detail_g_v == True %} value="{{base_val.id}}" {% else %} value="-1" {% endif %}>
+        <input type="hidden" name="RACI_hidden" id="RACI_hidden">
+        <input type="hidden" name="RACI_hidden_roles" id="RACI_hidden_roles">
+        <input type="hidden" name="edit_or_create" value="c">
+        <input type="hidden" name="edit_id" id="edit_id">
+        <input type="hidden" name="generator" value="o">
+        <input type="hidden" name="tache" value="{{base_val.id}}">
+        <input type="hidden" name="who_assign" id="who_assign" value="0">
+        <input type="hidden" id="chronogr" name="chronogr">
+
+        <div class="modal-footer bg-light mt-4">
+            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
+                <i class="fas fa-times me-2"></i> Annuler
+            </button>
+            <button type="submit" class="btn btn-submit" id="saveOperation">
+                <i class="fas fa-save me-2"></i> Enregistrer
+            </button>
+        </div>
+    </form>
+<script>
+   
+document.addEventListener('DOMContentLoaded', function() {
+    const formTask = document.getElementById('FormTask');
+    if (!formTask) return; // Sécurité si le formulaire n'est pas sur cette page
+
+    const submitBtn = formTask.querySelector('button[type="submit"]');
+    
+    // Initialisation sécurisée des composants Bootstrap
+    const successModalEl = document.getElementById('meal-opera');
+    const successModal = successModalEl ? new bootstrap.Modal(successModalEl) : null;
+    
+    const toastEl = document.getElementById('opera-toast');
+    const toastBS = toastEl ? new bootstrap.Toast(toastEl) : null;
+
+    // Reset de la barre de progression
+    if (successModalEl) {
+        successModalEl.addEventListener('hidden.bs.modal', function () {
+            const bar = document.getElementById('apple-bar');
+            if (bar) bar.style.width = '0%';
+        });
+    }
+
+    formTask.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Envoi...`;
+
+        const formData = new FormData(this);
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        try {
+            const response = await fetch('/save_operation/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            // On vérifie si la réponse est du JSON
+            const data = await response.json();
+
+            if (response.ok && data.status === 'success') {
+                // 1. Fermer la modale de saisie
+                const formModalEl = document.getElementById('addActionModal');
+                const formModal = bootstrap.Modal.getInstance(formModalEl);
+                if (formModal) formModal.hide();
+
+                // 2. Injecter les données (avec vérification ID)
+                const resMontant = document.getElementById('res-montant');
+                const resDate = document.getElementById('res-date');
+                if (resMontant) resMontant.innerText = `${formData.get('total_financement') || '0'} FCFA`;
+                if (resDate) resDate.innerText = formData.get('date_debut') || '--';
+
+                // 3. Afficher la modale Apple
+                if (successModal) successModal.show();
+
+                // 4. Animation barre
+                setTimeout(() => {
+                    const progressBar = document.getElementById('apple-bar');
+                    if (progressBar) progressBar.style.width = '100%'; 
+                }, 400);
+
+                // 5. Confetti
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 }, colors: ['#007aff', '#34c759', '#ff9500'] });
+                }
+
+                this.reset();
+            } else {
+                throw new Error(data.message || "Erreur 400: Requête invalide");
+            }
+
+        } catch (err) {
+            console.error("Erreur Opera+:", err);
+            
+            // Tentative d'affichage du Toast
+            const toastMsg = document.getElementById('toast-message');
+            if (toastMsg && toastBS) {
+                toastMsg.innerText = err.message;
+                toastBS.show();
+            } else {
+                // Si le toast n'existe pas, on utilise l'alerte navigateur pour ne pas rester dans le flou
+                alert("Attention : " + err.message);
+            }
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+});
+</script>
+
+<script>
+    console.log("Script chargé !"); 
+
+   window.calculateCascade = function() {
+    const startDateInput = document.getElementById('date_debut');
+    console.log("Appel de calculateCascade ! Valeur :", startDateInput.value);
+
+    if (!startDateInput.value) return;
+
+    // On récupère toutes les lignes du tableau
+    const rows = document.querySelectorAll('table tbody tr');
+    
+    // IMPORTANT : On repart de la date de début à chaque fois
+    let currentRefDate = new Date(startDateInput.value);
+
+    rows.forEach((row) => {
+        const durationInput = row.querySelector('input[type="number"][name*="duree"]');
+        const endDateInput = row.querySelector('.date-input');
+
+        if (durationInput && endDateInput) {
+            const days = parseInt(durationInput.value) || 0;
+            
+            // On ajoute les jours à la date de référence actuelle
+            currentRefDate.setDate(currentRefDate.getDate() + days);
+
+            // Formatage YYYY-MM-DD
+            const y = currentRefDate.getFullYear();
+            const m = String(currentRefDate.getMonth() + 1).padStart(2, '0');
+            const d = String(currentRefDate.getDate()).padStart(2, '0');
+            
+            endDateInput.value = `${y}-${m}-${d}`;
+            
+            // Note : currentRefDate est maintenant la date de fin de CETTE ligne,
+            // elle servira de base pour la ligne SUIVANTE (effet cascade).
+        }
+    });
+};
+</script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sélection des éléments du DOM
+      const daysInput = document.getElementById('days-input');
+      const startDateInput = document.getElementById('date_debut');
+      const endDateInput = document.getElementById('date_fin');
+      const btnMinus = document.getElementById('btn-minus');
+      const btnPlus = document.getElementById('btn-plus');
+
+      /**
+       * Calcule et met à jour la date de fin en fonction de la date de début
+       * et du nombre de jours saisis.
+       */
+
+
+      const updateEndDate = () => {
+          const startDate = startDateInput.valueAsDate;
+          const daysToAdd = parseInt(daysInput.value, 10);
+
+          // S'assure que les valeurs sont valides
+          if (!startDate || isNaN(daysToAdd)) {
+              endDateInput.value = '';
+              return;
+          }
+
+          const endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + daysToAdd);
+          endDateInput.valueAsDate = endDate;
+      };
+
+      /**
+       * Met à jour le nombre de jours en fonction de la date de début et de fin.
+       */
+      const updateDaysFromDates = () => {
+          const startDate = startDateInput.valueAsDate;
+          const endDate = endDateInput.valueAsDate;
+
+          // S'assure que les valeurs sont valides
+          if (!startDate || !endDate || endDate < startDate) {
+              daysInput.value = '';
+              return;
+          }
+
+          const timeDifference = endDate.getTime() - startDate.getTime();
+          const dayDifference = Math.ceil(timeDifference / (1000 * 3600 * 24));
+          daysInput.value = dayDifference;
+      };
+
+      /**
+       * Met à jour le nombre de jours et recalcule la date de fin.
+       * @param {number} delta - La valeur à ajouter ou soustraire (1 ou -1).
+       */
+      const updateDays = (delta) => {
+          let currentValue = parseInt(daysInput.value, 10);
+          const min = parseInt(daysInput.min, 10) || 1;
+          const max = parseInt(daysInput.max, 10) || 365;
+
+          currentValue += delta;
+
+          // Limite la valeur entre min et max
+          if (currentValue >= min && currentValue <= max) {
+              daysInput.value = currentValue;
+              updateEndDate();
+          }
+      };
+
+      // Écouteurs d'événements pour les boutons
+      btnMinus.addEventListener('click', () => updateDays(-1));
+      btnPlus.addEventListener('click', () => updateDays(1));
+
+      // Écouteurs pour les champs de saisie
+      const relevantInputs = [daysInput, startDateInput];
+      relevantInputs.forEach(input => input.addEventListener('change', updateEndDate));
+      daysInput.addEventListener('input', updateEndDate);
+
+      // Nouvel écouteur pour mettre à jour le nombre de jours lorsque la date de fin change
+      endDateInput.addEventListener('change', updateDaysFromDates);
+
+
+      // Initialisation
+      startDateInput.valueAsDate = new Date();
+      updateEndDate();
+    });
+</script>
+
+{%endblock%}

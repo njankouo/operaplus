@@ -1,0 +1,127 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Notification Opera+</title>
+</head>
+
+<body style="margin:0; padding:0; background:#f4f6f9; font-family:Arial, sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:20px;">
+<tr>
+<td align="center">
+
+<!-- CONTAINER -->
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:14px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.08);">
+
+    <!-- HEADER -->
+    <tr>
+        <td style="background:linear-gradient(135deg,#0f172a,#1e293b); padding:25px; text-align:center;">
+            <h1 style="margin:0; font-size:26px;">
+                <a href="https://operaplus.org" style="color:#00f5ff; text-decoration:none;">
+                    Opera+
+                </a>
+            </h1>
+            <p style="color:#94a3b8; margin-top:8px; font-size:14px;">
+                {{ operation }}
+            </p>
+        </td>
+    </tr>
+
+    <!-- STATUS BAR -->
+    <tr>
+        <td style="padding:0;">
+            <div style="height:4px; background:linear-gradient(90deg,#e11d48,#f97316,#22c55e);"></div>
+        </td>
+    </tr>
+
+    <!-- BODY -->
+    <tr>
+        <td style="padding:35px; color:#333;">
+
+            <p style="font-size:16px; margin-bottom:10px;">
+                Bonjour, <strong>{{ personnel }}</strong>,
+            </p>
+
+            <p style="font-size:15px; color:#555; line-height:1.6;">
+                Une nouvelle tâche vous a été attribuée sur 
+                <strong style="color:#e11d48;">Opera+</strong>.
+                Veuillez consulter les détails ci-dessous.
+            </p>
+
+            <!-- ROLE BADGE -->
+            <div style="margin:25px 0; text-align:center;">
+                {% if role == 'A' %}
+                    <span style="background:#2563eb; color:#fff; padding:10px 18px; border-radius:25px; font-size:13px;">👑 Accountable</span>
+                {% elif role == 'C' %}
+                    <span style="background:#f59e0b; color:#fff; padding:10px 18px; border-radius:25px; font-size:13px;">💬 Consulted</span>
+                {% elif role == 'I' %}
+                    <span style="background:#10b981; color:#fff; padding:10px 18px; border-radius:25px; font-size:13px;">📢 Informed</span>
+                {% else %}
+                    <span style="background:#e11d48; color:#fff; padding:10px 18px; border-radius:25px; font-size:13px;">⚡ Responsable</span>
+                {% endif %}
+            </div>
+
+            <!-- CARD INFOS -->
+            <table width="100%" style="margin-top:20px; font-size:14px; background:#f8fafc; border-radius:10px; padding:15px;">
+                <tr>
+                    <td style="padding:10px; color:#64748b;">📅 Début</td>
+                    <td style="padding:10px;"><strong>{{ operation.date_debut }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding:10px; color:#64748b;">⏳ Échéance</td>
+                    <td style="padding:10px;"><strong>{{ operation.date_echeance }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding:10px; color:#64748b;">🏢 Institution</td>
+                    <td style="padding:10px;"><strong>{{ actual_institution.nom }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding:10px; color:#64748b;">📌 {{ institution.last_entity }}</td>
+                    <td style="padding:10px;"><strong>{{ tache }}</strong></td>
+                </tr>
+            </table>
+
+            <!-- CTA -->
+            <div style="text-align:center; margin:35px 0;">
+                <a href="https://operaplus.org"
+                   style="background:linear-gradient(135deg,#e11d48,#f97316); color:#fff; padding:14px 28px; text-decoration:none; border-radius:8px; font-weight:bold; display:inline-block;">
+                    Accéder à Opera+
+                </a>
+            </div>
+
+            <!-- ALERT -->
+            <div style="background:#fff7ed; border-left:4px solid #f97316; padding:12px; font-size:13px; color:#9a3412; border-radius:6px;">
+                ⏱ Pensez à respecter les délais pour assurer le bon suivi du projet.
+            </div>
+
+        </td>
+    </tr>
+
+    <!-- FOOTER -->
+    <tr>
+        <td style="background:#f1f5f9; padding:25px; text-align:center; font-size:12px; color:#666;">
+            
+            <p style="margin:5px 0;"><strong>Opera+ v4.4</strong></p>
+
+            <p style="margin:5px 0;">
+                <a href="https://operaplus.org" style="color:#00f5ff; text-decoration:none;">À propos</a> |
+                <a href="https://operaplus.org" style="color:#16a34a; text-decoration:none;">Support</a>
+            </p>
+
+            <p style="margin-top:10px; font-size:11px; color:#999;">
+                © 2026 Beinfos Plus — Tous droits réservés
+            </p>
+
+        </td>
+    </tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>

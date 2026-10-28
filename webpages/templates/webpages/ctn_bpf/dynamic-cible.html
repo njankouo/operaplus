@@ -1,0 +1,282 @@
+{% extends "./evaluer.html" %}
+{% block content %}
+{% load dict_helper %}
+
+<!-- Bibliothèque de Graphiques -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<div class="min-h-screen bg-[#09090b] text-zinc-100 font-sans selection:bg-blue-500/30">
+    
+    <!-- Header / Toolbar -->
+    <header class="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-6 backdrop-blur-md">
+        <div class="flex flex-col">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-blue-500">Analytics Engine</span>
+            <h1 class="text-sm font-semibold tracking-tight">{{ indicateur.nom }}</h1>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <button onclick="saveData()" 
+                    class="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(59,130,246,0.4)] active:scale-95">
+                <i class="fa fa-save text-[10px]"></i> Publier les données
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="p-6">
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden">
+            
+            <!-- Table Wrapper with Horizontal Scroll -->
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full border-collapse text-left" id="analyticsTable">
+                    <thead>
+                        <tr class="bg-zinc-800/50">
+                            <!-- Sticky Columns -->
+                            <th class="sticky left-0 z-40 min-w-[120px] border-b border-r border-zinc-800 bg-zinc-900 px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">UID / Actions</th>
+                            <th class="sticky left-[120px] z-40 min-w-[130px] border-b border-r border-zinc-800 bg-zinc-900 px-4 py-3 text-[10px] font-bold uppercase text-zinc-500 text-center">Modèle</th>
+                            
+                            <th class="min-w-[120px] border-b border-zinc-800 px-4 py-3 text-[10px] font-bold uppercase text-zinc-500 text-center">Baseline (B)</th>
+                            {% for p in periodes %}
+                            <th class="min-w-[110px] border-b border-zinc-800 px-4 py-3 text-[10px] font-bold uppercase text-zinc-500 text-center">
+                                {{ p.nom }}
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-800">
+                        {% for s in structures %}
+                        <tr data-id="{{ s.id }}" class="js-row group hover:bg-zinc-800/30 transition-colors">
+                            <!-- UID & Action (Sticky) -->
+                            <td class="sticky left-0 z-30 border-r border-zinc-800 bg-zinc-900 px-4 py-0 transition-colors">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="font-mono text-[11px] text-zinc-400">{{ s.nom|slice:":8"|upper }}</span>
+                                    <button onclick="showMiniGraph('{{ s.id }}')" class="text-zinc-600 hover:text-blue-400 transition-colors p-2" title="Voir l'aperçu">
+                                        <i class="fa fa-chart-line text-xs"></i>
+                                    </button>
+                                </div>
+                            </td>
+
+                            <!-- Mode Selector (Per Line - Sticky) -->
+                            <td class="sticky left-[120px] z-30 border-r border-zinc-800 bg-zinc-900 px-2 py-0">
+                                <select class="js-row-mode w-full bg-transparent text-[10px] text-zinc-400 outline-none border-none focus:text-blue-400 cursor-pointer">
+                                    <option value="linear" class="bg-zinc-900">Linéaire</option>
+                                    <option value="exponential" class="bg-zinc-900">Exponentiel</option>
+                                    <option value="sigmoide" class="bg-zinc-900">Courbe S</option>
+                                </select>
+                            </td>
+                            
+                            <!-- Baseline -->
+                            <td class="bg-white/[0.01] p-0 border-r border-zinc-800/30">
+                                <input type="number" step="0.1" value="{{ mapping_valeurs|get_valeur:s.id|stringformat:'d'|add:',baseline'|default:0 }}" 
+                                       class="js-baseline-start w-full h-[48px] bg-transparent text-center font-mono text-sm outline-none">
+                            </td>
+
+                            {% for p in periodes %}
+                            <td class="p-0 border-r border-zinc-800/20 {% if forloop.last %}bg-blue-500/5{% endif %}">
+                                {% with s_id=s.id|stringformat:"d" p_id=p.id|stringformat:"d" %}
+                                {% with current_key=s_id|add:","|add:p_id %}
+                                {% with val=mapping_valeurs|get_valeur:current_key %}
+                                    
+                                    {% if forloop.last %}
+                                        <input type="number" step="0.1" value="{{ val|default:0 }}" 
+                                               class="js-target w-full h-[48px] bg-transparent text-center font-mono text-sm font-bold text-blue-400 outline-none" 
+                                               data-periode-id="{{ p.id }}">
+                                    {% else %}
+                                        <input type="number" step="0.1" value="{{ val }}"
+                                               class="js-interpolation w-full h-[48px] bg-transparent text-center font-mono text-sm outline-none placeholder:text-zinc-800" 
+                                               placeholder="--" data-periode-id="{{ p.id }}"
+                                               {% if val %} data-manual="true" {% endif %}>
+                                    {% endif %}
+
+                                {% endwith %}{% endwith %}{% endwith %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <!-- Total Row -->
+                    <tfoot>
+                        <tr class="bg-zinc-950 border-t-2 border-zinc-800">
+                            <td class="sticky left-0 z-30 bg-zinc-950 px-4 py-3 text-[10px] font-black uppercase text-blue-500 border-r border-zinc-800">Total Cumulé</td>
+                            <td class="sticky left-[120px] z-30 bg-zinc-950 border-r border-zinc-800"></td>
+                            <td id="total-baseline" class="font-mono text-xs text-center text-zinc-500">-</td>
+                            {% for p in periodes %}
+                            <td class="js-total-col font-mono text-xs text-center text-blue-400/80 font-bold">-</td>
+                            {% endfor %}
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Graphique -->
+    <div id="graphModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="w-full max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
+            <div class="mb-4 flex items-center justify-between">
+                <div>
+                    <h3 id="modalTitle" class="text-lg font-bold text-white">Analyse de Projection</h3>
+                    <p id="modalSubtitle" class="text-xs text-zinc-500 uppercase tracking-widest"></p>
+                </div>
+                <button onclick="closeModal()" class="rounded-full bg-zinc-900 p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors">
+                    <i class="fa fa-times w-5 h-5 flex items-center justify-center"></i>
+                </button>
+            </div>
+            <div id="chartContainer" class="h-[400px] w-full"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="erpNotify" class="fixed bottom-8 right-8 translate-y-32 transition-all duration-500 ease-out z-[100]">
+        <div class="flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-900 p-4 shadow-2xl shadow-black">
+            <div id="statusDot" class="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+            <p class="text-xs font-bold uppercase tracking-tighter" id="erpNotifyText">Prêt</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { height: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #09090b; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; border: 2px solid #09090b; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+    
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+</style>
+
+<script>
+    const table = document.getElementById('analyticsTable');
+    let currentChart = null;
+
+    function notify(msg, type = 'info') {
+        const el = document.getElementById('erpNotify');
+        const dot = document.getElementById('statusDot');
+        document.getElementById('erpNotifyText').textContent = msg;
+        dot.className = "h-2 w-2 rounded-full " + (type === 'error' ? 'bg-red-500 animate-none' : 'bg-blue-500 animate-pulse');
+        el.classList.remove('translate-y-32');
+        setTimeout(() => el.classList.add('translate-y-32'), 3000);
+    }
+
+    function calculateRow(row, forceRecalc = false) {
+        const mode = row.querySelector('.js-row-mode').value;
+        const startVal = parseFloat(row.querySelector('.js-baseline-start').value) || 0;
+        const targetVal = parseFloat(row.querySelector('.js-target').value) || 0;
+        const steps = row.querySelectorAll('.js-interpolation');
+        const totalSteps = steps.length + 1;
+
+        steps.forEach((input, i) => {
+            if (forceRecalc || input.dataset.manual !== "true" || input.value === "") {
+                let val;
+                const t = (i + 1) / totalSteps;
+                
+                if (mode === 'exponential') val = startVal + (targetVal - startVal) * Math.pow(t, 2);
+                else if (mode === 'sigmoide') val = startVal + (targetVal - startVal) * (t * t * (3 - 2 * t));
+                else val = startVal + (targetVal - startVal) * t;
+                
+                input.value = val.toFixed(1);
+                if(forceRecalc) input.dataset.manual = "false";
+            }
+        });
+        calculateTotals();
+    }
+
+    function calculateTotals() {
+        // Total Baseline
+        let sumB = 0;
+        document.querySelectorAll('.js-baseline-start').forEach(i => sumB += parseFloat(i.value) || 0);
+        document.getElementById('total-baseline').textContent = sumB.toLocaleString();
+
+        // Totals par colonnes (Périodes)
+        const rows = document.querySelectorAll('.js-row');
+        const totalCells = document.querySelectorAll('.js-total-col');
+
+        totalCells.forEach((cell, colIndex) => {
+            let colSum = 0;
+            rows.forEach(row => {
+                const allInputs = row.querySelectorAll('.js-interpolation, .js-target');
+                colSum += parseFloat(allInputs[colIndex].value) || 0;
+            });
+            cell.textContent = colSum.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+        });
+    }
+
+    // Graphique Analytics
+    function showMiniGraph(structureId) {
+        const row = document.querySelector(`tr[data-id="${structureId}"]`);
+        const name = row.querySelector('span').textContent;
+        const mode = row.querySelector('.js-row-mode').value;
+        
+        const baseline = parseFloat(row.querySelector('.js-baseline-start').value) || 0;
+        const targets = Array.from(row.querySelectorAll('.js-interpolation, .js-target')).map(input => parseFloat(input.value) || 0);
+        
+        const dataSeries = [baseline, ...targets];
+        const labels = ["Baseline", {% for p in periodes %}"{{ p.nom }}",{% endfor %}];
+
+        const modal = document.getElementById('graphModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.getElementById('modalSubtitle').textContent = `${name} • ${mode}`;
+
+        const options = {
+            series: [{ name: 'Projection', data: dataSeries }],
+            chart: { type: 'area', height: 380, toolbar: { show: false }, background: 'transparent', foreColor: '#71717a' },
+            colors: ['#3b82f6'],
+            stroke: { curve: mode === 'sigmoide' ? 'smooth' : 'straight', width: 3 },
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0 } },
+            markers: { size: 5 },
+            xaxis: { categories: labels },
+            theme: { mode: 'dark' }
+        };
+
+        if (currentChart) currentChart.destroy();
+        currentChart = new ApexCharts(document.querySelector("#chartContainer"), options);
+        currentChart.render();
+    }
+
+    function closeModal() {
+        document.getElementById('graphModal').classList.add('hidden');
+        document.getElementById('graphModal').classList.remove('flex');
+    }
+
+    // Sauvegarde Cloud
+    async function saveData() {
+        notify("Publication en cours...");
+        const rowsData = Array.from(document.querySelectorAll('.js-row')).map(row => {
+            const vals = { 'baseline': row.querySelector('.js-baseline-start').value };
+            row.querySelectorAll('[data-periode-id]').forEach(el => {
+                vals[el.getAttribute('data-periode-id')] = el.value;
+            });
+            return { structure_id: row.getAttribute('data-id'), valeurs_periodiques: vals };
+        });
+
+        try {
+            const response = await fetch("{% url 'save_meal_data' %}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ indicateur_id: "{{ indicateur.id }}", donnees: rowsData })
+            });
+            if(response.ok) notify("Données synchronisées", 'success');
+            else notify("Erreur de sauvegarde", 'error');
+        } catch (e) { notify("Erreur réseau", 'error'); }
+    }
+
+    // Initialisation & Listeners
+    table.addEventListener('input', e => {
+        const row = e.target.closest('tr');
+        if (e.target.matches('.js-baseline-start, .js-target')) calculateRow(row, true);
+        if (e.target.matches('.js-interpolation')) { 
+            e.target.dataset.manual = "true"; 
+            calculateTotals(); 
+        }
+    });
+
+    table.addEventListener('change', e => {
+        if (e.target.matches('.js-row-mode')) calculateRow(e.target.closest('tr'), true);
+    });
+
+    window.onload = () => {
+        document.querySelectorAll('.js-row').forEach(row => calculateRow(row, false));
+    };
+</script>
+{% endblock %}

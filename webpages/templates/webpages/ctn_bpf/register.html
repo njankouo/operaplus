@@ -1,0 +1,130 @@
+{% extends './presentation.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 flex overflow-hidden font-sans">
+    <div class="hidden lg:flex w-5/12 bg-[#0F172A] relative flex-col justify-between p-12 overflow-hidden">
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+
+        <div class="relative z-10">
+            <h1 class="text-5xl font-extrabold text-white leading-tight mb-12">
+                Chef d'orchestre de votre <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
+                    performance.
+                </span>
+            </h1>
+            
+            <div class="space-y-10">
+                {% for step in MEAL_STEPS %}
+    <div class="group flex items-center space-x-5">
+        <div class="flex-shrink-0 w-12 h-12 bg-slate-800/50 border border-slate-700 rounded-full flex items-center justify-center group-hover:border-emerald-500 transition-colors">
+            <span class="text-emerald-400 font-bold text-lg">{{ step.0 }}</span>
+        </div>
+        <div>
+            <p class="text-slate-100 font-semibold italic">{{ step.1 }}</p>
+            <p class="text-slate-400 text-sm">{{ step.2 }}</p>
+        </div>
+    </div>
+    {% endfor %}
+            </div>
+        </div>
+
+        <div class="relative z-10">
+            <div class="inline-flex items-center px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-2"></span>
+                <p class="text-slate-400 text-[10px] tracking-[0.2em] uppercase font-bold">Plateforme Certifiée MEAL 2024</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full lg:w-7/12 flex flex-col justify-center items-center px-6 py-12">
+        <div class="w-full max-w-lg">
+            
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Rejoindre Opera+</h2>
+                <p class="text-slate-500 mt-2">Configurez votre espace de pilotage stratégique.</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                <div class="mb-6 p-4 rounded-2xl {% if message.tags == 'error' %}bg-red-50 text-red-600{% else %}bg-emerald-50 text-emerald-600{% endif %} text-sm font-medium">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 p-8 md:p-12 border border-slate-100 transition-all">
+                <form action="{% url 'register' %}" method="POST" class="space-y-5">
+                    {% csrf_token %}
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2 md:col-span-1">
+                            <label for="first_name" class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-2 ml-1">Prénom</label>
+                            <input type="text" name="first_name" id="first_name" required 
+                                class="w-full px-5 py-4 bg-slate-50 border border-transparent rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all outline-none text-slate-700 placeholder:text-slate-300" 
+                                placeholder="Jean">
+                        </div>
+                        <div class="col-span-2 md:col-span-1">
+                            <label for="last_name" class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-2 ml-1">Nom</label>
+                            <input type="text" name="last_name" id="last_name" required 
+                                class="w-full px-5 py-4 bg-slate-50 border border-transparent rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all outline-none text-slate-700 placeholder:text-slate-300" 
+                                placeholder="Dupont">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-2 ml-1">Email Professionnel</label>
+                        <input type="email" name="email" id="email" required 
+                            class="w-full px-5 py-4 bg-slate-50 border border-transparent rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all outline-none text-slate-700 placeholder:text-slate-300" 
+                            placeholder="expert@organisation.org">
+                    </div>
+
+                    <div>
+                        <label for="org_type" class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-2 ml-1">Type d'Organisation</label>
+                        <div class="relative">
+                            <select name="org_type" id="org_type" 
+                                class="w-full px-5 py-4 bg-slate-50 border border-transparent rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all outline-none text-slate-700 appearance-none cursor-pointer">
+                                <option value="ong">Organisation Internationale (ONG)</option>
+                                <option value="gov">Institution Gouvernementale</option>
+                                <option value="consulting">Cabinet de Consulting S&E</option>
+                                <option value="other">Autre</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-2 ml-1">Mot de passe</label>
+                        <input type="password" name="password" id="password" required 
+                            class="w-full px-5 py-4 bg-slate-50 border border-transparent rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all outline-none text-slate-700 placeholder:text-slate-300" 
+                            placeholder="••••••••••••">
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" 
+                            class="w-full bg-[#0F172A] hover:bg-emerald-600 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-slate-200 hover:shadow-emerald-500/30 transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center group">
+                            <span>Initialiser l'espace Opera+</span>
+                            <svg class="w-5 h-5 ml-3 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-8 pt-8 border-t border-slate-50 flex flex-col items-center">
+                    <p class="text-slate-500 text-sm">
+                        Déjà membre de l'orchestre ? 
+                        <a href="{% url 'login' %}" class="font-bold text-emerald-600 hover:text-emerald-700 ml-1 underline-offset-4 hover:underline">Se connecter</a>
+                    </p>
+                </div>
+            </div>
+
+            <p class="mt-8 text-center text-[11px] text-slate-400 leading-relaxed px-4">
+                En vous inscrivant, vous acceptez nos <a href="#" class="underline">conditions d'utilisation</a> et notre <a href="#" class="underline">politique de protection des données</a> d'impact.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

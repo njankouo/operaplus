@@ -1,0 +1,751 @@
+
+<!DOCTYPE html>
+
+<html lang="en" class="light-style layout-navbar-fixed layout-menu-fixed layout-compact " dir="ltr" data-theme="theme-default" data-assets-path="../../assets/" data-template="vertical-menu-template" data-style="light">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+
+    <title>CMIS-UHC</title>
+ <link rel="canonical" href="https://themeselection.com/item/sneat-dashboard-pro-bootstrap/">
+    
+    
+    <!-- ? PROD Only: Google Tag Manager (Default ThemeSelection: GTM-5DDHKGP, PixInvent: GTM-5J3LMKC) -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-5DDHKGP');</script>
+    <!-- End Google Tag Manager -->
+    {%load static%}
+<!-- Icons -->
+<link rel="stylesheet" href="{%static 'version/boxicons.css'%}" />
+
+<!--Core CSS -->
+<link rel="stylesheet" href="{%static 'version/core.css'%}" />
+<link rel="stylesheet" href="{%static 'version/boxicons.css'%}" />
+<link rel="stylesheet" href="{%static 'version/app-kanban.css'%}" />
+<!--Core CSS -->
+<link rel="stylesheet" href="{%static 'version/core.css'%}" />
+<link rel="stylesheet" href="{%static 'version/theme-default.css'%}" />
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/brands.min.css" integrity="sha512-EJp8vMVhYl7tBFE2rgNGb//drnr1+6XKMvTyamMS34YwOEFohhWkGq13tPWnK0FbjSS6D8YoA3n3bZmb3KiUYA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/svg-with-js.min.css" integrity="sha512-Nef0t+7fHdqSdK0uHHjJtjErpW8dJocz9vz2btqXLK9dVQEB3OdnufZ7lO4dQJJb1BvIhGScbk87vm5Z0OTezw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/solid.min.css" integrity="sha512-/r+0SvLvMMSIf41xiuy19aNkXxI+3zb/BN8K9lnDDWI09VM0dwgTMzK7Qi5vv5macJ3VH4XZXr60ip7v13QnmQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+ 
+<link rel="stylesheet" href="{%static 'version/demo.css'%}" />
+
+<!--Vendor CSS-->
+<link rel="stylesheet" href="{%static 'version/perfect-scrollbar.css'%}" />
+<script src="{%static 'version/helpers.js'%}"></script>
+
+<!--? Config:  Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file.  -->
+<script src="{%static 'version/config.js'%}"></script>
+<!-- beautify ignore:start -->
+
+
+<!-- remove while creating package  -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">  
+
+<link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css">
+  <!-- or -->
+  <link rel="stylesheet"
+  href="https://unpkg.com/boxicons@latest/css/boxicons.min.css">
+
+
+  <script src="{%static 'version/emplate-customizer.js' %}"></script>
+</head>
+
+<body>
+
+<link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css">
+  <!-- or -->
+  <link rel="stylesheet"
+  href="https://unpkg.com/boxicons@latest/css/boxicons.min.css">
+ 
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+                <div class="container-fluid">
+                 <a class="navbar-brand" href="/">
+                    <img style="width:40px;height:40px;border-radius:100%; " src="{{actual_institution.img.url}}"><span class="btn text-white" style="font-size:14px;">{{actual_institution.sigle}}</span>
+                        
+                 </a>
+                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-ex-7">
+                 <span class="navbar-toggler-icon"></span>
+                 </button>
+              
+                 <div class="collapse navbar-collapse" id="navbar-ex-7">
+                
+                 <ul class="navbar-nav ms-lg-auto">
+                    <li class="nav-item">
+                       <a class="nav-link" href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#exampleModal"><i class="tf-icons navbar-icon bx bx-menu"></i> Menu</a>
+                    </li>
+                    
+                 </ul>
+                 </div>
+                </div>
+              </nav>
+        </div>
+   
+        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="exampleModalLabel"></h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <div class="modal-body">
+              <div class="container-fluid">  
+              <div class="row">
+                {% if permissions > 0 and not_add == None %}
+                <a href="/" class="card1 d-block col-6 col-md-4 col-lg-3 text-center my-3">  
+                    <div>  
+                        <svg xmlns="http://www.w3.org/2000/svg" height="42px" viewBox="0 -960 960 960" width="48px" fill="#531607">  
+                            <path d="M510-570v-270h330v270H510ZM120-450v-390h330v390H120Zm390 330v-390h330v390H510Zm-390 0v-270h330v270H120Zm60-390h210v-270H180v270Zm390 330h210v-270H570v270Zm0-450h210v-150H570v150ZM180-180h210v-150H180v150Zm210-330Zm180-120Zm0 180ZM390-330Z"/>  
+                        </svg>  
+                    </div>  
+                    <div class="menu_littleWid_text"><strong>Tableau de Bord</strong></div>  
+                </a>  
+              
+                {% elif entity_manage != None and no_simple_user %}
+                <a href="/" class=" d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div><i class="fas fa-home fa-2x text-secondy"></i></div>
+                    <div class="menu_littleWid_text"><small class="">{{entity_manage}} </small></div>
+                </a>
+                {% endif %}
+                {% if permissions > 0 and not_add == None %}
+                <a href="/gestionnaire/0/" class="card1 text-primary col-6 col-md-4 d-block col-lg-3 p-4 text-center">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="42px" viewBox="0 -960 960 960" width="40px" fill="#173660"><path d="M146.67-226.67v-506.66V-226.67Zm0 66.67q-27 0-46.84-19.83Q80-199.67 80-226.67v-506.66q0-27 19.83-46.84Q119.67-800 146.67-800H414l66.67 66.67h332.66q27 0 46.84 19.83Q880-693.67 880-666.67v173.34q-15.67-8-32.5-10.84-16.83-2.83-34.17-1.83v-160.67H453l-66.67-66.66H146.67v506.66h348l-1.34 1.34V-160H146.67ZM560-80v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8.67 9 12.83 20 4.17 11 4.17 22t-4.33 22.5q-4.34 11.5-13.28 20.5L683-80H560Zm300-263-37-37 37 37ZM620-140h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/></svg>  
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Gestionnaire</i></div>
+                </a>
+                <a href="/gestionnaire/-1/" class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#46152F"><path d="M346.67-120q-27.5 0-47.09-19.58Q280-159.17 280-186.67v-426.66q0-27.5 19.58-47.09Q319.17-680 346.67-680h426.66q27.5 0 47.09 19.58Q840-640.83 840-613.33v426.66q0 27.5-19.58 47.09Q800.83-120 773.33-120H346.67Zm0-396h426.66v-97.33H346.67V-516Zm164 165.33h98.66v-98.66h-98.66v98.66Zm0 164h98.66V-284h-98.66v97.33Zm-164-164H444v-98.66h-97.33v98.66Zm329.33 0h97.33v-98.66H676v98.66Zm-329.33 164H444V-284h-97.33v97.33Zm329.33 0h97.33V-284H676v97.33ZM186.67-280q-27.5 0-47.09-19.58Q120-319.17 120-346.67v-426.66q0-27.5 19.58-47.09Q159.17-840 186.67-840h426.66q27.5 0 47.09 19.58Q680-800.83 680-773.33v60h-66.67v-60H186.67v426.66h60V-280h-60Z"/></svg>
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Aper&ccedil;u : {{last_entity}}</i></div>
+                </a>
+                <!-- /evaluer/0/ -->
+           
+                <a href="/evaluer/0/" class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#18333C"><path d="M344-345.33 209.33-480 344-614.67 390.67-567l-87 87 87 87L344-345.33Zm272 0L569.33-393l87-87-87-87L616-614.67 750.67-480 616-345.33ZM186.67-120q-27 0-46.84-19.83Q120-159.67 120-186.67v-168h66.67v168h168V-120h-168Zm418.66 0v-66.67h168v-168H840v168q0 27-19.83 46.84Q800.33-120 773.33-120h-168ZM120-605.33v-168q0-27 19.83-46.84Q159.67-840 186.67-840h168v66.67h-168v168H120Zm653.33 0v-168h-168V-840h168q27 0 46.84 19.83Q840-800.33 840-773.33v168h-66.67Z"/></svg>
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Cadre Des Resultats</i></div>
+                </a>
+        
+        
+                <a href="/chaine_indicateurs/"  class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#321D71"><path d="M159.92-120q-47.25 0-80.25-33.06-33-33.05-33-80.27 0-38.34 22.5-68 22.5-29.67 57.5-40.34v-276.66q-35-10.67-57.5-40.34-22.5-29.66-22.5-68 0-47.22 33.08-80.27Q112.82-840 160.08-840q47.25 0 80.25 33.06 33 33.05 33 80.27 0 38.34-22.5 68-22.5 29.67-57.5 40.34v105h253.34v-105q-35-10.67-57.5-40.34-22.5-29.66-22.5-68 0-47.22 33.08-80.27Q432.82-840 480.08-840q47.25 0 80.25 33.06 33 33.05 33 80.27 0 38.34-22.5 68-22.5 29.67-57.5 40.34v105H720q19.83 0 33.25-13.84Q766.67-541 766.67-560v-58.33q-35-10.67-57.5-40.34-22.5-29.66-22.5-68 0-47.22 33.08-80.27Q752.82-840 800.08-840q47.25 0 80.25 33.06 33 33.05 33 80.27 0 38.34-22.5 68-22.5 29.67-57.5 40.34V-560q0 46.67-33.05 80-33.06 33.33-80.28 33.33H513.33v105q35 10.67 57.5 40.34 22.5 29.66 22.5 68 0 47.22-33.08 80.27Q527.18-120 479.92-120q-47.25 0-80.25-33.06-33-33.05-33-80.27 0-38.34 22.5-68 22.5-29.67 57.5-40.34v-105H193.33v105q35 10.67 57.5 40.34 22.5 29.66 22.5 68 0 47.22-33.08 80.27Q207.18-120 159.92-120Zm.08-66.67q19 0 32.83-13.41 13.84-13.42 13.84-33.25 0-19-13.39-32.84Q179.9-280 160.12-280q-19.79 0-33.29 13.83-13.5 13.84-13.5 33.17 0 19.33 13.42 32.83t33.25 13.5ZM160-680q19 0 32.83-13.38 13.84-13.39 13.84-33.17t-13.39-33.28q-13.38-13.5-33.16-13.5-19.79 0-33.29 13.41-13.5 13.42-13.5 33.25 0 19 13.42 32.84Q140.17-680 160-680Zm320 493.33q19 0 32.83-13.41 13.84-13.42 13.84-33.25 0-19-13.84-32.84Q499-280 480-280t-32.83 13.83q-13.84 13.84-13.84 33.17 0 19.33 13.84 32.83 13.83 13.5 32.83 13.5ZM480-680q19 0 32.83-13.38 13.84-13.39 13.84-33.17t-13.84-33.28Q499-773.33 480-773.33t-32.83 13.38q-13.84 13.38-13.84 33.17 0 19.78 13.84 33.28Q461-680 480-680Zm320.33 0q19.34 0 32.84-13.38 13.5-13.39 13.5-33.17t-13.42-33.28q-13.42-13.5-33.25-13.5-19 0-32.83 13.38-13.84 13.38-13.84 33.17 0 19.78 13.84 33.28Q781-680 800.33-680ZM160-233.33Zm0-493.34Zm320 493.34Zm0-493.34Zm320 0Z"/></svg>
+                        <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#8C1AF6"><path d="M480-80q-121.67 0-200.83-31.5Q200-143 200-218.67q0-75.66 79.17-107.16 79.16-31.5 200.83-31.5 121.67 0 200.83 31.5Q760-294.33 760-218.67q0 75.67-79.17 107.17Q601.67-80 480-80Zm0-84q-115 0-172.67-21-57.66-21-67.33-67.67-4 7-5.33 16.67-1.34 9.67-1.34 17.33 0 49.67 64.84 77.5Q363-113.33 480-113.33q117 0 181.83-27.84 64.84-27.83 64.84-77.5 0-7.66-1.34-17.33-1.33-9.67-5.33-16.67Q709.67-206 652.33-185 595-164 480-164Zm0-33.33q100 0 152.67-16.67 52.66-16.67 52.66-47.33 0-30.67-52.66-46.67Q580-324 480-324q-100 0-153 16t-53 46.67q0 30.66 53 47.33 53 16.67 153 16.67Zm-38-210v-198h-78l154-276v198h78l-154 276Zm38 210Zm0 84Zm0-50.67Z"/></svg> -->
+                        <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#48752C"><path d="M480-80q-82.33 0-155.33-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.67T80-480q0-84 31-156.5t85.67-126.83L480-480v-400q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82.33-31.5 155.33-31.5 73-85.5 127.34Q709-143 636-111.5T480-80Z"/></svg> -->
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Cha&icirc;ne de R&eacute;sultats</i></div>
+                </a>
+                {% endif %}
+                {% if permissions >= 0 %}
+                <a href="/operations/" class="card1 text-info d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#EA33F7"><path d="M230.67-160q-29.67 0-50.17-20.5T160-230.67q0-29.66 20.5-50.16 20.5-20.5 50.17-20.5 29.66 0 50.16 20.5 20.5 20.5 20.5 50.16 0 29.67-20.5 50.17T230.67-160ZM480-160q-29.67 0-50.17-20.5t-20.5-50.17q0-29.66 20.5-50.16 20.5-20.5 50.17-20.5t50.17 20.5q20.5 20.5 20.5 50.16 0 29.67-20.5 50.17T480-160Zm249.33 0q-29.66 0-50.16-20.5-20.5-20.5-20.5-50.17 0-29.66 20.5-50.16 20.5-20.5 50.16-20.5 29.67 0 50.17 20.5t20.5 50.16q0 29.67-20.5 50.17T729.33-160ZM230.67-409.33q-29.67 0-50.17-20.5T160-480q0-29.67 20.5-50.17t50.17-20.5q29.66 0 50.16 20.5 20.5 20.5 20.5 50.17t-20.5 50.17q-20.5 20.5-50.16 20.5Zm249.33 0q-29.67 0-50.17-20.5T409.33-480q0-29.67 20.5-50.17t50.17-20.5q29.67 0 50.17 20.5t20.5 50.17q0 29.67-20.5 50.17T480-409.33Zm249.33 0q-29.66 0-50.16-20.5-20.5-20.5-20.5-50.17t20.5-50.17q20.5-20.5 50.16-20.5 29.67 0 50.17 20.5T800-480q0 29.67-20.5 50.17t-50.17 20.5ZM230.67-658.67q-29.67 0-50.17-20.5T160-729.33q0-29.67 20.5-50.17t50.17-20.5q29.66 0 50.16 20.5 20.5 20.5 20.5 50.17 0 29.66-20.5 50.16-20.5 20.5-50.16 20.5Zm249.33 0q-29.67 0-50.17-20.5t-20.5-50.16q0-29.67 20.5-50.17T480-800q29.67 0 50.17 20.5t20.5 50.17q0 29.66-20.5 50.16-20.5 20.5-50.17 20.5Zm249.33 0q-29.66 0-50.16-20.5-20.5-20.5-20.5-50.16 0-29.67 20.5-50.17t50.16-20.5q29.67 0 50.17 20.5t20.5 50.17q0 29.66-20.5 50.16-20.5 20.5-50.17 20.5Z"/></svg>
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Grille D'execution</i></div>
+                    
+                </a>
+                {% endif %}
+            
+                <a href="/archive_doc/" class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#46152F"><path d="M280-280h533.33v-533.33h-66.66v278.66l-95.34-58-95.33 58v-278.66H280V-280Zm0 66.67q-27 0-46.83-19.84Q213.33-253 213.33-280v-533.33q0-27 19.84-46.84Q253-880 280-880h533.33q27 0 46.84 19.83Q880-840.33 880-813.33V-280q0 27-19.83 46.83-19.84 19.84-46.84 19.84H280ZM146.67-80q-27 0-46.84-19.83Q80-119.67 80-146.67v-600h66.67v600h600V-80h-600ZM556-813.33H746.67 556Zm-276 0H813.33 280Z"/></svg>
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Archives</i></div>
+                </a>
+                {% if permissions > 0 and not_add == None %}
+                <a  href="/structures/" class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#5985E1"><path d="M208-254v-319.33h66.67V-254H208Zm241.33 0v-319.33H516V-254h-66.67ZM80-640v-62l400-218.67L880-702v62H80Zm149-66.67h502l-251-138-251 138Zm-149 586v-66.66h494q2 16.33 4 32.5 2 16.16 8 34.16H80ZM685.33-418v-155.33H752v122L685.33-418ZM800 0q-69-17-114.5-79.5T640-218v-102l160-80 160 80v102q0 76-45.5 138.5T800 0Zm-23.67-120 141-140.67-32.66-32.66-108.34 107.66L724-238l-32.67 33 85 85ZM229-706.67h502-502Z"/></svg>
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">{{default_struc_name}}</i></div>
+                </a>
+              
+                {% endif %}
+                {% if permissions > 0 and not_add == None %}
+                <a  href="/personnels/" class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div>
+                        <i class="fa fa-users fa-2x"></i>
+                        <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#AAC1F0"><path d="M226-262q59-42.33 121.33-65.5 62.34-23.17 132.67-23.17 70.33 0 133 23.17T734.67-262q41-49.67 59.83-103.67T813.33-480q0-141-96.16-237.17Q621-813.33 480-813.33t-237.17 96.16Q146.67-621 146.67-480q0 60.33 19.16 114.33Q185-311.67 226-262Zm253.88-184.67q-58.21 0-98.05-39.95Q342-526.58 342-584.79t39.96-98.04q39.95-39.84 98.16-39.84 58.21 0 98.05 39.96Q618-642.75 618-584.54t-39.96 98.04q-39.95 39.83-98.16 39.83ZM480.31-80q-82.64 0-155.64-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.51T80-480.18q0-82.82 31.5-155.49 31.5-72.66 85.83-127Q251.67-817 324.51-848.5T480.18-880q82.82 0 155.49 31.5 72.66 31.5 127 85.83Q817-708.33 848.5-635.65 880-562.96 880-480.31q0 82.64-31.5 155.64-31.5 73-85.83 127.34Q708.33-143 635.65-111.5 562.96-80 480.31-80Zm-.31-66.67q54.33 0 105-15.83t97.67-52.17q-47-33.66-98-51.5Q533.67-284 480-284t-104.67 17.83q-51 17.84-98 51.5 47 36.34 97.67 52.17 50.67 15.83 105 15.83Zm0-366.66q31.33 0 51.33-20t20-51.34q0-31.33-20-51.33T480-656q-31.33 0-51.33 20t-20 51.33q0 31.34 20 51.34 20 20 51.33 20Zm0-71.34Zm0 369.34Z"/></svg> -->
+                        <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#5985E1"><path d="M208-254v-319.33h66.67V-254H208Zm241.33 0v-319.33H516V-254h-66.67ZM80-640v-62l400-218.67L880-702v62H80Zm149-66.67h502l-251-138-251 138Zm-149 586v-66.66h494q2 16.33 4 32.5 2 16.16 8 34.16H80ZM685.33-418v-155.33H752v122L685.33-418ZM800 0q-69-17-114.5-79.5T640-218v-102l160-80 160 80v102q0 76-45.5 138.5T800 0Zm-23.67-120 141-140.67-32.66-32.66-108.34 107.66L724-238l-32.67 33 85 85ZM229-706.67h502-502Z"/></svg> -->
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Ressources Humaines</i></div>
+                </a>
+              
+                {% endif %}
+                <a href="/forms_data/" class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center" >
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#18333C"><path d="M480-40 328.67-192H632L480-40ZM146.67-280q-27 0-46.84-19.83Q80-319.67 80-346.67v-426.66q0-27 19.83-46.84Q119.67-840 146.67-840h666.66q27 0 46.84 19.83Q880-800.33 880-773.33v426.66q0 27-19.83 46.84Q840.33-280 813.33-280H146.67Zm0-66.67h666.66v-426.66H146.67v426.66Zm176-56.66H638V-470H322.67v66.67ZM198-526.67h66.67v-66.66H198v66.66Zm124.67 0h66.66v-66.66h-66.66v66.66Zm124 0h66.66v-66.66h-66.66v66.66Zm124.66 0H638v-66.66h-66.67v66.66Zm124 0H762v-66.66h-66.67v66.66ZM198-650h66.67v-66.67H198V-650Zm124.67 0h66.66v-66.67h-66.66V-650Zm124 0h66.66v-66.67h-66.66V-650Zm124.66 0H638v-66.67h-66.67V-650Zm124 0H762v-66.67h-66.67V-650ZM146.67-346.67v-426.66 426.66Z"/></svg>
+                        <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#999999"><path d="M120-120v-77.33L186.67-264v144H120Zm163.33 0v-237.33L350-424v304h-66.67Zm163.34 0v-304l66.66 67.67V-120h-66.66ZM610-120v-236.33L676.67-423v303H610Zm163.33 0v-397.33L840-584v464h-66.67ZM120-346.33v-94.34l280-278.66 160 160L840-840v94.33L560-465 400-625 120-346.33Z"/></svg> -->
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Saisie de Donnees</i></div>
+                </a>
+                {% if permissions > 0 and not_add == None %}
+                <a href="/configurations/" class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="#BD4C31"><path d="M42-120v-92q0-34 16-56.5t45-36.5q54-26 115.5-43T358-365q78 0 139.5 17T613-305q29 14 45 36.5t16 56.5v92H42Zm60-60h512v-32q0-15-8.5-24.5T585-251q-43-19-96-36.5T358-305q-78 0-131 17.5T131-251q-12 5-20.5 14.5T102-212v32Zm256-245q-66 0-108-43t-42-107h-10q-8 0-14-6t-6-14q0-8 6-14t14-6h10q0-40 20-72t52-52v39q0 6 4.5 10.5T295-685q7 0 11-4.5t4-10.5v-52q8-2 22-3.5t27-1.5q13 0 27 1.5t22 3.5v52q0 6 4 10.5t11 4.5q6 0 10.5-4.5T438-700v-39q32 20 51 52t19 72h10q8 0 14 6t6 14q0 8-6 14t-14 6h-10q0 64-42 107t-108 43Zm0-60q42 0 66-25t24-65H268q0 40 24 65t66 25Zm302 124-2-29q-7-4-14.5-9T630-409l-26 14-22-32 26-19q-2-4-2-7.5v-15q0-3.5 2-7.5l-26-19 22-32 26 14 14-10q7-5 14-9l2-29h40l2 29q7 4 14 9l14 10 26-14 22 32-26 19q2 4 2 7.5v15q0 3.5-2 7.5l26 19-22 32-26-14q-6 5-13.5 10t-14.5 9l-2 29h-40Zm20-62q16 0 27-11t11-27q0-16-11-27t-27-11q-16 0-27 11t-11 27q0 16 11 27t27 11Zm88-155-9-35q-10-4-20.5-11T721-639l-44 16-20-35 35-28q-2-5-3.5-11t-1.5-12q0-6 1.5-12t3.5-11l-35-28 20-35 44 16q7-8 17.5-15.5T759-805l9-35h38l9 35q10 3 20.5 10.5T853-779l44-16 20 35-35 28q2 5 3.5 11t1.5 12q0 6-1.5 12t-3.5 11l35 28-20 35-44-16q-7 8-17.5 15T815-613l-9 35h-38Zm19-73q25 0 41.5-16.5T845-709q0-25-16.5-41.5T787-767q-25 0-41.5 16.5T729-709q0 25 16.5 41.5T787-651ZM358-180Z"/></svg>
+                        <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#BD4C31"><path d="M42-120v-98.67q0-33.66 16.33-58.33 16.34-24.67 45.67-39 53-26 115.33-43.33 62.34-17.34 140-17.34 77.67 0 140 17.34Q561.67-342 614.67-316q29.33 14.33 45.66 39 16.34 24.67 16.34 58.33V-120H42Zm66.67-66.67H610v-32q0-13.66-7.5-23Q595-251 584-256q-40.67-18.67-94.83-36.33Q435-310 359.33-310q-75.66 0-129.83 17.67-54.17 17.66-94.83 36.33-11 5-18.5 14.33-7.5 9.34-7.5 23v32ZM359.33-430q-66 0-109.66-44.33-43.67-44.34-43.67-109h-10q-8.33 0-14.17-5.84Q176-595 176-603.33q0-8.34 5.83-14.17 5.84-5.83 14.17-5.83h10q0-41.67 20.67-75 20.66-33.34 54-53.67v38.67q0 7 4.83 11.83t11.83 4.83q7.67 0 12.17-4.83t4.5-11.83V-766q8.33-2.33 21-3.83t25-1.5q12.33 0 25 1.5t21 3.83v52.67q0 7 4.5 11.83t12.17 4.83q7 0 11.83-4.83t4.83-11.83V-752q33.34 20.33 53.34 53.67 20 33.33 20 75h10q8.33 0 14.16 5.83 5.84 5.83 5.84 14.17 0 8.33-5.84 14.16-5.83 5.84-14.16 5.84h-10q0 64.66-43.67 109Q425.33-430 359.33-430Zm0-66.67q39 0 62.84-24.5Q446-545.67 446-583.33H272.67q0 37.66 23.83 62.16t62.83 24.5Zm301.34 136L657.33-390q-6.66-3.33-13.5-7.5-6.83-4.17-12.5-9.17L604.67-394l-21.34-33.33L608-446.67q-1.33-3.66-1.33-7v-14q0-3.33 1.33-7L583.33-494l21.34-33.33 26.66 12.66q6-4.66 12.67-9 6.67-4.33 13.33-7.66l3.34-29.34h40l3.33 29.34q6.67 3.33 13.33 7.66 6.67 4.34 12.67 9l26.67-12.66L778-494l-24.67 19.33q1.34 3.67 1.34 7v14q0 3.34-1.34 7L778-427.33 756.67-394 730-406.67q-5.67 5-12.5 9.17T704-390l-3.33 29.33h-40Zm20-64.66q14.66 0 25-10.34Q716-446 716-460.67q0-14.66-10.33-25-10.34-10.33-25-10.33-14.67 0-25 10.33-10.34 10.34-10.34 25 0 14.67 10.34 25 10.33 10.34 25 10.34ZM763.33-572l-8.66-37.33Q745-613 735.5-619.17q-9.5-6.16-16.17-13.5L676-617.33l-22.67-39.34L688-685.33q-2-5-3-10T684-706q0-5.67 1-10.67t3-10l-34.67-28.66L676-794.67l43.33 15.34q6.67-7.34 16.17-13.84 9.5-6.5 19.17-9.5l8.66-37.33h44l8.67 37.33q9.67 3 19.17 9.5 9.5 6.5 16.16 13.84l43.34-15.34 22.66 39.34-34.66 28.66q2 5 3 10t1 10.67q0 5.67-1 10.67t-3 10l34.66 28.66-22.66 39.34-43.34-15.34q-6.66 7.34-16.16 13.5-9.5 6.17-19.17 9.84L807.33-572h-44Zm22-78.67q23.67 0 39.5-15.83 15.84-15.83 15.84-39.5t-15.84-39.5q-15.83-15.83-39.5-15.83-23.66 0-39.5 15.83Q730-729.67 730-706t15.83 39.5q15.84 15.83 39.5 15.83Zm-426 464Z"/></svg> -->
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Cadre Logique</i></div>
+                </a>
+                {% endif %}
+                {% if permissions > 0 and not_add == None %}
+                <a href="/actualite/" class="card1  d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#48752C"><path d="M333.33-259 480-347l146.67 89-39-166.67 129-112-170-15L480-709l-66.67 156.33-170 15 129 112.34-39 166.33ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-353.33Z"/></svg>
+                    </div>
+                    <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Actualité</i></div>
+                </a>
+                
+              
+                
+                <a href="http://metabase.operaplus.org" class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center" style="color: brown">
+                    <div><i class="fas fa-chart-line fa-2x "></i></div>
+                    <div class="menu_littleWid_text"><small>Analyse de Donnees</small></div>
+                </a>
+        
+               
+        
+        
+               
+        
+                <a href="/configurations_admin/" class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center" style="color:#a38975;">
+                    <div><i class="fas fa-cog fa-2x fa-spin"></i></div>
+                    <div class="menu_littleWid_text"><small>Configurations</small></div>
+                </a>
+        
+        
+        
+                <a href="/data/" style="color: #130e33;" class="card1 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                    <div>
+                        <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#6B2346"><path d="M186.67-186.67h586.66V-559L559-773.33H186.67v586.66Zm0 66.67q-27.5 0-47.09-19.58Q120-159.17 120-186.67v-586.66q0-27.5 19.58-47.09Q159.17-840 186.67-840h400L840-586.67v400q0 27.5-19.58 47.09Q800.83-120 773.33-120H186.67Zm92.66-167.33h401.34V-354H279.33v66.67Zm0-159.34h401.34v-66.66H279.33v66.66Zm0-159.33h277.34v-66.67H279.33V-606Zm-92.66 419.33v-586.66 586.66Z"/></svg>
+                    </div>
+                    <div class="menu_littleWid_text"><small> Logs</small></div>
+                </a>
+        
+                {% endif %}
+            </div>
+          </div>
+        </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+        
+                </div>
+              </div>
+            </div>
+          </div>
+        <div class="nav-align-top my-2">
+            <ul class="nav nav-pills flex-column flex-md-row mb-6">
+              {%for all_operation_datasets in all_operation_dataset%}
+              {%if all_operation_datasets.id == dataset.id%}
+              {%else%}
+              <li class="nav-item">
+                <a class="nav-link btn btn-primary" href="/loaddata_set/{{all_operation_datasets.id}}/{{operation.id}}/">
+                  <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v240h-80v-200H520v-200H240v640h360v80H240Zm638 15L760-183v89h-80v-226h226v80h-90l118 118-56 57Zm-638-95v-640 640Z"/></svg>&nbsp;
+                  {{all_operation_datasets.m_name}}</a>
+              </li>
+              {%endif%}
+              {%endfor%}
+             
+            </ul>
+          </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="card-title">
+                        <h4 style="font-weight:bold;">{{dataset.m_name}}</h4>
+                        <button data-id="{{dataset.id}}" class="btn btn-light mx-2" type="button" onclick="loadDataset(this)"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#4B77D1"><path d="M160-400v-80h280v80H160Zm0-160v-80h440v80H160Zm0-160v-80h440v80H160Zm360 560v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8 9 12.5 20t4.5 22q0 11-4 22.5T863-380L643-160H520Zm300-263-37-37 37 37ZM580-220h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/></svg>Afficher Formulaire {{dataset.m_nom}}</button>
+                        <button id="loadDataButton" class="btn btn-dark"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#4B77D1"><path d="M480-120q-151 0-255.5-46.5T120-280v-400q0-66 105.5-113T480-840q149 0 254.5 47T840-680v400q0 67-104.5 113.5T480-120Zm0-479q89 0 179-25.5T760-679q-11-29-100.5-55T480-760q-91 0-178.5 25.5T200-679q14 30 101.5 55T480-599Zm0 199q42 0 81-4t74.5-11.5q35.5-7.5 67-18.5t57.5-25v-120q-26 14-57.5 25t-67 18.5Q600-528 561-524t-81 4q-42 0-82-4t-75.5-11.5Q287-543 256-554t-56-25v120q25 14 56 25t66.5 18.5Q358-408 398-404t82 4Zm0 200q46 0 93.5-7t87.5-18.5q40-11.5 67-26t32-29.5v-98q-26 14-57.5 25t-67 18.5Q600-328 561-324t-81 4q-42 0-82-4t-75.5-11.5Q287-343 256-354t-56-25v99q5 15 31.5 29t66.5 25.5q40 11.5 88 18.5t94 7Z"/></svg>Charger Donn&eacute;es {{dataset.m_name}}</button>
+             
+                    </div>
+                    <hr class="p-2 bg-dark">
+                    <form method="POST" action="/save_value/" class="card" onsubmit="return submitForm('{{ dataset.id }}')" id="myForm{{ dataset.id }}">
+                        {% csrf_token %}
+                        <input type="hidden" name="generator" value="dSv">
+                        <input type="hidden" name="dSv_id" value="{{dataset.id}}">
+                        <input type="hidden" name="edit_or_create" value="c">
+                        <input type="hidden" name="variables_value" id="variables_value" >
+                        <input type="hidden" name="variables_names" id="variables_names" >
+                        <input type="hidden" name="structures_value" id="structures_value" >
+                        
+                    <div class="row">
+                        <div class="col-md-4 col-sm-12 mb-3">
+                            <label for="annee" class="text-dark" style="font-weight:bold;"> <small> Année *</small></label>
+                            <select class="form-control" name="period1_saisie" id="annee">
+                                <option value="{{periode.annee}}"> {{ periode.annee }}</option>
+                               
+                            </select>
+                        </div>
+                        <div class="col-md-4 col-sm-12 mb-3">
+                            <label for="period" class="text-dark" style="font-weight:bold"> <small>Période Saisie *</small> </label>
+                            <select class="form-control" name="period2_saisie" id="period">
+                                <!-- Options will be populated here -->
+                                <option value="{{periode.id}}"> {{ periode.nom }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 col-sm-12 mb-3">
+                            <label for="period" class="text-dark" style="font-weight:bold"> <small>Structure *</small> </label>
+                          <select name="struc_selec" id="structureSelect" class="form-control">
+                            <option value="{{structure.id}}"> {{ structure.nom }}</option>
+                          </select>
+                            <!-- <button  data-id="{{ dataset.id }}"class="btn btn-dark my-4" type="button">Renseigner Data</button> -->
+                        </div>
+                     
+                        <div class="col-md-6">
+                            <label for="" class="text-danger" style="font-weight:bold;display:none">Resultat CalCul *</label>
+                               <input type="text" id="indicator-values" name="indicator-values" class="form-control" readonly style="display:none">
+            
+                          </div>
+                                               <div class="col-md-6">
+                            
+                            <label for="" class="text-danger" style="font-weight:bold;display:none">Code Indicateur *</label>
+                                <input type="text" id="indicator-ids" name="indicator-ids" class="form-control" readonly style="display:none">
+                          </div>
+                          <input type="text" name="elementsArea" id="elementsArea" class="form-control" style="display:none">
+                          <input type="text" name="elements" id="displayArea" class="form-control" style="display:none">
+                </div>
+                </div>
+                
+            </div>
+            <div class="card my-3">
+                <div class="card-body{{dataset.id}}">
+                    <div class="contenu" style="overflow-y: auto; padding: 0;  width: 100%;">
+                        <!-- The content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="p-2">
+                <!-- <button type="button" class="btn btn-dark mx-3"   id="myButton{{ dataset.id }}" data-form-id="{{ dataset.id }}"> Enregistrer</button> -->
+                <a href="/alert_notifs/0/1/" class="btn btn-danger">Retour</a>
+            </div>
+        </form>
+        </div>
+    </div>
+</div>
+  
+<script>
+            
+    function submitForm(formId) {  
+        // Récupérez le formulaire via son ID dynamique  
+        const myForm = document.getElementById(`myForm${formId}`);  
+       
+
+        // Vérifiez si le formulaire est valide  
+        if (myForm.checkValidity()) {  
+            myForm.submit(); // Soumettez le formulaire  
+            return true; // Laissez la soumission se produire  
+        }  
+        return false; // Empêche la soumission par défaut si le formulaire n'est pas valide  
+    }  
+
+    // Ajoutez un écouteur d'événements pour le bouton de sauvegarde  
+    document.querySelectorAll('button[id^="myButton"]').forEach(button => {  
+   
+        button.addEventListener('click', function() {  
+            const formId = this.dataset.formId; // obtenir l'ID du formulaire dynamique   
+            Swal.fire({  
+                title: "<strong>Information</strong>",  
+                icon: "info",  
+                html: `  
+                    Les données saisies seront remplacées dans la base de données en cas de doublon. <b>Souhaitez-vous tout de même les enregistrer ?</b>  
+                `,  
+                showCloseButton: true,  
+                showCancelButton: true,  
+                focusConfirm: false,  
+                confirmButtonText: `  
+                    <i class="fa fa-thumbs-up"></i> Oui / Yes!  
+                `,  
+                confirmButtonAriaLabel: "Thumbs up, great!",  
+                cancelButtonText: `  
+                    <i class="fa fa-thumbs-down"></i> Non / No  
+                `,  
+                cancelButtonAriaLabel: "Thumbs down"  
+            }).then((result) => {  
+                if (result.isConfirmed) {  
+                    submitForm(formId); // Appelle la fonction de soumission avec l'ID du formulaire  
+                }  
+            });  
+        });  
+    });  
+
+        </script> 
+
+
+    
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js" integrity="sha512-ykZ1QQr0Jy/4ZkvKuqWn4iF3lqPZyij9iRv6sGqLRdTPkY69YX6+7wvVGmsdBbiIfN/8OdsI7HABjvEok6ZopQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% if message.tags == 'error' %}
+
+<script type="text/javascript">
+Swal.fire({
+position: "top-end",
+icon: "error",
+title: "{{message}}",
+showConfirmButton: false,
+timer: 4000
+});
+</script>
+{%endif%}
+{%endfor%}
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% if message.tags == 'success' %}
+
+<script type="text/javascript">
+Swal.fire({
+position: "top-end",
+icon: "success",
+title: "{{message}}",
+showConfirmButton: false,
+timer: 2000
+});
+</script>
+{%endif%}
+{%endfor%}
+
+
+
+
+
+
+
+
+
+
+<script>
+function loadDataset(button) {  
+const datasetId = button.getAttribute('data-id');  
+const url = `/get_dataset/${datasetId}/`;  
+
+Swal.fire({  
+title: 'Chargement...',  
+text: 'Veuillez patienter pendant le chargement des données.',  
+allowOutsideClick: false,  
+showConfirmButton: false,  
+onBeforeOpen: () => {  
+Swal.showLoading();  
+}  
+});  
+
+fetch(url)  
+.then(response => {  
+if (!response.ok) {  
+throw new Error('Erreur lors de la récupération du dataset');  
+}  
+return response.json();  
+})  
+.then(data => {  
+const contenu_view = document.querySelector(`.card-body${datasetId} .contenu`);  
+if (contenu_view) {  
+contenu_view.innerHTML = data.content ? `<p>${data.content}</p>` : "<p>Aucun contenu disponible.</p>";  
+initIndic(datasetId);  
+} else {  
+// console.error('contenu_view est null');  
+}  
+Swal.close();  
+})  
+.catch(error => {  
+const contenu_view = document.querySelector(`.card-body${datasetId} .contenu`);  
+if (contenu_view) {  
+contenu_view.innerHTML = "<p>Erreur lors du chargement des données. Veuillez réessayer.</p>";  
+}  
+console.error('Erreur:', error);  
+Swal.fire({  
+icon: 'error',  
+title: 'Une erreur est survenue',  
+text: `Veuillez réessayer. Détails: ${error.message}`,  
+});  
+});  
+}
+
+
+
+// Fonction pour initialiser les indicateurs  
+function initIndic(datasetId) {  
+console.log("Fonction initIndic() appelée avec datasetId:", datasetId);  
+
+const indicSelector = document.getElementsByClassName("indicSelector");  
+let indic_value = "";  
+for (let i = 0; i < indicSelector.length; i++) {  
+indic_value += indicSelector[i].getAttribute("data-id") + "#";  
+}  
+
+const institutionId = {{ actual_institution.id }}; // Assurez-vous que `actual_institution` est défini  
+
+$.ajax({  
+url: '/get_elements/',  
+data: {  
+'dataset': datasetId,  
+'type_dataset': '0',  
+'other': 'dI_formula',  
+'institution': institutionId,  
+'value': indic_value  
+},  
+success: function(data) {  
+
+function check_selector(evalu = false) {  
+const indicatorValues = {};  
+
+for (let i = 0; i < indicSelector.length; i++) {  
+indicSelector[i].textContent = data.formulas[i];  
+const indicatorId = indicSelector[i].getAttribute("data-id");  
+
+const tmp_elts = data.data_elts.split("#");  
+// console.log('Les IDs sont :', tmp_elts);
+let elts = [];  
+
+for (let j = 0; j < tmp_elts.length; j++) {  
+const tp = document.getElementsByName("D0elt" + tmp_elts[j]);  
+if (tp.length > 0 && tp[0].value) {  
+// Vérifie si l'élément existe et que sa valeur n'est pas une chaîne vide.  
+elts.push({ id: tmp_elts[j], value: tp[0].value }); // Récupération des valeurs avec l'ID  
+// console.log("Valeur de D0elt" + tmp_elts[j] + " :", tp[0].value); // Affichage de la valeur récupérée  
+} else {  
+// Attribuer une valeur par défaut de 0 si l'élément est manquant ou si aucune valeur n'est définie.  
+elts.push({ id: tmp_elts[j], value: 0 });  
+// console.warn("Élément manquant ou valeur nulle pour D0elt" + tmp_elts[j] + ". Valeur par défaut attribuée : 0");  
+}  
+}
+
+console.log("Éléments récupérés :", elts);   
+
+// Mettre à jour le displayArea  
+const displayArea = document.getElementById("displayArea");  
+const valuesString = elts.map(item => `"D0elt${item.id}": ${item.value}`).join(', '); // Formater les valeurs  
+displayArea.value = valuesString; // Mettre à jour l'input avec les valeurs formatées  
+
+// Définir la valeur à soumettre dans un champ caché  
+document.getElementById("elementsArea").value = JSON.stringify(elts); // Soumission en format JSON  
+
+// Remplacer les placeholders dans indicSelector avec les valeurs récupérées  
+for (let j = 0; j < elts.length; j++) {  
+indicSelector[i].textContent = indicSelector[i].textContent.replace("$" + elts[j].id + "$", elts[j].value);  
+}  
+
+if (evalu) {  
+try {  
+indicSelector[i].textContent = eval(indicSelector[i].textContent); // Évaluation des calculs  
+const indicatorValue = indicSelector[i].textContent;  
+indicatorValues[indicatorId] = indicatorValue;  
+} catch (error) {  
+console.error("Erreur lors du calcul de l'indicateur :", error);  
+}  
+}  
+}  
+
+// Stocker les valeurs et les identifiants dans les champs cachés du formulaire  
+document.getElementById("indicator-values").value = JSON.stringify(indicatorValues);  
+const indicatorIds = Object.keys(indicatorValues);  
+document.getElementById("indicator-ids").value = JSON.stringify(indicatorIds);  
+
+return indicatorValues;  
+}
+
+
+// Évaluer les sélecteurs d'indicateurs  
+check_selector(true);  
+
+const variables_selector = document.getElementsByClassName("variableSelector");  
+for (let i = 0; i < variables_selector.length; i++) {  
+const inputs = variables_selector[i].getElementsByTagName("input")[0];  
+if (inputs) {  
+inputs.onchange = function() {  
+try {  
+check_selector(true);  
+} catch (error) {  
+// console.error("Erreur lors de l'évaluation des sélecteurs :", error);  
+check_selector(); // Évaluer sans option  
+}  
+};  
+}  
+}  
+},  
+error: function(xhr, status, error) {  
+// console.error("Erreur AJAX:", status, error);  
+alert("Une erreur est survenue lors de la récupération des éléments. Veuillez réessayer.");  
+}  
+});  
+}  
+
+
+
+
+
+
+
+// Fonction pour échapper les caractères HTML (protection XSS)
+function escapeHtml(unsafe) {
+return unsafe
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#039;");
+}
+
+
+
+
+
+
+
+document.getElementById('loadDataButton').addEventListener('click', function() {
+const selectedYear = document.getElementById('annee').value;
+const selectedPeriod = document.getElementById('period').value;
+const selectedStructure = document.getElementById('structureSelect').value;
+
+// Vérifier si toutes les sélections sont faites
+if (!selectedYear || !selectedPeriod || !selectedStructure) {
+Swal.fire({
+icon: 'warning',
+title: 'Attention!',
+text: "Veuillez sélectionner l'année, la période et la structure.",
+confirmButtonText: 'OK'
+});
+return;
+}
+
+const url = `/load_data/${selectedStructure}/${selectedPeriod}/`; // URL pour récupérer les données
+showLoading(); // Afficher l'indicateur de chargement
+
+// Afficher le div avec animation
+const div = document.getElementById('contenu');
+// div.classList.add('show'); // Ajouter la classe 'show' pour afficher le div
+
+fetch(url)
+.then(response => {
+if (!response.ok) {
+throw new Error('Erreur lors de la récupération des données');
+}
+return response.json();
+})
+.then(data => handleData(data))
+.catch(error => {
+console.error('Erreur lors du chargement des données:', error);
+Swal.fire({
+icon: 'error',
+title: 'Erreur',
+text: "Une erreur est survenue. Veuillez réessayer.",
+});
+})
+.finally(() => {
+hideLoading(); // Masquer l'indicateur de chargement
+});
+});
+
+
+function handleData(data) {  
+if (data.error) {  
+console.error('Erreur:', data.error);  
+alert("Erreur lors du chargement des données: " + data.error);  
+return [];  
+}  
+
+const dataArray = data.data || [];   
+const inputData = dataArray.map(item => ({  
+name: `D0elt${item.id}`,  // Ajouter 'D0elt' devant 'item.id'  
+value: item.content        // Supposant que 'item' a une propriété 'value'  
+}));  
+
+
+// Vérifier s'il n'y a pas de valeurs
+if (inputData.length === 0) {
+toastr.warning('Il n\'y a aucune valeur à traiter.', 'Aucune valeur trouvée');
+
+// Vider tous les champs d'entrée
+const allInputs = document.querySelectorAll('input[name^="D0elt"]');
+allInputs.forEach(input => {
+input.value = '';  // Vider le champ
+});
+
+return [];
+}
+
+// Mettre à jour les champs d'entrée  
+inputData.forEach(input => {  
+console.log(`Recherche du champ: ${input.name}`); // Ajoutez ceci pour déboguer 
+
+const inputElement = document.querySelector(`input[name="${input.name}"]`);  
+if (inputElement) {  
+inputElement.value = input.value;  
+} else {  
+console.warn(`Champ d'entrée "${input.name}" introuvable.`);  
+}  
+});  
+
+console.log('Données traitées:', dataArray);  
+return dataArray;   
+}
+
+function showLoading() {  
+Swal.fire({  
+title: 'Chargement...',  
+text: 'Veuillez patienter pendant le chargement des données.',  
+allowOutsideClick: false,  
+showConfirmButton: false,  
+didOpen: () => {  
+Swal.showLoading(); // Afficher l'indicateur de chargement  
+}  
+});  
+}  
+
+function hideLoading() {  
+Swal.close(); // Fermer l'alerte de chargement  
+}  
+$(".sidebar-dropdown > a").click(function() {
+$(".sidebar-submenu").slideUp(200);
+if (
+$(this)
+.parent()
+.hasClass("active")
+) {
+$(".sidebar-dropdown").removeClass("active");
+$(this)
+.parent()
+.removeClass("active");
+} else {
+$(".sidebar-dropdown").removeClass("active");
+$(this)
+.next(".sidebar-submenu")
+.slideDown(200);
+$(this)
+.parent()
+.addClass("active");
+}
+});
+
+$("#close-sidebar").click(function() {
+$(".page-wrapper").removeClass("toggled");
+});
+$("#show-sidebar").click(function() {
+$(".page-wrapper").addClass("toggled");
+});
+</script>
+</body>
+</html>

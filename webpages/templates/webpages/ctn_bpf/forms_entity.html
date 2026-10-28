@@ -1,0 +1,44 @@
+{%extends './dataelts.html'%}
+
+
+{%block content%}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card my-4">
+               
+                   <div class="card-body">
+                    <div class="card-title">
+                        <h5 style="font-weight: bold; font-family: forte;">
+                           ASSOCIEZ UN OU PLUSIEURS  FORMULAIRES A L'ENTIT&Eacute; {{entities}}</h5> </div>
+                    <p style="font-weight: bold;font-family: forte;" class="text-center">   Choix Du Formulaire De Saisie </p>
+                    <br>
+                    <form action="/add_dataset_institution/{{entities.id}}/" method="post">
+                    {%csrf_token%}
+                      <input type="text" name="entities" id="" value="{{entities.id}}" style="display: none;">
+                       {%for datasets in all_institutions_datasets%}
+                       <label>  
+                           <input type="checkbox" name="dataset" value="{{ datasets.id }}"  class="toggle-public" id="check" checked>   
+                           <div class="btn btn-sık"><span>{{datasets.m_name}}</span></div>  
+                       </label>
+                       {%endfor%}
+                       <hr class="bg-dark p-2">
+                   
+                       {%for datasets in all_dataset%}
+                       <label>  
+                           <input type="checkbox" name="dataset" value="{{ datasets.id }}"  class="toggle-public" id="check" >   
+                           <div class="btn btn-sık"><span>{{datasets.m_name}}</span></div>  
+                       </label>
+                       {%endfor%}
+                   </div>
+                   <div class="card-footer">
+                    <a class="btn btn-danger" href="/configurations/">Retour</a>
+                    <button type="submit" class="btn btn-primary">Associer Le(s) Formulaire</button>
+                   </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

@@ -1,0 +1,421 @@
+
+  <style>
+  .sd_scroll::-webkit-scrollbar-track {
+      background-color:transparent;
+  }
+  .sd_scroll::-webkit-scrollbar-track:hover {
+      background-color:transparent;
+  }
+  
+  /* scrollbar itself */
+  .sd_scroll::-webkit-scrollbar-thumb {
+      background-color:#babac0;
+      border-radius:16px;
+      
+  }
+  .sd_scroll::-webkit-scrollbar-thumb:hover {
+      background-color:#a0a0a5;
+  }
+
+
+  .upload-main-wrapper{
+    width: 220px;
+    margin: 0 auto;
+}
+#file-upload-name{
+    margin: 4px 0 0 0;
+    font-size: 12px;
+}
+.upload-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 40px auto 0;
+    position: relative;
+    cursor: pointer;
+    background-color: #bcaef5;
+    padding: 8px 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: 0.2s linear all;
+    color: #ffffff;
+}
+.upload-wrapper input[type="file"] {
+    width: 100%;
+    position: absolute;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    top: 0;
+    bottom: 0;
+    cursor: pointer;
+    z-index: 1;
+}
+.upload-wrapper > svg {
+    width: 50px;
+    height: auto;
+    cursor: pointer;
+}
+.upload-wrapper.success > svg{
+    transform: translateX(-200px);
+}
+.upload-wrapper.uploaded {
+    transition: 0.2s linear all;
+    width: 60px;
+    border-radius: 50%;
+    height: 60px;
+    text-align: center;
+}
+.upload-wrapper .file-upload-text {
+    position: absolute;
+    left: 80px;
+    opacity: 1;
+    visibility: visible;
+    transition: 0.2s linear all;
+}
+.upload-wrapper.uploaded .file-upload-text {
+    text-indent: -999px;
+    margin: 0;
+}
+.file-success-text {
+    opacity: 0;
+    transition: 0.2s linear all;
+    visibility: hidden;
+    transform: translateX(200px);
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.file-success-text svg {
+    width: 25px;
+    height: auto;
+}
+.file-success-text span{
+   margin-left: 15px;
+}
+.upload-wrapper.success .file-success-text{
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+}
+.upload-wrapper.success.uploaded .file-success-text{
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+}
+.upload-wrapper.success.uploaded .file-success-text span{
+    display: none;
+}
+.upload-wrapper .file-success-text circle{
+      stroke-dasharray: 380;
+    stroke-dashoffset: 380;
+    transition: 1s linear all;
+    transition-delay: 1.4s;
+}
+.upload-wrapper.success .file-success-text  circle {
+    stroke-dashoffset: 0;
+}
+.upload-wrapper .file-success-text polyline {
+    stroke-dasharray: 380;
+    stroke-dashoffset: 380;
+    transition: 1s linear all;
+    transition-delay: 2s;
+}
+.upload-wrapper.success .file-success-text polyline {
+    stroke-dashoffset: 0;
+}
+.upload-wrapper.success .file-upload-text{
+    -webkit-animation-name: bounceOutLeft;
+    animation-name: bounceOutLeft;
+    -webkit-animation-duration: 0.2s;
+    animation-duration: 0.2s;
+    -webkit-animation-fill-mode: both;
+    animation-fill-mode: both;
+}
+@-webkit-keyframes bounceOutLeft {
+    20% {
+        opacity: 1;
+        -webkit-transform: translate3d(20px, 0, 0);
+        transform: translate3d(20px, 0, 0);
+    }
+
+    to {
+        opacity: 0;
+        -webkit-transform: translate3d(-2000px, 0, 0);
+        transform: translate3d(-2000px, 0, 0);
+    }
+}
+
+@keyframes bounceOutLeft {
+    20% {
+        opacity: 1;
+        -webkit-transform: translate3d(20px, 0, 0);
+        transform: translate3d(20px, 0, 0);
+    }
+
+    to {
+        opacity: 0;
+        -webkit-transform: translate3d(-2000px, 0, 0);
+        transform: translate3d(-2000px, 0, 0);
+    }
+}
+
+input[type="file"] {
+  margin-top: 1rem;
+  padding: 1.5em;
+  border: 2px dashed grey;
+  background-color: #fff;
+}
+
+input[type="file"]::file-selector-button {
+  padding: 1em 1.5em;
+  border-width: 0;
+  border-radius: 1rem;
+  background-color: dodgerblue;
+  color: #FFFFFF;
+  font-weight: bold;
+  transition: all .25s ease-in-out;
+  cursor: pointer;
+  margin-right: 1em;
+}
+  </style>
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+ 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/css/bootstrap-multiselect.css">
+ 
+  {% extends './operations_details.html' %}
+  {% load humanize %}
+  {% load static %}
+  
+  
+  {% block content %}
+  
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+                  <hr class="bg-dark p-2"/>
+                  <h5 style="font-weight:bold; margin-left:5%;" class="">DETAIL DE L'ACTUALITE</h5>
+<div class="sd_master_wrapper">	
+	<div class="sdtestBg2"></div>
+	<div class="sdtestBg3"></div>
+	<div class="slideshow">
+		
+		<div class="content"> <!-- slide 1 -->
+			<div class="thumbnail">
+		
+			</div>
+			<div class="btnNtxt"> 
+				<div class="sdAllContent"> 
+					
+					<div class="sd_scroll">
+					<h1 class="sdCustomSliderHeadig">{{actuality.description|safe}}</h1> 
+					</div>
+					<p class="SdClientName">Publi&eacute;e Le: {{actuality.date}}</p>
+					<p class="SdClientDesc">{{ actuality.intitule }}.</p>
+				</div>
+			</div>
+		</div>
+		
+	
+	
+        <hr class="bg-dark p-2"/>
+        <h5 style="font-weight:bold">ASSOCIEZ DES SOUS-ACTUALITES</h5>
+		<div class="card">
+            <div class="card-body">
+                <form method="POST" action="/add_information_data/{{ actuality.id }}/" enctype="multipart/form-data">
+                    {%csrf_token%}
+                    <div class="row">
+                      
+                      <div class="col">
+                        <label>Intitule</label>
+                        <input type="text" class="form-control" placeholder="intitule"  name="intitule">
+                      </div>
+                     
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                          <input type="file" class="form-control" name="photo" accept="images/*">
+                        </div>
+                        <div class="col">
+                          <input type="file" class="form-control" name="document">
+                        </div>
+                      </div>
+                      <div class="row">
+                       
+                        
+                        <input type="text" name="institution" style="display:none" value="{{ actual_institution.id }}"/>
+						
+                       
+                      </div>
+                      <div class="row">
+                      
+                        <div class="col-md-12">
+                            <label>Sous-Actualite</label>
+                          <textarea class="form-control" name="description" id="description"></textarea>
+                        </div>
+                      </div>
+                      <button type="submit" class="btn btn-primary my-2">Ajouter</button>
+                  </form>
+            </div>
+        </div>
+	</div>
+</div>	
+<div class="spacer"></div>
+                </div>
+              </div>
+ 
+      </div>
+    </div>
+</div>
+  
+ 
+  
+         
+        <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+   
+  
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script>
+          // Ajouter des animations en JavaScript
+          const collapseItems = document.querySelectorAll('.collapse');
+          const chevronIcons = document.querySelectorAll('.chevron-icon');
+  
+          chevronIcons.forEach((icon) => {
+            icon.addEventListener('click', () => {
+              $(icon).toggleClass('fa-chevron-down fa-chevron-up');
+            });
+          });
+  
+          collapseItems.forEach((item) => {
+            item.addEventListener('show.bs.collapse', () => {
+              item.classList.add('animate__animated', 'animate__fadeInDown');
+            });
+            item.addEventListener('hide.bs.collapse', () => {
+              item.classList.remove('animate__animated', 'animate__fadeInDown');
+            });
+          });
+        </script>
+        <script>
+          // Replace the <textarea id="editor1"> with a CKEditor 4
+          // instance, using default configuration.
+          CKEDITOR.replace( 'description' );
+      </script>
+      <script>
+        // Replace the <textarea id="editor1"> with a CKEditor 4
+        // instance, using default configuration.
+        CKEDITOR.replace( 'tiny' );
+    </script>
+    <script>
+      // Replace the <textarea id="editor1"> with a CKEditor 4
+      // instance, using default configuration.
+      CKEDITOR.replace( 'edition' );
+  </script>
+  {% endblock %}
+  
+  {% block script %}
+  {% for message in messages %}
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {% if message.tags == 'success' %}
+  
+  <script type="text/javascript">
+      Swal.fire({
+    position: "top-end",
+    icon: "success",
+    title: "{{message}}",
+    showConfirmButton: false,
+    timer: 2000
+  });
+  </script>
+  {%endif%}
+  {%endfor%}
+  
+  {% for message in messages %}
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {% if message.tags == 'error' %}
+  
+  <script type="text/javascript">
+      Swal.fire({
+    position: "top-end",
+    icon: "error",
+    title: "{{message}}",
+    showConfirmButton: false,
+    timer: 2000
+  });
+  </script>
+  {%endif%}
+  {%endfor%}
+  <script src="https://cdn.tiny.cloud/1/dj2vqyaiwqvylhr8vvhcz1izi4aj40055trefsoc11whqr4p/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+  
+  <script>
+    tinymce.init({
+      selector: 'textarea#tiny'
+    });
+  </script>
+  
+  
+  
+  
+  <script type="text/javascript">
+  // custom.js
+  
+  $(document).ready(function() {
+    $('#rubrique').on('change', function() {
+      var selectedId = $(this).val();
+  
+      // Effectuer une requête AJAX pour récupérer les informations de la table periodeok en fonction de l'ID de la période sélectionnée
+      $.ajax({
+        url: '/search_rubrique/',  // L'URL correspondant à la vue Django
+        method: 'GET',
+        data: { id: selectedId },
+        success: function(data) {
+          var selectInformations = $('#sous_rubrique');
+          selectInformations.empty(); // Effacer les anciennes options
+  
+          // Ajouter les nouvelles options basées sur les données récupérées via AJAX
+          data.forEach(function(ind) {
+            selectInformations.append($('<option>', {
+              value: ind.id,
+              text: ind.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
+            }));
+          });
+        },
+        error: function(xhr, status, error) {
+          console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+        }
+      });
+    });
+  });
+  
+  </script>
+  <script src="https://cdn.tiny.cloud/1/dj2vqyaiwqvylhr8vvhcz1izi4aj40055trefsoc11whqr4p/tinymce/7/tinymce.min.js" ></script>
+  
+  <!-- Place the following <script> and <textarea> tags your HTML's <body> -->
+  <script>
+    function modalAnimation(animation) {
+      $('.modal .modal-dialog').attr('class', 'modal-dialog  ' + animation + ' animated');
+    };
+    $('.modalAnimate').on('show.bs.modal', function (e) {
+      var anim = $(this).attr('data-animation-in');
+      modalAnimation(anim);
+    });
+    $('.modalAnimate').on('hide.bs.modal', function (e) {
+      var anim = $(this).attr('data-animation-out');
+      modalAnimation(anim);
+    });
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/js/bootstrap-multiselect.js"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.8/js/select2.min.js" defer></script>
+  <script>
+    $(document).ready(function() {
+      $('#multiple-checkboxes').multiselect({
+        includeSelectAllOption: true,
+      });
+  });
+  </script>
+   
+  {% endblock %}
+  

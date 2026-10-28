@@ -1,0 +1,236 @@
+
+{%extends './operations_details.html'%}
+
+{%block content%}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">Dossiers Du Participant</h5>
+    
+                  <nav>
+                    <ol class="breadcrumb">
+                      <li class="breadcrumb-item"><a href="/">Acceuil</a></li>
+                     
+                      <li class="breadcrumb-item active">Dossier</li>
+                    </ol>
+                  </nav>
+                </div>
+              </div>
+        </div>
+        {%if operation|length_is:"0"%}
+       Aucun Dossier Pour le moment
+        {%else%}
+        {%for operations in operation%}
+        
+        <div class="col-md-12">
+        <div class="card my-2">
+            <div class="row">
+              <div class="d-flex flex-wrap text-secondary"> 
+                {% for s in operations.tache.sup_hierachie %}
+                <div class="px-1"> <a class='tree_link' data-id="{{s.id}}" href="#"><small> {{s}} </small> <small class="text-secondary"> > </small> </a> </div>
+                {% endfor %}
+                <div class="px-1"> <a class='' data-id="-1" href="/taches/{{operations.tache.id}}/"><small> {{operations.tache}} </small> <small class="text-secondary"> > </small> </a> </div>
+              
+              </div>
+              <div class="col-md-6 col-12">
+                <div class="card-header" style="font-style: italic;">
+                  <h5 class="mb-1  text-primary"  >Responsible: {{operations.personnel}}</h5>
+                  <h5 class="mb-1 text-danger">Accountable: {{operations.accountable}}</h5>
+                  <h5 class="mb-1 text-secondary">Consulted: {{operations.consulted}}</h5>
+                  <h5 class="mb-1 text-info">Informed: {{operations.informed}}</h5>
+                  <!-- <p class="my-0 card-subtitle">Display content from your connected accounts on your site</p> -->
+                </div>
+                <div class="card-body">
+                 
+                  <div class="d-flex mb-4 align-items-center">
+                   
+                    <div class="flex-grow-1 d-flex align-items-center justify-content-between">
+                      <div class="mb-sm-0 mb-2">
+                        <h6 class="mb-0">Nom operations</h6>
+                        <small>{{operations.nom}}</small>
+                      </div>
+                      
+                    </div>
+                  </div>
+                  <div class="d-flex mb-4 align-items-center">
+                    
+                    <div class="flex-grow-1 d-flex align-items-center justify-content-between">
+                      <div class="mb-sm-0 mb-2">
+                        <h6 class="mb-0">Priorit&eacute;</h6>
+                        <small>{{operations.priorite}}</small>
+                      </div>
+                    
+                    </div>
+                  </div>
+                 
+                  
+                  <!-- /Connections -->
+                </div>
+              </div>
+              <div class="col-md-6 col-12">
+                <div class="card-header">
+                  <h5 class="mb-1">Date d'&eacute;ch&eacute;ance</h5>
+                  <p class="my-0 card-subtitle">{{operations.date_echeance}}</p>
+                </div>
+                <div class="card-body">
+                  <!-- Social Accounts -->
+                  <div class="d-flex mb-4 align-items-center">
+                    
+                    <div class="flex-grow-1 row">
+                      <div class="col-7">
+                        {%if operations.statut == 0%}
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal{{operations.id}}">R-A-C-I</button>
+                      
+                        {%else%}
+                        <button class="btn btn-success">Vous Avez Defini Les Responsabilit&eacute;s Pour Ce Dossier</button>
+                       
+                        {%endif%}
+                        
+                        
+                        <!-- <small>{{operations.nature.intitule}}</small> -->
+                           <div class="modal fade" id="exampleModal{{operations.id }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg" role="document">
+                              <div class="modal-content">
+                                <div class="modal-header">
+                                  <h5 class="modal-title" id="exampleModalLabel">Definir Les Responsabilit&eacute;s</h5>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <form action="/affecter_operation/{{operations.id}}/" method="post">
+                                      {%csrf_token%}
+                                    <label class="">Responsible</label>
+                                    <select class="form-control js-select2" name='responsible'>
+                                      <option value="0">Non D&eacute;fini</option>
+                                        {%for personnels in personnel%}
+                                        <option value="{{personnels.id}}">{{personnels.nom}}</option>
+                                        {%endfor%}
+                                    </select>
+
+                                    <label class="">Accountable</label>
+                                    <select class="form-control" name='accountable'>
+                                      <option value="0">Non D&eacute;fini</option>
+                                        {%for personnels in personnel%}
+                                        <option value="{{personnels.id}}">{{personnels.nom}}</option>
+                                        {%endfor%}
+                                    </select>
+
+
+                                    <label class="">Consulted</label>
+                                    <select class="form-control" name='consulted'>
+                                      <option value="0">Non D&eacute;fini</option>
+                                        {%for personnels in personnel%}
+                                        <option value="{{personnels.id}}">{{personnels.nom}}</option>
+                                        {%endfor%}
+                                    </select>
+
+
+                                    <span class="">Informed</span>
+                                    <select class="form-control" name='informed'>
+                                      <option value="0">Non D&eacute;fini</option>
+                                      {% for perso in personnel %}
+                                      <option value="{{perso.id}}">{{perso.get_structure}} - {{perso}}</option>
+                                      {% endfor %}
+                                       
+                                    </select>
+
+                                    <label for="date_D">Date Debut</label>
+                                    <input type="date" name="date_debut" id="" value="{{operations.date_debut|date:'Y-m-d'}}" class="form-control">
+
+                                    <label for="date_D">Date Echeance</label>
+                                    <input type="date" name="date_fin" id="" value="{{operations.date_echeance|date:'Y-m-d'}}" class="form-control">
+                                    <label for="Commentaire">Directives</label>
+                                    <textarea name="commentaire" id="" class="form-control"></textarea>
+                                  </div>
+                                <div class="modal-footer">
+                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                  <button type="submit" class="btn btn-primary">Definir</button>
+                                </div>
+                            </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      
+                    </div>
+                  </div>
+                  
+                 
+                  <div class="d-flex mb-4 align-items-center">
+                   
+                    <div class="flex-grow-1 row">
+                      <div class="col-7">
+                       {%for operation_file in operation_files%}
+                       {%if operations.id == operation_file.operation_id%}
+
+                        <a href="{{operation_file.m_file.url}}" class="btn btn-primary">Telecharger Le Fichier</a>
+
+                       {%endif%}
+
+                       {%endfor%}
+                      </div>
+                      
+                    </div>
+                  </div>
+                  
+                  <!-- /Social Accounts -->
+                </div>
+              </div>
+
+
+
+
+
+
+
+
+              
+            </div>
+          </div>
+    </div>
+    {%endfor%}
+   
+    {%endif%}
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- Place the first <script> tag in your HTML's <head> -->
+<script src="https://cdn.tiny.cloud/1/dj2vqyaiwqvylhr8vvhcz1izi4aj40055trefsoc11whqr4p/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+
+       
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ {% if message.tags == 'success' %}
+
+<script type="text/javascript">
+ Swal.fire({
+ position: "top-end",
+ icon: "success",
+ title: "{{message}}",
+ showConfirmButton: false,
+ timer: 2000
+});
+</script>
+{%endif%}
+{%endfor%}
+</script>
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ {% if message.tags == 'error' %}
+
+<script type="text/javascript">
+ Swal.fire({
+ position: "top-end",
+ icon: "error",
+ title: "{{message}}",
+ showConfirmButton: false,
+ timer: 5000
+});
+</script>
+{%endif%}
+{%endfor%}
+
+{%endblock%}

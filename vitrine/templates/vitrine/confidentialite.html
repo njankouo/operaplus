@@ -1,0 +1,34 @@
+{% extends vitrine_base %}
+{% block title %}Politique de confidentialité · OperaPlus{% endblock %}
+{% block meta_description %}Quelles données le site OperaPlus collecte, pourquoi, combien de temps et comment exercer vos droits.{% endblock %}
+{% block content %}
+{% include "vitrine/_pages.css.html" %}
+<div class="pg">
+<section class="pg-hero"><div class="op-wrap">
+    <nav aria-label="Fil d'Ariane"><ol class="pg-crumb"><li><a href="/">Accueil</a></li><li><span aria-current="page">Confidentialité</span></li></ol></nav>
+    <h1>Politique de confidentialité</h1>
+    <p class="lead">Nous collectons le minimum de données, uniquement pour répondre à vos demandes.</p>
+</div></section>
+<section class="pg-sec"><div class="op-wrap pg-prose">
+    <h2>Données collectées par le formulaire de contact</h2>
+    <ul>
+        <li>Nom, adresse e-mail, organisation et message ;</li>
+        <li>le nombre de projets et d'utilisateurs, si vous utilisez le simulateur ;</li>
+        <li>une empreinte non réversible de votre adresse IP, pour limiter les envois abusifs (l'adresse IP elle-même n'est pas conservée).</li>
+    </ul>
+    <h2>Pourquoi</h2>
+    <p>Uniquement pour vous répondre et, si vous le demandez, vous proposer une démonstration ou une offre. Vos données ne sont ni vendues ni cédées.</p>
+    <h2>Durée de conservation</h2>
+    <p>{{ entreprise.conservation|default:"Le temps nécessaire au traitement de votre demande, puis elles sont supprimées." }}</p>
+    <h2>Cookies et stockage</h2>
+    <ul>
+        <li><b>csrftoken</b> : cookie technique qui protège les formulaires contre les envois frauduleux ;</li>
+        <li><b>sessionid</b> : cookie de connexion, uniquement si vous vous connectez à votre espace ;</li>
+        <li>vos préférences d'affichage (fermeture du bandeau d'information), enregistrées dans votre navigateur.</li>
+    </ul>
+    <p>Ce site n'utilise aucun cookie publicitaire ni de mesure d'audience.</p>
+    <h2>Vos droits</h2>
+    <p>Vous pouvez demander l'accès, la rectification ou la suppression de vos données{% if entreprise.email %} en écrivant à <b>{{ entreprise.email }}</b>{% else %} via le <a href="/#contact" style="color:var(--acc);font-weight:700">formulaire de contact</a>{% endif %}.</p>
+</div></section>
+</div>
+{% endblock %}

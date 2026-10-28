@@ -1,0 +1,145 @@
+
+{% extends './index.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 style="font-weight:bold" class="text-center">Archiver Les Documents De L'operation <b class="text-danger">{{operation_rapport.operation.nom}}</b></h5>
+
+<form style="font-weight: bold" method="POST" action="/add_archive_operation/{{ operation_rapport.id }}/">
+{%csrf_token%}
+<div class="row">
+<div class="col">
+  <input type="hidden" name="operation_id" value="{{ operation_rapport.id }}">
+<label>Titre *</label>
+<input type="text" class="form-control" placeholder="Titre Du Fichier" name="titre" required="renseignez ce champ">
+</div>
+<div class="col">
+<label>Auteur *</label>
+<input type="text" class="form-control" placeholder="Auteur Du Fichier" name="auteur" value="{{request.user.personnel}}" required="merci de renseigner ce champ">
+</div>
+</div>
+<div class="row">
+<div class="col">
+<label>Associez Le document A une categorie *</label>
+<select class="form-control" name="categorie_id" required style="border-color: red" id="categorie">
+<option>Selctionnez La categorie</option>
+{%for category in categorie%}
+  <option value="{{category.id}}">{{category.nom}}</option>
+{%endfor%}
+</select>
+</div>
+<div class="col">
+
+<label>Format Document *</label>
+<select class="form-control" name="format" id="formatSelect" onchange="toggleFields()" required="renseignez ce champ">
+<option>Selectionnez Le format Du document</option>
+<option value="pdf">Pdf</option>
+<option value="image">Image</option>
+</select>
+</div>
+</div>
+
+
+<!-- <div class="row" id="imageFields" >
+<div class="col-md-12">
+<label>Upload Du fichier</label>
+<input type="file" name="upload_file" id="imageUpload" class="form-control" value="{{operation_rapports.piece_jointe}}" required>
+</div>
+</div> -->
+<div class="row">
+<div class="col-md-12">
+<label>Associez a Une Sous-Categorie *</label>
+<select class="form-control" name="sous_categorie" id="sous_categorie">
+<option value="">Selectionnez Votre Sous-Categorie</option>
+{%for sous_categories in sous_categorie%}
+    <option value="{{sous_categories.id}}">{{sous_categories.nom}}</option>
+{%endfor%}
+</select>
+</div>
+</div>
+<div class="row">
+<div class="col-md-12">
+<label>Description *</label>
+<textarea class="form-control" name="description"></textarea>
+</div>
+</div>
+<div class="row">
+<div class="col-md-12">
+<label>Source De Financement *</label>
+<input type="text" name="source_financement" class="form-control">
+</div>
+</div>
+<div class="row">
+<div class="col-md-12">
+<label class="text-danger">Provenance *</label>
+<input type="text" name="provenance" class="form-control" value="{{operation_rapport.operation.nom}}">
+</div>
+
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+<button type="submit" class="btn btn-primary">Archiver</button>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <div class="text-danger">
+      Document A archiver
+    </div>
+    {%for operations in operation%}
+    {%if operations.id == operation_rapport.operation_id%}
+      {{operation_rapport.piece_jointe}}
+      {%endif%}
+      {%endfor%}
+  </div>
+
+</div>
+</form>
+</div>
+</div>
+</div>
+</div>
+        </div>
+
+{% endblock %}
+
+{% block script %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript">
+// custom.js
+
+$(document).ready(function() {
+  $('#categorie').on('change', function() {
+    var selectedId = $(this).val();
+
+    // Effectuer une requête AJAX pour récupérer les informations de la table periodeok en fonction de l'ID de la période sélectionnée
+    $.ajax({
+      url: '/search_categorie/',  // L'URL correspondant à la vue Django
+      method: 'GET',
+      data: { id: selectedId },
+      success: function(data) {
+        var selectInformations = $('#sous_categorie');
+        selectInformations.empty(); // Effacer les anciennes options
+
+        // Ajouter les nouvelles options basées sur les données récupérées via AJAX
+        data.forEach(function(ind) {
+          selectInformations.append($('<option>', {
+            value: ind.id,
+            text: ind.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
+          }));
+        });
+      },
+      error: function(xhr, status, error) {
+        console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+      }
+    });
+  });
+});
+
+</script>
+{% endblock %}

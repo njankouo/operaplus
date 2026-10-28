@@ -1,0 +1,38 @@
+{% extends './index.html' %}
+
+{% block main %}
+<div class="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
+    <h2 class="text-xl font-bold text-gray-900 mb-4">Confirmer la suppression</h2>
+    <p class="text-gray-600 mb-6">Êtes-vous certain de vouloir supprimer cette entité ? Cette action est irréversible.</p>
+
+    <div class="bg-gray-50 p-4 rounded-xl mb-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider text-gray-500 mb-2">Entité concernée</h3>
+        <p class="font-medium text-gray-800">Type : {{ entity.m_entity_type.m_nom }}</p>
+        <p class="text-sm text-gray-600">Hiérarchie : {{ entity.m_hierachie|default:"Non définie" }}</p>
+    </div>
+
+    <div class="mb-6">
+        <h3 class="font-bold text-sm uppercase tracking-wider text-red-600 mb-2">Données liées (Datasets)</h3>
+        {% if datasets %}
+            <ul class="list-disc list-inside text-sm text-gray-700">
+                {% for ds in datasets %}
+                    <li>{{ ds.name }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-sm text-gray-400 italic">Aucun dataset associé.</p>
+        {% endif %}
+    </div>
+
+    <div class="flex gap-4">
+        <a href="{% url 'configurations'  %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Annuler</a>
+        
+        <form method="POST" action="{% url 'delete_entity_type' entity.id %}">
+            {% csrf_token %}
+            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all">
+                Confirmer la suppression
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

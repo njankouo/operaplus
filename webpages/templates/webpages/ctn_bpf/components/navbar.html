@@ -1,0 +1,531 @@
+{%load static%}
+ <header class="app-header">
+  <div class="header-container">
+    <!-- Logo et Nom de l'institution -->
+    <div class="brand-section">
+      <a href="/" class="brand-link">
+        <img src="{{actual_institution.img.url}}" alt="{{actual_institution.nom}}" class="brand-logo my-2">
+
+        <span class="brand-acronym" style="font-family:MaPolicePerso">{{actual_institution.sigle}}</span>
+      </a>
+    </div>
+
+    <!-- Notifications et Actions -->
+    <div class="actions-section">
+      <!-- Badges de notification -->
+      <div class="notifications-wrapper">
+        {%include "../alert/alert-retard.html"%}
+
+<a href="/alert_notifs/0/0/" class="notification-badge success" >
+  <i class="fas fa-envelope"></i>
+  <span class="badge-label">R</span> <!-- Ajout d'un ID spécifique -->
+  <span class="badge-count count_to_done2">0</span>
+</a>
+        <a href="/alert_notifs/0/1/" class="notification-badge danger" id="animated-badge">
+          <i class="fas fa-envelope"></i>
+         
+          <span class="badge-label" id="letter-r">A</span>
+          <span class="badge-count count_is_observ">0</span>
+        </a>
+
+        <a href="/tache_consulted" class="notification-badge light">
+          <i class="fas fa-envelope"></i>
+          <span class="badge-label">C</span>
+          <span class="badge-count regroup_consulted">0</span>
+        </a>
+
+        <a href="/alert_notifs/0/3/" class="notification-badge warning">
+          <i class="fas fa-envelope"></i>
+          <span class="badge-label">I</span>
+          <span class="badge-count count_informed">0</span>
+        </a>
+
+        <a href="/participant/" class="notification-badge info">
+          <i class="fas fa-envelope"></i>
+          <span class="badge-label">M</span>
+          <span class="badge-count count_participant">0</span>
+        </a>
+      </div>
+
+      <!-- Menu App -->
+      <button class="app-menu-btn" data-toggle="modal" href="#menuAppModal" id="rotateLink">
+        <svg class="app-menu-icon" viewBox="0 -960 960 960">
+          <path d="M666-440 440-666l226-226 226 226-226 226Zm-546-80v-320h320v320H120Zm400 400v-320h320v320H520Zm-400 0v-320h320v320H120Zm80-480h160v-160H200v160Zm467 48 113-113-113-113-113 113 113 113Zm-67 352h160v-160H600v160Zm-400 0h160v-160H200v160Zm160-400Zm194-65ZM360-360Zm240 0Z"/>
+        </svg>
+      </button>
+
+      <!-- Profil Utilisateur -->
+     <div class="profile-dropdown">
+  <button class="profile-toggle-btn" aria-label="Menu du profil">
+     {%if request.user.personnel.photo%}
+    <img src="{{request.user.personnel.photo.url}}"alt="Photo de profil" class="profile-img"/>
+     {%else%}
+  
+     <img src="{%static 'photos.png'%}"alt="Photo de profil" class="profile-img"/>
+    {%endif%}
+    <i class='bx bxs-down-arrow dropdown-arrow'></i>
+  </button>
+  <div class="dropdown-menu-content">
+    <div class="user-info-section" style="background:{{request.user.personnel.color_fond}}">
+      <p class="user-name text-light">{{ request.user.personnel.nom }}</p>
+          <p class="user-role text-light">{{ request.user.personnel.tel }}</p>
+      <p class="user-role text-light">{{ request.user.personnel.mail }}</p>
+    </div>
+    <div class="menu-items">
+      <a href="/profile/" class="dropdown-item">
+        <i class="bx bx-user"></i>
+        <span>Profil</span>
+      </a>
+
+   <a href="/organigramme/" 
+   class="group relative flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-slate-100 hover:bg-white hover:shadow-sm transition-all duration-300">
+    
+ 
+
+    <div class="flex items-center justify-center min-w-[24px]">
+        <i class="bx bx-sitemap text-xl text-slate-400 group-hover:text-emerald-500 transition-colors duration-300"></i>
+           Organigramme
+    </div>
+    
+  
+</a>
+      <a href="/institution/" class="dropdown-item">
+        <i class="bx bx-cog"></i>
+        <span>Institutions</span>
+      </a>
+      <a href="/log/1/" class="dropdown-item">
+        <i class="bx bx-power-off"></i>
+        <span>Déconnexion</span>
+      </a>
+    </div>
+  </div>
+</div>
+    </div>
+  </div>
+
+</header>
+
+
+
+<style>
+
+    /* Main Dropdown Container */
+.profile-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Profile Toggle Button */
+.profile-toggle-btn {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.profile-toggle-btn:hover .profile-img {
+  transform: scale(1.05);
+}
+
+/* Profile Image */
+.profile-img {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.3s ease, transform 0.3s ease;
+}
+
+/* Dropdown Arrow */
+.dropdown-arrow {
+  font-size: 1rem;
+  color: #6c757d;
+  transition: transform 0.3s ease;
+}
+
+.profile-dropdown:hover .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Menu Container */
+.dropdown-menu-content {
+  position: absolute;
+  top: calc(100% + 15px);
+  right: 0;
+  min-width: 220px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+  z-index: 1000;
+}
+
+.profile-dropdown:hover .dropdown-menu-content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* User Info Section */
+.user-info-section {
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+.user-name {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 2px;
+  color: #212529;
+}
+.user-role {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+/* Dropdown Items */
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  text-decoration: none;
+  color: #495057;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #e9ecef;
+  color: #007bff;
+}
+
+.dropdown-item i {
+  margin-right: 12px;
+  font-size: 1.2rem;
+  color: #6c757d;
+  transition: color 0.2s ease;
+}
+
+.dropdown-item:hover i {
+  color: #007bff;
+}
+:root {
+  --header-height: 70px;
+  --primary-color: #4361ee;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --warning-color: #ffc107;
+  --info-color: #17a2b8;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --text-color: #ffffff;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--header-height);
+  background:  {{request.user.personnel.color}};
+  color: var(--text-color);
+  z-index: 1000;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.header-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: var(--transition);
+}
+
+.brand-link:hover .brand-logo {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.brand-name {
+  font-family: 'Quartz', sans-serif;
+  text-transform: capitalize;
+  font-size: 1.2rem;
+  margin-right: 8px;
+  font-weight: 500;
+}
+
+.brand-acronym {
+  font-family: 'Quartz', sans-serif;
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.actions-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.notifications-wrapper {
+  display: flex;
+  gap: 15px;
+}
+
+.notification-badge {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 20px;
+  text-decoration: none;
+  color: white;
+  font-size: 0.85rem;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.notification-badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.notification-badge:hover::after {
+  transform: translateX(0);
+}
+
+.notification-badge i {
+  margin-right: 8px;
+  font-size: 1rem;
+}
+
+.alert-icon {
+  color: var(--danger-color);
+  margin-left: 5px;
+}
+
+.badge-label {
+  margin: 0 5px;
+  font-weight: bold;
+}
+
+.badge-count {
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+}
+
+/* Couleurs des badges */
+.success {
+  background-color: var(--success-color);
+}
+
+.danger {
+  background-color: var(--danger-color);
+}
+
+.warning {
+  background-color: var(--warning-color);
+}
+
+.info {
+  background-color: var(--info-color);
+}
+
+.light {
+  background-color: var(--light-color);
+  color: var(--dark-color);
+}
+
+/* Bouton menu app */
+.app-menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-menu-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.app-menu-icon {
+  width: 24px;
+  height: 24px;
+  fill: #AAC1F0;
+  transition: transform 0.3s ease;
+}
+
+.app-menu-btn:hover .app-menu-icon {
+  transform: rotate(90deg);
+}
+
+/* Dropdown profil */
+.profile-dropdown {
+  position: relative;
+}
+
+.profile-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.profile-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: var(--transition);
+}
+
+.profile-btn:hover .profile-img {
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 50px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: var(--transition);
+  z-index: 1000;
+}
+
+.profile-dropdown:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: var(--dark-color);
+  transition: var(--transition);
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+  color: var(--primary-color);
+}
+
+.dropdown-item i {
+  margin-right: 10px;
+  font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .brand-name, .brand-acronym {
+    display: none;
+  }
+
+  .notifications-wrapper {
+    gap: 10px;
+  }
+
+  .notification-badge {
+    padding: 6px 8px;
+  }
+
+  .badge-label {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .notification-badge span:not(.badge-count) {
+    display: none;
+  }
+
+  .notification-badge {
+    padding: 8px;
+    border-radius: 50%;
+  }
+}
+</style>
+
+<script>
+// Animation pour le bouton de menu
+document.getElementById('rotateLink').addEventListener('click', function() {
+  this.classList.toggle('active');
+});
+
+// Gestion des dropdowns
+document.querySelectorAll('.profile-dropdown').forEach(dropdown => {
+  const button = dropdown.querySelector('.profile-btn');
+  const menu = dropdown.querySelector('.dropdown-menu');
+
+  button.addEventListener('click', () => {
+    menu.classList.toggle('show');
+  });
+
+  // Fermer quand on clique ailleurs
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) {
+      menu.classList.remove('show');
+    }
+  });
+});
+</script>

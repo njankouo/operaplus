@@ -1,0 +1,641 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opera+ | Gestion des Périodes</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #f8fafc; 
+            color: #1e293b;
+        }
+
+        .dhis2-blue { background: {{request.user.personnel.color_fond}}; }
+        
+        /* Scrollbar custom */
+        .dhis-scroll::-webkit-scrollbar { width: 5px; }
+        .dhis-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Glass Effect */
+        .glass-nav {
+            background: {{request.user.personnel.color_fond}};
+            backdrop-filter: blur(8px);
+        }
+
+        /* Card Hover Effect */
+        .period-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .period-row:hover {
+            background: #f1f5f9;
+            transform: translateX(4px);
+        }
+
+        .search-container:focus-within {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide { animation: slideIn 0.5s ease-out forwards; }
+    </style>
+
+<!-- ===================== CHARTE + SIDEBAR : styles (ajout) ===================== -->
+<style>
+    :root {
+        --nav-bg-color:   {{ request.user.personnel.color_fond|default:'#1e293b' }};   /* dominante 60 % */
+        --primary-color:  {{ request.user.personnel.color|default:'#4361ee' }};        /* accent 30 %    */
+        --tertiary-color: {{ request.user.personnel.color_tiers|default:'#FACC15' }};  /* touche 10 %    */
+        --nav-ink: #fff; --accent-ink: #fff;
+        --sbx-danger: #E35A33;
+    }
+    .bg-erp-nav { background-color: var(--nav-bg-color) !important; }   /* fond de la sidebar */
+    #iconSidebar { z-index: 60 !important; }   /* au-dessus de la barre du haut : les info-bulles ne sont plus masquées */
+    /* La sidebar remplace la navigation texte du haut sur ordinateur */
+    @media (min-width: 768px) {
+        body > header nav, body > header #mobileMenuBtn { display: none !important; }
+        body > header > div:first-child > a:first-of-type { display: none !important; }   /* logo déjà dans la sidebar */
+    }
+    /* Couleurs de la sidebar selon la dominante */
+    .sbx-item { color: color-mix(in srgb, var(--nav-ink) 70%, transparent) !important; }
+    .sbx-item:hover, .sbx-item:focus-visible { color: var(--nav-ink) !important; background: color-mix(in srgb, var(--nav-ink) 12%, transparent) !important; }
+    .sbx-item.sbx-active { color: var(--accent-ink) !important; }
+    .sbx-item.sbx-active::before { background: var(--tertiary-color) !important; }
+    #iconSidebar > a:first-of-type { box-shadow: 0 0 0 2px var(--tertiary-color); }
+    .sbx-sep { background: color-mix(in srgb, var(--tertiary-color) 35%, transparent) !important; }
+    .sbx-tip { border-top: 3px solid var(--tertiary-color) !important; }
+    .sbx-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: var(--sbx-danger);
+                 color: #fff; font-size: 11px; font-weight: 800; line-height: 20px; text-align: center; box-shadow: 0 0 0 2px var(--nav-bg-color); }
+    .sbx-skip { position: fixed; left: 96px; top: -60px; z-index: 100001; background: #0f172a; color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 700; transition: top .15s; }
+    .sbx-skip:focus { top: 12px; }
+    #sbxFavs:empty { display: none; }
+
+    /* ===== Page : en-tête ===== */
+    body > header.glass-nav { background: var(--nav-bg-color) !important; color: var(--nav-ink) !important; border-bottom: 3px solid var(--tertiary-color); box-shadow: none !important; }
+    body > header .sbx-crumb { display: none; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+    body > header .sbx-crumb span { opacity: .55; }
+    @media (min-width: 768px) { body > header .sbx-crumb { display: flex; } }
+    #userMenuBtn > div:last-child { background: var(--primary-color) !important; background-image: none !important; color: var(--accent-ink); }
+    /* Bandeau coloré conservé (vos pages enfants posent leur titre blanc dessus) : il suit la dominante et la touche */
+    main > div.absolute.-z-10 { background: var(--nav-bg-color) !important; top: 64px !important; height: 150px !important; border-bottom: 4px solid var(--tertiary-color); }
+    @media (min-width: 768px) { main > div.absolute.-z-10 { left: 84px !important; width: calc(100% - 84px) !important; } }
+    html.sbx-light-dom main .text-white, html.sbx-light-dom main .text-blue-100\/70 { color: #111 !important; }
+
+    /* ===== Bloc titre (sur le bandeau) ===== */
+    main > .max-w-6xl > .flex.flex-col.md\:flex-row:first-child h2 { letter-spacing: -.02em; }
+    main > .max-w-6xl > .flex.flex-col.md\:flex-row:first-child p { opacity: .8; color: inherit !important; }
+    main a[href="/import-periode/"] { background: var(--primary-color) !important; color: var(--accent-ink) !important; box-shadow: none !important;
+                                      border-radius: 12px !important; text-transform: none; letter-spacing: 0; }
+    main a[href="/import-periode/"] span { font-size: 0; }
+    main a[href="/import-periode/"] span::after { content: "Importer des périodes"; font-size: 14px; }
+    main a[href="/import-periode/"]:hover { filter: brightness(.93); }
+
+    /* ===== Recherche ===== */
+    .search-container { box-shadow: 0 1px 2px rgba(15,23,42,.05), 0 8px 24px -16px rgba(15,23,42,.25) !important; border: 1px solid #e6e8ec; border-radius: 16px !important;
+                        margin-bottom: 28px !important; transform: none !important; }
+    .search-container:focus-within { border-color: var(--nav-bg-color); box-shadow: 0 0 0 4px color-mix(in srgb, var(--nav-bg-color) 12%, transparent) !important; }
+    .search-container button[type="submit"] { font-size: 0 !important; }
+    .search-container button[type="submit"]::after { content: "Filtrer"; font-size: 13px; }
+
+    /* ===== Groupes et tableaux ===== */
+    .section-group h3 + span, .section-group .bg-blue-100 { background: color-mix(in srgb, var(--nav-bg-color) 10%, #fff) !important; color: var(--nav-bg-color) !important;
+                                                           text-transform: none !important; font-size: 11px !important; }
+    html.sbx-light-dom .section-group .bg-blue-100 { color: #111 !important; }
+    .section-group .bg-\[\#276696\] { background: var(--tertiary-color) !important; }
+    .section-group > .bg-white { border-radius: 20px !important; border-color: #e6e8ec !important; box-shadow: 0 1px 2px rgba(15,23,42,.04) !important; }
+    .section-group thead th { color: #667085 !important; font-size: 11px !important; letter-spacing: .04em !important; }
+    .period-row { transform: none !important; }
+    .period-row:hover { background: color-mix(in srgb, var(--nav-bg-color) 4%, #fff) !important; }
+    .period-row .bg-blue-50 { background: color-mix(in srgb, var(--nav-bg-color) 10%, #fff) !important; color: var(--nav-bg-color) !important; border-radius: 12px !important; }
+    .period-row:hover .bg-blue-50 { background: var(--nav-bg-color) !important; color: var(--nav-ink) !important; }
+    html.sbx-light-dom .period-row .bg-blue-50 { color: #111 !important; }
+    .period-row code { color: #344054 !important; background: #f2f4f7 !important; border-color: #e4e7ec !important; }
+    .period-row .bg-blue-400 { background: var(--primary-color) !important; }
+    .period-row .group-hover\:text-blue-500, .period-row:hover .text-slate-300 { color: var(--nav-bg-color) !important; }
+    .period-row .italic { font-style: normal !important; }
+    /* Actions toujours visibles (avant : invisibles tant qu'on ne survolait pas la ligne) */
+    .period-row td:last-child > div { opacity: 1 !important; transform: none !important; }
+    .period-row td:last-child a { background: #fff !important; border: 1px solid #e4e7ec; color: #475467 !important; }
+    .period-row td:last-child a[href*="editer"]:hover { background: var(--primary-color) !important; border-color: var(--primary-color); color: var(--accent-ink) !important; box-shadow: none !important; }
+    .period-row td:last-child a[href*="delete"]:hover { background: #fef3f2 !important; border-color: #fda29b; color: #d92d20 !important; box-shadow: none !important; }
+
+    /* ===== Pagination ===== */
+    main .bg-blue-600 { background: var(--nav-bg-color) !important; color: var(--nav-ink) !important; box-shadow: none !important; }
+    main .text-blue-600 { color: var(--nav-bg-color) !important; }
+    html.sbx-light-dom main .text-blue-600 { color: #111 !important; }
+    main a.hover\:border-blue-500:hover { border-color: var(--nav-bg-color) !important; color: var(--nav-bg-color) !important; }
+
+    /* ===== Mode sombre ===== */
+    html.sbx-dark body { background: color-mix(in srgb, var(--nav-bg-color) 10%, #0d1016) !important; color: #e5e7eb; }
+    html.sbx-dark main .bg-white { background: #161a22 !important; border-color: #2a303c !important; }
+    html.sbx-dark main :is(.text-slate-800, .text-slate-700, .text-slate-600) { color: #e5e7eb !important; }
+    html.sbx-dark main :is(.text-slate-500, .text-slate-400) { color: #9aa4b2 !important; }
+    html.sbx-dark .period-row:hover { background: #1b202a !important; }
+    html.sbx-dark .period-row code, html.sbx-dark .period-row td:last-child a, html.sbx-dark .search-container button, html.sbx-dark main thead tr { background: #1b202a !important; border-color: #2a303c !important; color: #cbd5e1 !important; }
+    html.sbx-dark .search-container input { color: #e5e7eb !important; }
+
+    a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--tertiary-color) !important; outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) { .animate-slide { animation: none !important; opacity: 1 !important; } }
+</style>
+<!-- ===================== FIN CHARTE + SIDEBAR : styles ===================== -->
+</head>
+
+<body class="h-screen flex flex-col overflow-hidden">
+
+<!-- ===================== SIDEBAR À ICÔNES (ajout) ===================== -->
+<style>
+    /* Décale le contenu pour laisser la place à la sidebar (écrans ≥ 768 px) */
+    @media (min-width: 768px) {
+        body > header, body > main { margin-left: 84px; }
+    }
+
+    #iconSidebar {
+        width: 84px;
+        box-shadow: 4px 0 24px -8px rgba(15, 23, 42, .35);
+    }
+
+    /* ---- Icône ---- */
+    .sbx-item {
+        position: relative; width: 52px; height: 52px; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        color: rgba(255,255,255,.62); font-size: 18px;
+        background: transparent; border: 0; cursor: pointer;
+        transition: background-color .2s, color .2s, transform .2s;
+    }
+    .sbx-item i { transition: transform .2s; }
+    .sbx-item:hover, .sbx-item:focus-visible {
+        background: rgba(255,255,255,.10); color: #fff; outline: none;
+    }
+    .sbx-item:hover i { transform: scale(1.12); }
+    .sbx-item:focus-visible { box-shadow: 0 0 0 2px rgba(255,255,255,.6); }
+
+    /* ---- Page active ---- */
+    .sbx-item.sbx-active {
+        background: var(--primary-color); color: #fff;
+        box-shadow: 0 8px 18px -6px var(--primary-color);
+    }
+    .sbx-item.sbx-active::before {
+        content: ""; position: absolute; left: -16px; top: 12px; bottom: 12px; width: 4px;
+        border-radius: 0 4px 4px 0; background: #fff;
+    }
+
+    /* ---- Déconnexion ---- */
+    .sbx-item.sbx-danger:hover { background: rgba(239,68,68,.18); color: #fecaca; }
+
+    /* ---- Info-bulle ---- */
+    .sbx-tip {
+        position: absolute; left: calc(100% + 18px); top: 50%;
+        transform: translate(-8px, -50%) scale(.96); transform-origin: left center;
+        opacity: 0; visibility: hidden; pointer-events: none;
+        display: flex; align-items: center; gap: 12px;
+        min-width: 240px; padding: 14px 20px 14px 14px;
+        background: #ffffff; color: #0f172a; text-align: left;
+        border-radius: 14px; border: 1px solid #e2e8f0;
+        box-shadow: 0 18px 40px -12px rgba(15,23,42,.35), 0 2px 6px rgba(15,23,42,.06);
+        transition: opacity .18s ease, transform .18s ease, visibility .18s;
+        z-index: 60; white-space: nowrap;
+    }
+    .sbx-tip::before {
+        content: ""; position: absolute; left: -7px; top: 50%; width: 12px; height: 12px;
+        background: #ffffff; border-left: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;
+        transform: translateY(-50%) rotate(45deg);
+    }
+    .sbx-tip-ico {
+        width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center; font-size: 16px;
+        background: color-mix(in srgb, var(--primary-color) 14%, white); color: var(--primary-color);
+    }
+    .sbx-tip-title { display: block; font-size: 16px; font-weight: 700; line-height: 1.2; }
+    .sbx-tip-desc  { display: block; font-size: 14px; color: #64748b; margin-top: 3px; line-height: 1.2; }
+    .sbx-danger .sbx-tip-ico { background: #fef2f2; color: #dc2626; }
+    .sbx-item:hover .sbx-tip, .sbx-item:focus-visible .sbx-tip {
+        opacity: 1; visibility: visible; transform: translate(0, -50%) scale(1);
+        transition-delay: .08s;
+    }
+
+    /* Petits écrans en hauteur : icônes plus compactes */
+    @media (max-height: 1000px) {
+        .sbx-item { width: 44px; height: 44px; font-size: 16px; border-radius: 13px; }
+        #iconSidebar nav, #iconSidebar > div { gap: 3px !important; }
+        #iconSidebar { padding-top: 14px !important; padding-bottom: 14px !important; }
+        #iconSidebar > a:first-of-type { margin-bottom: 12px !important; }
+    }
+    @media (max-height: 780px) {
+        .sbx-item { width: 38px; height: 38px; font-size: 14px; border-radius: 11px; }
+        #iconSidebar nav, #iconSidebar > div { gap: 2px !important; }
+        #iconSidebar > a:first-of-type { width: 40px !important; height: 40px !important; margin-bottom: 8px !important; }
+    }
+
+    .sbx-sep { width: 32px; height: 1px; background: rgba(255,255,255,.12); margin: 6px 0; }
+</style>
+
+<a href="#sbxMain" class="sbx-skip">Aller au contenu</a>
+<aside id="iconSidebar" aria-label="Navigation principale"
+       class="bg-erp-nav hidden md:flex fixed inset-y-0 left-0 z-30 flex-col items-center py-5">
+
+    <a href="/" aria-label="Accueil" class="mb-6 w-12 h-12 rounded-2xl overflow-hidden ring-2 ring-white/25 shadow-lg shrink-0 bg-white">
+        <img src="{{actual_institution.img.url}}" alt="Logo {{actual_institution.sigle}}" class="w-full h-full object-cover">
+    </a>
+
+    <div id="sbxFavs" aria-label="Modules favoris"></div>
+    <nav class="flex flex-col items-center gap-2 flex-1">
+        <a href="/" aria-label="Tableau de bord" class="sbx-item {% if request.path == '/' %}sbx-active{% endif %}">
+            <i class="fa-solid fa-chart-line"></i>
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-chart-line"></i></span><span><span class="sbx-tip-title">Tableau de bord</span><span class="sbx-tip-desc">Vue d'ensemble du projet</span></span></span>
+        </a>
+        <a href="/configurations/" aria-label="Cadre logique" class="sbx-item {% if '/configurations/' in request.path %}sbx-active{% endif %}">
+            <i class="fa-solid fa-diagram-project"></i>
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-diagram-project"></i></span><span><span class="sbx-tip-title">Cadre logique</span><span class="sbx-tip-desc">Objectifs et résultats</span></span></span>
+        </a>
+        <a href="/evaluer/0/" aria-label="Indicateurs" class="sbx-item {% if '/evaluer/' in request.path %}sbx-active{% endif %}">
+            <i class="fa-solid fa-gauge-high"></i>
+            {% if rapports_en_attente %}<span class="sbx-badge" aria-label="{{ rapports_en_attente }} rapports en attente">{{ rapports_en_attente }}</span>{% endif %}
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-gauge-high"></i></span><span><span class="sbx-tip-title">Indicateurs</span><span class="sbx-tip-desc">{% if rapports_en_attente %}{{ rapports_en_attente }} rapports en attente{% else %}Mesures et cibles{% endif %}</span></span></span>
+        </a>
+        <a href="/gestionnaire/0/0/" aria-label="Planification" class="sbx-item {% if '/gestionnaire/' in request.path %}sbx-active{% endif %}">
+            <i class="fa-solid fa-calendar-days"></i>
+            {% if urgent %}<span class="sbx-badge" aria-label="{{ urgent }} tâches en retard">{{ urgent }}</span>{% endif %}
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-calendar-days"></i></span><span><span class="sbx-tip-title">Planification</span><span class="sbx-tip-desc">{% if urgent %}{{ urgent }} tâches en retard{% else %}Gestion des tâches{% endif %}</span></span></span>
+        </a>
+        <a href="/forms/" aria-label="Collecte" class="sbx-item {% if '/forms/' in request.path %}sbx-active{% endif %}">
+            <i class="fa-solid fa-database"></i>
+            {% if formulaires_a_valider %}<span class="sbx-badge" aria-label="{{ formulaires_a_valider }} formulaires à valider">{{ formulaires_a_valider }}</span>{% endif %}
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-database"></i></span><span><span class="sbx-tip-title">Collecte</span><span class="sbx-tip-desc">{% if formulaires_a_valider %}{{ formulaires_a_valider }} formulaires à valider{% else %}Saisie des données{% endif %}</span></span></span>
+        </a>
+
+        <span class="sbx-sep" aria-hidden="true"></span>
+
+        <a href="/personnels/" aria-label="Ressources humaines" class="sbx-item {% if '/personnels/' in request.path %}sbx-active{% endif %}">
+            <i class="fa-solid fa-users"></i>
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-users"></i></span><span><span class="sbx-tip-title">Ressources humaines</span><span class="sbx-tip-desc">Effectifs</span></span></span>
+        </a>
+        <a href="/structures/" aria-label="Structures" class="sbx-item {% if '/structures/' in request.path %}sbx-active{% endif %}">
+            <i class="fa-solid fa-sitemap"></i>
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-sitemap"></i></span><span><span class="sbx-tip-title">Structures</span><span class="sbx-tip-desc">Organisation interne</span></span></span>
+        </a>
+        <a href="/archive_doc/" aria-label="Archives" class="sbx-item {% if '/archive_doc/' in request.path %}sbx-active{% endif %}">
+            <i class="fa-solid fa-box-archive"></i>
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-box-archive"></i></span><span><span class="sbx-tip-title">Archives</span><span class="sbx-tip-desc">Données historiques</span></span></span>
+        </a>
+        <button type="button" aria-label="Tous les modules" class="sbx-item modalOpen">
+            <i class="fa-solid fa-grip"></i>
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-grip"></i></span><span><span class="sbx-tip-title">Tous les modules</span><span class="sbx-tip-desc">Ouvrir le menu complet</span></span></span>
+        </button>
+    </nav>
+
+    <div class="flex flex-col items-center gap-2 pt-4 mt-2 border-t border-white/10">
+        <a href="/configurations_admin/" aria-label="Système" class="sbx-item {% if '/configurations_admin/' in request.path or '/periode' in request.path %}sbx-active{% endif %}">
+            <i class="fa-solid fa-gear"></i>
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-gear"></i></span><span><span class="sbx-tip-title">Système</span><span class="sbx-tip-desc">Configuration globale</span></span></span>
+        </a>
+        <button type="button" aria-label="Mode sombre" aria-pressed="false" class="sbx-item" id="sbxDarkBtn">
+            <i class="fa-solid fa-moon"></i>
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-circle-half-stroke"></i></span><span><span class="sbx-tip-title">Mode sombre</span><span class="sbx-tip-desc">Confort en soirée</span></span></span>
+        </button>
+        <button type="button" aria-label="Couleurs" class="sbx-item" id="sbxThemeBtn">
+            <i class="fa-solid fa-palette"></i>
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-palette"></i></span><span><span class="sbx-tip-title">Couleurs</span><span class="sbx-tip-desc">Personnaliser l'interface</span></span></span>
+        </button>
+        <a href="/log/1/" aria-label="Se déconnecter" class="sbx-item sbx-danger">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid fa-right-from-bracket"></i></span><span><span class="sbx-tip-title">Se déconnecter</span><span class="sbx-tip-desc">Quitter la session</span></span></span>
+        </a>
+    </div>
+</aside>
+<script>
+    // Couleurs : ouvre la fenêtre si elle existe sur la page, sinon mène aux paramètres
+    document.getElementById('sbxThemeBtn').addEventListener('click', function () {
+        var m = document.getElementById('theme-modal');
+        if (m) m.classList.remove('hidden'); else window.location.href = '/configurations_admin/';
+    });
+</script>
+<!-- ===================== FIN SIDEBAR ===================== -->
+
+
+    <header class="glass-nav text-white h-16 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-lg z-50">
+    <div class="flex items-center gap-4 lg:gap-8">
+        <button id="mobileMenuBtn" class="lg:hidden p-2 hover:bg-white/10 rounded-lg">
+            <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+
+        <a href="/" class="flex items-center gap-3 group transition-all">
+            <div class="bg-white/90 p-1 rounded-lg h-9 w-9 flex items-center justify-center shadow-md">
+                {% if actual_institution.logo %}
+                    <img src="{{ actual_institution.img.url }}" alt="Logo" class="h-full w-full object-contain">
+                {% else %}
+                    <i class="fa fa-university text-[#276696]"></i>
+                {% endif %}
+            </div>
+            <h1 class="hidden sm:block text-[10px] font-black uppercase tracking-widest leading-none">
+                {{ actual_institution.nom|default:"Opera+" }}
+            </h1>
+        </a>
+
+      <nav class="hidden lg:flex items-center gap-1 text-[13px] font-semibold">
+    <a href="/" class="{% if request.path == '/' %}bg-white/20 text-white{% else %}hover:bg-white/10{% endif %} px-3 py-2 rounded-lg transition-all">Dashboard</a>
+    
+    <a href="/structures/" class="{% if '/structures/' in request.path %}bg-white/20 text-white{% else %}hover:bg-white/10{% endif %} px-3 py-2 rounded-lg transition-all">Unités d'Org</a>
+    
+    <a href="/evaluer/0/" class="{% if '/evaluer/' in request.path %}bg-white/20 text-white{% else %}hover:bg-white/10{% endif %} px-3 py-2 rounded-lg transition-all">Indicateurs</a>
+    
+    <a href="/forms/" class="{% if '/forms/' in request.path %}bg-white/20 text-white{% else %}hover:bg-white/10{% endif %} px-3 py-2 rounded-lg transition-all">Collecte</a>
+    
+    <a href="/dataelts/" class="{% if '/dataelts/' in request.path %}bg-white/20 text-white{% else %}hover:bg-white/10{% endif %} px-3 py-2 rounded-lg transition-all">DataElements</a>
+</nav>
+    </div>
+
+    <div class="relative">
+    <button id="userMenuBtn" class="flex items-center gap-2 sm:gap-4 outline-none">
+        <div class="text-right hidden sm:block">
+            <p class="text-[9px] uppercase opacity-60 font-bold">Session active</p>
+            <p class="text-[11px] font-bold">{{ request.user.username }}</p>
+        </div>
+        <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center font-bold text-xs shadow-inner uppercase border-2 border-white/20">
+            {{ request.user.username|slice:'2'|upper }}
+        </div>
+    </button>
+
+    <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 text-slate-700 dark:text-slate-200 z-50">
+        <div class="px-4 py-2 border-b border-slate-100 dark:border-slate-700">
+            <p class="text-xs font-bold">{{ request.user.get_full_name }}</p>
+            <p class="text-[10px] opacity-60">{{ request.user.email }}</p>
+        </div>
+        <a href="/profile/" class="block px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Mon Profil</a>
+        <a href="/configurations_admin/" class="block px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Paramètres</a>
+        <div class="my-1 border-t border-slate-100 dark:border-slate-700"></div>
+        <a href="/log/1/" class="block px-4 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">Déconnexion</a>
+    </div>
+</div>
+</header>
+
+<div id="mobileMenu" class="hidden lg:hidden fixed top-16 left-0 w-full bg-slate-900/95 backdrop-blur-md p-6 flex flex-col gap-4 text-white z-40 border-b border-white/10">
+    <a href="/structures/" class="block py-2 border-b border-white/10">Unités d'Org</a>
+    <a href="/evaluer/0/" class="block py-2 border-b border-white/10">Indicateurs</a>
+    <a href="/forms/" class="block py-2 border-b border-white/10">Collecte</a>
+    <a href="/dataelts/" class="block py-2 border-b border-white/10">Données</a>
+</div>
+<script>
+    const userBtn = document.getElementById('userMenuBtn');
+    const dropdown = document.getElementById('userDropdown');
+
+    // Basculer l'affichage du menu
+    userBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Empêche la fermeture immédiate
+        dropdown.classList.toggle('hidden');
+    });
+
+    // Fermer si on clique en dehors
+    window.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target) && e.target !== userBtn) {
+            dropdown.classList.add('hidden');
+        }
+    });
+</script>
+<script>
+    const btn = document.getElementById('mobileMenuBtn');
+    const menu = document.getElementById('mobileMenu');
+
+    btn.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+    });
+
+    // Ferme le menu si on redimensionne l'écran vers le mode desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            menu.classList.add('hidden');
+        }
+    });
+</script>
+    <main class="flex-1 overflow-y-auto dhis-scroll">
+        
+        <div class=" h-32 w-full absolute top-14 left-0 -z-10" style="background: {{request.user.personnel.color_fond}};"></div>
+
+        <div class="max-w-6xl mx-auto px-6 pt-8 pb-20">
+            {%block design%}
+            <div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
+                <div class="text-white">
+                    <h2 class="text-3xl font-extrabold tracking-tight">Référentiel Temporel</h2>
+                    <p class="text-blue-100/70 text-sm font-medium mt-1">Gérez les cycles de collecte et les périodes d'analyse</p>
+                </div>
+                <a href="/import-periode/" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-3 active:scale-95">
+                    <i class="fa fa-plus-circle text-lg"></i>
+                    <span>IMPORT PÉRIODE</span>
+                </a>
+            </div>
+
+            <div class="search-container bg-white rounded-2xl p-2 shadow-xl mb-12 transition-all duration-300">
+                <form method="GET" action="" class="flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" name="q" id="searchInput" value="{{ search_query }}"
+                               placeholder="Rechercher par libellé, code technique ou année..." 
+                               class="w-full pl-12 pr-4 py-3 bg-transparent outline-none text-sm font-medium text-slate-700">
+                    </div>
+                    <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-xs transition-all">
+                        FILTRER
+                    </button>
+                </form>
+            </div>
+            {%endblock%}
+            {%block content%}
+            <div class="space-y-10">
+                {% regroup periodes by periodicite.m_value as periodicite_list %}
+
+                {% for section in periodicite_list %}
+                <div class="animate-slide section-group">
+                    <div class="flex items-center justify-between mb-4 px-2">
+                        <div class="flex items-center gap-3">
+                            <span class="h-8 w-1.5 bg-[#276696] rounded-full"></span>
+                            <h3 class="text-lg font-extrabold text-slate-800 tracking-tight">{{ section.grouper }}</h3>
+                            <span class="bg-blue-100 text-blue-700 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase">
+                                {{ section.list|length }} entrées
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/50 border-b border-slate-100">
+                                    <th class="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Désignation</th>
+                                    <th class="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Code Identifiant</th>
+                                    <th class="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Temporalité</th>
+                                    <th class="px-6 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">Position</th>
+                                    <th class="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-50">
+                                {% for item in section.list %}
+                                <tr class="period-row transition-all duration-200 group">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-4">
+                                            <div class="h-11 w-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                                <i class="fa fa-calendar-check"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-bold text-slate-800 search-target-nom">{{ item.nom }}</p>
+                                                <p class="text-[10px] font-extrabold text-slate-400 mt-0.5">CYCLE {{ item.annee }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <code class="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
+                                            {{ item.nicename|default:"N/A" }}
+                                        </code>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <span class="text-xs font-semibold text-slate-600 italic">
+                                                {{ item.date_debut|date:"d M Y" }}
+                                            </span>
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <span class="h-1 w-12 bg-slate-100 rounded-full overflow-hidden">
+                                                    <span class="block h-full bg-blue-400 w-full"></span>
+                                                </span>
+                                                <span class="text-[10px] font-bold text-slate-400">{{ item.date_fin|date:"d M Y" }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="text-sm font-black text-slate-300 group-hover:text-blue-500 transition-colors">
+                                            {{ item.numero_ordre|floatformat:"0" }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform group-hover:scale-100 scale-95">
+                                            <a href="/editer-periode/{{item.id}}/" class="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-200 transition-all"><i class="fa fa-pen text-xs"></i></a>
+                                            <a href="/delete_periodes/{{item.id}}/" class="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white hover:shadow-lg hover:shadow-rose-200 transition-all"><i class="fa fa-trash text-xs"></i></a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="bg-white rounded-[3rem] p-20 text-center border border-slate-100 shadow-sm">
+                    <div class="inline-flex h-24 w-24 items-center justify-center rounded-full bg-slate-50 mb-6">
+                        <i class="fa fa-ghost text-4xl text-slate-200"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Aucune période n'habite ici</h3>
+                    <p class="text-slate-500 text-sm mt-2 max-w-sm mx-auto leading-relaxed">Ajustez vos filtres ou commencez par ajouter une nouvelle période pour alimenter votre calendrier.</p>
+                </div>
+                {% endfor %}
+
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        Page <span class="text-blue-600">{{ periodes.number }}</span> sur {{ periodes.paginator.num_pages }}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        {% if periodes.has_previous %}
+                            <a href="?page={{ periodes.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                               class="h-12 px-6 flex items-center gap-2 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 hover:border-blue-500 hover:text-blue-600 transition-all shadow-sm">
+                                <i class="fa fa-chevron-left"></i> Précédent
+                            </a>
+                        {% endif %}
+
+                        <div class="flex h-12 items-center px-4 bg-blue-600 rounded-2xl text-xs font-black text-white shadow-lg shadow-blue-200">
+                            {{ periodes.number }}
+                        </div>
+
+                        {% if periodes.has_next %}
+                            <a href="?page={{ periodes.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                               class="h-12 px-6 flex items-center gap-2 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 hover:border-blue-500 hover:text-blue-600 transition-all shadow-sm">
+                                Suivant <i class="fa fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {%endblock%}
+        </div>
+    </main>
+
+    <script>
+        // Auto-submit avec "debounce" pour ne pas saturer le serveur
+        $(document).ready(function(){
+            let timer;
+            $("#searchInput").on("input", function() {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    $(this).closest('form').submit();
+                }, 1000); 
+            });
+        });
+    </script>
+
+<!-- ===================== CHARTE + SIDEBAR : script (ajout) ===================== -->
+<script>
+(function () {
+    var root = document.documentElement;
+    function ink(hex) {
+        var h = String(hex || '#000').trim().replace('#', ''); if (h.length === 3) h = h.replace(/./g, '$&$&');
+        var c = [0, 2, 4].map(function (i) { var v = parseInt(h.substr(i, 2), 16) / 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+        return (.2126 * c[0] + .7152 * c[1] + .0722 * c[2]) > .42 ? '#111111' : '#FFFFFF';
+    }
+    var cs = getComputedStyle(root);
+    root.style.setProperty('--nav-ink', ink(cs.getPropertyValue('--nav-bg-color')));
+    root.style.setProperty('--accent-ink', ink(cs.getPropertyValue('--primary-color')));
+    root.classList.toggle('sbx-light-dom', ink(cs.getPropertyValue('--nav-bg-color')) === '#111111');
+
+    /* Zone principale identifiée pour le lien « Aller au contenu » */
+    var main = document.querySelector('body > main'); if (main && !main.id) main.id = 'sbxMain';
+
+    /* Fil d'Ariane dans l'en-tête */
+    var left = document.querySelector('body > header > div:first-child');
+    if (left) {
+        var h = document.querySelector('body > main h1, body > main h2');
+        var page = h ? h.textContent.trim() : (document.title.split('|').pop() || '').trim();
+        var crumb = document.createElement('div'); crumb.className = 'sbx-crumb';
+        crumb.innerHTML = '<span></span><span>/</span><b></b>';
+        crumb.children[0].textContent = left.querySelector('h1') ? left.querySelector('h1').textContent.trim() : 'Opera+';
+        crumb.children[2].textContent = page;
+        left.appendChild(crumb);
+    }
+
+    /* Mode sombre (même réglage que les autres pages) */
+    var key = 'sbx-dark-{{ request.user.personnel.id }}', btn = document.getElementById('sbxDarkBtn');
+    function setDark(on) {
+        root.classList.toggle('sbx-dark', on);
+        try { localStorage.setItem(key, JSON.stringify(on)); } catch (e) {}
+        if (btn) { btn.querySelector(':scope > i').className = on ? 'fa-solid fa-sun' : 'fa-solid fa-moon'; btn.setAttribute('aria-pressed', on);
+                   var t = btn.querySelector('.sbx-tip-title'); if (t) t.textContent = on ? 'Mode clair' : 'Mode sombre'; }
+    }
+    try { setDark(!!JSON.parse(localStorage.getItem(key) || 'false')); } catch (e) {}
+    if (btn) btn.addEventListener('click', function () { setDark(!root.classList.contains('sbx-dark')); });
+
+    /* Favoris de la barre latérale (enregistrés depuis le menu des modules) */
+    var box = document.getElementById('sbxFavs');
+    try {
+        var favs = JSON.parse(localStorage.getItem('sbx-favs-{{ request.user.personnel.id }}') || '[]');
+        if (box && favs.length) {
+            var NAMES = { '/': ['Dashboard', 'fa-chart-line'], '/configurations/': ['Logique', 'fa-diagram-project'], '/evaluer/0/': ['Indicateurs', 'fa-gauge-high'],
+                          '/personnels/': ['RH', 'fa-users'], '/gestionnaire/0/0/': ['Planification', 'fa-calendar-days'], '/structures/': ['Structures', 'fa-sitemap'],
+                          '/forms/': ['Collecte', 'fa-database'], '/configurations_admin/': ['Système', 'fa-gear'], '/archive_doc/': ['Archives', 'fa-box-archive'] };
+            box.innerHTML = favs.slice(0, 4).map(function (h) {
+                var n = NAMES[h]; if (!n) return '';
+                return '<a href="' + h + '" class="sbx-item" aria-label="' + n[0] + ' (favori)"><i class="fa-solid ' + n[1] + '"></i>' +
+                    '<span class="sbx-tip"><span class="sbx-tip-ico"><i class="fa-solid ' + n[1] + '"></i></span><span><span class="sbx-tip-title">' + n[0] + '</span><span class="sbx-tip-desc">Favori</span></span></span></a>';
+            }).join('') + '<span class="sbx-sep" aria-hidden="true"></span>';
+        }
+    } catch (e) {}
+})();
+</script>
+<!-- ===================== FIN CHARTE + SIDEBAR : script ===================== -->
+</body>
+</html>

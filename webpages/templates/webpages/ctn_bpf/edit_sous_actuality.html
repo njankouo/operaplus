@@ -1,0 +1,245 @@
+
+<style>
+    @import url('https://fonts.googleapis.com/css?family=Roboto:400,500,700,900&display=swap');
+
+.container{
+	max-width: 1230px;
+	width: 100%;
+}
+
+h1{
+	font-weight: 700;
+	font-size: 45px;
+	font-family: 'Roboto', sans-serif;
+}
+
+.header{
+	margin-bottom: 80px;
+}
+#description{
+	font-size: 24px;
+}
+
+.form-wrap{
+	background: rgba(255,255,255,1);
+	width: 100%;
+	max-width: 850px;
+	padding: 50px;
+	margin: 0 auto;
+	position: relative;
+	-webkit-border-radius: 10px;
+	-moz-border-radius: 10px;
+	border-radius: 10px;
+	-webkit-box-shadow: 0px 0px 40px rgba(0, 0, 0, 0.15);
+	-moz-box-shadow: 0px 0px 40px rgba(0, 0, 0, 0.15);
+	box-shadow: 0px 0px 40px rgba(0, 0, 0, 0.15);
+}
+.form-wrap:before{
+	content: "";
+	width: 90%;
+	height: calc(100% + 60px);
+	left: 0;
+	right: 0;
+	margin: 0 auto;
+	position: absolute;
+	top: -30px;
+	background: #00bcd9;
+	z-index: -1;
+	opacity: 0.8;
+	-webkit-border-radius: 10px;
+	-moz-border-radius: 10px;
+	border-radius: 10px;
+	-webkit-box-shadow: 0px 0px 40px rgba(0, 0, 0, 0.15);
+	-moz-box-shadow: 0px 0px 40px rgba(0, 0, 0, 0.15);
+	box-shadow: 0px 0px 40px rgba(0, 0, 0, 0.15);
+}
+.form-group{
+	margin-bottom: 25px;
+}
+.form-group > label{
+	display: block;
+	font-size: 18px;	
+	color: #000;
+}
+.custom-control-label{
+	color: #000;
+	font-size: 16px;
+}
+.form-control{
+	height: 50px;
+	background: #ecf0f4;
+	border-color: transparent;
+	padding: 0 15px;
+	font-size: 16px;
+	-webkit-transition: all 0.3s ease-in-out;
+	-moz-transition: all 0.3s ease-in-out;
+	-o-transition: all 0.3s ease-in-out;
+	transition: all 0.3s ease-in-out;
+}
+.form-control:focus{
+	border-color: #00bcd9;
+	-webkit-box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+	-moz-box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+	box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+}
+textarea.form-control{
+	height: 160px;
+	padding-top: 15px;
+	resize: none;
+}
+
+.btn{
+	padding: .657rem .75rem;
+	font-size: 18px;
+	letter-spacing: 0.050em;
+	-webkit-transition: all 0.3s ease-in-out;
+	-moz-transition: all 0.3s ease-in-out;
+	-o-transition: all 0.3s ease-in-out;
+	transition: all 0.3s ease-in-out;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: #00bcd9;
+  border-color: #00bcd9;
+}
+
+.btn-primary:hover {
+  color: #00bcd9;
+  background-color: #ffffff;
+  border-color: #00bcd9;
+	-webkit-box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+	-moz-box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+	box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+}
+
+.btn-primary:focus, .btn-primary.focus {
+  color: #00bcd9;
+  background-color: #ffffff;
+  border-color: #00bcd9;
+  -webkit-box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+	-moz-box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+	box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+}
+
+.btn-primary:not(:disabled):not(.disabled):active, .btn-primary:not(:disabled):not(.disabled).active,
+.show > .btn-primary.dropdown-toggle {
+  color: #00bcd9;
+  background-color: #ffffff;
+  border-color: #00bcd9;
+}
+
+.btn-primary:not(:disabled):not(.disabled):active:focus, .btn-primary:not(:disabled):not(.disabled).active:focus,
+.show > .btn-primary.dropdown-toggle:focus {
+  -webkit-box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+	-moz-box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+	box-shadow: 0px 0px 20px rgba(0, 0, 0, .1);
+}
+</style>
+
+  {% extends './index.html' %}
+  {% load humanize %}
+  {% load static %}
+  
+  
+  {% block content %}
+  
+  
+  <div class="container">
+	<header class="header">
+		<h1 id="title" class="text-center">Mise A Jour</h1>
+		<p id="description" class="text-center">
+			{{ sous_actualite.intitule }}
+		</p>
+	</header>
+	<div class="form-wrap">	
+		<form id="survey-form" method="POST" action="/update_sous_actuality/{{ sous_actualite.id }}/">
+            {%csrf_token%}
+			<div class="row">
+				<div class="col-md-6">
+					<div class="form-group">
+						<label id="name-label" for="name">intitule</label>
+						<input type="text" name="intitule" id="intitule" placeholder="Intitule" value ="{{ sous_actualite.intitule }}"class="form-control" required>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="form-group">
+						<label id="email-label" for="email">Actualite</label>
+                        <select class="form-control" name="actualite" id ="actualite" >
+                            <option></option>
+
+                            {%for actuality in actualite%}
+                            {%if actuality.id == sous_actualite.actualite_id%}
+                            <option value="{{ actuality.id }}" selected>{{actuality.intitule}}</option>
+                            {%else%}
+                            <option value="{{ actuality.id }}" >{{actuality.intitule}}</option>
+                            {%endif%}
+                            {%endfor%}
+                        </select>
+                    </div>
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="col-md-6">
+					<div class="form-group">
+						<label id="number-label" for="number">Photo</label>
+						<input type="file" name="file_image"  class="form-control"  >
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="form-group">
+						<label>Document</label>
+						<input type="file" name="file_doc"  class="form-control"  >
+					</div>
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="col-md-12">
+					<label>Institution</label>
+                    <select class="form-control" name="institution">
+                        <option></option>
+                        {%for institutions in institution%}
+                        {%if institutions.id == sous_actualite.institution_id%}
+                        <option value="{{institutions.id}}" selected>{{institutions.sigle}}</option>
+
+                        {%else%}
+                        <option value="{{institutions.id}}" >{{institutions.sigle}}</option>
+                        {%endif%}
+                        {%endfor%}
+                    </select>
+				</div>
+
+				
+
+
+			
+				<div class="col-md-12">
+					<div class="form-group">
+						<label>Description</label>
+                        <textarea name="description" class="form-control" id="editions">{{sous_actualite.description}}</textarea>	
+                    </div>
+				
+			
+			
+			<div class="row">
+				<div class="col-md-4">
+					<button type="submit" id="submit" class="btn btn-primary btn-block">Modifier</button>
+				</div>
+			</div>
+
+		</form>
+	</div>	
+</div>
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+ 
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // Replace the <textarea id="editor1"> with a CKEditor 4
+    // instance, using default configuration.
+    CKEDITOR.replace( 'editions' );
+</script>
+  {% endblock %}
+  

@@ -1,0 +1,159 @@
+<div class="neon-alert" id="neonWidget">
+    <div class="neon-card">
+        <div class="neon-glow"></div>
+        <div class="neon-body">
+            <div class="neon-header" style="background: #C42D2D;">
+                <div class="pulse-ring"></div>
+                <span style="color:white;">CONTRÔLE CRITIQUE</span>
+              
+            </div>
+            
+          <div class="neon-stats">
+    <a href="{% url 'tache-retards' %}" class="n-stat-link">
+        <div class="n-stat">
+            <span class="n-val">{{ operations_delay|default:"0"|cut:" " }}</span>
+            <div class="n-lab">Tâches<br>en retard</div>
+        </div>
+    </a>
+
+    <div class="n-sep"></div>
+
+    <a href="/details-retard/" class="n-stat-link">
+        <div class="n-stat">
+            <span class="n-val highlight">{{ transaction_delay|default:"0"|cut:" " }}</span>
+            <div class="n-lab">Transactions<br>en retard</div>
+        </div>
+    </a>
+</div>
+
+<style>
+.neon-stats {
+    display: flex;
+    align-items: center; /* Aligne tout le monde sur le milieu vertical */
+    justify-content: center; /* Centre l'ensemble du bloc horizontalement */
+    gap: 30px; /* Espace équilibré de chaque côté du séparateur */
+}
+
+.n-sep {
+    width: 1px;
+    height: 50px; /* Hauteur ajustée pour correspondre à la taille du texte */
+    background: linear-gradient(to bottom, transparent, #ffffff80, transparent);
+    flex-shrink: 0; /* Empêche le séparateur de s'écraser */
+}
+
+/* S'assure que les liens prennent la même place */
+.n-stat-link {
+    text-decoration: none;
+    text-align: center;
+}
+</style>  
+            <a onclick="toggleNeon()" class="neon-btn">VUE D'ENSEMBLE</a>
+        </div>
+    </div>
+</div>
+<style>
+.neon-alert { position: fixed; bottom: 24px; left: 24px; z-index: 3000; width: 300px; }
+.neon-card { 
+    background: #ffffff; 
+    border-radius: 16px; 
+    border: 1px solid #e2e8f0; 
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); 
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.neon-header { 
+    padding: 16px 20px; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    background: #f8fafc;
+    border-bottom: 1px solid #f1f5f9;
+}
+.neon-header span { font-size: 11px; font-weight: 800; color: #475569; letter-spacing: 0.05em; }
+
+.pulse-ring { width: 8px; height: 8px; background: #e11d48; border-radius: 50%; }
+
+.neon-stats { display: flex; padding: 20px; justify-content: space-around; align-items: center; }
+.n-stat-link { text-decoration: none; flex: 1; transition: opacity 0.2s; }
+.n-stat-link:hover { opacity: 0.7; }
+
+.n-chart {
+    --p: 0; --n-color: #cbd5e1;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: conic-gradient(var(--n-color) calc(var(--p) * 1%), #f1f5f9 0);
+    margin: 0 auto 8px;
+    position: relative;
+}
+.n-chart::after { content: ""; position: absolute; inset: 5px; background: #fff; border-radius: 50%; }
+
+.n-val { position: relative; font-size: 14px; font-weight: 700; color: #0f172a; }
+.n-val.highlight { color: #e11d48; }
+
+.n-lab { font-size: 10px; color: #64748b; font-weight: 500; text-align: center; text-transform: uppercase; }
+
+.neon-btn { 
+    display: block; 
+    margin: 0 20px 20px;
+    padding: 10px; 
+    background: #C42D2D; 
+    color: #fff; 
+    text-align: center; 
+    font-size: 11px; 
+    font-weight: 700; 
+    text-decoration: none; 
+    border-radius: 8px; 
+}
+.neon-btn:hover { background: #1e293b; }
+
+/* Animation de fermeture */
+.neon-hide { display: none; }
+</style>
+
+<script>
+    const DUREE_OUVERT = 30000; // 30s
+    const DUREE_FERME = 30000;  // 30s
+    const KEY_MANUAL_CLOSE = 'neon_widget_closed';
+
+    function gererCycleNeon() {
+        const widget = document.getElementById('neonWidget');
+        if (!widget) return;
+
+        // Si l'utilisateur a déjà fermé manuellement, on arrête tout
+        if (localStorage.getItem(KEY_MANUAL_CLOSE) === 'true') {
+            widget.style.display = 'none';
+            return;
+        }
+
+        const fermer = () => {
+            // Vérification de sécurité avant de fermer
+            if (localStorage.getItem(KEY_MANUAL_CLOSE) !== 'true') {
+                widget.style.display = 'none';
+                setTimeout(ouvrir, DUREE_FERME);
+            }
+        };
+
+        const ouvrir = () => {
+            if (localStorage.getItem(KEY_MANUAL_CLOSE) !== 'true') {
+                widget.style.display = 'block';
+                setTimeout(fermer, DUREE_OUVERT);
+            }
+        };
+
+        // Lancement du cycle
+        setTimeout(fermer, DUREE_OUVERT);
+    }
+
+    function toggleNeon() {
+        const w = document.getElementById('neonWidget');
+        if (w) {
+            w.style.display = 'none';
+            // On enregistre dans le localStorage que l'utilisateur a fermé manuellement
+            localStorage.setItem(KEY_MANUAL_CLOSE, 'true');
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", gererCycleNeon);
+</script>

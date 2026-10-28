@@ -1,0 +1,579 @@
+{%extends './index.html'%}
+{%block main%}
+     <div id="canvas-wrapper"></div>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  
+ 
+   <style>
+
+/* CARD BASE */
+.kpi-card {
+    background: {{request.user.personnel.color_fond}};
+    border: 1px solid #334155;
+    padding: 20px;
+    border-radius: 18px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+}
+
+/* HEADER */
+.kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-bottom: 10px;
+    color: #94a3b8;
+}
+
+.kpi-header i {
+    font-size: 14px;
+    opacity: 0.6;
+}
+
+/* VALUE */
+.kpi-value {
+    font-size: 34px;
+    font-weight: 900;
+    color: white;
+}
+
+/* COLORS */
+.text-blue { color: #3b82f6; }
+.text-green { color: #22c55e; }
+.text-red { color: #ef4444; }
+.text-amber { color: #f59e0b; }
+
+.border-blue { border-left: 4px solid #3b82f6; }
+.border-green { border-left: 4px solid #22c55e; }
+.border-red { border-left: 4px solid #ef4444; }
+.border-amber { border-left: 4px solid #f59e0b; }
+
+/* PROGRESS */
+.kpi-progress {
+    margin-top: 12px;
+    height: 6px;
+    background: #334155;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.kpi-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    transition: width 0.6s ease;
+}
+
+</style>
+
+
+
+    <main class="max-w-[1600px] mx-auto px-6 py-3">
+        
+     
+        <div class="flex flex-wrap items-center justify-between mb-6 gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-2">
+                <button onclick="changeView('day')" class="px-4 py-2 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-all">Jour</button>
+                <button onclick="changeView('week')" class="px-4 py-2 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-all">Semaine</button>
+                <button onclick="changeView('month')" class="px-4 py-2 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-all">Mois</button>
+            </div>
+            
+           
+        </div>
+
+        <div id="gantt-container" class="bg-white rounded-2xl shadow-soft border border-slate-200 overflow-hidden">
+            <div class="flex items-center justify-center py-40">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="operationModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all max-h-[90vh] flex flex-col">
+            <div id="modalHeader" class="p-8 text-white shrink-0 bg-accent-primary">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-fingerprint text-xl"></i>
+                    </div>
+                    <button id="closeModal" class="text-white/70 hover:text-white transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <h3 id="modalTitre" class="text-2xl font-black mb-1 leading-tight tracking-tight uppercase italic">Détails</h3>
+                <div id="modalStatus" class="inline-block px-3 py-1 bg-black/20 rounded-full text-[10px] font-bold tracking-widest uppercase italic">STATUT</div>
+            </div>
+
+            <div class="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-grow">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Date Début</p>
+                        <p id="modalDateDebut" class="font-bold text-slate-800">-</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Échéance</p>
+                        <p id="modalDateEcheance" class="font-bold text-slate-800">-</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Matrice RACI</p>
+                    <div id="raciContainer" class="grid grid-cols-1 gap-2"></div>
+                </div>
+            </div>
+
+            <div class="p-8 pt-0 shrink-0">
+                <button id="btnModifierModal" class="w-full bg-slate-900 hover:bg-accent-primary text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl">
+                    <i class="fas fa-external-link-alt text-xs"></i>
+                    Consulter la fiche complète
+                </button>
+            </div>
+        </div>
+    </div>
+<link href="https://unpkg.com/vis-timeline/styles/vis-timeline-graph2d.min.css" rel="stylesheet" />
+<script src="https://unpkg.com/vis-timeline/standalone/umd/vis-timeline-graph2d.min.js"></script>
+<style>
+:root {
+    --corp-primary: {{request.user.personnel.color}};      /* Indigo corporate */
+    --corp-success: #22c55e;
+    --corp-warning: #f59e0b;
+    --corp-danger:  #ef4444;
+    --corp-bg:     #FFFFFF;
+    --corp-surface: #1e293b;
+    --corp-border:  #334155;
+}
+</style>
+<style>
+
+/* ===== CONTAINER ===== */
+#gantt-container {
+    background: var(--corp-bg);
+    border-radius: 16px;
+    padding: 18px;
+    border: 1px solid var(--corp-border);
+    text-color: white;
+}
+
+/* ===== TIMELINE GLOBAL ===== */
+.vis-timeline {
+    background: var(--corp-bg);
+    border: none;
+    color: #e2e8f0;
+}
+
+/* Axe du temps */
+.vis-time-axis {
+    background: var(--corp-bg);
+    border-color: var(--corp-border);
+}
+
+.vis-time-axis .vis-text {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Groupes */
+.vis-group {
+    color: white;
+    font-weight: 700;
+    font-size: 11px;
+}
+
+/* ===== ITEM DESIGN ===== */
+.vis-item {
+    border-radius: 10px !important;
+    border: none !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+.vis-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.5);
+}
+
+/* ===== CONTENU INTERNE ===== */
+.task-wrapper {
+    position: relative;
+    padding: 6px 10px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+}
+
+/* Barre progression interne */
+.task-progress {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    opacity: 0.25;
+}
+/* ======= GROUPES ======= */
+.group-text {
+    display: block;
+    max-width: 120px;        /* Largeur max du texte */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* … si texte trop long */
+    font-size: 11px;         /* Taille réduite pour compact */
+    font-weight: 700;
+    color: white;            /* Toujours visible en dark mode */
+    transition: transform 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+}
+
+/* Hover effet premium sur le groupe */
+.group-text:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);  /* Ombre douce */
+    color: #60a5fa;                                  /* Accent color */
+}
+
+/* ======= ITEMS (Tâches) ======= */
+.vis-item {
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+/* Hover effet premium sur les items */
+.vis-item:hover {
+    transform: scale(1.05);  /* Zoom léger */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);  /* Ombre plus marquée */
+    background-color: rgba(96, 165, 250, 0.15);  /* Légère coloration de fond */
+}
+/* Texte tronqué */
+.task-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+    color: white;
+}
+
+/* Ligne Aujourd'hui */
+.vis-custom-time.today-line {
+    background: var(--corp-danger) !important;
+    width: 2px;
+}
+
+</style>
+<script>
+let timeline = null;
+
+$(document).ready(function() {
+    fetchPlanningData();
+
+    $('#closeModal').on('click', () => {
+        $('#operationModal')
+            .fadeOut(200, function() {
+                $(this).addClass('hidden').removeClass('flex');
+            });
+    });
+});
+
+function fetchPlanningData() {
+    $.getJSON('/gantt_planification/', function(data) {
+        renderGantt(data);
+    }).fail(function(err) {
+        console.error("Erreur JSON:", err);
+        document.querySelector("#gantt-container").innerHTML =
+            "<div class='p-20 text-center text-red-500 font-bold'>Erreur de chargement</div>";
+    });
+}
+
+function renderGantt(sourceData) {
+
+    const container = document.getElementById("gantt-container");
+
+    if (!sourceData || sourceData.length === 0) {
+        container.innerHTML =
+            "<div class='p-20 text-center text-slate-400 font-bold uppercase'>Aucune tâche planifiée</div>";
+        return;
+    }
+
+    sourceData.sort((a, b) =>
+        new Date(a.date_debut) - new Date(b.date_debut)
+    );
+
+    container.innerHTML = "";
+
+    function truncateText(text, maxLength = 60) {
+    if (!text) return "";
+    return text.length > maxLength ? text.substring(0, maxLength) + "…" : text;
+}
+const groups = new vis.DataSet(
+    sourceData.map((op, index) => ({
+        id: index,
+        content: `<span class="group-text group-hover" title="${op.tache || 'AUTRE'}">
+                    ${truncateText(op.nom || "AUTRE", 60).toUpperCase()}
+                  </span>`
+    }))
+);
+const items = new vis.DataSet(
+    sourceData.map((op, index) => {
+
+        let color;
+
+        switch (op.suivi_evaluation) {
+            case "Excellent":
+                color = "var(--corp-success)";
+                break;
+            case "Satisfaisant":
+                color = "var(--corp-primary)";
+                break;
+            case "Moyen":
+                color = "var(--corp-warning)";
+                break;
+            case "Critique":
+                color = "var(--corp-danger)";
+                break;
+            default:
+                color = "#64748b";
+        }
+
+        const progress = op.progress || 0;
+
+        return {
+            id: index,
+            group: index,
+            start: op.date_debut,
+            end: op.date_echeance,
+            content: `
+                <div class="task-wrapper" style="background:${color}">
+                    
+                    <div class="task-progress"
+                         style="width:${progress}%; background:white;">
+                    </div>
+
+                    <span class="task-text" title="${op.personnel}">
+                        ${op.personnel}
+                    </span>
+
+                 
+                </div>
+            `,
+            meta: op
+        };
+    })
+);
+    const options = {
+        stack: false,
+        orientation: "top",
+        height: Math.max(350, sourceData.length * 38),
+        margin: { item: 6 },
+        zoomKey: "ctrlKey",
+        horizontalScroll: true,
+        zoomable: true,
+        moveable: false,
+        showCurrentTime: false
+    };
+
+    if (timeline) timeline.destroy();
+
+    timeline = new vis.Timeline(container, items, groups, options);
+
+    // Ligne Aujourd'hui
+    timeline.addCustomTime(new Date(), "today");
+    const custom = container.querySelector('.vis-custom-time');
+    if (custom) custom.classList.add("today-line");
+
+    // Click tâche
+    timeline.on("select", function (properties) {
+        if (properties.items.length > 0) {
+            const item = items.get(properties.items[0]);
+            showOperationModal(item);
+        }
+    });
+}
+
+function showOperationModal(point) {
+
+    const op = point.meta;
+    const userColor = '{{request.user.personnel.color_fond|default:"#4f46e5"}}';
+
+    $('#modalHeader').css('background-color', userColor);
+    $('#modalTitre').text(op.nom);
+    $('#modalStatus').text(op.status);
+
+    $('#modalDateDebut').text(
+        new Date(point.start).toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        })
+    );
+
+    $('#modalDateEcheance').text(
+        new Date(point.end).toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        })
+    );
+
+    const $container = $('#raciContainer').empty();
+
+    const roles = [
+        { r: 'R', l: 'Responsable', u: op.personnel },
+        { r: 'A', l: 'Approbateur', u: op.accountable || 'Direction' },
+        { r: 'C', l: 'Consulté', u: op.consulted || 'Équipe Tech' },
+        { r: 'I', l: 'Informé', u: op.informed || 'Client' }
+    ];
+
+    roles.forEach(item => {
+        $container.append(`
+            <div class="flex items-center gap-3 p-3 bg-white border rounded-xl">
+                <div class="w-8 h-8 bg-indigo-500 text-white text-xs font-bold flex items-center justify-center rounded-lg">
+                    ${item.r}
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 uppercase">${item.l}</p>
+                    <p class="text-sm font-bold text-slate-700">${item.u || 'Non assigné'}</p>
+                </div>
+            </div>
+        `);
+    });
+
+    $('#btnModifierModal')
+        .off('click')
+        .on('click', () => window.location.href = `/detail-gantt/${op.id}/`);
+
+    $('#operationModal')
+        .removeClass('hidden')
+        .addClass('flex')
+        .hide()
+        .fadeIn(250);
+}
+
+window.changeView = function(unit) {
+
+    if (!timeline) return;
+
+    const now = new Date();
+    const day = 24 * 3600 * 1000;
+
+    let start, end;
+
+    if (unit === 'day') {
+        start = new Date(now.getTime() - day/2);
+        end = new Date(now.getTime() + day);
+    }
+    else if (unit === 'week') {
+        start = new Date(now.getTime() - day*3);
+        end = new Date(now.getTime() + day*7);
+    }
+    else {
+        start = new Date(now.getTime() - day*7);
+        end = new Date(now.getTime() + day*30);
+    }
+
+    timeline.setWindow(start, end);
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- SCRIPT DU GLOBE THREE.JS -->
+<script>
+    (function() {
+        function initGlobe() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            if (!wrapper) return; 
+
+            if (typeof THREE === 'undefined') {
+                console.warn("Three.js n'est pas chargé sur cette page.");
+                return;
+            }
+
+            let scene, camera, renderer, globeGroup, pointsMesh;
+            let time = 0;
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 1, 1000);
+            camera.position.z = 250; 
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+            wrapper.appendChild(renderer.domElement);
+
+            globeGroup = new THREE.Group();
+            scene.add(globeGroup);
+
+            const radius = 75;
+            const dotCount = 3000;
+            const positions = [], colors = [], directions = [];
+
+            for (let i = 0; i < dotCount; i++) {
+                const phi = Math.acos(-1 + (2 * i) / dotCount);
+                const theta = Math.sqrt(dotCount * Math.PI) * phi;
+                const x = radius * Math.sin(phi) * Math.cos(theta);
+                const y = radius * Math.sin(phi) * Math.sin(theta);
+                const z = radius * Math.cos(phi);
+
+                const lat = (phi * 180 / Math.PI) - 90;
+                const lon = (theta * 180 / Math.PI) % 360 - 180;
+                const isLand = (lon > -22 && lon < 52 && lat > -35 && lat < 70) || (lon >= 52 && lon < 145 && lat > -12 && lat < 75) || (lon > -120 && lon < -34 && lat > -55 && lat < 18);
+
+                if (isLand) {
+                    positions.push(x, y, z);
+                    const norm = Math.sqrt(x*x + y*y + z*z);
+                    directions.push(x/norm, y/norm, z/norm);
+                    const isAmber = (lon > -12 && lon < 45 && lat > -30 && lat < 35);
+                    colors.push(isAmber ? 0.96 : 0.06, isAmber ? 0.62 : 0.72, isAmber ? 0.04 : 0.50);
+                }
+            }
+
+            const dotGeometry = new THREE.BufferGeometry();
+            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            dotGeometry.setAttribute('originalPosition', new THREE.Float32BufferAttribute(positions, 3));
+            dotGeometry.setAttribute('direction', new THREE.Float32BufferAttribute(directions, 3));
+
+            pointsMesh = new THREE.Points(dotGeometry, new THREE.PointsMaterial({ 
+                size: 1.8, vertexColors: true, transparent: true, opacity: 0.8 
+            }));
+            globeGroup.add(pointsMesh);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                time += 0.01;
+                const progress = (Math.sin(time * 0.5) + 1) / 2; 
+                const explosionForce = progress * 60;
+
+                const pos = pointsMesh.geometry.attributes.position;
+                const orig = pointsMesh.geometry.attributes.originalPosition;
+                const dir = pointsMesh.geometry.attributes.direction;
+
+                for (let i = 0; i < pos.count; i++) {
+                    pos.setX(i, orig.getX(i) + dir.getX(i) * explosionForce);
+                    pos.setY(i, orig.getY(i) + dir.getY(i) * explosionForce);
+                    pos.setZ(i, orig.getZ(i) + dir.getZ(i) * explosionForce);
+                }
+                pos.needsUpdate = true;
+                globeGroup.rotation.y += 0.005;
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        window.addEventListener("DOMContentLoaded", initGlobe);
+    })();
+</script>
+
+{%endblock%}

@@ -1,0 +1,131 @@
+{% extends './index.html' %}
+{% block main %}
+
+<div class="max-w-7xl mx-auto p-8 bg-slate-50 min-h-screen">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Administration Employé</h1>
+            <p class="text-slate-500 text-sm">Gestion des informations et paramètres de sécurité</p>
+        </div>
+        <a href="javascript:history.back()" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-100 transition-all">Retour</a>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        <div class="xl:col-span-1">
+            <div class="bg-white border border-slate-200 rounded-xl p-6 text-center shadow-sm">
+                <div class="relative w-24 h-24 mx-auto mb-4 cursor-pointer group" id="upload-trigger">
+                  <div class="relative w-24 h-24 mx-auto mb-4 cursor-pointer group" id="upload-trigger">
+    <img id="imagePreview" 
+         src="{% if personnel.photo %}{{ personnel.photo.url }}{% else %}https://ui-avatars.com/api/?name={{ personnel.prenom }}+{{ personnel.nom }}{% endif %}" 
+         class="w-full h-full rounded-lg object-cover border border-slate-200 shadow-inner">
+    
+    <div class="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <span class="text-white text-[10px] font-bold uppercase">Modifier</span>
+    </div>
+</div>
+                    <div class="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span class="text-white text-[10px] font-bold uppercase">Modifier</span>
+                    </div>
+                </div>
+                <h2 class="font-bold text-slate-900">{{ personnel.prenom }} {{ personnel.nom }}</h2>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mt-1">ID: #{{ personnel.id }}</span>
+            </div>
+        </div>
+
+        <div class="xl:col-span-3 space-y-8">
+            
+            <form id="edit-form" method="post" action="/edit_form/{{ personnel.id }}" enctype="multipart/form-data" class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                {% csrf_token %}
+                <input type="file" id="imageUpload" name="file" accept="image/*" class="hidden">
+                
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                    <h5 class="text-sm font-bold text-slate-700 uppercase">Informations générales</h5>
+                </div>
+                <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Prénom</label>
+                        <input type="text" name="prenom" value="{{ personnel.prenom }}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nom</label>
+                        <input type="text" name="nom" value="{{ personnel.nom }}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Email</label>
+                        <input type="email" name="mail" value="{{ personnel.mail }}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Téléphone</label>
+                        <input type="tel" name="tel" value="{{ personnel.tel }}" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all">
+                    </div>
+                </div>
+                <div class="px-8 pb-8">
+                    <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-all">Enregistrer le profil</button>
+                </div>
+            </form>
+
+            <form method="POST" action="{% url 'change-password' %}" class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                {% csrf_token %}
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                    <h5 class="text-sm font-bold text-slate-700 uppercase flex items-center">
+                        <i class="bi bi-shield-lock mr-2 text-blue-600"></i> Paramètres de sécurité
+                    </h5>
+                </div>
+                <div class="p-8 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nouveau mot de passe</label>
+                            <input type="password" id="newPassword" name="password1" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all">
+                            <div class="h-1.5 w-full bg-slate-100 rounded-full mt-2 overflow-hidden">
+                                <div id="pw-strength" class="h-full w-0 transition-all duration-500 ease-out"></div>
+                            </div>
+                            <p id="pw-text" class="text-[10px] text-slate-400 mt-1 font-medium">Force du mot de passe</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Confirmation</label>
+                            <input type="password" name="password2" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all">
+                        </div>
+                    </div>
+                    <button type="submit" class="px-6 py-2.5 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition-all">Mettre à jour le mot de passe</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Upload photo
+        $('#upload-trigger').click(function() { $('#imageUpload').click(); });
+        
+        $("#imageUpload").change(function() {
+            if (this.files && this.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) { $('#imagePreview').attr('src', e.target.result); }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        // Force mot de passe
+        $('#newPassword').on('input', function() {
+            let val = $(this).val();
+            let strength = 0;
+            if (val.length > 5) strength += 30;
+            if (val.match(/[A-Z]/)) strength += 35;
+            if (val.match(/[0-9]/)) strength += 35;
+            $('#pw-strength').css('width', strength + '%');
+            
+            let color = 'bg-red-500';
+            let text = 'Faible';
+            if(strength >= 60) { color = 'bg-yellow-500'; text = 'Moyen'; }
+            if(strength >= 100) { color = 'bg-green-500'; text = 'Fort'; }
+            
+            $('#pw-strength').removeClass('bg-red-500 bg-yellow-500 bg-green-500').addClass(color);
+            $('#pw-text').text('Force : ' + text);
+        });
+    });
+</script>
+
+{% endblock %}

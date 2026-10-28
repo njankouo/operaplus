@@ -1,0 +1,89 @@
+{% extends './main.html' %}
+{% load static %}
+
+
+{% block style %}
+<style type="text/css">
+	body *{
+		font-size: 14px;
+	}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero-media" style="position: fixed;">
+							<div class="header-illustration">
+								<img class="header-illustration-image asset-light" src="{% static 'webpages/dist/images/header-illustration-light.svg' %}" alt="Header illustration">
+								<img class="header-illustration-image asset-dark" src="{% static 'webpages/dist/images/header-illustration-dark.svg' %}" alt="Header illustration">
+							</div>
+							<div class="hero-media-illustration">
+								<img class="hero-media-illustration-image asset-light" src="{% static 'webpages/dist/images/hero-media-illustration-light.svg' %}" alt="Hero media illustration">
+								<img class="hero-media-illustration-image asset-dark" src="{% static 'webpages/dist/images/hero-media-illustration-dark.svg' %}" alt="Hero media illustration">
+							</div>
+							<div class="hero-media-container">
+								<img class="hero-media-image asset-light" src="{% static 'webpages/dist/images/hero-media-light.svg' %}" alt="Hero media">
+								<img class="hero-media-image asset-dark" src="{% static 'webpages/dist/images/hero-media-dark.svg' %}" alt="Hero media">
+							</div>
+						</div>
+<div style="z-index:9999;">
+	{% if edit == 1 %}<div class="mb-3 text-center" ><a style="font-size:14px;" class="btn btn-primary" href="/configurations/">Retourner à l'Ecran de Configuration</a></div>
+	{% else %}
+<div class="mb-3 text-center" ><a style="font-size:14px;" class="btn btn-success" href="/institution/">Retourner aux Configurations</a></div>
+	{% endif %}
+</div>
+
+<div style="display:flex;justify-content: center;">
+<div class=" col-lg-12 p-3">
+	<form  method="POST"  enctype="multipart/form-data" action="/edit_categorie_up/{{ categorie.id }}/">
+		{% csrf_token %}
+<div style="display:flex;justify-content: center;">
+<div class=" card col-lg-6 p-3">
+
+	<div class="card-header mb-3">
+		<div class="text-center" style="color:#777;"> <small > Bienvenue sur Opera </small></div>
+		{% if edit == 1 %}
+		<h1 class="text-center">Modifier l'Institution <b class="text-primary">{{institution}}</b> </h1>
+		{% else %}
+		<h1 class="text-center"> Ajouter une <b class="text-primary">Institution</b> </h1>
+		{% endif %}
+		{% if edit == 1 %}  <div class="text-center" style="color:#777;font-weight:bold; "> <small > Modifier les Informations de Base de votre Institution </small></div>
+		{% else %}  <div class="text-center" style="color:#777;"> <small > Il s'agit d'une Entité ausein de laquelle sera déployé l'outil de Suivi et Evalaution des Plans d'Action </small></div>
+		{% endif %}
+	</div>
+	<div style="width: 100vw; " class="card-body col-lg-12 d-flex flex-column justify-content-around">
+		<center>
+		<div class="form-group col-md-12">
+			<div class="text-center"><label> Categorie</label></div>
+			<div><input type="text"  value="{{categorie.intitule}}" class="form-control" name="nom"></div>
+		</div>
+	
+
+	
+<button type="submit" class="btn btn-success">Modifier</button>
+</div>
+</div>
+</form>
+</div>
+</div>
+
+
+<footer class="mt-2 footer" style="padding:20px;position:static; background-color:#fff;">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                2024 © BeinInfo.
+            </div>
+            <div class="col-sm-6">
+                <div class="text-sm-right">
+                 <a href="/main/" class="text-primary">A Propos</a> | <a href="/main/" class="text-success">Aide</a> | Design &amp; Develop by Beinfos Plus
+             </div>
+         </div>
+     </div>
+ </div>
+</footer>
+
+{% endblock %}
+
+{% block script %}
+
+{% endblock %}

@@ -1,0 +1,129 @@
+<div class="space-y-6">
+  <!-- Liste des opérations -->
+  <div class="grid grid-cols-1 gap-6">
+    {% for operation in operations %}
+    <div class="group relative bg-white rounded-2xl border border-gray-200/80 shadow-xs hover:shadow-xl hover:border-indigo-500/50 transition-all duration-300 overflow-hidden" style="animation-delay: {{ forloop.counter0|floatformat:0 }}00ms">
+      
+      <!-- Barre d'accentuation latérale dynamique -->
+      <div class="absolute inset-y-0 left-0 w-1.5 shadow-sm" style="background-color: {{ request.user.personnel.color_fond|default:'#6366f1' }};"></div>
+
+      <!-- En-tête de la carte -->
+      <div class="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-100">
+        <div class="flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
+            <i class="bx bx-atom text-xl" style="color: {{ request.user.personnel.color_fond|default:'#6366f1' }};"></i>
+          </div>
+          <h3 class="text-base font-bold text-gray-900 tracking-tight m-0">
+            {{ operation }}
+          </h3>
+        </div>
+
+        <div class="flex items-center gap-3 self-start sm:self-auto">
+          <!-- Badge Structure -->
+          <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-700">
+            {{ operation.structure.nom }}
+          </span>
+          <a href="/detail-gantt/{{ operation.id }}/" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-md text-xs font-semibold transition-colors">
+            <i class="fas fa-eye text-indigo-600"></i>
+            <span>Détails</span>
+        </a>
+          <!-- Bouton Modifier Tâche / Opération -->
+          <a href="/editer-tache/{{ operation.id }}/" class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200 shadow-2xs">
+            <i class="bx bx-edit-alt text-base"></i>
+            <span>Modifier Tache</span>
+          </a>
+
+        </div>
+      </div>
+
+      <!-- Grille Bento des Statistiques -->
+      <div class="grid grid-cols-2 md:grid-cols-4 bg-gray-100 gap-px border-b border-gray-100">
+        <div class="bg-white p-5 text-center transition-colors hover:bg-gray-50/50">
+          <span class="block text-xl font-extrabold text-indigo-600 tracking-tight">{{ operation.niveau_execution }}%</span>
+          <span class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mt-1">Exécution</span>
+        </div>
+        <div class="bg-white p-5 text-center transition-colors hover:bg-gray-50/50">
+          <span class="block text-xl font-extrabold text-emerald-600 tracking-tight">{{ operation.resultat_niveau_execution }}</span>
+          <span class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mt-1">Résultat</span>
+        </div>
+        <div class="bg-white p-5 text-center transition-colors hover:bg-gray-50/50">
+          <span class="block text-xl font-extrabold text-amber-600 tracking-tight">{{ operation.niveau_execution_valide }}%</span>
+          <span class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mt-1">Validé</span>
+        </div>
+        <div class="bg-white p-5 text-center transition-colors hover:bg-gray-50/50">
+          <span class="block text-xl font-extrabold text-sky-600 tracking-tight">{{ operation.resultat_niveau_execution_valide }}</span>
+          <span class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mt-1">Confirmé</span>
+        </div>
+      </div>
+
+      <!-- Zone Flux de données (Transactions) -->
+      <div class="p-5 bg-gray-50/60 border-b border-gray-100">
+        <div class="flex flex-wrap gap-2">
+          {% for trans in transaction %}
+            {% if trans.operation_id == operation.id %}
+            <div class="inline-flex items-center gap-2 bg-white border border-gray-200/70 px-3.5 py-1.5 rounded-full text-xs shadow-2xs">
+              <i class="bx bx-pulse text-indigo-500"></i>
+              <strong class="font-bold text-gray-900">{{ trans.valeur }}%</strong>
+              <span class="text-gray-300">|</span>
+              <span class="text-gray-500">{{ trans.date_enregistrement }}</span>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Pied de carte -->
+      <div class="px-6 py-4 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-gray-600">
+        <div class="flex flex-wrap items-center gap-4">
+          <span class="inline-flex items-center gap-1.5">
+            <i class="bx bx-wallet-alt text-gray-400 text-sm"></i> Budget : <strong class="text-gray-900">{{ operation.montant_total_source_financement }}</strong>
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <i class="bx bx-calendar-check text-gray-400 text-sm"></i> Deadline : <strong class="text-gray-900">{{ operation.date_echeance }}</strong>
+          </span>
+        </div>
+        <div class="inline-flex items-center gap-1.5 font-semibold text-gray-900">
+          <i class="bx bx-user-circle text-gray-400 text-base"></i> Lead : {{ operation.personnel|default:"Agent Alpha" }}
+        </div>
+      </div>
+
+    </div>
+    {% empty %}
+    <!-- État vide -->
+    <div class="col-span-full py-16 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-white shadow-2xs">
+      <i class="bx bx-ghost text-4xl text-gray-300"></i>
+      <p class="text-sm font-medium text-gray-500 mt-2">Aucun flux de données actif.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination Moderne Tailwind -->
+  <nav class="flex items-center justify-center pt-4 pb-8" aria-label="Pagination">
+    <div class="inline-flex items-center gap-1 bg-white border border-gray-200 p-1 rounded-xl shadow-xs">
+      
+      <!-- Bouton Premier / Précédent -->
+      {% if operations.has_previous %}
+        <a href="?page=1" class="px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">&laquo;</a>
+        <a href="?page={{ operations.previous_page_number }}" class="px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Précédent</a>
+      {% else %}
+        <span class="px-3 py-2 text-xs font-semibold text-gray-300 cursor-not-allowed">&laquo;</span>
+        <span class="px-3 py-2 text-xs font-semibold text-gray-300 cursor-not-allowed">Précédent</span>
+      {% endif %}
+
+      <!-- Indicateur de page courant -->
+      <span class="px-4 py-1.5 mx-1 text-xs font-medium text-gray-700 bg-gray-100 rounded-full">
+        Page <strong class="font-bold text-gray-900">{{ operations.number }}</strong> sur <strong class="font-bold text-gray-900">{{ operations.paginator.num_pages }}</strong>
+      </span>
+
+      <!-- Bouton Suivant / Dernier -->
+      {% if operations.has_next %}
+        <a href="?page={{ operations.next_page_number }}" class="px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Suivant</a>
+        <a href="?page={{ operations.paginator.num_pages }}" class="px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">&raquo;</a>
+      {% else %}
+        <span class="px-3 py-2 text-xs font-semibold text-gray-300 cursor-not-allowed">Suivant</span>
+        <span class="px-3 py-2 text-xs font-semibold text-gray-300 cursor-not-allowed">&raquo;</span>
+      {% endif %}
+
+    </div>
+  </nav>
+</div>

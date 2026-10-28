@@ -1,0 +1,187 @@
+<style>
+    
+	*
+	{
+	  margin: 0;
+	  padding: 0;
+	  font-family: "montserrat", sans-serif;
+	}
+	
+	.testimonials
+	{
+	  padding: 40px 0;
+	  background: #f1f1f1;
+	  color: #434343;
+	  text-align: center;
+	}
+	
+	.testimonial-inner
+	{
+	  max-width: 1200px;
+	  margin: auto;
+	  overflow: hidden;
+	  padding: 0 20px;
+	}
+	
+	.border
+	{
+	  width: 160px;
+	  height: 5px;
+	  background: #6ab04c;
+	  margin: 26px auto;
+	}
+	
+	.row
+	{
+	  display: flex;
+	  flex-wrap: wrap;
+	  justify-content: center;
+	}
+	
+	.col
+	{
+	  flex: 33.33%;
+	  max-width: 33.33%;
+	  box-sizing:  border-box;
+	  padding: 15px;
+	}
+	
+	.testimonial
+	{
+	  background: #fff;
+	  padding: 30px;
+	}
+	
+	.testimonial img
+	{
+	  width: 100px;
+	  height: 100px;
+	  background-position: 50% 50%;
+		  background-size: cover;
+		  background-repeat: no-repeat;
+	 
+	}
+	
+	.name
+	{
+	  font-size: 20px;
+	  text-transform: uppercase;
+	  margin: 20px 0;
+	}
+	
+	.stars
+	{
+	  color: #f0932b;
+	  margin-bottom: 20px;
+	}
+	
+	@media screen and (max-width: 960px)
+	{
+	  .col
+	  {
+		flex: 100%;
+		max-width: 80%;
+	  }
+	}
+  
+  
+  
+	*{
+	  outline:none;
+	}
+	/* spacer */
+	.spacer{
+	  height:150px;
+	  width:100%;
+	}
+	.spacer2{
+	  height:20px;
+	  width:100%;
+	}
+	/* spacer ends */
+	
+	/* slider styles */
+	.sd_master_wrapper{
+	  position: relative;	
+	  max-width:900px;
+	  margin:0 auto;
+	  padding:0;
+	  border-radius:10px;
+	 
+	}
+	.sdtestBg3{
+	  height: 100%;
+		width: 80%;
+		background: #fff;
+		position: absolute;
+		bottom: -40px;
+		left: 10%;
+		border-radius: 20px;
+		box-shadow: 0px 18px 52.8537px rgb(215 228 249 / 50%);
+	  z-index:1;
+	}
+	.sdtestBg2{
+	  height: 100%;
+		width: 90%;
+		background: #fff;
+		position: absolute;
+		bottom: -22px;
+		left: 5%;
+		border-radius: 20px;
+		box-shadow: 0px 18px 52.8537px rgb(215 228 249 / 50%);
+	  z-index:2;
+	}
+	
+	.sd_scroll {
+	  height: auto;
+		max-height: 180px;
+		overflow: auto;
+	}
+	  
+	.slideshow {
+		position: relative;
+		min-height: 300px;
+		height: auto;
+		background: #fff;
+		box-shadow: 0px 18px 52.8537px rgba(215, 228, 249, 0.5);
+		border-radius: 20px;
+		background-image: url(https://farsighttechnologies.com/wp-content/uploads/2021/03/quote1.png), url(https://farsighttechnologies.com/wp-content/uploads/2021/03/quote.png);
+		background-position: top 15px left 15px, bottom 40% right 15px;
+		background-repeat: no-repeat;
+		background-size: 180px, 180px;
+	  z-index:3;
+	}
+</style>
+  
+  {% extends './index.html' %}
+  {% load humanize %}
+  {% load static %}
+  
+  {% block content %}
+  <div class="row">
+    <div class="col-md-12">
+        <hr class="bg-dark p-2"/>
+                 
+        <div class="sd_master_wrapper">	
+            <div class="sdtestBg2"></div>
+            <div class="sdtestBg3"></div>
+            <div class="slideshow">
+                    <h3 style="font-weight: bold;font-family:forte">Details Sur L'indicateur</h3>
+                        <br>
+
+                    <h5 style="font-weight: bold;font-family:forte">Indicateur: {{indicateur.m_name}}</h5>
+
+                    <h5 style="font-weight: bold;font-family:forte">Type D'agregation: {{indicateur.natureindicateur.libelle}}</h5>
+
+                    
+                    <h5 style="font-weight: bold;font-family:forte">Donnee Totals: {{total}}</h5>
+
+            </div>
+            </div>
+            </div>
+            
+
+        </div>
+        
+  {% endblock %}
+  

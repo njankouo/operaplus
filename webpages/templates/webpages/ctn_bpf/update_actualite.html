@@ -1,0 +1,153 @@
+{% extends './operations_details.html' %}
+
+{% load static %}
+
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/44.3.0/ckeditor5.css" />
+
+{% block content %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+
+   
+<div class="card my-4">
+    <div class="card-body">
+        <form method="POST" action="/edition_actualite/{{ actualite.id }}/" enctype="multipart/form-data">
+            {%csrf_token%}
+            <div class="row">
+              
+              <div class="col">
+                <label>Intitule</label>
+                <input type="text" class="form-control" placeholder="intitule"  name="intitule" value="{{ actualite.intitule }}">
+              </div>
+             
+            </div>
+            <div class="row">
+                <div class="col my-2">
+                  <input type="file" class="form-control" name="photo" accept="images/*"  id="imageUpload">
+                </div>
+                <div class="col my-2">
+                  <input type="file" class="form-control" name="document">
+                </div>
+              </div>
+              <div class="row">
+               
+                
+                <div class="col">
+                  <label>description</label>
+                  <textarea class="form-control" placeholder="Contenu" name="contenu">{{ actualite.description|safe }}</textarea>
+                </div>
+              </div>
+              <div class="row">
+              <div class="col">
+                <label for="Rubrique">Rubrique</label>
+                <select name="rubrique" id="rubrique" class='form-control'>
+                    {%for rubriques in rubrique%}
+                    {%if actualite.rubrique_id == rubriques.id %}
+                    <option value="{{rubriques.id}}" selected>{{rubriques.nom}}</option>
+                    {%else%}
+                    <option value="{{rubriques.id}}" >{{rubriques.nom}}</option>
+                    {%endif%}
+                    {%endfor%}
+                </select>
+              </div>
+               
+              </div>
+
+              <div class="row">
+                <div class="col">
+                  <label for="Rubrique">Sous Rubrique</label>
+                  <select name="sous_rubrique" id="sous_rubrique" class='form-control'>
+                    {%for sous_rubriques in sous_rubrique%}
+                    {%if actualite.sous_rubrique_id == sous_rubriques.id %}
+                    <option value="{{sous_rubriques.id}}" selected>{{sous_rubriques.nom}}</option>
+                    {%endif%}
+                    {%endfor%}
+
+                  </select>
+                </div>
+                <div id="imagePreview">
+
+                </div>
+                 
+                </div>
+              <button type="submit" class="btn btn-primary my-2">Edition</button>
+          </form>
+    </div>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- Place the first <script> tag in your HTML's <head> -->
+    <script src="https://cdn.tiny.cloud/1/dj2vqyaiwqvylhr8vvhcz1izi4aj40055trefsoc11whqr4p/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+
+    <!-- Place the following <script> and <textarea> tags your HTML's <body> -->
+      <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+ 
+
+    <script>
+      CKEDITOR.replace('textarea', {  
+  extraPlugins: 'uploadimage',  
+  toolbar: [  
+    { name: 'document', items: ['Source', '-', 'Save', 'NewPage', 'Preview', 'Print'] },  
+    { name: 'clipboard', items: ['Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord'] },  
+    { name: 'editing', items: ['Find', 'Replace', '-', 'SelectAll'] },  
+    { name: 'insert', items: ['Image', 'Table', 'HorizontalRule', 'Smiley', 'SpecialChar'] },  
+    { name: 'styles', items: ['Styles', 'Format'] },  
+    { name: 'color', items: ['TextColor', 'BGColor'] },  
+    { name: 'basicstyles', items: ['Bold', 'Italic', 'Underline', 'Strike'] },  
+  ],  
+});  
+    </script>
+   <script>
+  // custom.js
+  
+  $(document).ready(function() {
+    $('#rubrique').on('change', function() {
+      var selectedId = $(this).val();
+  
+      // Effectuer une requête AJAX pour récupérer les informations de la table periodeok en fonction de l'ID de la période sélectionnée
+      $.ajax({
+        url: '/search_rubrique/',  // L'URL correspondant à la vue Django
+        method: 'GET',
+        data: { id: selectedId },
+        success: function(data) {
+          var selectInformations = $('#sous_rubrique');
+          selectInformations.empty(); // Effacer les anciennes options
+  
+          // Ajouter les nouvelles options basées sur les données récupérées via AJAX
+          data.forEach(function(ind) {
+            selectInformations.append($('<option>', {
+              value: ind.id,
+              text: ind.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
+            }));
+          });
+        },
+        error: function(xhr, status, error) {
+          console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+        }
+      });
+    });
+  });
+  
+  </script>
+  <script>
+    function readURL(input) {
+  if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+          $('#imagePreview').css('background-image', 'url('+e.target.result +')');
+          $('#imagePreview').hide();
+          $('#imagePreview').fadeIn(650);
+        
+      }
+      reader.readAsDataURL(input.files[0]);
+  }
+}
+$("#imageUpload").change(function() {
+  readURL(this);
+});
+</script>
+{%endblock%}

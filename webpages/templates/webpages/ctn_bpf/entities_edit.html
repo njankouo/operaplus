@@ -1,0 +1,71 @@
+{%extends './index.html'%}
+
+{%block content%}
+
+<div class="card">
+
+  <div class="card-body">
+
+    <div class="card-header" style='background:{{request.user.personnel.color}}'>
+
+      <h6 class="text-light text-center font-bold" style='background:{{request.user.personnel.color}}, color:white'>Modification {{entity.m_type_entity}} {{entity}}</h6>
+
+    </div>
+
+
+    <form class="form-horizontal bordered-row" action="/save_entity_value/" method="post">
+        {% csrf_token %}
+        <label for="nom">Nom</label>
+      <input type="text" name="nom" value="{{entity}}" class="form-control">
+
+      <label for="ponderation">Ponderation</label>
+
+      <input type="text" name="ponderation" value="{{entity.ponderation}}" class="form-control">
+
+      {%if entity.m_pic_represented%}
+      <label for="">image</label>
+      <input type="file" name="image" value="">
+      {%endif%}
+        <button type="submit" class="btn btn-primary">Mettre à jour</button>
+    </form>
+  </div>
+
+</div>
+
+<!--
+
+{% for field in objects_field %}
+{% if forloop.counter not in calculates_field %}
+<div class="col-sm-6 col-10 col-md-9">
+  <div class="form-group">
+    {{field.label}}
+    {% if field.type == 'string' or field.type == 'char' %}
+    <input type='text'  class='fields_value form-control'>
+    {% elif field.type == 'int' or field.type == 'time' %}
+    <input type='number'  class='fields_value form-control'>
+    {% elif field.type == 'date' %}
+    <input type='date' class='fields_value form-control'>
+    {% elif field.type == 'text' %}
+    <textarea   class=' fields_value form-control'></textarea>
+    {% elif field.type == 'image' or field.type == 'file' %}
+    <input type="file"  class='fields_value form-control' name="{{field.label}}">
+    {% elif field.type == 'enum' %}
+    {% for fi in actu_entity.enum_fields.result %}
+    {% if fi.name == field.label %}
+    <select name="s_enum_2" class="fields_value form-control">
+      {% for li in fi.lines %}
+      <option value="{{li}}">{{li}}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div>
+  <input type="hidden" class="fields_value" value="-1">
+</div>
+{% endif %} -->
+{% endfor %}
+{%endblock%}

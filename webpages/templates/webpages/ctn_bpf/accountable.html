@@ -1,0 +1,106 @@
+{% extends './index.html' %}
+{% block main %}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    
+    <!-- En-tête de page ERP -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-200/80 gap-4">
+        <div>
+            <div class="flex items-center space-x-2 text-xs font-mono font-bold text-indigo-600 uppercase tracking-wider mb-1">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+                </span>
+                <span>Espace de validation</span>
+            </div>
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Tâches en attente de validation</h1>
+            <p class="text-xs text-slate-500 mt-1">Gérez et validez les opérations assignées à votre entité.</p>
+        </div>
+        
+        <div class="bg-white px-4 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs text-right">
+            <p class="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Total en attente</p>
+            <p class="text-sm font-mono font-extrabold text-slate-800">{{ operation_accountable|length }} Élément(s)</p>
+        </div>
+    </div>
+
+    <!-- Grille des cartes -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for line in operation_accountable %}
+            <div class="relative bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group overflow-hidden">
+                
+                <!-- Liseré supérieur lumineux -->
+                <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity"></div>
+
+                <!-- En-tête de la carte -->
+                <div class="px-5 pt-4 pb-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <!-- Date d'échéance -->
+                    <span class="text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-wider flex items-center bg-white px-2.5 py-1 rounded-md border border-slate-200/60 shadow-2xs">
+                        <i class="far fa-calendar-alt mr-1.5 text-indigo-500"></i> {{ line.date_echeance|date:"d M Y" }}
+                    </span>
+                    
+                    <!-- Badge du nombre d'étapes / transactions -->
+                    <div class="flex items-center gap-1.5">
+                        {% if line.nb_steps or line.nb_transactions %}
+                        <span class="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200/80 flex items-center gap-1 shadow-2xs" title="Nombre d'étapes ou transactions">
+                            <i class="fas fa-list-check text-slate-400 text-[9px]"></i>
+                            <span>{{ line.nb_steps|default:line.nb_transactions }}</span>
+                        </span>
+                        {% endif %}
+
+                        {% if line.has_dataset %}
+                        <span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60 uppercase tracking-wide flex items-center gap-1 shadow-2xs">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            Action requise
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Corps de la carte -->
+                <div class="p-5 flex-grow space-y-4">
+                    <div class="flex items-start gap-3.5">
+                        <div class="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                            {% if line.institution and line.institution.img %}
+                                <img src="{{ line.institution.img.url }}" class="w-full h-full object-cover" alt="Logo">
+                            {% else %}
+                                <i class="fas fa-building text-slate-400 text-sm"></i>
+                            {% endif %}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h6 class="text-sm font-bold text-slate-800 leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors cursor-pointer" title="{{ line.nom }}">{{ line.nom }}</h6>
+                            <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">{{ line.m_institution.sigle }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Barre de progression -->
+                    <div class="space-y-1.5 pt-2 border-t border-slate-100">
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden p-0.5 border border-slate-200/50">
+                            <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 h-full rounded-full transition-all duration-500 shadow-2xs" 
+                                 style="width: {% if line.nb_total > 0 %}{% widthratio line.nb_completed line.nb_total 100 %}{% else %}0{% endif %}%">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pied de carte (Actions) -->
+                <div class="px-5 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end">
+                    <a href="/decision/o/{{line.id}}/" 
+                       class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-200 hover:shadow-indigo-300">
+                        <span>Valider / Rejeter</span>
+                        <i class="fas fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-span-full py-20 px-4 text-center text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300 shadow-xs">
+                <div class="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 text-slate-300">
+                    <i class="fas fa-folder-open text-2xl"></i>
+                </div>
+                <h5 class="text-sm font-bold text-slate-700">Aucune tâche en attente</h5>
+                <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Il n'y a pas d'opérations assignées à afficher pour le moment.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

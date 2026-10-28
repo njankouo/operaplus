@@ -1,0 +1,24 @@
+                {% for categorie in categories %}
+<tr>
+    <td>{{ categorie.intitule }}</td>
+    <td>{{ categorie.description }}</td>
+    <td>
+        <a class="btn btn-sm btn-info" href="/update_categorie/{{categorie.id}}/">Modifier</a>
+        <a class="btn btn-sm btn-danger" href="/delete_categorie/{{categorie.id}}/">Delete</a>
+    </td>
+</tr>
+{% endfor %}
+
+{% if page_obj.has_next %}
+<tr hx-get="{% url 'get_categories' %}?page={{ page_obj.next_page_number }}"
+    hx-trigger="revealed"
+    hx-swap="afterend"
+    hx-indicator="#loading-indicator">
+    <td colspan="3" class="text-center">
+        <div id="loading-indicator" class="spinner-border spinner-border-sm" role="status" style="display: none;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        Loading more...
+    </td>
+</tr>
+{% endif %}

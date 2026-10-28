@@ -1,0 +1,96 @@
+    {% if base_val == None %}
+    {# --- CONTEXTE ENTITY --- #}
+    {% if champs_rapportes %}
+        {% for champ in champs_rapportes %}
+            {% if entity.id == champ.entity.id %}
+                <div class="flex justify-between items-start mb-4 p-4 border border-slate-200 rounded-xl bg-white shadow-sm hover:border-blue-400 transition-all">
+                    <div class="flex-grow mr-3">
+                        <label class="block text-sm font-bold text-slate-700 mb-2" for="champ_{{ champ.id }}">
+                            {{ champ.name }}
+                            {% if champ.required %}<span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        
+                        {# LOGIQUE DES CHAMPS #}
+                        {% if champ.type == 'Text' %}
+                            <textarea class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600/20 outline-none" rows="3" data-champ="{{ champ.name }}" data-type="{{ champ.type }}" data-id="{{ champ.id }}" name='champ_{{ champ.id }}' data-context="entity"></textarea>
+                        {% elif champ.type == 'number' %}
+                            <input type="number" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600/20 outline-none" placeholder="0" data-champ="{{ champ.name }}" data-type="{{ champ.type }}" data-id="{{ champ.id }}" name='champ_{{ champ.id }}' data-context="entity">
+                        {% elif champ.type == 'date' %}
+                            <input type="date" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600/20 outline-none" data-champ="{{ champ.name }}" data-type="{{ champ.type }}" data-id="{{ champ.id }}" name='champ_{{ champ.id }}' data-context="entity">
+                        {% elif champ.type == 'boolean' %}
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" class="w-5 h-5 accent-blue-600" id="champ_{{ champ.id }}" data-champ="{{ champ.name }}" data-type="{{ champ.type }}" data-id="{{ champ.id }}" name='champ_{{ champ.id }}' data-context="entity">
+                                <span class="text-sm font-semibold">{{ champ.name }}</span>
+                            </label>
+                        {% elif champ.type == 'file' %}
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="file" class="w-5 h-5 accent-blue-600" id="champ_{{ champ.id }}" data-champ="{{ champ.name }}" data-type="{{ champ.type }}" data-id="{{ champ.id }}" name='champ_{{ champ.id }}' data-context="entity">
+                                <span class="text-sm font-semibold">{{ champ.name }}</span>
+                            </label>
+                        {% elif champ.type == 'select' %}
+                            <select class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600/20 outline-none" data-champ="{{ champ.name }}" data-type="{{ champ.type }}" data-id="{{ champ.id }}" name='champ_{{ champ.id }}' data-context="entity">
+                                <option value="">Choisir...</option>
+                                {% for option in champ.options %}<option value="{{ option.value }}">{{ option.label }}</option>{% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="text" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600/20 outline-none" placeholder="{{ champ.type }}" data-champ="{{ champ.name }}" data-type="{{ champ.type }}" data-id="{{ champ.id }}" name='champ_{{ champ.id }}' data-context="entity">
+                        {% endif %}
+                        
+                        {% if champ.description %}<p class="text-xs text-slate-400 mt-2">{{ champ.description }}</p>{% endif %}
+                    </div>
+                    
+                    <div class="text-right ml-3 flex flex-col gap-1">
+                        <span class="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-black uppercase rounded">{{ champ.type|title }}</span>
+                        {% if champ.indicateur %}<span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase rounded">Indicateur</span>{% endif %}
+                        {% if champ.required %}<span class="px-2 py-1 bg-red-50 text-red-700 text-[10px] font-black uppercase rounded">Obligatoire</span>{% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-10 text-slate-400 italic">Aucun champ pour cette entité</div>
+    {% endif %}
+
+{% else %}
+    {# --- CONTEXTE SUB_ENTITY --- #}
+    {% if champs_rapportes %}
+        {% for champ in champs_rapportes %}
+            {% if sub_entity.id == champ.entity.id %}
+                <div class="flex justify-between items-start mb-4 p-4 border border-amber-200 rounded-xl bg-amber-50/50 shadow-sm">
+                    <div class="flex-grow mr-3">
+                        <label class="block text-sm font-bold text-amber-900 mb-2" for="champ_{{ champ.id }}">
+                            {{ champ.name }} {% if champ.required %}<span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        
+                        {# LOGIQUE IDENTIQUE #}
+                        {% if champ.type == 'Text' %}
+                            <textarea class="w-full p-3 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 outline-none" rows="3" name='champ_{{ champ.id }}' data-context="sub_entity"></textarea>
+                        {% elif champ.type == 'number' %}
+                            <input type="number" class="w-full p-2.5 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 outline-none" name='champ_{{ champ.id }}' data-context="sub_entity">
+                        {% elif champ.type == 'date' %}
+                            <input type="date" class="w-full p-2.5 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 outline-none" name='champ_{{ champ.id }}' data-context="sub_entity">
+                        {% elif champ.type == 'boolean' %}
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" class="w-5 h-5 accent-amber-600" name='champ_{{ champ.id }}' data-context="sub_entity">
+                                <span class="text-sm font-semibold">{{ champ.name }}</span>
+                            </label>
+                        {% elif champ.type == 'select' %}
+                            <select class="w-full p-2.5 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 outline-none" name='champ_{{ champ.id }}' data-context="sub_entity">
+                                {% for option in champ.options %}<option value="{{ option.value }}">{{ option.label }}</option>{% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="text" class="w-full p-2.5 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 outline-none" name='champ_{{ champ.id }}' data-context="sub_entity">
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-right ml-3 flex flex-col gap-1">
+                        <span class="px-2 py-1 bg-amber-100 text-amber-800 text-[10px] font-black uppercase rounded">{{ champ.type|title }}</span>
+                        {% if champ.indicateur %}<span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase rounded">Indicateur</span>{% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        
+    {% endif %}
+{% endif %}

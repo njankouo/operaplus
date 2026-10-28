@@ -1,0 +1,189 @@
+{% extends './presentation.html' %}
+
+{% block content %}
+<div id="progress-bar" class="fixed top-0 left-0 h-1 z-50 bg-emerald-500 transition-all duration-150 " style="width: 0%"></div>
+
+<div class="bg-slate-50 min-h-screen font-sans my-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
+        
+      <nav class="flex mb-10 items-center space-x-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+    <a href="/" class="hover:text-emerald-600 transition-colors">Index</a>
+    <span class="opacity-20">/</span>
+    <span class="text-emerald-600">Archive Actualités</span>
+</nav>
+
+<article class="relative mb-32 group">
+    <div class="flex flex-col lg:flex-row items-stretch">
+        
+        <div class="lg:w-7/12 relative z-10">
+            <div class="relative aspect-[4/3] lg:aspect-auto lg:h-[600px] overflow-hidden rounded-2xl shadow-2xl">
+                {% if actualities.photos %}
+                    <img src="{{ actualities.photos.url }}" 
+                         alt="{{ actualities.intitule }}" 
+                         class="absolute inset-0 w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110">
+                {% else %}
+                    <div class="absolute inset-0 bg-slate-200 flex items-center justify-center">
+                        <i class="fas fa-image text-8xl text-white"></i>
+                    </div>
+                {% endif %}
+                
+                <div class="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]"></div>
+                
+                <div class="absolute top-6 left-6 bg-emerald-500 text-white text-[10px] font-bold px-4 py-2 rounded-sm tracking-[0.2em] uppercase shadow-lg">
+                    Story à la une
+                </div>
+            </div>
+
+            <div class="absolute -bottom-6 -left-6 w-48 h-48 bg-emerald-50 -z-10 rounded-2xl"></div>
+        </div>
+
+        <div class="lg:w-5/12 lg:-ml-20 lg:mt-20 z-20">
+            <div class="bg-white p-10 lg:p-16 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.12)] rounded-2xl border-t-4 border-emerald-500">
+                
+                <div class="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
+                    <span class="text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                        {{ actualities.date|date:"d M Y" }}
+                    </span>
+                    <span class="text-emerald-600 text-[10px] font-black uppercase tracking-widest flex items-center">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-ping mr-2"></span>
+                        {% with count=actualities.description|striptags|wordcount %}{% widthratio count 200 1 %}{% endwith %} MIN READ
+                    </span>
+                </div>
+
+                <h1 class="text-4xl lg:text-5xl font-serif font-black text-slate-900 leading-[1.1] mb-8 group-hover:text-emerald-700 transition-colors duration-500">
+                    {{ actualities.intitule }}
+                </h1>
+                
+                <div class="text-slate-600 text-lg leading-relaxed font-serif italic mb-10 opacity-90 line-clamp-4">
+                    {{ actualities.description|safe|striptags }}
+                </div>
+
+                <div class="flex items-center group/link">
+                    <div class="h-[2px] w-12 bg-slate-900 group-hover/link:w-20 transition-all duration-500 mr-4"></div>
+                    <a href="#" class="text-sm font-black uppercase tracking-widest text-slate-900 group-hover/link:text-emerald-600 transition-colors">
+                        Découvrir l'histoire
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</article>
+
+<style>
+    /* Intégration des polices Magazine */
+    @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@900&display=swap');
+
+    .font-serif {
+        font-family: 'Libre+Baskerville', serif;
+    }
+
+    /* Effet de lettrine sur le premier caractère du texte si besoin */
+    .magazine-dropcap::first-letter {
+        float: left;
+        font-size: 4.5rem;
+        line-height: 1;
+        font-weight: 900;
+        padding-right: 12px;
+        color: #10b981; /* Emerald-500 */
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    /* Animation subtile pour l'entrée du texte */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .lg\:-ml-20 {
+        animation: fadeInUp 1s ease-out forwards;
+    }
+</style>
+        <div class="space-y-12 py-10">
+    <div class="flex items-center space-x-4 border-b border-slate-100 pb-6">
+        <h2 class="text-2xl lg:text-3xl font-serif font-black text-slate-900 whitespace-nowrap">
+            Articles Similaires
+        </h2>
+        <div class="h-1 w-full bg-slate-50 rounded-full relative overflow-hidden">
+            <div class="absolute inset-0 w-1/4 bg-emerald-500 rounded-full"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
+        {% for act in sous_actualite %}
+        {% if act.actualite_id == actualities.id %}
+        <article class="group relative flex flex-col bg-white rounded-3xl p-4 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:-translate-y-2 border border-transparent hover:border-slate-100">
+            
+            <div class="relative aspect-[16/10] overflow-hidden rounded-2xl mb-6 shadow-sm">
+                {% if act.photos %}
+                    <img src="{{ act.photos.url }}" alt="{{ act.intitule }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                {% else %}
+                    <div class="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300">
+                        <i class="fas fa-image text-3xl"></i>
+                    </div>
+                {% endif %}
+                
+                <div class="absolute inset-0 bg-gradient-to-t from-emerald-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                <div class="absolute top-4 left-4">
+                    <span class="bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-black px-3 py-1.5 rounded-lg shadow-sm uppercase tracking-widest">
+                        {{ act.date|date:"d M Y" }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex flex-col flex-grow px-2">
+                <h3 class="text-lg lg:text-xl font-bold text-slate-900 mb-3 group-hover:text-emerald-600 transition-colors duration-300 line-clamp-2 leading-snug">
+                    {{ act.intitule }}
+                </h3>
+                
+                <p class="text-slate-500 text-sm leading-relaxed mb-6 line-clamp-3">
+                    {{ act.description|safe|striptags|truncatechars:120 }}
+                </p>
+
+                <div class="mt-auto pt-4 border-t border-slate-50">
+                    <a href="{{ act.get_absolute_url }}" class="inline-flex items-center text-xs font-black text-slate-900 uppercase tracking-[0.15em] group-hover:text-emerald-500 transition-all duration-300">
+                        Lire l'article 
+                        <span class="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 group-hover:bg-emerald-50 group-hover:translate-x-1 transition-all">
+                            <i class="fas fa-arrow-right text-[10px]"></i>
+                        </span>
+                    </a>
+                </div>
+            </div>
+            
+            <a href="{{ act.get_absolute_url }}" class="absolute inset-0 z-10" aria-label="Lire {{ act.intitule }}"></a>
+        </article>
+        {% endif %}
+        {% empty %}
+        <div class="col-span-full py-20 text-center bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200">
+            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                <i class="fas fa-newspaper text-2xl"></i>
+            </div>
+            <p class="text-slate-500 font-medium italic">Aucun article connexe disponible pour le moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+    </div>
+</div>
+
+<script>
+    window.onscroll = function() {
+        let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+        let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        let scrolled = (winScroll / height) * 100;
+        document.getElementById("progress-bar").style.width = scrolled + "%";
+    };
+</script>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+    .font-serif { font-family: 'Playfair Display', serif; }
+    .font-sans { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .line-clamp-5 { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+</style>
+{% endblock %}

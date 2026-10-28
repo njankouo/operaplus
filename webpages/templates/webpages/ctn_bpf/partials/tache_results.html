@@ -1,0 +1,607 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.min.js" integrity="sha512-nKXmKvJyiGQy343jatQlzDprflyB5c+tKCzGP3Uq67v+lmzfnZUi/ZT+fc6ITZfSC5HhaBKUIvr/nTLCV+7F+Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+{%load static%}
+<div class="container mt-3">
+    {% for message in messages %}
+    <div class="alert alert-dismissible fade show custom-alert shadow-sm border-0 {% if message.tags == 'success' %}alert-success-soft{% else %}alert-danger-soft{% endif %}" role="alert">
+        <div class="d-flex align-items-center">
+            <div class="alert-icon-container me-3">
+                {% if message.tags == 'success' %}
+                    <i class="fas fa-check-circle fs-4"></i>
+                {% else %}
+                    <i class="fas fa-exclamation-circle fs-4"></i>
+                {% endif %}
+            </div>
+            <div>
+                <strong class="d-block">{% if message.tags == 'success' %}Succès !{% else %}Attention{% endif %}</strong>
+                <span class="small">{{ message }}</span>
+            </div>
+        </div>
+        <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% for operations in operation %}
+<div class="col-xl-3 col-lg-4 col-md-6 col-sm-6 mb-4">
+    <div class="card h-100 border-0 shadow-sm overflow-hidden" style="background-color:{{request.user.personnel.color_fond}}; border-radius: 12px;">
+        <!-- Card Header -->
+        <div class="card-header position-relative" style="
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        ">
+            <h6 class="mb-0 fw-bold text-uppercase text-white" style="letter-spacing: 1px;">
+                <i class="fas fa-user-tie me-2"></i>RESPONSABLE
+            </h6>
+            <span class="badge bg-white text-primary position-absolute top-0 end-0 mt-2 me-2" style="
+                transform: rotate(15deg);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                font-size: 0.75rem;
+            ">
+                {{ operations.niveau_execution }}%
+            </span>
+        </div>
+
+        <!-- Card Body -->
+        <div class="card-body text-center pt-4 pb-2 position-relative">
+            <!-- Avatar -->
+            <div class="avatar-wrapper mb-3 mx-auto position-relative" style="width: 90px; height: 90px;">
+                <div class="pulse-border position-absolute top-0 start-0 w-100 h-100 rounded-circle"></div>
+                {% if operations.personnel.photo and operations.personnel.photo.url %}
+                    <img src="{{ operations.personnel.photo.url }}"
+                         class="avatar-img rounded-circle shadow"
+                         style="width: 100%; height: 100%; object-fit: cover; border: 3px solid white;">
+                {% elif actual_institution.img and actual_institution.img.url %}
+                    <img src="{{ actual_institution.img.url }}"
+                         class="avatar-img rounded-circle shadow"
+                         style="width: 100%; height: 100%; object-fit: cover; border: 3px solid white;">
+                {% else %}
+                    <div class="avatar-default rounded-circle d-flex align-items-center justify-content-center bg-light shadow"
+                         style="width: 100%; height: 100%; border: 3px solid white;">
+                        <span style="font-size: 1.5rem; color: #666;">{{ operations.personnel.nom|first|upper }}</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Responsable Name -->
+            <h5 class="mb-1 fw-bold text-white text-truncate px-2">{{ operations.personnel.nom }}</h5>
+
+            <!-- Operation Name -->
+            <p class="small mb-3 text-white-50 text-uppercase">{{ operations.nom }}</p>
+
+            <!-- Deadline -->
+            <div class="d-flex justify-content-center align-items-center mb-2">
+                <i class="fas fa-calendar-day me-2 text-white-50" style="font-size: 0.8rem;"></i>
+                <span class="text-white small fw-medium">
+                    {{ operations.date_echeance|date:"d/m/Y" }}
+                </span>
+                <span class="ms-2 badge {% if operations.is_overdue %}bg-danger{% else %}bg-success{% endif %} py-1" style="font-size: 0.65rem;">
+                    {% if operations.is_overdue %}Retard{% else %}En cours{% endif %}
+                </span>
+            </div>
+
+            <!-- Transactions -->
+            <div class="d-flex justify-content-center align-items-center mb-3">
+                <i class="fas fa-exchange-alt me-2 text-white-50" style="font-size: 0.8rem;"></i>
+                <span class="text-white small fw-medium">
+                    {{ operations.nombre_transactions }} transaction{{ operations.nombre_transactions|pluralize }}
+                </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-info mb-4 px-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <small class="text-white-50">Progression</small>
+                    <small class="text-white fw-bold">{{ operations.niveau_execution }}%</small>
+                </div>
+                <div class="progress" style="height: 8px; background-color: rgba(255,255,255,0.2); border-radius: 100px;">
+                    <div class="progress-bar bg-gradient-progress"
+                         role="progressbar"
+                         style="width: {{ operations.niveau_execution }}%;"
+                         aria-valuenow="{{ operations.niveau_execution }}"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Card Footer - Buttons -->
+        <div class="card-footer bg-transparent border-0 pt-0 pb-3 px-3">
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+                <!-- Comment Button -->
+                <button class="btn btn-action btn-comment flex-grow-1"
+                        data-bs-toggle="modal"
+                        data-bs-target="#exampleModal{{ operations.id }}"
+                        style="min-width: 120px;">
+                    <i class="fas fa-comment me-1"></i>
+                    <span class="btn-text">Transactions</span>
+                </button>
+
+              
+                
+            </div>
+        </div>
+    </div>
+</div>
+{%empty%}
+<div class="empty-state">
+ <div class="text-center py-5">
+     <div class="empty-state-icon mb-4">
+         <i class="fas fa-database fa-4x" style="color:{{request.user.personnel.color_fond}} ;"></i>
+     </div>
+     <h4 class="text-muted mb-3 fw-bold">Aucune donnée disponible</h4>
+     <p class="text-muted mb-4">
+          donn&eacute;e non disponible  pour le moment.
+     </p>
+     <div class="d-flex justify-content-center">
+         <div class="pulse-animation" style="width: 120px; height: 4px; background: {{request.user.personnel.color_fond}}; border-radius: 2px;"></div>
+     </div>
+ </div>
+</div>
+
+
+
+
+
+
+<style>
+.empty-state {
+transition: all 0.3s ease;
+}
+
+.empty-state-icon {
+opacity: 0.5;
+transition: all 0.3s ease;
+}
+
+.card:hover .empty-state-icon {
+opacity: 0.8;
+transform: translateY(-5px);
+}
+
+.pulse-animation {
+animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+0% { transform: scaleX(0.8); opacity: 0.6; }
+50% { transform: scaleX(1.1); opacity: 1; }
+100% { transform: scaleX(0.8); opacity: 0.6; }
+}
+
+</style>
+
+{% endfor %}
+{% for operations in operation %}
+<div class="modal fade" id="exampleModal{{ operations.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg"> <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+      
+      <div class="modal-header bg-light border-0 py-3">
+        <h6 class="modal-title fw-bold text-dark text-uppercase mb-0" style="letter-spacing: 1px;">
+            <i class="fas fa- Daly fa-tasks me-2 text-primary"></i> Suivi : {{ operations.nom }}
+        </h6>
+        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <div class="card border-0 shadow-sm animate__animated animate__fadeIn" 
+     style="border-radius: 12px; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); border: 1px solid rgba(0,0,0,0.05);">
+    <div class="card-body p-1"> <div class="table-responsive">
+            <table class="table table-sm table-borderless align-middle mb-0">
+                <thead>
+                    <tr class="text-muted" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th class="ps-3"><i class="fas fa-check-circle me-1 text-success"></i> Responsible.</th>
+                        <th class="ps-3"><i class="fas fa-shield-alt me-1 text-danger"></i> Accountable.</th>
+                        <th class="ps-3"><i class="fas fa-comments me-1 text-primary"></i> Consulted.</th>
+                        <th class="ps-3"><i class="fas fa-info-circle me-1 text-warning"></i> Informed.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="raci-mini-cell">
+                            <div class="d-flex align-items-center">
+                                <img src="{% if operations.personnel.photo == '47774_frHGCVr.png' %}{% static 'webpages/ctn_bpf/M.png' %}{% else %}{{ operations.personnel.photo.url }}{% endif %}" 
+                                     class="mini-avatar shadow-sm">
+                                <div class="ms-2">
+                                    <div class="mini-name">{{operations.personnel.nom}}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="raci-mini-cell">
+                            <div class="d-flex align-items-center">
+                                <img src="{% if operations.accountable.photo == '47774_frHGCVr.png' %}{% static 'webpages/ctn_bpf/M.png' %}{% else %}{{ operations.accountable.photo.url }}{% endif %}" 
+                                     class="mini-avatar shadow-sm">
+                                <div class="ms-2">
+                                    <div class="mini-name">{{operations.accountable.nom}}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="raci-mini-cell">
+                            <div class="d-flex align-items-center">
+                                <img src="{% if operations.consulted.photo == '47774_frHGCVr.png' %}{% static 'webpages/ctn_bpf/M.png' %}{% else %}{{ operations.consulted.photo.url }}{% endif %}" 
+                                     class="mini-avatar shadow-sm">
+                                <div class="ms-2">
+                                    <div class="mini-name">{{operations.consulted.nom}}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="raci-mini-cell">
+                            <div class="d-flex align-items-center">
+                                <img src="{% if operations.informed.photo == '47774_frHGCVr.png' %}{% static 'webpages/ctn_bpf/M.png' %}{% else %}{{ operations.informed.photo.url }}{% endif %}" 
+                                     class="mini-avatar shadow-sm">
+                                <div class="ms-2">
+                                    <div class="mini-name">{{operations.informed.nom}}</div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Taille de cellule réduite */
+    .raci-mini-cell {
+        padding: 4px 12px !important;
+        border-left: 1px solid rgba(0,0,0,0.03);
+    }
+
+    .raci-mini-cell:first-child { border-left: none; }
+
+    /* Avatar compact */
+    .mini-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        object-fit: cover;
+        border: 1px solid #fff;
+    }
+
+    /* Texte minimaliste */
+    .mini-name {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90px;
+    }
+
+    /* Suppression des emails pour gagner de l'espace (visible au survol si besoin) */
+    .raci-mini-cell:hover {
+        background: rgba(0,0,0,0.02);
+        cursor: default;
+    }
+</style>
+        <form method='POST' action='/save_comment/' enctype='multipart/form-data'>
+          {% csrf_token %}
+          
+          <div class="mb-4">
+            <div class="d-flex align-items-center mb-3">
+               <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
+                  <i class="fas fa-comment-dots text-primary"></i>
+               </div>
+               <div>
+                   <h6 class="mb-0 fw-bold">Compte-rendu</h6>
+                   <small class="text-muted">Détaillez l'avancement de l'opération</small>
+               </div>
+            </div>
+
+            <div class="position-relative">
+                <textarea
+                  class="form-control border-0 bg-light p-3 soft-textarea comment-textarea"
+                  rows="4"
+                  placeholder="Quoi de neuf sur ce dossier ?"
+                  maxlength="300"
+                  style="border-radius: 15px; resize: none;"
+                  name='commentaire'
+                ></textarea>
+                
+                <div class="mt-2 d-flex justify-content-between align-items-center">
+                    <div class="ai-button-container">
+
+<button type="button" class="btn btn-secondary ai-suggest-btn shadow-sm" data-nom="{{ operations.nom }}">
+
+<i class="fas fa-wand-magic-sparkles"></i>
+
+<span>Suggérer avec l'IA</span>
+
+<div class="spinner-border spinner-border-sm d-none ms-2" role="status"></div>
+
+</button>
+
+</div> 
+                    <small class="text-muted"><span id="charCount">0</span> / 300</small>
+                </div>
+            </div>
+          </div>
+
+          <hr class="my-4 opacity-50">
+
+          <div class="row g-4">
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-uppercase text-muted">
+                <i class="fas fa-paperclip me-1"></i> Pièces jointes
+              </label>
+              <div class="input-group">
+                <input type="file" class="form-control shadow-none" name="file[]" multiple id="attachment" style="border-radius: 10px;">
+              </div>
+              <div id="fileList" class="mt-2">
+                <div id="files-names" class="small text-primary"></div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-uppercase text-muted">
+                <i class="fas fa-envelope me-1"></i> Destinataire
+              </label>
+              <input type="hidden" value='{{ operations.id }}' name="operation_id">
+              <select class="form-select shadow-none" name="email" required style="border-radius: 10px;">
+                <option selected disabled>Choisir un contact...</option>
+                {% for personnels in personnel %}
+                <option value="{{ personnels.mail }}">
+                    {{ personnels.nom }} ({{ personnels.mail }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm" style="border-radius: 15px;">
+    <div class="card-header bg-white border-0 py-3">
+        <h5 class="fw-bold text-dark mb-0" style="text-transform:capitalize">
+            <i class="fas fa-history me-2 text-primary"></i>Historisation : {{ operations.nom }}
+        </h5>
+    </div>
+    
+    <div class="table-responsive p-3">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr class="text-secondary small text-uppercase">
+                    <th class="border-0 py-3" style="letter-spacing: 0.5px;">Personnel</th>
+                    <th class="border-0 py-3">Date</th>
+                    <th class="border-0 py-3">Commentaire</th>
+                    <th class="border-0 py-3 text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for hist in operation_historic %}
+                    {% if hist.m_operation.id == operations.id %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm-text me-2">{{ hist.mail|slice:":1"|upper }}</div>
+                                <span class="fw-medium text-dark">{{ hist.mail }}</span>
+                            </div>
+                        </td>
+                        
+                        <td class="text-muted small">
+                            {{ hist.m_date_realisation}}
+                        </td>
+                        
+                        <td>
+                            <div class="text-wrap" style="max-width: 300px; font-size: 0.9rem;">
+                                {{ hist.m_commentaire|slice:'50' }}
+                            </div>
+                        </td>
+                        
+                        <td class="text-center">
+                            {% if hist.file %}
+                                <a href="{{ hist.file.url }}" class="btn btn-sm btn-light rounded-pill border shadow-sm px-3" target="_blank">
+                                    <i class="fas fa-download me-1 text-primary"></i> Fichier
+                                </a>
+                            {% else %}
+                                <span class="badge rounded-pill bg-light text-muted fw-normal">Aucun</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="fas fa-folder-open d-block fs-2 mb-2 opacity-25"></i>
+                            Aucun historique disponible pour cette opération.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+      </div>
+   
+      <div class="modal-footer bg-light border-0 p-3">
+        <button type="button" class="btn btn-link text-muted fw-medium text-decoration-none" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary px-5 rounded-pill shadow-sm fw-bold shadow" id="saveComment{{ operations.id }}">
+          Enregistrer le suivi
+        </button>
+      </div>
+    </form>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+document.querySelectorAll('.ai-suggest-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const btn = this;
+        const modalBody = btn.closest('.modal-body'); // On remonte au parent
+        const textArea = modalBody.querySelector('.comment-textarea');
+        const loader = btn.querySelector('.spinner-border');
+        const btnText = btn.querySelector('span');
+        const nomTache = btn.getAttribute('data-nom');
+
+        // UI State
+        loader.classList.remove('d-none');
+        btnText.innerText = "Analyse...";
+        btn.disabled = true;
+
+        const params = new URLSearchParams({ nom: nomTache });
+
+        fetch(`/api/suggerer-commentaire/?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                textArea.value = data.commentaire;
+                // Effet de focus après remplissage
+                textArea.focus();
+            })
+            .catch(error => {
+                console.error('Erreur IA:', error);
+                alert("Impossible de contacter l'IA.");
+            })
+            .finally(() => {
+                loader.classList.add('d-none');
+                btnText.innerText = "Suggérer avec l'IA";
+                btn.disabled = false;
+            });
+    });
+});
+</script>
+{% endfor %}
+<style>
+    /* Style pour l'initiale du nom */
+.avatar-sm-text {
+    width: 32px;
+    height: 32px;
+    background-color: #e9ecef;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.8rem;
+}
+
+/* Ligne au survol */
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+/* Ajustement du tableau */
+.table thead th {
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+    /* Style global pour les alertes personnalisées */
+.custom-alert {
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    animation: slideInRight 0.5s ease-out;
+}
+
+/* Alerte Succès (Vert doux) */
+.alert-success-soft {
+    background-color: #e6fffa;
+    color: #047857;
+    border-left: 5px solid #10b981 !important;
+}
+.alert-success-soft .alert-icon-container {
+    color: #10b981;
+}
+
+/* Alerte Erreur (Rouge doux) */
+.alert-danger-soft {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border-left: 5px solid #ef4444 !important;
+}
+.alert-danger-soft .alert-icon-container {
+    color: #ef4444;
+}
+
+/* Animation d'apparition */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+/* Modal global */
+.custom-modal-soft {
+    border-radius: 20px !important;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08) !important;
+}
+
+/* Avatar soft */
+.avatar-circle {
+    width: 45px;
+    height: 45px;
+    background: #eef2ff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+/* Zone de texte */
+.soft-textarea {
+    border: 2px solid #f3f4f6;
+    background: #f9fafb;
+    border-radius: 15px;
+    padding: 15px;
+    resize: none;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.soft-textarea:focus {
+    background: #fff;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+/* Bouton IA Magic */
+.ai-button-container {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+}
+
+.btn-ai-magic {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-ai-magic:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    color: white;
+}
+
+.btn-ai-magic:disabled {
+    opacity: 0.7;
+    filter: grayscale(0.5);
+}
+
+/* Animation Loader */
+.spinner-border-sm {
+    width: 0.8rem;
+    height: 0.8rem;
+}
+</style>

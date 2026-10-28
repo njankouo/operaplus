@@ -1,0 +1,30 @@
+{% extends vitrine_base %}
+{% block title %}Mentions légales · OperaPlus{% endblock %}
+{% block meta_description %}Mentions légales du site OperaPlus : éditeur, directeur de la publication, hébergeur et contact.{% endblock %}
+{% block content %}
+{% include "vitrine/_pages.css.html" %}
+<div class="pg">
+<section class="pg-hero"><div class="op-wrap">
+    <nav aria-label="Fil d'Ariane"><ol class="pg-crumb"><li><a href="/">Accueil</a></li><li><span aria-current="page">Mentions légales</span></li></ol></nav>
+    <h1>Mentions légales</h1>
+</div></section>
+<section class="pg-sec"><div class="op-wrap pg-prose">
+    {# Renseignez settings.VITRINE_ENTREPRISE ; une ligne vide n'est pas affichée. #}
+    <h2>Éditeur du site</h2>
+    <dl>
+        {% if entreprise.raison_sociale %}<dt>Raison sociale</dt><dd>{{ entreprise.raison_sociale }}</dd>{% endif %}
+        {% if entreprise.forme %}<dt>Forme juridique</dt><dd>{{ entreprise.forme }}</dd>{% endif %}
+        {% if entreprise.immatriculation %}<dt>Immatriculation</dt><dd>{{ entreprise.immatriculation }}</dd>{% endif %}
+        {% if entreprise.adresse %}<dt>Adresse</dt><dd>{{ entreprise.adresse }}</dd>{% endif %}
+        {% if entreprise.email %}<dt>E-mail</dt><dd>{{ entreprise.email }}</dd>{% endif %}
+        {% if entreprise.telephone %}<dt>Téléphone</dt><dd>{{ entreprise.telephone }}</dd>{% endif %}
+        {% if entreprise.directeur_publication %}<dt>Directeur de la publication</dt><dd>{{ entreprise.directeur_publication }}</dd>{% endif %}
+    </dl>
+    {% if entreprise.hebergeur %}<h2>Hébergement</h2><p>{{ entreprise.hebergeur }}</p>{% endif %}
+    <h2>Propriété intellectuelle</h2>
+    <p>Les textes, visuels et éléments graphiques de ce site sont la propriété de leur éditeur. Toute reproduction sans autorisation est interdite.</p>
+    <h2>Données personnelles</h2>
+    <p>Consultez notre <a href="/confidentialite/" style="color:var(--acc);font-weight:700">politique de confidentialité</a>.</p>
+</div></section>
+</div>
+{% endblock %}

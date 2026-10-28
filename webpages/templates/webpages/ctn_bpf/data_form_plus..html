@@ -1,0 +1,283 @@
+{% extends './data_form.html' %}
+{% load static %}
+
+
+{% block table %}
+	<!-- Rappeller les Infos -->
+	<!-- Mettre les Structures Menu Gauche -->
+	<!-- Rattacher une Structure a une Autre ex : Rg -> District -> FOSA -->
+	<div class="py-3">
+		<div>
+			<a href="/data_form/-1/0/" >
+			<h5 style="font-weight:bold" class="text-danger text-center">
+				Liste des Formulaires
+			</h5>
+			</a>
+		</div>
+	</div>
+	<div class="col-lg-12">
+		<div class="py-2 d-flex">
+	<button data-show='1' onclick="startF(this,{{element.id}},'dF_Div2','block1','block2')" class="btn btn-success">Renseigner Valeurs</button>
+	
+	
+		</div>
+
+		<section id="block1" style="display:none;">
+			<div class="pl-2 d-flex mb-2">
+				<!-- <div><small>Formulaire de Donnees</small></div> -->
+				<div class="d-none"><small class="btn btn-danger">Imprimer la Fiche</small></div>
+			</div>
+			<div>
+				<form method="POST" action="/save_gestion/" class="card" onsubmit="submitForm()">
+					{% csrf_token %}
+					<input type="hidden" name="generator" value="dSv">
+					<input type="hidden" name="dSv_id" value="{{element.id}}">
+					<input type="hidden" name="edit_or_create" value="c">
+					<input type="hidden" name="variables_value" id="variables_value" >
+					<input type="hidden" name="variables_names" id="variables_names" >
+					<input type="hidden" name="structures_value" id="structures_value" >
+					<div class="container">
+
+
+		 
+		    <div class="row">
+		      <div class="col-md-6">
+		        <label for="" class="text-danger" style="font-weight:bold">Annee *</label>
+		        <select class="form-control" name="period1_saisie" id='annee'>
+		        <option>Selectionnez L'année</option>
+		        	{%for periode_oks in periode_ok%}
+
+		          <option value="{{periode_oks.id}}">{{periode_oks.annee}}</option>
+		        	{%endfor%}
+		        </select>
+		      </div>
+		      <div class="col-md-6">
+		        <label for="" class="text-danger" style="font-weight:bold">Periode Saisie *</label>
+		        <select class="form-control" name="period2_saisie" id="period">
+		        
+		        </select>
+		      </div>
+		    </div>
+		    <div class="row">
+		    	 <div class="col-md-6">
+		        <label for="" class="text-danger" style="font-weight:bold">Resultat CalCul *</label>
+		        <input type="text" id="indicator_result" name="indicator_result" class="form-control" >
+
+		      </div>
+		    	 <div class="col-md-6">
+		        <label for="" class="text-danger" style="font-weight:bold">Code Indicateur *</label>
+		        <input type="text" id="indicator_id" name="indicator_id" class="form-control" >
+		      </div>
+		    </div>
+						</div>
+					<div class="card-body" id="dF_Div2">
+
+					</div>
+					<div class="p-2">
+						<input type="submit" class="btn btn-primary" value="Enregistrer" name="">
+					</div>
+				</form>
+			</div>
+		</section>
+		<section id="block2">
+			<caption> <b>Valeurs Renseignees</b> </caption>
+			<table class="table table-responsive">
+				<thead>
+					<tr>
+						<td>Date de Saisie</td>
+						<td>Periode de Validation</td>
+						<td>Sous-Periode de Validation</td>
+						<td>Renseigne par</td>
+						<td>Structures concernees</td>
+						<td>Elements de Donnees</td>
+					</tr>
+				</thead>
+				{% for l in pages_o %}
+				<tr>
+					<td>
+						{{l.m_date_creation}}
+					</td>
+					<td>
+						{{l.m_period_value}}
+					</td>
+					<td>
+						{{l.m_sub_period_value}}
+					</td>
+					<td>
+						{{l.m_user}}
+					</td>
+					<td>
+						<div class="d-flex flex-wrap">
+						{% for elt in l.m_structures.filter %}
+							<div class="px-2"><small class="badge badge-warning">{{elt}}</small></div>
+						{% endfor %}
+						</div>
+					</td>
+					<td>
+						{% for elt in l.elt_values %}
+						{% if elt.m_value != None %}
+						<div class="d-flex flex-wrap">
+							<div class="px-2"><small class="badge badge-primary">{{elt.m_dataelement}}</small></div>
+							<div class="pl-2">
+								<small class="badge">{{elt.m_value}}</small>
+							</div>
+						</div>
+						{% endif %}
+						{% endfor %}
+					</td>
+
+				</tr>
+				{% empty %}
+				<tr>
+					<td>Aucune valeur enregistree</td>
+				</tr>
+				{% endfor %}
+			</table>
+			<div>
+				<caption> <b>Taux de Completude</b> </caption>
+				<table class="table table-responsive">
+					<thead>
+					<tr>
+						<td>Periode</td>
+						<td>Sous-Periode</td>
+						<td>Structures assignees</td>
+						<td>Structures effectives</td>
+						<td class="text-success">Taux de Completude</td>
+					</tr>
+					</thead>
+				</table>
+			</div>
+		</section>
+	</div>
+{% endblock %}
+
+
+{% block add_script %}
+<script>
+	LaunchFormData({{element.id}},Idiv="dF_Div")
+	function initIndic(){
+	    console.log("Fonction initIndic() appelée");
+
+	    indicSelector = document.getElementsByClassName("indicSelector")
+	    indic_value = ""
+	    for (var i=0;i<indicSelector.length;i++){
+	        indic_value += indicSelector[i].getAttribute("data-id")+"#"
+	    }
+
+	    $.ajax({
+	        url: '/get_elements/',
+	        data:{
+	            'dataset':{{element.id}},
+	            'type_dataset':'0',
+	            'other':'dI_formula',
+	            'institution':{{actual_institution.id}},
+	            'value':indic_value
+	        },
+	        success:function(data){
+						function check_selector(evalu=false){
+    for (var i=0;i<indicSelector.length;i++){
+        //alert(data.formulas[i])
+        indicSelector[i].textContent = data.formulas[i]
+        var indicatorId = indicSelector[i].getAttribute("data-id");
+        tmp_elts = data.data_elts.split("#")
+        elts = new Array()
+        for (var j=0; j<tmp_elts.length;j++){
+            tp = document.getElementsByName("D0elt"+tmp_elts[j]+"")
+            if (tp.length > 0)
+            {
+                elts.push(tp[0].value)
+            }
+        }
+        for (var j=0; j<elts.length;j++){
+            indicSelector[i].textContent = indicSelector[i].textContent.replace("$"+tmp_elts[j]+"$",elts[j])
+            if (evalu){
+                try{
+                    indicSelector[i].textContent = eval(indicSelector[i].textContent);
+                    var indicatorValue = indicSelector[i].textContent;
+                    document.getElementById("indicator_result").value = indicatorValue;
+                    document.getElementById("indicator_id").value = indicatorId;
+                }
+                catch(error){
+                    console.error("Erreur lors du calcul de l'indicateur :", error);
+                }
+            }
+        }
+    }
+}
+
+	            check_selector(true)
+	            variables_selector = document.getElementsByClassName("variableSelector");
+	            for (var i=0;i<variables_selector.length;i++){
+	                inputs = variables_selector[i].getElementsByTagName("input")[0]
+	                inputs.onchange = function(){
+	                    try{
+	                    check_selector(true)
+	                    }
+	                    catch{
+	                        check_selector()
+	                    }
+	                }
+	            }
+	        }
+	    })
+	}
+
+
+function startF(block,element_id,div,b1,b2){
+	LaunchFormData(element_id,div);
+
+	dS = parseInt(block.getAttribute("data-show"))
+	if (dS == 1){
+		$("#"+b2).slideUp('slow',function(){
+			$("#"+b1).slideDown('slow')
+		})
+		block.textContent = "Donnees conservees"
+		initIndic()
+	}
+	else{
+		$("#"+b1).slideUp('slow',function(){
+			$("#"+b2).slideDown('slow')
+		})
+		block.textContent = "Renseigner Valeurs"
+	}
+	block.setAttribute("data-show",(1-dS))
+}
+
+</script>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript">
+// custom.js
+
+$(document).ready(function() {
+  $('#annee').on('change', function() {
+    var selectedId = $(this).val();
+
+    // Effectuer une requête AJAX pour récupérer les informations de la table periodeok en fonction de l'ID de la période sélectionnée
+    $.ajax({
+      url: '/search_period/',  // L'URL correspondant à la vue Django
+      method: 'GET',
+      data: { id: selectedId },
+      success: function(data) {
+        var selectInformations = $('#period');
+        selectInformations.empty(); // Effacer les anciennes options
+
+        // Ajouter les nouvelles options basées sur les données récupérées via AJAX
+        data.forEach(function(periode_ok_id) {
+          selectInformations.append($('<option>', {
+            value: periode_ok_id.id,
+            text: periode_ok_id.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
+          }));
+        });
+      },
+      error: function(xhr, status, error) {
+        console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+      }
+    });
+  });
+});
+
+</script>
+{% endblock %}

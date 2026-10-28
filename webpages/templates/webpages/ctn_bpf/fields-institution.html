@@ -1,0 +1,79 @@
+{% extends './index.html' %}
+
+{% block main %}
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <!-- En-tête de section -->
+    <div class="mb-6 border-b pb-4 flex justify-between items-center">
+        <div>
+            <h2 class="text-lg font-bold text-slate-800">Configuration des Champs</h2>
+            <p class="text-sm text-slate-500">Définissez la structure de vos données dynamiques</p>
+        </div>
+        <div class="h-8 w-8 rounded-full shadow-inner" style="background-color: {{ request.user.personnel.color_fond }};"></div>
+    </div>
+
+   <form method="POST" action="/save-fields/">
+    {% csrf_token %}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div id="fields-container" class="space-y-3 mb-6">
+            {% for field in fields %}
+            <div class="grid grid-cols-12 gap-4 p-3 border border-slate-200 rounded-lg bg-white shadow-sm">
+                <div class="col-span-7">
+                    <input type="text" name="field_name[]" value="{{ field.name }}" 
+                        class="w-full border border-slate-300 rounded px-3 py-2 outline-none focus:ring-2" 
+                        style="--tw-ring-color: {{ request.user.personnel.color_fond }};">
+                </div>
+                <div class="col-span-4">
+                    <select name="field_type[]" class="w-full border border-slate-300 rounded px-3 py-2 outline-none focus:ring-2" style="--tw-ring-color: {{ request.user.personnel.color_fond }};">
+                        <option value="text" {% if field.type == 'text' %}selected{% endif %}>Texte</option>
+                        <option value="file" {% if field.type == 'file' %}selected{% endif %}>Fichier</option>
+                        </select>
+                </div>
+                <div class="col-span-1 flex items-center justify-center">
+                    <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <button type="button" onclick="addChamp()" class="w-full py-3 border-2 border-dashed ...">
+            + Ajouter un champ
+        </button>
+
+        <div class="mt-6">
+            <button type="submit" class="px-6 py-2 bg-slate-900 text-white rounded-lg">Enregistrer</button>
+        </div>
+    </div>
+</form>
+</div>
+
+<script>
+   function addChamp() {
+    const container = document.getElementById('fields-container');
+    const row = document.createElement('div');
+    row.className = "grid grid-cols-12 gap-4 p-3 border border-slate-200 rounded-lg bg-white shadow-sm";
+    
+    row.innerHTML = `
+        <div class="col-span-7">
+            <input type="text" name="field_name[]" placeholder="Nom du nouveau champ..." 
+                class="w-full border border-slate-300 rounded px-3 py-2 outline-none focus:ring-2" 
+                style="--tw-ring-color: {{ request.user.personnel.color_fond }};">
+        </div>
+        <div class="col-span-4">
+            <select name="field_type[]" class="w-full border border-slate-300 rounded px-3 py-2 outline-none focus:ring-2" style="--tw-ring-color: {{ request.user.personnel.color_fond }};">
+                <option value="text">Texte</option>
+                <option value="file">Fichier</option>
+                <option value="number">Nombre</option>
+                <option value="date">Date</option>
+                <option value="boolean">Oui/Non</option>
+            </select>
+        </div>
+        <div class="col-span-1 flex items-center justify-center">
+            <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-red-600">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(row);
+}
+</script>
+{% endblock %}

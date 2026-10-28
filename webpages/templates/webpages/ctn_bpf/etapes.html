@@ -1,0 +1,163 @@
+<div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Paramètres de Planification</h3>
+        <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-bold uppercase">Configuration Active</span>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Début</label>
+            <input type="date" name="date_debut" id="date_debut" class="w-full h-10 px-4 rounded-xl border border-slate-200 text-sm focus:border-indigo-500 outline-none transition-all">
+        </div>
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Échéance</label>
+            <input type="date" name="date_echeance" id="date_fin" class="w-full h-10 px-4 rounded-xl border border-slate-200 text-sm focus:border-indigo-500 outline-none transition-all">
+        </div>
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Jours de réalisation</label>
+            <div class="flex items-center rounded-xl border border-slate-200 h-10 overflow-hidden">
+                <button type="button" id="btn-minus" class="px-4 h-full bg-slate-50 hover:bg-slate-100 text-slate-500">-</button>
+                <input type="text" id="new-total-val" value="{{ total_duration }}" class="w-full h-full text-center text-sm font-bold outline-none">
+                <button type="button" id="btn-plus" class="px-4 h-full bg-slate-50 hover:bg-slate-100 text-slate-500">+</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Fonction de calcul centrale (toujours disponible)
+    function calculerDateFin() {
+        const dateDebut = document.getElementById('date_debut');
+        const dateFin = document.getElementById('date_fin');
+        const daysInput = document.getElementById('new-total-val');
+        
+        // On vérifie que les éléments existent
+        if (dateDebut && dateFin && daysInput && dateDebut.value) {
+            let date = new Date(dateDebut.value);
+            let jours = parseInt(daysInput.value) || 0;
+            
+            date.setDate(date.getDate() + jours);
+            // Conversion en format YYYY-MM-DD pour l'input type="date"
+            dateFin.value = date.toISOString().split('T')[0];
+        }
+    }
+
+    // 2. Gestionnaire d'événements "Délégué" (Fonctionne même après un swap HTMX)
+    document.body.addEventListener('input', function(e) {
+        if (e.target.id === 'date_debut' || e.target.id === 'new-total-val') {
+            calculerDateFin();
+        }
+    });
+
+    // 3. Gestionnaire pour les boutons (Délégué)
+    document.body.addEventListener('click', function(e) {
+        const daysInput = document.getElementById('new-total-val');
+        if (!daysInput) return;
+
+        if (e.target.id === 'btn-plus') {
+            daysInput.value = parseInt(daysInput.value || 0) + 1;
+            calculerDateFin();
+        } else if (e.target.id === 'btn-minus') {
+            let val = parseInt(daysInput.value || 0);
+            if (val > 0) {
+                daysInput.value = val - 1;
+                calculerDateFin();
+            }
+        }
+    });
+</script>
+
+<div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-100/50">
+    <table class="w-full text-left border-collapse">
+        <thead style="background-color:{{request.user.personnel.color_fond}};" class="text-white">
+            <tr class="uppercase text-[10px] tracking-[0.2em] font-bold">
+                <th class="px-8 py-6">Étape</th>
+                <th class="px-6 py-6 text-center">Progression</th>
+                <th class="px-6 py-6">Durée (Jours)</th>
+                <th class="px-6 py-6">Date de fin</th>
+            </tr>
+        </thead>
+        <tbody id="list-step" class="divide-y divide-slate-100">
+            {% for etape in etapes %}
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-8 py-5">
+                    <input type="hidden" name="etape_ids" value="{{ etape.id }}">
+                    <div class="text-sm font-bold text-slate-900">{{ etape.numero_ordre }}. {{ etape.intitule }}</div>
+                    <span class="text-[9px] text-slate-400 uppercase tracking-widest font-bold">ID: #{{ etape.id }}</span>
+                </td>
+                <td class="px-6 py-5 text-center">
+                    <div class="inline-flex items-center bg-slate-100 rounded-lg px-2 py-1">
+                        <input type="number" class="w-10 bg-transparent text-center text-sm font-bold text-slate-700 outline-none" value="{{ etape.progression }}" name="progression_{{ etape.id }}">
+                        <span class="text-slate-400 text-[10px] font-black">%</span>
+                    </div>
+                </td>
+                     <td class="px-6 py-5">
+
+                    <input type="number" 
+
+                           name="duree_{{ etape.id }}" 
+
+                           data-etape-id="{{ etape.id }}"
+
+                           class="duree-input w-20 h-9 text-center rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+
+                           value="{% if intensite == 'FAIBLE' %}{{ etape.duree_faible|default:0 }}{% elif intensite == 'GRANDE' %}{{ etape.duree_grande|default:0 }}{% else %}{{ etape.duree_moyenne|default:0 }}{% endif %}">
+
+                </td> 
+                <td class="px-6 py-5">
+    <input type="date" class="etape-date h-9 px-3 rounded-xl border border-slate-200 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" name="date_fin_{{ etape.id }}">
+</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+    function recalculerDatesEtapes() {
+        const dateDebutInput = document.getElementById('date_debut');
+        if (!dateDebutInput || !dateDebutInput.value) return;
+
+        // Créer une nouvelle instance de date à chaque calcul pour éviter la mutation
+        let runningDate = new Date(dateDebutInput.value);
+        
+        const durees = document.querySelectorAll('.duree-input');
+        const datesInputs = document.querySelectorAll('.etape-date');
+
+        durees.forEach((inputDuree, index) => {
+            const joursEtape = parseInt(inputDuree.value) || 0;
+            
+            // Ajout des jours
+            runningDate.setDate(runningDate.getDate() + joursEtape);
+            
+            // Mise à jour de l'input date de fin
+            if (datesInputs[index]) {
+                // toISOString() convertit en UTC, attention au décalage horaire
+                // On utilise une approche plus sécurisée pour le format YYYY-MM-DD
+                const yyyy = runningDate.getFullYear();
+                const mm = String(runningDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(runningDate.getDate()).padStart(2, '0');
+                datesInputs[index].value = `${yyyy}-${mm}-${dd}`;
+            }
+        });
+
+        // Mise à jour de l'échéance globale
+        const dateFinGlobale = document.getElementById('date_fin');
+        if (dateFinGlobale && datesInputs.length > 0) {
+            dateFinGlobale.value = datesInputs[datesInputs.length - 1].value;
+            // Mise à jour synchrone du compteur de jours global
+            const totalDaysInput = document.getElementById('new-total-val');
+            if (totalDaysInput) {
+                let total = 0;
+                durees.forEach(d => total += parseInt(d.value) || 0);
+                totalDaysInput.value = total;
+            }
+        }
+    }
+
+    // Déclencheur sur tout changement
+    document.body.addEventListener('input', function(e) {
+        if (e.target.classList.contains('duree-input') || e.target.id === 'date_debut') {
+            recalculerDatesEtapes();
+        }
+    });
+</script>

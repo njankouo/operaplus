@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>MEAL Afrique - Verso Securisé</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #010403;
+            --pan-gold: #af8936;
+        }
+
+        body { 
+            background: #000; 
+            font-family: 'Space Grotesk', sans-serif;
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; margin: 0;
+            perspective: 1500px;
+        }
+
+        .card-wrapper {
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .card-wrapper:hover { transform: rotateX(-8deg) rotateY(8deg); }
+
+        .card {
+            width: 440px;
+            height: 680px;
+            background: var(--bg-dark);
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(175, 137, 54, 0.25);
+            box-shadow: 0 60px 120px rgba(0,0,0,1);
+            display: flex; flex-direction: column;
+        }
+
+        /* Bande Magnétique */
+        .magnetic-stripe {
+            width: 100%;
+            height: 60px;
+            background: #000;
+            margin-top: 40px;
+            position: relative;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Zone de Signature */
+        .signature-zone {
+            width: 80%;
+            height: 45px;
+            background: rgba(255,255,255,0.05);
+            margin: 25px auto;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding-left: 15px;
+            border: 0.5px dashed var(--pan-gold);
+        }
+
+        .inner-content {
+            padding: 2rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .legal-text {
+            font-size: 8px;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.4;
+            text-align: justify;
+        }
+
+        /* Zone MRZ (Machine Readable Zone) - Standard Passeport */
+        .mrz-zone {
+            background: rgba(255,255,255,0.03);
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #fff;
+            letter-spacing: 4px;
+            line-height: 1.2;
+            margin-top: auto;
+            border-top: 1px solid rgba(175, 137, 54, 0.1);
+        }
+
+        .emergency-box {
+            border: 1px solid rgba(175, 137, 54, 0.2);
+            border-radius: 12px;
+            padding: 10px;
+            margin-top: 20px;
+            background: linear-gradient(to right, rgba(175, 137, 54, 0.05), transparent);
+        }
+    </style>
+</head>
+<body>
+
+<div class="card-wrapper">
+    <div class="card">
+        <div class="magnetic-stripe"></div>
+
+        <div class="inner-content">
+            <p class="text-[7px] text-[var(--pan-gold)] uppercase tracking-widest ml-10">Signature du Titulaire / Holder's Signature</p>
+            <div class="signature-zone">
+                <span class="text-white/20 font-serif italic opacity-30">Validation requise...</span>
+            </div>
+
+            <div class="space-y-4">
+                <p class="legal-text">
+                    Cette carte est la propriété exclusive de <strong>MEAL AFRIQUE</strong>. Elle est strictement personnelle et non transmissible. L'utilisation de cette carte est soumise aux protocoles de sécurité de l'Union. En cas de perte ou de vol, veuillez signaler immédiatement l'incident au centre de sécurité le plus proche ou via le portail numérique souverain.
+                </p>
+                <p class="legal-text">
+                    This card is the exclusive property of MEAL AFRIQUE. It is strictly personal and non-transferable. Use of this card is subject to Union security protocols.
+                </p>
+            </div>
+
+            <div class="emergency-box">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-[7px] text-[var(--pan-gold)] uppercase font-bold">Emergency Contact</p>
+                        <p class="text-[10px] text-white font-mono">+237 6XX XX XX XX</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[7px] text-[var(--pan-gold)] uppercase font-bold">Secure Mail</p>
+                        <p class="text-[10px] text-white font-mono">auth@meal-afrique.org</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-center mt-8 opacity-20">
+                 <h1 class="text-xl font-black text-white italic">MEAL SECURE SYSTEMS</h1>
+            </div>
+        </div>
+
+        <div class="mrz-zone">
+            I<AFRNJAM<<DAIROU<NJANKOUO<<<<<<<<<<<
+            MEAL2370498<6<CAM9804047M310320<X<<<
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,525 @@
+{% extends './evaluer.html' %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+
+    <div class="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-10">
+        <div class="max-w-7xl mx-auto bg-white shadow-2xl rounded-xl overflow-hidden">
+            
+            <div class="p-6  text-white rounded-t-xl flex justify-between items-center" style="background-color: {{request.user.personnel.color_fond}};">
+                <h2 class="text-3xl font-bold tracking-tight" style="font-family: 'Times New Roman', Times, serif;">
+                    Liste Des Périodes Associées Aux Cibles Pour L'indicateur 
+                    <b class="text-red-300">{{ ind }}</b>
+                </h2>
+                
+                <button class="bg-teal-400 hover:bg-teal-500 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105" 
+                        data-modal-target="exampleModal{{ ind.id }}" data-modal-toggle="exampleModal{{ ind.id }}">
+                    <i class="fas fa-plus mr-2"></i> Nouvelle Cible
+                </button>
+            </div>
+
+            <div id="exampleModal{{ ind.id }}" tabindex="-1" aria-hidden="true" 
+                 class="fixed inset-0 z-50 hidden overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300">
+                <div class="relative p-6 w-full max-w-3xl max-h-[90vh] mx-auto transition-transform duration-300 transform scale-95" 
+                     data-modal-content>
+                    <div class="relative bg-white rounded-xl shadow-2xl">
+                        <div class="flex items-center justify-between p-5 border-b border-gray-200 rounded-t-xl bg-indigo-50">
+                            <h3 class="text-2xl font-semibold text-indigo-800">
+                                Indicateur <b class="text-teal-600">{{ ind }}</b>
+                            </h3>
+                            <button type="button" class="text-gray-400 hover:bg-gray-200 hover:text-gray-900 rounded-full p-1 transition" 
+                                    data-modal-hide="exampleModal{{ ind.id }}">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                <span class="sr-only">Close modal</span>
+                            </button>
+                        </div>
+                        
+                        <div class="p-6 space-y-6">
+                            <form method="POST" action="/add_cible/" id="form-add-cible">
+                                {% csrf_token %}
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    
+                                    <input type="hidden" name="id_indicateur" id="id_indicateur" value="{{ ind.id }}">
+                                    <input type="hidden" name="type_donnee" id="type_donnee" value="cible">
+
+                                    <div class="col-span-full">
+                                        <label for="structure" class="block text-sm font-medium text-gray-700 mb-1">Structure</label>
+                                        <select id="structure" name="structure" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5 transition duration-150 border">
+                                            <option value="">Sélectionnez la Structure</option>
+                                            {% for structures in structure %}
+                                                <option value="{{ structures.id }}">{{ structures.nom }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="periodes" class="block text-sm font-medium text-gray-700 mb-1">Période de Ciblage</label>
+                                        <select id="periodes" name="periodicite" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5 transition duration-150 border periode-ciblage">
+                                            <option value="">Période de ciblage</option>
+                                            {% for periodes in periode %}
+                                                <option value="{{ periodes.id }}">{{ periodes.m_value }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+
+
+                                    
+                                    <div>
+                                        <label for="informations" class="block text-sm font-medium text-gray-700 mb-1">Période Spécifique</label>
+                                        <select id="informations" name="periode" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5 transition duration-150 border periode">
+                                            <option value="">-- Sélectionnez --</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="cible" class="block text-sm font-medium text-gray-700 mb-1">Cible</label>
+                                        <input type="number" name="cible" id="cible" step="0.01" min="0"  
+                                               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5 transition duration-150 border" placeholder="Valeur Cible (e.g., 75.5)">
+                                    </div>
+                                    <div class="card border-1 shadow-none selection-card-sm" id="targetCard">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex align-items-center justify-content-between">
+            
+            <div class="d-flex align-items-center flex-grow-1">
+                <div class="icon-sm me-2 text-primary">
+                    <i class="fas fa-bullseye fa-sm"></i>
+                </div>
+                
+                <div class="lh-sm">
+                    <label class="form-check-label d-block small fw-bold text-dark mb-0" for="periodicite2" style="cursor:pointer">
+                        Cible Référente
+                    </label>
+                    <span class="text-muted" style="font-size: 0.75rem;">Validation des objectifs</span>
+                </div>
+            </div>
+
+            <div class="form-check form-switch m-0 p-0">
+                <input class="form-check-input compact-switch" type="checkbox" id="periodicite2" role="switch" name='is_referent'>
+            </div>
+        </div>
+
+        <div class="collapse" id="targetFeedback">
+            <div class="mt-2 pt-2 border-top">
+                <div class="d-flex align-items-center text-success" style="font-size: 0.7rem;">
+                    <i class="fas fa-check-circle me-1"></i>
+                    <span class="fw-bold">Indicateur activé</span>
+                </div>
+            </div>
+        </div>
+         <button type="button" class="text-gray-600 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-300 rounded-lg text-sm font-medium px-5 py-2.5 transition duration-150" 
+                                            data-modal-hide="exampleModal{{ ind.id }}">Fermer</button>
+                                    <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 ml-3 shadow-md transition duration-150" id="submit">
+                                        <i class="fas fa-save mr-1"></i> Enregistrer
+                                    </button>
+    </div>
+</div>
+
+<style>
+    .selection-card-sm {
+        max-width: 400px; /* Optionnel : limite la largeur */
+        border-radius: 8px;
+        transition: background 0.2s;
+        cursor: pointer;
+        border: 1px solid #eee;
+    }
+
+    .selection-card-sm:hover {
+        background-color: #f8f9fa;
+    }
+
+    .card-active-sm {
+        background-color: #f0fdf4 !important;
+        border-color: #bbf7d0 !important;
+    }
+
+    /* Switch réduit */
+    .compact-switch {
+        width: 2.2rem !important;
+        height: 1.1rem !important;
+        margin-top: 0 !important;
+        cursor: pointer;
+    }
+
+    .icon-sm {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('periodicite2');
+    const card = document.getElementById('targetCard');
+    const feedback = new bootstrap.Collapse(document.getElementById('targetFeedback'), {toggle: false});
+
+    card.addEventListener('click', (e) => {
+        if (e.target !== checkbox) {
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+        }
+    });
+
+    checkbox.addEventListener('change', function() {
+        if (this.checked) {
+            card.classList.add('card-active-sm');
+            feedback.show();
+        } else {
+            card.classList.remove('card-active-sm');
+            feedback.hide();
+        }
+    });
+});
+</script>
+                                </div>
+                                
+                                
+                            </form>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            <div class="overflow-x-auto p-6">
+                <table class="min-w-full divide-y divide-gray-200" id="example">
+                    <thead class="bg-indigo-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Structure</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Date Enregistrement</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Période</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Valeur</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-indigo-700 uppercase tracking-wider">Type Donnée</th>
+                            <th scope="col" class="relative px-6 py-3">
+                                <span class="sr-only">Actions</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        {% for indicateur_valeurs in indicateur_valeur %}
+                            {% if ind.id == indicateur_valeurs.indicateur_id %}
+                                <tr data-indicateur-valeur-id="{{ indicateur_valeurs.id }}" class="hover:bg-indigo-50 transition duration-150">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <img class="h-10 w-10 rounded-full object-cover shadow-sm" src="{% static 'webpages/img_plan.jpg' %}" alt="Image placeholder">
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">{{ indicateur_valeurs.structure.nom }}</div>
+                                            </div>
+                                        </div>
+                                     {% if indicateur_valeurs.reference_cible %}
+    <div class="mt-1">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-green-100 text-green-700 border border-green-200 uppercase tracking-wider">
+            <i class="fas fa-check-double mr-1 text-[8px]"></i> 
+            Cible à atteindre
+        </span>
+    </div>
+{% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ indicateur_valeurs.date_enregistrement }}
+                                       
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 shadow-sm">
+                                            {{ indicateur_valeurs.periode_ok.nom }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono editable-value cursor-pointer hover:bg-yellow-50 rounded-lg transition duration-150">
+                                        {{ indicateur_valeurs.valeur|floatformat:'-2' }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ indicateur_valeurs.type_donnee }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                        <a href="/delete_cible/{{ indicateur_valeurs.id }}/" class="text-red-500 hover:text-red-700 transition duration-150 ease-in-out">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </a>
+                                        <button class="text-indigo-600 hover:text-indigo-800 transition duration-150 ease-in-out" 
+                                                data-modal-target="staticBackdrop{{ indicateur_valeurs.id }}" data-modal-toggle="staticBackdrop{{ indicateur_valeurs.id }}">
+                                            <i class="fas fa-edit"></i> Modifier
+                                        </button>
+                                    </td>
+                                </tr>
+                                <div id="staticBackdrop{{ indicateur_valeurs.id }}" tabindex="-1" aria-hidden="true" 
+                                     class="fixed inset-0 z-50 hidden overflow-y-auto  bg-opacity-50 flex items-center justify-center transition-opacity duration-300">
+                                    <div class="relative p-6 w-full max-w-3xl max-h-[90vh]  transition-transform duration-300 transform scale-95" 
+                                         data-modal-content>
+                                        <div class="relative bg-white rounded-xl shadow-2xl">
+                                            <div class="p-6 text-center">
+                                                <h3 class="mb-5 text-xl font-semibold text-gray-700">Modification Cible</h3>
+                                                <p class="text-gray-500 mb-6">Contenu de la modification pour la cible de {{ indicateur_valeurs.structure.nom }}.</p>
+                                                
+
+                            <form method="POST" action="/edit_cible/" id="form-add-cible">
+                                {% csrf_token %}
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    
+                                  
+                                    <input type="hidden" name="indicateur_valeur" value="{{indicateur_valeurs.id}}">
+                                    <div class="col-span-full">
+                                        <label for="structure" class="block text-sm font-medium text-gray-700 mb-1">Structure</label>
+                                        <select id="structure" name="structure" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5 transition duration-150 border">
+                                            <option value="">Sélectionnez la Structure</option>
+                                            {% for structures in structure %}
+                                                {%if indicateur_valeurs.structure_id == structures.id%}
+                                                <option value="{{ structures.id }}" selected>{{ structures.nom }}</option>
+                                                {%else%}
+                                                 <option value="{{ structures.id }}">{{ structures.nom }}</option>
+                                                {%endif%}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="periodes" class="block text-sm font-medium text-gray-700 mb-1">Période de Ciblage</label>
+                                        <select id="periodes" name="periodicite" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5 transition duration-150 border periode-ciblage">
+                                            <option value="">Période de ciblage</option>
+                                            {% for periodes in periode %}
+                                                {%if periodes.id  == indicateur_valeurs.periode_id%}
+                                                <option value="{{ periodes.id }}" selected>{{ periodes.m_value }}</option>
+                                                {%else%}
+                                                <option value="{{ periodes.id }}">{{ periodes.m_value }}</option>
+                                              {%endif%}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                   
+                <div class="d-flex align-items-center gap-3 lh-sm">
+    <!-- Label principal -->
+    <div class="flex-grow-1">
+        <label class="form-check-label d-block fw-semibold text-dark mb-1" for="periodicite2">
+            Cible Référente
+        </label>
+        <span class="text-muted small">Validation des objectifs</span>
+    </div>
+    
+    <!-- Switch -->
+    <div class="form-check form-switch m-0 p-0">
+        <input 
+            class="form-check-input compact-switch shadow-sm" 
+            type="checkbox" 
+            
+            role="switch" 
+            name="is_referent"
+            {% if indicateur_valeurs.reference_cible %}checked{% endif %}
+            aria-label="Activer la cible référente"
+            aria-describedby="periodicite2-help"
+        >
+    </div>
+</div>
+
+
+                                    
+                                    <div>
+                                        <label for="informations" class="block text-sm font-medium text-gray-700 mb-1">Période Spécifique</label>
+                                        <select id="informations" name="periode" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5 transition duration-150 border periode">
+                                            <option value="">-- Sélectionnez --</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                    <label for="cible" class="block text-sm font-medium text-gray-700 mb-1">Cible</label>
+                                    <input 
+                                type="text" 
+                                name="cible" 
+                                id="cible" 
+                                step="0.01" 
+                                min="0" 
+                                max="100" 
+                                class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2.5 transition duration-150 border" 
+                                placeholder="Valeur Cible (e.g., 75.5)" 
+                                value="{{ indicateur_valeurs.valeur|floatformat:'-2' }}"
+                                >
+                                </div>
+                                </div>
+                                
+
+   
+                               
+                         
+
+                                                <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center shadow-md">
+                                                    Modifier
+                                                </button>
+                                                <button data-modal-hide="staticBackdrop{{ indicateur_valeurs.id }}" type="button" class="py-2.5 px-5 ms-3 text-sm font-medium text-gray-900 focus:outline-none bg-gray-100 rounded-lg border border-gray-200 hover:bg-gray-200 hover:text-indigo-700 focus:z-10 transition">Fermer</button>
+
+                                       </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <footer class="mt-8">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            <div class="text-center text-sm text-gray-500">
+                <p>Opera+ <a href="#" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-medium">Solution Créée</a> Par BeinInfos+</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://kit.fontawesome.com/your-font-awesome-kit-id.js" crossorigin="anonymous"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    
+    {% for message in messages %}
+        <script type="text/javascript">
+            // The logic remains the same for displaying Django messages
+            Swal.fire({
+                position: "top-end",
+                icon: "{{ message.tags }}",
+                title: "{{ message }}",
+                showConfirmButton: false,
+                timer: 2000
+            });
+        </script>
+    {% endfor %}
+
+    <script type="text/javascript">
+        // 1. **MODAL ACTIVATION LOGIC (WITH OVERLAY)**
+        // Toggles the 'hidden' class on the modal and handles the overlay/backdrop effect.
+        $(document).ready(function() {
+            // Show Modal
+            $('[data-modal-toggle]').on('click', function() {
+                var targetId = $(this).data('modal-target');
+                var $modal = $('#' + targetId);
+                
+                $modal.removeClass('hidden').attr('aria-hidden', 'false');
+                setTimeout(() => {
+                    // Slight animation for the content (optional)
+                    $modal.find('[data-modal-content]').removeClass('scale-95').addClass('scale-100');
+                }, 10);
+                $('body').addClass('overflow-hidden'); // Prevent background scrolling
+            });
+
+            // Hide Modal
+            $('[data-modal-hide]').on('click', function() {
+                var $modal = $(this).closest('.fixed');
+                $modal.find('[data-modal-content]').removeClass('scale-100').addClass('scale-95');
+                
+                setTimeout(() => {
+                    $modal.addClass('hidden').attr('aria-hidden', 'true');
+                    $('body').removeClass('overflow-hidden');
+                }, 300); // Wait for the transition
+            });
+
+            // Hide Modal on outside click (Overlay)
+            $('.fixed.bg-black.bg-opacity-50').on('click', function(e) {
+                if ($(e.target).is(this)) {
+                    $(this).find('[data-modal-hide]').click();
+                }
+            });
+        });
+
+        // 2. AJAX for Periodes de Ciblage
+        $(document).ready(function() {
+            $('#periodes').on('change', function() {
+                var selectedId = $(this).val();
+
+                $.ajax({
+                    url: '/get_periodeok_informations/',
+                    method: 'GET',
+                    data: { id: selectedId },
+                    success: function(data) {
+                        var selectInformations = $('#informations');
+                        selectInformations.empty();
+                        
+                        selectInformations.append($('<option>', {
+                            value: '',
+                            text: '-- Sélectionnez --'
+                        }));
+                        
+                        data.forEach(function(ind) {
+                            selectInformations.append($('<option>', {
+                                value: ind.id,
+                                text: ind.nom
+                            }));
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error for periodes:', status, error);
+                    }
+                });
+            });
+        });
+
+        // 3. AJAX for Adding Cible (Using form submission logic)
+        // ... (standard AJAX form submission logic here) ...
+
+        // 4. Double-Click Edit for Valeur
+        $(document).ready(function() {
+            // Double-click to start editing
+            $('#example').on('dblclick', 'td.editable-value', function() {
+                var valeurCell = $(this);
+                if (valeurCell.find('input').length) return;
+                
+                var valeur = valeurCell.text().trim();
+                valeurCell.data('original-value', valeur); // Store original value
+                
+                var inputField = $('<input>', {
+                    type: 'number',
+                    value: valeur,
+                    class: 'w-24 p-1 border border-indigo-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-sm shadow-inner',
+                    step: '0.01',
+                    min: '0'
+                });
+                var validateButton = $('<button>', {
+                    html: '<i class="fas fa-check"></i>', // Check icon
+                    class: 'ml-2 bg-green-500 hover:bg-green-600 text-white text-xs py-1 px-2 rounded-full transition duration-150',
+                    type: 'button'
+                });
+                
+                valeurCell.empty().removeClass('cursor-pointer hover:bg-yellow-50').append(inputField).append(validateButton).find('input').focus();
+            });
+
+            // Click to validate and send AJAX
+            $('#example').on('click', '.validate-button', function() {
+                var button = $(this);
+                var inputField = button.prev('input');
+                var newValue = inputField.val();
+                var row = button.closest('tr');
+                var indicateurValeurId = row.data('indicateur-valeur-id');
+                var valeurCell = button.parent();
+
+                // Get CSRF Token
+                var csrftoken = $('input[name=csrfmiddlewaretoken]').val();
+                
+                // Perform AJAX update
+                $.ajax({
+                    url: '/update_indicateur_valeur/',
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': csrftoken },
+                    data: { 
+                        newValue: newValue, 
+                        indicateurValeurId: indicateurValeurId 
+                    },
+                    success: function(response) {
+                        // Success Feedback
+                        valeurCell.text(parseFloat(newValue).toFixed(2));
+                        valeurCell.addClass('cursor-pointer hover:bg-yellow-50');
+                        Swal.fire({ position: "top-end", icon: "success", title: "Mise à jour réussie!", showConfirmButton: false, timer: 1500 });
+                    },
+                    error: function(xhr, status, error) {
+                        // Error Feedback
+                        valeurCell.text(valeurCell.data('original-value')); // Revert to original
+                        valeurCell.addClass('cursor-pointer hover:bg-yellow-50');
+                        Swal.fire({ position: "top-end", icon: "error", title: "Erreur de mise à jour!", text: error, showConfirmButton: false, timer: 2500 });
+                    }
+                });
+            });
+        });
+    </script>
+    
+{% endblock %}

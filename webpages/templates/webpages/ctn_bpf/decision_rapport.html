@@ -1,0 +1,672 @@
+{% extends './index.html' %}
+{% load static %}
+{% load humanize %}
+{% block main %}
+
+{% if request.user.personnel.is_process %}
+<div class="w-full my-6">
+    <div class="bg-slate-800 border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+        
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                <h5 class="text-base font-bold text-gray-800 uppercase tracking-wide">Suivi des Transactions</h5>
+            </div>
+           
+        </div>
+
+        <div class="p-6">
+            <div id="progression_lineaire" class="min-h-[100px]">
+                </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<div class="flex flex-wrap">
+    <div class="w-full">
+        <div class="my-3">
+            <ul class="flex flex-col md:flex-row mb-3 gap-2 list-none">
+                {% for data_operation in data_operations %}
+                <li class="nav-item">
+                    <a class="flex items-center px-4 py-2 bg-white border shadow-sm rounded-xl transition-all duration-300 ease-in-out {% if forloop.first %}border-blue-600 text-blue-600{% else %}border-gray-200 text-gray-700{% endif %}" 
+                       href="/loaddata_set/{{data_operation.id}}/{{operation.id}}/">
+                        <svg class="me-2 w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v240h-80v-200H520v-200H240v640h360v80H240Zm638 15L760-183v89h-80v-226h226v80h-90l118 118-56 57Zm-638-95v-640 640Z"/></svg>
+                        <span class="font-bold">{{data_operation.m_name}}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="shadow-lg rounded-[20px] overflow-hidden bg-white border-0">
+            <div class="flex flex-wrap">
+                <div class="w-full md:w-5/12 border-r bg-gray-50/50">
+    <div class="pt-4 px-6 pb-4">
+        <h5 class="font-bold text-gray-900 text-base">Responsabilités</h5>
+        <p class="text-gray-500 text-xs uppercase tracking-wider font-medium">Matrice RACI : {{ operation.nom }}</p>
+    </div>
+
+    <div class="px-6 pb-6">
+        <div class="flex items-center p-4 mb-4 bg-white shadow-sm rounded-2xl border border-gray-100">
+            <img src="{% if operation.personnel.photo %}{{ operation.personnel.photo.url }}{% else %}{% static 'version/images.jpeg' %}{% endif %}" 
+                 class="rounded-full mr-4 w-12 h-12 object-cover border-2 border-gray-100">
+            <div>
+                <div class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-0.5">Responsable</div>
+                <div class="font-semibold text-gray-800">{{ operation.personnel }}</div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-white shadow-sm rounded-2xl border border-gray-100">
+            <div class="grid grid-cols-2 gap-4 text-center mb-4">
+                <div class="border-r border-gray-100">
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Pondération</p>
+                    <p class="text-lg font-bold text-gray-900">{{ operation.ponderation }}%</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Exécution</p>
+                    <p class="text-lg font-bold text-green-600">{{ operation.niveau_execution_valide }}%</p>
+                </div>
+            </div>
+            
+            <div class="relative w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                <div class="absolute top-0 left-0 bg-green-500 h-full rounded-full transition-all duration-500" 
+                     style="width: {{ operation.niveau_execution_valide }}%">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                <div class="w-full md:w-7/12 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <!-- En-tête -->
+    <div class="pt-6 px-6 pb-4 border-b border-gray-50">
+        <h5 class="font-bold text-gray-900 text-lg mb-1">
+            Informations Techniques
+        </h5>
+        <p class="text-gray-500 text-sm">Détails des fichiers associés à cette soumission</p>
+    </div>
+
+    <!-- Contenu -->
+    <div class="p-6 bg-gray-50/50">
+        {% if rapport_fichier %}
+            <div class="grid gap-3">
+                {% for fichier_item in rapport_fichier %}
+                <div class="group flex items-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all duration-200">
+                    <!-- Icône de document -->
+                    <div class="h-10 w-10 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 mr-4">
+                        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    
+                    <!-- Texte -->
+                    <div class="flex-1 overflow-hidden">
+                        <span class="block text-[10px] text-gray-400 uppercase tracking-wider font-semibold">{{ fichier_item.nom_champ }}</span>
+                        <a href="{{ fichier_item.fichier.url }}" target="_blank" class="block truncate text-gray-800 font-medium text-sm hover:text-blue-600 transition-colors">
+                            {{ fichier_item.fichier.name|cut:"rapports/fichiers/" }}
+                        </a>
+                    </div>
+
+                    <!-- Icône de téléchargement -->
+                    <div class="ml-2 text-gray-300 group-hover:text-blue-600 transition-colors">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-8">
+                <p class="text-sm text-gray-400 italic">Aucun fichier trouvé pour ce rapport.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+            </div>
+        </div>
+    </div>
+</div>
+ 
+        <div class="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+  <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <h2 class="text-xl font-bold text-gray-900 tracking-tight">Historique RACI & Transactions</h2>
+      <p class="text-sm text-gray-500 mt-1">Suivi de l'exécution, des validations et de la progression des opérations.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+        Filtrer
+      </button>
+      
+      <button type="button" onclick="openModal()" 
+              class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all shadow-sm active:scale-95">
+        <i class="fas fa-check-circle"></i>
+        Valider la tâche
+      </button>
+
+     <button type="button" onclick="openModalInvalid()" 
+              class="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-all shadow-sm active:scale-95">
+        <i class="fas fa-close"></i>
+        Rejeter la tâche
+      </button> 
+    </div>
+  </div>
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="bg-gray-50/70 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+          <th class="px-6 py-3.5">ID Opération</th>
+          <th class="px-6 py-3.5">Acteur / Rôle</th>
+          <th class="px-6 py-3.5">Commentaire & Pièce jointe</th>
+        
+          <th class="px-6 py-3.5">Date</th>
+        </tr>
+      </thead>
+      
+      <tbody class="divide-y divide-gray-100 text-sm text-gray-600">
+        {% for historic in operation_historic %}
+        <tr class="hover:bg-gray-50/50 transition-colors">
+          
+          <!-- ID & Institution -->
+          <td class="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+              #{{ historic.m_operation_id }}
+            </span>
+            <span class="block text-[11px] text-gray-400 font-normal mt-0.5">Inst. {{ historic.institution_id }}</span>
+          </td>
+          
+          <!-- Acteur / Rôle -->
+          <td class="px-6 py-4">
+            <div class="flex flex-col">
+              
+              <span class="text-[11px] text-indigo-600 font-semibold uppercase tracking-wide mt-0.5">Auteur : {{ historic.m_role }}</span>
+            </div>
+          </td>
+          
+          <!-- Commentaire & Fichier -->
+          <td class="px-6 py-4 max-w-xs">
+            <p class="text-gray-600 text-xs line-clamp-2 leading-relaxed">
+              {% if historic.m_commentaire_validation_transaction %}
+                {{ historic.m_commentaire_validation_transaction }}
+              {% else %}
+                {{ historic.m_commentaire }}
+              {% endif %}
+            </p>
+            {% if historic.file %}
+            <a href="#" class="inline-flex items-center gap-1.5 px-2.5 py-1 mt-2 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+              {{ historic.file }}
+            </a>
+            {% endif %}
+          </td>
+          
+          <!-- Statut -->
+         
+          
+          <!-- Date -->
+          <td class="px-6 py-4 text-xs text-gray-500 whitespace-nowrap">
+            <div class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              <span>{{ historic.m_date_realisation }}</span>
+            </div>
+          </td>
+
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-6 py-12 text-center text-gray-400 text-sm">
+            Aucun historique d'opération disponible pour le moment.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+
+<style>
+    /* Cache la barre de défilement par défaut sur Chrome/Safari/Edge */
+.scroll-custom::-webkit-scrollbar {
+    width: 6px;
+}
+/* Style de la partie mobile (le "curseur") */
+.scroll-custom::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1; /* Gris doux */
+    border-radius: 20px;
+}
+/* Style de la zone de fond */
+.scroll-custom::-webkit-scrollbar-track {
+    background: transparent;
+}
+</style>
+
+<dialog id="monModalPonderation" class="p-0 rounded-2xl shadow-2xl w-full max-w-4xl border-0 backdrop:bg-slate-900/50 transition-all duration-300 opacity-0 translate-y-5 max-h-[90vh] flex flex-col overflow-hidden">
+    <form action='/valid_rapport/' method="POST" enctype="multipart/form-data" class="flex flex-col h-full overflow-hidden">
+        {% csrf_token %}
+
+        {% if operation_rapport %}
+            <input type="hidden" value="{{operation_rapport.id}}" name="operation_rapport">
+        {% endif %}
+
+        <!-- Header -->
+        <div class="px-8 py-6 bg-slate-800 text-white flex justify-between items-center shrink-0">
+            <div>
+                <small class="text-slate-400 uppercase tracking-widest text-xs font-semibold">Rapport d'Opération</small>
+                <h3 id="opera_valider_title" class="text-xl font-bold text-amber-400 mt-1"></h3>
+            </div>
+            <i class="fas fa-check-double text-4xl opacity-20"></i>
+        </div>
+        
+        <input type="hidden" id="opera_valider_id" name="opera_valider_id" value="{{operation.id}}">
+        <input type="hidden" name="operation_id" value="{{operation.id}}">
+
+        <!-- Body (Scrollable) -->
+        <div class="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 overflow-y-auto flex-1">
+            
+       
+
+<div id="financement-container" class="lg:col-span-7 lg:border-r lg:border-slate-200 lg:pr-8">
+    <h5 class="flex items-center font-bold text-slate-800 mb-6 text-base tracking-wide">
+        <i class="fas fa-hand-holding-usd mr-3 text-emerald-600 text-lg"></i>Sources de Financement
+    </h5>
+    
+    <div class="space-y-4">
+        {% for source_financements in financement_operation %}
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 transition-all hover:border-slate-300 hover:shadow-sm">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-start items-center space-x-3">
+                        <input type="checkbox" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer" 
+                               id="source-{{ source_financements.source_financement.id }}" 
+                               name="source_financement" 
+                               value="{{ source_financements.source_financement.id }}" 
+                               data-id="{{ source_financements.source_financement.id }}" 
+                               data-nom="{{ source_financements.source_financement.nom }}">
+                        <label class="text-sm font-semibold text-slate-700 cursor-pointer select-none" for="source-{{ source_financements.source_financement.id }}">
+                            {{ source_financements.source_financement.nom }}
+                        </label>
+                    </div>
+                    <i class="fa fa-coins text-slate-400"></i>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mt-4 pt-3 border-t border-slate-200/60">
+                    <div>
+                        <small class="text-slate-500 block text-xs mb-0.5">Montant Planifié</small>
+                        <span class="font-bold text-slate-900 text-sm">
+                            {{source_financements.montant_attribue|floatformat:'-2'}} {%for devises in devise%}{%if actual_institution.devise%} {{devises.symbole}} {%endif%}{%endfor%}
+                        </span>
+                    </div>
+                    <div>
+                        <small class="text-slate-500 block text-xs mb-0.5">Montant Déclaré</small>
+                        <span class="font-bold text-emerald-600 text-sm">
+                            {{source_financements.montant_declare|floatformat:'-2'|default:'0'}} {%for devises in devise%}{%if actual_institution.devise%} {{devises.symbole}} {%endif%}{%endfor%}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-200" id="montant-container-{{ source_financements.source_financement.id }}" style="display: none;">
+                    <label for="montant-{{ source_financements.source_financement.id }}" class="block text-xs font-medium text-slate-600 mb-1.5">
+                        Montant Déclaré pour {{ source_financements.source_financement.nom }}
+                    </label>
+                    <div class="relative rounded-lg shadow-sm">
+                        <input type="number" 
+                               class="montant-input w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" 
+                               id="montant-{{ source_financements.source_financement.id }}" 
+                               name="montant_source_{{ source_financements.source_financement.id }}" 
+                               data-source-id="{{ source_financements.source_financement.id }}"
+                               placeholder="0.00" 
+                               step="0.01">
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                <i class="fas fa-folder-open text-3xl text-slate-300 mb-2"></i>
+                <p class="text-sm text-slate-500">Aucune donnée de financement à valider.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-6 bg-slate-900 rounded-xl p-4 text-center shadow-inner">
+        <label class="text-slate-400 text-[10px] uppercase tracking-widest font-bold block mb-1">Total Opération</label>
+        <input type="number" name="total_financement" id="montant-total" readonly value="0.00"
+               class="w-full bg-transparent text-white text-3xl font-extrabold text-center border-none outline-none focus:ring-0">
+    </div>
+</div>
+
+            <!-- Right Column: Learning & Impact -->
+            <div class="lg:col-span-5 space-y-6">
+                <h5 class="flex items-center font-bold text-slate-800 mb-6 text-base tracking-wide">
+                    <i class="fas fa-lightbulb mr-3 text-amber-500 text-lg"></i>Apprentissage & Impact
+                </h5>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Analyse qualitative</label>
+                    <textarea rows="4" name="opera_valider_comment" placeholder="Saisir votre analyse ici..." class="w-full p-3 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none bg-slate-50/50 focus:bg-white"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Niveau d'exécution</label>
+                    <div class="relative">
+                        <select name="niveau" class="w-full p-3 text-sm border border-slate-300 rounded-lg bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer appearance-none">
+                            <option value="100">100% - Achevé</option>
+                            <option value="75">75% - Avancé</option>
+                            <option value="50">50% - Mi-parcours</option>
+                            <option value="25">25% - Démarrage</option>
+                            <option value="0">0% - Suspendu</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border border-slate-200 rounded-xl p-4 space-y-3 bg-slate-50/30">
+                    <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">Coordonnées Feedback</label>
+                    <div class="space-y-2">
+                        <input type="number" name="numero" value="{{operation.informed.tel}}" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white" placeholder="Téléphone"/>
+                        <input type="email" name="email" value="{{operation.informed.mail}}" class="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white" placeholder="Email">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-slate-50 p-6 flex justify-between items-center border-t border-slate-200 shrink-0">
+            <p class="text-slate-500 text-xs max-w-[300px] hidden md:flex items-center">
+                <i class="fas fa-info-circle mr-2 text-blue-500 text-sm"></i> Confirmation de la conformité réglementaire des données.
+            </p>
+            <input type="hidden" name="operation_id" value="{{operation.id}}">
+            <button type="submit" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg text-sm tracking-wide">
+                Finaliser la Validation
+            </button>
+        </div>
+    </form>
+</dialog>
+<!-- 1. Remplacement de <dialog> par <div> -->
+<div id="annulerOperModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform scale-95 transition-transform duration-300">
+        <form action='/in_valid_rapport/' method="POST">
+            {% csrf_token %}
+            <div class="p-6 pb-2">
+                <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+                    <i class="bx bx-error-circle text-2xl"></i>
+                </div>
+                <h5 class="text-lg font-black text-slate-800">Invalider le rapport</h5>
+                <p class="text-sm text-slate-500 mt-1">Cette action est irréversible. Veuillez justifier le rejet.</p>
+            </div>
+            
+            <div class="p-6 pt-2">
+                <textarea name="opera_invalider_comment" 
+                          class="w-full h-32 p-4 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all" 
+                          placeholder="Motif du rejet..." 
+                          required></textarea>
+            </div>
+            <input type="hidden" name="opera_invalider_id" value="{{operation.id}}"/>
+            <div class="p-6 pt-0 flex gap-3">
+                <button type="button" onclick="closemodalInvalide()" 
+                        class="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-all">
+                    Annuler
+                </button>
+                <button type="submit" 
+                        class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-red-200 transition-all">
+                    Confirmer le rejet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // --- GESTION MODAL PONDÉRATION (Utilisant l'élément <dialog>) ---
+    const modalPonderation = document.getElementById('monModalPonderation');
+
+    function openModal() {
+        modalPonderation.showModal();
+        setTimeout(() => {
+            modalPonderation.style.opacity = '1';
+            modalPonderation.style.transform = 'translateY(0)';
+        }, 10);
+    }
+
+    function closeModalPonderation() {
+        modalPonderation.style.opacity = '0';
+        modalPonderation.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            modalPonderation.close();
+            modalPonderation.style.opacity = '';
+            modalPonderation.style.transform = '';
+        }, 300);
+    }
+
+    modalPonderation.addEventListener('click', (e) => {
+        if (e.target === modalPonderation) closeModalPonderation();
+    });
+
+
+
+function openModalInvalid() {
+    const modal = document.getElementById('annulerOperModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+}
+
+// Fonction pour FERMER la modale
+function closemodalInvalide() {
+    const modal = document.getElementById('annulerOperModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+</script>
+<script>
+const operationId = {{ operation.id|default:0 }};
+
+console.log("Operation ID:", operationId);
+
+/* COLORS */
+const colors = {
+    previsionnel: '#00f5ff',
+    declarees: '#ff9800',
+    validees: '#e11d48',
+    text: '#e2e8f0',
+    grid: 'rgba(255,255,255,0.08)'
+};
+
+/* 🔥 CLEAN DATA (IMPORTANT) */
+function cleanSeries(arr) {
+    return (arr || []).map(v => v === null ? 0 : Number(v));
+}
+
+/* CHART INIT */
+const options = {
+    chart: {
+        height: 550,
+        type: 'line',
+        background: 'transparent',
+        foreColor: colors.text,
+        toolbar: { show: false },
+        animations: { enabled: true }
+    },
+
+    series: [
+        { name: "Prévisionnel", type: "line", data: [] },
+        { name: "Déclarées", type: "scatter", data: [] },
+        { name: "Validées", type: "scatter", data: [] }
+    ],
+
+    stroke: {
+        width: [4, 0, 0],
+        curve: 'smooth',
+        dashArray: [6, 0, 0]
+    },
+
+    markers: {
+        size: [0, 6, 6],
+        strokeWidth: 2,
+        strokeColors: "#fff"
+    },
+
+    colors: [
+        colors.previsionnel,
+        colors.declarees,
+        colors.validees
+    ],
+
+    xaxis: {
+        categories: []   // 👈 on garde ton système actuel
+    },
+
+    yaxis: {
+        min: 0,
+        max: 100
+    },
+
+    tooltip: {
+        theme: "dark"
+    },
+
+    noData: {
+        text: "Chargement..."
+    }
+};
+
+const chart = new ApexCharts(document.querySelector("#progression_lineaire"), options);
+chart.render();
+
+
+/* 🔥 LOAD DATA */
+function loadData() {
+
+    if (!operationId) {
+        console.error("❌ ID manquant");
+        return;
+    }
+
+    $.ajax({
+        url: `/api/transactions/${operationId}/`,
+        method: "GET",
+
+        success: function(data) {
+
+            console.log("🔥 RAW RESPONSE:", data);
+
+            if (!data || !data.categories) {
+                console.error("❌ JSON invalide");
+                return;
+            }
+
+            chart.updateOptions({
+                xaxis: {
+                    categories: data.categories
+                }
+            });
+
+            chart.updateSeries([
+                {
+                    name: "Prévisionnel",
+                    type: "line",
+                    data: cleanSeries(data.previsionnel)
+                },
+                {
+                    name: "Déclarées",
+                    type: "scatter",
+                    data: cleanSeries(data.declarations)
+                },
+                {
+                    name: "Validées",
+                    type: "scatter",
+                    data: cleanSeries(data.validations)
+                }
+            ]);
+        },
+
+        error: function(err) {
+            console.error("❌ ERREUR AJAX:", err);
+        }
+    });
+}
+
+
+/* AUTO REFRESH */
+$(document).ready(function () {
+    loadData();
+    setInterval(loadData, 10000);
+});
+</script>
+
+     <!-- Left Column: Finance -->
+           <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // On cible le conteneur principal pour isoler nos sélections
+    const container = document.getElementById('financement-container');
+    if (!container) return;
+
+    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+    const totalInput = document.getElementById('montant-total');
+
+    // Fonction pour calculer et mettre à jour le total
+    function calculateTotal() {
+        let total = 0;
+        // On sélectionne uniquement les inputs montants de notre zone
+        const amountInputs = container.querySelectorAll('.montant-input');
+        
+        amountInputs.forEach(input => {
+            const montantContainer = document.getElementById(`montant-container-${input.dataset.sourceId}`);
+            // Vérification de la visibilité réelle du conteneur parent
+            if (montantContainer && montantContainer.style.display !== 'none') {
+                const value = parseFloat(input.value);
+                if (!isNaN(value)) {
+                    total += value;
+                }
+            }
+        });
+        
+        if (totalInput) {
+            totalInput.value = total.toFixed(2);
+        }
+    }
+
+    // Gestion des événements pour chaque checkbox
+    checkboxes.forEach(checkbox => {
+        const sourceId = checkbox.dataset.id;
+        const montantContainer = document.getElementById(`montant-container-${sourceId}`);
+        const montantInput = document.getElementById(`montant-${sourceId}`);
+
+        if (!montantContainer || !montantInput) return;
+
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                montantContainer.style.display = 'block';
+            } else {
+                montantContainer.style.display = 'none';
+                montantInput.value = ''; // Réinitialise la valeur si décoché
+            }
+            calculateTotal();
+        });
+    });
+
+    // Écouteur global pour les saisies de montants (Délégation d'événement)
+    container.addEventListener('input', function(e) {
+        if (e.target.classList.contains('montant-input')) {
+            calculateTotal();
+        }
+    });
+
+    // Calcul initial au chargement de la page
+    calculateTotal();
+});
+</script>
+{% endblock %}

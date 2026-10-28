@@ -1,0 +1,282 @@
+
+{% extends './evaluer.html' %}
+{% load static %}
+
+{% block add_title %}
+Formulaires de Données
+{% if element != None %}
+- {{element}}
+{% endif %}
+{% endblock %}
+
+{% block style %}
+<style type="text/css">
+    /* No custom CSS needed here as we rely on Tailwind utility classes */
+</style>
+{% endblock %}
+
+{% block search_filters %}
+{% endblock %}
+
+{% block table %}
+<div class="container mx-auto px-4 py-8">
+
+    <div class="mb-6">
+        <h6 class="text-xl font-extrabold uppercase text-center text-gray-800">
+            Liste des formulaires de l'institution <b class="text-red-600">{{actual_institution.nom}}</b>
+        </h6>
+        <div class="h-1 bg-gray-900 w-full mt-4"></div>
+    </div>
+    <div class="flex flex-wrap -mx-4">
+        {% for l in pages_o %}
+        
+        <div class="w-full sm:w-1/2 lg:w-1/3 px-4 mb-8">
+            <div class="bg-white rounded-xl shadow-2xl p-6 h-full text-center transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 border-t-4 border-blue-500 hover:border-blue-700">
+                
+                <div class="card-body">
+                    <p class="text-lg font-semibold text-gray-700 mb-4">{{ l }}</p>
+                    
+                    <div class="flex justify-center space-x-4 mt-6">
+                        <a href="/grub_form/{{l.id}}/" 
+                           class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 shadow-md hover:shadow-lg">
+                            Saisir Formulaire
+                        </a>
+                        
+                        <a href="/data_form/{{l.id}}/0/" 
+                           class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg transition duration-300 shadow-md hover:shadow-lg">
+                            Données Saisies
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {%empty%}
+
+        <div class="empty-state">
+    <div class="text-center py-5">
+      <div class="empty-state-icon mb-4">
+        <i class="fas fa-database fa-4x"></i>
+      </div>
+      <h4 class="text-muted mb-3 fw-bold">Aucune donnée disponible</h4>
+      <p class="text-muted mb-4">
+        Aucun formulaire pour le moment.
+      </p>
+      <div class="d-flex justify-content-center">
+        <div class="pulse-animation"></div>
+      </div>
+    </div>
+  </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
+<style>
+	/* Empty State Styles */
+  .empty-state {
+    transition: all 0.3s ease;
+  }
+
+  .empty-state-icon {
+    color: var(--empty-state-color) !important;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+  }
+
+  .card:hover .empty-state-icon {
+    opacity: 0.8;
+    transform: translateY(-5px);
+  }
+
+  .pulse-animation {
+    animation: pulse 2s infinite ease-in-out;
+    width: 120px;
+    height: 4px;
+    background: var(--main-color);
+    border-radius: 2px;
+  }
+
+  /* Keyframe Animations */
+  @keyframes progressAnimation {
+    0% {
+      left: -30%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scaleX(0.8);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scaleX(1.1);
+      opacity: 1;
+    }
+    100% {
+      transform: scaleX(0.8);
+      opacity: 0.6;
+    }
+  }
+</style>
+{% block modals %}
+<div class="modal fade" id="formDataModal" tabindex="-1" role="dialog" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+		<div class="modal-content">
+			<form class="form-horizontal bordered-row" action="/save_gestion/" method="post">
+				{% csrf_token %}
+				<div class="modal-header">
+					<h5> Renseigner des Donnees </h5>
+				</div>
+				<div class="modal-body">
+					<input type="hidden" id="edit_or_create" name="edit_or_create" value="c">
+					<input type="hidden" id='generator' name="generator" value="i3">
+					<input type="hidden" class="entity_id form-control" name="id_entity">
+					<input type="hidden" name="hierachy" value="{{hierachy}}">
+					<h5 class="text-info">Indicateur <span class="h5" id="indi_name"></span></h5>
+					<input type="hidden" name="indi_id_hidden" id="indi_id_hidden">
+					<input type="hidden" name="nb_dataE" id="nb_dataE">
+					<input type="hidden" name="u1" value="{{nature}}">
+					<input type="hidden" name="u2" value="{{elt_id}}">
+					<div id='indicaBody'>
+
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-danger" data-dismiss="modal"> Annuler</button>
+					<button type="submit" class="btn btn-primary"> Enregistrer</button>
+				</div>
+			</form>
+
+		</div>
+	</div>
+</div>
+
+	<div class="modal fade" id="dataFormModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-body">
+					<div id="dF_Div">
+						<div class="text-center"> Recuperation des Information</div>
+
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+	function loadIndi(indi_id, arg_elt) {
+	    elt = arg_elt;
+
+	    // Vérifier si les informations de l'indicateur sont déjà dans le localStorage
+	    var indicatorData = localStorage.getItem("indicator_" + indi_id);
+	    if (indicatorData) {
+	        indicatorData = JSON.parse(indicatorData);
+	        displayIndicatorData(indicatorData, elt);
+	        return;
+	    }
+
+	    $.ajax({
+	        url: '/get_indi_data/',
+	        data: {
+	            'indi_id': indi_id,
+	        },
+	        dataType: 'json',
+	        success: function(data) {
+	            // Stocker les informations de l'indicateur dans le localStorage
+	            localStorage.setItem("indicator_" + indi_id, JSON.stringify(data));
+	            displayIndicatorData(data, elt);
+	        },
+	        error: function(data) {
+	            alert("error")
+	        }
+	    });
+	}
+
+	function displayIndicatorData(data, elt) {
+	    indi_name = document.getElementById("indi_name");
+	    indi_name.textContent = data.nom;
+	    indicaBody = document.getElementById("indicaBody");
+	    indicaBody.innerHTML = "<div>";
+	    indicaBody.innerHTML = "<div> Entite : <label class='text-success'> " + elt + "</label> </div>";
+	    indicaBody.innerHTML += "<div class='my-3'>";
+	    indicaBody.innerHTML += "<div class='text-danger'> Periode de Saisie </div>";
+	    indicaBody.innerHTML += "<div class='d-flex'> <div class='px-2'> <input name='tmp_per1' class='form-control' value='2023'> </div> <div class='px-2'> <select name='tmp_per2' class='form-control'> <option value='2'>Janvier </option> </select> </div> </div>"
+	    indicaBody.innerHTML += "</div></div><div>"
+
+	    indi_id_hidden = document.getElementById("indi_id_hidden");
+	    indi_id_hidden.value = indi_id;
+	    nb_dataE = document.getElementById("nb_dataE");
+	    nb_dataE.value = data.nums.length;
+	    indicaBody.innerHTML += "<div class='mt-3 mb-2 pt-3'><small> Renseignement des Donnees </small></div>"
+	    for (var i = 0; i < data.nums.length; i++) {
+	        indicaBody.innerHTML += "<div><label>" + data.nums[i] + "</label></div>"
+	        indicaBody.innerHTML += "<input type='hidden' name='indiID" + i + "' value='" + data.ids[i] + "''>"
+	        indicaBody.innerHTML += "<div style='width:250px;'><input class='form-control' type='text' name='indiVal" + i + "'></div>";
+	    }
+	    indicaBody.innerHTML += "</div>";
+	}
+period_cell = document.getElementsByClassName("period_cell");
+for (var i=0;i<period_cell.length;i++){
+	months = ["Jan","Fev","Mars","Avril","Mai","Juin","Juillet","Aout","Septembre","Octobre","Novembre","Decembre"];
+	tmp =  period_cell[i].textContent.split("#");
+	period_cell[i].textContent = months[parseInt(tmp[1])] + " "+tmp[0]
+}
+// Rattacher la Periode pourt la Validation
+// Afficher les Periodes de Suivi
+
+actual_month = new Date().getMonth();
+
+
+
+
+
+
+
+
+
+function submitForm(){
+	// Recuperation des Variables
+	variables = document.getElementsByClassName("variableSelector");
+	variables_value = document.getElementById("variables_value");
+	variables_names = document.getElementById("variables_names");
+
+	tmp = "";
+	tmp2 = "";
+	for (var i=0;i<variables.length;i++){
+		input = variables[i].getElementsByTagName("input")[0];
+		if (input.value != "")
+		{tmp += input.value + "#";
+		tmp2 += input.getAttribute("name")+ "#";}
+	}
+	variables_value.value = tmp;
+	variables_names.value = tmp2
+
+
+	// Recuperation des Structures
+	saisie_structures = document.getElementById("saisie_structures")
+	structures_value = document.getElementById("structures_value");
+	tmp = "";
+	inputs = saisie_structures.getElementsByTagName("input")
+	for (var i=0;i<inputs.length;i++){
+		if (inputs[i].checked == true){
+			tmp += inputs[i].value + "#"
+		}
+	}
+	structures_value.value = tmp
+
+	// Recuperation des Periodes
+}
+
+</script>
+{% block add_script %}
+
+{% endblock %}
+
+{% endblock %}

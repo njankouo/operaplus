@@ -1,0 +1,1086 @@
+
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap4.css">
+{% extends './index.html' %}
+{% load static %}
+
+
+{% block content %}
+
+	<div class="row">
+		<div class="col-12">
+
+
+
+								<style>
+    /* Style global de l'accordéon */
+    .custom-accordion {
+        border: none;
+        background: transparent;
+    }
+
+    .custom-accordion .accordion-item {
+        border: none;
+        margin-bottom: 15px;
+        border-radius: 15px !important;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        background: #fff;
+    }
+
+    .custom-accordion .accordion-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    /* En-tête du bouton */
+    .custom-accordion .accordion-button {
+        padding: 1.2rem;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: none;
+        outline: none;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Style spécifique pour l'alerte de licence (Rouge) */
+    .btn-licence-alert {
+        background: linear-gradient(135deg, #ff4d4d, #d90429) !important;
+        color: white !important;
+    }
+
+    .btn-licence-alert:not(.collapsed) {
+        box-shadow: 0 4px 15px rgba(217, 4, 41, 0.3);
+    }
+
+    /* Style pour la gestion des utilisateurs (Bleu/Sombre) */
+    .btn-management {
+        background: #ffffff !important;
+        color: #2b2d42 !important;
+    }
+
+    .btn-management:not(.collapsed) {
+        color: #4361ee !important;
+        background: #f8faff !important;
+    }
+
+    /* Personnalisation de l'icône de flèche */
+    .custom-accordion .accordion-button::after {
+        background-size: 1rem;
+        transition: transform 0.3s ease;
+    }
+
+    /* Corps de l'accordéon */
+    .custom-accordion .accordion-body {
+        padding: 1.5rem;
+        background-color: #ffffff;
+        border-top: 1px solid #f1f1f1;
+    }
+
+    /* Boutons d'action à l'intérieur */
+    .action-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-action {
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+        border: none;
+    }
+
+    .btn-action:hover {
+        transform: scale(1.05);
+    }
+
+    /* Badge d'info pour la licence */
+    .licence-warning {
+        background: #fff5f5;
+        border-left: 4px solid #ff4d4d;
+        padding: 15px;
+        border-radius: 8px;
+        color: #852d2d;
+        font-weight: 500;
+    }
+</style>
+
+<div class="accordion custom-accordion" id="accordionExample">
+    
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingOne">
+            <button class="accordion-button btn-licence-alert" type="button" data-bs-toggle="collapse" data-bs-target="#accordionOne" aria-expanded="true">
+                <i class="bi bi-shield-lock-fill me-3"></i> Informations Sur La Licence
+            </button>
+        </h2>
+        <div id="accordionOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+            <div class="accordion-body">
+                <div class="licence-warning">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    La création est limitée selon votre type de licence actuelle. Contactez l'administrateur pour augmenter vos quotas.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="headingTwo">
+            <button class="accordion-button collapsed btn-management" type="button" data-bs-toggle="collapse" data-bs-target="#accordionTwo" aria-expanded="false">
+                <i class="bi bi-people-fill me-3"></i> Gestion Des Utilisateurs Et Rôles
+            </button>
+        </h2>
+        <div id="accordionTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+            <div class="accordion-body">
+                <div class="action-group">
+                    <button data-bs-target="#exampleModalpersonnel" data-bs-toggle="modal" class="btn btn-action btn-dark">
+                        <i class="bi bi-person-plus-fill"></i> Ajouter Personnel
+                    </button>
+                    
+                    <button type="button" class="btn btn-action btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModalRole">
+                        <i class="bi bi-ui-checks"></i> Ajouter Des Rôles
+                    </button>
+
+                    <a href="/roles_personnels/" class="btn btn-action btn-success">
+                        <i class="bi bi-list-stars"></i> Liste Des Rôles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+							
+
+									<div class="modal fade" id="exampleModalpersonnel" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+										<div class="modal-dialog" role="document">
+										  <div class="modal-content">
+											<div class="modal-header">
+											  <h5 class="modal-title" id="exampleModalLabel">Ajouter Personnel</h5>
+											  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+												</button>
+											</div>
+											<div class="modal-body">
+											  <!-- <p>Croissant jelly beans donut apple pie. Caramels bonbon lemon drops. Sesame snaps lemon drops lemon drops liquorice icing bonbon pastry pastry carrot cake. Dragée sweet sweet roll sugar plum.</p>
+											  <p>Jelly-o cookie jelly gummies pudding cheesecake lollipop macaroon. Sweet chocolate bar sweet roll carrot cake. Sweet roll sesame snaps fruitcake brownie bear claw toffee bonbon brownie.</p> -->
+											  <form class="form-horizontal bordered-row" action="/save_gestion/" id="addFormPerso" enctype="multipart/form-data" data-toggle="validator" role="form" method="post">
+												{% csrf_token %}
+												<input type="hidden" name="edit_or_create" id="edit_or_create">
+												<input type='hidden' name='generator' value='p2'>
+												<input type="hidden" name="edit_id" id="edit_id">
+												<div class="row">
+													<div class="col-sm-12">
+														<div class="form-group">
+							<label style="font-family: quartz" class="text-danger">		Photo  </label>
+															<input type="file" name="photo" class="form-control" >
+														</div>
+													</div>
+													<div class="col-sm-6">
+														<div class="form-group">
+							<label style="font-family: quartz" class="text-danger">Nom * </label>
+															<input type="text" class="form-control nom" name="nom"  required="" id="codeAct">
+														</div>
+													</div>
+													<div class="col-sm-6">
+														<div class="form-group">
+										<label style="font-family: quartz" class="text-danger">	Prenom * </label>
+															<input type="text" class="form-control prenom" name="prenom"  required="" id="nomAct">
+														</div>
+													</div>
+
+
+													<div class="col-sm-12">
+														<div class="form-group">
+							<label style="font-family: quartz" class="text-danger">	Email *</label>
+
+															<input type="email" name="mail" class="form-control" id="mail">
+														</div>
+
+												</div>
+
+													<div class="col-sm-12">
+														<div class="form-group">
+							<label style="font-family: quartz" class="text-danger">	Fonction / Responsabilit&eacute;</label>
+
+															<input type="text" name="poste" class="form-control" id="poste">
+														</div>
+
+												</div>
+												<div class="col-sm-12">
+													<div class="form-group">
+					<label style="font-family: quartz" class="text-danger">	Num&eacute;ro T&eacute;l&eacute;phone * </label>
+				<input type="text" name="tel" class="my-2 form-control telephone" id='tel'>
+				</div>
+				</div>
+
+					<div class="col-sm-12">
+													<div class="form-group">
+				<label class="text-danger" style="font-family: quartz">Genre *</label>
+				<select class="form-control" name="sexe">
+					<option>Selectionnez Le sexe</option>
+					<option value="M">Masculin</option>
+					<option value="F">Feminin</option>
+				</select>
+				</div>
+				</div>
+				<input type='hidden' name='matrice'/>
+													{% for search in searches %}
+													<div class="col-sm-12">
+														<div class="form-group">
+							<label for="exampleFormControlSelect1" class="text-danger" style="font-family: quartz">{{search.label}} *</label>
+															{% if search.values != None %}
+															<select class="form-control" name="{{search.label}}" id="exampleFormControlSelect1">
+																{% for v in search.values %}<option value="{{v.id}}">{{v.nom}}</option>{% endfor %}
+															</select>
+															{% endif %}
+														</div>
+													</div>
+													{% endfor %}
+
+											</div>
+											<div class="modal-footer">
+											  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+											  <button type="submit" class="btn btn-primary">Enregistrer</button>
+											</div>
+											</form>
+										  </div>
+										</div>
+									  </div>
+									  </div>
+							<div class="table-wrapper">
+								
+
+
+
+
+
+
+
+
+
+
+
+
+
+																					<div class="modal fade" id="exampleModalRole" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+																						<div class="modal-dialog" role="document">
+																						  <div class="modal-content">
+																							<div class="modal-header">
+																							  <h5 class="modal-title" id="exampleModalLabel">Ajouter R&ocirc;les</h5>
+																							  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+																								</button>
+																							</div>
+																							<div class="modal-body">
+																								<form class="form-horizontal bordered-row" action="/save_gestion/" onsubmit="saveRoles()" id="addFormAction" data-toggle="validator" role="form" method="post">
+																									{% csrf_token %}
+																									<input type="hidden" id="edit_or_create" value="c" name="edit_or_create">
+																									<input type="hidden" id="edit_id" name="edit_id" value="">
+																									<input type='hidden' name='generator' value='r'>
+																									<input type="hidden" value="{{actual_institution.id}}" name="institution">
+																									<div class="row">
+
+																										<div class="col-sm-12">
+																											<div class="form-group">
+																												Nom
+																												<input type="text" class="form-control" name="nom" id="nomAct" required="">
+																											</div>
+																										</div>
+																										<div class="col-sm-12">
+																											<div class="form-group">
+																												Description
+																												<textarea class="form-control" name="description"></textarea>
+																											</div>
+																										</div>
+																										<div class="col-sm-12">
+																											<div>
+																												<div><small> Champs Supplementaires</small></div>
+																												<div></div>
+																											</div>
+																											<div class="form-group">
+																												Permissions
+																												<div class="d-flex mb-3">
+																													<div class="px-1"><span data-elt='0' class="ros_btn btn btn-success">G&eacute;n&eacute;lrique</span></div>
+																													<div class="px-1"><span data-elt='1' class="ros_btn btn btn-light">Sp&eacute;cifique</span></div>
+																													<div class="px-1"><span data-elt='2' class="ros_btn btn btn-light">Utilisateur Simple</span></div>
+																													<input type="hidden" name="ros_click" id="ros_click">
+																												</div>
+																												<div class="ros_div">
+																													<select class="form-control" name="permission">
+																														<option value='-1'><span class="text-success">Operant :</span> Charg&eacute; d'Executer les Taches </option>
+
+																																									   <!--
+																																									   <option value='1'>Superviseur de TÃƒÂ¢ches : Supervise les Taches  </option>
+																																								   -->
+																																								   {% for role in actual_institution.get_entities.reverse %}
+																																								   <option  value="{{role.m_hierachie}}"> Charg&eacute; {{role}} : Supervise L'Evolution {{role}}</option>
+																																								   {% endfor %}
+																																								   <option value='99'> Administrateur : Aide &agrave;  l'Administration de l'Institution </option>
+																																								</select>
+																																							</div>
+
+																																							<input type="hidden" name="entity_administr" id="entity_administr">
+																																							<div class="ros_div" style="display:none;">
+																																								<div>Supervise</div>
+																																								<div>
+																																									<select id="entiRole_select" class="form-control" name="permission_entity">
+
+																																										{% for role in actual_institution.get_entities.reverse %}
+																																										<option value="{{role.id}}"> {{role}}</option>
+																																										{% endfor %}
+																																		</select>
+
+																																	<div class="p-4">
+																																										<ul style="max-height:100px;overflow-y:auto;" class="list-group" id="rol_list">
+
+																																										</ul>
+
+																																									</div>
+																																								</div>
+																																							</div>
+																																							<!-- <div class="ros_div" style="display:none;">
+																																								<div>
+																																									<small>Relier &acirc;  une entit&eacute;</small>
+																																								</div>
+																																								<div>
+																																									<select name="user_simple_entity" class="form-control">
+																																										{% for simp in actual_institution.get_entities.reverse %}
+																																										<option  value="{{simp.m_entity_type.id}}"> {{simp}}</option>
+																																										{% endfor %}
+																																									</select>
+																																								</div>
+																																							</div> -->
+																																							<!-- <div><small class="text-success">Ajouter Role</small></div> -->
+																																						</div>
+																																					</div>
+																																						</div>
+																																					</div>
+																																					<div class="modal-footer">
+																																						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+																																						<button type="submit" class="btn btn-primary">Enregistrer</button>
+																																					  </div>
+
+																							  <!-- <p>Croissant jelly beans donut apple pie. Caramels bonbon lemon drops. Sesame snaps lemon drops lemon drops liquorice icing bonbon pastry pastry carrot cake. Dragée sweet sweet roll sugar plum.</p>
+																							  <p>Jelly-o cookie jelly gummies pudding cheesecake lollipop macaroon. Sweet chocolate bar sweet roll carrot cake. Sweet roll sesame snaps fruitcake brownie bear claw toffee bonbon brownie.</p> -->
+																							</div>
+
+																						</form>
+																						  </div>
+																						</div>
+																					  </div>
+
+
+
+
+<div class="row g-4"> 
+	{% for line in personnel %}
+    <div class="col-sm-6 col-md-4 col-lg-3">
+        <div class="user-card-modern">
+            <div class="card-header-custom">
+                <div class="user-img-wrapper">
+                    {% if line.photo %}
+                        <img src="{{line.photo.url}}" alt="{{line.nom}}" class="user-img">
+                    {% else %}
+                        <img src="{{actual_institution.img.url}}" alt="{{line.nom}}" class="user-img">
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card-body-custom">
+                <h5 class="user-name">
+                    <span class="text-uppercase fw-bold">{{ line.nom }}</span> {{ line.prenom }}
+                </h5>
+                
+                <p class="user-role-text">
+                    {{ line.get_function }}
+                </p>
+
+                <div class="badge-container">
+                    <a class="custom-badge " href="/delete-personnel/{{ line.id }}/">
+                        <i class="fas fa-delete"></i> 
+                       supprimer
+					</a>
+                </div>
+
+                <div class="user-actions">
+                    <a href="/edit-personnel/{{ line.id }}/" class="btn-action btn-edit" title="Modifier">
+                        <i class="fas fa-pen"></i>
+                        <span>Modifier</span>
+                    </a>
+                    <a href="#" class="btn-action btn-collab" title="Voir les collaborateurs" data-bs-toggle="modal" data-bs-target="#exampleModal{{line.id}}">
+                        <i class="fas fa-users"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<div class="modal fade" id="exampleModal{{line.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable"> <div class="modal-content border-0 shadow">
+      <form action="/association-collaborator/{{line.id}}/" method="POST">
+        {% csrf_token %}
+        
+        <div class="modal-header bg-light">
+          <h5 class="modal-title fw-bold" id="exampleModalLabel">
+            <i class="fas fa-user-plus me-2 text-primary"></i>
+            Collaborateurs pour {{ line.nom }}
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="input-group mb-3">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" class="form-control border-start-0 ps-0 shadow-none" 
+                   id="searchInput{{line.id}}" 
+                   placeholder="Rechercher un collaborateur..."
+                   onkeyup="searchCollab('{{line.id}}')">
+          </div>
+
+          <p class="small text-muted mb-2">Sélectionnez les membres à associer :</p>
+          
+          <div class="list-group list-group-flush border rounded-3 overflow-auto collab-list" style="max-height: 300px;" 
+		 id="collabList{{line.id}}" 
+		  >
+            {% for collab in personnel %} 
+			{% if collab.id != line.id %} {# On évite de s'auto-associer #}
+              <label class="list-group-item list-group-item-action d-flex align-items-center py-2 collab-item-{{line.id}}">
+                <input class="form-check-input me-3" type="checkbox" name="collaborateurs" value="{{collab.id}}" 
+                       {% if collab in line.collaborateurs.all %}checked{% endif %}>
+                
+                <div class="d-flex align-items-center">
+                  <div class="avatar-xs me-2">
+                    <span class="badge rounded-circle bg-soft-primary text-primary border">
+                      {{ collab.nom|first|upper }}
+                    </span>
+                  </div>
+                  <div>
+                    <div class="fw-bold mb-0" style="font-size: 0.9rem;">{{ collab.nom }} {{ collab.prenom }}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">{{ collab.fonction }}</div>
+                  </div>
+                </div>
+              </label>
+              {% endif %}
+            {% empty %}
+              <div class="p-3 text-center text-muted">Aucun collaborateur disponible</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="modal-footer  border-0">
+          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm">
+            <i class="fas fa-check me-1"></i> Enregistrer l'association
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+    {% endfor %}
+</div>
+
+<script>
+function searchCollab(id) {
+    // 1. On récupère la valeur saisie dans l'input spécifique
+    const input = document.getElementById('searchInput' + id);
+    const filter = input.value.toLowerCase();
+    
+    // 2. On cible uniquement la liste de ce modal
+    const listContainer = document.getElementById('collabList' + id);
+    const items = listContainer.getElementsByClassName('collab-item');
+
+    // 3. Boucle sur les éléments pour masquer ceux qui ne correspondent pas
+    for (let i = 0; i < items.length; i++) {
+        const name = items[i].getAttribute('data-name');
+        
+        if (name.includes(filter)) {
+            items[i].style.display = "flex"; // Affiche
+        } else {
+            items[i].style.display = "none"; // Cache
+        }
+    }
+}
+</script>
+
+
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ {% if message.tags == 'success' %}
+
+<script type="text/javascript">
+ Swal.fire({
+ position: "top-end",
+ icon: "success",
+ title: "{{message}}",
+ showConfirmButton: false,
+ timer: 2000
+});
+</script>
+{%endif%}
+{%endfor%}
+</script>
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ {% if message.tags == 'error' %}
+
+<script type="text/javascript">
+ Swal.fire({
+ position: "top-end",
+ icon: "error",
+ title: "{{message}}",
+ showConfirmButton: false,
+ timer: 5000
+});
+</script>
+{%endif%}
+{%endfor%}
+<style>
+/* Conteneur principal de la carte */
+.user-card-modern {
+    background: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid #f0f0f0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.user-card-modern:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    border-color: #e0e0e0;
+}
+
+/* Header & Image */
+.card-header-custom {
+    padding-top: 2rem;
+    display: flex;
+    justify-content: center;
+    background: linear-gradient(to bottom, #f8f9fa 50%, transparent 50%);
+}
+
+.user-img-wrapper {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    padding: 5px;
+    background: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.user-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Typographie */
+.card-body-custom {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.user-name {
+    font-size: 1.1rem;
+    color: #1a1d23;
+    margin-bottom: 0.25rem;
+}
+
+.user-role-text {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
+}
+
+/* Badge */
+.custom-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f1f5f9;
+    color: #475569;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.custom-badge i {
+    color: #3b82f6;
+}
+
+/* Boutons d'action */
+.user-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.btn-action {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-edit {
+    background-color: #3b82f6;
+    color: white;
+    flex-grow: 1;
+}
+
+.btn-edit:hover {
+    background-color: #2563eb;
+    color: white;
+}
+
+.btn-collab {
+    background-color: #f8f9fa;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+.btn-collab:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+}
+</style>
+
+									{% if perso_saved == True %}
+									<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-hidden="true">
+										<div class="modal-dialog">
+											<div class="modal-content">
+												<form class="form-horizontal bordered-row" action="/delete/" id="tooMUCHFormAction" method="post">
+													{% csrf_token %}
+													<div class="modal-body">
+														<div class="mb-4 text-center">
+															<img src="{%if not perso_get.photo%}{%else%}{{perso_get.photo.url}}{%endif%}" style="width:85px;height:85px;border-radius:100%;">
+														</div>
+														<div class="text-center">
+															<b>{{perso_get}}</b> [ {{perso_get.mail}} ] a d&eacute;ja un compte au sein d'Opera, ses informations ont juste &eacute;t&eacute; conserv&eacute;es.
+														</div>
+													</div>
+													<div class="modal-footer">
+														<div class="px-2">
+															<span> 2024 Solution BeinInfo. </span>
+														</div>
+													</div>
+												</form>
+
+											</div>
+										</div>
+									</div>
+									<script type="text/javascript">
+										$("#exampleModal").modal('show')
+									</script>
+									{% endif %}
+
+
+									<div class="modal fade" id="addSimpUser" tabindex="-1" role="dialog" aria-hidden="true">
+										<div class="modal-dialog">
+											<div class="modal-content">
+												<form class="form-horizontal bordered-row" action="/save_gestion/" id="tooMUCHFormAction" method="post">
+													{% csrf_token %}
+													<input type="hidden" name="generator" value="p2">
+													<input type="hidden" name="edit_or_create" value="c">
+
+													<div class="modal-body">
+														<div class="mb-4 text-center">
+															Ajouter un Nouvel Utilisateur Simple
+														</div>
+														{% if lines.count > 0 %}
+														<div>
+															<div>
+																<label>Compte</label>
+																<select name="Fonction" id="account_roles_lines" class="form-control">
+																	{% for r in lines %}
+																	<option value="{{r.id}}">{{r}}</option>
+																	{% endfor %}
+																</select>
+															</div>
+															<div class="my-2">
+																<label>Entit&eacute; :</label>
+																<div class="d-flex flex-wrap" id="entities_roles_desc">
+
+																</div>
+															</div>
+															<div class="d-flex">
+																<div class="px-1">
+																	<label>Pr&eacute;nom</label>
+																	<input type="text" class="form-control" name="prenom">
+																</div>
+																<div class="px-1">
+																	<label>Nom</label>
+																	<input type="text" class="form-control" name="nom">
+																</div>
+															</div>
+															<div class="py-2">
+																<label>Adresse Mail</label>
+																<input type="text" class="form-control" name="mail">
+															</div>
+															<div class="py-2">
+																<label>Telephone</label>
+																<input type="text" class="form-control" name="tel">
+															</div>
+															<input type="hidden" name="simple_user" id="simple_user" value="1">
+															<div>
+																<input type="submit" class="btn btn-success" value="Enregistrer l'Utilisateur" name="">
+															</div>
+														</div>
+														{% else %}
+														<div class="text-center">
+															Aucun Role defini, veuillez au prealable en creer <a href="/roles/">ici</a>
+														</div>
+														{% endif %}
+													</div>
+													<div class="modal-footer">
+														<div class="px-2">
+															<span style="font-family:quartz"> 2023,Solution BeinInfo. </span>
+														</div>
+													</div>
+												</form>
+
+											</div>
+										</div>
+									</div>
+
+									<div class="modal fade bd-example-modal-xl" id="modifyRole" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+										<div style='max-width:450px;' class="modal-dialog modal-xl">
+											<div class="modal-content">
+												<div class="modal-header">
+													<!--button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button-->
+													<h4 class="modal-title">Attribuer un RÃƒÂ´le </h4>
+													<button type="button" class="close waves-effect waves-light" data-dismiss="modal" aria-label="Close">
+														<span aria-hidden="true">Ãƒâ€”</span>
+													</button>
+												</div>
+
+												<div class="modal-body">
+													<form class="form-horizontal bordered-row" action="/modify/rol_emp/" id="addFormPerso" enctype="multipart/form-data" data-toggle="validator" role="form" method="post">
+														{% csrf_token %}
+														<input type='hidden' id="add_val" name='personnel' value=''>
+														<input type="hidden" name="institution" value="{{actual_institution.id}}">
+														<div class="row">
+															<div id='add_nom' class="text-success h3 col-sm-12">
+
+															</div>
+															<div class="col-sm-12">
+																<div class="form-group">
+																	<select class="form-control" name="role" >
+																		{% for v in roles %}<option value="{{v.id}}" selected>{{v}}</option>{% endfor %}
+																	</select>
+																</div>
+															</div>
+														</div>
+														<button type="submit" class="btn btn-primary">Enregistrer
+														</button>
+													</form>
+												</div>
+											</div>
+										</div>
+									</div>
+
+<div class="pagination-container" style="margin-top: 20px; text-align: center;">
+    <nav aria-label="Navigation personnel">
+        <ul class="pagination" style="display: inline-flex; list-style: none; gap: 10px;">
+            
+            {% if personnel.has_previous %}
+                <li>
+                    <a href="?page=1" class="btn-page">&laquo;&laquo; Début</a>
+                </li>
+                <li>
+                    <a href="?page={{ personnel.previous_page_number }}" class="btn-page">Précédent</a>
+                </li>
+            {% endif %}
+
+            <li class="current-page">
+                <strong>Page {{ personnel.number }} sur {{ personnel.paginator.num_pages }}</strong>
+            </li>
+
+            {% if personnel.has_next %}
+                <li>
+                    <a href="?page={{ personnel.next_page_number }}" class="btn-page">Suivant</a>
+                </li>
+                <li>
+                    <a href="?page={{ personnel.paginator.num_pages }}" class="btn-page">Fin &raquo;&raquo;</a>
+                </li>
+            {% endif %}
+
+        </ul>
+    </nav>
+</div>
+<style>
+  .btn-page {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    text-decoration: none;
+    color: #007bff;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+.btn-page:hover {
+    background-color: #f8f9fa;
+    border-color: #007bff;
+}
+
+.current-page {
+    padding: 8px 12px;
+    color: #333;
+}
+</style>
+
+
+									<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+
+									<script type="text/javascript">
+										ros_btn = document.getElementsByClassName("ros_btn");
+										ros_click = 0
+										for (var i=0;i<ros_btn.length;i++){
+											ros_btn[i].onclick = function(){
+												$(".ros_btn").removeClass("btn-success");
+												$(".ros_btn").addClass("btn-light");
+												this.className = "ros_btn btn btn-success";
+
+												id_div = parseInt(this.getAttribute('data-elt'));
+												ros_div = document.getElementsByClassName("ros_div");
+												ros_click = id_div;
+												$(ros_div).slideUp(function(){
+
+												});
+												$(ros_div[id_div]).slideDown('slow');
+
+											}
+										}
+
+										$(".renseigner").click(function(){
+											$("#add_nom").text($(this).attr('data-nom'));
+											$("#add_val").val($(this).attr('data-id'));
+										});
+										line_func = document.getElementsByClassName('line_func');
+										line_struc = document.getElementsByClassName('line_struc');
+	//alert(line_struc.length)
+	i=0;
+	{% for f in actual_institution.functions %}
+	//line_func[i].textContent = "{{f}}";
+	line_func[i].setAttribute('data-id',{{f.id}});
+	i++;
+	{% endfor %}
+
+	i=0;
+	{% if g_vs == 'p2' %}
+	{% for f in actual_institution.structures %}
+		//line_struc[i].textContent = "{{f}}";
+		//line_struc[i].setAttribute('data-id',{{f.id}});
+		i++;
+		{% endfor %}
+		{% elif g_vs == 'u2' %}
+		function type_users(role){
+			$.ajax({
+				url: '/get_elements_hierachy/',
+				data: {
+					'institution':{{actual_institution.id}},
+					'nature':-100,
+					'type_entity':role
+				},
+				dataType: 'json',
+				success: function (data) {
+					entities_roles_desc = document.getElementById("entities_roles_desc");
+					entities_roles_desc.innerHTML = ""
+					for (var i=0;i<data.lines.length;i++){
+						entities_roles_desc.innerHTML += "<div class='p-2'> <span data-value='"+data.ids[i]+"' class='border-success entity_rolD btn'>"+data.lines[i]+"</span></div>";
+					}
+					$(".entity_rolD").click(function(){
+						$(".entity_rolD").removeClass("btn-success");
+						$(this).addClass("btn-success")
+						simple_user = document.getElementById("simple_user");
+						simple_user.value = $(this).attr('data-value')
+					})
+				},
+				error: function(data) {}
+			});
+		}
+		account_roles_lines = document.getElementById("account_roles_lines");
+		account_roles_lines.onchange = function(){
+			type_users(this.value);
+		}
+		type_users(account_roles_lines.value);//.getElementsByTagName("option")[0]
+		{% endif %}
+		function list_elts(hierachie){
+		/*
+		$.ajax({
+			url: '/get_elements_hierachy/',
+			data: {
+				'institution':{{actual_institution.id}},
+				'nature':hierachie,
+			},
+			dataType: 'json',
+			success: function (data) {
+				rol_list = document.getElementById('rol_list');
+				tmp = "";
+				for (var i=0;i<data.lines.length;i++){
+					tmp += "<li class='list-group-item'> <input class='list_value' id=cie"+data.ids[i]+" value="+data.ids[i]+" type='checkbox'>&nbsp;<label for='cie"+data.ids[i]+"'>"+data.lines[i]+"</label></li>";
+				}
+				try{
+					rol_list.innerHTML = tmp;
+				}
+				catch(error){
+
+				}
+			},
+			error: function(data){
+			}
+		});
+		*/
+	}
+
+	list_elts(-1);
+	{% if g_v != 'p2' %}
+	entiRole_select = document.getElementById("entiRole_select")
+	entiRole_select.onchange = function(){
+		list_elts(this.value)
+	}
+	{% endif %}
+
+	function saveRoles(){
+		ros_click_input = document.getElementById("ros_click");
+		ros_click_input.value = ros_click;
+		if (ros_click == 1){
+			entity_administr = document.getElementById("entity_administr");
+			list_value = document.getElementsByClassName("list_value");
+			tmp = "";
+			for (var i=0;i<list_value.length;i++){
+				if (list_value[i].checked == true){
+					tmp += list_value[i].value+"#";
+				}
+			}
+			entity_administr.value = tmp;
+		}
+	}
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+	$(document).ready(function() {
+	  $('.js-example-basic-single').select2({
+		placeholder: 'Saisissez Votre Adresse Email',
+		allowClear: true,
+		tags: true,
+		createTag: function(params) {
+		  var term = $.trim(params.term);
+
+		  if (term === '') {
+			return null;
+		  }
+
+		  return {
+			id: term,
+			text: term,
+			newTag: true
+		  }
+		}
+	  });
+	});
+	</script>
+<script>
+		$(document).ready(function() {
+		  // Lorsqu'un utilisateur est sÃ©lectionnÃ© dans la liste dÃ©roulante
+		  $('.mail').on('change', function() {
+			var mail = $(this).val();
+
+			// RÃ©cupÃ¨re le jeton CSRF
+			var csrf_token = $('input[name="csrfmiddlewaretoken"]').val();
+
+			// RequÃªte AJAX
+			$.ajax({
+			  url: "/recuperer_personnel/",
+			  type: 'POST',
+			  data: {
+				csrfmiddlewaretoken: csrf_token,
+				mail: mail
+			  },
+			  dataType: 'json',
+			  success: function(data) {
+				// Met Ã  jour les champs du formulaire avec les informations rÃ©cupÃ©rÃ©es
+				console.log(data);
+				$('.nom').val(data.nom);
+				$('.prenom').val(data.prenom);
+				$('.telephone').val(data.tel);
+				console.log(data.telephone)
+			  },
+			  error: function(jqXHR, textStatus, errorThrown) {
+				console.log('error');
+			  }
+			});
+		  });
+		});
+	  </script>
+
+{% for message in messages %}
+   <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+   {% if message.tags == 'success' %}
+    <script>
+        swal("Succes!", "{{ message }}", "success");
+    </script>
+   {% endif %}
+{% endfor %}
+
+
+{% for message in messages %}
+   <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+   {% if message.tags == 'info' %}
+    <script>
+        swal("info!", "{{ message }}", "info");
+    </script>
+   {% endif %}
+{% endfor %}
+<script>
+	(function() {
+
+		'use strict';
+
+		$('.input-file').each(function() {
+		  var $input = $(this),
+			  $label = $input.next('.js-labelFile'),
+			  labelVal = $label.html();
+
+		 $input.on('change', function(element) {
+			var fileName = '';
+			if (element.target.value) fileName = element.target.value.split('\\').pop();
+			fileName ? $label.addClass('has-file').find('.js-fileName').html(fileName) : $label.removeClass('has-file').html(labelVal);
+		 });
+		});
+
+	  })();
+</script>
+<script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap4.js"></script>
+<script>
+	new DataTable('#example');
+</script>
+
+
+{% endblock %}

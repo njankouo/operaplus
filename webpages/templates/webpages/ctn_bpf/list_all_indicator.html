@@ -1,0 +1,64 @@
+{%extends './dataelts.html'%}
+{%block content%}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card my-4">
+                <div class="card-body">
+                    <div class="nav-align-left">
+                        <ul class="nav nav-tabs" role="tablist">
+                          <li class="nav-item">
+                            <button type="button" class="nav-link active btn" role="tab" data-bs-toggle="tab" data-bs-target="#navs-left-align-home">Indicateur Li&eacute;s</button>
+                          </li>
+                          <li class="nav-item">
+                            <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-left-align-profile">Actions Sur Indicateurs</button>
+                          </li>
+                         
+                        </ul>
+                        <div class="tab-content">
+                          <div class="tab-pane fade show active" id="navs-left-align-home">
+                            <p>
+                               Liste Des Indicateurs Associ&eacute;s Au Groupe {{groupe_indicateur.libelle}}
+                              </p>
+                              <hr class="p-2 bg-dark">
+                            {%for linkend_indicateurs in linkend_indicateur%}
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="defaultCheck3-{{linkend_indicateurs.id}}" checked />
+                                <label class="form-check-label" for="defaultCheck3-{{linkend_indicateurs.id}}">
+                                  {{linkend_indicateurs.m_name}}
+                                </label>
+                              </div>
+
+                            {%endfor%}
+                          </div>
+                          <div class="tab-pane fade" id="navs-left-align-profile">
+                            <p>
+                                Ajouter Des Indicateurs  Au Groupe {{groupe_indicateur.libelle}}
+                               </p>
+                               <hr class="p-2 bg-dark">
+                               <input type="search" name="search" id="search" class="form-control" placeholder="Recherche Indicateur">
+                               <hr class="p-2 bg-dark">
+                             {%for un_linked_indicateurs in un_linked_indicateur%}
+ 
+                             <div class="form-check">
+                                 <input class="form-check-input" type="checkbox" value="" id="defaultCheck3-{{un_linked_indicateurs.id}}"  />
+                               
+                                 <label class="form-check-label" for="defaultCheck3-{{un_linked_indicateurs.id}}">
+                                   {{un_linked_indicateurs.m_name}}
+                                 </label>
+                               </div>
+ 
+                             {%endfor%}
+                             <button type="submit" class="btn btn-dark">Ajouter Indicateurs</button>
+                          </div>
+                          
+                        </div>
+                      </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

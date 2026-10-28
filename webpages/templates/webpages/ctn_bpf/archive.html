@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi & Évaluation Élite — OPERAPLUS</title>
+    
+    <style>
+        :root {
+            --custom-primary: {{ request.user.personnel.color_fond|default:"#2563eb" }};
+        }
+    </style>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'custom-primary': 'var(--custom-primary)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; 
+            background-color: #f8fafc;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .doc-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .doc-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(var(--custom-primary), 0.1), 0 8px 10px -6px rgba(var(--custom-primary), 0.1);
+        }
+
+        #canvas-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.4; 
+            pointer-events: none; 
+        }
+    </style>
+</head>
+
+<body class="font-sans antialiased text-slate-800 bg-slate-50 flex flex-col h-screen" id="globe-3d-container">
+
+    <div id="canvas-wrapper"></div>
+    
+    <header id="mobile-nav" class="lg:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-40 relative transition-all duration-300 ease-in-out origin-top shrink-0">
+        <div class="flex items-center gap-3">
+            <button id="btn-toggle-menu" class="text-slate-500 hover:text-custom-primary p-2 -ml-2">
+                <i class="fas fa-bars text-lg"></i>
+            </button>
+            <h1 class="font-bold text-custom-primary text-sm tracking-wider">OPERAPLUS</h1>
+        </div>
+        <button class="text-slate-500 hover:text-custom-primary">
+            <i class="fas fa-info-circle text-lg"></i>
+        </button>
+    </header>
+    
+    <div class="flex flex-1 overflow-hidden relative z-10">
+        
+        <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity opacity-0"></div>
+
+<aside id="sidebar-left" class="fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 flex flex-col shadow-xl lg:shadow-none lg:relative transition-all duration-300">
+    <div class="p-4 border-b border-slate-100">
+        <div class="relative mb-4">
+            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+            <input type="text" placeholder="Rechercher un document..." 
+                   class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition">
+        </div>
+        <button onclick="toggleModal()" class="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-[0.98] transition-all font-semibold text-sm">
+            <i class="fas fa-plus"></i> Nouveau document
+        </button>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto p-3 space-y-6 custom-scrollbar">
+        <div class="space-y-1">
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-clock text-slate-400"></i> Récents
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-star text-amber-400"></i> Favoris
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-trash text-slate-400"></i> Corbeille
+            </a>
+        </div>
+
+        <div class="space-y-1">
+            <h4 class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Archives</h4>
+            {% for category in categorie %}
+            <div class="space-y-0.5">
+                <button onclick="toggleElement('cat-{{ category.id }}', this)" 
+                        class="group w-full flex items-center justify-between px-3 py-2.5 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-all text-sm font-bold">
+                    <span class="flex items-center gap-3">
+                        <i class="fas fa-folder text-amber-500 group-hover:text-amber-600"></i> {{ category.nom }}
+                    </span>
+                    <i class="fas fa-chevron-right text-[10px] text-slate-400 group-hover:text-indigo-600 transition-transform duration-300"></i>
+                </button>
+
+                <div id="cat-{{ category.id }}" class="hidden overflow-hidden transition-all duration-300">
+                    <div class="pl-4 border-l-2 border-slate-100 ml-4 space-y-1 mt-1">
+                        {% for sous_category in category.sous_categories.all %}
+                        <div>
+                           <button hx-get="{% url 'liste_archives_par_sous_cat' sous_category.id %}" 
+                                    hx-target="#main-document-list" 
+                                    hx-swap="innerHTML"
+                                    onclick="toggleElement('sub-{{ sous_category.id }}', this)" 
+                                    class="w-full flex items-center justify-between px-3 py-2 text-slate-600 hover:text-indigo-600 text-[13px] rounded-lg">
+                                <span class="flex items-center gap-2">
+                                    <i class="fas fa-folder-open text-slate-400"></i> {{ sous_category.nom }}
+                                </span>
+                                <i class="fas fa-chevron-right text-[8px] opacity-50 transition-transform duration-300"></i>
+                            </button>
+                            
+                            <div id="sub-{{ sous_category.id }}" class="hidden pl-8 mt-1 space-y-1">
+                                {% for archive in sous_category.archives.all %}
+                                <a href="#" 
+                                   hx-get="{% url 'detail_archive' archive.id %}" 
+                                   hx-target="#sidebar-details-content"
+                                   onclick="openDetailsSidebar()"
+                                   class="group flex items-center gap-2 px-3 py-1.5 text-slate-500 hover:text-indigo-600 text-[12px] font-medium rounded-md hover:bg-indigo-50 transition-colors">
+                                    <i class="far fa-file-alt text-slate-400 group-hover:text-indigo-500"></i> {{ archive.titre }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </nav>
+
+    <div class="p-4 border-t border-slate-100 bg-slate-50">
+       <button 
+    type="button"
+    onclick="toggleCategorieModal()" 
+    class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shadow-md active:scale-95">
+    <i class="fas fa-folder-open text-base"></i>
+    <span>Explorer les dossiers</span>
+</button>
+    </div>
+</aside>
+<div id="modal-categorie" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform scale-95 transition-all duration-300 flex flex-col max-h-[85vh]">
+    
+    <div class="flex justify-between items-center p-5 border-b border-slate-100 shrink-0">
+      <h3 class="text-lg font-bold text-slate-800">Gestion des catégories</h3>
+      <button type="button" onclick="toggleCategorieModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="p-5 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-5 gap-6">
+      
+      <form method="POST" action="/add_categorie/" id="form-categorie" class="md:col-span-2 space-y-4 border-b md:border-b-0 md:border-r border-slate-100 pb-6 md:pb-0 md:pr-6">
+        {% csrf_token %}
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Nouvelle catégorie</h4>
+        
+        <div class="w-full">
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Code <span class="text-rose-500">*</span></label>
+          <input type="text" name="code" required placeholder="Ex: RH, FIN..." class="w-full px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+        </div>
+
+        <div class="w-full">
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Nom <span class="text-rose-500">*</span></label>
+          <input type="text" name="nom" required placeholder="Ex: Ressources Humaines..." class="w-full px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+        </div>
+
+        <div class="w-full">
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Description</label>
+          <textarea name="description" rows="2" class="block w-full px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none" placeholder="Description courte..."></textarea>
+        </div>
+        
+        <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-colors text-center">
+          Ajouter
+        </button>
+      </form>
+
+      <div class="md:col-span-3 flex flex-col min-h-[250px]">
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Catégories existantes</h4>
+        
+        <div class="border border-slate-100 rounded-xl overflow-hidden bg-slate-50/50 flex-1">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-100 text-xs text-slate-600 font-semibold uppercase">
+              <tr>
+                <th class="px-4 py-2.5">Code</th>
+                <th class="px-4 py-2.5">Nom</th>
+                <th class="px-4 py-2.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              {% for category in categorie %}
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="px-4 py-2.5 font-medium text-slate-700">CAT-{{ category.id }}</td>
+                <td class="px-4 py-2.5 text-slate-600 truncate max-w-[120px]">{{ category.nom }}</td>
+                <td class="px-4 py-2.5 text-right whitespace-nowrap space-x-1">
+                  <a href="/edit_categorie/{{ category.id }}/" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded transition-colors" title="Modifier">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="/delete_categorie_archive/{{ category.id }}/" onclick="return confirm('Supprimer cette catégorie ?')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded transition-colors inline-block" title="Supprimer">
+                    <i class="fas fa-trash-alt"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aucune catégorie enregistrée</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="p-4 border-t border-slate-100 flex justify-end gap-2 shrink-0 bg-slate-50 rounded-b-2xl">
+      <button type="button" onclick="toggleCategorieModal()" class="px-4 py-2 bg-white border border-gray-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">Fermer</button>
+    </div>
+
+  </div>
+</div>
+<script>
+function toggleCategorieModal() {
+    const modal = document.getElementById('modal-categorie');
+    if (modal.classList.contains('hidden')) {
+        // Ouvrir la modal
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            modal.firstElementChild.classList.remove('scale-95', 'opacity-0');
+            modal.firstElementChild.classList.add('scale-100', 'opacity-100');
+        }, 20);
+    } else {
+        // Fermer la modal
+        modal.firstElementChild.classList.remove('scale-100', 'opacity-100');
+        modal.firstElementChild.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }, 300);
+    }
+}
+</script>
+<script>
+function toggleElement(id, btn) {
+    const content = document.getElementById(id);
+    const chevron = btn.querySelector('.fa-chevron-right');
+    if (content) {
+        content.classList.toggle('hidden');
+        if (chevron) {
+            chevron.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(90deg)';
+        }
+    }
+}
+
+function openDetailsSidebar() {
+    document.getElementById('sidebar-right').classList.remove('translate-x-full');
+    document.getElementById('overlay').classList.remove('hidden');
+}
+
+function closeDetailsSidebar() {
+    document.getElementById('sidebar-right').classList.add('translate-x-full');
+    document.getElementById('overlay').classList.add('hidden');
+}
+</script>
+
+<style>
+/* Style personnalisé pour une barre de défilement propre */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
+</style>
+<div id="modal-nouveau" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300 flex flex-col max-h-[90vh]">
+    
+    <div class="flex justify-between items-center p-5 border-b border-slate-100 shrink-0">
+      <h3 class="text-lg font-bold text-slate-800">Ajouter un document</h3>
+      <button type="button" onclick="toggleModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <form method="POST" action="/add_archive/" enctype="multipart/form-data" id="form" class="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+      {% csrf_token %}
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Titre <span class="text-rose-500">*</span></label>
+          <input type="text" name="titre" required class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Auteur <span class="text-rose-500">*</span></label>
+          <input type="text" name="auteur" value="{{ request.user.personnel }}" required class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Catégorie <span class="text-rose-500">*</span></label>
+          <select name="categorie_id" id="categorie" required class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer">
+            <option value="">Sélectionnez...</option>
+            {% for category in categorie %}
+              <option value="{{ category.id }}">{{ category.nom }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Sous-catégorie <span class="text-rose-500">*</span></label>
+          <select name="sous_categorie" id="sous_categorie" class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer">
+            <option value="">Sélectionnez...</option>
+            {% for sub in sous_categorie %}
+              <option value="{{ sub.id }}">{{ sub.nom }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="w-full">
+        <label for="formatSelect" class="block text-xs font-semibold text-gray-700 mb-1.5">Format Document <span class="text-rose-500">*</span></label>
+        <div class="relative">
+          <select name="format" id="formatSelect" onchange="toggleFields()" required class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer">
+            <option value="" disabled selected hidden>Selectionnez Le format Du document</option>
+            <option value="pdf">Pdf</option>
+            <option value="image">Image</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div id="imageFields" class="w-full">
+        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Fichier <span class="text-rose-500">*</span></label>
+        <input type="file" name="upload_file" id="imageUpload" onchange="previewImage(event)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 file:cursor-pointer border border-gray-300 rounded-lg p-1 bg-white shadow-sm focus:outline-none">
+      </div>
+
+      <div class="w-full">
+        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Description <span class="text-rose-500">*</span></label>
+        <textarea name="description" rows="3" class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-y" placeholder="Saisissez la description ici..."></textarea>
+      </div>
+
+      <div class="w-full">
+        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Source De Financement <span class="text-rose-500">*</span></label>
+        <input type="text" name="source_financement" class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="Ex: Banque Mondiale, Budget d'État...">
+      </div>
+
+      <div class="w-full">
+        <label class="block text-xs font-semibold text-rose-600 mb-1.5">Provenance <span class="text-rose-500">*</span></label>
+        <input type="text" name="provenance" value="{{ operation_rapport.operation.nom }}" class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-gray-50 border border-rose-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium">
+      </div>
+    </form>
+
+    <div class="p-5 border-t border-slate-100 flex justify-end gap-2 shrink-0 bg-gray-50 rounded-b-2xl">
+      <button type="button" onclick="toggleModal()" class="px-4 py-2 bg-white border border-gray-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">Annuler</button>
+      <button type="submit" form="form" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors">Archiver</button>
+    </div>
+
+  </div>
+</div>
+<script>
+function toggleModal() {
+    const modal = document.getElementById('modal-nouveau');
+    const content = modal.querySelector('div'); // Le div blanc intérieur
+    
+    if (modal.classList.contains('hidden')) {
+        // Ouverture
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            content.classList.replace('scale-95', 'scale-100');
+        }, 10);
+    } else {
+        // Fermeture
+        content.classList.replace('scale-100', 'scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 300);
+    }
+}
+
+// Optionnel : Fermer le modal si on clique en dehors de la boîte blanche
+document.getElementById('modal-nouveau').addEventListener('click', function(e) {
+    if (e.target === this) toggleModal();
+});
+</script>
+        <main class="flex-1 flex flex-col overflow-hidden min-w-0 bg-transparent relative z-10 w-full">
+            <header class="bg-white/70 backdrop-blur-md px-4 sm:px-6 py-4 border-b border-slate-200 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shrink-0 z-10">
+                <div class="flex items-center gap-4 w-full flex-1 min-w-0">
+                    <div class="relative w-full max-w-full lg:max-w-md">
+                        <i class="fas fa-search absolute left-3.5 top-2.5 text-slate-400 text-sm"></i>
+                        <input type="text" placeholder="Rechercher (OCR, nom)..." class="w-full pl-10 pr-4 py-2 bg-white/60 border border-slate-200 lg:border-transparent rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-custom-primary/20 focus:border-custom-primary transition-all outline-none backdrop-blur-sm">
+                    </div>
+                    <div class="hidden xl:flex items-center text-sm text-slate-500 whitespace-nowrap">
+                        <span class="hover:text-custom-primary cursor-pointer">Accueil</span>
+                        <i class="fas fa-chevron-right text-[10px] mx-2 text-slate-300"></i>
+                        <span class="font-medium text-slate-800">Partenariats</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between w-full lg:w-auto gap-3 shrink-0">
+                    <button class="text-sm font-medium text-slate-600 hover:text-custom-primary flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 transition">
+                        <i class="fas fa-sliders-h"></i> Filtres
+                    </button>
+                    <select class="text-sm border border-slate-200 rounded-xl text-slate-600 focus:ring-custom-primary/20 focus:border-custom-primary bg-white py-2 pl-3 pr-8 outline-none cursor-pointer">
+                        <option>Récents</option>
+                        <option>Nom (A-Z)</option>
+                    </select>
+                </div>
+            </header>
+
+           <div class="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar relative z-10">
+    <div class="flex justify-between items-center mb-6 gap-4">
+        <div class="relative flex-1 max-w-md">
+            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+            <input type="text" 
+                   placeholder="Rechercher dans ce dossier..." 
+                   class="w-full pl-9 pr-4 py-2 bg-white/80 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-primary/20 focus:border-custom-primary transition-all outline-none">
+        </div>
+
+        <div class="flex gap-1 shrink-0">
+            <button class="p-2 text-slate-400 hover:text-slate-700 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 transition">
+                <i class="fas fa-th-large"></i>
+            </button>
+            <button class="p-2 text-custom-primary bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200">
+                <i class="fas fa-list"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3" id="main-document-list">
+        <div class="flex flex-col items-center justify-center py-24 text-center animate-in fade-in duration-700">
+            <div class="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-folder-open text-3xl text-indigo-300"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Accédez à vos documents</h3>
+            <p class="text-slate-500 text-sm max-w-xs mb-8">
+                Sélectionnez une catégorie ou une sous-catégorie dans le menu de gauche pour afficher et gérer vos archives.
+            </p>
+          <button 
+    type="button"
+    onclick="toggleCategorieModal()" 
+    class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shadow-md active:scale-95">
+    <i class="fas fa-folder-open text-base"></i>
+    <span>Explorer les dossiers</span>
+</button>
+        </div>
+    </div>
+</div>
+        </main>
+
+        <aside id="sidebar-right" class="fixed inset-y-0 right-0 z-50 w-full sm:w-80 bg-white/95 backdrop-blur-md border-l border-slate-200 flex flex-col shadow-[-4px_0_24px_-10px_rgba(0,0,0,0.05)] transform translate-x-full xl:relative xl:translate-x-0 transition-transform duration-300 shrink-0">
+    
+    <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Détails de l'archive</h3>
+        <button id="btn-close-details" onclick="closeDetailsSidebar()" class="text-slate-400 hover:text-slate-700 transition p-2">
+            <i class="fas fa-times text-lg"></i>
+        </button>
+    </div>
+
+    <div id="sidebar-details-content" class="flex-1 overflow-y-auto custom-scrollbar">
+        <div class="flex flex-col items-center justify-center h-64 text-slate-400">
+            <i class="fas fa-file-invoice text-4xl mb-3 opacity-30"></i>
+            <p class="text-xs italic">Sélectionnez un document</p>
+        </div>
+    </div>
+</aside>
+    </div>
+
+    <script>
+        const mobileNav = document.getElementById('mobile-nav');
+        const sidebarLeft = document.getElementById('sidebar-left');
+        const sidebarRight = document.getElementById('sidebar-right');
+        const overlay = document.getElementById('sidebar-overlay');
+
+        // Ouvrir/Fermer Menu Principal
+        document.getElementById('btn-toggle-menu').addEventListener('click', () => {
+            sidebarLeft.classList.remove('-translate-x-full');
+            showOverlay();
+            
+            // Rétractation de la barre de navigation pour éviter les chevauchements
+            mobileNav.classList.add('-translate-y-full', 'h-0', 'opacity-0', 'border-transparent');
+            mobileNav.classList.remove('p-4');
+        });
+
+        document.getElementById('btn-close-menu').addEventListener('click', closeAllSidebars);
+        
+        // Ouvrir Détails Archive
+        function openDetailsSidebar() {
+            sidebarRight.classList.remove('translate-x-full');
+            showOverlay();
+            
+            // Rétractation optionnelle de la navbar si on ouvre le panneau de droite sur mobile
+            if (window.innerWidth < 1024) {
+                mobileNav.classList.add('-translate-y-full', 'h-0', 'opacity-0', 'border-transparent');
+                mobileNav.classList.remove('p-4');
+            }
+        }
+
+        document.getElementById('btn-close-details').addEventListener('click', closeAllSidebars);
+        
+        // Clic sur l'overlay sombre
+        overlay.addEventListener('click', closeAllSidebars);
+
+        function showOverlay() {
+            overlay.classList.remove('hidden');
+            setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+        }
+
+        function closeAllSidebars() {
+            sidebarLeft.classList.add('-translate-x-full');
+            sidebarRight.classList.add('translate-x-full');
+            
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
+
+            // Restauration de la barre de navigation
+            mobileNav.classList.remove('-translate-y-full', 'h-0', 'opacity-0', 'border-transparent');
+            mobileNav.classList.add('p-4');
+        }
+
+        // Gérer le redimensionnement de la fenêtre pour reset l'état
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) { // lg breakpoint
+                closeAllSidebars();
+                mobileNav.classList.remove('-translate-y-full', 'h-0', 'opacity-0', 'border-transparent');
+                mobileNav.classList.add('p-4');
+            }
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        (function() {
+            function initGlobe() {
+                const wrapper = document.getElementById('canvas-wrapper');
+                if (!wrapper || typeof THREE === 'undefined') return; 
+
+                const rootStyle = getComputedStyle(document.documentElement);
+                const cssColorStr = rootStyle.getPropertyValue('--custom-primary').trim() || '#2563eb';
+                
+                const highlightColor = new THREE.Color(cssColorStr);
+                const baseLandColor = new THREE.Color('#94a3b8'); 
+
+                let scene, camera, renderer, globeGroup, pointsMesh;
+                let time = 0;
+                
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 1, 1000);
+                camera.position.z = 250; 
+
+                renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+                wrapper.appendChild(renderer.domElement);
+
+                window.addEventListener('resize', () => {
+                    camera.aspect = wrapper.clientWidth / wrapper.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+                });
+
+                globeGroup = new THREE.Group();
+                // Ajustement dynamique du globe en fonction de la taille d'écran
+                globeGroup.position.x = window.innerWidth < 1024 ? 0 : 40; 
+                scene.add(globeGroup);
+
+                const radius = window.innerWidth < 640 ? 55 : 75; // Globe plus petit sur mobile
+                const dotCount = 3000;
+                const positions = [], colors = [], directions = [];
+
+                for (let i = 0; i < dotCount; i++) {
+                    const phi = Math.acos(-1 + (2 * i) / dotCount);
+                    const theta = Math.sqrt(dotCount * Math.PI) * phi;
+                    const x = radius * Math.sin(phi) * Math.cos(theta);
+                    const y = radius * Math.sin(phi) * Math.sin(theta);
+                    const z = radius * Math.cos(phi);
+
+                    const lat = (phi * 180 / Math.PI) - 90;
+                    const lon = (theta * 180 / Math.PI) % 360 - 180;
+                    
+                    const isLand = (lon > -22 && lon < 52 && lat > -35 && lat < 70) || 
+                                   (lon >= 52 && lon < 145 && lat > -12 && lat < 75) || 
+                                   (lon > -120 && lon < -34 && lat > -55 && lat < 18);
+
+                    if (isLand) {
+                        positions.push(x, y, z);
+                        const norm = Math.sqrt(x*x + y*y + z*z);
+                        directions.push(x/norm, y/norm, z/norm);
+                        
+                        const isTargetZone = (lon > -12 && lon < 45 && lat > -30 && lat < 35);
+                        
+                        if (isTargetZone) {
+                            colors.push(highlightColor.r, highlightColor.g, highlightColor.b);
+                        } else {
+                            colors.push(baseLandColor.r, baseLandColor.g, baseLandColor.b);
+                        }
+                    }
+                }
+
+                const dotGeometry = new THREE.BufferGeometry();
+                dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                dotGeometry.setAttribute('originalPosition', new THREE.Float32BufferAttribute(positions, 3));
+                dotGeometry.setAttribute('direction', new THREE.Float32BufferAttribute(directions, 3));
+
+                pointsMesh = new THREE.Points(dotGeometry, new THREE.PointsMaterial({ 
+                    size: 1.8, vertexColors: true, transparent: true, opacity: 0.8 
+                }));
+                globeGroup.add(pointsMesh);
+
+                function animate() {
+                    requestAnimationFrame(animate);
+                    time += 0.01;
+                    const progress = (Math.sin(time * 0.5) + 1) / 2; 
+                    const explosionForce = progress * 60;
+
+                    const pos = pointsMesh.geometry.attributes.position;
+                    const orig = pointsMesh.geometry.attributes.originalPosition;
+                    const dir = pointsMesh.geometry.attributes.direction;
+
+                    for (let i = 0; i < pos.count; i++) {
+                        pos.setX(i, orig.getX(i) + dir.getX(i) * explosionForce);
+                        pos.setY(i, orig.getY(i) + dir.getY(i) * explosionForce);
+                        pos.setZ(i, orig.getZ(i) + dir.getZ(i) * explosionForce);
+                    }
+                    pos.needsUpdate = true;
+                    globeGroup.rotation.y += 0.005;
+                    renderer.render(scene, camera);
+                }
+                animate();
+            }
+
+            window.addEventListener("DOMContentLoaded", initGlobe);
+        })();
+    </script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript">
+// custom.js
+
+$(document).ready(function() {
+  $('#categorie').on('change', function() {
+    var selectedId = $(this).val();
+
+    // Effectuer une requête AJAX pour récupérer les informations de la table periodeok en fonction de l'ID de la période sélectionnée
+    $.ajax({
+      url: '/search_categorie/',  // L'URL correspondant à la vue Django
+      method: 'GET',
+      data: { id: selectedId },
+      success: function(data) {
+        var selectInformations = $('#sous_categorie');
+        selectInformations.empty(); // Effacer les anciennes options
+
+        // Ajouter les nouvelles options basées sur les données récupérées via AJAX
+        data.forEach(function(ind) {
+          selectInformations.append($('<option>', {
+            value: ind.id,
+            text: ind.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
+          }));
+        });
+      },
+      error: function(xhr, status, error) {
+        console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+      }
+    });
+  });
+});
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const messages = [
+        {% for message in messages %}
+        {
+            text: "{{ message|escapejs }}",
+            type: "{{ message.tags|default:'info' }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    messages.forEach((msg) => {
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: msg.type === 'success' || msg.type === 'error' || msg.type === 'warning' ? msg.type : 'info',
+            title: msg.text,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: "#1f2937",
+            color: "#fff",
+            showClass: { popup: 'animate__animated animate__fadeInRight' },
+            hideClass: { popup: 'animate__animated animate__fadeOutRight' }
+        });
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+{% extends '../presentation.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+  :root {
+    --total-items: {{ valeurs|length }};
+    --radius-desktop: 320px;
+    --orbit-speed: 50s;
+    
+    /* Palette */
+    --color-primary: #1e40af; 
+    --color-primary-light: #eff6ff; 
+    --color-accent: #f97316; 
+    --color-text-main: #1f2937; 
+    --color-text-muted: #64748b; 
+    --color-bg-card: rgba(255, 255, 255, 0.9);
+  }
+
+  .valeurs-scene {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: 
+      radial-gradient(circle at 10% 10%, rgba(30, 64, 175, 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 90% 90%, rgba(249, 115, 22, 0.05) 0%, transparent 40%),
+      #ffffff;
+    padding: 4rem 1rem;
+    min-height: 850px;
+  }
+
+  .orbit-wrapper {
+    position: relative;
+    width: 0; height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: orbit-rotation var(--orbit-speed) linear infinite;
+    will-change: transform;
+  }
+
+  .valeurs-scene:hover .orbit-wrapper,
+  .valeurs-scene:hover .value-card {
+    animation-play-state: paused;
+  }
+
+  @keyframes orbit-rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .value-node {
+    position: absolute;
+    width: 240px;
+    left: calc(var(--radius-desktop) * cos(var(--angle-unitless) * 1deg));
+    top: calc(var(--radius-desktop) * sin(var(--angle-unitless) * 1deg));
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .value-card {
+    background: var(--color-bg-card);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    padding: 1.75rem 1.5rem;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    animation: counter-rotation var(--orbit-speed) linear infinite;
+  }
+
+  @keyframes counter-rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(-360deg); }
+  }
+
+  .orbit-wrapper:hover .value-card {
+    opacity: 0.3;
+    filter: blur(1px) grayscale(50%);
+    transform: scale(0.95);
+  }
+
+  .value-node:hover .value-card {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: scale(1.1) translateY(-10px);
+    box-shadow: 0 25px 50px -12px rgba(30, 64, 175, 0.15);
+    border-color: var(--color-accent);
+    background: #ffffff;
+  }
+
+  .card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    animation: icon-float 3s ease-in-out infinite;
+  }
+
+  @keyframes icon-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .card-title {
+    font-weight: 800;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    color: var(--color-primary);
+    margin-bottom: 0.75rem;
+  }
+
+  .card-title::after {
+    content: '';
+    display: block;
+    width: 30px;
+    height: 3px;
+    background: var(--color-accent);
+    margin: 0.5rem auto 0;
+  }
+
+  /* 🔵 HUB CENTRAL AVEC BATTEMENT */
+  .center-hub {
+    position: absolute;
+    z-index: 20;
+    width: 140px;
+    height: 140px;
+    background: var(--color-primary);
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 8px solid #ffffff;
+
+    animation: heartbeat-pulse 2.5s ease-in-out infinite;
+  }
+
+  /* 💓 ANIMATION BATTEMENT */
+  @keyframes heartbeat-pulse {
+    0% {
+      transform: scale(1);
+      box-shadow: 
+        0 0 0 0 rgba(30, 64, 175, 0.4),
+        0 0 0 0 rgba(249, 115, 22, 0.3);
+    }
+
+    40% {
+      transform: scale(1.08);
+      box-shadow: 
+        0 0 0 20px rgba(30, 64, 175, 0.1),
+        0 0 0 40px rgba(249, 115, 22, 0.08);
+    }
+
+    70% {
+      transform: scale(0.98);
+      box-shadow: 
+        0 0 0 30px rgba(255, 255, 255, 0.2),
+        0 0 0 60px rgba(249, 115, 22, 0.05);
+    }
+
+    100% {
+      transform: scale(1);
+      box-shadow: 
+        0 0 0 0 rgba(30, 64, 175, 0),
+        0 0 0 0 rgba(249, 115, 22, 0);
+    }
+  }
+
+  /* 🌊 ONDE QUI SE PROPAGE */
+  .center-hub::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(249,115,22,0.4) 0%, transparent 70%);
+    animation: ripple 3s infinite;
+    z-index: -1;
+  }
+
+  @keyframes ripple {
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    70% {
+      transform: scale(2.2);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
+
+  .svg-guidelines {
+    position: absolute;
+    width: calc(var(--radius-desktop) * 2.5);
+    height: calc(var(--radius-desktop) * 2.5);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  @media (max-width: 1024px) {
+    .valeurs-scene { min-height: auto; }
+    .svg-guidelines, .center-hub { display: none; }
+
+    .orbit-wrapper {
+      animation: none;
+      width: 100%;
+      max-width: 600px;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .value-node {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+      width: 100%;
+    }
+
+    .value-card {
+      animation: none !important;
+      display: flex;
+      align-items: center;
+      text-align: left;
+      gap: 1.5rem;
+      opacity: 1 !important;
+      filter: none !important;
+    }
+  }
+  /* 🟠 TITRE */
+  .valeurs-header {
+  position: absolute;
+  top: 20px; /* légèrement remonté */
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  width: auto;
+  z-index: 30;
+  padding: 0 1rem;
+}
+
+.valeurs-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  position: relative;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+  /* ✨ Soulignement curviligne */
+  .valeurs-title::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -10px;
+    width: 120%;
+    height: 20px;
+    transform: translateX(-50%);
+    background: none;
+    border-bottom: 4px solid var(--color-accent);
+    border-radius: 50%;
+    animation: underline-wave 3s ease-in-out infinite;
+  }
+
+  @keyframes underline-wave {
+    0%, 100% { transform: translateX(-50%) scaleX(1); }
+    50% { transform: translateX(-50%) scaleX(1.2); }
+  }
+</style>
+
+<section class="valeurs-scene">
+ <div class="valeurs-header">
+    <h2 class="valeurs-title">Nos Valeurs Meal-Afrique</h2>
+  </div>
+  <svg class="svg-guidelines" viewBox="0 0 800 800">
+    <circle cx="400" cy="400" r="320" stroke="rgba(30, 64, 175, 0.1)" stroke-width="1" fill="none" stroke-dasharray="10 5"/>
+  </svg>
+  <!-- 🟠 TITRE -->
+ 
+  <div class="center-hub">
+    <span class="text-[10px] uppercase tracking-widest opacity-80">Notre</span>
+    <span class="text-2xl font-black italic">ADN</span>
+    <span class="text-[10px] uppercase tracking-widest opacity-80">MEAL-AFRIQUE</span>
+  </div>
+
+  <div class="orbit-wrapper">
+    {% for v in valeurs %}
+      <div class="value-node" style="--angle-unitless: calc({{ forloop.counter0 }} * 360 / var(--total-items));">
+        <article class="value-card">
+          <div class="card-icon">{{ v.icon }}</div>
+          <div>
+            <h3 class="card-title">{{ v.title }}</h3>
+            <p>{{ v.desc }}</p>
+          </div>
+        </article>
+      </div>
+    {% endfor %}
+  </div>
+
+</section>
+{% endblock %}

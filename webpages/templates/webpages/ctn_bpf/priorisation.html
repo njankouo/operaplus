@@ -1,0 +1,195 @@
+{% extends "./index.html" %}
+{% block main %}
+
+<input type="hidden" id="global-csrf" value="{{ csrf_token }}">
+
+<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 min-h-screen rounded-3xl transition-colors duration-500" 
+     style="background-color: {{ request.user.personnel.color_fond|default:'#0f172a' }};">
+    
+    <div class="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 mb-6 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-600 flex items-center justify-center text-white shadow-[0_0_15px_rgba(244,63,94,0.2)]">
+                <i class="fa-solid fa-arrow-down-short-wide text-sm"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-tight">Priorisation &amp; Classification</h1>
+                <p class="text-slate-300 text-[11px] uppercase tracking-widest font-semibold opacity-60">Arbitrage opérationnel &amp; Criticité ({{ actual_institution.nom }})</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-2 flex-wrap">
+            <button class="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs px-3 py-1.5 rounded-xl font-medium hover:bg-rose-500/30 transition-all">🔴 Haute ({{ count_haute }})</button>
+            <button class="bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs px-3 py-1.5 rounded-xl font-medium hover:bg-amber-500/30 transition-all">🟡 Moyenne ({{ count_moyenne }})</button>
+            <button class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs px-3 py-1.5 rounded-xl font-medium hover:bg-emerald-500/30 transition-all">🟢 Faible ({{ count_faible }})</button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="space-y-4">
+            <div class="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 shadow-xl">
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-widest mb-4">Volume par classification</h3>
+                <div class="space-y-4">
+                    
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-rose-400 font-medium flex items-center gap-1.5">🔴 Priorité Haute</span>
+                            <span class="text-white font-bold" id="count-haute">{{ count_haute }} {% if count_haute > 1 %}tâches{% else %}tâche{% endif %}</span>
+                        </div>
+                        <div class="w-full bg-black/40 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-rose-500 to-orange-500 h-1.5 rounded-full transition-all duration-500" style="width: 35%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-amber-400 font-medium flex items-center gap-1.5">🟡 Priorité Moyenne</span>
+                            <span class="text-white font-bold" id="count-moyenne">{{ count_moyenne }} {% if count_moyenne > 1 %}tâches{% else %}tâche{% endif %}</span>
+                        </div>
+                        <div class="w-full bg-black/40 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-amber-400 to-orange-400 h-1.5 rounded-full transition-all duration-500" style="width: 55%"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-emerald-400 font-medium flex items-center gap-1.5">🟢 Priorité Faible</span>
+                            <span class="text-white font-bold">{{ count_faible }} {% if count_faible > 1 %}tâches{% else %}tâche{% endif %}</span>
+                        </div>
+                        <div class="w-full bg-black/40 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-emerald-500 to-teal-500 h-1.5 rounded-full transition-all duration-500" style="width: 75%"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+            <div class="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-xs text-blue-300 flex gap-3 items-start">
+                <i class="fa-solid fa-circle-info mt-0.5 shrink-0"></i>
+                <p>Survolez une tâche à droite pour modifier instantanément sa classification à l'aide des boutons de contrôle rapide (H, M, F).</p>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-3">
+            
+            {% for operations in operation %}
+            <div data-operation-id="{{ operations.id }}" class="group relative bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-lg transition-all duration-300 flex items-center justify-between gap-4 {% if operations.priorite == 'HAUTE' %}hover:border-rose-500/30{% elif operations.priorite == 'FAIBLE' %}hover:border-emerald-500/30{% else %}hover:border-amber-500/30{% endif %}">
+                
+                <div class="flex items-start gap-4 min-w-0 flex-grow">
+                    <div class="w-1 h-12 rounded-full shrink-0 
+                        {% if operations.priorite == 'HAUTE' %}bg-gradient-to-b from-rose-500 to-orange-500
+                        {% elif operations.priorite == 'FAIBLE' %}bg-gradient-to-b from-emerald-500 to-teal-500
+                        {% else %}bg-gradient-to-b from-amber-400 to-orange-400{% endif %}">
+                    </div>
+                    
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            {% if operations.priorite == 'HAUTE' %}
+                                <span class="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">Urgent &amp; Critique</span>
+                            {% elif operations.priorite == 'FAIBLE' %}
+                                <span class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">Routine / Recul</span>
+                            {% else %}
+                                <span class="bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">Important / Planifié</span>
+                            {% endif %}
+                            <span class="text-slate-400 text-[10px]"><i class="fa-regular fa-clock mr-1"></i>Suivi</span>
+                        </div>
+                        <h4 class="text-sm font-semibold text-slate-200 truncate group-hover:text-white transition-colors">{{ operations.nom }}</h4>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1 bg-black/30 p-1 rounded-xl border border-white/5 opacity-60 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button onclick="updatePriority('{{ operations.id }}', 'HAUTE')" title="Passer en HAUTE" 
+                        class="w-8 h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center 
+                        {% if operations.priorite == 'HAUTE' %}bg-rose-500 text-white shadow-md scale-105{% else %}text-rose-400 hover:bg-rose-500/20{% endif %}">H</button>
+                    
+                    <button onclick="updatePriority('{{ operations.id }}', 'MOYENNE')" title="Passer en MOYENNE" 
+                        class="w-8 h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center 
+                        {% if operations.priorite == 'MOYENNE' or not operations.priorite %}bg-amber-500 text-black shadow-md scale-105{% else %}text-amber-400 hover:bg-amber-500/20{% endif %}">M</button>
+                    
+                    <button onclick="updatePriority('{{ operations.id }}', 'FAIBLE')" title="Passer en FAIBLE" 
+                        class="w-8 h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center 
+                        {% if operations.priorite == 'FAIBLE' %}bg-emerald-500 text-white shadow-md scale-105{% else %}text-emerald-400 hover:bg-emerald-500/20{% endif %}">F</button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-12 text-slate-400 text-sm border border-dashed border-white/10 rounded-2xl">
+                Aucune opération trouvée pour le moment.
+            </div>
+            {% endfor %}
+
+            {% if operation.has_other_pages %}
+            <div class="flex items-center justify-between bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 mt-4 shadow-lg">
+                <div class="text-xs text-slate-400">
+                    Opérations <span class="text-white font-semibold">{{ operation.start_index }}</span> à <span class="text-white font-semibold">{{ operation.end_index }}</span> sur <span class="text-white font-semibold">{{ operation.paginator.count }}</span>
+                </div>
+                
+                <div class="flex items-center gap-1">
+                    {% if operation.has_previous %}
+                        <a href="?page={{ operation.previous_page_number }}" class="w-8 h-8 rounded-lg bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 flex items-center justify-center text-xs transition-all">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                    {% else %}
+                        <button disabled class="w-8 h-8 rounded-lg bg-white/5 opacity-30 text-slate-500 flex items-center justify-center text-xs cursor-not-allowed">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                    {% endif %}
+
+                    {% for i in operation.paginator.page_range %}
+                        {% if operation.number == i %}
+                            <span class="w-8 h-8 rounded-lg bg-rose-500 text-white text-xs font-bold flex items-center justify-center shadow-md shadow-rose-500/20">{{ i }}</span>
+                        {% else %}
+                            <a href="?page={{ i }}" class="w-8 h-8 rounded-lg bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 flex items-center justify-center text-xs transition-all">{{ i }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if operation.has_next %}
+                        <a href="?page={{ operation.next_page_number }}" class="w-8 h-8 rounded-lg bg-white/5 border border-white/5 text-slate-300 hover:bg-white/10 flex items-center justify-center text-xs transition-all">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                    {% else %}
+                        <button disabled class="w-8 h-8 rounded-lg bg-white/5 opacity-30 text-slate-500 flex items-center justify-center text-xs cursor-not-allowed">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<script>
+async function updatePriority(operationId, newPriority) {
+    const csrfToken = document.getElementById('global-csrf').value;
+    const card = document.querySelector(`[data-operation-id="${operationId}"]`);
+    
+    if(card) card.style.opacity = '0.4';
+
+    try {
+        const response = await fetch('/priorisation/update/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                id: operationId,
+                priorite: newPriority
+            })
+        });
+
+        if (response.ok) {
+            window.location.reload(); 
+        } else {
+            alert("Une erreur est survenue lors du changement de priorité.");
+            if(card) card.style.opacity = '1';
+        }
+    } catch (error) {
+        console.error("Erreur réseau :", error);
+        if(card) card.style.opacity = '1';
+    }
+}
+</script>
+
+{% endblock %}

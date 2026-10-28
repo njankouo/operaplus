@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPERAPLUS - Form Maintenance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdn.tiny.cloud/1/8kf3xjr2ogr36s843rm077bwcavvwb5497fwpfuxrhqfl1bg/tinymce/5/tinymce.min.js" referrerpolicy="no-referrer"></script>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --dhis2-blue: #276696;
+            --dhis2-dark: #1d4e74;
+            --bg-light: #f8fafc;
+        }
+
+        body { background-color: #f1f5f9; font-family: "Inter", "Segoe UI", sans-serif; }
+        
+        /* Header */
+        .header-dhis2 { 
+            background: linear-gradient(90deg, var(--dhis2-blue) 0%, var(--dhis2-dark) 100%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .main-container { height: calc(100vh - 48px); }
+
+        /* Sidebar Tabs */
+        .tab-btn { padding: 10px; font-size: 12px; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid transparent; flex: 1; transition: 0.3s; color: #64748b; }
+        .tab-btn.active { color: var(--dhis2-blue); border-bottom-color: var(--dhis2-blue); background: #f0f7ff; }
+
+        /* Sidebar Items */
+        .left-bar { width: 350px; background: white; border-right: 1px solid #e2e8f0; }
+        .element-item { 
+            padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .element-item:hover { 
+            background-color: #f0f7ff; border-left: 3px solid var(--dhis2-blue);
+            transform: translateX(4px);
+        }
+        
+        /* Tags */
+        .variable-tag { font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; }
+        .tag-de { background-color: #dbeafe; color: #1e40af; }
+        .tag-ind { background-color: #ffedd5; color: #9a3412; }
+
+        /* Editor Customization */
+        .editor-container { background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); overflow: hidden; }
+
+        .search-container { position: relative; padding: 15px; }
+        .search-container i { position: absolute; left: 25px; top: 27px; color: #94a3b8; }
+        .search-input { width: 100%; border: 1px solid #cbd5e1; padding: 10px 10px 10px 35px; border-radius: 8px; font-size: 14px; transition: 0.2s; }
+        .search-input:focus { border-color: var(--dhis2-blue); ring: 2px solid #bfdbfe; outline: none; }
+
+        /* Scrollbar style */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+
+<div class="header-dhis2 h-[48px] flex items-center justify-between px-6 text-white">
+    <div class="flex items-center gap-3">
+       
+        <span class="font-semibold text-sm tracking-wide">DESIGNER DE FORMULAIRE <span class="opacity-50 mx-2">|</span> <span class="font-normal text-blue-100">Maintenance</span></span>
+    </div>
+    <div class="text-xs opacity-80 italic">
+        <i class="fas fa-info-circle mr-1"></i> Cliquez sur un élément pour l'insérer
+    </div>
+</div>
+
+<div class="main-container flex overflow-hidden">
+    <!-- SIDEBAR -->
+    <div class="left-bar flex flex-col shadow-xl">
+        <div class="search-container">
+            <i class="fas fa-search"></i>
+            <input type="text" id="filterInput" onkeyup="filterElements()" placeholder="Rechercher un élément..." class="search-input">
+        </div>
+
+        <div class="flex border-b">
+            <button class="tab-btn active" onclick="switchTab('de')">Data Elements</button>
+            <button class="tab-btn" onclick="switchTab('ind')">Indicateurs</button>
+        </div>
+
+        <div id="elementsList" class="flex-grow overflow-y-auto bg-white">
+            <!-- Section Data Elements -->
+            <div id="section-de">
+                {% for s in dataset.m_dataelements.all %}
+                <div class="element-item" onclick="insertDE('{{s.id}}', '{{s|escapejs}}')">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="variable-tag tag-de">Input</span>
+                        <span class="text-[9px] font-mono text-gray-400">#{{s.id}}</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-700 leading-tight block">{{s}}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Section Indicateurs -->
+            <div id="section-ind" class="hidden">
+                {% for i in dataset.m_indicateurs.all %}
+                <div class="element-item" onclick="insertIND('{{i.id}}', '{{i|escapejs}}')">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="variable-tag tag-ind">Calculé</span>
+                        <span class="text-[9px] font-mono text-gray-400">#{{i.id}}</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-700 leading-tight block">{{i}}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN EDITOR -->
+    <div class="flex-grow p-6 overflow-y-auto">
+        <form method="POST" action="/save_gestion/" id="datasetForm" class="max-w-5xl mx-auto">
+            {% csrf_token %}
+            <input type="hidden" name="form_design" id="form_design">
+            <input type="hidden" name="generator" value="d_s_1">
+            <input type="hidden" name="edit_or_create" value="{% if dataset == None %}c{% else %}e{% endif %}">
+            <input type="hidden" name="edit_id" value="{{dataset.id}}">
+            <input type="hidden" name="matrice">
+
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-2xl font-extrabold text-slate-800">{{dataset}}</h1>
+                    <p class="text-sm text-slate-500 mt-1">Édition du canevas HTML dynamique</p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="button" onclick="tinymce.activeEditor.execCommand('mcePreview')" class="px-4 py-2 bg-white border border-slate-300 text-slate-600 rounded-lg font-semibold text-sm hover:bg-slate-50 transition">
+                        <i class="fas fa-eye mr-2"></i> Prévisualiser
+                    </button>
+                    <button type="submit" onclick="prepareSubmit()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                        <i class="fas fa-save mr-2"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+
+            <div class="editor-container">
+                <textarea id="mainEditor">{{ dataset.m_formulaire|safe }}</textarea>
+            </div>
+            
+            <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-3">
+                <i class="fas fa-code text-blue-400"></i>
+                <p class="text-[12px] text-blue-700">
+                    <strong>Conseil technique :</strong> Les champs de saisie générés utilisent le préfixe <code class="bg-blue-100 px-1 rounded">D0elt</code> pour la liaison avec la base de données.
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Gestion des Onglets
+    function switchTab(type) {
+        $('.tab-btn').removeClass('active');
+        $(`.tab-btn:contains(${type === 'de' ? 'Data' : 'Indicateurs'})`).addClass('active');
+        
+        if(type === 'de') {
+            $('#section-de').show();
+            $('#section-ind').hide();
+        } else {
+            $('#section-de').hide();
+            $('#section-ind').show();
+        }
+    }
+
+    tinymce.init({
+        selector: '#mainEditor',
+        height: '65vh',
+        plugins: 'table advlist autolink lists link charmap preview code visualblocks wordcount paste fullpage',
+        toolbar: 'undo redo | formatselect | bold italic forecolor | alignleft aligncenter alignright | table bullist numlist | code preview',
+        menubar: false,
+        branding: false,
+        content_style: `
+            body { font-family: 'Inter', Arial, sans-serif; font-size: 14px; padding: 20px; color: #334155; }
+            table { border-collapse: collapse; width: 100%; border: 2px solid #cbd5e1 !important; }
+            td, th { border: 1px solid #cbd5e1; padding: 12px; }
+            th { background-color: #f8fafc; font-weight: bold; }
+            .form-control { 
+                border: 2px solid #276696 !important; 
+                background-color: #f0f7ff !important;
+                color: #276696 !important;
+                font-weight: bold; text-align: center; width: 80px; padding: 4px; border-radius: 4px;
+            }
+            .indicSelector {
+                display: inline-block; background-color: #fff7ed; border: 1px dashed #f97316;
+                color: #c2410c; padding: 2px 10px; font-weight: bold; min-width: 60px;
+                text-align: center; border-radius: 4px;
+            }
+        `
+    });
+
+    function insertDE(id, name) {
+        const html = `<input class="form-control" name="D0elt${id}" type="number" title="${name}" value="0" />&nbsp;`;
+        tinymce.activeEditor.insertContent(html);
+    }
+
+    function insertIND(id, name) {
+        const html = `<div class="indicSelector" data-id="${id}" title="${name}" contenteditable="false">0.00</div>&nbsp;`;
+        tinymce.activeEditor.insertContent(html);
+    }
+
+    function filterElements() {
+        const filter = document.getElementById('filterInput').value.toUpperCase();
+        $('.element-item').each(function() {
+            const text = $(this).text().toUpperCase();
+            $(this).toggle(text.indexOf(filter) > -1);
+        });
+    }
+
+    function prepareSubmit() {
+        document.getElementById('form_design').value = tinymce.activeEditor.getContent();
+    }
+</script>
+
+</body>
+</html>

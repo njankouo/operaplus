@@ -1,0 +1,60 @@
+name: iacs-operaplus
+
+services:
+
+  web:
+    build: .
+    container_name: iacs-operaplus-app-web
+    env_file:
+      - .env
+    volumes:
+      - static_iacs_operaplus:/app/static
+      - media_iacs_operaplus:/app/media
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - global_proxy
+      - iacs_operaplus_network
+
+  db:
+    image: postgres:15
+    container_name: operaplus-iacs-app-db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_data_iacs_operaplus:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iacs_operaplus_network
+
+  redis:
+    image: redis:7
+    container_name: iacs-operaplus-redis
+    restart: unless-stopped
+    networks:
+      - iacs_operaplus_network
+
+networks:
+  global_proxy:
+    external: true
+
+  iacs_operaplus_network:
+    driver: bridge
+
+volumes:
+  static_iacs_operaplus:
+  media_iacs_operaplus:
+  db_data_iacs_operaplus:

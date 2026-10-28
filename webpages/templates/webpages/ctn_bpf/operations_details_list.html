@@ -1,0 +1,166 @@
+{% extends './entities.html' %}
+{% load static %}
+
+
+
+{% block add_title %}
+{{actual_institution.operations_name}} : {{operation}}
+{% endblock %}
+
+{% block search_filters %}
+
+{% endblock %}
+
+{% block table %}
+
+
+<table class="table">
+  <thead class="thead-dark">
+    <tr>
+
+      <th scope="col">Frequence</th>
+      <th scope="col">Nombre de suivi</th>
+      <th scope="col">date de suivi </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+
+      <td>{{operation.frequence}}</td>
+      <td>{{operation.suivi}}</td>
+      <td>{{operation.date_suivi}}</td>
+    </tr>
+
+  </tbody>
+</table>
+<div class="d-flex flex-wrap text-secondary">
+	{% for s in operation.tache.sup_hierachie %}
+	<div class="px-1"> <a class='tree_link' data-id="{{s.id}}" href="#"><small> {{s}} </small> <small class="text-secondary"> > </small> </a> </div>
+	{% endfor %}
+	<div class="px-1"> <a class='' data-id="-1" href="/taches/{{operation.tache.id}}/"><small> {{operation.tache}} </small> <small class="text-secondary"> > </small> </a> </div>
+
+</div>
+
+<div>
+	<div class="h4 mb-3 text-success">{{actual_institution.operations_name}}</div>
+
+	<div class="h2">
+		{{operation}}
+	</div>
+
+	<div class="row">
+		{%for operation_heritages in operation_heritage%}
+		<div class="col-md-4 col-xs-6 col-sm-3">
+
+
+	<div class="card text-center">
+		<div class="card-header">
+			Date Debut {{operation_heritages.date_debut}}
+		</div>
+		<div class="card-body">
+		<h5 class="card-title text-danger" style="font-weight: bold;">
+			{%if operation_heritages.etat == '0'%}
+			Non Soumise
+			{%elif operation_heritages.etat == '1'%}
+			Soumise
+			{%elif operation_heritages.etat == '2'%}
+			Valid&eacute;
+			{%endif%}
+		</h5>
+		  <p class="card-text">{{operation_heritages.nom}}</p>
+		  <!-- <a href="#" class="btn btn-primary">Responsabilit&eacute;</a> -->
+		  <div class="btn-group dropstart">
+			<button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				Responsabilit&eacute;
+			</button>
+			<ul class="dropdown-menu">
+			  <li>
+
+				<button type="button" class="btn btn-label-primary text-nowrap d-inline-flex position-relative me-4 dropdown-item">
+					{{operation_heritages.personnel}}
+					<span class="position-absolute top-0 start-100 translate-middle badge badge-center rounded-pill bg-primary text-white">R</span>
+				  </button>
+			</li>
+			<hr class="dropdown-divider">
+			  <li>
+				<button type="button" class="btn btn-label-primary text-nowrap d-inline-flex position-relative me-4 dropdown-item">
+					{{operation_heritages.accountable}}
+					<span class="position-absolute top-0 start-100 translate-middle badge badge-center rounded-pill bg-primary text-white">A</span>
+				  </button>
+			</li>
+			<hr class="dropdown-divider">
+			  <li>
+				<button type="button" class="btn btn-label-primary text-nowrap d-inline-flex position-relative me-4 dropdown-item">
+					{{operation_heritages.consulted}}
+					<span class="position-absolute top-0 start-100 translate-middle badge badge-center rounded-pill bg-primary text-white">C</span>
+				  </button>
+			</li>
+			  <li>
+				<hr class="dropdown-divider">
+			  </li>
+			  <li>
+				<button type="button" class="btn btn-label-primary text-nowrap d-inline-flex position-relative me-4 dropdown-item">
+					{{operation_heritages.informed}}
+					<span class="position-absolute top-0 start-100 translate-middle badge badge-center rounded-pill bg-primary text-white">I</span>
+				  </button>
+			  </li>
+			</ul>
+		  </div>
+		</div>
+		<div class="card-footer text-muted">
+		  Date Fin {{operation_heritages.date_echeance}}
+		</div>
+	  </div>
+	</div>
+{%endfor%}
+
+</div>
+
+
+	<div>
+		<h5 style="font-weight:bold">Liste des Rapports produits</h5>
+
+		<div class="card">
+			<div class="card-body">
+				<table class="table table-responsive">
+					<thead>
+					<tr>
+						<th>
+						<th> Date enregistree </th>
+						<th> Soumis par </th>
+						{% for th in operation.tache.aggregates2 %}
+			            <th class="sorting text-primary" tabindex="0" aria-controls="tache"  aria-label="Tache: activate to sort column ascending" style=" ">
+			                 {{th}}
+			            </th>
+		            	{% endfor %}
+		        	</tr>
+		        	</thead>
+		            <tbody>
+					{% for line in operation.get_operation_details %}
+					<tr>
+						<td>{% if line.etat == '2' %}<i class="fas fa-check text-success"></i>{% else %}<i class="fas fa-exclamation-triangle text-danger"></i>{% endif %}</td>
+						<td>{{line.date_created}}</td>
+						<td>{{line.personnel}}</td>
+							{% for val in line.values_spl2 %}
+                            <td class="t_cell value_liner">{{val}}</td>
+                            {% endfor %}
+                     </tr>
+					{% empty %}
+					</tbody>
+				</table>
+
+
+			</div>
+			<div>
+				<div class="alert alert-danger alert-dismissible" role="alert">
+					<h4 class="alert-heading d-flex align-items-center"><span class="alert-icon rounded-circle"><i class="bx bx-coffee"></i></span>Alert :)</h4>
+					<hr>
+					<p class="mb-0">Aucun  Rapport Pour Le Moment.</p>
+					<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
+					</button>
+				  </div>
+			{% endfor %}
+		</div>
+	</div>
+</div>
+{% endblock %}

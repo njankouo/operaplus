@@ -1,0 +1,362 @@
+<style>
+	.table {  
+		border-collapse: separate;  
+		border-spacing: 0 1rem; /* Espacement entre les lignes */  
+	}  
+	
+	.table th, .table td {  
+		vertical-align: middle; /* Centrer verticalement */  
+	}  
+	
+	.badge {  
+		transition: background-color 0.3s ease;  
+	}  
+	
+	.badge-primary {  
+		background-color: #007bff;  
+	}  
+	
+	.badge-primary:hover {  
+		background-color: #0056b3; /* Couleur au survol */  
+	}  
+	
+	.badge-warning {  
+		background-color: #ffc107;  
+	}  
+	
+	.badge-warning:hover {  
+		background-color: #e0a800; /* Couleur au survol */  
+	}  
+	
+	.dataValues {  
+		display: none; /* Masquer par défaut */  
+		transition: max-height 0.3s ease, opacity 0.3s ease;  
+	}  
+	
+	/* Ajouter une transition lors de l'affichage */  
+	.dataValues.show {  
+		display: block; /* Afficher avec une animation */  
+	}
+</style>
+{% extends './data_form.html' %}
+{% load static %}
+
+
+{% block table %}
+	<!-- Rappeller les Infos -->
+	<!-- Mettre les Structures Menu Gauche -->
+	<!-- Rattacher une Structure a une Autre ex : Rg -> District -> FOSA -->
+
+	<div class="col-lg-12">
+	
+		<!--  -->
+		<div class="card">
+			<div class="card-body">
+		<section id="block2">
+			<caption> <b>Valeurs Renseignees</b> </caption>
+			<table class="table table-responsive table-striped table-hover">  
+				<thead class="thead-light">  
+					<tr>  
+						<th>Date de Saisie</th>  
+						<th>Période de Validation</th>  
+						<th>Sous-Période de Validation</th>  
+						<th>Renseigné par</th>  
+						<th>Structures concernées</th>  
+						<th>Éléments de Données</th>  
+					</tr>  
+				</thead>  
+				<tbody>  
+					{% for l in pages_o %}  
+					<tr>  
+						<td>{{ l.m_date_creation }}</td>  
+						<td>{{ l.m_period_value }}</td>  
+						<td>{{ l.m_sub_period_value }}</td>  
+						<td>{{ l.m_user }}</td>  
+						<td>  
+							<div class="d-flex flex-wrap">  
+								{% for elt in l.m_structures.all %}  
+									<div class="px-2">  
+										<small class="badge badge-warning">{{ elt }}</small>  
+									</div>  
+								{% empty %}  
+									<small class="badge badge-secondary">Aucune structure</small>  
+								{% endfor %}  
+							</div>  
+						</td>  
+						<td>  
+							<div class="d-flex align-items-center">  
+								<span class="toggleChevron" style="cursor: pointer;" aria-expanded="false">  
+									<i class="fa fa-chevron-down"></i>  
+								</span>  
+								<div class="dataValues">  
+									<div class="d-flex flex-wrap">  
+										{% for elt in l.elt_values %}  
+											{% if elt.m_value is not None %}  
+												<div class="px-2">  
+													<small class="badge badge-primary">{{ elt.m_dataelement }}</small>  
+												</div>  
+												<div class="pl-2">  
+													<small class="badge">{{ elt.m_value }}</small>  
+												</div>  
+											{% endif %}  
+										{% empty %}  
+											<small>Aucun élément de données enregistré</small>  
+										{% endfor %}  
+									</div>  
+								</div>  
+							</div>  
+						</td>  
+					</tr>  
+					{% empty %}  
+					<tr>  
+						<td colspan="6" class="text-center">Aucune valeur enregistrée</td>  
+					</tr>  
+					{% endfor %}  
+				</tbody>  
+			</table>
+			<div>
+				<caption> <b>Taux de Completude</b> </caption>
+				<table class="table table-responsive">
+					<thead>
+					<tr>
+						<td>Periode</td>
+						<td>Sous-Periode</td>
+						<td>Structures assignees</td>
+						<td>Structures effectives</td>
+						<td class="text-success">Taux de Completude</td>
+					</tr>
+					</thead>
+				</table>
+			</div>
+		</section>
+	</div>
+</div>
+	</div>
+{% endblock %}
+
+
+{% block add_script %}
+
+<script type="text/javascript">
+	const reloadButton = document.getElementById('reloadButton'); // Get the button element
+reloadButton.addEventListener('click', reloadPage); // Add click event listener
+
+// Function to reload the page
+function reloadPage() {
+    window.location.reload(); // Reload the current page
+}
+
+</script>
+<script>
+	function LaunchFormData(indi_id, Idiv = "dF_Div", callback) {
+		$.ajax({
+			url: '/ajax_form/',
+			data: {
+				'id_dataset': indi_id,
+			},
+			dataType: 'json',
+			success: function(data) {
+				dF_Div = document.getElementById(Idiv);
+				tmp = "<div id='saisie_period' class='my-2 text-primary' style='font-weight:bold;display:none'> Periode de Saisie </div>"
+				tmp2 = "<div class='my-2 text-danger' style='font-weight:bold'> structure concernes </div> <div id='saisie_structures' style='border-bottom:1px solid #aaa;' Class='py-2 d-flex'>"
+				for (var i = 0; i < data.structures.length; i++) {
+					tmp2 += "<div class='px-2'><input type='radio' name='struc_selec' value='" + data.structures_id[i] + "' class='mr-2'>" + data.structures[i] + " </div>"
+				}
+				tmp2 += "</div>";
+	
+				tmp3 = " <div class='pt-2'>";
+				tmp3 += data.form;
+				tmp3 += data.m_start_date;
+				tmp3 += "</div>";
+	
+				dF_Div.innerHTML = tmp + tmp2 + tmp3
+	
+				// Appel de la fonction de rappel
+				if (typeof callback === 'function') {
+					callback();
+				}
+			},
+			error: function(data) {
+	
+			}
+		});
+	}
+	
+	
+	function initIndic(){
+    console.log("Fonction initIndic() appelée");
+
+    indicSelector = document.getElementsByClassName("indicSelector");
+    indic_value = "";
+    for (var i = 0; i < indicSelector.length; i++) {
+        indic_value += indicSelector[i].getAttribute("data-id") + "#";
+    }
+
+    $.ajax({
+        url: '/get_elements/',
+        data: {
+            'dataset': {{element.id}},
+            'type_dataset': '0',
+            'other': 'dI_formula',
+            'institution': {{actual_institution.id}},
+            'value': indic_value
+        },
+        success: function(data) {
+
+
+
+			/****CETTE FONCTION A POUR BUT DEVALUER LA FORMULE RECUPERER EN BD ET BIEN LES FORMATER POUR FAIRE DES CALCULS****/
+
+
+	function check_selector(evalu = false) {
+    var indicatorValues = {};
+
+    for (var i = 0; i < indicSelector.length; i++) {
+        indicSelector[i].textContent = data.formulas[i];
+        var indicatorId = indicSelector[i].getAttribute("data-id");
+        tmp_elts = data.data_elts.split("#");
+        elts = {};
+
+        for (var j = 0; j < tmp_elts.length; j++) {
+            tp = document.getElementsByName("D0elt" + tmp_elts[j] + "");
+            if (tp.length > 0) {
+                elts[tmp_elts[j]] = tp[0].value; // Stocker les valeurs dans un objet
+            }
+        }
+
+        // Afficher les valeurs extraites
+        console.log("Valeurs extraites de data.data_elts :", elts);
+
+        // Remplacer les variables dans la formule
+        for (var j = 0; j < tmp_elts.length; j++) {
+            indicSelector[i].textContent = indicSelector[i].textContent.replace("$" + tmp_elts[j] + "$", elts[tmp_elts[j]]);
+        }
+
+        if (evalu) {
+            try {
+                console.log("Évaluation de la formule :", indicSelector[i].textContent); // Log de la formule
+                var formula = new Function("return " + indicSelector[i].textContent);
+                indicSelector[i].textContent = formula();
+                var indicatorValue = indicSelector[i].textContent;
+                indicatorValues[indicatorId] = indicatorValue;
+            } catch (error) {
+                console.error("Erreur lors du calcul de l'indicateur :", error);
+            }
+        }
+    }
+
+    // Stocker les valeurs et les identifiants dans les champs cachés du formulaire
+    document.getElementById("indicator-values").value = JSON.stringify(indicatorValues);
+    var indicatorIds = Object.keys(indicatorValues);
+    document.getElementById("indicator-ids").value = JSON.stringify(indicatorIds);
+
+    return indicatorValues;
+}
+
+
+            check_selector(true);
+            var variables_selector = document.getElementsByClassName("variableSelector");
+            for (var i = 0; i < variables_selector.length; i++) {
+                inputs = variables_selector[i].getElementsByTagName("input")[0];
+                inputs.onchange = function() {
+                    try {
+                        check_selector(true);
+                    } catch {
+                        check_selector();
+                    }
+                }
+            }
+        }
+    });
+}
+
+	
+		function startF(block, element_id, div, b1, b2) {
+			LaunchFormData(element_id, div, function() {
+				// Cette fonction de rappel sera appelée une fois que les données auront été chargées
+				dS = parseInt(block.getAttribute("data-show"))
+				if (dS == 1) {
+					$("#" + b2).slideUp('slow', function() {
+						$("#" + b1).slideDown('slow')
+					})
+					block.textContent = "Donnees conservees"
+					initIndic()
+				} else {
+					$("#" + b1).slideUp('slow', function() {
+						$("#" + b2).slideDown('slow')
+					})
+					block.textContent = "Renseigner Valeurs"
+				}
+				block.setAttribute("data-show", (1 - dS))
+			});
+		}
+		
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+	$(document).ready(function() {
+		$('#annee').on('change', function() {
+			var selectedId = $(this).val();
+			
+			$.ajax({
+				url: '/search_period_id/',  // L'URL correspondant à la vue Django
+				method: 'GET',
+				data: { annee: selectedId },
+				success: function(data) {
+					var selectInformations = $('#period');
+					selectInformations.empty(); // Effacer les anciennes options
+					
+					// Ajouter les nouvelles options basées sur les données récupérées via AJAX
+					data.forEach(function(period_id) {
+						selectInformations.append($('<option>', {
+							value: period_id.id,
+							text: period_id.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
+						}));
+					});
+				},
+				error: function(xhr, status, error) {
+					console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+				}
+			});
+		});
+	});
+	</script>
+
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  {% if message.tags == 'success' %}
+
+<script type="text/javascript">
+    Swal.fire({
+  position: "top-end",
+  icon: "success",
+  title: "{{message}}",
+  showConfirmButton: false,
+  timer: 2000
+});
+</script>
+{%endif%}
+{%endfor%}
+<script>  
+    document.querySelectorAll('.toggleChevron').forEach(function(chevron) {  
+        chevron.addEventListener('click', function() {  
+            const dataValues = this.closest('td').querySelector('.dataValues');  
+            const expanded = this.getAttribute('aria-expanded') === 'true';  
+
+            if (expanded) {  
+                dataValues.classList.remove('show');  
+                this.setAttribute('aria-expanded', 'false');  
+                this.querySelector('i').classList.remove('fa-chevron-up');  
+                this.querySelector('i').classList.add('fa-chevron-down');  
+            } else {  
+                dataValues.classList.add('show');  
+                this.setAttribute('aria-expanded', 'true');  
+                this.querySelector('i').classList.remove('fa-chevron-down');  
+                this.querySelector('i').classList.add('fa-chevron-up');  
+            }  
+        });  
+    });  
+</script>
+
+{% endblock %}

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activation Élite — ImpactPulse Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome (Icônes) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- AlpineJS -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        /* Couleurs de marque dynamiques */
+        .brand-om-border { border-color: #FF6600 !important; }
+        .brand-om-bg { background-color: rgba(255, 102, 0, 0.05) !important; }
+        .brand-om-text { color: #FF6600 !important; }
+
+        .brand-mtn-border { border-color: #FFCC00 !important; }
+        .brand-mtn-bg { background-color: rgba(255, 204, 0, 0.05) !important; }
+        .brand-mtn-text { color: #E6B800 !important; }
+
+        /* Gestion du fond pour le Globe 3D avec des tons clairs et professionnels */
+        body#globe-3d-container {
+            display: block !important;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden; 
+            background-color: #f1f5f9; 
+        }
+
+        #page-content {
+            height: 100vh;
+            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        #page-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        #page-content::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        #page-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body id="globe-3d-container" class="font-sans antialiased text-slate-800">
+
+    <div id="page-content" class="selection:bg-blue-500/20">
+        <div class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+            
+            <!-- Conteneur principal -->
+            <div id="mainCard" class="w-full max-w-5xl bg-white rounded-3xl border border-slate-200/80 shadow-2xl shadow-slate-300/60 p-6 sm:p-8 space-y-8 transition-all duration-500">
+                
+                <!-- ZONE DE NOTIFICATION FLASH -->
+                <div id="notificationAlert" class="hidden transform scale-95 opacity-0 transition-all duration-300 p-4 rounded-xl text-center text-sm font-semibold tracking-wide flex items-center justify-center gap-3 shadow-sm border">
+                    <span id="alertIcon"></span>
+                    <span id="alertText"></span>
+                </div>
+                
+                <!-- En-tête -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="flex h-2 w-2 relative">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                            </span>
+                            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">Passerelle de paiement sécurisée</span>
+                        </div>
+                        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
+                            Activation de l'abonnement
+                        </h1>
+                        <p class="text-slate-500 text-xs mt-0.5">
+                            Finalisez votre accès pour <span class="text-blue-600 font-semibold">{{ package.nom }}</span>
+                        </p>
+                    </div>
+                    
+                    <div class="text-left sm:text-right bg-slate-50 border border-slate-200/60 p-3 rounded-2xl min-w-[170px] shadow-inner">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Montant total</span>
+                        <span class="text-3xl font-black tabular-nums text-slate-900 tracking-tight">
+                            {{ package.prix|floatformat:"0" }} <span class="text-xs font-bold text-slate-400 ml-0.5">FCFA</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- BLOC EN VEDETTE : Sécurité du transfert -->
+                <div class="bg-gradient-to-br from-blue-50/60 to-indigo-50/20 border border-blue-100/70 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="space-y-1.5">
+                        <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest block">Consignes réglementaires</span>
+                        <p class="text-xs text-slate-600 max-w-xl leading-relaxed">
+                            Veuillez envoyer le montant exact mentionné via votre application mobile vers le compte du bénéficiaire agréé ci-contre avant de soumettre ce reçu.
+                        </p>
+                    </div>
+                    
+                    <!-- Badge de validation du bénéficiaire (Couleur dynamique en JS) -->
+                    <div id="beneficiaryBadge" class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 min-w-[280px] md:min-w-[320px] shadow-sm transition-all duration-300">
+                        <div id="beneficiaryIconWrapper" class="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm transition-all duration-300">
+                            <i id="beneficiaryIcon" class="fa-solid fa-shield-checkmark text-lg"></i>
+                        </div>
+                        <div class="space-y-0.5 flex-1">
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Compte Récepteur Certifié</span>
+                            <span id="beneficiaryName" class="text-xs font-bold text-slate-800 block transition-colors">Sélectionnez un mode</span>
+                            <span id="beneficiaryPhone" class="text-sm font-extrabold text-blue-600 tracking-wide block tabular-nums transition-colors cursor-pointer hover:underline">
+                                -- -- -- -- --
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulaire -->
+                <form id="activationForm" method="POST" action="" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+                    {% csrf_token %}
+                   
+                    <!-- ÉLÉMENT 1 : Moyens de paiement avec Logos de marque -->
+                <div class="space-y-2 lg:col-span-12">
+    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block pl-1">Choisir votre opérateur</span>
+    
+    <div class="flex flex-wrap items-center gap-y-4">
+        {% for m in mode_paiement %}
+            <label class="relative cursor-pointer group flex items-center">
+                <input type="radio" name="pay_method" value="{{ m.id }}" 
+                       data-name="{{ m.beneficiaire_nom|default:'IMPACTPULSE PRO SAS' }}" 
+                       data-phone="{{ m.numero|default:'Compte officiel' }}"
+                       data-label="{{ m.nom }}"
+                       class="peer sr-only" required onchange="updateBeneficiaryDetails(this)">
+                
+                <div class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl bg-white transition-all duration-200
+                            peer-checked:border-blue-600 peer-checked:ring-1 peer-checked:ring-blue-600">
+                    
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-black text-[9px] shadow-sm border overflow-hidden
+                                {% if 'orange' in m.nom|lower %}bg-[#FF6600] text-white
+                                {% elif 'mtn' in m.nom|lower %}bg-[#FFCC00] text-[#002C6C]
+                                {% else %}bg-slate-800 text-white{% endif %}">
+                        {% if 'orange' in m.nom|lower %}OM
+                        {% elif 'mtn' in m.nom|lower %}MTN
+                        {% else %}<i class="fa-solid fa-wallet"></i>{% endif %}
+                    </div>
+                    
+                    <div class="flex flex-col">
+                        <span class="text-[11px] font-bold text-slate-700 leading-none">{{ m.nom }}</span>
+                        <span class="text-[10px] font-mono text-slate-400">{{ m.numero }}</span>
+                    </div>
+                </div>
+            </label>
+
+            {% if not forloop.last %}
+                <div class="hidden sm:block h-10 w-px bg-slate-300 mx-4 self-center"></div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+                   
+                    <!-- ÉLÉMENT 3 : Upload Justificatif -->
+                    <div x-data="{ fileName: '' }" class="lg:col-span-2">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest block pl-1 mb-2">Preuve de transfert</span>
+                        <label class="h-20 flex items-center justify-center gap-3 cursor-pointer group/file px-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200">
+                            <input type="file" name="proof_file" class="hidden" @change="fileName = $event.target.files[0].name" required>
+                            <div class="min-w-[32px] h-8 flex items-center justify-center rounded-lg bg-blue-50 border border-blue-100 transition-all">
+                                <i class="fa-solid fa-receipt text-xs text-blue-600 group-hover/file:scale-110 transition-transform"></i>
+                            </div>
+                            <div class="flex flex-col overflow-hidden min-w-0">
+                                <span class="text-[10px] font-bold text-slate-700 uppercase tracking-widest truncate">Capture</span>
+                                <span class="text-[11px] text-slate-400 truncate mt-0.5 font-medium" x-text="fileName || 'Joindre le reçu'"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <input type="hidden" name="project_id" value="{{ project_id }}">
+                    <!-- ÉLÉMENT 4 : Bouton Soumettre Haute Visibilité -->
+                    <div class="relative group/btn lg:col-span-2">
+                        <button type="submit" id="submitBtn" class="w-full h-20 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-[0.12em] rounded-xl active:scale-[0.99] transition-all duration-150 flex items-center justify-center shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span id="btnText">Activer mon accès</span>
+                        </button>
+
+                       
+                    </div>
+
+ <input type="text" name="personnel_id" value="{{request.user.personnel.id}}" required>
+                    <input type="text" name="package_id" value="{{package.id}}" required>
+                 
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logique JavaScript intégrée -->
+    <script>
+    // Met à jour la boîte d'affichage du bénéficiaire selon la marque choisie
+   function updateBeneficiaryDetails(radioElement) {
+    const name = radioElement.getAttribute('data-name');
+    const phone = radioElement.getAttribute('data-phone');
+    const label = radioElement.getAttribute('data-label').toLowerCase();
+    
+    const nameContainer = document.getElementById('beneficiaryName');
+    const phoneContainer = document.getElementById('beneficiaryPhone');
+    const badge = document.getElementById('beneficiaryBadge');
+    const iconWrapper = document.getElementById('beneficiaryIconWrapper');
+    const icon = document.getElementById('beneficiaryIcon');
+    
+    // Reset des styles de marque
+    badge.className = "bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 min-w-[280px] md:min-w-[320px] shadow-sm transition-all duration-300";
+    
+    // Application des couleurs selon l'opérateur
+    if (label.includes('orange')) {
+        badge.classList.add('brand-om-border', 'brand-om-bg');
+        iconWrapper.className = "w-10 h-10 rounded-lg flex items-center justify-center shadow-sm bg-black border-black text-[#FF6600]";
+        icon.className = "fa-solid fa-money-bill-transfer text-md";
+    } else if (label.includes('mtn') || label.includes('momo')) {
+        badge.classList.add('brand-mtn-border', 'brand-mtn-bg');
+        iconWrapper.className = "w-10 h-10 rounded-lg flex items-center justify-center shadow-sm bg-[#FFCC00] border-[#FFCC00] text-[#002C6C]";
+        icon.className = "fa-solid fa-building-columns text-md";
+    }
+
+    // Animation de transition ultra-propre
+    nameContainer.style.opacity = 0;
+    phoneContainer.style.opacity = 0;
+    
+    setTimeout(() => {
+        nameContainer.innerText = name;
+        phoneContainer.innerText = numero; // <--- C'est ici que le numéro est injecté
+        nameContainer.style.opacity = 1;
+        phoneContainer.style.opacity = 1;
+    }, 150);
+}
+
+    // Auto-sélection au chargement
+    document.addEventListener("DOMContentLoaded", function() {
+        const firstRadio = document.querySelector('input[name="pay_method"]');
+        if (firstRadio) {
+            firstRadio.checked = true;
+            updateBeneficiaryDetails(firstRadio);
+        }
+    });
+
+    let isSubmitting = false;
+
+    document.getElementById('activationForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        if (isSubmitting) return;
+        isSubmitting = true;
+
+        const form = this;
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const mainCard = document.getElementById('mainCard');
+        const alertBox = document.getElementById('notificationAlert');
+        const alertText = document.getElementById('alertText');
+        const alertIcon = document.getElementById('alertIcon');
+
+        submitBtn.disabled = true;
+        btnText.innerHTML = `
+            <svg class="animate-spin h-4 w-4 text-white inline-block mr-2" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>Sécurisation...`;
+
+        alertBox.className = "hidden transform scale-95 opacity-0 transition-all duration-300 p-4 rounded-xl text-center text-sm font-semibold tracking-wide flex items-center justify-center gap-3 shadow-sm border";
+
+        const formData = new FormData(form);
+
+        fetch('/active-package/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Erreur réseau');
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                mainCard.className = "w-full max-w-5xl bg-white rounded-3xl border border-emerald-400 shadow-[0_0_40px_rgba(16,185,129,0.15)] p-6 sm:p-8 space-y-8 transition-all duration-500";
+                
+                alertIcon.innerHTML = '<i class="fa-solid fa-circle-check text-lg"></i>';
+                alertText.innerText = data.message || "Reçu envoyé avec succès. Traitement sécurisé en cours.";
+                alertBox.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    alertBox.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200', 'scale-100', 'opacity-100');
+                }, 50);
+
+                submitBtn.className = "w-full h-20 bg-emerald-600 text-white font-bold text-xs uppercase tracking-[0.12em] rounded-xl cursor-not-allowed flex items-center justify-center shadow-lg";
+                btnText.innerHTML = '<i class="fa-solid fa-lock mr-2"></i> Document Traité';
+
+                Array.from(form.elements).forEach(element => element.disabled = true);
+
+                if (data.redirect_url) {
+                    setTimeout(() => { window.location.href = data.redirect_url; }, 2200);
+                }
+            } else {
+                displayError(mainCard, alertBox, alertIcon, alertText, data.message);
+                isSubmitting = false;
+                submitBtn.disabled = false;
+                btnText.innerText = "Activer mon accès";
+            }
+        })
+        .catch(error => {
+            displayError(mainCard, alertBox, alertIcon, alertText, "Le serveur sécurisé n'a pas répondu. Veuillez réessayer.");
+            isSubmitting = false;
+            submitBtn.disabled = false;
+            btnText.innerText = "Activer mon accès";
+        });
+    });
+
+    function displayError(mainCard, alertBox, alertIcon, alertText, message) {
+        mainCard.className = "w-full max-w-5xl bg-white rounded-3xl border border-rose-400 shadow-[0_0_40px_rgba(244,63,94,0.15)] p-6 sm:p-8 space-y-8 transition-all duration-500";
+        alertIcon.innerHTML = '<i class="fa-solid fa-shield-exclamation text-lg"></i>';
+        alertText.innerText = message;
+        alertBox.classList.remove('hidden');
+        
+        setTimeout(() => {
+            alertBox.classList.add('bg-rose-50', 'text-rose-700', 'border-rose-200', 'scale-100', 'opacity-100');
+        }, 50);
+    }
+    </script>
+</body>
+</html>

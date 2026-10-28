@@ -1,0 +1,18 @@
+ {%for op in nature%}
+                                      <tr id="op-{{ op.id }}">
+
+                                        <td>{{op.intitule}}</td>
+                                        <td>{{op.description}}</td>
+
+                                        <td>
+                                          <!-- <a href="/edit_op/{{op.id  }}/" class="edit" ><i class="bx bx-edit" data-toggle="tooltip" title="Edit">&#xE254;</i></a>
+                                          <a href="/delete_nature/{{ op.id }}/" class="delete" ><i class="bx bx-trash" data-toggle="tooltip" title="Delete">&#xE872;</i></a> -->
+
+
+                                            <button class="btn btn text-danger" hx-delete="/delete_nature/{{ op.id }}/" hx-confirm="Voulez Vous Vraiment Supprimer?" hx-target="#op-{{ op.id }}" hx-swap="outerHTML swap:0.5s">Supprimer</button>
+                                            <a class="btn btn text-primary" href="/edit_natures/{{op.id  }}/">Modifier</a>
+                                              
+                                        </td>
+                                      </tr>
+
+                                        {%endfor%}

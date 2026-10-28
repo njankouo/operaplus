@@ -1,0 +1,113 @@
+{% extends './index.html' %}
+
+{% block main %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    
+    <!-- En-tête de page ERP de haut niveau -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between pb-6 border-b border-slate-200/80 gap-4">
+        <div>
+            <div class="flex items-center space-x-2 text-xs font-mono font-bold text-indigo-600 uppercase tracking-wider mb-2">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+                </span>
+                <span>Registre des flux & transactions</span>
+            </div>
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Validation des transactions</h1>
+            {% if transaction %}
+                <p class="text-xs text-slate-500 mt-1.5 font-medium">
+                    Opération concernée : <span class="font-bold text-indigo-600">{{ transaction.0.operation.nom }}</span>
+                </p>
+            {% endif %}
+        </div>
+        
+        <div class="flex items-center space-x-3 bg-white px-4 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+            <div class="text-right">
+                <p class="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Statut global</p>
+                <p class="text-sm font-mono font-extrabold text-slate-800">{{ transaction|length }} Élément(s) en attente</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grille des Transactions (Design Cartes ERP Avancé) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for item in transaction %}
+        <div class="relative bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-xl hover:border-indigo-400/80 transition-all duration-300 flex flex-col group overflow-hidden">
+            
+            <!-- Liseré supérieur lumineux -->
+            <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500 to-amber-400 opacity-80"></div>
+
+            <!-- Header de la carte -->
+            <div class="px-5 pt-4 pb-3 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                <span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-mono font-bold text-slate-500 bg-white border border-slate-200/80 shadow-2xs">
+                    <i class="far fa-calendar-alt mr-1.5 text-indigo-500"></i>{{ item.date_enregistrement|date:"d M Y" }}
+                </span>
+                <span class="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">#{{ item.id }}</span>
+            </div>
+            
+            <!-- Contenu principal -->
+            <div class="p-5 flex-grow space-y-4">
+                <!-- État de la transaction -->
+                <div>
+                    <div class="mb-1.5">
+                        {% if not item.etat %}
+                            <span class="inline-flex items-center space-x-1.5 text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/60 uppercase tracking-wide">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                <span>En attente de validation</span>
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center space-x-1.5 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/60 uppercase tracking-wide">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span>Transaction Réalisée</span>
+                            </span>
+                        {% endif %}
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors" title="{{ item.indicateur.nom }}">
+                        {{ item.indicateur.nom }}
+                    </h3>
+                </div>
+
+                <!-- Formulaires / Datasets liés à l'opération (Pills modernes) -->
+                <div class="bg-slate-50/80 rounded-xl p-3 border border-slate-200/60 space-y-1.5">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Formulaires associés</p>
+                    <div class="flex flex-wrap gap-1">
+                        {% for operation_datasets in operation_dataset %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-white text-indigo-700 border border-indigo-200/60 shadow-2xs">
+                                {{ operation_datasets.dataset.m_name }}
+                            </span>
+                        {% empty %}
+                            <span class="text-[10px] text-slate-400 italic">Aucun formulaire</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Valeur chiffrée -->
+                <div class="pt-2">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Valeur mesurée</p>
+                    <span class="text-2xl font-black text-slate-900 font-mono tabular-nums">{{ item.valeur|floatformat:'2' }}</span>
+                </div>
+            </div>
+
+            <!-- Footer / Action de validation -->
+            <div class="px-5 py-3.5 bg-slate-50/90 rounded-b-2xl flex items-center justify-end border-t border-slate-100">
+                <a href="/send-transaction/{{ item.id }}/" 
+                    class="group/btn inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-0.5">
+                    <svg class="w-3.5 h-3.5 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>Valider</span>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300 shadow-xs">
+            <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h2m4 0h2M7 20h10a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <p class="font-bold text-slate-700 text-sm">Aucune transaction en attente</p>
+            <p class="text-xs text-slate-400 mt-0.5">Toutes les opérations de ce flux ont été validées.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

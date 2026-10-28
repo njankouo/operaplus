@@ -1,0 +1,174 @@
+{% extends './index.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block main %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate__animated animate__fadeIn">
+
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 w-1.5 h-8 rounded-full"></div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">
+                Tâches Planifiées
+            </h1>
+            <span class="bg-blue-50 text-blue-700 border border-blue-200 text-sm font-bold px-3 py-1 rounded-full shadow-sm">
+                {{ operations_paginated.paginator.count|default:operation|length }}
+            </span>
+        </div>
+
+        <div class="relative w-full md:w-96 group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-search text-slate-400 group-focus-within:text-blue-600 transition-colors duration-300"></i>
+            </div>
+            <input type="text" 
+                   id="searchInput" 
+                   placeholder="Rechercher une tâche, un responsable..." 
+                   class="block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all duration-300 shadow-inner hover:bg-white">
+            
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <kbd class="hidden sm:inline-block border border-slate-200 rounded px-2 py-0.5 text-xs font-sans text-slate-400 bg-white shadow-sm">Ctrl+K</kbd>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="operations-container">
+        {% for operations in operation %}
+        
+        <div class="operation-card group relative rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-white/10"
+             style="background-color: {{ request.user.personnel.color_fond|default:'#1e293b' }};">
+            
+            <div class="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500 z-0"></div>
+
+            <div class="absolute -bottom-10 left-0 w-full h-1/2 bg-gradient-to-t from-white/20 to-transparent opacity-50 blur-xl pointer-events-none z-0 transform scale-y-[-1]"></div>
+
+            <div class="relative z-10 bg-white/10 backdrop-blur-md border-b border-white/20 p-4 flex justify-between items-start">
+                <h6 class="searchable-text font-black text-white text-sm tracking-widest uppercase drop-shadow-md pr-16 truncate">
+                    {{ operations.personnel.nom }}
+                </h6>
+                <span class="absolute top-3 right-3 bg-white text-blue-700 text-[9px] font-black px-2.5 py-1 rounded-md shadow-lg rotate-[15deg] group-hover:rotate-0 transition-transform duration-300">
+                    RESPONSIBLE
+                </span>
+            </div>
+
+            <div class="relative z-10 p-6 flex flex-col items-center">
+                
+                <div class="relative w-24 h-24 mb-5">
+                    <div class="absolute inset-0 rounded-full border-4 border-white/30 animate-ping opacity-75"></div>
+                    
+                    {% if operations.personnel.photo and operations.personnel.photo.url %}
+                        <img src="{{ operations.personnel.photo.url }}"
+                             alt="Photo de {{ operations.personnel.nom }}"
+                             class="w-full h-full object-cover rounded-full border-4 border-white shadow-xl relative z-20 group-hover:scale-105 transition-transform duration-500">
+                    {% elif actual_institution.img and actual_institution.img.url %}
+                        <img src="{{ actual_institution.img.url }}"
+                             alt="Logo de {{ actual_institution.nom }}"
+                             class="w-full h-full object-cover rounded-full border-4 border-white shadow-xl relative z-20 group-hover:scale-105 transition-transform duration-500">
+                    {% else %}
+                        <div class="w-full h-full bg-slate-100 flex items-center justify-center rounded-full border-4 border-white shadow-xl relative z-20 group-hover:scale-105 transition-transform duration-500">
+                            <span class="text-3xl font-bold text-slate-400">{{ operations.personnel.nom|first|upper }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <p class="searchable-text text-xs font-semibold text-white/80 uppercase tracking-widest text-center mb-6 line-clamp-2 min-h-[2rem]">
+                    {{ operations.nom }}
+                </p>
+
+                <button type="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#exampleModal{{ operations.id }}"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-slate-800 text-xs font-bold rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:bg-slate-50 transform hover:scale-105 transition-all duration-300">
+                    <i class="fas fa-comment-dots text-blue-600"></i> Transactions
+                </button>
+            </div>
+            
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if operations_paginated %}
+    <div class="mt-12 flex justify-center">
+        <nav class="inline-flex items-center gap-1 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200" aria-label="Pagination">
+            
+            {% if operations_paginated.has_previous %}
+                <a href="?page=1" class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors" title="Premier">
+                    <i class="fas fa-angle-double-left text-sm"></i>
+                </a>
+                <a href="?page={{ operations_paginated.previous_page_number }}" class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors" title="Précédent">
+                    <i class="fas fa-angle-left text-sm"></i>
+                </a>
+            {% else %}
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-300 cursor-not-allowed">
+                    <i class="fas fa-angle-double-left text-sm"></i>
+                </span>
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-300 cursor-not-allowed">
+                    <i class="fas fa-angle-left text-sm"></i>
+                </span>
+            {% endif %}
+
+            <div class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold shadow-md mx-1 flex items-center gap-1.5">
+                {{ operations_paginated.number }} 
+                <span class="text-blue-200 font-normal">/</span> 
+                {{ operations_paginated.paginator.num_pages }}
+            </div>
+
+            {% if operations_paginated.has_next %}
+                <a href="?page={{ operations_paginated.next_page_number }}" class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors" title="Suivant">
+                    <i class="fas fa-angle-right text-sm"></i>
+                </a>
+                <a href="?page={{ operations_paginated.paginator.num_pages }}" class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors" title="Dernier">
+                    <i class="fas fa-angle-double-right text-sm"></i>
+                </a>
+            {% else %}
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-300 cursor-not-allowed">
+                    <i class="fas fa-angle-right text-sm"></i>
+                </span>
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl text-slate-300 cursor-not-allowed">
+                    <i class="fas fa-angle-double-right text-sm"></i>
+                </span>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+    
+    // Logique de filtrage lors de la frappe
+    $('#searchInput').on('input', function() {
+        var searchText = $(this).val().toLowerCase().trim();
+        
+        $('.operation-card').each(function() {
+            var cardText = "";
+            
+            // On récupère uniquement le texte pertinent (Nom de l'opération et Responsable)
+            $(this).find('.searchable-text').each(function() {
+                cardText += $(this).text().toLowerCase() + " ";
+            });
+            
+            // Afficher ou masquer la carte
+            if (cardText.includes(searchText)) {
+                $(this).fadeIn(300); // Animation fluide
+            } else {
+                $(this).fadeOut(300);
+            }
+        });
+    });
+
+    // Optionnel : Focus sur la barre de recherche au raccourci clavier Ctrl+K
+    $(document).keydown(function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            $('#searchInput').focus();
+        }
+    });
+
+});
+</script>
+{% endblock %}

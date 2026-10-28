@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark transition-colors duration-300">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Centre de Notifications - IACS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script>
+        tailwind.config = { darkMode: 'class' }
+        if (localStorage.theme === 'light') { document.documentElement.classList.remove('dark') } 
+        else { document.documentElement.classList.add('dark') }
+    </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass { background: rgba(30,41,59,0.7); backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.05); }
+        .toast-active { transform: translateY(0); opacity: 1; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        /* Animation subtile pour le bouton */
+        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+        .saving { animation: pulse-soft 1.5s infinite; pointer-events: none; }
+    </style>
+</head>
+
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white min-h-screen transition-colors duration-300">
+
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3"></div>
+
+    <div class="max-w-6xl mx-auto px-4 pt-12 pb-20">
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+            <div>
+                <h1 class="text-4xl font-black tracking-tight flex items-center gap-3">
+                    <span class="bg-blue-600 text-white p-2 rounded-2xl shadow-lg shadow-blue-500/30">
+                        <i class="bi bi- megaphone-fill"></i>
+                    </span>
+                    Gestion des Alertes
+                </h1>
+                <p class="text-slate-500 dark:text-slate-400 mt-2 max-w-md">
+                    Personnalisez comment et quand vous recevez vos rapports. Ces réglages s'appliquent à l'institution : 
+                    <span class="text-blue-500 font-bold">#{{ actual_institution.nom }}</span>
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="themeToggle" class="p-4 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:scale-105 transition-all">
+                    <i id="themeIcon" class="bi text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+
+            <div class="glass p-8 rounded-[2.5rem] relative overflow-hidden group border-t-4 border-blue-500">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i class="bi bi-clock-history text-6xl text-blue-500"></i>
+                </div>
+                
+                <div class="flex items-center gap-2 mb-4">
+                    <h3 class="text-xl font-bold text-blue-500">Alertes Retard</h3>
+                    <span id="status-retard" class="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-bold uppercase tracking-widest">Actif</span>
+                </div>
+
+                <p class="text-sm text-slate-400 mb-6 leading-relaxed">
+                    Vous informe dès qu'une tâche dépasse sa date d'échéance. Idéal pour ne jamais rater une date limite.
+                </p>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Délai de grâce</label>
+                        <select id="minutes_alerte" class="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold outline-none focus:ring-2 ring-blue-500 transition-all">
+                            <option value="0" {% if inst.minutes_avant_alerte == 0 %}selected{% endif %}>🔔 Immédiat (Dès le retard)</option>
+                            <option value="15" {% if inst.minutes_avant_alerte == 15 %}selected{% endif %}>⏳ Après 15 minutes</option>
+                            <option value="60" {% if inst.minutes_avant_alerte == 60 %}selected{% endif %}>🕐 Après 1 heure</option>
+                            <option value="1440" {% if inst.minutes_avant_alerte == 1440 %}selected{% endif %}>📅 Après 24 heures</option>
+                        </select>
+                        <p class="text-[10px] text-slate-500 mt-2 italic">Délai avant l'envoi de la première notification de retard.</p>
+                    </div>
+
+                    <label class="flex items-center justify-between p-4 bg-blue-500/5 rounded-2xl cursor-pointer hover:bg-blue-500/10 transition-colors">
+                        <span class="font-bold text-sm">Activer les alertes</span>
+                        <input type="checkbox" id="alert_active" onchange="updateBadge('alert_active', 'status-retard')" class="w-6 h-6 rounded-lg accent-blue-600" {% if inst.alert_retard_active %}checked{% endif %}>
+                    </label>
+                </div>
+            </div>
+
+            <div class="glass p-8 rounded-[2.5rem] relative overflow-hidden group border-t-4 border-purple-500">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i class="bi bi-calendar-check text-6xl text-purple-500"></i>
+                </div>
+
+                <div class="flex items-center gap-2 mb-4">
+                    <h3 class="text-xl font-bold text-purple-500">Daily Digest</h3>
+                    <span id="status-daily" class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-bold uppercase tracking-widest">Actif</span>
+                </div>
+
+                <p class="text-sm text-slate-400 mb-6 leading-relaxed">
+                    Un e-mail récapitulatif chaque jour contenant toutes les tâches à faire et celles terminées hier.
+                </p>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Heure de réception</label>
+                        <input type="time" id="daily_hour" value="{{ inst.daily_digest_hour|time:'H:i' }}" 
+                            class="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-purple-500 outline-none focus:ring-2 ring-purple-500">
+                        <p class="text-[10px] text-slate-500 mt-2 italic">Nous vous conseillons de le recevoir avant de commencer votre journée.</p>
+                    </div>
+
+                    <label class="flex items-center justify-between p-4 bg-purple-500/5 rounded-2xl cursor-pointer hover:bg-purple-500/10 transition-colors">
+                        <span class="font-bold text-sm">Activer le résumé</span>
+                        <input type="checkbox" id="daily_active" onchange="updateBadge('daily_active', 'status-daily')" class="w-6 h-6 rounded-lg accent-purple-600" {% if inst.daily_digest_active %}checked{% endif %}>
+                    </label>
+                </div>
+            </div>
+
+            <div class="glass p-8 rounded-[2.5rem] relative overflow-hidden group border-t-4 border-emerald-500">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i class="bi bi-bar-chart-line text-6xl text-emerald-500"></i>
+                </div>
+
+                <div class="flex items-center gap-2 mb-4">
+                    <h3 class="text-xl font-bold text-emerald-500">Analyse Hebdo</h3>
+                    <span id="status-hebdo" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold uppercase tracking-widest">Inactif</span>
+                </div>
+
+                <p class="text-sm text-slate-400 mb-6 leading-relaxed">
+                    Un bilan de performance envoyé chaque lundi matin pour analyser l'avancement global de l'institution.
+                </p>
+                
+                <div class="space-y-6">
+                    <div class="p-4 rounded-2xl border border-dashed border-slate-700 text-center">
+                        <i class="bi bi-info-circle text-emerald-500 mb-2 block"></i>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Planification fixe</span>
+                        <p class="text-xs font-bold mt-1 text-slate-300 italic">Tous les lundis à 07:30</p>
+                    </div>
+
+                    <label class="flex items-center justify-between p-4 bg-emerald-500/5 rounded-2xl cursor-pointer hover:bg-emerald-500/10 transition-colors">
+                        <span class="font-bold text-sm">Activer le rapport</span>
+                        <input type="checkbox" id="hebdo_active" onchange="updateBadge('hebdo_active', 'status-hebdo')" class="w-6 h-6 rounded-lg accent-emerald-600" {% if inst.report_hebdo_active %}checked{% endif %}>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-16 flex flex-col items-center">
+            <button id="saveBtn" onclick="saveSettings('{{ actual_institution.id }}')" 
+                class="group bg-blue-600 hover:bg-blue-500 text-white px-12 py-5 rounded-[2rem] font-black text-lg shadow-2xl shadow-blue-500/40 transition-all flex items-center gap-4 active:scale-95">
+                <i class="bi bi-cloud-check-fill text-2xl group-hover:scale-125 transition-transform"></i>
+                Appliquer les réglages
+            </button>
+            <p class="mt-4 text-slate-500 text-[10px] font-bold uppercase tracking-widest">Dernière mise à jour : Aujourd'hui à {{ "now"|date:"H:i" }}</p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- MISE À JOUR VISUELLE DES BADGES ---
+        function updateBadge(checkboxId, badgeId) {
+            const isChecked = document.getElementById(checkboxId).checked;
+            const badge = document.getElementById(badgeId);
+            badge.innerText = isChecked ? 'Actif' : 'Désactivé';
+            badge.className = isChecked 
+                ? badge.className.replace('text-slate-400 bg-slate-500/20', 'text-blue-400 bg-blue-500/20')
+                : badge.className.replace('text-blue-400 bg-blue-500/20', 'text-slate-400 bg-slate-500/20');
+            // Adapté pour chaque couleur (blue, purple, emerald)
+            if (badgeId.includes('daily')) badge.classList.toggle('text-purple-400', isChecked);
+            if (badgeId.includes('hebdo')) badge.classList.toggle('text-emerald-400', isChecked);
+        }
+
+        // --- GESTION DU THEME ---
+        function updateThemeUI() {
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('themeIcon').className = isDark ? 'bi bi-sun-fill text-yellow-400' : 'bi bi-moon-stars-fill text-blue-600';
+        }
+        updateThemeUI();
+        document.getElementById('themeToggle').onclick = () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            updateThemeUI();
+        }
+
+        // --- GESTION DES NOTIFICATIONS ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colorClass = type === 'success' ? 'bg-emerald-600 shadow-emerald-500/20' : 'bg-red-600 shadow-red-500/20';
+            const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+
+            toast.className = `flex items-center gap-4 px-8 py-5 rounded-3xl text-white shadow-2xl ${colorClass} opacity-0 -translate-y-4 transition-all duration-500`;
+            toast.innerHTML = `<i class="bi ${icon} text-xl"></i> <div class="flex flex-col"><span class="font-black text-sm uppercase">Système</span><span class="text-xs opacity-90">${message}</span></div>`;
+            
+            container.prepend(toast);
+            setTimeout(() => { toast.classList.add('opacity-100', 'translate-y-0'); }, 10);
+            setTimeout(() => { 
+                toast.classList.replace('opacity-100', 'opacity-0');
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        // --- SAUVEGARDE ---
+        async function saveSettings(instId) {
+            const btn = document.getElementById('saveBtn');
+            const hourField = document.getElementById('daily_hour');
+
+            // Vérification pédagogique
+            if (!hourField.value) {
+                showToast("Veuillez définir une heure pour le Daily Digest", "error");
+                hourField.focus();
+                return;
+            }
+
+            btn.classList.add('saving');
+            btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Synchronisation...`;
+
+            const payload = {
+                alert_active: document.getElementById('alert_active').checked,
+                minutes: document.getElementById('minutes_alerte').value,
+                daily_active: document.getElementById('daily_active').checked,
+                daily_hour: hourField.value,
+                hebdo_active: document.getElementById('hebdo_active').checked
+            };
+
+            try {
+                const response = await fetch(`/save_inst_settings/${instId}/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    showToast("Vos préférences ont été enregistrées avec succès !");
+                } else {
+                    showToast("Erreur serveur. Impossible d'enregistrer.", "error");
+                }
+            } catch (error) {
+                showToast("Connexion perdue. Vérifiez votre internet.", "error");
+            } finally {
+                setTimeout(() => {
+                    btn.classList.remove('saving');
+                    btn.innerHTML = `<i class="bi bi-cloud-check-fill text-2xl"></i> Appliquer les réglages`;
+                }, 800);
+            }
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1)); break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Initialisation badges
+        window.onload = () => {
+            updateBadge('alert_active', 'status-retard');
+            updateBadge('daily_active', 'status-daily');
+            updateBadge('hebdo_active', 'status-hebdo');
+        };
+    </script>
+</body>
+</html>

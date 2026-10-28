@@ -1,0 +1,108 @@
+<div class="modal-body">
+  <form class="form-horizontal bordered-row" action="/save_gestion/" onsubmit="saveRoles()"
+  id="addFormAction" data-toggle="validator" role="form" method="post">
+    {% csrf_token %}
+    <input type="hidden" id="edit_or_create" value="c" name="edit_or_create">
+    <input type="hidden" id="edit_id" name="edit_id" value="">
+    <input type='hidden' name='generator' value='r'>
+    <input type="hidden" value="{{actual_institution.id}}" name="institution">
+    <div class="row">
+      <div class="col-sm-12">
+        <div class="form-group">
+          Nom
+          <input type="text" class="form-control" name="nom" id="nomAct" required="">
+        </div>
+      </div>
+      <div class="col-sm-12">
+        <div class="form-group">
+          Description
+          <textarea class="form-control" name="description">
+          </textarea>
+        </div>
+      </div>
+      <div class="col-sm-12">
+        <div>
+          <div>
+            <small>
+              Champs Supplementaires
+            </small>
+          </div>
+          <div>
+          </div>
+        </div>
+        <div class="form-group">
+          Permissions
+          <div class="d-flex mb-3">
+            <div class="px-1">
+              <span data-elt='0' class="ros_btn btn btn-success">
+                G&eacute;n&eacute;lrique
+              </span>
+            </div>
+            <div class="px-1">
+              <span data-elt='1' class="ros_btn btn btn-light">
+                Sp&eacute;cifique
+              </span>
+            </div>
+            <div class="px-1">
+              <span data-elt='2' class="ros_btn btn btn-light">
+                Utilisateur Simple
+              </span>
+            </div>
+            <input type="hidden" name="ros_click" id="ros_click">
+          </div>
+          <div class="ros_div">
+            <select class="form-control" name="permission">
+              <option value='-1'>
+                <span class="text-success">
+                  Operant :
+                </span>
+                Charg&eacute; d'Executer les Taches
+              </option>
+              <!-- <option value='1'>Superviseur de TÃƒÂ¢ches : Supervise les Taches  </option>
+              -->
+              {% for role in actual_institution.get_entities.reverse %}
+              <option value="{{role.m_hierachie}}">
+                Charg&eacute; {{role}} : Supervise L'Evolution {{role}}
+              </option>
+              {% endfor %}
+              <option value='99'>
+                Administrateur : Aide &agrave;  l'Administration de l'Institution
+              </option>
+            </select>
+          </div>
+          <input type="hidden" name="entity_administr" id="entity_administr">
+          <div class="ros_div" style="display:none;">
+            <div>
+              Supervise
+            </div>
+            <div>
+              <select id="entiRole_select" class="form-control" name="permission_entity">
+                {% for role in actual_institution.get_entities.reverse %}
+                <option value="{{role.id}}">
+                  {{role}}
+                </option>
+                {% endfor %}
+              </select>
+              <div class="p-4">
+                <ul style="max-height:100px;overflow-y:auto;" class="list-group" id="rol_list">
+                </ul>
+              </div>
+            </div>
+          </div>
+         
+        </div>
+      </div>
+    </div>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+    Fermer
+  </button>
+  <button type="submit" class="btn btn-primary">
+    Enregistrer
+  </button>
+</div>
+
+</div>
+</form>
+</div>

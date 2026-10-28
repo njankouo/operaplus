@@ -1,0 +1,106 @@
+{%extends './presentation.html'%}
+
+{%block content%}
+
+<section id="actualites" class="relative py-24 bg-slate-50/50 overflow-hidden">
+    <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:40px_40px] opacity-20"></div>
+    <div class="absolute -top-48 -left-48 w-[600px] h-[600px] bg-blue-100/40 rounded-full blur-[120px] opacity-60"></div>
+    <div class="absolute -bottom-48 -right-48 w-[600px] h-[600px] bg-emerald-100/40 rounded-full blur-[120px] opacity-60"></div>
+
+    <div class="container mx-auto px-6 lg:px-12 relative z-10">
+        <div class="max-w-3xl mx-auto text-center mb-24">
+            <div class="inline-flex items-center gap-2 px-4 py-2 mb-8 bg-white shadow-sm border border-slate-200 rounded-full">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-[10px] font-black tracking-[0.2em] text-slate-600 uppercase">Le Journal    OPERAPLUS</span>
+            </div>
+            <h3 class="text-4xl md:text-6xl font-black text-slate-900 leading-[1.1] tracking-tight">
+                Analyses d'experts & <br/>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500">L'actualité OPERAPLUS</span>
+            </h3>
+            <p class="mt-6 text-slate-500 text-lg max-w-2xl mx-auto">
+                Restez à la pointe de l'innovation sociale avec nos décryptages sur le suivi-évaluation et l'impact data-driven.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {% for item in actualite %}
+            <article class="group flex flex-col h-full bg-white rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/30 hover:shadow-2xl hover:shadow-blue-900/10 hover:-translate-y-2 transition-all duration-500 overflow-hidden">
+                
+                <div class="relative h-64 w-full overflow-hidden">
+                    {% if item.photos %}
+                        <img src="{{ item.photos.url }}" 
+                             class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                             alt="{{ item.intitule }}">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
+                            <i class="fas fa-image text-5xl"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="absolute top-5 left-5">
+                        <span class="px-4 py-1.5 bg-white/90 backdrop-blur-md border border-white/20 rounded-full shadow-lg text-blue-600 text-[10px] font-bold uppercase tracking-wider">
+                            Focus MEAL
+                        </span>
+                    </div>
+
+                    <div class="absolute bottom-5 right-5 bg-slate-900/80 backdrop-blur-md text-white px-3 py-1 rounded-lg text-[10px] font-medium">
+                        {{ item.date_publication|date:"d M Y"|default:"Janvier 2026" }}
+                    </div>
+                </div>
+
+                <div class="p-8 flex flex-col flex-grow">
+                    <div class="flex items-center gap-2 mb-4 text-slate-400 text-[11px] font-bold uppercase tracking-widest">
+                        <i class="far fa-clock text-blue-500"></i>
+                        <span>5 min de lecture</span>
+                    </div>
+
+                    <h4 class="text-2xl font-black text-slate-900 mb-4 leading-snug group-hover:text-blue-600 transition-colors duration-300">
+                        {{ item.intitule }}
+                    </h4>
+
+                    <div class="text-slate-500 text-sm leading-relaxed mb-8 line-clamp-3">
+                        {{ item.description|striptags|safe|slice:":150" }}...
+                    </div>
+
+                    <div class="mt-auto pt-6 border-t border-slate-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-emerald-400 flex items-center justify-center text-white text-[10px]">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span class="text-[11px] font-bold text-slate-700">Rédaction Opera+</span>
+                        </div>
+
+                        <a href="{{item.get_absolute_url}}" class="flex items-center gap-2 text-sm font-black text-slate-900 group/link">
+                            <span class="group-hover/link:mr-1 transition-all">Lire l'article</span>
+                            <i class="fas fa-arrow-right text-emerald-500 transform group-hover/link:translate-x-1 transition-transform"></i>
+                        </a>
+                    </div>
+                </div>
+            </article>
+            {% empty %}
+                <div class="col-span-full py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-200">
+                    <div class="relative inline-flex mb-8">
+                        <div class="absolute inset-0 bg-blue-200 rounded-full blur-2xl opacity-40 animate-pulse"></div>
+                        <div class="relative w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center border border-slate-100">
+                            <i class="fas fa-feather-alt text-slate-300 text-4xl"></i>
+                        </div>
+                    </div>
+                    <h5 class="text-xl font-bold text-slate-800 mb-2">Plume en attente...</h5>
+                    <p class="text-slate-400 max-w-xs mx-auto text-sm">Nos experts préparent actuellement les prochaines analyses. Revenez très bientôt !</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-20 text-center">
+            <a href="#" class="inline-flex items-center gap-4 px-8 py-4 bg-slate-900 text-white rounded-full font-bold hover:bg-blue-600 transition-all shadow-xl shadow-slate-200">
+                <span>Consulter toutes les archives</span>
+                <i class="fas fa-th-large"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+{%endblock%}

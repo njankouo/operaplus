@@ -1,0 +1,177 @@
+{% extends '../presentation.html' %}
+{% block content %}
+{% load static %}
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<section class="py-5 bg-slate-50 relative overflow-hidden min-h-screen flex items-center font-['Plus_Jakarta_Sans']">
+  
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-200/20 rounded-full blur-[100px]"></div>
+    <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-orange-200/20 rounded-full blur-[100px]"></div>
+  </div>
+
+  <div class="max-w-[1600px] mx-auto px-6 flex flex-col xl:flex-row items-center justify-center gap-16 relative z-10">
+    
+    <div class="hidden xl:block flex-1 animate-float">
+      <div class="relative group">
+        <div class="absolute inset-0 border-[1px] border-slate-200 rounded-[3rem] translate-x-6 translate-y-6 transition-transform duration-700 group-hover:translate-x-3 group-hover:translate-y-3"></div>
+        <div class="relative w-[420px] h-[580px] rounded-[2.8rem] overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] transition-all duration-700">
+          <img src="{% static 'mission.jpeg' %}" alt="Mission" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/10 to-transparent"></div>
+          
+          <div class="absolute bottom-8 left-8 right-8 p-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl">
+            <p class="text-white text-sm font-medium leading-relaxed opacity-90">
+              Engagés pour un impact durable et une excellence opérationnelle à travers toute l'Afrique.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-[1.5] flex items-center justify-center min-h-[850px] w-full">
+      <div class="orbit-system relative w-[780px] h-[780px] flex items-center justify-center group">
+
+        <div class="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div class="w-48 h-48 lg:w-60 lg:h-60 p-2 bg-white rounded-full shadow-2xl pointer-events-auto">
+            <div class="w-full h-full bg-slate-900 rounded-full flex flex-col items-center justify-center text-white relative overflow-hidden group/center transition-transform duration-700 hover:scale-105">
+                <div class="absolute inset-0 bg-gradient-to-tr from-blue-900 via-indigo-900 to-slate-900 animate-gradient-slow"></div>
+                <div class="relative z-10 flex flex-col items-center">
+                    <div class="w-12 h-[2px] bg-indigo-500 mb-4 transition-all group-hover/center:w-20"></div>
+                    <span class="text-[10px] uppercase tracking-[0.5em] font-bold text-indigo-400 mb-2">MEAL-Afrique</span>
+                    <span class="text-2xl lg:text-3xl font-extrabold tracking-tighter text-center leading-[0.9]">NOTRE<br><span class="text-indigo-200">MISSION</span></span>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rotating-container relative w-full h-full flex items-center justify-center animate-orbit group-hover:pause-animation">
+            
+            <svg class="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-40 transition-opacity duration-500 group-hover:opacity-100">
+                {% for item in mission_items %}
+                <line class="connector-line 
+                    {% if forloop.counter0|divisibleby:3 %}line-blue
+                    {% elif forloop.counter|add:1|divisibleby:3 %}line-white
+                    {% else %}line-orange{% endif %}" 
+                    stroke-width="1.5" />
+                {% endfor %}
+            </svg>
+
+            {% for item in mission_items %}
+            {% cycle 'card-blue' 'card-white' 'card-orange' as card_theme silent %}
+            <div class="mission-card absolute group/card {{ card_theme }}"
+                 style="--i:{{ forloop.counter0 }}; --n:{{ mission_items|length }};">
+              
+              <div class="card-content w-[175px] h-[210px] bg-white/70 backdrop-blur-xl rounded-[2.5rem] border-[1px] border-white/60 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] flex flex-col items-center justify-center p-6 transition-all duration-700 animate-counter-orbit group-hover:pause-animation group-hover/card:bg-white group-hover/card:-translate-y-4">
+                
+                <div class="relative mb-5">
+                    <div class="icon-box w-16 h-16 rounded-[1.2rem] flex items-center justify-center relative z-10 transition-all duration-500 shadow-sm">
+                       <i class="fa-solid {% if forloop.counter0|divisibleby:3 %}fa-chart-line{% elif forloop.counter|add:1|divisibleby:3 %}fa-shield-halved{% else %}fa-lightbulb{% endif %} text-xl"></i>
+                    </div>
+                    <div class="absolute -inset-2 border-2 border-transparent border-t-current opacity-0 group-hover/card:opacity-20 group-hover/card:rotate-180 transition-all duration-1000 rounded-full"></div>
+                </div>
+                
+                <h3 class="text-[13px] font-bold text-slate-800 leading-tight text-center px-2">
+                  {{ item.text|upper }}
+                </h3>
+
+                <div class="absolute bottom-6 flex gap-1">
+                    <span class="w-1 h-1 rounded-full bg-slate-300 transition-all group-hover/card:w-4 group-hover/card:bg-current"></span>
+                    <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+/* --- ANIMATIONS CORE --- */
+@keyframes orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes counter-orbit { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+@keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+@keyframes gradient-move { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+.animate-orbit { animation: orbit 50s linear infinite; }
+.animate-counter-orbit { animation: counter-orbit 50s linear infinite; }
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-gradient-slow { background-size: 200% 200%; animation: gradient-move 8s ease infinite; }
+.pause-animation { animation-play-state: paused !important; }
+
+/* --- STRUCTURE --- */
+.orbit-system { --radius: 340px; }
+.mission-card {
+  width: 175px; height: 210px; top: 50%; left: 50%; margin-top: -105px; margin-left: -87px;
+  --angle: calc(var(--i) * (360deg / var(--n)));
+  transform: translate(calc(cos(var(--angle) - 90deg) * var(--radius)), calc(sin(var(--angle) - 90deg) * var(--radius)));
+  transition: opacity 0.5s ease;
+}
+
+/* Effet de focus : les autres cartes s'estompent au survol */
+.rotating-container:has(.mission-card:hover) .mission-card:not(:hover) {
+  opacity: 0.3;
+  filter: blur(2px);
+}
+
+/* --- THEMES DE COULEURS --- */
+.card-blue { color: #3b82f6; }
+.card-blue .icon-box { background: #f0f7ff; color: #3b82f6; }
+.card-blue:hover .card-content { border-color: #3b82f6; box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.3); }
+
+.card-white { color: #64748b; }
+.card-white .icon-box { background: #f8fafc; color: #64748b; }
+.card-white:hover .card-content { border-color: #94a3b8; box-shadow: 0 25px 50px -12px rgba(148, 163, 184, 0.3); }
+
+.card-orange { color: #f97316; }
+.card-orange .icon-box { background: #fff7ed; color: #f97316; }
+.card-orange:hover .card-content { border-color: #f97316; box-shadow: 0 25px 50px -12px rgba(249, 115, 22, 0.3); }
+
+/* --- CONNECTEURS --- */
+.connector-line { stroke-dasharray: 4 4; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+.line-blue { stroke: #3b82f6; }
+.line-white { stroke: #cbd5e1; }
+.line-orange { stroke: #f97316; }
+
+.mission-card:hover ~ svg line { opacity: 0.1; } /* On cache les autres lignes */
+.card-blue:hover ~ svg .line-blue, .card-white:hover ~ svg .line-white, .card-orange:hover ~ svg .line-orange { 
+  opacity: 1; stroke-width: 3px; stroke-dasharray: 0; filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 1280px) { .orbit-system { --radius: 270px; } .mission-card { width: 140px; height: 180px; } }
+@media (max-width: 768px) { 
+  .orbit-system { --radius: 170px; width: 400px; height: 400px; } 
+  .mission-card { width: 100px; height: 130px; margin-top: -65px; margin-left: -50px; }
+  .mission-card h3 { font-size: 0.65rem; }
+  .icon-box { width: 40px; height: 40px; margin-bottom: 0.5rem; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const updateConnectors = () => {
+    const container = document.querySelector('.orbit-system');
+    const lines = container.querySelectorAll('.connector-line');
+    const rect = container.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const radius = parseFloat(getComputedStyle(container).getPropertyValue('--radius'));
+
+    lines.forEach((line, i) => {
+      const angle = (i * 360 / lines.length - 90) * (Math.PI / 180);
+      line.setAttribute('x1', centerX);
+      line.setAttribute('y1', centerY);
+      line.setAttribute('x2', centerX + radius * Math.cos(angle));
+      line.setAttribute('y2', centerY + radius * Math.sin(angle));
+    });
+  };
+  updateConnectors();
+  window.addEventListener('resize', updateConnectors);
+});
+</script>
+{% endblock %}

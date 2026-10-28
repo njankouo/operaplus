@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #475569;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <table width="500" border="0" cellspacing="0" cellpadding="0" style="background: #ffffff; border-radius: 40px; padding: 40px; border: 1px solid #e2e8f0;">
+                    
+                    <tr>
+                        <td align="center" style="padding-bottom: 40px;">
+                            <div style="font-size: 20px; font-weight: 900; letter-spacing: -0.5px; color: #0f172a;">
+                                OPERA<span style="color: #059669;">PLUS</span>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="padding-bottom: 24px;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 300; color: #0f172a;">
+                                {% if is_new_user %}Votre accès est actif.{% else %}Abonnement renouvelé !{% endif %}
+                            </h1>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="padding-bottom: 30px;">
+                            <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #64748b;">
+                                Bonjour <strong>{{ nom }}</strong>, votre environnement est prêt. 
+                                {% if is_new_user %}
+                                Voici vos identifiants de connexion :
+                                {% else %}
+                                Votre abonnement a été prolongé avec succès.
+                                {% endif %}
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="padding-bottom: 30px;">
+                            <div style="background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #e2e8f0; display: inline-block; text-align: left; min-width: 280px;">
+                                <p style="margin: 5px 0; font-size: 14px;"><strong>Email :</strong> {{ email }}</p>
+                                {% if is_new_user %}
+                                <p style="margin: 5px 0; font-size: 14px;"><strong>Mot de passe :</strong> <code>{{ password }}</code></p>
+                                {% else %}
+                                <p style="margin: 5px 0; font-size: 14px; color: #059669; font-weight: 500;">✓ Utilisez votre mot de passe habituel</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="padding-bottom: 40px;">
+                            <a href="{{ lien }}" style="padding: 16px 32px; background: #0f172a; color: #ffffff; text-decoration: none; border-radius: 50px; font-size: 13px; font-weight: 500;">
+                                Accéder au Dashboard
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" style="border-top: 1px solid #f1f5f9; padding-top: 30px;">
+                            <p style="margin: 0; font-size: 11px; color: #cbd5e1; text-transform: uppercase; letter-spacing: 2px;">
+                                Une solution par OperaPlus
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

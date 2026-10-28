@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration DataSet - OPERAPLUS (Style DHIS2)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* Charte Graphique Officielle DHIS2 */
+        :root {
+            --dhis2-blue: #276696;
+            --dhis2-light-blue: #e4eff5;
+            --dhis2-border: #bcbcbc;
+            --dhis2-bg: #f3f3f3;
+            --dhis2-text: #333;
+        }
+
+        body { 
+            background-color: var(--dhis2-bg); 
+            font-family: "Open Sans", Helvetica, Arial, sans-serif; 
+            color: var(--dhis2-text);
+            font-size: 14px;
+        }
+
+        .dhis2-app-header {
+            background-color: var(--dhis2-blue);
+            height: 48px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .maintenance-container {
+            max-width: 1100px;
+            margin: 30px auto;
+            background: white;
+            border: 1px solid var(--dhis2-border);
+            padding: 30px;
+        }
+
+        /* Composant Transfer List */
+        .transfer-container {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .transfer-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .transfer-label {
+            font-weight: 700;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #555;
+            text-transform: uppercase;
+        }
+
+        .transfer-list {
+            height: 280px;
+            border: 1px solid var(--dhis2-border);
+            overflow-y: auto;
+            background: white;
+        }
+
+        /* Éléments de liste cliquables */
+        .transfer-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.1s;
+            user-select: none;
+        }
+
+        .transfer-item:hover {
+            background-color: var(--dhis2-light-blue);
+        }
+
+        .transfer-item input[type="checkbox"] {
+            display: none; /* On cache la box car le clic sur le libellé suffit */
+        }
+
+        /* Barre de filtre collée à la liste */
+        .filter-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--dhis2-border);
+            border-bottom: none;
+            font-size: 12px;
+            outline: none;
+            background: #f9f9f9;
+        }
+        .filter-input:focus {
+            background: white;
+            border-color: var(--dhis2-blue);
+        }
+
+        .section-title {
+            color: var(--dhis2-blue);
+            font-size: 16px;
+            font-weight: 700;
+            margin: 30px 0 15px 0;
+            border-bottom: 2px solid var(--dhis2-light-blue);
+            padding-bottom: 5px;
+        }
+
+        .dhis2-input-full {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--dhis2-border);
+            border-radius: 3px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .btn-dhis2-primary {
+            background-color: var(--dhis2-blue);
+            color: white;
+            font-weight: 700;
+            padding: 10px 25px;
+            border-radius: 3px;
+            transition: 0.2s;
+        }
+        .btn-dhis2-primary:hover { background-color: #1d4e74; }
+    </style>
+</head>
+<body>
+
+<div class="dhis2-app-header">
+    <i class="fas fa-cog mr-3"></i>
+    Maintenance OPERAPLUS - Configuration de l'ensemble de données
+</div>
+
+<div class="maintenance-container">
+    <form method="post" action="/data_set/modif/{{data_set.id}}/">
+        {% csrf_token %}
+        <input type='hidden' name='matrice' />
+
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Mise à jour : {{ data_set.m_name }}</h1>
+
+        <!-- NOM DU FORMULAIRE -->
+        <label class="transfer-label">Nom de l'ensemble de données</label>
+        <input type="text" name="form_name" value="{{ data_set.m_name }}" class="dhis2-input-full" required>
+
+        <!-- SECTION 1: STRUCTURES (Unités d'organisation) -->
+        <div class="section-title"><i class="fas fa-sitemap mr-2"></i> Affectation aux structures</div>
+        <div class="transfer-container">
+            <div class="transfer-column">
+                <span class="transfer-label">Structures disponibles</span>
+                <input type="text" placeholder="Filtrer les structures..." class="filter-input" onkeyup="filterList(this, 'avail-struct')">
+                <div class="transfer-list" id="avail-struct">
+                    {% for s in unlinked_structures %}
+                    <div class="transfer-item" onclick="migrate(this, 'sel-struct')">
+                        <span>{{ s.nom }}</span>
+                        <input type="checkbox" name="structure" value="{{ s.id }}">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="text-gray-400"><i class="fas fa-exchange-alt"></i></div>
+
+            <div class="transfer-column">
+                <span class="transfer-label">Structures sélectionnées</span>
+                <input type="text" placeholder="Filtrer les structures..." class="filter-input" onkeyup="filterList(this, 'sel-struct')">
+                <div class="transfer-list" id="sel-struct">
+                    {% for v in data_set.m_structures.all %}
+                    <div class="transfer-item" onclick="migrate(this, 'avail-struct')">
+                        <span>{{ v.nom }}</span>
+                        <input type="checkbox" name="structure" value="{{ v.id }}" checked>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: ELEMENTS DE DONNEES -->
+        <div class="section-title"><i class="fas fa-table mr-2"></i> Éléments de données (Saisie)</div>
+        <div class="transfer-container">
+            <div class="transfer-column">
+                <span class="transfer-label">Éléments disponibles</span>
+                <input type="text" placeholder="Filtrer..." class="filter-input" onkeyup="filterList(this, 'avail-de')">
+                <div class="transfer-list" id="avail-de">
+                    {% for de in unlinked_element %}
+                    <div class="transfer-item" onclick="migrate(this, 'sel-de')">
+                        <span>{{ de.m_name }}</span>
+                        <input type="checkbox" name="element" value="{{ de.id }}">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="text-gray-400"><i class="fas fa-exchange-alt"></i></div>
+
+            <div class="transfer-column">
+                <span class="transfer-label">Éléments sélectionnés</span>
+                <input type="text" placeholder="Filtrer..." class="filter-input" onkeyup="filterList(this, 'sel-de')">
+                <div class="transfer-list" id="sel-de">
+                    {% for v in data_set.m_dataelements.all %}
+                    <div class="transfer-item" onclick="migrate(this, 'avail-de')">
+                        <span>{{ v }}</span>
+                        <input type="checkbox" name="element" value="{{ v.id }}" checked>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: INDICATEURS -->
+        <div class="section-title"><i class="fas fa-calculator mr-2"></i> Indicateurs (Calculés)</div>
+        <div class="transfer-container">
+            <div class="transfer-column">
+                <span class="transfer-label">Indicateurs disponibles</span>
+                <input type="text" placeholder="Filtrer..." class="filter-input" onkeyup="filterList(this, 'avail-ind')">
+                <div class="transfer-list" id="avail-ind">
+                    {% for i in unlinked_indicateur %}
+                    <div class="transfer-item" onclick="migrate(this, 'sel-ind')">
+                        <span>{{ i.m_name }}</span>
+                        <input type="checkbox" name="indicateur" value="{{ i.id }}">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="text-gray-400"><i class="fas fa-exchange-alt"></i></div>
+
+            <div class="transfer-column">
+                <span class="transfer-label">Indicateurs sélectionnés</span>
+                <input type="text" placeholder="Filtrer..." class="filter-input" onkeyup="filterList(this, 'sel-ind')">
+                <div class="transfer-list" id="sel-ind">
+                    {% for v in data_set.m_indicateurs.all %}
+                    <div class="transfer-item" onclick="migrate(this, 'avail-ind')">
+                        <span>{{ v }}</span>
+                        <input type="checkbox" name="indicateur" value="{{ v.id }}" checked>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-10 pt-6 border-t flex justify-end gap-4">
+            <button type="button" onclick="window.history.back()" class="px-6 py-2 bg-gray-100 text-gray-700 rounded font-bold border border-gray-300 hover:bg-gray-200">
+                Annuler
+            </button>
+            <button type="submit" class="btn-dhis2-primary shadow-md">
+                Enregistrer les modifications
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    /**
+     * Gère la migration d'un élément d'une liste à l'autre
+     * @param {HTMLElement} element - La div .transfer-item cliquée
+     * @param {string} targetId - L'ID de la liste de destination
+     */
+    function migrate(element, targetId) {
+        const targetList = document.getElementById(targetId);
+        const checkbox = element.querySelector('input[type="checkbox"]');
+
+        // 1. Mise à jour de la checkbox (crucial pour le backend)
+        if (targetId.includes('sel')) {
+            // Si on déplace vers la droite (sélectionnés)
+            checkbox.checked = true;
+            // On prépare le prochain clic pour un retour vers la gauche
+            const reverseId = targetId.replace('sel', 'avail');
+            element.setAttribute('onclick', `migrate(this, '${reverseId}')`);
+        } else {
+            // Si on déplace vers la gauche (disponibles)
+            checkbox.checked = false;
+            // On prépare le prochain clic pour un retour vers la droite
+            const reverseId = targetId.replace('avail', 'sel');
+            element.setAttribute('onclick', `migrate(this, '${reverseId}')`);
+        }
+
+        // 2. Déplacement physique de l'élément dans le DOM
+        targetList.appendChild(element);
+        
+        // 3. Optionnel : Réinitialiser l'affichage si un filtre était actif
+        element.style.display = "";
+    }
+
+    /**
+     * Filtre les éléments à l'intérieur d'une liste
+     */
+    function filterList(input, listId) {
+        const val = input.value.toUpperCase();
+        const items = document.getElementById(listId).querySelectorAll('.transfer-item');
+        
+        items.forEach(item => {
+            const txt = item.textContent || item.innerText;
+            if (txt.toUpperCase().includes(val)) {
+                item.style.display = "";
+            } else {
+                item.style.display = "none";
+            }
+        });
+    }
+</script>
+
+</body>
+</html>

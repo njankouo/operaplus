@@ -1,0 +1,276 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Facture Fosa</title>
+    
+</head>
+{%load static%}
+<body>
+
+                         
+<table width="100%" border="0" cellpadding="0" cellspacing="0" align="center" class="fullTable" bgcolor="#e1e1e1">
+    <tr>
+      <td height="20"></td>
+    </tr>
+    <tr>
+      <td>
+        <table width="600" border="0" cellpadding="0" cellspacing="0" align="center" class="fullTable" bgcolor="#ffffff" style="border-radius: 10px 10px 0 0;">
+          <tr class="hiddenMobile">
+            <td height="40"></td>
+          </tr>
+          <tr class="visibleMobile">
+            <td height="30"></td>
+          </tr>
+  
+          <tr>
+            <td>
+              <table width="500" border="0" cellpadding="0" cellspacing="0" align="center" class="fullPadding">
+                <tbody>
+                  <tr>
+                    <td>
+                      <table width="220" border="0" cellpadding="0" cellspacing="0" align="left" class="col">
+                        <tbody>
+                          <tr>
+                            <td align="left"> <img src="{%static 'csu.jpg'%}" width="32" height="32" alt="logo" border="0" /></td>
+                          </tr>
+                          <tr class="hiddenMobile">
+                            <td height="40"></td>
+                          </tr>
+                          <tr class="visibleMobile">
+                            <td height="20"></td>
+                          </tr>
+                          <tr>
+                            <td style="font-size: 12px; color: #5b5b5b; font-family: 'Open Sans', sans-serif; line-height: 18px; vertical-align: top; text-align: left;">
+                              Region
+                              <br>
+                              
+                              .................
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="font-size: 12px; color: #5b5b5b; font-family: 'Open Sans', sans-serif; line-height: 18px; vertical-align: top; text-align: left;">
+                                Centre de sant&eacute;
+                              <br> ........
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="font-size: 12px; color: #5b5b5b; font-family: 'Open Sans', sans-serif; line-height: 18px; vertical-align: top; text-align: left;">
+                                G&eacute;n&eacute;r&eacute;e Le:
+                              &nbsp; ......
+                            </td>
+                          </tr>
+                        </tbody>
+                      
+                      </table>
+                      
+                     
+                      <table width="300" border="0" cellpadding="0" cellspacing="0" align="right" class="col">
+                        <tbody>
+                          <tr class="visibleMobile">
+                            <td height="20"></td>
+                          </tr>
+                          <tr>
+                            <td height="5"></td>
+                          </tr>
+                          <tr>
+                            <td style="font-size: 21px; color: #ff0000; letter-spacing: -1px; font-family: 'Open Sans', sans-serif; line-height: 1; vertical-align: top; text-align: right;">
+                              Facture 
+                            </td>
+                          </tr>
+                          <tr>
+                          <tr class="hiddenMobile">
+                            <td height="50"></td>
+                          </tr>
+                          <tr class="visibleMobile">
+                            <td height="20"></td>
+                          </tr>
+                          <tr>
+                            <td style="font-size: 12px; color: #5b5b5b; font-family: 'Open Sans', sans-serif; line-height: 18px; vertical-align: top; text-align: right;">
+                              <small>Numero</small> #800000025<br />
+                              <small>Date:MM_JJ_AAAA</small>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+
+
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+  <!-- /Header -->
+  <!-- Order Details -->
+  &nbsp;&nbsp;
+  <h3 style="font-weight:bold;margin-left:20px">Fiche de Declaration/Validation des Performances/Facture PMA - Contrat principale</h3>
+  
+            
+                                <table border="1" cellpadding="5" cellspacing="0" align="center" class="fullPadding" style="text-align:text-center">
+                                    <tbody>
+                                        <tr style="font-size:12px">
+                                            <th class="table-header" width="50%" align="center">
+                                                Element De Donn&eacute;e-Activit&eacute; de sant&eacute;
+                                            </th>
+                                            <th class="table-header" width="12%" align="center">
+                                               D&eacute;clar&eacute;
+                                            </th>
+                                            <th class="table-header" width="12%" align="center">
+                                                Valid&eacute;
+                                            </th>
+                                            <th class="table-header" width="12%" align="center">
+                                                Prix Unitaire
+                                            </th>
+                                            <th class="table-header" width="12%" align="center">
+                                                Montant
+                                            </th>
+                                        </tr>
+                                       
+                                        
+                                        {% for dset_delt_lists in dset_delt_list %}
+                                        {%for groupe_elements in groupe_element%}
+                                        {%if groupe_elements.dataelement_id == dset_delt_lists.m_dataelement_id%}
+                                        <tr style="text-align:center" >
+                                            <td class="table-data" style="padding:5px 0;">
+                                                {{ dset_delt_lists.m_dataelement.m_name }}
+                                            </td>
+                                            <td class="table-data" style="padding:5px 0;">
+                                               {{ groupe_elements.qte_declare }}
+                                            </td>
+                                            <td class="table-data" style="padding:5px 0;" align="center">
+                                                {{ dset_delt_lists.m_value }}
+                                            </td>
+                                            <td class="table-data" style="padding:5px 0;" align="center">
+                                              {{ groupe_elements.cout_unitaire }}
+                                            </td>
+                                            <td class="table-data" style="padding:5px 0;" align="center">
+                                              **{{ dset_delt_lists.total_cost }}**
+      
+                                           </td>
+                                        </tr>
+                                        
+                                        {%endif%}
+                                        
+                                        {% endfor %}
+                                        {% endfor %}
+                                        <tr>
+                                          <th scope="row">Total 1 (Production quantit&eacute;)</th>
+                                          <td colspan="4" >0</td>
+                                        </tr>
+                                        <tr>
+                                          <th scope="row">  Prime D'&eacute;quit&eacute;
+                                            </th>
+                                          <td colspan="4" >0</td>
+                                        
+                                          
+                                        </tr>
+                                        <tr>
+                                          <th scope="row"> Total 2 = Total 1 + Prime D'&eacute;quit&eacute;
+                                            </th>
+                                          <td colspan="4" >0</td>
+                                        
+                                          
+                                        </tr>
+                                        <tr>
+                                          <th scope="row"> 
+                                            </th>
+                                            <th scope="row"> Pond&eacute;ration
+                                            </th>
+                                            <th scope="row"> Score Pond&eacute;r&eacute;
+                                            </th>
+                                          <th >Score</th>                                      
+                                        </tr>
+                                       <tr>
+                                        <th>&eacute;valuation de la Qualit&eacute;</th>
+                                        <th colspan="1" ></th>     
+                                        <th colspan="1" ></th> 
+                                        
+                                       </tr>
+                                       <tr>
+                                        <th>Qualit&eacute; percue par la communaut&eacute;</th>
+                                        <th colspan="1" ></th>     
+                                        <th colspan="1" ></th> 
+                                        
+                                       </tr>
+                                       <tr>
+                                        <th>Outil Indice score</th>
+                                        <th colspan="1" ></th>     
+                                        <th colspan="1" ></th> 
+                                        
+                                       </tr>
+                                       <tr>
+                                        <th scope="row"> 
+                                          </th>
+                                          <th scope="row"> Mois 1
+                                          </th>
+                                          <th scope="row"> Mois 2
+                                          </th>
+                                        <th scope="row" >Ce Mois</th>  
+                                        <th>Trimestre  </th>                                 
+                                      </tr>
+                                      <tr>
+                                        <th>Production Trimestrielle</th>
+                                        <th colspan="1" ></th>     
+                                        <th colspan="1" ></th> 
+                                        <th colspan="1" ></th> 
+                                       </tr>
+                                       <tr>
+                                        <th>Bonus qualit&eacute; trimestriel
+                                          =
+                                          ProductionTrimestrielle
+                                          (
+                                          ) x 15% x
+                                          Score qualit&eacute;global
+                                          (
+                                          0.00
+                                          ) %</th>
+                                        <th colspan="1" ></th>     
+                                        <th colspan="1" ></th> 
+                                        <th colspan="1" ></th> 
+                                       </tr>
+                                       <tr>
+                                        <th colspan="1" >Total 3 = Total 2 +
+                                          Bonus qualit&eacute; trimestriel</th>  
+                                       </tr>
+                                       <tr>
+                                        <th>Bonus dam&eacute;lioration qualit&eacute; (BAQ)</th>
+                                        <th colspan="1" ></th>     
+                                        <th colspan="1" ></th> 
+                                        <th colspan="1" ></th> 
+                                       </tr>
+                                       <tr>
+                                        <th scope="row">Total g&eacute;n&eacute;ral = total 3 + BAQ</th>
+                                        <td colspan="4" >0</td>
+                                      </tr>
+                                    </tbody>
+                                </table>
+                           
+<br/>
+
+<div class="card-container" style="display: flex; justify-content: space-between;">
+  <div class="card" style="color: black;">
+    <h6>Declared at:...................</h6>
+    <h6>On:...................</h6>
+    <h6>Chief of Centre:...................</h6>
+  </div>
+  <hr/>
+  <div class="card" style="color: black;">
+    <h6>Verified at:...................</h6>
+    <h6>On:...................</h6>
+    <h6>Verificator PPA:...................</h6>
+  </div>
+  <hr/>
+  <div class="card" style="color: black;">
+    <h6>Validated at:...................</h6>
+    <h6>On:...................</h6>
+    <h6>Deputy Manager PPA:...................</h6>
+  </div>
+</div>
+
+</body>
+</html>

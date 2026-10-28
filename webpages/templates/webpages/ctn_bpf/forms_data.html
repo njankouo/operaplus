@@ -1,0 +1,1031 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+{% extends './evaluer.html' %}
+{% load static %}
+
+{% block style %}
+<style type="text/css">
+    /* Animation pour les options du FAB */
+    .fab-transition {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Style spécifique pour ressembler aux boutons de la barre latérale DHIS2 */
+    .dhis2-card {
+        border: 1px solid #e1e1e1;
+        transition: border-color 0.15s ease-in-out;
+    }
+    .dhis2-card:hover {
+        border-color: #2c6693;
+        background-color: #fbfbfb;
+    }
+</style>
+{% endblock %}
+{%block design%}
+<div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
+                <div class="text-white">
+                    <h2 class="text-3xl font-extrabold tracking-tight">Formulaires {{actual_institution.nom}}</h2>
+                    <p class="text-blue-100/70 text-sm font-medium mt-1">Gérez les Formulaires de collecte</p>
+                </div>
+               
+            </div>
+
+            <div class="search-container bg-white rounded-2xl p-2 shadow-xl mb-12 transition-all duration-300">
+                <form method="GET" action="" class="flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" name="q" id="searchInput" value="{{ search_query }}"
+                               placeholder="Rechercher par libellé, code technique ou année..." 
+                               class="w-full pl-12 pr-4 py-3 bg-transparent outline-none text-sm font-medium text-slate-700">
+                    </div>
+                    <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-xs transition-all">
+                        FILTRER
+                    </button>
+                </form>
+            </div>
+
+
+{%endblock%}
+{% block content %}
+<div class="min-h-screen bg-[#f3f6f9] pb-24">
+  
+
+    <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {% for datasets in dataset %}
+            <div class="dhis2-card bg-white p-5 flex flex-col justify-between rounded-sm shadow-sm">
+                <div>
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="text-base font-bold text-[#212934] uppercase tracking-tight line-clamp-2">
+                            {{ datasets.m_name }}
+                        </h3>
+                        <i class='bx bx-info-circle text-gray-300 hover:text-blue-500 cursor-help'></i>
+                    </div>
+                    <div class="h-1 w-full bg-gray-100 rounded-full mb-4">
+                        <div class="h-1 bg-[#2c6693] rounded-full w-1/4"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-6 leading-relaxed">
+                        ID: <span class="font-mono text-[10px]">{{ datasets.id }}</span><br>
+                        Dernière modification : Aujourd'hui
+                    </p>
+                </div>
+
+                <a href="/grub_form/{{ datasets.id }}/" 
+                   class="flex items-center justify-center gap-2 w-full py-2 bg-[#2c6693] hover:bg-[#1d4e74] text-white text-sm font-medium rounded shadow-sm transition-colors">
+                    <i class='bx bx-pencil text-lg'></i>
+                    Saisir les données
+                </a>
+            </div>
+            {% empty %}
+            <div class="col-span-full py-20 text-center bg-white border border-dashed border-gray-300 rounded">
+                <i class='bx bx-folder-open text-6xl text-gray-200 mb-4'></i>
+                <p class="text-gray-400 font-medium italic">Aucun ensemble de données disponible pour votre unité d'organisation.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="fixed bottom-8 right-8 z-[100] group">
+    
+    <div class="flex flex-col gap-3 mb-4 opacity-0 translate-y-4 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto fab-transition">
+        
+        <!-- IMPORT CSV -->
+        <button onclick="openModal('CSV')" class="flex items-center justify-end gap-3">
+            <span class="bg-[#212934] text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-lg">
+                IMPORT CSV
+            </span>
+            <div class="w-12 h-12 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-all">
+                <i class='bx bxs-file-import text-xl'></i>
+            </div>
+        </button>
+
+        <!-- CALCUL INDICATEURS -->
+        <button onclick="openIndicatorModal()" class="flex items-center justify-end gap-3">
+            <span class="bg-[#1f6feb] text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-lg">
+                CALCUL INDICATEURS
+            </span>
+            <div class="w-12 h-12 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all">
+                <i class='bx bx-calculator text-xl'></i>
+            </div>
+        </button>
+
+    </div>
+
+    <!-- bouton principal -->
+    <button class="w-16 h-16 bg-[#2c6693] hover:bg-[#1d4e74] rounded-full shadow-2xl flex items-center justify-center text-white text-3xl transition-all active:scale-95">
+        <i class='bx bx-plus group-hover:rotate-45 transition-transform duration-300'></i>
+    </button>
+
+</div>
+</div>
+<div id="indicatorModal"
+     class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-[200]">
+
+    <!-- MODAL CARD -->
+    <div class="bg-white w-[800px] max-w-[95%] rounded-2xl shadow-2xl p-8 border border-gray-100">
+
+        <!-- HEADER -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-semibold text-gray-800">
+                    Calcul des indicateurs
+                </h2>
+                <p class="text-sm text-gray-500">
+                    Sélectionnez la période, l’unité et les indicateurs à calculer
+                </p>
+            </div>
+
+            <button onclick="closeIndicatorModal()"
+                    class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-red-500 transition">
+                ✕
+            </button>
+        </div>
+        
+        <!-- GRID INPUTS -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+
+            <!-- PERIODE -->
+            <div>
+                <label class="text-sm font-medium text-gray-600">Période</label>
+               
+                <select  class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition" id="period">
+                    {%for period in periode%}
+                    <option value="{{period.id}}">{{period.nom}}</option>
+                    {%endfor%}
+                </select>
+            </div>
+
+            <!-- ORG UNIT -->
+            <div>
+                <label class="text-sm font-medium text-gray-600">Unité organisationnelle</label>
+               
+
+                 <select  class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition" id="orgUnit">
+                    {%for orgUnit in structure%}
+                    <option value="{{orgUnit.id}}">{{orgUnit.nom}}</option>
+                    {%endfor%}
+                </select>
+            </div>
+
+        </div>
+
+        <!-- INDICATORS -->
+        <div class="mb-6">
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-sm font-medium text-gray-600">
+                    Indicateurs disponibles
+                </label>
+                <span class="text-xs text-gray-400">multi-sélection</span>
+            </div>
+
+            <div class="h-64 overflow-y-auto border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50">
+
+              {%for indicateur in indicateurs%}
+                <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-sm transition cursor-pointer">
+                    <input type="checkbox" value="{{indicateur.id}}" class="accent-blue-600" name="indicateur">
+                    <span class="text-gray-700">{{indicateur.m_name}}</span>
+                </label>
+                {%endfor%}
+
+            </div>
+        </div>
+
+        <!-- ACTION -->
+        <div class="flex justify-end gap-3">
+
+            <button onclick="closeIndicatorModal()"
+                    class="px-5 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
+                Annuler
+            </button>
+
+            <button onclick="runCalculation()"
+                    class="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-md transition">
+                Lancer le calcul
+            </button>
+
+        </div>
+
+
+    </div>
+</div>
+<div id="importModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+
+    <div id="modalBox"
+        class="bg-white/90 backdrop-blur-xl w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden
+        transform scale-95 opacity-0 transition-all duration-300 flex flex-col max-h-[92vh] border border-white/30">
+
+        <!-- HEADER -->
+        <div class="relative bg-gradient-to-r from-[#2c6693] to-blue-500 px-6 py-5">
+
+            <!-- subtle glow -->
+            <div class="absolute inset-0 bg-white/5"></div>
+
+            <div class="relative flex justify-between items-center">
+                <div>
+                    <h2 class="text-white font-semibold text-sm tracking-wide">Import intelligent</h2>
+                    <p class="text-[10px] text-white/70 mt-0.5">
+                        Analyse automatique & validation des données
+                    </p>
+                </div>
+
+                <span id="globalBadge"
+                    class="text-[10px] font-semibold px-3 py-1 rounded-full bg-white/15 text-white backdrop-blur">
+                    Prêt
+                </span>
+            </div>
+        </div>
+
+        <!-- BODY -->
+        <div class="p-5 space-y-5 overflow-y-auto">
+
+            <!-- DROPZONE -->
+            <div id="dropZone"
+                class="group relative border border-dashed border-slate-300/70 rounded-2xl p-8 text-center
+                bg-slate-50/40 hover:bg-slate-50 transition-all cursor-pointer">
+
+                <input type="file" id="fileInput"
+                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+
+                <div id="uploadContent" class="space-y-2">
+
+                    <div class="w-10 h-10 mx-auto rounded-full bg-white shadow-sm flex items-center justify-center">
+                        📄
+                    </div>
+
+                    <p class="text-sm font-medium text-slate-700">
+                        Glisser ou choisir un fichier
+                    </p>
+
+                    <p class="text-[10px] text-slate-400">
+                        Excel (.xlsx, .csv)
+                    </p>
+                </div>
+            </div>
+
+            <!-- PROGRESS -->
+            <div class="space-y-1">
+                <div class="flex justify-between text-[11px] text-slate-500">
+                    <span>Progression</span>
+                    <span id="progressText" class="font-semibold text-slate-600">0%</span>
+                </div>
+
+                <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div id="globalProgress"
+                        class="h-full w-0 bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- PIPELINE -->
+            <div id="pipeline" class="space-y-2 hidden"></div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="p-4 border-t bg-slate-50/40 flex justify-between items-center">
+
+            <p class="text-[10px] text-slate-400">
+                Système sécurisé • validation en temps réel
+            </p>
+
+            <div class="flex gap-2">
+                <button onclick="closeModal()"
+                    class="px-4 py-2 text-[11px] text-slate-500 hover:text-slate-700 transition">
+                    Fermer
+                </button>
+
+                <button id="startBtn" onclick="runPipeline()"
+                    class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-semibold shadow-sm transition">
+                    Lancer l’analyse
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="toastContainer" class="fixed top-5 right-5 z-[999] space-y-3"></div>
+<div id="errorModal"
+     class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+
+    <div class="bg-white/95 backdrop-blur-xl w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-white/30 flex flex-col max-h-[85vh]">
+
+        <!-- HEADER -->
+        <div class="bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 px-6 py-5 relative">
+
+            <div class="absolute inset-0 bg-white/10"></div>
+
+            <div class="relative flex items-start justify-between gap-4">
+
+                <!-- ICON -->
+                <div class="flex items-center gap-3">
+
+                    <div class="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                                  d="M12 9v4m0 4h.01M10.29 3.86l-8.2 14.21A1.5 1.5 0 003.3 20h17.4a1.5 1.5 0 001.3-2.23L13.71 3.86a1.5 1.5 0 00-2.62 0z"/>
+                        </svg>
+                    </div>
+
+                    <div>
+                        <h3 class="text-white font-semibold text-sm">
+                            Rapport d’anomalies
+                        </h3>
+                        <p class="text-[10px] text-white/80">
+                            Analyse terminée avec incohérences détectées
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- SUMMARY BADGE -->
+                <div id="errorSummaryBadge"
+                     class="text-[10px] font-semibold px-3 py-1 rounded-full bg-white/15 text-white">
+                    En cours d’analyse
+                </div>
+
+            </div>
+        </div>
+
+        <!-- BODY -->
+        <div class="p-5 overflow-y-auto flex-1 space-y-4">
+
+            <!-- SUMMARY CARD -->
+            <div class="grid grid-cols-3 gap-3">
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <div class="text-[10px] text-slate-400">Total erreurs</div>
+                    <div id="totalErrors" class="text-sm font-semibold text-slate-800">0</div>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                    <div class="text-[10px] text-amber-500">Avertissements</div>
+                    <div id="warningErrors" class="text-sm font-semibold text-amber-600">0</div>
+                </div>
+
+                <div class="bg-rose-50 border border-rose-200 rounded-xl p-3">
+                    <div class="text-[10px] text-rose-500">Bloquants</div>
+                    <div id="criticalErrors" class="text-sm font-semibold text-rose-600">0</div>
+                </div>
+
+            </div>
+
+            <!-- ERROR LIST -->
+            <div id="errorContent" class="space-y-3 text-xs"></div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="p-4 bg-slate-50/60 border-t flex justify-between items-center">
+
+            <p class="text-[10px] text-slate-400">
+                Corrigez les erreurs ou continuez avec les données valides
+            </p>
+
+            <div class="flex gap-2">
+
+                <button onclick="closeErrorModal()"
+                        class="px-4 py-2 text-[11px] text-slate-500 hover:text-slate-700 transition rounded-xl">
+                    Annuler
+                </button>
+
+                <button onclick="confirmAndImport()"
+                        class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[11px] font-semibold transition">
+                    Continuer
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<div id="toast-container" class="fixed top-5 right-5 z-[9999] space-y-3 w-[320px]"></div>
+
+<script>
+let toastQueue = [];
+let toastActiveCount = 0;
+const MAX_TOAST = 3;
+
+/* =========================
+   ENTERPRISE TOAST ENGINE
+========================= */
+function showToast(message, type = "info", duration = 3500) {
+
+    const container = document.getElementById("toast-container");
+
+    const styles = {
+        success: "bg-emerald-600",
+        error: "bg-rose-600",
+        warning: "bg-amber-500",
+        info: "bg-blue-600"
+    };
+
+  const icons = {
+    success: `
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+            d="M5 13l4 4L19 7"/>
+        </svg>
+    `,
+    error: `
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+            d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+    `,
+    warning: `
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+            d="M12 9v4m0 4h.01M10.29 3.86l-8.2 14.21A1.5 1.5 0 003.3 20h17.4a1.5 1.5 0 001.3-2.23L13.71 3.86a1.5 1.5 0 00-2.62 0z"/>
+        </svg>
+    `,
+    info: `
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+            d="M13 16h-1v-4h-1m1-4h.01M12 18a6 6 0 100-12 6 6 0 000 12z"/>
+        </svg>
+    `
+};
+
+    // LIMIT STACK (anti spam)
+    if (toastActiveCount >= MAX_TOAST) {
+        toastQueue.push({message, type, duration});
+        return;
+    }
+
+    toastActiveCount++;
+
+    const toast = document.createElement("div");
+
+    toast.className = `
+        ${styles[type]} text-white rounded-2xl shadow-2xl
+        px-5 py-4 flex gap-3 items-start
+        opacity-0 translate-x-6 transition-all duration-300
+    `;
+
+    toast.innerHTML = `
+        <div class="text-lg leading-none">${icons[type]}</div>
+        <div class="flex-1">
+            <div class="text-xs font-black uppercase opacity-90">Système</div>
+            <div class="text-sm">${message}</div>
+        </div>
+    `;
+
+    container.appendChild(toast);
+
+    // animation entrée
+    setTimeout(() => {
+        toast.classList.remove("opacity-0","translate-x-6");
+    }, 10);
+
+    // auto remove
+    setTimeout(() => {
+        toast.classList.add("opacity-0","translate-x-6");
+
+        setTimeout(() => {
+            toast.remove();
+            toastActiveCount--;
+
+            // process queue
+            if (toastQueue.length > 0) {
+                const next = toastQueue.shift();
+                showToast(next.message, next.type, next.duration);
+            }
+
+        }, 2000);
+
+    }, duration);
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+/**
+ * SYSTÈME D'IMPORTATION INTELLIGENT - OPERA+
+ * Version : 2.0 (UX Premium & Feedback Contextuel)
+ * Auteur : Njankouo Ndam Dairou
+ */
+
+const steps = [
+    { id: 'periods',  label: 'Périodes',  desc: 'Analyse de la chronologie et des doublons', est: 5 },
+    { id: 'elements', label: 'Indicateurs', desc: 'Validation des formats et données', est: 12 },
+    { id: 'orgunits', label: 'Structures',  desc: 'Rapprochement hiérarchique', est: 8 }
+];
+
+let pendingErrors = {};
+const fileInput = document.getElementById('fileInput');
+const uploadContent = document.getElementById('uploadContent');
+const dropZone = document.getElementById('dropZone');
+
+// --- UTILITAIRES ---
+const getCookie = (name) => {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+};
+
+// --- INITIALISATION UI ---
+function initPipeline() {
+    const container = document.getElementById('pipeline');
+    container.classList.remove('hidden');
+    container.innerHTML = steps.map(s => `
+        <div id="step-${s.id}" class="p-4 border border-slate-100 rounded-2xl bg-white/50 transition-all duration-300 mb-3">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-700">${s.label}</h4>
+                    <p class="text-[10px] text-slate-400 italic">${s.desc}</p>
+                </div>
+                <span class="status-badge px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-400">
+                    En attente
+                </span>
+            </div>
+            <div class="bg-slate-100 h-1.5 w-full rounded-full overflow-hidden">
+                <div class="bar bg-blue-500 h-full w-0 transition-all duration-700 ease-out"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// --- GESTION DU FICHIER ---
+fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['csv', 'xlsx', 'xls'].includes(ext)) {
+        showToast("Format non supporté. Utilisez Excel ou CSV.", "error");
+        fileInput.value = '';
+        return;
+    }
+
+    const sizeKB = (file.size / 1024).toFixed(1);
+    dropZone.classList.replace('border-slate-300/70', 'border-emerald-400');
+    dropZone.classList.add('bg-emerald-50/30');
+
+    uploadContent.innerHTML = `
+        <div class="space-y-2 animate-in fade-in zoom-in duration-300 text-center">
+            <div class="w-10 h-10 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <p class="text-sm font-bold text-emerald-800">Fichier prêt pour l'analyse</p>
+            <p class="text-[11px] text-slate-500 font-mono">${file.name} (${sizeKB} KB)</p>
+        </div>
+    `;
+});
+
+// --- EXECUTION DU PIPELINE ---
+async function runPipeline() {
+    const file = fileInput.files[0];
+    if (!file) return showToast("Veuillez choisir un fichier", "warning");
+
+    initPipeline();
+    pendingErrors = {};
+    document.getElementById('globalProgress').style.width = "0%";
+    
+    const formData = new FormData();
+    formData.append('file', file);
+
+    for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const el = document.getElementById(`step-${step.id}`);
+        const bar = el.querySelector('.bar');
+        const badge = el.querySelector('.status-badge');
+
+        badge.innerText = "Analyse...";
+        badge.classList.replace('bg-slate-100', 'bg-blue-100');
+        badge.classList.replace('text-slate-400', 'text-blue-600');
+
+        try {
+            const res = await fetch(`/check-${step.id}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: formData
+            });
+
+            const result = await res.json();
+            bar.style.width = "100%";
+
+            if (result.errors && result.errors.length > 0) {
+                pendingErrors[step.id] = result.errors;
+                badge.innerText = "Alertes";
+                badge.classList.replace('bg-blue-100', 'bg-amber-100');
+                badge.classList.replace('text-blue-600', 'text-amber-600');
+                bar.classList.replace('bg-blue-500', 'bg-amber-500');
+            } else {
+                badge.innerText = "OK";
+                badge.classList.replace('bg-blue-100', 'bg-emerald-100');
+                badge.classList.replace('text-blue-600', 'text-emerald-600');
+                bar.classList.replace('bg-blue-500', 'bg-emerald-500');
+            }
+        } catch (e) {
+            badge.innerText = "Erreur";
+            bar.classList.replace('bg-blue-500', 'bg-rose-500');
+        }
+        
+        await new Promise(r => setTimeout(r, 300));
+        updateGlobalProgress(((i + 1) / steps.length) * 100);
+    }
+
+    // --- DÉCISION FINALE ---
+    const hasErrors = Object.keys(pendingErrors).length > 0;
+    if (hasErrors) {
+        showToast("Analyse terminée : des anomalies ont été détectées.", "warning");
+        setTimeout(showErrors, 600); // Ouvre le modal automatiquement
+    } else {
+        handleSuccessAction();
+    }
+}
+
+// --- AFFICHAGE DU RAPPORT D'ERREURS ---
+
+function showErrors() {
+    const modal = document.getElementById('errorModal');
+    const content = document.getElementById('errorContent');
+    const badge = document.getElementById('errorSummaryBadge');
+    
+    // Compteurs
+    let total = 0;
+    let warnings = 0;
+    let critical = 0;
+    let html = '';
+
+    // Parcours des erreurs stockées pendant le pipeline
+    Object.entries(pendingErrors).forEach(([stepId, errors]) => {
+        const stepName = steps.find(s => s.id === stepId)?.label || stepId;
+        total += errors.length;
+
+        html += `
+            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">${stepName}</span>
+                    <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500">${errors.length} anomalie(s)</span>
+                </div>
+                <div class="space-y-2">
+        `;
+
+        errors.forEach(err => {
+            const isCritical = err.type === "critical";
+            isCritical ? critical++ : warnings++;
+
+            html += `
+                <div class="flex gap-3 p-3 rounded-xl border ${isCritical ? 'bg-rose-50/50 border-rose-100' : 'bg-amber-50/50 border-amber-100'}">
+                    <div class="mt-0.5">
+                        ${isCritical 
+                            ? '<svg class="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/></svg>' 
+                            : '<svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/></svg>'}
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-[10px] font-mono text-slate-500 mb-0.5">Valeur : <span class="font-bold text-slate-700">${err.value || 'N/A'}</span></div>
+                        <div class="text-[11px] leading-snug ${isCritical ? 'text-rose-600' : 'text-amber-700'}">${err.message}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div></div>`;
+    });
+
+    // Mise à jour des compteurs dans ton HTML
+    document.getElementById('totalErrors').innerText = total;
+    document.getElementById('warningErrors').innerText = warnings;
+    document.getElementById('criticalErrors').innerText = critical;
+    
+    // Mise à jour du badge header
+    badge.innerText = critical > 0 ? "Importation bloquée" : "Avertissements détectés";
+    badge.className = `text-[10px] font-semibold px-3 py-1 rounded-full bg-white/15 text-white ${critical > 0 ? 'ring-1 ring-white/50' : ''}`;
+
+    // Logique du bouton Continuer
+    const btnContinue = document.querySelector('button[onclick="confirmAndImport()"]');
+    if (critical > 0) {
+        btnContinue.disabled = true;
+        btnContinue.classList.add('opacity-50', 'cursor-not-allowed');
+        btnContinue.innerText = "Correction requise";
+    } else {
+        btnContinue.disabled = false;
+        btnContinue.classList.remove('opacity-50', 'cursor-not-allowed');
+        btnContinue.innerText = "Continuer l'importation";
+    }
+
+    content.innerHTML = html;
+    modal.classList.remove('hidden');
+}
+// --- ACTIONS FINALES ---
+function handleSuccessAction() {
+    Swal.fire({
+        html: `
+            <div class="p-2 text-center">
+                <div class="flex justify-center mb-8">
+                    <div class="relative w-20 h-20 flex items-center justify-center">
+                        <div class="absolute inset-0 rounded-full border border-emerald-500/20 animate-[ping_3s_linear_infinite]"></div>
+                        <div class="absolute inset-2 rounded-full border border-emerald-500/10"></div>
+                        
+                        <svg class="w-10 h-10 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" 
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" 
+                                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+
+                <h3 class="text-xs font-black tracking-[0.3em] text-emerald-500 uppercase mb-4">
+                    Statut : <span class="text-white">Synchronisé</span>
+                </h3>
+                
+                <h2 class="text-2xl font-light tracking-tight text-slate-100 mb-4">
+                    Analyse <span class="font-bold border-b border-emerald-500/50">terminée</span>
+                </h2>
+                
+                <p class="text-[10px] leading-relaxed text-slate-400 font-medium uppercase tracking-[0.15em] max-w-[280px] mx-auto mb-8">
+                    L'intégrité structurelle des données a été validée. 
+                    <span class="block mt-1 text-slate-500 font-light lowercase italic">Prêt pour l'exécution des algorithmes de calcul.</span>
+                </p>
+
+                <div class="flex justify-center items-center gap-2 mb-2">
+                    <div class="h-[1px] w-8 bg-slate-800"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500/50"></div>
+                    <div class="h-[1px] w-8 bg-slate-800"></div>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'EXÉCUTER LES CALCULS',
+        cancelButtonText: 'TERMINER',
+        customClass: {
+            container: 'backdrop-blur-md bg-slate-950/40',
+            popup: 'rounded-[32px] border border-slate-800 shadow-2xl p-10 bg-slate-900',
+            confirmButton: `
+                px-8 py-4 bg-emerald-600 text-white text-[10px] font-black tracking-[0.25em] 
+                rounded-xl transition-all duration-500 hover:bg-emerald-500 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]
+            `,
+            cancelButton: `
+                px-8 py-4 text-slate-500 text-[10px] font-bold tracking-[0.25em] 
+                rounded-xl hover:text-slate-300 transition-colors
+            `
+        },
+        buttonsStyling: false,
+        showClass: { popup: 'animate__animated animate__fadeIn animate__faster' },
+        hideClass: { popup: 'animate__animated animate__fadeOut animate__faster' }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            executeFinalImport();
+        }
+    });
+}
+
+async function executeFinalImport() {
+    closeErrorModal();
+    
+    // Notification de début de processus (Style minimaliste)
+    showToast("Synchronisation avec le serveur central en cours...", "info");
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    try {
+        const res = await fetch('/final-import-data/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken') },
+            body: formData
+        });
+
+        if (res.ok) {
+            // Feedback final : Esthétique "Mission Accomplished"
+            Swal.fire({
+                html: `
+                    <div class="p-4 text-center">
+                        <div class="flex justify-center mb-6">
+                            <div class="relative w-16 h-16">
+                                <div class="absolute inset-0 rounded-full border-2 border-emerald-500/20"></div>
+                                <svg class="w-16 h-16 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" 
+                                          d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                                    <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75" class="text-emerald-500"></path>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <h3 class="text-xs font-black tracking-[0.4em] text-emerald-500 uppercase mb-2">
+                            Base de données
+                        </h3>
+                        
+                        <h2 class="text-xl font-light tracking-tight text-white mb-4">
+                            Persistance <span class="font-bold">validée</span>
+                        </h2>
+                        
+                        <p class="text-[10px] text-slate-500 uppercase tracking-widest leading-relaxed">
+                            Les indicateurs MEAL ont été injectés <br/> avec une intégrité de 100%
+                        </p>
+                    </div>
+                `,
+                showConfirmButton: false,
+                timer: 3500,
+                timerProgressBar: true,
+                background: '#0f172a', // Slate-950
+                customClass: {
+                    popup: 'rounded-[32px] border border-slate-800 shadow-2xl p-8',
+                    timerProgressBar: 'bg-emerald-500/30'
+                },
+                showClass: { popup: 'animate__animated animate__fadeInUp animate__faster' }
+            });
+
+            updateGlobalProgress(100);
+            
+            // Mise à jour optionnelle d'un badge d'état global sur l'interface
+            const globalBadge = document.getElementById('globalBadge');
+            if (globalBadge) {
+                globalBadge.innerText = "Synchronisé";
+                globalBadge.classList.replace('text-slate-400', 'text-emerald-500');
+            }
+
+        } else {
+            throw new Error("Server response not OK");
+        }
+
+    } catch (e) {
+        // Alerte d'échec critique (Thème Rose/Dark)
+        Swal.fire({
+            html: `
+                <div class="text-center p-2">
+                    <div class="text-rose-500 mb-4 flex justify-center">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-rose-500 mb-2">Erreur Critique</h3>
+                    <p class="text-sm text-slate-300 font-light italic text-pretty">La synchronisation a été interrompue par le serveur distant.</p>
+                </div>
+            `,
+            background: '#0f172a',
+            showConfirmButton: true,
+            confirmButtonText: 'REVOIR LES LOGS',
+            customClass: {
+                popup: 'rounded-3xl border border-rose-500/20 p-8',
+                confirmButton: 'bg-rose-500 text-white px-6 py-2 rounded-xl text-[10px] font-bold tracking-widest uppercase'
+            },
+            buttonsStyling: false
+        });
+        showToast("Échec de l'écriture SQL", "error");
+    }
+}
+
+function updateGlobalProgress(val) {
+    document.getElementById('globalProgress').style.width = val + "%";
+}
+
+function closeErrorModal() {
+    document.getElementById('errorModal').classList.add('hidden');
+}
+
+function showToast(msg, type) {
+    // Configuration des accents de bordure (Glow technique)
+    const accents = { 
+        success: '#10b981', // Emerald
+        error: '#f43f5e',   // Rose
+        warning: '#f59e0b',  // Amber
+        info: '#3b82f6'      // Blue
+    };
+
+    const accentColor = accents[type] || '#64748b';
+
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: undefined, // On retire l'icône standard pour un design plus épuré
+        html: `
+            <div class="flex items-center gap-3 px-1">
+                <div class="w-1 h-6 rounded-full" style="background-color: ${accentColor}"></div>
+                
+                <div class="flex flex-col">
+                    <span class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                        Système • ${type}
+                    </span>
+                    <span class="text-[11px] font-medium text-slate-200 tracking-tight">
+                        ${msg}
+                    </span>
+                </div>
+            </div>
+        `,
+        showConfirmButton: false,
+        timer: 3500,
+        timerProgressBar: true,
+        
+        // Design Dark Carbon
+        background: '#0f172a', // Slate-950
+        color: '#f8fafc',
+        
+        // Personnalisation avancée via les classes CSS de SweetAlert
+        customClass: {
+            popup: 'rounded-xl border border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)] p-3',
+            timerProgressBar: 'bg-opacity-30'
+        },
+        
+        // Couleur de la barre de progression
+        didOpen: (toast) => {
+            const progressBar = toast.querySelector('.swal2-timer-progress-bar');
+            if (progressBar) progressBar.style.backgroundColor = accentColor;
+            
+            // Animation d'entrée
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+}
+
+// MODALS
+function openModal(){
+    const m = document.getElementById('importModal');
+    const b = document.getElementById('modalBox');
+    m.classList.remove('hidden');
+    setTimeout(()=>b.classList.remove('scale-95','opacity-0'),10);
+}
+
+function closeModal(){
+    location.reload();
+}
+
+function closeErrorModal(){
+    document.getElementById('errorModal').classList.add('hidden');
+}
+
+</script>
+<script>
+    function openIndicatorModal() {
+    document.getElementById("indicatorModal").classList.remove("hidden");
+    document.getElementById("indicatorModal").classList.add("flex");
+}
+
+function closeIndicatorModal() {
+    document.getElementById("indicatorModal").classList.add("hidden");
+    document.getElementById("indicatorModal").classList.remove("flex");
+}
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+function runCalculation() {
+    const period = document.getElementById("period").value;
+    const orgUnit = document.getElementById("orgUnit").value;
+
+    if (!period || !orgUnit) {
+        alert("Veuillez sélectionner la période et l’unité");
+        return;
+    }
+
+    const selected = Array.from(
+        document.querySelectorAll("#indicatorModal input[type=checkbox]:checked")
+    ).map(cb => cb.value);
+
+    if (selected.length === 0) {
+        alert("Veuillez sélectionner au moins un indicateur");
+        return;
+    }
+
+    const csrftoken = getCookie('csrftoken');
+
+    fetch('/api/indicators/calculate/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            period,
+            orgUnit,
+            indicators: selected
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log(data);
+          showToast("calcul Terminé");
+        closeIndicatorModal();
+    })
+    .catch(err => {
+        console.error(err);
+          showToast("Erreur de Calcul", "err");
+    });
+}
+</script>
+
+{% endblock %}

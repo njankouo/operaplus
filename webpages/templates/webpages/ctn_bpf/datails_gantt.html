@@ -1,0 +1,260 @@
+{% extends './index.html' %}
+{% load static %}
+{% block main %}
+
+<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
+    
+    <!-- En-tête style Odoo (Breadcrumb / Titre & Actions) -->
+    <div class="bg-white border border-slate-200 rounded-lg p-6 shadow-2xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <span>Projets</span>
+                <i class="fas fa-chevron-right text-[10px]"></i>
+                <span class="text-indigo-600">Planification</span>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">
+                {{ operation.nom|default:"Projet Sans Nom" }}
+            </h1>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                <i class="fas fa-shield-alt mr-1.5 text-indigo-600"></i> Mode Édition
+            </span>
+        </div>
+    </div>
+
+    <!-- Formulaire principal (Style Fiche Odoo) -->
+    <div class="bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-sm font-bold text-slate-700">
+                <i class="fas fa-sliders-h text-indigo-600"></i>
+                <span>Paramètres de Planification</span>
+            </div>
+        </div>
+
+        <form method="POST" action='{% url "update-planification" %}' class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="bg-red-50 text-red-700 p-4 rounded-md border border-red-200 text-sm space-y-1">
+                <div class="font-bold flex items-center gap-2">
+                    <i class="fas fa-exclamation-circle"></i> Veuillez corriger les erreurs suivantes :
+                </div>
+                <ul class="list-disc list-inside text-xs">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <input type="hidden" value="{{ operation.id }}" name="operation">
+            
+            <!-- Champs en grille type formulaire ERP -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="date_debut" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Date de début</label>
+                    <input type="date" name="date_debut" class="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-md text-slate-800 text-sm focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 outline-none" id="date_debut" value="{{ operation.date_debut|date:'Y-m-d' }}" required>
+                </div>
+                {% include '../ctn_bpf/includes/date.html' %}
+            </div>
+
+            <!-- Jours de réalisation -->
+            <div>
+                <label for="days-input" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Jours pour la réalisation</label>
+                <div class="flex items-center border border-slate-300 rounded-md bg-white max-w-xs overflow-hidden">
+                    <button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border-r border-slate-300 transition-colors text-xs" type="button" id="btn-minus"><i class="fas fa-minus"></i></button>
+                    <input type="number" class="w-full text-center py-2 bg-transparent font-bold text-slate-800 text-sm outline-none" id="days-input" name="nombre_jour" value="{{ operation.nombre_jour|default:1 }}" min="1" max="365" required>
+                    <button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border-l border-slate-300 transition-colors text-xs" type="button" id="btn-plus"><i class="fas fa-plus"></i></button>
+                </div>
+                <p class="text-xs text-slate-500 mt-1.5 font-medium">
+                    Durée totale estimée : <span id="total-duration-display" class="font-bold text-indigo-600">{{ total_duration|default:1 }} jour{{ total_duration|default:1|pluralize }}</span>
+                </p>
+            </div>
+            
+            <input type="hidden" value="{{ operation.personnel.id }}" name="responsable">
+            
+            {% if actual_institution.is_frequency %}
+                {% include '../ctn_bpf/includes/frequence.html' %}
+            {% endif %}
+
+            <!-- Boutons d'action pied de formulaire -->
+            <div class="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-semibold text-xs tracking-wider uppercase transition-colors shadow-2xs flex items-center gap-2" id="submitBtn">
+                    <i class="fas fa-save"></i>
+                    <span>Enregistrer</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Registre Actif (Transactions - Style Liste/Tableau Odoo) -->
+    {% if operation_transaction %}
+    <div class="bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden space-y-4" id="transactions-section">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm">Registre des Transactions</h3>
+                <p class="text-xs text-slate-500">Suivi en temps réel des flux opérationnels.</p>
+            </div>
+            <span class="px-2.5 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded">
+                Total : {{ operation_transaction|length }}
+            </span>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for transaction in operation_transaction %}
+            
+            <!-- Modale Odoo -->
+            <div class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs items-center justify-center p-4" id="editModal{{ transaction.id }}">
+                <div class="bg-white rounded-lg w-full max-w-lg shadow-xl border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                        <h4 class="text-sm font-bold text-slate-800">Configuration - TRX-{{ forloop.counter|stringformat:"03d" }}</h4>
+                        <button type="button" class="text-slate-400 hover:text-slate-600" onclick="document.getElementById('editModal{{ transaction.id }}').style.display='none'">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form method="POST" action="/update_transaction/{{ transaction.id }}/" class="p-6 space-y-4">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Nom</label>
+                            <input type="text" name="nom" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:border-indigo-600 outline-none" value="{{ transaction.nom|default:'' }}" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Responsable</label>
+                            <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:border-indigo-600 outline-none bg-white" name="responsable">
+                                {% for personnels in personnel %}<option value="{{ personnels.id }}">{{ personnels.nom }}</option>{% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Date</label>
+                                <input type="date" name="date_enregistrement" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:border-indigo-600 outline-none" value="{{ transaction.date_enregistrement|date:'Y-m-d' }}" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Valeur (%)</label>
+                                <input type="number" name="valeur" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:border-indigo-600 outline-none" value="{{ transaction.valeur|floatformat:'0' }}" max="100" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-slate-200 flex justify-end gap-2">
+                            <button type="button" class="px-4 py-2 border border-slate-300 hover:bg-slate-50 rounded-md text-xs font-semibold text-slate-700" onclick="document.getElementById('editModal{{ transaction.id }}').style.display='none'">Annuler</button>
+                            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold">Mettre à jour</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Carte Transaction Style Kanban Odoo -->
+            <div class="bg-white p-4 rounded-md border border-slate-200 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 uppercase">TRX-{{ forloop.counter|stringformat:"03d" }}</span>
+                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full {% if transaction.etat %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                            {% if transaction.etat %}Traitée{% else %}En attente{% endif %}
+                        </span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-sm mb-0.5 truncate">{{ transaction.nom|default:"Sans Nom"|title }}</h4>
+                    <p class="text-xs text-slate-400 mb-3"><i class="far fa-calendar-alt mr-1"></i> {{ transaction.date_enregistrement }}</p>
+                    
+                    <div class="space-y-1 mb-4">
+                        <div class="flex justify-between text-xs text-slate-500 font-medium">
+                            <span>Progression</span>
+                            <span class="font-bold text-slate-700">{{ transaction.valeur }}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-indigo-600 h-full rounded-full" style="width: {{ transaction.valeur }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100">
+                    {% if not transaction.etat %}
+                        <div class="flex gap-2">
+                            <a href="/send-transaction/{{ transaction.id }}/" class="flex-1 text-center py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-xs font-semibold transition-colors">Soumettre</a>
+                            <button onclick="document.getElementById('editModal{{ transaction.id }}').style.display='flex'" class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded text-xs transition-colors"><i class="fas fa-cog"></i></button>
+                        </div>
+                    {% else %}
+                        <div class="w-full text-center py-1.5 text-emerald-700 bg-emerald-50/60 rounded text-xs font-semibold">Validé</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Script logique inchangé -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const daysInput = document.getElementById('days-input');
+        const startDateInput = document.getElementById('date_debut');
+        const endDateInput = document.getElementById('date_fin');
+        const btnMinus = document.getElementById('btn-minus');
+        const btnPlus = document.getElementById('btn-plus');
+
+        const updateEndDate = () => {
+            if (!startDateInput || !endDateInput || !daysInput) return;
+            const startDate = startDateInput.valueAsDate;
+            const daysToAdd = parseInt(daysInput.value, 10);
+
+            if (!startDate || isNaN(daysToAdd)) {
+                endDateInput.value = '';
+                return;
+            }
+
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + daysToAdd);
+            endDateInput.valueAsDate = endDate;
+        };
+
+        const updateDaysFromDates = () => {
+            if (!startDateInput || !endDateInput || !daysInput) return;
+            const startDate = startDateInput.valueAsDate;
+            const endDate = endDateInput.valueAsDate;
+
+            if (!startDate || !endDate || endDate < startDate) {
+                daysInput.value = '';
+                return;
+            }
+
+            const timeDifference = endDate.getTime() - startDate.getTime();
+            const dayDifference = Math.ceil(timeDifference / (1000 * 3600 * 24));
+            daysInput.value = dayDifference;
+        };
+
+        const updateDays = (delta) => {
+            if (!daysInput) return;
+            let currentValue = parseInt(daysInput.value, 10) || 1;
+            const min = parseInt(daysInput.min, 10) || 1;
+            const max = parseInt(daysInput.max, 10) || 365;
+
+            currentValue += delta;
+
+            if (currentValue >= min && currentValue <= max) {
+                daysInput.value = currentValue;
+                updateEndDate();
+            }
+        };
+
+        if (btnMinus) btnMinus.addEventListener('click', () => updateDays(-1));
+        if (btnPlus) btnPlus.addEventListener('click', () => updateDays(1));
+
+        if (startDateInput) startDateInput.addEventListener('change', updateEndDate);
+        if (daysInput) {
+            daysInput.addEventListener('change', updateEndDate);
+            daysInput.addEventListener('input', updateEndDate);
+        }
+        if (endDateInput) endDateInput.addEventListener('change', updateDaysFromDates);
+
+        if (startDateInput && !startDateInput.value) {
+            startDateInput.valueAsDate = new Date();
+            updateEndDate();
+        }
+    });
+</script>
+
+{% endblock %}

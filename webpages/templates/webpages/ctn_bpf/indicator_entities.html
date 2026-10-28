@@ -1,0 +1,150 @@
+{% for entity, indicateur_list in grouped_indicators.items %}
+
+    <div class="mb-6 p-5 bg-white shadow-lg rounded-xl transition duration-300 hover:shadow-xl group-entite
+                border-t-4 border-[{{ request.user.personnel.color|default:'#9CA3AF' }}]">
+
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-extrabold text-gray-900 flex items-center truncate">
+                <i class='bx bxs-institution text-3xl mr-2 text-[{{ request.user.personnel.color|default:"#1E88E5" }}]'></i>
+                {{ entity }}
+            </h3>
+            <span class="flex-shrink-0 px-2 py-0.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold">
+                {{ indicateur_list|length }} indicateur{{ indicateur_list|length|pluralize }}
+            </span>
+        </div>
+
+        <div class="space-y-4 indicator-list-v3">
+            {% for indicateur in indicateur_list %}
+                
+                <div class="group relative rounded-xl shadow-md border border-gray-200 bg-white
+                            transition-all duration-300 ease-in-out hover:shadow-lg 
+                            ring-1 ring-primary-vibrant/30">
+                    
+                    {# EN-TÊTE OPTIMISÉ AVEC L'INDICATEUR DE CIBLE #}
+                    <div class="flex justify-between items-center p-4
+                                 rounded-t-xl transition-all duration-300 ease-in-out"
+                          style="background-color: {{ request.user.personnel.color|default:'#1E88E5' }};">
+                        
+                        {# Titre de l'indicateur #}
+                        <div class="flex items-center flex-grow truncate pr-4"> 
+                            <i class="bx bx-target-lock text-xl mr-3 text-white flex-shrink-0"></i>
+                            <h5 class="text-base font-bold truncate text-white"
+                                title="{{ indicateur.m_name }}">
+                                {{ indicateur.m_name|default:"Nom non spécifié" }}
+                            </h5>
+                        </div>
+                        
+                        {# INDICATEUR VISUEL DANS L'ESPACE À DROITE #}
+                        <div class="flex-shrink-0 flex items-center space-x-2">
+                            <span class="text-sm font-semibold text-white uppercase hidden sm:inline">Cible Non Atteinte</span>
+                            <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center 
+                                        bg-red-500 shadow-lg"
+                                 title="Indicateur d'atteinte : 95%">
+                                <span class="text-sm font-extrabold text-white">
+                                    0%
+                                </span>
+                            </div>
+                        </div>
+                        
+                    </div>
+                    {# FIN EN-TÊTE #}
+
+                    <div class="p-4 transition-all duration-300 ease-in-out border-t border-gray-100 bg-gray-50 rounded-b-xl">
+                        
+                        {# DÉBUT DE LA GRILLE 2 COLONNES POUR CIBLES ET OBJECTIFS #}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-4">
+                            
+                            {# 1. CIBLES (Colonne de gauche) #}
+                            <div>
+                                <h5 class="text-md font-bold text-gray-700 mb-2 border-b pb-1 flex items-center">
+                                    <i class='bx bxs-bullseye text-lg mr-2 text-primary-vibrant'></i> Cibles
+                                </h5>
+                                <div class="ml-2 space-y-1 text-sm">
+                                    {% for indicateurvaleurs in indicateurvaleur %}
+                                        {% if indicateurvaleurs.indicateur_id == indicateur.id %}
+                                            <p class="text-gray-600">
+                                                <span class="font-semibold">{{ indicateurvaleurs.structure.nom }}</span>: {{ indicateurvaleurs.valeur|floatformat }}
+                                            </p>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if not indicateurvaleur %}
+                                        <p class="text-gray-400 italic">Aucune cible définie.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {# 2. OBJECTIFS (Colonne de droite) #}
+                            <div>
+                                <h5 class="text-md font-bold text-gray-700 mb-2 border-b pb-1 flex items-center">
+                                     <i class='bx bxs-badge-check text-lg mr-2 text-primary-vibrant'></i> Objectifs
+                                </h5>
+                                <div class="ml-2 space-y-1 text-sm">
+                                    {% for objectif in objectifs %}
+                                        {% if objectif.indicateur_id == indicateur.id %}
+                                            <p class="text-gray-600">
+                                                <span class="font-semibold">{{ objectif.structure.nom|default:'Structure non spécifiée' }}</span>: {{ objectif.valeur|floatformat|default:'Valeur non spécifiée' }}
+                                            </p>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if not objectifs %}
+                                        <p class="text-gray-400 italic">Aucun objectif défini.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {# FIN DE LA GRILLE 2 COLONNES #}
+
+
+                        {# ALIAS ET FORMULE (restent en grille 2 colonnes) #}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+
+                            <div>
+                                <p class="text-gray-500 mb-1 text-xs font-bold uppercase tracking-widest">Alias :</p>
+                                <span class="inline-flex items-center px-3 py-0.5 text-sm font-semibold rounded-full
+                                             text-white bg-green-500 shadow-md shadow-green-500/20">
+                                    <i class="bx bx-tag-alt mr-2 text-sm"></i>
+                                    {{ indicateur.nicename|default:"Non spécifié" }}
+                                </span>
+                            </div>
+
+                            <div>
+                                <p class="text-gray-500 mb-1 text-xs font-bold uppercase tracking-widest">Formule :</p>
+                                <span class="inline-flex items-center px-3 py-0.5 text-sm font-mono rounded-lg
+                                             text-gray-800 bg-gray-200 border border-gray-300">
+                                    <i class="bx bx-code-alt mr-2 text-sm"></i>
+                                    {{ indicateur.get_formule_affichee|default:"Non définie" }}
+                                </span>
+                            </div>
+
+                        </div>
+
+                        <div class="pt-4 mt-4 border-t border-gray-200">
+                            <p class="text-gray-500 mb-2 text-xs font-bold uppercase tracking-widest">Niveaux d'exécution techniques :</p>
+                            <div class="flex flex-wrap gap-2 justify-start">
+                                {% if indicateur.niveaux_exec %}
+                                    {% for niveau in indicateur.niveaux_exec %}
+                                        <span class="inline-flex items-center px-3 py-0.5 text-sm font-medium rounded-full
+                                                     text-white bg-indigo-500 shadow-md shadow-indigo-500/20">
+                                            <i class="bx bx-layer mr-2 text-sm"></i> {{ niveau }}
+                                        </span>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-sm text-gray-400 italic">Aucun niveau spécifié</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                    </div>
+                    
+                </div>
+                
+            {% endfor %}
+        </div>
+
+    </div>
+
+{% empty %}
+    <p class="text-center text-gray-600 p-8 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 text-md">
+        😔 Aucun indicateur trouvé pour cette institution.
+    </p>
+{% endfor %}

@@ -1,0 +1,642 @@
+
+{% extends './index.html' %}
+{% load static %}
+{% load humanize %}
+{% block main %}
+
+
+           <script>
+   document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const totalInput = document.getElementById('montant-total');
+
+    // Fonction pour calculer et mettre à jour le total
+    function calculateTotal() {
+        let total = 0;
+        // Sélectionnez tous les champs de montant visibles
+        const amountInputs = document.querySelectorAll('.montant-input');
+        amountInputs.forEach(input => {
+            // Vérifiez si le champ est visible avant d'ajouter sa valeur
+            if (input.closest('div').style.display !== 'none') {
+                 const value = parseFloat(input.value);
+                 if (!isNaN(value)) {
+                     total += value;
+                 }
+            }
+        });
+        totalInput.value = total.toFixed(2);
+    }
+
+    // Écouteur d'événement sur chaque checkbox
+    checkboxes.forEach(checkbox => {
+        const sourceId = checkbox.dataset.id;
+        const montantContainer = document.getElementById(`montant-container-${sourceId}`);
+        const montantInput = document.getElementById(`montant-${sourceId}`);
+
+        // Gérer la visibilité du champ de montant
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                montantContainer.style.display = 'block';
+                montantInput.addEventListener('input', calculateTotal);
+            } else {
+                montantContainer.style.display = 'none';
+                montantInput.removeEventListener('input', calculateTotal);
+                // Réinitialiser la valeur du champ masqué
+                montantInput.value = '';
+            }
+            // Recalculer le total après un changement
+            calculateTotal();
+        });
+
+        // Ajouter un écouteur initial pour les champs de montant déjà affichés
+        if (montantInput) {
+            montantInput.addEventListener('input', calculateTotal);
+        }
+    });
+
+    // Calcul initial au chargement de la page
+    calculateTotal();
+});
+</script>
+
+
+                          {%if request.user.personnel.is_process%}
+                          <div class="col-md-12">
+    <div class="neon-card-dashboard my-4">
+
+        <div class="neon-header">
+            <div class="neon-dot"></div>
+            <h5>Suivi des Transactions</h5>
+        </div>
+
+        <div class="card-body p-0">
+            <div id="progression_lineaire"></div>
+        </div>
+
+    </div>
+</div>
+                           {%endif%}
+        
+      
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+const operationId = {{ operation.id|default:0 }};
+
+console.log("Operation ID:", operationId);
+
+/* COLORS */
+const colors = {
+    previsionnel: '#00f5ff',
+    declarees: '#ff9800',
+    validees: '#e11d48',
+    text: '#e2e8f0',
+    grid: 'rgba(255,255,255,0.08)'
+};
+
+/* 🔥 CLEAN DATA (IMPORTANT) */
+function cleanSeries(arr) {
+    return (arr || []).map(v => v === null ? 0 : Number(v));
+}
+
+/* CHART INIT */
+const options = {
+    chart: {
+        height: 550,
+        type: 'line',
+        background: 'transparent',
+        foreColor: colors.text,
+        toolbar: { show: false },
+        animations: { enabled: true }
+    },
+
+    series: [
+        { name: "Prévisionnel", type: "line", data: [] },
+        { name: "Déclarées", type: "scatter", data: [] },
+        { name: "Validées", type: "scatter", data: [] }
+    ],
+
+    stroke: {
+        width: [4, 0, 0],
+        curve: 'smooth',
+        dashArray: [6, 0, 0]
+    },
+
+    markers: {
+        size: [0, 6, 6],
+        strokeWidth: 2,
+        strokeColors: "#fff"
+    },
+
+    colors: [
+        colors.previsionnel,
+        colors.declarees,
+        colors.validees
+    ],
+
+    xaxis: {
+        categories: []   // 👈 on garde ton système actuel
+    },
+
+    yaxis: {
+        min: 0,
+        max: 100
+    },
+
+    tooltip: {
+        theme: "dark"
+    },
+
+    noData: {
+        text: "Chargement..."
+    }
+};
+
+const chart = new ApexCharts(document.querySelector("#progression_lineaire"), options);
+chart.render();
+
+
+/* 🔥 LOAD DATA */
+function loadData() {
+
+    if (!operationId) {
+        console.error("❌ ID manquant");
+        return;
+    }
+
+    $.ajax({
+        url: `/api/transactions/${operationId}/`,
+        method: "GET",
+
+        success: function(data) {
+
+            console.log("🔥 RAW RESPONSE:", data);
+
+            if (!data || !data.categories) {
+                console.error("❌ JSON invalide");
+                return;
+            }
+
+            chart.updateOptions({
+                xaxis: {
+                    categories: data.categories
+                }
+            });
+
+            chart.updateSeries([
+                {
+                    name: "Prévisionnel",
+                    type: "line",
+                    data: cleanSeries(data.previsionnel)
+                },
+                {
+                    name: "Déclarées",
+                    type: "scatter",
+                    data: cleanSeries(data.declarations)
+                },
+                {
+                    name: "Validées",
+                    type: "scatter",
+                    data: cleanSeries(data.validations)
+                }
+            ]);
+        },
+
+        error: function(err) {
+            console.error("❌ ERREUR AJAX:", err);
+        }
+    });
+}
+
+
+/* AUTO REFRESH */
+$(document).ready(function () {
+    loadData();
+    setInterval(loadData, 10000);
+});
+</script>
+
+<div class="row">
+    <div class="col-md-12">
+    <div class="nav-align-top my-3">
+        <ul class="nav nav-pills flex-column flex-md-row mb-3 gap-2">
+            {% for data_operation in data_operations %}
+            <li class="nav-item">
+                <a class="nav-link btn btn-light border shadow-sm d-flex align-items-center px-4" 
+                   href="/loaddata_set/{{data_operation.id}}/{{operation.id}}/" 
+                   style="border-radius: 12px; transition: all 0.3s ease; {% if forloop.first %}background-color: #fff; border-color: #0d6efd; color: #0d6efd;{% endif %}">
+                    <svg class="me-2" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h320l240 240v240h-80v-200H520v-200H240v640h360v80H240Zm638 15L760-183v89h-80v-226h226v80h-90l118 118-56 57Zm-638-95v-640 640Z"/></svg>
+                    <span class="fw-bold">{{data_operation.m_name}}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="card border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+        <div class="row g-0">
+            <div class="col-md-5 border-end bg-light bg-opacity-50">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold text-dark mb-1">Responsabilités</h5>
+                    <p class="text-muted small">Matrice RACI de l'opération {{operation.nom}}</p>
+                </div>
+                
+                <div class="card-body px-4 pt-0">
+                    <div class="d-flex align-items-center p-3 mb-3 bg-white shadow-sm" style="border-radius: 15px; border-left: 4px solid #0d6efd;">
+                        <img src="{% if operation.personnel.photo %}{{ operation.personnel.photo.url }}{% else %}{% static 'version/images.jpeg' %}{% endif %}"
+                             class="rounded-circle me-3 shadow-sm" style="width: 48px; height: 48px; object-fit: cover;">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">Responsible</h6>
+                            <small class="text-muted">{{operation.personnel}}</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center p-3 mb-3 bg-white shadow-sm" style="border-radius: 15px; border-left: 4px solid #198754;">
+                        <img src="{% if operation.accountable.photo %}{{ operation.accountable.photo.url }}{% else %}{% static 'version/images.jpeg' %}{% endif %}"
+                             class="rounded-circle me-3 shadow-sm" style="width: 48px; height: 48px; object-fit: cover;">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">Accountable</h6>
+                            <small class="text-muted">{{operation.accountable}}</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center p-3 mb-3 bg-white shadow-sm" style="border-radius: 15px; border-left: 4px solid #ffc107;">
+                        <img src="{% if operation.consulted.photo %}{{ operation.consulted.photo.url }}{% else %}{% static 'version/images.jpeg' %}{% endif %}"
+                             class="rounded-circle me-3 shadow-sm" style="width: 48px; height: 48px; object-fit: cover;">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">Consulted</h6>
+                            <small class="text-muted">{{operation.consulted}}</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center p-3 mb-3 bg-white shadow-sm" style="border-radius: 15px; border-left: 4px solid #6c757d;">
+                        <img src="{% if operation.informed.photo %}{{ operation.informed.photo.url }}{% else %}{% static 'version/images.jpeg' %}{% endif %}"
+                             class="rounded-circle me-3 shadow-sm" style="width: 48px; height: 48px; object-fit: cover;">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 fw-bold text-dark small text-uppercase" style="letter-spacing: 0.5px;">Informed</h6>
+                            <small class="text-muted">{{operation.informed}}</small>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-white shadow-sm mt-4 mb-3" style="border-radius: 15px;">
+                        <div class="row text-center">
+                            <div class="col-6 border-end">
+                                <p class="text-muted small mb-0">Pondération</p>
+                                <h5 class="fw-bold mb-0">{{operation.ponderation}}%</h5>
+                            </div>
+                            <div class="col-6">
+                                <p class="text-muted small mb-0">Exécution Valide</p>
+                                <h5 class="fw-bold mb-0 text-success">{{operation.niveau_execution_valide}}%</h5>
+                            </div>
+                        </div>
+                        <div class="progress mt-3" style="height: 8px; border-radius: 10px;">
+                            <div class="progress-bar bg-success" style="width: {{operation.niveau_execution_valide}}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-7 bg-white">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold text-dark mb-1">Informations Techniques</h5>
+                    <p class="text-muted small">Détails de la soumission actuelle</p>
+                </div>
+
+                <div class="card-body px-4">
+                    <div class="p-4 bg-light bg-opacity-25 rounded-4 border mb-4">
+                        {% if actual_institution.default_options == False %}
+                            {% for elt in operation_rapport.aggregate_values %}
+                            <div class="d-flex flex-column flex-sm-row justify-content-between mb-3 pb-2 border-bottom border-light">
+                                <span class="text-secondary small fw-bold text-uppercase">{{elt.label}}</span>
+                                <div class="mt-1 mt-sm-0 text-sm-end">
+                                    {% if elt.type == 'file' %}
+                                        {% if elt.value.m_file %}
+                                        <a href="{{elt.value.m_file.url}}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="fas fa-file-download me-1"></i> Télécharger
+                                        </a>
+                                        {% endif %}
+                                    {% elif elt.type == 'image' %}
+                                        {% if elt.value.m_file %}
+                                        <img src="{{elt.value.m_file.url}}" class="rounded shadow-sm border" style="width:120px; height:80px; object-fit: cover;">
+                                        {% endif %}
+                                    {% elif elt.type == 'choix' %}
+                                        <div class="d-flex flex-wrap gap-1">
+                                        {% for e in elt.extras_repported %}
+                                            <span class="badge {% if e.state == '1' %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %} rounded-pill">
+                                                <i class="fas {% if e.state == '1' %}fa-check{% else %}fa-times{% endif %} me-1"></i> {{e.label}}
+                                            </span>
+                                        {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="fw-bold text-dark">{{elt.value}}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <div class="mt-4 pt-2 border-top d-flex flex-wrap gap-3">
+                            <div class="small text-muted"><i class="fas fa-user-edit me-1 text-primary"></i> Soumis par : <span class="fw-bold text-dark">{{operation_rapport.personnel}}</span></div>
+                            <div class="small text-muted"><i class="fas fa-calendar-alt me-1 text-primary"></i> Le : <span class="fw-bold text-dark">{{operation_rapport.date_created|date:"d/m/Y à H:i"}}</span></div>
+                        </div>
+                    </div>
+
+                    {% if operation_rapport.m_commentaire %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-2"><i class="fas fa-comment-dots text-primary me-2"></i>Compte Rendu</h6>
+                        <div class="p-3 bg-white border rounded-4 shadow-sm" style="font-style: italic; border-left: 5px solid #0d6efd !important;">
+                            "{{operation_rapport.m_commentaire}}"
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if operation.accountable.bd_user == user %}
+                    <div class="d-flex flex-wrap gap-2 justify-content-end mt-4 pt-4 border-top">
+                        <button onclick="annulerTache(this)" data-bs-target="#annulerOperModal" data-bs-toggle="modal" data-id="{{operation.id}}" 
+                                class="btn btn-outline-danger px-4 rounded-pill fw-bold text-uppercase" style="font-size: 0.8rem;">
+                            <i class="fas fa-undo me-2"></i> Rejeter
+                        </button>
+                        <button onclick="validerTache(this)" data-bs-target="#validOperModal" data-bs-toggle="modal" data-id="{{operation.id}}" 
+                                class="btn btn-success px-4 rounded-pill fw-bold shadow-sm text-uppercase" style="font-size: 0.8rem;">
+                            <i class="fas fa-check-circle me-2"></i> Valider l'opération
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+                            <div class="modal fade bd-example-modal-xl" id="validOperModal" id="staticBackdrop" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-lg" role="document">
+                                    <div class="modal-content">
+                                      <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLabel">Valider Rapport</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                                          </button>
+                                      </div>
+                                      <div class="modal-body">
+
+
+<div class="meal-container">
+    <form action='/valid_rapport/' method="POST" ENCTYPE="multipart/form-data">
+        {% csrf_token %}
+
+        {% if operation_rapport != None %}
+            <input type="hidden" value="{{operation_rapport.id}}" name="operation_rapport">
+        {% endif %}
+
+        <div class="meal-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                 
+                    <small class="mb-0">Rapport d'Opération : <span id='opera_valider_title' class="text-warning"></span></small>
+                </div>
+                <div class="col-md-4 text-right">
+                    <i class="fas fa-check-double fa-3x" style="opacity: 0.2;"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4">
+            <div class="row">
+                <div class="col-lg-7 border-right">
+                    <h5 class="mb-4 font-weight-bold"><i class="fas fa-hand-holding-usd mr-2 text-success"></i>Sources de Financement & Redevabilité</h5>
+                    
+                    <div class="row">
+                        {% for source_financements in financement_operation %}
+                        <div class="col-md-12 mb-3">
+                            <div class="source-card p-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input" id="source-{{ source_financements.source_financement.id }}" name="source_financement" value="{{ source_financements.source_financement.id }}" data-id="{{ source_financements.source_financement.id }}" data-nom="{{ source_financements.source_financement.nom }}">
+                                        <label class="custom-control-label font-weight-bold" for="source-{{ source_financements.source_financement.id }}">
+                                            {{ source_financements.source_financement.nom }}
+                                        </label>
+                                    </div>
+                                    <i class="fa fa-coins text-muted"></i>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Montant Planifié</small>
+                                        <span class="font-weight-bold text-dark">{{source_financements.montant_attribue|floatformat:'-2'}} {%for devises in devise%}{%if actual_institution.devise%} {{devises.symbole}} {%endif%}{%endfor%}</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Montant Déclaré</small>
+                                        <span class="font-weight-bold text-success">{{source_financements.montant_declare|floatformat:'-2'|default:'0'}} {%for devises in devise%}{%if actual_institution.devise%} {{devises.symbole}} {%endif%}{%endfor%}</span>
+                                    </div>
+                                </div>
+
+                               
+                                                            <div class="mt-2" id="montant-container-{{ source_financements.source_financement.id }}" style="display: none;">
+                                                              <label for="montant-{{ source_financements.source_financement.id }}" class="form-label">Montant D&eacute;clar&eacute; pour {{ source_financements.source_financement.nom }}</label>
+                                                              <input type="number" class="form-control montant-input" id="montant-{{ source_financements.source_financement.id }}"  name="montant_source_{{ source_financements.source_financement.id }}" placeholder="Montant" step="0.01">
+                                                            </div>
+
+                                                 
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-5">
+                            <i class="fas fa-folder-open fa-3x text-light mb-3"></i>
+                            <p class="text-muted">Aucune donnée de financement à valider.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="kpi-box bg-light mt-3">
+                        <label class="font-weight-bold text-uppercase small text-muted">Total de l'Opération</label>
+                        <input type="number" class="form-control-plaintext text-center h4 font-weight-bold text-primary mb-0" name="total_financement" id="montant-total" readonly value="0">
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <h5 class="mb-4 font-weight-bold"><i class="fas fa-lightbulb mr-2 text-warning"></i>Apprentissage & Impact</h5>
+                    
+                    <div class="form-group mb-4">
+                        <label class="small font-weight-bold">Analyse qualitative (Commentaire)</label>
+                        <textarea rows='4' name="opera_valider_comment" class="form-control meal-input" placeholder="Décrivez les résultats obtenus..."></textarea>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="small font-weight-bold">Niveau d'exécution (Indicateur %)</label>
+                        <select name="niveau" class="form-control meal-input">
+                            <option value="100" selected>100% - Achevé</option>
+                            <option value="75">75% - Avancé</option>
+                            <option value="50">50% - Mi-parcours</option>
+                            <option value="25">25% - Démarrage</option>
+                            <option value="0">0% - Suspendu</option>
+                        </select>
+                    </div>
+
+                    <div class="accordion" id="feedbackAccordion">
+                        <div class="card border-0 mb-2">
+                            <button type="button" class="btn btn-outline-dark btn-sm btn-block text-left" data-bs-toggle="collapse" data-bs-target="#collapseInfo">
+                                <i class="fas fa-envelope-open-text mr-2"></i> Coordonnées de Feedback
+                            </button>
+                            <div id="collapseInfo" class="collapse mt-2" data-parent="#feedbackAccordion">
+                                <div class="p-3 border rounded bg-light">
+                                    <label class="x-small font-weight-bold">Téléphone</label>
+                                    <input type="number" class="form-control meal-input mb-2" name="numero" value="{{operation.informed.tel}}"/>
+                                    <label class="x-small font-weight-bold">Email</label>
+                                    <input type="email" class="form-control meal-input" name="email" value="{{operation.informed.mail}}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 shadow-sm p-3 rounded border">
+                        <label class="small font-weight-bold text-muted">Classification</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <select class="form-control form-control-sm border-0" name="categorie">
+                                    {%for categorie in categorie_operation%}<option value="{{categorie.id}}">{{categorie.intitule}}</option>{%endfor%}
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <select class="form-control form-control-sm border-0" name="nature">
+                                    {%for nature in nature_operation%}<option value="{{nature.id}}">{{nature.intitule}}</option>{%endfor%}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-light p-4 text-right">
+            <p class="text-muted small text-left float-left d-none d-md-block" style="max-width: 300px;">
+                <i class="fas fa-info-circle mr-2"></i> En validant, vous confirmez que les données de monitoring sont conformes à la réalité du terrain.
+            </p>
+            <input type="hidden" id="opera_valider_id" name="opera_valider_id" value="{{operation.id}}">
+            <input type="hidden" name="operation_id" value="{{operation.id}}">
+            <button type="submit" class="btn-submit-meal">
+                Finaliser la Validation
+            </button>
+        </div>
+    </form>
+</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="modal fade bd-example-modal-xl" id="annulerOperModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                      <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLabel">Invalider Le Rapport</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                                          </button>
+                                      </div>
+                                      <div class="modal-body">
+                                            <form action='/in_valid_rapport/' method="POST">
+                                                {% csrf_token %}
+
+                                                {% if operation_rapport != None %}
+                                                <div>
+                                                    <input type="text" value="{{operation_rapport.id}}" name="operation_rapport" style="display: none;">
+                                                </div>
+                                                {% endif %}
+                                                <div class="">
+                                                    <p>
+                                                        <div style="text-transform:uppercase;" class="h5">Vous Invalidez le Rapport sur l'Operation <b id='opera_invalider_title' class="text-success"> </b> ?</div>
+                                                        <div>
+                                                            <input type="text" id="opera_invalider_id" name="opera_invalider_id" value="{{operation.id}}" style="display: none;">
+                                                            <input type="text" name="opera_invalider_rapport" id="opera_invalider_rapport" value="{{operation.id}}" style="display: none;">
+
+                                                                                        </div>
+                                                        <div>
+                                                            <label>Veuillez associer un Commentaire Svp</label>
+                                                            <textarea rows='5' required name="opera_invalider_comment" class="form-control"></textarea>
+                                                        </div>
+                                                    </p>
+                                                </div>
+                            <div class="modal-footer">
+                            <button type="submit" class="btn btn-danger">Rejeter</button>
+                            </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card border-0 shadow-sm my-4" style="border-radius: 1.25rem;">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h5 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.5px;">
+                <i class="fas fa-history text-primary me-2"></i>Historique de l'opération
+            </h5>
+            <span class="badge bg-primary-soft text-primary rounded-pill px-3 py-2">
+                {{ operation_historic|length }} entrées
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table align-middle table-hover border-light">
+                <thead class="bg-light">
+                    <tr class="text-muted small text-uppercase">
+                        <th class="border-0 ps-3">Intervenant</th>
+                        <th class="border-0">Date de réalisation</th>
+                        <th class="border-0">Détails du suivi</th>
+                        <th class="border-0 text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hist in operation_historic %}
+                    {% if operation.id == hist.m_operation.id %}
+                    <tr class="transition-all">
+                        <td class="ps-3">
+                            <div class="d-flex align-items-center">
+                                <div class="position-relative">
+                                    <img src="{{operation.personnel.photo.url}}" 
+                                         alt="Avatar" 
+                                         style="width: 42px; height: 42px; object-fit: cover;" 
+                                         class="rounded-circle border border-2 border-white shadow-sm" />
+                                    <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle"></span>
+                                </div>
+                                <div class="ms-3">
+                                    <p class="fw-semibold mb-0 text-dark" style="font-size: 0.95rem;">{{operation.personnel}}</p>
+                                    <p class="text-muted mb-0 small">{{operation.personnel.mail}}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span class="fw-medium text-dark">{{ hist.m_date_realisation|date:"d M Y" }}</span>
+                                <span class="text-muted small">{{ hist.m_date_realisation|time:"H:i" }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="comment-bubble bg-light p-2 rounded-3 text-muted" style="font-size: 0.9rem; max-width: 250px;">
+                                {{ hist.m_commentaire|truncatechars:100 }}
+                            </div>
+                        </td>
+                        <td class="text-end pe-3">
+                            {% if hist.file %}
+                            <a href="{{ hist.file.url }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-none">
+                                <i class="fas fa-paperclip me-1"></i> Consulter
+                            </a>
+                            {% else %}
+                            <span class="text-muted small italic">Aucun fichier</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+								</div>
+	</div>
+</div>
+
+
+
+
+
+{% endblock %}

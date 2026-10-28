@@ -1,0 +1,326 @@
+<div id="pending-card" class="fixed top-6 right-6 z-[100] transition-all duration-700 ease-out opacity-0 translate-x-10 pointer-events-none">
+    <div class="relative w-64 bg_color border border-rose-600/50 rounded-xl shadow-[0_10px_25px_rgba(225,29,72,0.15)] overflow-hidden">
+        
+        <div id="cardProgress" class="absolute top-0 left-0 w-full h-1 bg-slate-800">
+            <div id="progressFill" class="h-full bg-rose-600 transition-all duration-[30000ms] ease-linear" style="width: 0%"></div>
+        </div>
+        
+        <div class="p-3">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-triangle-exclamation text-slate-100 text-[10px] animate-pulse"></i>
+                    <h3 class="text-[9px] font-black text-slate-100 uppercase tracking-widest">Alerte</h3>
+                </div>
+                <button onclick="userClose()" class="text-slate-500 hover:text-white transition-colors p-1">
+                    <i class="fa-solid fa-xmark text-[10px]"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-2">
+                <a href="{% url 'retard-personnel' %}" class="flex items-center justify-between group p-1.5 rounded-lg hover:bg-rose-900/20 transition-all">
+                    <span class="text-[10px] font-medium text-slate-300">Tâches en retard</span>
+                    <span id="task-count" class="text-[10px] font-bold text-white bg-rose-600 px-1.5 py-0.5 rounded">0</span>
+                </a>
+
+                <a href="/details-retard-transaction/" class="flex items-center justify-between group p-1.5 rounded-lg hover:bg-rose-900/20 transition-all">
+                    <span class="text-[10px] font-medium text-slate-300">Transactions</span>
+                    <span id="trans-count" class="text-[10px] font-bold text-white bg-rose-600 px-1.5 py-0.5 rounded">0</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .bg_color{
+        background: {{request.user.personnel.color_fond}};
+    }
+</style>
+<script>
+    const card = document.getElementById('pending-card');
+    const fill = document.getElementById('progressFill');
+    const STORAGE_KEY = 'pending_card_dismissed';
+    let timer, restartTimer;
+
+    function showCard() {
+        // Vérification du localStorage avant d'afficher
+        if (localStorage.getItem(STORAGE_KEY) === 'true') return;
+
+        card.classList.remove('opacity-0', 'translate-x-10', 'pointer-events-none');
+        card.classList.add('opacity-100', 'translate-x-0');
+        fill.style.width = '100%';
+        
+        timer = setTimeout(hideCard, 30000);
+    }
+
+    function hideCard() {
+        card.classList.remove('opacity-100', 'translate-x-0');
+        card.classList.add('opacity-0', 'translate-x-10');
+        
+        setTimeout(() => card.classList.add('pointer-events-none'), 1000);
+        fill.style.width = '0%';
+        
+        // Relance l'affichage après 20s seulement si non fermé manuellement
+        if (localStorage.getItem(STORAGE_KEY) !== 'true') {
+            restartTimer = setTimeout(showCard, 20000);
+        }
+    }
+
+    function userClose() {
+        // On mémorise la fermeture manuelle
+        localStorage.setItem(STORAGE_KEY, 'true');
+        
+        clearTimeout(timer);
+        clearTimeout(restartTimer);
+        hideCard();
+    }
+
+    // --- LOGIQUE DE DONNÉES ---
+    async function updateDashboardData() {
+        try {
+            const [tasksRes, transRes] = await Promise.all([
+                fetch('/count_operation_retard/'),
+                fetch('/count_transaction/')
+            ]);
+            
+            const tasks = await tasksRes.json();
+            const trans = await transRes.json();
+
+            document.getElementById('task-count').textContent = tasks.data || 0;
+            document.getElementById('trans-count').textContent = trans.data || 0;
+        } catch (err) {
+            console.error("Erreur mise à jour widget:", err);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Initialisation : On ne lance l'affichage que si l'utilisateur n'a pas fermé le widget
+        if (localStorage.getItem(STORAGE_KEY) !== 'true') {
+            setTimeout(showCard, 2000);
+        }
+        
+        updateDashboardData();
+        setInterval(updateDashboardData, 300000);
+    });
+</script>
+
+<!-- ===================== CARTE D'ALERTE : design (ajout) ===================== -->
+<style>
+    #pending-card { --al-danger: var(--sbx-danger, #E35A33); --al-ok: var(--sbx-ok, #2A8A7D); --al-ink: #fff; top: 20px !important; right: 20px !important; }
+    #pending-card > div {
+        width: 19rem !important; border-radius: 16px !important; background: #ffffff !important;
+        border: 1px solid #e6eaf0 !important; border-bottom-color: #dfe4ea !important;
+        box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 18px 40px -20px rgba(15,23,42,.35) !important;
+        font-family: inherit;
+    }
+    /* filet d'état à gauche */
+    #pending-card > div::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--al-danger); z-index: 2; }
+    #pending-card.al-calm > div::before { background: var(--al-ok); }
+
+    /* barre de temps : fine, sous l'en-tête */
+    #pending-card #cardProgress { top: auto !important; height: 2px !important; background: #eef1f5 !important; position: relative !important; }
+    #pending-card #progressFill { background: var(--al-danger) !important; opacity: .7; }
+    #pending-card.al-calm #progressFill { background: var(--al-ok) !important; }
+
+    /* en-tête dans la couleur dominante */
+    #pending-card .p-3 { padding: 0 !important; }
+    #pending-card .p-3 > div:first-child {
+        margin: 0 !important; padding: 12px 12px 12px 16px; background: var(--nav-bg-color, #123A37); color: var(--al-ink);
+    }
+    #pending-card .p-3 > div:first-child h3 { font-size: 12px !important; font-weight: 700 !important; letter-spacing: .06em !important; color: var(--al-ink) !important; }
+    #pending-card .p-3 > div:first-child .fa-triangle-exclamation {
+        width: 24px; height: 24px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+        font-size: 11px !important; background: var(--al-danger); color: #fff !important; margin-right: 4px;
+    }
+    #pending-card.al-calm .p-3 > div:first-child .fa-triangle-exclamation { background: var(--al-ok); animation: none; }
+    #pending-card .p-3 > div:first-child button {
+        width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+        color: var(--al-ink) !important; opacity: .7; transition: opacity .15s, background .15s;
+    }
+    #pending-card .p-3 > div:first-child button:hover { opacity: 1; background: color-mix(in srgb, var(--al-ink) 14%, transparent); }
+    #pending-card .p-3 > div:first-child button i { font-size: 12px !important; }
+    .al-total { margin-left: 6px; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--al-ink) 16%, transparent); }
+
+    /* lignes */
+    #pending-card .space-y-2 { padding: 8px; }
+    #pending-card .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 4px !important; }
+    #pending-card .space-y-2 > a {
+        gap: 10px; padding: 9px 10px !important; border-radius: 10px !important; border: 1px solid transparent;
+        transition: background .15s, border-color .15s !important;
+    }
+    #pending-card .space-y-2 > a:hover { background: #f8fafc !important; border-color: #eef1f5; }
+    .al-ico { width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;
+              background: color-mix(in srgb, var(--al-danger) 12%, #fff); color: var(--al-danger); border: 1px solid color-mix(in srgb, var(--al-danger) 20%, #fff); }
+    .al-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    #pending-card .al-txt > span:first-child { font-size: 13px !important; font-weight: 600 !important; color: #0f172a !important; }
+    .al-sub { font-size: 11px; color: #94a3b8; font-weight: 500; }
+    #pending-card #task-count, #pending-card #trans-count {
+        min-width: 28px; text-align: center; font-size: 12px !important; font-weight: 800 !important; padding: 3px 8px !important; border-radius: 999px !important;
+        background: var(--al-danger) !important; color: #fff !important; font-variant-numeric: tabular-nums;
+    }
+    .al-chev { color: #cbd5e1; font-size: 11px; transition: transform .15s, color .15s; }
+    #pending-card .space-y-2 > a:hover .al-chev { transform: translateX(2px); color: #64748b; }
+    /* ligne à zéro : apaisée */
+    #pending-card .space-y-2 > a.al-zero .al-ico { background: color-mix(in srgb, var(--al-ok) 10%, #fff); color: var(--al-ok); border-color: color-mix(in srgb, var(--al-ok) 18%, #fff); }
+    #pending-card .space-y-2 > a.al-zero #task-count, #pending-card .space-y-2 > a.al-zero #trans-count { background: #f1f5f9 !important; color: #64748b !important; }
+
+    html.sbx-dark #pending-card > div { background: #181c25 !important; border-color: #262b36 !important; }
+    html.sbx-dark #pending-card .al-txt > span:first-child { color: #f1f5f9 !important; }
+    html.sbx-dark #pending-card .space-y-2 > a:hover { background: #1f2430 !important; border-color: #262b36; }
+    html.sbx-dark #pending-card #cardProgress { background: #262b36 !important; }
+    @media (max-width: 480px) { #pending-card { left: 12px !important; right: 12px !important; } #pending-card > div { width: auto !important; } }
+</style>
+<script>
+(function () {
+    var c = document.getElementById('pending-card'); if (!c) return;
+    var KEY = 'pending_card_dismissed', DAY = 'pending_card_dismissed_day', today = new Date().toISOString().slice(0, 10);
+
+    /* La fermeture vaut pour la journée : le lendemain, l'alerte revient */
+    try { if (localStorage.getItem(KEY) === 'true' && localStorage.getItem(DAY) !== today) localStorage.removeItem(KEY); } catch (e) {}
+    var closeBtn = c.querySelector('button');
+    if (closeBtn) { closeBtn.setAttribute('aria-label', "Fermer l'alerte pour aujourd'hui"); closeBtn.title = "Masquer pour aujourd'hui";
+        closeBtn.addEventListener('click', function () { try { localStorage.setItem(DAY, today); } catch (e) {} }); }
+    c.setAttribute('role', 'status'); c.setAttribute('aria-live', 'polite');
+
+    /* Encre de l'en-tête selon la dominante */
+    function lum(rgb) { var m = rgb.match(/\d+(\.\d+)?/g); if (!m) return 0; return [0, 1, 2].reduce(function (s, i, k) { var v = m[i] / 255; v = v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); return s + v * [.2126, .7152, .0722][k]; }, 0); }
+    var head = c.querySelector('.p-3 > div:first-child');
+    if (head) c.style.setProperty('--al-ink', lum(getComputedStyle(head).backgroundColor) > .42 ? '#111111' : '#ffffff');
+
+    /* Icône, sous-titre et chevron sur chaque ligne */
+    var META = { 'task-count': ['fa-regular fa-clock', 'Échéance dépassée'], 'trans-count': ['fa-solid fa-money-bill-transfer', 'En attente de traitement'] };
+    c.querySelectorAll('.space-y-2 > a').forEach(function (a) {
+        var n = a.querySelector('span[id]'), lbl = a.querySelector('span:not([id])'); if (!n || !lbl || a.querySelector('.al-ico')) return;
+        var m = META[n.id] || ['fa-solid fa-circle-exclamation', ''];
+        var ico = document.createElement('span'); ico.className = 'al-ico'; ico.innerHTML = '<i class="' + m[0] + '"></i>';
+        var txt = document.createElement('span'); txt.className = 'al-txt';
+        a.insertBefore(ico, lbl); a.insertBefore(txt, lbl); txt.appendChild(lbl);
+        if (m[1]) txt.insertAdjacentHTML('beforeend', '<span class="al-sub">' + m[1] + '</span>');
+        a.insertAdjacentHTML('beforeend', '<i class="fa-solid fa-chevron-right al-chev" aria-hidden="true"></i>');
+    });
+
+    /* Total dans l'en-tête + état apaisé si tout est à zéro */
+    var title = c.querySelector('h3'), total = document.createElement('span'); total.className = 'al-total';
+    if (title) title.parentNode.appendChild(total);
+    function sync() {
+        var sum = 0;
+        ['task-count', 'trans-count'].forEach(function (id) {
+            var el = document.getElementById(id); if (!el) return;
+            var v = parseInt(el.textContent, 10) || 0; sum += v;
+            el.closest('a').classList.toggle('al-zero', v === 0);
+        });
+        total.textContent = sum; total.style.display = sum ? '' : 'none'; c.classList.toggle('al-calm', sum === 0);
+        if (title) title.textContent = sum === 0 ? 'Tout est à jour' : 'Alerte';
+    }
+    ['task-count', 'trans-count'].forEach(function (id) { var el = document.getElementById(id); if (el) new MutationObserver(sync).observe(el, { childList: true, characterData: true, subtree: true }); });
+    sync();
+})();
+</script>
+
+<!-- ===================== CARTE D'ALERTE : affichage fiable (ajout) ===================== -->
+<style>
+    /* Visibilité gérée ici, sans dépendre de Tailwind (pages Bootstrap ou CDN pas encore prêt) */
+    #pending-card {
+        position: fixed !important; top: 20px !important; right: 20px !important; z-index: 1080 !important;
+        opacity: 0 !important; transform: translateX(40px) !important; visibility: hidden !important; pointer-events: none !important;
+        transition: opacity .45s ease, transform .45s ease, visibility 0s linear .45s !important;
+    }
+    #pending-card.al-open {
+        opacity: 1 !important; transform: none !important; visibility: visible !important; pointer-events: auto !important;
+        transition: opacity .45s ease, transform .45s ease !important;
+    }
+    #pending-card > div { position: relative; overflow: hidden; }
+    #pending-card .p-3 > div:first-child { display: flex; align-items: center; justify-content: space-between; }
+    #pending-card .p-3 > div:first-child > div { display: flex; align-items: center; gap: 6px; }
+    #pending-card h3 { margin: 0; text-transform: uppercase; }
+    #pending-card .space-y-2 > a { display: flex; align-items: center; justify-content: space-between; text-decoration: none; }
+    #pending-card button { background: transparent; border: 0; cursor: pointer; }
+    #pending-card #cardProgress { width: 100%; }
+    #pending-card #progressFill { height: 100%; width: 0; transition-property: width; transition-timing-function: linear; }
+    #pending-card.al-hold #progressFill { transition: none !important; }
+    @media print { #pending-card { display: none !important; } }
+</style>
+<script>
+(function () {
+    var c = document.getElementById('pending-card'); if (!c) return;
+    var fillEl = document.getElementById('progressFill');
+    var SHOW_MS = 7000;                                 // durée d'affichage (ms)
+    var SEEN = 'pending_card_seen', DAYKEY = 'pending_card_dismissed';
+    var ready = false, total = 0, hideT = null, isOpen = false;
+
+    function n(id) { var el = document.getElementById(id); return el ? (parseInt(String(el.textContent).replace(/\D/g, ''), 10) || 0) : 0; }
+    function dismissed() { try { return localStorage.getItem(DAYKEY) === 'true'; } catch (e) { return false; } }
+    function seenTotal() { try { var v = JSON.parse(sessionStorage.getItem(SEEN) || 'null'); return v && v.day === new Date().toDateString() ? v.total : -1; } catch (e) { return -1; } }
+    function markSeen() { try { sessionStorage.setItem(SEEN, JSON.stringify({ day: new Date().toDateString(), total: total })); } catch (e) {} }
+    function killTheirs() { try { clearTimeout(timer); } catch (e) {} try { clearTimeout(restartTimer); } catch (e) {} }
+
+    function open() {
+        killTheirs(); clearTimeout(hideT);
+        c.classList.remove('opacity-0', 'translate-x-10', 'pointer-events-none'); c.classList.add('opacity-100', 'translate-x-0', 'al-open');
+        isOpen = true; markSeen();
+        fillEl.style.transitionDuration = '0ms'; fillEl.style.width = '0%'; void fillEl.offsetWidth;
+        fillEl.style.transitionDuration = SHOW_MS + 'ms'; fillEl.style.width = '100%';
+        hideT = setTimeout(close, SHOW_MS);
+    }
+    function close() {
+        killTheirs(); clearTimeout(hideT);
+        c.classList.remove('opacity-100', 'translate-x-0', 'al-open', 'al-hold'); c.classList.add('opacity-0', 'translate-x-10', 'pointer-events-none');
+        isOpen = false;
+        fillEl.style.transitionDuration = '0ms'; fillEl.style.width = '0%';
+    }
+
+    /* Vos fonctions restent appelables, mais passent par ces règles :
+       aucun affichage à 0, une fois par session, et toujours une fermeture automatique. */
+    window.showCard = function (force) {
+        if (!ready || total === 0) return;
+        if (force !== true && (dismissed() || seenTotal() >= total)) return;
+        open();
+    };
+    window.hideCard = function () { close(); };
+    if (typeof window.userClose === 'function') {
+        window.userClose = function () { try { localStorage.setItem(DAYKEY, 'true'); localStorage.setItem(DAYKEY + '_day', new Date().toISOString().slice(0, 10)); } catch (e) {} close(); };
+    }
+
+    /* Clic sur la carte = fermer (les liens restent des liens) */
+    c.style.cursor = 'pointer'; c.title = 'Cliquer pour fermer';
+    c.addEventListener('click', function (e) {
+        if (e.target.closest('a')) return;
+        e.preventDefault(); close();
+    });
+    /* Survol : pause, puis fermeture 3 s après */
+    c.addEventListener('mouseenter', function () {
+        if (!isOpen) return;
+        clearTimeout(hideT); c.classList.add('al-hold'); fillEl.style.width = getComputedStyle(fillEl).width;
+    });
+    c.addEventListener('mouseleave', function () {
+        if (!isOpen) return;
+        c.classList.remove('al-hold'); fillEl.style.transitionDuration = '3000ms'; void fillEl.offsetWidth; fillEl.style.width = '100%';
+        hideT = setTimeout(close, 3000);
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isOpen) close(); });
+
+    /* Décision à l'arrivée des chiffres */
+    function onData() {
+        var t = n('task-count') + n('trans-count'), grew = t > total, first = !ready;
+        total = t; ready = true;
+        if (!t) { close(); return; }                                    // 0 retard : jamais affiché
+        if (first || grew) setTimeout(function () { window.showCard(); }, first ? 800 : 0);
+    }
+    var deb;
+    ['task-count', 'trans-count'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) new MutationObserver(function () { clearTimeout(deb); deb = setTimeout(onData, 150); }).observe(el, { childList: true, characterData: true, subtree: true });
+    });
+
+    /* Si votre script n'a pas pu tourner (nom déjà utilisé ailleurs dans la page), on va chercher les chiffres nous-mêmes */
+    setTimeout(function () {
+        if (ready) return;
+        Promise.all([fetch('/count_operation_retard/').then(function (r) { return r.json(); }), fetch('/count_transaction/').then(function (r) { return r.json(); })])
+            .then(function (d) {
+                var a = document.getElementById('task-count'), b = document.getElementById('trans-count');
+                if (a) a.textContent = (d[0] && d[0].data) || 0; if (b) b.textContent = (d[1] && d[1].data) || 0;
+                setTimeout(function () { if (!ready) onData(); }, 200);
+            })
+            .catch(function () { ready = true; close(); });
+    }, 5000);
+})();
+</script>

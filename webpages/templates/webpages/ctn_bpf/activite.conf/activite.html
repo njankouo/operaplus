@@ -1,0 +1,184 @@
+{% extends '../presentation.html' %}
+{% load static %}
+
+{% block content %}
+
+<section class="relative bg-gradient-to-br from-slate-50 via-slate-100/50 to-blue-50/30 py-24 lg:py-5 overflow-hidden min-h-screen">
+  <div class="absolute top-20 left-1/4 w-96 h-96 bg-blue-200/30 rounded-full mix-blend-multiply blur-3xl opacity-50 animate-blob"></div>
+  <div class="absolute bottom-20 right-1/4 w-96 h-96 bg-orange-200/40 rounded-full mix-blend-multiply blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
+  <div class="absolute top-1/2 right-1/2 w-72 h-72 bg-teal-200/30 rounded-full mix-blend-multiply blur-3xl opacity-40 animate-blob animation-delay-4000"></div>
+
+  <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 relative z-10">
+   <div class="text-center mb-20 lg:mb-28 relative">
+  <span class="inline-block px-4 py-2 mb-6 text-xs font-bold tracking-widest text-blue-600 uppercase bg-gradient-to-r from-blue-100 to-blue-200 rounded-full shadow-lg backdrop-blur-sm border border-blue-200">
+    Ce qui nous anime
+  </span>
+  <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tight leading-tight relative inline-block">
+    Parcourez Nos 
+    <span class="bg-gradient-to-r from-blue-600 via-orange-500 to-teal-500 bg-clip-text text-transparent animate-gradient-x">Activités</span>
+    <!-- Trait curviligne SVG -->
+    <svg class="absolute -bottom-3 left-1/2 -translate-x-1/2 w-full h-6" viewBox="0 0 200 20" preserveAspectRatio="none">
+      <path d="M0,10 C50,20 150,0 200,10" stroke="#f97316" stroke-width="3" fill="transparent"/>
+    </svg>
+  </h1>
+  <p class="text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
+    Découvrez automatiquement nos Activités, formations et projets impactants pour le Suivi, Évaluation, Redevabilité et Apprentissage en Afrique.
+  </p>
+</div>
+
+    
+
+    <div class="horizontal-timeline-wrapper h-[75vh] lg:h-[80vh] relative overflow-hidden rounded-[2.5rem] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.1)] bg-white/40 backdrop-blur-xl border border-white/80 group">
+      
+      <div class="absolute top-1/2 left-0 w-full h-1 bg-slate-200 transform -translate-y-1/2 z-0">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-400 via-orange-400 to-teal-400 opacity-30 blur-sm"></div>
+      </div>
+
+      <div class="horizontal-timeline-track flex items-center h-full py-12 px-8 lg:px-32 overflow-x-auto scrollbar-hide snap-x snap-proximity">
+        {% for item in timeline_items %}
+        <div class="timeline-item-horizontal flex-shrink-0 w-[320px] lg:w-[400px] snap-center relative z-10 px-4 transition-all duration-700" data-index="{{ forloop.counter0 }}">
+          
+          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[180px] lg:-translate-y-[220px] w-16 h-16 lg:w-20 lg:h-20 z-20">
+            <div class="marker-active w-full h-full rounded-2xl flex items-center justify-center text-white shadow-xl transition-all duration-500 {{ item.color|default:'bg-slate-800' }} border-4 border-white">
+              <i class="fa-solid {{ item.icon|default:'fa-star' }} text-xl lg:text-2xl transition-transform group-hover:scale-110"></i>
+            </div>
+            <div class="absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-16 lg:h-24 bg-gradient-to-b from-slate-300 to-transparent"></div>
+          </div>
+
+          <div class="glass-card bg-white/90 backdrop-blur-2xl p-8 rounded-[2rem] shadow-xl border border-white flex flex-col h-[380px] lg:h-[420px] transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+            <div class="flex-1">
+              <div class="flex justify-between items-start mb-6">
+                <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 rounded-lg border border-blue-100">
+                  {{ item.category|default:"Impact" }}
+                </span>
+                <span class="text-slate-400 font-mono text-sm">#0{{ forloop.counter }}</span>
+              </div>
+              <h3 class="text-xl lg:text-2xl font-black text-slate-900 mb-4 leading-tight">
+                {{ item.title }}
+              </h3>
+              <p class="text-slate-600 text-sm lg:text-base leading-relaxed line-clamp-5">
+                {{ item.desc }}
+              </p>
+            </div>
+
+            {% if item.link %}
+            <a href="{{ item.link }}" class="mt-6 flex items-center gap-2 font-bold text-orange-600 hover:text-orange-700 transition-colors group/btn">
+              <span>Voir le projet</span>
+              <i class="fas fa-arrow-right text-sm transition-transform group-hover/btn:translate-x-1"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="w-full text-center opacity-50">
+          <i class="fas fa-history text-6xl mb-4"></i>
+          <p class="font-bold">Aucune étape à afficher pour le moment.</p>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="progress-bar-container mb-7 lg:mb-16 max-w-4xl mx-auto">
+      <div class="h-2.5 bg-slate-200/50 rounded-full overflow-hidden shadow-inner border border-white/50">
+        <div class="h-full bg-gradient-to-r from-blue-500 via-orange-400 to-teal-500 rounded-full w-0 progress-fill transition-all duration-500 ease-out"></div>
+      </div>
+      <div class="flex justify-between text-[10px] font-bold uppercase tracking-tighter text-slate-400 mt-3 px-1">
+        <span>D&ecute;but</span>
+        <span>Fin</span>
+      </div>
+    </div>
+      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button id="prevBtn" class="w-12 h-12 rounded-full bg-white/80 shadow-lg flex items-center justify-center text-slate-700 hover:bg-orange-500 hover:text-white transition-all">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button id="nextBtn" class="w-12 h-12 rounded-full bg-white/80 shadow-lg flex items-center justify-center text-slate-700 hover:bg-orange-500 hover:text-white transition-all">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-8 flex justify-between items-center px-4">
+      <div class="flex items-center gap-3">
+        <div class="flex gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500/50"></span>
+        </div>
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Auto-Scroll <span id="playStatus" class="text-emerald-600">Actif</span></span>
+      </div>
+      <div class="text-[10px] font-black text-slate-400">SERA TIMELINE V1.0</div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  @keyframes blob {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+  }
+  .animate-blob { animation: blob 7s infinite; }
+  .animation-delay-2000 { animation-delay: 2s; }
+  .animation-delay-4000 { animation-delay: 4s; }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  /* État inactif - délavé */
+  .timeline-item-horizontal:not(.is-active) {
+    opacity: 0.4;
+    filter: grayscale(0.5) blur(1px);
+    transform: scale(0.9);
+  }
+  
+  /* État actif - focus */
+  .timeline-item-horizontal.is-active {
+    opacity: 1;
+    filter: grayscale(0) blur(0);
+    transform: scale(1.05);
+    z-index: 50;
+  }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const track = document.querySelector('.horizontal-timeline-track');
+  const items = document.querySelectorAll('.timeline-item-horizontal');
+  const progressFill = document.querySelector('.progress-fill');
+  const playStatus = document.getElementById('playStatus');
+
+  let currentIndex = 0;
+  const totalItems = items.length;
+
+  const updateUI = () => {
+    items.forEach((item, index) => {
+      item.classList.toggle('is-active', index === currentIndex);
+    });
+
+    // Update progress bar
+    const progress = ((currentIndex + 1) / totalItems) * 100;
+    progressFill.style.width = `${progress}%`;
+
+    // Scroll smoothly to item
+    const target = items[currentIndex];
+    const offset = target.offsetLeft - (track.clientWidth / 2) + (target.clientWidth / 2);
+    track.scrollTo({ left: offset, behavior: 'smooth' });
+  };
+
+  const nextSlide = () => {
+    currentIndex = (currentIndex + 1) % totalItems;
+    updateUI();
+  };
+
+  // Auto-scroll infini
+  setInterval(nextSlide, 4000);
+
+  // Initialisation
+  updateUI();
+  playStatus.textContent = "Actif";
+  playStatus.classList.add('text-emerald-600');
+});
+</script>
+
+{% endblock %}

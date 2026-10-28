@@ -1,0 +1,202 @@
+{% extends './index.html' %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold text-danger">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            Opérations en retard
+        </h4>
+        <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill">
+            {{ operation|length }} en retard
+        </span>
+    </div>
+
+    {% if operations_delay %}
+    <div class="row g-4">
+
+        {% for op in operation %}
+        <div class="col-xl-4 col-lg-6 col-md-12">
+
+            <div class="card delay-card h-100 border-0 rounded-4 position-relative overflow-hidden">
+
+                <!-- GLOW EFFECT -->
+                <div class="glow"></div>
+
+                <!-- HEADER -->
+                <div class="card-header border-0 d-flex justify-content-between align-items-center px-4 py-3">
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark">{{ op.nom }}</h6>
+                        <small class="text-muted">Ref #{{ op.id }}</small>
+                    </div>
+
+                    <span class="badge badge-danger-glow">
+                        <i class="fa-solid fa-clock me-1"></i>
+                        Retard
+                    </span>
+                </div>
+
+                <!-- BODY -->
+                <div class="card-body px-4 pt-2">
+
+                    <div class="info-item">
+                        <i class="fa-solid fa-calendar-xmark text-danger"></i>
+                        <div>
+                            <small>Échéance</small>
+                            <strong>{{ op.date_echeance }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fa-solid fa-user text-primary"></i>
+                        <div>
+                            <small>Responsable</small>
+                            <strong>{{ op.personnel }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <i class="fa-solid fa-hourglass-half text-warning"></i>
+                        <div>
+                            <small>Retard</small>
+                            <strong>{{ op.date_echeance|timesince }} dépassé</strong>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- FOOTER -->
+                <div class="card-footer border-0 px-4 py-3 d-flex justify-content-between align-items-center">
+
+                    <span class="status-badge">
+                        <i class="fa-solid fa-ban me-1"></i>
+                        Non traitée
+                    </span>
+
+                    <a href="/operations/{{ op.id }}/" class="btn btn-danger btn-action">
+                        <i class="fa-solid fa-check me-1"></i>
+                        Traiter
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <!-- EMPTY STATE -->
+    <div class="empty-state">
+        <i class="fa-solid fa-circle-check"></i>
+        <h5>Aucune opération en retard</h5>
+        <p>Toutes les tâches sont à jour. Continue comme ça </p>
+    </div>
+
+    {% endif %}
+
+</div>
+
+<style>
+
+/* CARD STYLE */
+.delay-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+}
+
+.delay-card:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+}
+
+/* GLOW EFFECT */
+.glow {
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    top: 0;
+    left: 0;
+    background: linear-gradient(90deg, #ff4d4d, #ff0000);
+}
+
+/* INFO ITEMS */
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed #eee;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item i {
+    font-size: 18px;
+}
+
+/* BADGES */
+.badge-danger-glow {
+    background: rgba(255, 0, 0, 0.1);
+    color: #dc3545;
+    padding: 6px 10px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* STATUS */
+.status-badge {
+    background: #fff0f0;
+    color: #dc3545;
+    border: 1px solid #ffc9c9;
+    padding: 6px 10px;
+    border-radius: 50px;
+    font-size: 12px;
+}
+
+/* BUTTON */
+.btn-action {
+    border-radius: 50px;
+    padding: 6px 14px;
+    font-size: 13px;
+    transition: all 0.3s ease;
+}
+
+.btn-action:hover {
+    transform: scale(1.05);
+}
+
+/* EMPTY STATE */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #f8fff8, #eaffea);
+}
+
+.empty-state i {
+    font-size: 60px;
+    color: #28a745;
+    margin-bottom: 15px;
+}
+
+.empty-state h5 {
+    font-weight: bold;
+}
+
+.empty-state p {
+    color: #6c757d;
+}
+
+</style>
+
+{% endblock %}

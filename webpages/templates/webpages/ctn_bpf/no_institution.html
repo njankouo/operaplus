@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion du Personnel - Sans Institution</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="h-full text-slate-800 antialiased p-4 md:p-8">
+
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- TOP NAV / BREADCRUMB STYLE ERP -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-slate-900 tracking-tight">Personnel Sans Institution</h1>
+          <p class="text-xs text-slate-500">Module de communication et gestion des rattachements</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Base synchronisée
+        </span>
+      </div>
+    </div>
+
+    <!-- MAIN PANEL -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- COLONNE GAUCHE : Sélecteur de Personnel -->
+      <div class="lg:col-span-5 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex flex-col h-[650px]">
+        
+        <!-- Header Sélection -->
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div>
+            <h2 class="font-bold text-sm uppercase tracking-wider text-slate-900">Membres éligibles</h2>
+            <p class="text-xs text-slate-400">Sélectionnez les destinataires</p>
+          </div>
+          <span id="selectedCount" class="bg-indigo-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm shadow-indigo-200">
+            0 sélectionné
+          </span>
+        </div>
+
+        <!-- Outils de Filtre -->
+        <div class="py-3 space-y-2">
+          <div class="relative">
+            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="search" oninput="filterUsers()" placeholder="Rechercher par nom, prénom ou e-mail..." 
+                   class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition">
+          </div>
+
+          <label class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl cursor-pointer hover:bg-slate-100/60 transition select-none">
+            <span class="text-xs font-semibold text-slate-700">Sélectionner toute la liste</span>
+            <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" 
+                   class="w-4 h-4 accent-indigo-600 rounded cursor-pointer">
+          </label>
+        </div>
+<!-- Liste du Personnel -->
+<div class="flex flex-col h-full">
+  <!-- Conteneur défilant -->
+  <div class="flex-1 overflow-y-auto pr-1">
+    <ul id="userList" class="space-y-2">
+      {% for p in personnel %}
+      <!-- Suppression de la classe 'hidden' par défaut -->
+      <li class="user-item" data-search="{{ p.nom|default:''|lower }} {{ p.prenom|default:''|lower }} {{ p.mail|default:''|lower }}">
+        <label class="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/20 transition cursor-pointer group">
+          <div class="flex items-center gap-3">
+            <!-- Photo / Avatar -->
+            {% if p.photo %}
+              <img src="{{ p.photo.url }}" alt="{{ p.nom }}" class="w-9 h-9 rounded-xl object-cover border border-slate-200 shadow-sm">
+            {% else %}
+              <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center border border-slate-200">
+                {{ p.nom|default:''|slice:":1" }}{{ p.prenom|default:''|slice:":1" }}
+              </div>
+            {% endif %}
+            
+            <div class="flex flex-col">
+              <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition">{{ p.prenom }} {{ p.nom }}</span>
+              <span class="text-[11px] text-slate-500 font-mono">{{ p.mail }}</span>
+            </div>
+          </div>
+
+          <!-- Validation Mail & Checkbox -->
+          {% if p.mail and '@' in p.mail %}
+            <input type="checkbox" name="selected_emails" value="{{ p.mail }}" onchange="updateCount()"
+                   class="user-checkbox w-4 h-4 accent-indigo-600 rounded cursor-pointer">
+          {% else %}
+            <span class="text-[10px] font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">Mail Invalide</span>
+          {% endif %}
+        </label>
+      </li>
+      {% empty %}
+      <li class="flex flex-col items-center justify-center py-10 px-4 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200 my-2">
+        <p class="text-xs font-bold text-slate-700">Aucun membre à afficher</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- Pagination -->
+  {% if personnel %}
+  <div id="paginationControls" class="flex items-center justify-between pt-3 mt-2 border-t border-slate-100 text-xs text-slate-500">
+    <span id="pageIndicator" class="font-medium">Page 1 sur 1</span>
+    <div class="flex items-center gap-1">
+      <button type="button" id="prevBtn" onclick="changePage(-1)" 
+              class="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium">
+        Précédent
+      </button>
+      <button type="button" id="nextBtn" onclick="changePage(1)" 
+              class="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium">
+        Suivant
+      </button>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const ITEMS_PER_PAGE = 8;
+let currentPage = 1;
+
+// Récupère uniquement les éléments qui correspondent au filtre de recherche
+function getFilteredItems() {
+  const query = document.getElementById('search').value.toLowerCase().trim();
+  const allItems = Array.from(document.querySelectorAll('.user-item'));
+  
+  if (!query) return allItems;
+  
+  return allItems.filter(item => {
+    const searchData = item.getAttribute('data-search') || '';
+    return searchData.includes(query);
+  });
+}
+
+function renderPagination() {
+  const allItems = Array.from(document.querySelectorAll('.user-item'));
+  const filteredItems = getFilteredItems();
+  
+  // Masquer tous les éléments d'abord
+  allItems.forEach(item => item.classList.add('hidden'));
+
+  const totalItems = filteredItems.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+
+  // Afficher seulement la tranche courante des éléments filtrés
+  filteredItems.slice(startIndex, endIndex).forEach(item => {
+    item.classList.remove('hidden');
+  });
+
+  const pageIndicator = document.getElementById('pageIndicator');
+  if (pageIndicator) {
+    pageIndicator.textContent = `Page ${currentPage} sur ${totalPages}`;
+  }
+
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  if (prevBtn) prevBtn.disabled = (currentPage === 1);
+  if (nextBtn) nextBtn.disabled = (currentPage === totalPages || totalItems === 0);
+}
+
+function filterUsers() {
+  currentPage = 1; // Revenir à la page 1 lors d'une recherche
+  renderPagination();
+}
+
+function changePage(direction) {
+  currentPage += direction;
+  renderPagination();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderPagination();
+});
+</script>
+      </div>
+
+      <!-- COLONNE DROITE : Editeur de message avec Upload (ERP STYLE) -->
+      <div class="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm h-[650px] flex flex-col">
+        
+        <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 class="font-bold text-sm uppercase tracking-wider text-slate-900">Éditeur de message</h2>
+            <p class="text-xs text-slate-400">Diffusion d'e-mails groupés</p>
+          </div>
+          <span class="text-[11px] font-medium text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">Format HTML supporté</span>
+        </div>
+
+        <!-- Formulaire Django (avec enctype pour les fichiers) -->
+        <form action="{% url 'send_emails' %}" method="POST" enctype="multipart/form-data" class="flex-1 flex flex-col justify-between pt-4">
+          {% csrf_token %}
+          
+          <!-- Conteneur d'inputs cachés pour les emails -->
+          <div id="hiddenEmailsContainer"></div>
+
+          <div class="space-y-4 flex-1">
+            <!-- Sujet -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Sujet du Message</label>
+              <input type="text" name="sujet" required placeholder="ex: [Action Requise] Régularisation de votre rattachement institutionnel"
+                     class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition">
+            </div>
+
+            <!-- Corps -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Corps du Message</label>
+              <textarea name="message" rows="6" required placeholder="Bonjour,&#10;&#10;Nous constatons que votre compte n'est actuellement rattaché à aucune institution..."
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white transition resize-none"></textarea>
+            </div>
+
+            <!-- ZONE PIÈCE JOINTE (UPLOAD FILE ERP) -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Pièce Jointe (Optionnel)</label>
+              
+              <div class="relative border-2 border-dashed border-slate-200 rounded-xl p-3 bg-slate-50/50 hover:bg-slate-50 transition text-center group cursor-pointer">
+                <input type="file" name="piece_jointe" id="fileInput" onchange="handleFileSelect(this)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                
+                <div id="uploadPlaceholder" class="flex items-center justify-center gap-3">
+                  <div class="p-2 bg-white rounded-lg border border-slate-200 text-slate-500 group-hover:text-indigo-600 transition shadow-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                  </div>
+                  <div class="text-left">
+                    <p class="text-xs font-semibold text-slate-700 group-hover:text-indigo-600 transition">Glissez un fichier ou cliquez pour parcourir</p>
+                    <p class="text-[10px] text-slate-400">PDF, DOCX, PNG, JPG (Max. 10 Mo)</p>
+                  </div>
+                </div>
+
+                <!-- Aperçu du fichier chargé -->
+                <div id="filePreview" class="hidden flex items-center justify-between bg-white p-2 rounded-lg border border-indigo-200 shadow-sm">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span id="fileName" class="text-xs font-semibold text-slate-700 truncate max-w-[200px]"></span>
+                    <span id="fileSize" class="text-[10px] text-slate-400"></span>
+                  </div>
+                  <button type="button" onclick="removeFile()" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-rose-500 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bouton de Soumission -->
+          <div class="pt-3 border-t border-slate-100">
+            <button type="submit" 
+                    class="w-full bg-slate-900 hover:bg-indigo-600 text-white font-semibold py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition duration-200 shadow-md shadow-slate-900/10 flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer">
+              <span>Lancer la diffusion de l'e-mail</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- SWEETALERT ALERTS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  {% if messages %}
+      {% for message in messages %}
+          {% if message.tags == 'success' and message.message == 'premiere_connexion' %}
+          <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                  Swal.fire({
+                      title: 'Connexion établie',
+                      html: `
+                          <div class="text-left py-2">
+                              <p class="text-slate-600 text-sm mb-6">Bienvenue dans votre environnement de travail <strong>{{ request.user.personnel.nom }}</strong>.</p>
+                              <div class="space-y-3">
+                                  <div class="flex items-center gap-3">
+                                      <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                      <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Système MEAL prêt</span>
+                                  </div>
+                                  <div class="flex items-center gap-3">
+                                      <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                      <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Connexion sécurisée</span>
+                                  </div>
+                              </div>
+                          </div>
+                      `,
+                      confirmButtonText: 'Accéder au tableau de bord',
+                      confirmButtonColor: '#0f172a',
+                      buttonsStyling: true,
+                      allowOutsideClick: false,
+                      customClass: {
+                          popup: 'rounded-3xl border border-slate-100 shadow-xl p-6',
+                          title: 'text-left text-xl font-bold text-slate-900 pt-2',
+                          confirmButton: 'w-full py-3.5 rounded-xl font-semibold uppercase tracking-widest text-[10px] bg-slate-900 text-white hover:bg-slate-800 transition-colors'
+                      }
+                  });
+              });
+          </script>
+          {% elif message.tags == 'success' %}
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              Swal.fire({
+                icon: 'success',
+                title: 'Succès !',
+                text: '{{ message }}',
+                confirmButtonColor: '#4f46e5'
+              });
+            });
+          </script>
+          {% elif message.tags == 'error' %}
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: '{{ message }}',
+                confirmButtonColor: '#e11d48'
+              });
+            });
+          </script>
+          {% endif %}
+      {% endfor %}
+  {% endif %}
+
+  <!-- LOGIQUE JS SCRIPT -->
+  <script>
+    function filterUsers() {
+      const q = document.getElementById('search').value.toLowerCase();
+      document.querySelectorAll('.user-item').forEach(item => {
+        const text = item.getAttribute('data-search');
+        item.style.display = text.includes(q) ? '' : 'none';
+      });
+    }
+
+    function toggleSelectAll(master) {
+      document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = master.checked);
+      updateCount();
+    }
+
+    function updateCount() {
+      const selected = document.querySelectorAll('.user-checkbox:checked');
+      const total = document.querySelectorAll('.user-checkbox').length;
+      document.getElementById('selectedCount').innerText = `${selected.length} sélectionné${selected.length > 1 ? 's' : ''}`;
+      document.getElementById('selectAll').checked = (selected.length === total && total > 0);
+
+      // Injection des e-mails sélectionnés dans des champs masqués du formulaire
+      const container = document.getElementById('hiddenEmailsContainer');
+      container.innerHTML = '';
+      selected.forEach(cb => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'selected_emails';
+        input.value = cb.value;
+        container.appendChild(input);
+      });
+    }
+
+    // Gestion de l'affichage de la pièce jointe
+    function handleFileSelect(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        document.getElementById('fileName').innerText = file.name;
+        document.getElementById('fileSize').innerText = `(${ (file.size / 1024 / 1024).toFixed(2) } MB)`;
+        
+        document.getElementById('uploadPlaceholder').classList.add('hidden');
+        document.getElementById('filePreview').classList.remove('hidden');
+      }
+    }
+
+    function removeFile() {
+      const input = document.getElementById('fileInput');
+      input.value = '';
+      document.getElementById('uploadPlaceholder').classList.remove('hidden');
+      document.getElementById('filePreview').classList.add('hidden');
+    }
+  </script>
+
+</body>
+</html>

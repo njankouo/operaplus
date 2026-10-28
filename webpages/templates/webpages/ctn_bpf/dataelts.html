@@ -1,0 +1,435 @@
+{%extends './evaluer.html'%}
+{%block design%}
+
+<div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
+                <div class="text-white">
+                    <h2 class="text-3xl font-extrabold tracking-tight">DataElements {{actual_institution.nom}}</h2>
+                    <p class="text-blue-100/70 text-sm font-medium mt-1">Gérez les DataElements</p>
+                </div>
+               
+            </div>
+
+            <div class="search-container bg-white rounded-2xl p-2 shadow-xl mb-12 transition-all duration-300">
+                <form method="GET" action="" class="flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" name="q" id="searchInput" value="{{ search_query }}"
+                               placeholder="Rechercher par libellé, code technique ou année..." 
+                               class="w-full pl-12 pr-4 py-3 bg-transparent outline-none text-sm font-medium text-slate-700">
+                    </div>
+                    <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-xs transition-all">
+                        FILTRER
+                    </button>
+                </form>
+            </div>
+
+{%endblock%}
+{%block content%}
+
+<div class="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto">
+           
+   
+        <div class="bg-white shadow-xl rounded-lg overflow-hidden">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-2xl font-semibold text-gray-800">Liste Des DataElements</h2>
+                <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out shadow-md" data-modal-target="modalToggle2" data-modal-toggle="modalToggle2">
+                    Ajouter DataElement
+                </button>
+            </div>
+
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200" id="example">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aggregation</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {%for dataelt in dataelts%}
+                            <tr class="hover:bg-gray-50 transition duration-100">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+
+                                <!-- Nom principal -->
+                                <div class="font-semibold text-gray-900">
+                                    {{ dataelt.m_name }}
+                                </div>
+
+                              
+<div class="mt-2 p-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700 space-y-2">
+   
+    <div class="flex items-center justify-between">
+      
+        <a href="{% url 'details_cumul' dataelt.id %}" 
+           class="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-colors group">
+            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+            Voir détails
+        </a>
+    </div>
+       {% if dataelt.is_calcul %}
+    <div class="bg-emerald-900 dark:bg-emerald-900 border border-emerald-100 dark:border-emerald-800/50 rounded-md p-2 mt-2">
+        <div class="flex items-center space-x-2">
+            <div class="flex-shrink-0">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-tight">
+                    Calcul auto activé
+                </p>
+                <p class="text-[10px] text-emerald-600/80 dark:text-emerald-500/80 leading-none">
+                    Mode : 
+                    <span class="font-bold underline italic">
+                        {% if dataelt.m_aggregation_type == 's' %}Somme
+                        {% elif dataelt.m_aggregation_type == 'a' %}Moyenne
+                        {% elif dataelt.m_aggregation_type == 'M' %}Maximum
+                        {% elif dataelt.m_aggregation_type == 'm' %}Minimum
+                        {% else %}{{ dataelt.m_aggregation_type }}{% endif %}
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% if dataelt.define %}
+    <!-- Bloc Parent / Période (votre code existant) -->
+    <div class="flex items-center space-x-2">
+        <span class="flex h-2 w-2 rounded-full bg-blue-500"></span>
+        <span class="text-sm font-bold text-gray-700 dark:text-slate-200">Indicateur Cumulatif</span>
+    </div>
+        
+    <div class="text-xs text-gray-600 dark:text-slate-400 leading-snug pl-4 border-l-2 border-gray-200 dark:border-slate-700 mb-3">
+        <span class="block italic opacity-75">Lié à la donnée source :</span>
+        <span class="font-semibold text-gray-900 dark:text-slate-100">
+            {{ dataelt.parent.m_name }}
+        </span>
+        <div class="mt-1 flex items-center text-[10px] uppercase tracking-wider font-bold text-gray-500 dark:text-slate-500">
+            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            {{ dataelt.periode_debut.nom }} — {{ dataelt.periode_fin.nom }}
+        </div>
+    </div>
+
+    <!-- 🔥 NOUVEAU BLOC : État du déclencheur Celery -->
+ 
+
+{% endif %}
+
+                            </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{dataelt.m_value_type}}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                                        {{dataelt.m_aggregation_type}}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div class="relative inline-block text-left">
+                                        <button type="button" class="text-gray-500 hover:text-gray-800 focus:outline-none p-1 rounded hover:bg-gray-100" 
+                                                data-dropdown-toggle="dropdown-{{dataelt.id}}" aria-expanded="false">
+                                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                                        </button>
+                                        
+                                        <div id="dropdown-{{dataelt.id}}" 
+                                            class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-20" 
+                                            role="menu" aria-orientation="vertical" aria-labelledby="menu-button-{{dataelt.id}}">
+                                            <div class="py-1" role="none">
+                                                <a href="/dataelt/edit/{{dataelt.id}}/" class="text-gray-700 flex items-center px-4 py-2 text-sm hover:bg-gray-100 transition duration-100" role="menuitem">
+                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-7-1.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM19 8l-3 3-5-5 3-3 5 5z"></path></svg>
+                                                    Modifier
+                                                </a>
+                                                <a href="/delete_data_element/{{dataelt.id}}/" class="text-red-600 flex items-center px-4 py-2 text-sm hover:bg-red-50 transition duration-100" role="menuitem">
+                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                    Supprimer
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {%endfor%}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        </div>
+        <div id="modalToggle2" tabindex="-1" aria-hidden="true" 
+     class="fixed top-0 left-0 right-0 z-[1050] hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full">
+    <div class="relative w-full max-w-2xl max-h-full mx-auto">
+        <div class="relative bg-white rounded-lg shadow-2xl dark:bg-gray-700">
+            <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-600 bg-gray-50">
+                <h3 class="text-xl font-semibold text-gray-900 uppercase dark:text-white">
+                    Nouvel Element de Donnée
+                </h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ml-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-hide="modalToggle2">
+                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/></svg>
+                    <span class="sr-only">Fermer la modal</span>
+                </button>
+            </div>
+            <form enctype="multipart/form-data" class="form-horizontal bordered-row" action="/save_dataelts/"  id="deleteFormAction" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="generator" value="eD">
+                <input type="hidden" name="edit_or_create" value="c">
+                <div class="p-6 space-y-4">
+                    
+                    <div class="space-y-1">
+                        <label for="logo" class="block text-sm font-medium text-gray-700">Image pour l'Element de Donnée</label>
+                        <input type="file" id="logo" class="mt-1 block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-blue-50 file:text-blue-700
+                            hover:file:bg-blue-100" name="logo">
+                        <p class="mt-1 text-xs text-gray-500">S'il n'y a pas d'icone, l'image par défaut sera conservée.</p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="nom" class="block text-sm font-medium text-gray-700">Nom de l'Element de Donnée</label>
+                        <input type="text" id="nom" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" name="nom">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="domain_type" class="block text-sm font-medium text-gray-700">Type de Domaine</label>
+                        <select id="domain_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" name="domain_type">
+                            <option value="Aggregate">Aggregat</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="value_type" class="block text-sm font-medium text-gray-700">Nature des Données</label>
+                        <select id="value_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" name="value_type">
+                            <option value="Number">Nombre</option>
+                            <option value="Text">Texte</option>
+                            <option value="Date">Date</option>
+                        </select>
+                    </div>
+                    <input type='hidden' name='matrice' />
+                    <div class="space-y-1">
+                        <label for="aggregation_type" class="block text-sm font-medium text-gray-700">Aggrégation</label>
+                        <select id="aggregation_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" name="aggregation_type">
+                            <option value="s">Somme</option>
+                            
+                            <option value="a">Moyenne</option>
+                            <option value="M">Max</option>
+                            <option value="m">Minimum</option>
+                        </select>
+                    </div>
+
+                    <!-- div class="space-y-1">
+                        <label for="description" class="block text-sm font-medium text-gray-700">Desription de L'Element</label>
+                        <textarea id="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" name="description"></textarea>
+                    </div>
+                     -->
+                    <div class="space-y-4 pt-3">
+
+    <!-- Checkbox stylisée -->
+    <label class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
+        <input 
+            id="cumulatif"
+            name="null_conserv"
+     
+            type="checkbox"
+            class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        >
+        <div>
+            <p class="text-sm font-semibold text-gray-800">
+                Activer le calcul cumulatif
+            </p>
+            <p class="text-xs text-gray-500">
+                Calcul basé sur les périodes précédentes
+            </p>
+        </div>
+    </label>
+
+    <!-- Bloc période -->
+    <div id="periode_cummul" 
+         class="space-y-4 hidden p-4 rounded-xl border border-blue-100 bg-blue-50 transition-all duration-300">
+
+        <!-- Titre -->
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <h3 class="text-sm font-semibold text-blue-700">
+                Configuration  Moyenne, Somme, Min, Max
+            </h3>
+        </div>
+
+        <!-- Période début -->
+        <div>
+            <label for="periode_debut" class="block mb-1 text-sm font-medium text-gray-700">
+                Période Début
+            </label>
+            <select id="periode_debut" name="periode_debut"
+                class="w-full px-3 py-2.5 bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                <option value="">-- Sélectionner --</option>
+                {%for periodes in periode%}
+                    <option value="{{periodes.id}}">{{periodes.nom}}</option>
+                {%endfor%}
+            </select>
+        </div>
+
+        <!-- Période fin -->
+        <div>
+            <label for="periode_fin" class="block mb-1 text-sm font-medium text-gray-700">
+                Période Fin
+            </label>
+            <select id="periode_fin" name="periode_fin"
+                class="w-full px-3 py-2.5 bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                <option value="">-- Sélectionner --</option>
+                {%for periodes in periode%}
+                    <option value="{{periodes.id}}">{{periodes.nom}}</option>
+                {%endfor%}
+            </select>
+        </div>
+
+        <div>
+            <label for="periode_fin" class="block mb-1 text-sm font-medium text-gray-700">
+                DataElement D'association< 
+            </label>
+            <select id="dataelt" name="dataelts"
+                class="w-full px-3 py-2.5 bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                <option value="">-- Sélectionner --</option>
+                {%for dataelt in dataelts%}
+                    <option value="{{dataelt.id}}">{{dataelt.m_name}}</option>
+                {%endfor%}
+            </select>
+        </div>
+
+
+    </div>
+
+</div>
+                 
+                </div>
+
+                <div class="flex items-center justify-end p-4 border-t border-gray-200 rounded-b dark:border-gray-600">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out shadow-md" type="submit">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const checkbox = document.getElementById('cumulatif');
+    const bloc = document.getElementById('periode_cummul');
+
+    if (!checkbox || !bloc) return;
+
+    function toggle() {
+        bloc.classList.toggle('hidden', !checkbox.checked);
+    }
+
+    toggle();
+    checkbox.addEventListener('change', toggle);
+});
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // --- 1. GESTION DES MENUS DÉROULANTS (DROPDOWNS) ---
+        
+        // Fonctionnalité de bascule pour tous les dropdowns
+        document.querySelectorAll('[data-dropdown-toggle]').forEach(button => {
+            button.addEventListener('click', () => {
+                const dropdownId = button.getAttribute('data-dropdown-toggle');
+                const dropdown = document.getElementById(dropdownId);
+                
+                // Masquer tous les autres dropdowns ouverts pour éviter les superpositions multiples
+                document.querySelectorAll('[id^="dropdown-"]').forEach(otherDropdown => {
+                    if (otherDropdown.id !== dropdownId && !otherDropdown.classList.contains('hidden')) {
+                        otherDropdown.classList.add('hidden');
+                    }
+                });
+
+                // Basculer l'état du dropdown actuel
+                dropdown.classList.toggle('hidden');
+                const isExpanded = dropdown.classList.contains('hidden') ? 'false' : 'true';
+                button.setAttribute('aria-expanded', isExpanded);
+            });
+        });
+
+        // Fermer le dropdown si l'utilisateur clique en dehors
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('[data-dropdown-toggle]') && !event.target.closest('[id^="dropdown-"]')) {
+                document.querySelectorAll('[id^="dropdown-"]').forEach(dropdown => {
+                    dropdown.classList.add('hidden');
+                });
+                document.querySelectorAll('[data-dropdown-toggle]').forEach(button => {
+                    button.setAttribute('aria-expanded', 'false');
+                });
+            }
+        });
+        
+        // --- 2. GESTION DES MODALS (FENÊTRES MODALES) ---
+        
+        // Ouvrir la modal et créer un overlay
+        document.querySelectorAll('[data-modal-toggle]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const modalId = btn.getAttribute('data-modal-target');
+                const modal = document.getElementById(modalId);
+                modal.classList.remove('hidden');
+                modal.setAttribute('aria-hidden', 'false');
+                // Création d'un overlay avec un z-index inférieur à la modal, mais supérieur à la nav (si z-nav est < 1040)
+                document.body.insertAdjacentHTML('beforeend', '<div id="modal-backdrop" class="bg-gray-900 bg-opacity-50 fixed inset-0 z-[1040]"></div>');
+            });
+        });
+
+        // Fermer la modal et supprimer l'overlay
+        document.querySelectorAll('[data-modal-hide]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const modalId = btn.getAttribute('data-modal-hide');
+                const modal = document.getElementById(modalId);
+                modal.classList.add('hidden');
+                modal.setAttribute('aria-hidden', 'true');
+                // Suppression de l'overlay
+                document.getElementById('modal-backdrop')?.remove();
+            });
+        });
+        
+        // --- 3. LOGIQUE DU FORMULAIRE (Valeur par Défaut) ---
+        document.getElementById('fill_valid').addEventListener('change', function() {
+            const defaultValueDiv = document.getElementById('fill_default_div');
+            if (this.checked) {
+                defaultValueDiv.style.display = 'block';
+            } else {
+                defaultValueDiv.style.display = 'none';
+            }
+        });
+        
+    });
+</script>
+{% for message in messages %}
+<script>
+Swal.fire({
+    toast: true,
+    position: "top-end",
+    icon: "{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}",
+    title: "{{ message|escapejs }}",
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    background: "#1f2937", // dark élégant
+    color: "#fff",
+    didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer)
+        toast.addEventListener('mouseleave', Swal.resumeTimer)
+    }
+});
+</script>
+{% endfor %}
+
+{%endblock%}

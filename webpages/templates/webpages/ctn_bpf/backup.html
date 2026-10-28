@@ -1,0 +1,746 @@
+
+{% extends './index.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block main %}
+
+
+<div class="row">
+  <div class="col-md-12">
+    <img src="{% static 'webpages/archive.jpeg'%}" width="85" style="float: left;">
+    <h4 class="card-title text-dark my-4" style="float: left; margin-left: 10px;font-family: quartz">Liste Des Archives Des Documents De L'institution <b class="text-danger">{{actual_institution.sigle}}</b></h4>
+  </div>
+</div>
+
+
+
+     <div class="container">
+              <div class="row">
+
+                <div class="col-md-12">
+                  <button class="btn btn-dark my-2" data-toggle="modal" data-target="#exampleModal"><i class="fa fa-plus"></i> Nouvelle Categorie</button>
+                  <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title text-primary text-center" id="exampleModalLabel" style="font-weight: bold;">Gestion Des Categories</h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                 <form method="POST" action="/add_categorie/">
+                  {%csrf_token%}
+                <div class="row">
+                  <div class="col-md-12">
+                    <label class="text-danger">Nom Categorie *</label>
+                    <input type="text" class="form-control" placeholder="Nom categorie" name="nom" style="border-color:red" required>
+                     <button type="submit" class="btn btn-primary my-2" style="float:right">Enregistrer</button>
+                  </div>
+
+                </div>
+                                <div class="card-body">
+                    <!--Table-->
+                    <div class="col-md-12">
+                      <h5 class="text-primary">Liste Des Categories </h5>
+                    <table class="table table-hover text-center  w-100 table-responsive">
+                        <!--Table head-->
+                        <thead class="mdb-color darken-3">
+                            <tr class="text-white bg-dark">
+
+                                <th style="width:50%">Nom Categorie</th>
+
+                                <th style="width:50%">Action</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                          {%for category in categorie%}
+                            <tr>
+
+                                <th>{{category.nom}}</th>
+
+                                <td>
+                                 <a href="/drop_categorie/{{category.id}}/" class="btn btn-danger"><i class="fa fa-trash text-danger text-light"></i>Supprimer</a>&nbsp;
+                                  <a href="/edit_categorie/{{category.id}}/" class="btn btn-primary text-light"><i class="fa fa-pen text-primary text-light"></i> Sous-Categorie</a>
+
+                                </td>
+                                <td></td>
+                              </tr>
+                           {%endfor%}
+                        </tbody>
+                        <!--Table body-->
+                    </table>
+
+                    <h5 class="text-primary text-center" style="font-weight:bold;">Liste Des Sous-Categorie</h5>
+
+                    <table class="table table-hover text-center  w-100 table-responsive">
+                        <!--Table head-->
+                        <thead class="mdb-color darken-3">
+                            <tr class="text-white bg-dark">
+
+                                <th style="width:50%">Sous-Categorie</th>
+
+                                <th style="width:50%">Action</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                          {%for sous_category in sous_categorie%}
+                            <tr>
+
+                                <th>{{sous_category.nom}}</th>
+
+                                <td>
+                                 <a href="/drop_sous_categorie/{{sous_category.id}}/" class="btn btn-danger"><i class="fa fa-trash text-danger text-light"></i>Supprimer</a>&nbsp;
+                                  <a href="/edit_sous_categorie/{{sous_category.id}}/" class="btn btn-primary text-light"><i class="fa fa-edit text-primary text-light"></i>Modifier</a>
+                                </td>
+                                <td></td>
+                              </tr>
+                           {%endfor%}
+                        </tbody>
+                        <!--Table body-->
+                    </table>
+                    <!--Table-->
+                </div>
+                </div>
+               </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+
+                </div>
+                </form>
+              </div>
+            </div>
+          </div>
+                  <button class="btn btn-dark my-2" data-toggle="modal" data-target="#staticBackdrop"><i class="fa fa-plus" ></i> Archiver Le document</button>
+
+                  <button class="btn btn-dark my-2 " data-toggle="modal" data-target="#staticBackdropconvert" disabled><i class="fa fa-convert" ></i> Convertir word vers Pdf</button>
+
+
+                    <div class="modal fade" id="staticBackdropconvert" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title text-danger" id="staticBackdropLabel" style="font-weight: bold">Conversion des fichiers (Word,Txt) En Pdf</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <form method="POST" action="/convert_to_pdf/" enctype="multipart/form-data">
+                    {%csrf_token%}
+                  <div class="modal-body">
+                   <div class="main-wrapper">
+                 <div class="upload-main-wrapper">
+                          <div class="upload-wrapper">
+                        <input type="file" id="upload-file" name="file">
+                        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid meet" viewBox="224.3881704980842 176.8527621722847 221.13266283524905 178.8472378277154" width="221.13" height="178.85"><defs><path d="M357.38 176.85C386.18 176.85 409.53 204.24 409.53 238.02C409.53 239.29 409.5 240.56 409.42 241.81C430.23 246.95 445.52 264.16 445.52 284.59C445.52 284.59 445.52 284.59 445.52 284.59C445.52 309.08 423.56 328.94 396.47 328.94C384.17 328.94 285.74 328.94 273.44 328.94C246.35 328.94 224.39 309.08 224.39 284.59C224.39 284.59 224.39 284.59 224.39 284.59C224.39 263.24 241.08 245.41 263.31 241.2C265.3 218.05 281.96 199.98 302.22 199.98C306.67 199.98 310.94 200.85 314.93 202.46C324.4 186.96 339.88 176.85 357.38 176.85Z" id="b1aO7LLtdW"></path><path d="M306.46 297.6L339.79 297.6L373.13 297.6L339.79 255.94L306.46 297.6Z" id="c4SXvvMdYD"></path><path d="M350.79 293.05L328.79 293.05L328.79 355.7L350.79 355.7L350.79 293.05Z" id="b11si2zUk"></path></defs><g><g><g><use xlink:href="#b1aO7LLtdW" opacity="1" fill="#ffffff" fill-opacity="1"></use></g><g><g><use xlink:href="#c4SXvvMdYD" opacity="1" fill="#363535" fill-opacity="1"></use></g><g><use xlink:href="#b11si2zUk" opacity="1" fill="#363535" fill-opacity="1"></use></g></g></g></g></svg>
+                        <span class="file-upload-text">Upload File</span>
+                        <div class="file-success-text">
+                         <svg version="1.1" id="check" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                    viewBox="0 0 100 100"  xml:space="preserve">
+                <circle style="fill:rgba(0,0,0,0);stroke:#ffffff;stroke-width:10;stroke-miterlimit:10;" cx="49.799" cy="49.746" r="44.757"/>
+                <polyline style="fill:rgba(0,0,0,0);stroke:#ffffff;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;" points="
+                    27.114,51 41.402,65.288 72.485,34.205 "/>
+                </svg> <span>Successfully</span></div>
+                    </div>
+                    <p id="file-upload-name"></p>
+              </div>
+               </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                    <button type="submit" class="btn btn-primary">Convertir</button>
+                  </div>
+                </div>
+                </form>
+              </div>
+            </div>
+                  <button class="btn btn-dark my-2" data-toggle="modal" data-target="#exampleModallien" disabled><i class="fa fa-upload" ></i> Importer Fichier</button>
+
+                  <div class="modal fade" id="exampleModallien" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="exampleModalLabel">Uploder Le fichier Par Lien</h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <form method="POST" action="/ma_vue/"enctype="multipart/form-data">
+                    {%csrf_token%}
+                    <label>Lien Vers Le Fichier</label>
+                    <input type="url" name="url" class="form-control" placeholder="Inserez Le Lien Vers Lle Fichier"  accept=".docx"  >
+
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                  <button type="submit" class="btn btn-primary">Importer</button>
+                </div>
+                </form>
+
+              </div>
+            </div>
+          </div>
+                  <button class="btn btn-dark my-2 brisk" onclick="toggleSearchElements()"><i class="fa fa-search" ></i> Recherche Le Fichier</button>
+                  <a class="btn btn-dark my-2 text-white" href="/history/"><i class="fa fa-file"></i> Operation Non  Archivées</a>
+
+
+                  <div class="modal fade" id="staticBackdrop" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title text-primary" style="font-family: quartz" id="staticBackdropLabel">Archiver Des Documents A partir de Plusieurs Sources</h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                      <form style="font-weight: bold" method="POST" action="/add_archive/" enctype="multipart/form-data" id="form">
+                        {%csrf_token%}
+                  <div class="row">
+                    <div class="col">
+                      <label>Titre *</label>
+                      <input type="text" class="form-control" placeholder="Titre Du Fichier" name="titre" required="renseignez ce champ">
+                    </div>
+                    <div class="col">
+                      <label>Auteur *</label>
+                      <input type="text" class="form-control" placeholder="Auteur Du Fichier" name="auteur" value="{{request.user.personnel}}" required="merci de renseigner ce champ">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                      <label>Associez Le document A une categorie *</label>
+                      <select class="form-control" name="categorie_id" required style="border-color: red" id="categorie">
+                        <option>Selctionnez La categorie</option>
+                        {%for category in categorie%}
+                          <option value="{{category.id}}">{{category.nom}}</option>
+                        {%endfor%}
+                        </select>
+                    </div>
+                    <div class="col">
+
+                      <label>Format Document *</label>
+                      <select class="form-control" name="format" id="formatSelect" onchange="toggleFields()" required="renseignez ce champ">
+                        <option>Selectionnez Le format Du document</option>
+                        <option value="pdf">Pdf</option>
+                        <option value="image">Image</option>
+                        <option value="video">Video(MP4,AVI)</option>
+                      </select>
+                    </div>
+                    </div>
+
+
+                    <div class="row" id="imageFields" style="display: none;">
+                      <div class="col-md-12">
+                        <label>Upload Du fichier</label>
+                        <input type="file" name="upload_file" id="imageUpload" class="form-control" onchange="previewImage(event)" required>
+                      </div>
+                    </div>
+                    <div class="row">
+                    <div class="col-md-12">
+                        <label>Associez a Une Sous-Categorie *</label>
+                        <select class="form-control" name="sous_categorie" id="sous_categorie">
+                        <option value="">Selectionnez Votre Sous-Categorie</option>
+                        {%for sous_categories in sous_categorie%}
+                            <option value="{{sous_categories.id}}">{{sous_categories.nom}}</option>
+                        {%endfor%}
+                        </select>
+                    </div>
+                </div>
+                    <div class="row">
+                    <div class="col-md-12">
+                        <label>Description *</label>
+                        <textarea class="form-control" name="description"></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                <div class="col-md-12">
+                    <label>Source De Financement *</label>
+                    <input type="text" name="source_financement" class="form-control">
+                </div>
+            </div>
+            <div class="row">
+            <div class="col-md-12">
+                <label>Provenance *</label>
+                <input type="text" name="provenance" class="form-control">
+            </div>
+          </div>
+                <div class="row">
+                  <div class="col-md-12">
+                    <img id="imagePreview" src="#" alt="Aperçu du Fichier" style="display: none; max-width: 100%;">
+                    <button onclick="removeImagePreview()" style="display: none;" id="removeImageButton" class="btn btn-danger">Supprimer</button>
+
+
+                  </div>
+                </div>
+                  </div>
+
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                  <button type="submit" class="btn btn-primary" id="submit">Archiver</button>
+                </div>
+                  </form>
+
+              </div>
+            </div>
+          </div>
+                  <nav>
+         <div class="nav nav-tabs nav-fill" id="nav-tab" role="tablist">
+              {% if categorie|length == '0'%}
+                  <h5 class="text-light text-center" style="font-weight: bold;font-family: quartz;">Aucune Categorisation Pour Les Archives.Veuillez D'abord Creer Des Categories Pour y associer Vos Archives.</h5>
+              {% else %}
+                  {% for category in categorie %}
+                      <a class="nav-item nav-link {% if forloop.first %}active{% endif %}" id="nav-{{ category.id }}-tab" data-toggle="tab" href="#nav-{{ category.id }}" role="tab" aria-controls="nav-{{ category.id }}" aria-selected="true">
+
+
+                      {{ category.nom }}</a>
+                  {% endfor %}
+              {% endif %}
+          </div>
+
+          <div class="tab-content" id="nav-tabContent">
+  {% for category in categorie %}
+    <div class="tab-pane fade {% if forloop.first %} show active {% endif %}" id="nav-{{ category.id }}" role="tabpanel" aria-labelledby="nav-{{ category.id }}-tab">
+      <!-- Contenu de la catégorie -->
+
+      <div class="nav nav-tabs nav-fill" id="sous-categorie-tab-{{ category.id }}" role="tablist">
+        {% for sous_categorie in category.sous_categorie_set.all %}
+          <a class="nav-item nav-link {% if forloop.first%} active {% endif %}" id="nav-{{ sous_categorie.id }}-tab" data-toggle="tab" href="#nav-{{ sous_categorie.id }}" role="tab" aria-controls="nav-{{ sous_categorie.id }}" aria-selected="true">
+            {{ sous_categorie.nom }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+          <div class="tab-content" id="nav-tabContent">
+            <div class="card" style="padding: 2px;display:none;">
+                <div card-title>
+                <h6 class="text-primary my-2 text-center" style="font-weight:bold">
+                Criteres De Recherche
+                </h6>
+                </div>
+                <div class="card-body">
+                <div class="row">
+                <div class="col-md-4">
+                <label style="font-weight:bold">Index Document</label>
+                <input type="search" class="form-control p-2 my-2"id="archiveSearch" placeholder="recherche Archives Par Index">
+                </div>
+                <div class="col-md-4">
+                <label style="font-weight:bold">Date D'archivage</label>
+                <input type="date" class="form-control p-2 my-2" id="dateInput" onchange="filterArchivesByDate()">
+                </div>
+                <div class="col-md-4">
+                <label style="font-weight:bold">Auteur</label>
+                <select class="form-control my-2" id="filter_personnel">
+                <option>Filtre Les Archives Par Auteur</option>
+                {%for personnels in personnel%}
+                <option>{{personnels.nom}}</option>
+                {%endfor%}
+                </select>
+
+                </div>
+                </div>
+                </div>
+                </div>
+
+
+              {% if categorie|length == "0" %}
+                  <div style="display: flex; align-items: center; justify-content: center;">
+
+                      <img src="{% static 'webpages/images.jpeg' %}" style="margin-right: 10px;">
+                      <h4 class="text-danger" style="font-family: quartz">Aucun Document Archivé Pour Le Moment</h4>
+                  </div>
+              {% else %}
+                  {% for sous_category in sous_categorie %}
+              <div class="tab-pane fade" id="nav-{{ sous_category.id }}" role="tabpanel" aria-labelledby="nav-{{ sous_category.id }}-tab">
+                  <div class="row">
+                      {% for archive in sous_category.archive_set.all %}
+                          <div class="col-md-4">
+                            <div class="panel panel-default bootcards-file">
+
+                    <div class="list-group">
+                      <div class="list-group-item">
+                        <a href="#">
+
+                          {% if archive.format_fichier == "pdf" %}
+                              <div style="display: flex; align-items: center;">
+                      <img src="{% static 'webpages/tele.png' %}" class="file-icon" alt="File Icon" width="60" height="70">
+                      <h4 class="list-group-item-heading" style="margin-left: 10px;">
+                          <a href="#">
+                              <p><b style="font-weight: bold" class="text-dark my-2">Titre</b>: {{archive.titre}}</p>
+                                            <p><b style="font-weight: bold" class="text-dark">Id.</b>: {{archive.index}}</p>
+                          </a>
+                      </h4>
+                  </div>
+              {% elif archive.format_fichier == "image" %}
+                  <div style="display: flex; align-items: center;">
+                      <img src="{% static 'webpages/images.png' %}" class="file-icon" alt="File Icon" width="65" height="70">
+                      <h4 class="list-group-item-heading" style="margin-left: 10px;">
+                          <a href="#">
+                              <p><b style="font-weight: bold" class="text-dark my-2">Titre</b>: {{archive.titre}}</p>
+                          </a>
+                      </h4>
+                  </div>
+                  {%elif archive.format_fichier == 'video'%}
+                  <div style="display: flex; align-items: center;">
+                    <div class="card" style="max-width: 18rem;">
+                         <video src="{{archive.file.url}}" class="card-img-top" controls></video>
+
+                         <div class="card-body">
+                           <h5 class="card-title">Card title</h5>
+                           <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                           <a href="#" class="btn btn-primary">Go somewhere</a>
+                         </div>
+                       </div>
+                      <h4 class="list-group-item-heading" style="margin-left: 10px;">
+                          <a href="#">
+                              <p><b style="font-weight: bold" class="text-dark my-2">Titre</b>: {{archive.titre}}</p>
+                          </a>
+                      </h4>
+                  </div>
+
+              {% endif %}
+
+                      <p class="list-group-item-text"><strong>  <b style="font-weight: bold">Auteur</b>: {{archive.auteur}}</strong></p>
+                      <p class="list-group-item-text"><strong><b style="font-weight: bold">Date Archivage</b>: {{archive.date_enregistrement}}</strong>
+                      <p class="list-group-item-text"><strong><b style="font-weight: bold">Taille</b>: {{archive.taille}} {{archive.unite}}</strong>
+                      </p>
+                    </div>
+
+                      <p class="list-group-item-text">
+                         <div class="btn-group">
+                        <a class="btn btn-primary" href="/download/{{archive.id}}">
+                          <i class="fa fa-arrow-down"></i>
+                          telecharger
+                        </a>
+
+                        <a class="btn btn-danger" href="/download/{{archive.id}}">
+                          <i class="fa fa-star"></i>
+                          Visualiser
+                        </a>
+
+                        <a class="btn btn-dark" href="/stat_doc/{{archive.id}}/">
+                          <i class="fa fa-star"></i>
+                          Details.D
+                        </a>
+
+
+
+                                </div>
+
+
+
+                                </div>
+
+
+
+                              </div>
+
+                          </div>
+                      {% endfor %}
+                  </div>
+              </div>
+          {% endfor %}
+                        {% endif %}
+          </div>
+
+
+                </div>
+              </div>
+        </div>
+      </div>
+</div>
+
+  </div>
+
+</div>
+
+{%endblock%}
+
+{%block script%}
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('#formatSelect').on('change', function() {
+    var $imageFields = $('#imageFields');
+
+    if ($(this).val() === 'image' || $(this).val() === 'pdf' || $(this).val() === 'video') {
+      $imageFields.stop(true, true).slideDown(300, function() {
+        $(this).css({
+          'display': 'flex',
+          'flex-direction': 'column',
+          'align-items': 'flex-start',
+          'margin-top': '20px'
+        }).addClass('animate__animated animate__fadeIn');
+      });
+    } else {
+      $imageFields.stop(true, true).slideUp(300, function() {
+        $(this).removeClass('animate__animated animate__fadeIn');
+      });
+    }
+  });
+});
+</script>
+
+
+<script>
+function previewImage(event) {
+    var input = event.target;
+    var imagePreview = document.getElementById('imagePreview');
+    var removeButton = document.getElementById('removeImageButton');
+
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+
+        reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+            imagePreview.style.display = 'block'; // Show the image preview
+            removeButton.style.display = 'block'; // Show the remove button
+        }
+
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        imagePreview.src = '#';
+        imagePreview.style.display = 'none'; // Hide the image preview
+        removeButton.style.display = 'none'; // Hide the remove button
+    }
+}
+
+function removeImagePreview(event) {
+    event.preventDefault(); // Prevent the default form submission
+    var input = document.getElementById('imageUpload');
+    input.value = ''; // Reset the input value, clearing the selected file
+    var imagePreview = document.getElementById('imagePreview');
+    var removeButton = document.getElementById('removeImageButton');
+    imagePreview.src = '#';
+    imagePreview.style.display = 'none'; // Hide the image preview
+    removeButton.style.display = 'none'; // Hide the remove button
+}
+
+</script>
+
+
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  {% if message.tags == 'success' %}
+
+<script type="text/javascript">
+    Swal.fire({
+  position: "top-end",
+  icon: "success",
+  title: "{{message}}",
+  showConfirmButton: false,
+  timer: 2000
+});
+</script>
+{%endif%}
+{%endfor%}
+
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  {% if message.tags == 'error' %}
+
+<script type="text/javascript">
+    Swal.fire({
+  position: "top-end",
+  icon: "error",
+  title: "{{message}}",
+  showConfirmButton: false,
+  timer: 2000
+});
+</script>
+{%endif%}
+{%endfor%}
+
+
+<script type="text/javascript">
+   $(document).ready(function(){
+             $('#upload-file').change(function() {
+                var filename = $(this).val();
+                $('#file-upload-name').html(filename);
+                if(filename!=""){
+                    setTimeout(function(){
+                        $('.upload-wrapper').addClass("uploaded");
+                    }, 600);
+                    setTimeout(function(){
+                        $('.upload-wrapper').removeClass("uploaded");
+                        $('.upload-wrapper').addClass("success");
+                    }, 1600);
+                }
+            });
+        });
+</script>
+
+
+
+<!-- Inclure jQuery et SweetAlert -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Script jQuery pour autoriser les fichiers PDF et les fichiers d'images -->
+<script>
+$(document).ready(function() {
+    $('#imageUpload').on('change', function() {
+        var fileInput = document.getElementById('imageUpload');
+        var filePath = fileInput.value;
+        var allowedExtensions = /(\.pdf|\.jpg|\.jpeg|\.png|\.mp4|\.avi)$/i;  // Autoriser les fichiers PDF, JPG, JPEG, PNG
+
+        if (!allowedExtensions.exec(filePath)) {
+            // Afficher une alerte SweetAlert pour avertir l'utilisateur
+            Swal.fire({
+                icon: 'error',
+                title: 'Type de fichier non autorisé',
+                text: 'Veuillez sélectionner un fichier au format PDF, JPG, JPEG ou PNG.'
+            });
+
+            // Réinitialiser le champ de saisie de fichier
+            fileInput.value = '';
+            return false;
+        }
+    });
+});
+</script>
+<script type="text/javascript">
+
+
+</script>
+
+<script type="text/javascript">
+    function validateForm() {
+  const selectElement = document.querySelector('select[name="categorie_id"]');
+  const selectedIndex = selectElement.selectedIndex;
+
+  // Verify if an option is selected
+  if (selectedIndex === 0) {
+    // Use SweetAlert for error message
+    swal("Erreur !", "Merci de sélectionner une catégorie", "error");
+
+    // Prevent form submission
+    return false;
+  }
+
+  // Allow form submission
+  return true;
+}
+
+// Attach the function to form's submit event
+document.querySelector('form').addEventListener('submit', validateForm);
+</script>
+
+
+<script type="text/javascript">
+
+ // jQuery pour filtrer les archives en fonction du titre
+$(document).ready(function() {
+    $('#archiveSearch').on('input', function() {
+        var searchTerm = $(this).val().toLowerCase();  // Convertir le terme de recherche en minuscules
+        $('.tab-pane').each(function() {
+            var title = $(this).find('.list-group-item-heading a').text().toLowerCase();  // Récupérer le texte du titre en minuscules
+            if (title.includes(searchTerm)) {
+                $(this).show();  // Afficher l'onglet si le terme de recherche est trouvé dans le titre
+            } else {
+                $(this).hide();  // Masquer l'onglet sinon
+            }
+        });
+    });
+});
+</script>
+
+<script type="text/javascript">
+// Fonction pour filtrer les éléments en fonction du titre
+function filterByTitle(searchText) {
+    // Convertir le texte de recherche en minuscules pour une recherche insensible à la casse
+    var searchQuery = searchText.toLowerCase();
+
+    // Parcourir les éléments à filtrer
+    $('.tab-pane').each(function() {
+        var title = $(this).find('.text-primary').text().toLowerCase();
+
+        // Vérifier si le titre correspond au critère de recherche
+        if (title.indexOf(searchQuery) === -1) {
+            // Masquer les éléments qui ne correspondent pas au critère de recherche
+            $(this).hide();
+        } else {
+            // Afficher les éléments qui correspondent au critère de recherche
+            $(this).show();
+        }
+    });
+}
+
+// Écouter l'événement de saisie dans le champ de recherche
+$('#searchInput').on('input', function() {
+    var searchText = $(this).val();
+    filterByTitle(searchText);
+});
+
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript">
+// custom.js
+
+$(document).ready(function() {
+  $('#categorie').on('change', function() {
+    var selectedId = $(this).val();
+
+    // Effectuer une requête AJAX pour récupérer les informations de la table periodeok en fonction de l'ID de la période sélectionnée
+    $.ajax({
+      url: '/search_categorie/',  // L'URL correspondant à la vue Django
+      method: 'GET',
+      data: { id: selectedId },
+      success: function(data) {
+        var selectInformations = $('#sous_categorie');
+        selectInformations.empty(); // Effacer les anciennes options
+
+        // Ajouter les nouvelles options basées sur les données récupérées via AJAX
+        data.forEach(function(ind) {
+          selectInformations.append($('<option>', {
+            value: ind.id,
+            text: ind.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
+          }));
+        });
+      },
+      error: function(xhr, status, error) {
+        console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+      }
+    });
+  });
+});
+
+</script>
+<script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    // Masquer les éléments au chargement de la page
+    $('.card').hide();
+
+    // Fonction pour basculer les éléments et changer le texte du bouton
+    function toggleSearchElements() {
+      $('.card').toggle('slow');
+      var buttonText = $('.brisk').text();
+      if (buttonText.trim() === "Masquer Options De Recherche") {
+        $('.brisk').text("Afficher Options De Recherche");
+
+      } else {
+        $('.brisk').text("Masquer Options De Recherche");
+      }
+    }
+
+    // Attacher la fonction à un événement, par exemple un clic sur un bouton
+    $('.brisk').click(function() {
+      toggleSearchElements();
+    });
+  });
+</script>
+
+{%endblock%}

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historique des e-mails - Celery Broker</title>
+    <!-- CDN Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+</head>
+<body class="h-full font-sans antialiased text-slate-800">
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- En-tête de page -->
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight flex items-center gap-3">
+                <i class="fas fa-envelope-open-text text-indigo-600"></i>
+                Historique des e-mails
+            </h2>
+            <p class="mt-1 text-sm text-slate-500">
+                Suivi en temps réel de l'exécution des tâches dans le broker Celery.
+            </p>
+        </div>
+        <div class="mt-4 flex md:ml-4 md:mt-0">
+            <button onclick="location.reload();" type="button" class="inline-flex items-center gap-x-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-indigo-600 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-all">
+                <i class="fas fa-sync-alt"></i>
+                Actualiser
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtres et Recherche -->
+    <div class="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-2 relative">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <i class="fas fa-search text-slate-400"></i>
+                </div>
+                <input type="text" id="searchInput" placeholder="Rechercher par nom, email ou sujet..." class="block w-full rounded-lg border-0 py-2.5 pl-10 pr-4 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+            </div>
+            <div>
+                <select id="statusFilter" class="block w-full rounded-lg border-0 py-2.5 pl-3 pr-8 text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6">
+                    <option value="">Tous les statuts</option>
+                    <option value="EN_ATTENTE">En attente</option>
+                    <option value="EN_COURS">En cours</option>
+                    <option value="SUCCES">Envoyé (Succès)</option>
+                    <option value="ECHEC">Échec</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau de suivi -->
+    <div class="bg-white rounded-xl shadow-sm ring-1 ring-slate-900/5 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200" id="emailTable">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th scope="col" class="py-3.5 pl-6 pr-3 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">Destinataire</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">Email</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">Sujet</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">Date</th>
+                        <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold text-slate-900 uppercase tracking-wider">Statut Broker</th>
+                        <th scope="col" class="relative py-3.5 pl-3 pr-6 text-right text-xs font-semibold text-slate-900 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 bg-white">
+                    {% for e in emails %}
+                    <tr class="email-row hover:bg-slate-50/80 transition-colors" data-statut="{{ e.statut }}">
+                        <!-- Destinataire -->
+                        <td class="whitespace-nowrap py-4 pl-6 pr-3 text-sm">
+                            <div class="flex items-center gap-x-3">
+                                <div class="h-9 w-9 flex-none rounded-full bg-indigo-50 flex items-center justify-center font-semibold text-indigo-600 ring-1 ring-indigo-500/10">
+                                    {{ e.personnel.nom|slice:":1"|upper }}
+                                </div>
+                                <div class="font-medium text-slate-900">
+                                    {{ e.personnel.nom }} {{ e.personnel.prenom }}
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Email -->
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ e.email }}</td>
+
+                        <!-- Sujet -->
+                        <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-slate-800">{{ e.sujet }}</td>
+
+                        <!-- Date -->
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ e.date_creation|date:"d/m/Y à H:i" }}</td>
+
+                        <!-- Statut -->
+                        <td class="whitespace-nowrap px-3 py-4 text-sm">
+                            {% if e.statut == 'SUCCES' %}
+                                <span class="inline-flex items-center gap-x-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                                    <i class="fas fa-check-circle"></i> Envoyé
+                                </span>
+                            {% elif e.statut == 'EN_COURS' %}
+                                <span class="inline-flex items-center gap-x-1.5 rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">
+                                    <i class="fas fa-spinner fa-spin"></i> En cours
+                                </span>
+                            {% elif e.statut == 'ECHEC' %}
+                                <span class="inline-flex items-center gap-x-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20" title="{{ e.erreur }}">
+                                    <i class="fas fa-exclamation-triangle"></i> Échec
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-x-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+                                    <i class="fas fa-clock"></i> En attente
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="whitespace-nowrap py-4 pl-3 pr-6 text-right text-sm">
+                            <button onclick="openModal('modalEmail{{ e.id }}')" type="button" class="rounded-full p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Modale Tailwind pour chaque e-mail -->
+                    <div id="modalEmail{{ e.id }}" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-hidden="true">
+                        <!-- Backdrop -->
+                        <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal('modalEmail{{ e.id }}')"></div>
+
+                        <div class="flex min-h-full items-center justify-center p-4 text-center">
+                            <div class="relative w-full max-w-lg transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-xl transition-all">
+                                
+                                <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                    <h3 class="text-base font-semibold leading-6 text-slate-900 flex items-center gap-2">
+                                        <i class="fas fa-envelope text-indigo-600"></i> Détails du message
+                                    </h3>
+                                    <button onclick="closeModal('modalEmail{{ e.id }}')" class="text-slate-400 hover:text-slate-500">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+
+                                <div class="p-6 space-y-3">
+                                    <p class="text-sm text-slate-600"><strong class="text-slate-900">Destinataire :</strong> {{ e.personnel.nom }} {{ e.personnel.prenom }} ({{ e.email }})</p>
+                                    <p class="text-sm text-slate-600"><strong class="text-slate-900">Sujet :</strong> {{ e.sujet }}</p>
+                                    <p class="text-sm text-slate-600"><strong class="text-slate-900">Date :</strong> {{ e.date_creation|date:"d/m/Y H:i:s" }}</p>
+                                    
+                                    {% if e.erreur %}
+                                    <div class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700 ring-1 ring-inset ring-rose-600/20">
+                                        <strong>Erreur Celery :</strong> {{ e.erreur }}
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="mt-4 rounded-lg bg-slate-50 p-4 ring-1 ring-slate-900/5 text-sm text-slate-700 whitespace-pre-line">
+                                        {{ e.message }}
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-50 px-6 py-3 flex justify-end">
+                                    <button onclick="closeModal('modalEmail{{ e.id }}')" type="button" class="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50">
+                                        Fermer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-12 text-slate-500">
+                            <i class="fas fa-inbox text-4xl mb-3 text-slate-300 block"></i>
+                            Aucun historique d'envoi trouvé dans la base de données.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript Modales, Filtre & Auto-Refresh -->
+<script>
+function openModal(id) {
+    document.getElementById(id).classList.remove('hidden');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const tableRows = document.querySelectorAll('.email-row');
+
+    function filterTable() {
+        const query = searchInput.value.toLowerCase();
+        const selectedStatus = statusFilter.value;
+
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const status = row.getAttribute('data-statut');
+
+            const matchesSearch = text.includes(query);
+            const matchesStatus = selectedStatus === "" || status === selectedStatus;
+
+            row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('keyup', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+
+    // Auto-refresh si des tâches sont EN_ATTENTE ou EN_COURS
+    const hasPendingTasks = Array.from(tableRows).some(row => {
+        const s = row.getAttribute('data-statut');
+        return s === 'EN_ATTENTE' || s === 'EN_COURS';
+    });
+
+    if (hasPendingTasks) {
+        setTimeout(() => location.reload(), 8000);
+    }
+});
+</script>
+
+</body>
+</html>

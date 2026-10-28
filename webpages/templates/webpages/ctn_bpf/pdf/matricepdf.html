@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Matrice RACI - {{ actual_institution.sigle }}</title>
+    <style>
+        /* Configuration de la page */
+        @page {
+            size: A4 landscape; /* Paysage pour plus d'espace horizontal */
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+        }
+
+        /* En-tête */
+        .header {
+            display: table;
+            width: 100%;
+            border-bottom: 3px solid #1e40af;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .header-left {
+            display: table-cell;
+            vertical-align: middle;
+        }
+        .header-right {
+            display: table-cell;
+            text-align: right;
+            vertical-align: middle;
+            font-size: 9pt;
+            color: #666;
+        }
+        .header h1 {
+            font-size: 22pt;
+            margin: 0;
+            color: #1e40af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Tableau RACI */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* Force le respect des largeurs */
+        }
+
+        th {
+            background-color: #1e40af;
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 9pt;
+            padding: 12px 8px;
+            border: 1px solid #1e3a8a;
+        }
+
+        td {
+            padding: 10px 8px;
+            border: 1px solid #e2e8f0;
+            word-wrap: break-word; /* Évite les débordements de texte */
+        }
+
+        /* Colonne Tâches plus large */
+        .col-task { width: 30%; text-align: left; font-weight: 600; color: #1e293b; background-color: #f8fafc; }
+        .col-raci { width: 17.5%; text-align: center; font-size: 9pt; }
+
+        tr:nth-child(even) { background-color: #ffffff; }
+        tr:nth-child(odd) { background-color: #fcfcfc; }
+
+        /* Style des initiales RACI */
+        .badge {
+            display: inline-block;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 4px;
+        }
+
+        .name-text {
+            display: block;
+            color: #475569;
+            font-size: 8.5pt;
+        }
+
+        /* Légende stylisée */
+        .legend-container {
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+        .legend-title {
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            display: inline-block;
+            padding-right: 20px;
+        }
+        .legend-grid {
+            display: table;
+            width: 100%;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .legend-item {
+            display: table-cell;
+            width: 25%;
+            font-size: 9pt;
+        }
+        .letter {
+            font-weight: bold;
+            color: #1e40af;
+            font-size: 11pt;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 8pt;
+            color: #94a3b8;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <h1>Matrice RACI</h1>
+        <div style="color: #64748b; font-weight: bold;">{{ actual_institution.sigle }} — Répartition Opérationnelle</div>
+    </div>
+    <div class="header-right">
+        Document généré le : {% now "d/m/Y H:i" %}<br>
+        Confidentiel
+    </div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th class="col-task">Description de la Tâche</th>
+            <th class="col-raci">Responsable (R)</th>
+            <th class="col-raci">Autorité (A)</th>
+            <th class="col-raci">Consulté (C)</th>
+            <th class="col-raci">Informé (I)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for op in operation %}
+        <tr>
+            <td class="col-task">{{ op.nom|default:"Sans nom" }}</td>
+            
+            <td class="col-raci">
+                <span class="name-text">{{ op.personnel.nom|default:"-" }} {{ op.personnel.prenom|default:"" }}</span>
+            </td>
+            
+            <td class="col-raci">
+                <span class="name-text">{{ op.accountable.nom|default:"-" }} {{ op.accountable.prenom|default:"" }}</span>
+            </td>
+            
+            <td class="col-raci">
+                <span class="name-text">{{ op.consulted.nom|default:"-" }} {{ op.consulted.prenom|default:"" }}</span>
+            </td>
+            
+            <td class="col-raci">
+                <span class="name-text">{{ op.informed.nom|default:"-" }} {{ op.informed.prenom|default:"" }}</span>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" style="text-align: center; padding: 20px; color: #94a3b8;">Aucune donnée disponible</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="legend-container">
+    <div class="legend-title">Légende des rôles</div>
+    <div class="legend-grid">
+        <div class="legend-item"><span class="letter">R</span> : Responsable (Exécute)</div>
+        <div class="legend-item"><span class="letter">A</span> : Autorité (Approuve)</div>
+        <div class="legend-item"><span class="letter">C</span> : Consulté (Conseille)</div>
+        <div class="legend-item"><span class="letter">I</span> : Informé (Suit)</div>
+    </div>
+</div>
+
+<div class="footer">
+    {{ actual_institution.nom }} — Matrice de Responsabilité — Page <span class="page"></span>
+</div>
+
+</body>
+</html>

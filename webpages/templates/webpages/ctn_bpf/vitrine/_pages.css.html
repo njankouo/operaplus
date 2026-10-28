@@ -1,0 +1,34 @@
+{# Styles communs aux pages intérieures (inclus par chaque page) #}
+<style>
+    .pg { background: #fff; color: var(--ink); }
+    .pg-hero { background: var(--ink); color: #fff; padding: 140px 0 70px; position: relative; }
+    .pg-crumb { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.6); margin-bottom: 26px; list-style: none; padding: 0; }
+    .pg-crumb a { color: rgba(255,255,255,.8); } .pg-crumb a:hover { color: #fff; }
+    .pg-crumb li + li::before { content: "/"; margin-right: 8px; color: rgba(255,255,255,.35); }
+    .pg-hero-grid { display: grid; grid-template-columns: 1.3fr .7fr; gap: 50px; align-items: center; }
+    .pg-hero h1 { font-size: clamp(32px, 4.4vw, 54px); line-height: 1.06; letter-spacing: -.035em; font-weight: 800; margin: 14px 0 0; }
+    .pg-hero p.lead { color: rgba(255,255,255,.75); font-size: 18px; line-height: 1.65; margin: 18px 0 0; max-width: 620px; }
+    .pg-hero .op-btn.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.28); }
+    .pg-badge { justify-self: center; width: 210px; height: 210px; border-radius: 48px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+        display: flex; align-items: center; justify-content: center; font-size: 74px; color: var(--acc); animation: pgFloat 5s ease-in-out infinite; }
+    @keyframes pgFloat { 50% { transform: translateY(-10px) rotate(-3deg); } }
+    .pg-sec { padding: 90px 0; } .pg-sec.alt { background: var(--bg); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .pg-points { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .pg-point { display: flex; gap: 14px; align-items: flex-start; padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: #fff; font-size: 16px; font-weight: 700; transition: border-color .25s, transform .25s; }
+    .pg-point:hover { border-color: #D5DAE2; transform: translateY(-3px); }
+    .pg-point i { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #E6F4F1; color: var(--ok); font-size: 14px; }
+    .pg-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: pgs; }
+    .pg-step { padding: 28px; border-radius: 20px; background: #fff; border: 1px solid var(--line); }
+    .pg-step::before { counter-increment: pgs; content: counter(pgs); display: flex; width: 40px; height: 40px; border-radius: 12px; align-items: center; justify-content: center; background: var(--ink); color: #fff; font-weight: 800; margin-bottom: 16px; }
+    .pg-step b { font-size: 18px; }
+    .pg-more { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .pg-more a { display: flex; gap: 12px; align-items: center; padding: 16px; border: 1px solid var(--line); border-radius: 16px; font-weight: 700; font-size: 14px; transition: border-color .2s, background .2s; }
+    .pg-more a:hover { border-color: var(--acc); background: #FFF7F1; }
+    .pg-more i { color: var(--acc); width: 20px; text-align: center; }
+    .pg-prose { max-width: 780px; } .pg-prose h2 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 40px 0 10px; }
+    .pg-prose p, .pg-prose li { color: var(--muted); font-size: 16px; line-height: 1.75; } .pg-prose ul { padding-left: 20px; }
+    .pg-prose dl { display: grid; grid-template-columns: 220px 1fr; gap: 10px 20px; } .pg-prose dt { font-weight: 700; } .pg-prose dd { margin: 0; color: var(--muted); }
+    .pg-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 10px; }
+    .pg-cards div { padding: 24px; border: 1px solid var(--line); border-radius: 18px; } .pg-cards i { font-size: 22px; color: var(--acc); } .pg-cards b { display: block; font-size: 17px; margin: 14px 0 6px; } .pg-cards p { margin: 0; font-size: 14px; }
+    @media (max-width: 900px) { .pg-hero-grid, .pg-points, .pg-steps, .pg-cards { grid-template-columns: 1fr; } .pg-more { grid-template-columns: 1fr 1fr; } .pg-badge { display: none; } .pg-prose dl { grid-template-columns: 1fr; } }
+</style>

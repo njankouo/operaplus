@@ -1,0 +1,41 @@
+<tr id="etape-{{ etape.id }}">
+      <td>
+        <input type="number" name="numero_ordre" value="{{ etape.numero_ordre }}" class="form-control">
+    </td>
+    <td>
+        <input type="text" name="intitule" value="{{ etape.intitule }}" class="form-control">
+    </td>
+    <td>
+        <input type="number" name="progression" value="{{ etape.progression }}" class="form-control">
+    </td>
+    <td colspan="3">
+        <small>Duree Faible</small>
+         <input type="number" name="duree_faible" value="{{ etape.duree_faible }}" class="form-control">
+         <small>Duree Moyenne</small>
+         <input type="number" name="duree_moyenne" value="{{ etape.duree_moyenne }}" class="form-control">
+         <small>Duree Grande</small>
+         <input type="number" name="duree_grande" value="{{ etape.duree_grande }}" class="form-control">
+    </td>
+    <td>
+    <select class="form-control" name="nature">
+        {% for natures in nature %}
+            <option value="{{ natures.id }}" {% if etape.nature.id == natures.id %}selected{% endif %}>
+                {{ natures.intitule }}
+            </option>
+        {% endfor %}
+    </select>
+</td>
+    <td>
+        <input type="text" name="description" value="{{ etape.description }}" class="form-control">
+    </td>
+    <td>
+        <button class="btn btn-sm btn-success me-1" 
+        hx-put="/update-etape/{{ etape.id }}/" 
+        hx-include="#etape-{{ etape.id }} input, #etape-{{ etape.id }} select" 
+        hx-target="#etape-{{ etape.id }}" 
+        hx-swap="outerHTML">
+    <i class="fas fa-save"></i>
+</button>
+        
+    </td>
+</tr>

@@ -1,0 +1,659 @@
+{% extends './index.html' %}
+{% block main %}
+{% load static humanize %}
+<!-- ===================== OPÉRATIONS : cartes de hauteur égale (ajout) ===================== -->
+<style>
+    .tk-grid { --tk-dom: var(--nav-bg-color, #123A37); --tk-acc: var(--primary-color, #E48B0C); --tk-ok: var(--sbx-ok, #2A8A7D);
+               --tk-warn: var(--sbx-warn, #E48B0C); --tk-danger: var(--sbx-danger, #E35A33); --tk-line: #e4e8ee;
+               gap: 18px !important; align-items: stretch; }
+    /* ---- carte ---- */
+    .tk-card { --tone: var(--tk-dom); background: #fff !important; backdrop-filter: none !important; border-radius: 18px !important;
+               border: 1px solid var(--tk-line) !important; border-bottom-color: #dfe4ea !important; box-shadow: 0 1px 2px rgba(16,24,40,.05) !important;
+               transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s, border-color .28s !important; overflow: visible !important; }
+    .tk-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--tone) 35%, var(--tk-line)) !important;
+                     box-shadow: 0 24px 40px -26px color-mix(in srgb, var(--tone) 70%, rgba(16,24,40,.6)) !important; }
+    .tk-card > div.absolute.top-0 { background: var(--tone) !important; height: 3px !important; border-radius: 18px 18px 0 0; opacity: 1 !important; }
+    .tk-card.tk-has-ds { --tone: var(--tk-acc); }
+    /* en-tête */
+    .tk-card > div:nth-child(2) { background: transparent !important; border-bottom: 0 !important; padding: 16px 18px 6px !important; }
+    .tk-card > div:nth-child(2) .font-mono { font-family: inherit !important; font-size: 11px !important; border-radius: 8px !important; }
+    .tk-card > div:nth-child(2) { flex-wrap: wrap; gap: 6px; }
+    .tk-card > div:nth-child(2) > div { flex-wrap: nowrap; }
+    .tk-card > div:nth-child(2) span { white-space: nowrap; }
+    .tk-card > div:nth-child(2) > div:last-child { margin-left: auto; }
+    .tk-card > div:nth-child(2) .animate-pulse { animation: none !important; }
+    .tk-due { gap: 4px; border-color: transparent !important; box-shadow: none !important; }
+    .tk-due i { color: currentColor !important; }
+    .tk-due-t { font-style: normal; font-weight: 800; }
+    .tk-card > div:nth-child(2) .animate-pulse, .tk-card > div:nth-child(2) .text-amber-700 { font-size: 0 !important; gap: 0 !important; padding: 0 !important; width: 24px; height: 24px; justify-content: center; border-radius: 8px !important; }
+    .tk-card > div:nth-child(2) .animate-pulse > span:first-child { width: 8px !important; height: 8px !important; }
+    .tk-card > div:nth-child(2) .animate-pulse::after { content: "!"; font-size: 12px; font-weight: 900; margin-left: 2px; }
+    .tk-due.late { background: color-mix(in srgb, var(--tk-danger) 12%, #fff); color: var(--tk-danger); }
+    .tk-due.soon { background: color-mix(in srgb, var(--tk-warn) 14%, #fff); color: color-mix(in srgb, var(--tk-warn) 75%, #000); }
+    .tk-due.ok { background: color-mix(in srgb, var(--tk-ok) 12%, #fff); color: var(--tk-ok); }
+    /* corps : hauteurs fixes pour que toutes les cartes s'alignent */
+    .tk-card > div:nth-child(3) { padding: 10px 18px 16px !important; }
+    .tk-card h6 { font-size: 14px !important; line-height: 1.4 !important; min-height: 2.8em; color: #0b1220 !important; }
+    .tk-card:hover h6 { color: var(--tone) !important; }
+    .tk-card .w-12.h-12 { border-radius: 12px !important; }
+    .tk-forms-box { position: relative; background: #f8fafc !important; border-color: #eef1f4 !important; border-radius: 14px !important; }
+    .tk-forms { flex-wrap: nowrap !important; overflow: hidden; height: 30px; align-items: center; padding: 0 3px; }
+    .tk-forms > span:not(.tk-more) { flex-shrink: 0; min-width: 0; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block !important;
+                                     line-height: 18px; color: color-mix(in srgb, var(--tk-dom) 85%, #000) !important; border-color: color-mix(in srgb, var(--tk-dom) 18%, #fff) !important; }
+    .tk-forms > span:not(.tk-more) > span { display: inline-block; vertical-align: middle; background: var(--tk-dom) !important; }
+    .tk-forms > span.tk-hide:not(.tk-more) { display: none !important; }
+    .tk-more { flex-shrink: 0; display: inline-flex !important; align-items: center; height: 26px; padding: 0 9px; border-radius: 8px; border: 0; cursor: pointer;
+               font-size: 11px; font-weight: 800; color: #fff; background: var(--tk-dom); }
+    .tk-none { font-size: 12px; color: #98a2b3; font-style: italic; }
+    /* liste complète : info-bulle À CÔTÉ de la carte (droite, ou gauche s'il n'y a pas la place) */
+    .tk-pop { position: fixed; z-index: 1000; width: 290px; background: #0F1B2D; color: #fff; border-radius: 16px;
+              box-shadow: 0 28px 50px -18px rgba(15,27,45,.6); padding: 14px 10px 10px; pointer-events: none;
+              opacity: 0; visibility: hidden; transform: translateX(-8px); transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s; }
+    .tk-pop.left { transform: translateX(8px); }
+    .tk-pop.on { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition: opacity .18s ease, transform .18s ease; }
+    .tk-pop::after { content: ""; position: absolute; top: var(--arrow, 40px); left: -6px; width: 12px; height: 12px; background: #0F1B2D; transform: rotate(45deg); border-radius: 2px; }
+    .tk-pop.left::after { left: auto; right: -6px; }
+    .tk-pop > b { display: flex; justify-content: space-between; align-items: center; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.6); margin: 0 6px 8px; }
+    .tk-pop > b em { font-style: normal; color: #fff; background: rgba(255,255,255,.14); border-radius: 999px; padding: 1px 8px; letter-spacing: 0; }
+    .tk-pop ol { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; counter-reset: tkp; scrollbar-width: thin; }
+    .tk-pop li { counter-increment: tkp; display: flex; gap: 10px; align-items: flex-start; padding: 7px 6px; border-radius: 8px; font-size: 12.5px; font-weight: 600; line-height: 1.35; color: rgba(255,255,255,.92); }
+    .tk-pop li::before { content: counter(tkp); min-width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; background: rgba(255,255,255,.12); color: #fff; flex-shrink: 0; }
+    .tk-pop li:hover { background: rgba(255,255,255,.07); }
+    .tk-more:focus-visible { outline: 2px solid var(--tk-acc); outline-offset: 2px; }
+
+    /* ---- titre de la page ---- */
+    .tk-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 6px 0 18px; }
+    .tk-head h1 { margin: 0; font-size: clamp(22px, 2.2vw, 28px); font-weight: 800; letter-spacing: -.02em; color: #0b1220; display: flex; align-items: center; gap: 12px; }
+    .tk-head h1 i { width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; background: var(--nav-bg-color, #123A37); }
+    .tk-head p { margin: 6px 0 0 52px; font-size: 13px; color: #667085; font-weight: 500; }
+    .tk-head-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tk-head-stats span { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #fff; border: 1px solid #e4e8ee; color: #344054; }
+    .tk-head-stats span b { font-variant-numeric: tabular-nums; }
+    .tk-head-stats .late { color: var(--sbx-danger, #E35A33); border-color: color-mix(in srgb, var(--sbx-danger, #E35A33) 25%, #fff); background: color-mix(in srgb, var(--sbx-danger, #E35A33) 7%, #fff); }
+    .tk-head-stats .soon { color: color-mix(in srgb, var(--sbx-warn, #E48B0C) 75%, #000); border-color: color-mix(in srgb, var(--sbx-warn, #E48B0C) 25%, #fff); background: color-mix(in srgb, var(--sbx-warn, #E48B0C) 8%, #fff); }
+    /* pondération */
+    .tk-card .bg-gradient-to-r.from-indigo-500 { background: var(--tone) !important; }
+    .tk-card .text-indigo-600.bg-indigo-50 { color: var(--tone) !important; background: color-mix(in srgb, var(--tone) 10%, #fff) !important; }
+    .tk-card .text-indigo-500 { color: var(--tone) !important; }
+    /* pied */
+    .tk-card > div:last-child { background: #fbfcfd !important; border-top: 1px solid #eef1f4 !important; border-radius: 0 0 18px 18px !important; padding: 12px 18px !important; }
+    .tk-card > div:last-child a[href^="/operations/"], .tk-valid > div:last-child a { background: var(--tone) !important; box-shadow: 0 10px 18px -12px var(--tone) !important; border-radius: 12px !important; }
+    .tk-card > div:last-child a[href^="/operations/"]:hover { filter: brightness(1.08); }
+    .tk-card > div:last-child .bg-indigo-50 { background: color-mix(in srgb, var(--tk-dom) 10%, #fff) !important; color: var(--tk-dom) !important; }
+    .tk-card > div:last-child a:hover .bg-indigo-50 { background: var(--tk-dom) !important; color: #fff !important; }
+    /* carte de validation (report 1) */
+    .tk-valid h6 { min-height: 2.8em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .tk-valid .bg-indigo-600 { background: var(--tk-dom) !important; }
+    .tk-noresult { grid-column: 1 / -1; display: none; text-align: center; padding: 36px; border: 1px dashed #d0d5dd; border-radius: 18px; background: #fff; color: #667085; font-weight: 600; }
+    #canvas-wrapper:empty { display: none; }
+    @media (prefers-reduced-motion: reduce) { .tk-card { transition: none !important; } }
+</style>
+ 
+<div class="p-6 bg-black-400 min-h-screen">
+    
+    <!-- ===== Titre de la page (ajout) ===== -->
+    <div class="tk-head">
+        <div>
+            <h1><i class="fa-solid fa-list-check" aria-hidden="true"></i>{% if report == 1 %}Opérations en attente de validation{% else %}Tâches en attente de réalisation{% endif %}</h1>
+            <p>{% if report == 1 %}Opérations soumises qui attendent votre décision.{% else %}Les activités qui vous sont attribuées et restent à réaliser.{% endif %}</p>
+        </div>
+        <div class="tk-head-stats" id="tkHeadStats" aria-live="polite">
+            <span><b>{{ lines|length }}</b> au total</span>
+        </div>
+    </div>
+
+    <!-- En-tête avec KPIs (Style ERP) -->
+<div class="mb-4">
+    {% if report == 1 %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+        
+        <div class="lg:col-span-2 bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center">
+            <div id="myChart" style="width: 100px; height: 100px;"></div>
+            <div class="ml-4">
+                <h4 class="font-bold text-slate-800 text-sm">Transactions en cours</h4>
+                <p class="text-slate-400 text-[10px]">Volume d'opérations en attente</p>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 rounded-xl p-4 text-white flex items-center justify-between shadow-lg">
+            <div>
+                <h3 class="font-bold text-sm">Transactions</h3>
+                <p class="text-slate-400 text-[10px]">Validations requises</p>
+            </div>
+            <a href="/valid-transaction/" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-bold transition-all">
+                VOIR
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+  <div class="flex flex-col md:flex-row md:items-center gap-2 mt-1">
+    <div class="flex items-center gap-4">
+        <h2 class="text-sm font-bold text-blue-800 whitespace-nowrap">VUE D'ENSEMBLE</h2>
+        <div class="h-6 w-px bg-slate-300 hidden md:block"></div>
+    </div>
+
+    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between w-full md:w-64">
+        <div>
+            <p class="text-[9px] uppercase text-slate-400 font-bold">En Attente</p>
+            <h4 class="text-md font-bold text-slate-800">{{ lines|length }}</h4>
+        </div>
+        <div class="p-2 bg-blue-50 text-blue-600 rounded-lg text-xs"><i class="fas fa-spinner"></i></div>
+    </div>
+
+    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm w-full md:flex-1">
+        <div class="relative">
+            <input type="text" id="tkSearch" autocomplete="off"
+                   placeholder="Rechercher une opération..." 
+                   class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all shadow-inner">
+            <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+        </div>
+    </div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var options = {
+        series: [{{ transaction_en_attente|default:0 }}], 
+        chart: { type: 'donut', height: 100, width: 100 }, // Taille réduite ici
+        colors: ['#F54927'],
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '70%',
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true,
+                            label: '',
+                            formatter: function (w) { return "{{ transaction_en_attente }}"; },
+                            style: { fontSize: '14px', fontWeight: 'bold', color: '#F54927' }
+                        }
+                    }
+                }
+            }
+        },
+        dataLabels: { enabled: false },
+        legend: { show: false },
+        tooltip: { enabled: false }
+    };
+    new ApexCharts(document.querySelector("#myChart"), options).render();
+});
+</script>
+    <div id="canvas-wrapper"></div>
+    <!-- Grille des Tâches -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 tk-grid" id="tkGrid">
+         {% if report != 1 and report != 2 and report != 3 %}
+       {% for line in lines %}
+<div class="relative bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-2xl hover:border-indigo-400/80 transition-all duration-300 flex flex-col group overflow-hidden tk-card" data-due="{{ line.date_echeance|date:'Y-m-d' }}">
+    
+    <!-- Liseré supérieur lumineux de statut (Accent de marque ERP) -->
+    <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent {% if line.has_dataset %}via-amber-500 to-amber-400{% else %}via-indigo-500 to-indigo-600{% endif %} opacity-80 group-hover:opacity-100 transition-opacity"></div>
+
+    <!-- Header carte -->
+    <div class="px-5 pt-4 pb-3 bg-gradient-to-b from-slate-50/80 to-slate-50/20 border-b border-slate-100/80 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold text-slate-500 bg-white border border-slate-200/80 shadow-2xs tracking-tight">
+                <i class="far fa-calendar-alt mr-1.5 text-indigo-500"></i>{{ line.date_echeance|date:"d M Y" }}
+            </span>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+            {% if line.has_dataset %}
+            <span class="inline-flex items-center space-x-1.5 text-[10px] font-extrabold text-amber-700 bg-amber-50/90 px-2.5 py-1 rounded-lg border border-amber-200/80 uppercase tracking-wider shadow-2xs animate-pulse">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                <span>Action requise</span>
+            </span>
+            {% endif %}
+            
+            <!-- Lien rapide gestion formulaires avec effet Tooltip visuel -->
+            <a href="/ajouter-formulaire/{{ line.id }}/" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg border border-slate-200/60 hover:border-indigo-200 transition-all shadow-2xs group/btn" title="Gérer les formulaires associés">
+                <svg class="w-4 h-4 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- Corps de la carte -->
+    <div class="p-5 flex-grow space-y-4">
+        
+        <!-- Identité (Institution & Titre avec Tooltip Natif) -->
+        <div class="flex items-start space-x-3.5">
+            <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs group-hover:border-indigo-200 transition-colors">
+                {% if line.institution.img.url %}
+                    <img src="{{ line.institution.img.url }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                {% else %}
+                    <i class="fas fa-building text-slate-300"></i>
+                {% endif %}
+            </div>
+            <div class="min-w-0 flex-1">
+                <h6 class="text-sm font-bold text-slate-900 line-clamp-2 group-hover:text-indigo-600 transition-colors cursor-pointer leading-snug" title="{{ line.nom }}">
+                    {{ line.nom }}
+                </h6>
+                <div class="flex items-center space-x-2 mt-1">
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600 uppercase">
+                        {{ line.m_institution.sigle }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Formulaires / Datasets Liés (Design Enterprise Pills) -->
+        <div class="bg-slate-50/80 rounded-xl p-3 border border-slate-200/60 space-y-2">
+            <div class="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span class="flex items-center">
+                    <svg class="w-3.5 h-3.5 mr-1 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    Formulaires liés
+                </span>
+            </div>
+            
+            <div class="flex flex-wrap gap-1.5 tk-forms">
+                {% for dataset_operations in dataset_operation %}
+                    {% if line.id == dataset_operations.operation_id %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold bg-white text-indigo-700 border border-indigo-200/60 shadow-2xs">
+                            <span class="w-1 h-1 rounded-full bg-indigo-500 mr-1.5"></span>
+                            {{ dataset_operations.dataset.m_name }}
+                        </span>
+                    {% endif %}
+                {% empty %}
+                    <span class="text-[11px] text-slate-400 italic">Aucun formulaire associé</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Indicateur de progression & Pondération (Style Dashboard Pro) -->
+        <div class="space-y-1.5 pt-1">
+            <div class="flex justify-between text-[11px] font-bold text-slate-600">
+                <span class="text-slate-400 uppercase tracking-wider text-[10px]">Pondération de l'opération</span>
+                <span class="font-mono font-extrabold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">{{ line.ponderation|default:0 }}%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/50 p-0.5">
+                <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 h-full rounded-full transition-all duration-700 shadow-xs" style="width: {{ line.ponderation|default:0 }}%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer carte (Actions hautement interactives) -->
+    <div class="px-5 py-3.5 bg-slate-50/90 rounded-b-2xl flex items-center justify-between border-t border-slate-100">
+        
+        <!-- Bouton Étapes / Transactions -->
+        {% if line.poceded_step %}
+        <a href="{% url 'details-etapes' line.id %}" class="group/btn flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all shadow-2xs">
+            <span class="flex items-center justify-center min-w-[22px] h-[22px] px-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-mono font-black group-hover/btn:bg-indigo-600 group-hover/btn:text-white transition-colors">
+               {% for id, total in counts_dict.items %}
+                    {% if id == line.id %}{{ total }}{% endif %}
+               {% endfor %}
+            </span>
+            <span class="text-[11px] font-bold text-slate-600 group-hover/btn:text-indigo-600 uppercase tracking-wider transition-colors">
+                Étapes
+            </span>
+        </a>
+        {% else %}
+        <a href="{% url 'transactions' line.id %}" class="group/btn flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 hover:border-indigo-300 hover:bg-indigo-50/30 transition-all shadow-2xs">
+            <span class="flex items-center justify-center min-w-[22px] h-[22px] px-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-mono font-black group-hover/btn:bg-indigo-600 group-hover/btn:text-white transition-colors">
+                {% for id, total in counts_dict.items %}
+                    {% if id == line.id %}{{ total }}{% endif %}
+                {% endfor %}
+            </span>
+            <span class="text-[11px] font-bold text-slate-600 group-hover/btn:text-indigo-600 uppercase tracking-wider transition-colors">
+                Transactions
+            </span>
+        </a>
+        {% endif %}
+
+        <!-- Bouton Soumettre principal (Effet lumineux ERP) -->
+        <a href="/operations/{{ line.id }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-0.5">
+            <span>Soumettre</span>
+            <svg class="w-3.5 h-3.5 ml-1.5 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
+        </a>
+    </div>
+
+</div>
+{% empty %}
+<div class="col-span-full py-20 text-center bg-white/60 backdrop-blur-md rounded-2xl border border-dashed border-slate-300 shadow-xs">
+    <div class="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto mb-3 text-slate-400">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+    </div>
+    <p class="font-bold text-slate-800 text-sm">Aucune opération trouvée</p>
+    <p class="text-xs text-slate-400 mt-0.5">Aucune donnée n'est actuellement disponible dans ce flux.</p>
+</div>
+{% endfor %}
+         {% elif report == 1 %}
+
+    {% for line in lines %}
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group tk-card tk-valid" data-due="{{ line.date_echeance|date:'Y-m-d' }}">
+            
+            <div class="p-5 border-b border-slate-50 flex justify-between items-center">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                    <i class="far fa-calendar-alt mr-1.5"></i> {{ line.date_echeance|date:"d M Y" }}
+                </span>
+                {% if line.has_dataset %}
+                <span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 uppercase">
+                    Action requise
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="p-5 flex-grow">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                        <img src="{{ line.institution.img.url }}" class="w-full h-full object-cover" alt="Logo">
+                    </div>
+                    <div>
+                        <h6 class="text-sm font-bold text-slate-800">{{ line.nom }}</h6>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">{{ line.m_institution.sigle }}</p>
+                    </div>
+                </div>
+
+                <div class="space-y-1 mt-4">
+                    <div class="flex justify-between text-[10px] font-bold text-slate-500">
+                        <span>Progression</span>
+                        <span>{{ line.nb_completed|default:0 }}/{{ line.nb_total|default:0 }}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-indigo-600 h-1.5 rounded-full transition-all duration-500" 
+                             style="width: {% if line.nb_total > 0 %}{% widthratio line.nb_completed line.nb_total 100 %}{% else %}0{% endif %}%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-b-2xl flex items-center justify-between">
+                <button type="button" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#exampleModal{{line.id}}" 
+                        class="text-[11px] font-bold text-slate-500 hover:text-indigo-600 transition-colors">
+                    <i class="fas fa-layer-group mr-1"></i> Détails 
+                </button>
+                <a href="/decision/o/{{line.id}}/" 
+                   class="bg-slate-900 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-[11px] font-bold transition-all shadow-md">
+                    Valider
+                </a>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-span-full py-20 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <i class="fas fa-folder-open text-4xl mb-4 opacity-50"></i>
+            <p class="font-bold">Aucune opération trouvée</p>
+            <p class="text-xs mt-1">Il n'y a pas d'opérations à afficher pour le moment.</p>
+        </div>
+    {% endfor %}
+{% endif %}
+
+    </div>
+</div>
+{% if num_pages > 1 %}
+<nav aria-label="Pagination" class="flex justify-center items-center py-6 border-t border-gray-100">
+    <ul class="flex items-center gap-1.5 list-none p-0">
+        
+        <li>
+            <a href="{% if pages_o.has_previous %}?page={{ pages_o.previous_page_number }}{% else %}#{% endif %}" 
+               class="flex items-center px-4 py-2 border rounded-md text-sm font-medium transition-all {% if not pages_o.has_previous %}bg-gray-50 text-gray-300 cursor-not-allowed border-gray-200{% else %}bg-white text-gray-700 hover:border-blue-500 hover:text-blue-600 border-gray-200 shadow-sm{% endif %}">
+                <i class="fas fa-chevron-left text-xs mr-2"></i> Précédent
+            </a>
+        </li>
+
+        {% if pages_o.number > 3 %}
+        <li><a href="?page=1" class="px-4 py-2 border rounded-md text-sm font-medium bg-white text-gray-700 border-gray-200 hover:border-blue-500 shadow-sm">1</a></li>
+        {% if pages_o.number > 4 %}
+        <li class="px-2 text-gray-400">...</li>
+        {% endif %}
+        {% endif %}
+
+        {% for num in page_range %}
+            {% if num > 0 %}
+            <li>
+                <a href="?page={{ num }}" 
+                   class="px-4 py-2 border rounded-md text-sm font-semibold transition-all 
+                   {% if pages_o.number == num %}
+                   bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-100
+                   {% else %}
+                   bg-white text-gray-700 border-gray-200 hover:border-blue-500 shadow-sm
+                   {% endif %}">
+                    {{ num }}
+                </a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if pages_o.number < num_pages|add:-2 %}
+        {% if pages_o.number < num_pages|add:-3 %}
+        <li class="px-2 text-gray-400">...</li>
+        {% endif %}
+        <li><a href="?page={{ num_pages }}" class="px-4 py-2 border rounded-md text-sm font-medium bg-white text-gray-700 border-gray-200 hover:border-blue-500 shadow-sm">{{ num_pages }}</a></li>
+        {% endif %}
+
+        <li>
+            <a href="{% if pages_o.has_next %}?page={{ pages_o.next_page_number }}{% else %}#{% endif %}" 
+               class="flex items-center px-4 py-2 border rounded-md text-sm font-medium transition-all {% if not pages_o.has_next %}bg-gray-50 text-gray-300 cursor-not-allowed border-gray-200{% else %}bg-white text-gray-700 hover:border-blue-500 hover:text-blue-600 border-gray-200 shadow-sm{% endif %}">
+                Suivant <i class="fas fa-chevron-right text-xs ml-2"></i>
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- SCRIPT DU GLOBE THREE.JS -->
+<script>
+    (function() {
+        function initGlobe() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            if (!wrapper) return; 
+
+            if (typeof THREE === 'undefined') {
+                console.warn("Three.js n'est pas chargé sur cette page.");
+                return;
+            }
+
+            let scene, camera, renderer, globeGroup, pointsMesh;
+            let time = 0;
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 1, 1000);
+            camera.position.z = 250; 
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+            wrapper.appendChild(renderer.domElement);
+
+            globeGroup = new THREE.Group();
+            scene.add(globeGroup);
+
+            const radius = 75;
+            const dotCount = 3000;
+            const positions = [], colors = [], directions = [];
+
+            for (let i = 0; i < dotCount; i++) {
+                const phi = Math.acos(-1 + (2 * i) / dotCount);
+                const theta = Math.sqrt(dotCount * Math.PI) * phi;
+                const x = radius * Math.sin(phi) * Math.cos(theta);
+                const y = radius * Math.sin(phi) * Math.sin(theta);
+                const z = radius * Math.cos(phi);
+
+                const lat = (phi * 180 / Math.PI) - 90;
+                const lon = (theta * 180 / Math.PI) % 360 - 180;
+                const isLand = (lon > -22 && lon < 52 && lat > -35 && lat < 70) || (lon >= 52 && lon < 145 && lat > -12 && lat < 75) || (lon > -120 && lon < -34 && lat > -55 && lat < 18);
+
+                if (isLand) {
+                    positions.push(x, y, z);
+                    const norm = Math.sqrt(x*x + y*y + z*z);
+                    directions.push(x/norm, y/norm, z/norm);
+                    const isAmber = (lon > -12 && lon < 45 && lat > -30 && lat < 35);
+                    colors.push(isAmber ? 0.96 : 0.06, isAmber ? 0.62 : 0.72, isAmber ? 0.04 : 0.50);
+                }
+            }
+
+            const dotGeometry = new THREE.BufferGeometry();
+            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            dotGeometry.setAttribute('originalPosition', new THREE.Float32BufferAttribute(positions, 3));
+            dotGeometry.setAttribute('direction', new THREE.Float32BufferAttribute(directions, 3));
+
+            pointsMesh = new THREE.Points(dotGeometry, new THREE.PointsMaterial({ 
+                size: 1.8, vertexColors: true, transparent: true, opacity: 0.8 
+            }));
+            globeGroup.add(pointsMesh);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                time += 0.01;
+                const progress = (Math.sin(time * 0.5) + 1) / 2; 
+                const explosionForce = progress * 60;
+
+                const pos = pointsMesh.geometry.attributes.position;
+                const orig = pointsMesh.geometry.attributes.originalPosition;
+                const dir = pointsMesh.geometry.attributes.direction;
+
+                for (let i = 0; i < pos.count; i++) {
+                    pos.setX(i, orig.getX(i) + dir.getX(i) * explosionForce);
+                    pos.setY(i, orig.getY(i) + dir.getY(i) * explosionForce);
+                    pos.setZ(i, orig.getZ(i) + dir.getZ(i) * explosionForce);
+                }
+                pos.needsUpdate = true;
+                globeGroup.rotation.y += 0.005;
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        window.addEventListener("DOMContentLoaded", initGlobe);
+    })();
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const messages = [
+        {% for message in messages %}
+        {
+            text: "{{ message|escapejs }}",
+            type: "{{ message.tags|default:'info' }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    messages.forEach((msg) => {
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: msg.type === 'success' || msg.type === 'error' || msg.type === 'warning' ? msg.type : 'info',
+            title: msg.text,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: "#1f2937",
+            color: "#fff",
+            showClass: { popup: 'animate__animated animate__fadeInRight' },
+            hideClass: { popup: 'animate__animated animate__fadeOutRight' }
+        });
+    });
+});
+</script>
+<!-- ===================== OPÉRATIONS : interactions (ajout) ===================== -->
+<script>
+(function () {
+    var grid = document.getElementById('tkGrid'); if (!grid) return;
+    var cards = [].slice.call(grid.querySelectorAll('.tk-card'));
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+
+    cards.forEach(function (c) {
+        /* couleur : orange si une action est requise */
+        var act = c.querySelector('.animate-pulse, span.text-amber-700'); if (act) { c.classList.add('tk-has-ds'); act.title = 'Action requise'; act.setAttribute('aria-label', 'Action requise'); }
+
+        /* échéance : en retard / bientôt / à jour */
+        var d = c.dataset.due, chipHost = c.querySelector('.font-mono, .uppercase.tracking-wider');
+        if (d && chipHost) {
+            var due = new Date(d + 'T00:00:00'), n = Math.round((due - today) / 86400000), cls, txt;
+            if (n < 0) { cls = 'late'; txt = 'En retard · ' + (-n) + ' j'; }
+            else if (n === 0) { cls = 'soon'; txt = "Aujourd'hui"; }
+            else if (n <= 7) { cls = 'soon'; txt = 'Dans ' + n + ' j'; }
+            else { cls = 'ok'; txt = 'Dans ' + n + ' j'; }
+            chipHost.classList.add('tk-due', cls); chipHost.insertAdjacentHTML('beforeend', '<em class="tk-due-t">· ' + txt + '</em>'); chipHost.title = txt;
+            if (n < 0) c.style.setProperty('--tone', 'var(--tk-danger)');
+        }
+
+        /* formulaires liés : une seule ligne, « +N » ouvre la liste complète par-dessus */
+        var box = c.querySelector('.tk-forms'); if (!box) return;
+        box.parentNode.classList.add('tk-forms-box');
+        var pills = [].slice.call(box.children).filter(function (x) { return x.tagName === 'SPAN' && !x.classList.contains('italic'); });
+        var empty = box.querySelector('.italic');
+        if (!pills.length) { if (!empty) box.insertAdjacentHTML('beforeend', '<span class="tk-none">Aucun formulaire associé</span>'); return; }
+        var label = box.parentNode.querySelector('.uppercase span, .uppercase');
+        var head = box.parentNode.firstElementChild;
+        if (head) head.insertAdjacentHTML('beforeend', '<span style="font-size:11px;color:#667085;text-transform:none;letter-spacing:0">' + pills.length + '</span>');
+        function fit() {
+            pills.forEach(function (p) { p.classList.remove('tk-hide'); });
+            var more = box.querySelector('.tk-more'); if (more) more.remove();
+            if (box.scrollWidth <= box.clientWidth + 1) return;
+            var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'tk-more'; box.appendChild(btn);
+            var hidden = 0;
+            for (var i = pills.length - 1; i > 0 && box.scrollWidth > box.clientWidth + 1; i--) { pills[i].classList.add('tk-hide'); hidden++; btn.textContent = '+' + hidden; }
+            btn.textContent = '+' + hidden;
+            btn.setAttribute('aria-label', 'Voir les ' + pills.length + ' formulaires liés'); btn.setAttribute('aria-describedby', pop.id);
+            btn.addEventListener('click', function (e) { e.stopPropagation(); if (pop.classList.contains('on')) hide(true); else show(); });
+            btn.addEventListener('focus', show); btn.addEventListener('blur', function () { hide(); });
+            c.__many = true;
+        }
+        /* info-bulle : la liste complète, numérotée, affichée À CÔTÉ de la carte */
+        var pop = document.createElement('div'); pop.className = 'tk-pop'; pop.id = 'tkPop' + Math.random().toString(36).slice(2, 8); pop.setAttribute('role', 'tooltip');
+        var ol = document.createElement('ol');
+        pills.forEach(function (p) { var li = document.createElement('li'); li.textContent = p.textContent.trim(); ol.appendChild(li); });   // textContent : aucun HTML interprété
+        pop.insertAdjacentHTML('beforeend', '<b>Formulaires liés <em>' + pills.length + '</em></b>'); pop.appendChild(ol);
+        document.body.appendChild(pop);                      // hors de la carte : jamais coupée
+        var tHide;
+        function place() {
+            var r = c.getBoundingClientRect(), fr = box.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight, m = 14;
+            var droite = r.right + m + w <= window.innerWidth - 8;
+            pop.classList.toggle('left', !droite);
+            var x = droite ? r.right + m : Math.max(8, r.left - m - w);
+            var y = Math.min(Math.max(8, fr.top + fr.height / 2 - 40), window.innerHeight - h - 8);
+            pop.style.left = x + 'px'; pop.style.top = y + 'px';
+            pop.style.setProperty('--arrow', Math.max(16, Math.min(h - 28, fr.top + fr.height / 2 - y - 6)) + 'px');
+        }
+        function show() {
+            if (!c.__many) return;
+            clearTimeout(tHide); closeAll(pop); place(); pop.classList.add('on');
+        }
+        function hide(now) { clearTimeout(tHide); tHide = setTimeout(function () { pop.classList.remove('on'); }, now ? 0 : 180); }
+        [box, pop].forEach(function (el) { el.addEventListener('mouseenter', show); el.addEventListener('mouseleave', function () { hide(); }); });
+        window.addEventListener('scroll', function () { if (pop.classList.contains('on')) place(); }, { passive: true });
+        fit(); c.__fit = fit;
+    });
+
+    function closeAll(sauf) { document.querySelectorAll('.tk-pop.on').forEach(function (p) { if (p !== sauf) p.classList.remove('on'); }); }
+    document.addEventListener('click', function (e) { if (!e.target.closest('.tk-pop, .tk-more')) closeAll(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
+    var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { cards.forEach(function (c) { c.__fit && c.__fit(); }); }, 150); });
+
+    /* compteurs à côté du titre */
+    var nLate = 0, nSoon = 0;
+    cards.forEach(function (c) { var t = c.querySelector('.tk-due'); if (!t) return; if (t.classList.contains('late')) nLate++; else if (t.classList.contains('soon')) nSoon++; });
+    var hs = document.getElementById('tkHeadStats');
+    if (hs) {
+        if (nLate) hs.insertAdjacentHTML('beforeend', '<span class="late"><b>' + nLate + '</b> en retard</span>');
+        if (nSoon) hs.insertAdjacentHTML('beforeend', '<span class="soon"><b>' + nSoon + '</b> cette semaine</span>');
+    }
+
+    /* recherche instantanée */
+    var input = document.getElementById('tkSearch'), nr = document.createElement('div');
+    nr.className = 'tk-noresult'; nr.textContent = 'Aucune opération ne correspond à votre recherche.'; grid.appendChild(nr);
+    function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+    if (input) input.addEventListener('input', function () {
+        var q = norm(input.value.trim()), n = 0;
+        cards.forEach(function (c) { var ok = !q || norm(c.textContent).indexOf(q) > -1; c.style.display = ok ? '' : 'none'; if (ok) n++; });
+        nr.style.display = cards.length && !n ? 'block' : 'none';
+    });
+})();
+</script>
+{% endblock %}

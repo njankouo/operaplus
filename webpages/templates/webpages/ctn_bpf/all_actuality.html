@@ -1,0 +1,232 @@
+{% extends './presentation.html' %}
+
+{% block content %}
+
+<section class="relative w-screen -ml-4 sm:-ml-6 lg:-ml-8 py-16 lg:py-20 bg-[#f8fafc] overflow-hidden">
+    
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-emerald-100/20 rounded-full blur-[100px] pointer-events-none"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-100/20 rounded-full blur-[100px] pointer-events-none"></div>
+
+    <div class="container mx-auto px-6 lg:px-12 relative z-10">
+        
+        <div class="max-w-3xl mx-auto text-center mb-16">
+            <div class="inline-flex items-center px-3 py-1.5 rounded-full bg-white border border-slate-200 text-emerald-600 text-[11px] font-bold uppercase tracking-[0.2em] mb-6 shadow-sm">
+                <span class="flex h-2 w-2 mr-2">
+                    <span class="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Base de connaissances OPERAPLUS
+            </div>
+            
+            <h2 class="text-4xl md:text-5xl font-black text-slate-900 mb-6 leading-tight tracking-tight">
+                Médiathèque <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-blue-600">OPERAPLUS</span>
+            </h2>
+            
+            <p class="text-lg text-slate-500 font-medium max-w-xl mx-auto leading-relaxed">
+                Accédez à <span class="text-slate-900 font-bold">{{count_archive}} ressources</span> stratégiques pour optimiser vos interventions MEAL.
+            </p>
+        </div>
+
+        <div class="max-w-6xl mx-auto space-y-8">
+            
+            <div class="relative max-w-2xl mx-auto group">
+               
+                    <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors"></i>
+                    <input type="text" 
+                            hx-get="{% url 'filtrer_archives' %}" 
+                            hx-trigger="keyup changed delay:500ms" 
+                            hx-target="#liste-resultats" 
+                            hx-indicator=".loader"
+                            name='q'
+                           placeholder="Rechercher une matrice, un guide..." 
+                           class="w-full pl-14 pr-6 py-5 bg-white border border-slate-200 rounded-3xl shadow-xl shadow-slate-200/40 focus:ring-4 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-medium text-slate-700 outline-none">
+                <div class="loader htmx-indicator absolute inset-y-0 right-0 pr-4 flex items-center">
+                        <i class="fas fa-spinner animate-spin text-blue-500"></i>
+                </div>
+            </div>
+<div class="relative w-full py-6">
+
+    <!-- Background doux -->
+    <div class="absolute inset-0 bg-gradient-to-r from-slate-50 via-white to-slate-50 rounded-3xl"></div>
+
+    <!-- Dégradé gauche -->
+    <div class="pointer-events-none absolute left-0 top-0 h-full w-16 bg-gradient-to-r from-white via-white/80 to-transparent z-10"></div>
+
+    <!-- Dégradé droite -->
+    <div class="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-white via-white/80 to-transparent z-10"></div>
+
+    <!-- Navigation catégories -->
+    <div class="relative flex items-center gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth px-8">
+
+        <!-- TOUS -->
+        <a href="?"
+           data-id=""
+           class="filter-link group whitespace-nowrap flex items-center gap-3 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 border
+           {% if not request.GET.cat %} 
+            bg-gradient-to-r from-slate-900 to-slate-700 text-white border-slate-900 shadow-lg shadow-slate-900/20 scale-105
+           {% else %} 
+            bg-white text-slate-600 border-slate-200 hover:border-emerald-400 hover:text-emerald-600 hover:shadow-md hover:-translate-y-0.5
+           {% endif %}">
+           
+            <i class="fas fa-th-large text-xs opacity-70"></i>
+            <span>Tous</span>
+
+            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 group-hover:bg-emerald-100 group-hover:text-emerald-600 transition">
+                {{ total_sous_categorie }}
+            </span>
+        </a>
+
+        {% for cat in categorie %}
+        <a href="?cat={{ cat.id }}"
+           data-id="{{ cat.id }}"
+           class="filter-link group whitespace-nowrap flex items-center gap-3 px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 border
+            {% if request.GET.cat == cat.id|stringformat:'i' %}
+                bg-gradient-to-r from-emerald-600 to-emerald-500 text-white border-emerald-600 shadow-lg shadow-emerald-600/20 scale-105
+            {% else %}
+                bg-white text-slate-600 border-slate-200 hover:border-emerald-400 hover:text-emerald-600 hover:shadow-md hover:-translate-y-0.5
+            {% endif %}">
+
+            <i class="fas fa-folder-open text-xs opacity-70"></i>
+            <span>{{ cat.nom }}</span>
+
+            <span class="text-xs px-2 py-0.5 rounded-full 
+                {% if request.GET.cat == cat.id|stringformat:'i' %}
+                    bg-white/20 text-white
+                {% else %}
+                    bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200
+                {% endif %}
+                transition">
+                {{ cat.total_sous_categorie }}
+            </span>
+        </a>
+        {% endfor %}
+
+    </div>
+</div>
+
+<!-- Script scroll automatique vers élément actif -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const active = document.querySelector(".filter-link.scale-105");
+    if (active) {
+        setTimeout(() => {
+            active.scrollIntoView({
+                behavior: "smooth",
+                inline: "center",
+                block: "nearest"
+            });
+        }, 100);
+    }
+});
+</script>
+
+<!-- Suppression scrollbar -->
+<style>
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+</style>
+
+<!-- Séparation élégante -->
+<div class="mt-10 border-t border-slate-200 pt-8">
+
+    <div class="list-sous-categorie" id="list-sous-categorie"> 
+        {% include 'webpages/ctn_bpf/sites/sous_categorie.html' %}
+    </div>
+
+    <div class="mt-16" id="liste-resultats">
+        {% include 'webpages/ctn_bpf/sites/mediatheque.html' %}
+    </div>
+
+</div>
+<script>
+document.addEventListener('click', function(e) {
+    // On vérifie si l'élément cliqué est un lien de filtre
+    const link = e.target.closest('.filter-link');
+    if (!link) return;
+
+    e.preventDefault();
+
+    const catId = link.dataset.id;
+    // Si catId est vide (bouton Tous), on n'envoie pas de paramètre cat filtrer_archives
+
+    const url = catId ? `{% url 'filters_sous_categorie' %}?cat=${catId}` : `{% url 'filters_sous_categorie' %}`;
+    const targetUrl = catId ? `?cat=${catId}` : `?`;
+
+    // Petit effet de chargement
+    const container = document.querySelector('#list-sous-categorie');
+    container.style.opacity = '0.5';
+
+    fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Erreur réseau');
+        return response.text();
+    })
+    .then(html => {
+        // Mise à jour du contenu
+        // Note: innerHTML est souvent préférable à outerHTML si tu veux garder l'ID sur le parent
+        container.innerHTML = html;
+        container.style.opacity = '1';
+
+        // Mise à jour de l'URL
+        window.history.pushState({ path: targetUrl }, '', targetUrl);
+        
+        // Mise à jour visuelle des boutons
+        updateActiveState(catId);
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        container.style.opacity = '1';
+    });
+});
+
+function updateActiveState(activeId) {
+    document.querySelectorAll('.filter-link').forEach(link => {
+        const isSelected = link.dataset.id === activeId;
+        
+        if (isSelected) {
+            // Si c'est le bouton "Tous" (id vide)
+            if (activeId === "") {
+                link.className = "filter-link flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20";
+            } else {
+                // Si c'est une catégorie
+                link.className = "filter-link flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20";
+            }
+        } else {
+            // État inactif de base
+            link.className = "filter-link flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-600 hover:shadow-md";
+        }
+    });
+}
+</script>
+        {% comment %} <div class="mt-20 flex flex-col items-center">
+            <nav class="flex items-center gap-2">
+                <button class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 transition-all">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                
+                <div class="flex gap-2 mx-4">
+                    <span class="w-12 h-12 flex items-center justify-center rounded-2xl bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-600/30">1</span>
+                    <button class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-600 font-bold hover:bg-slate-50">2</button>
+                    <button class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-600 font-bold hover:bg-slate-50">3</button>
+                </div>
+
+                <button class="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 transition-all">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </nav>
+            <p class="mt-6 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                Page 1 de 238 <span class="mx-2 text-slate-200">|</span> 2 847 ressources
+            </p>
+        </div> {% endcomment %}
+
+    </div>
+</section>
+
+{% endblock %}

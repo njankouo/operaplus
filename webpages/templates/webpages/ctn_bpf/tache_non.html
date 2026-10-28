@@ -1,0 +1,375 @@
+{% extends './index.html' %}
+
+{% block main %}
+
+<div class="col-md-12 mb-4">
+  <div class="accordion custom-accordion" id="searchAccordion">
+    <!-- Premier accordéon - Titre -->
+    <div class="accordion-item border-0 mb-3">
+      <h2 class="accordion-header" id="headingTitle">
+        <button class="accordion-button  text-white rounded-3 shadow-sm" type="button"
+                style="font-size: 1.2rem; font-weight: 500; letter-spacing: 0.5px; background:{{request.user.personnel.color}}">
+          <i class="bi bi-calendar2-check me-2"></i> Opérations Globales Non Effectu&eacute;e
+        </button>
+      </h2>
+    </div>
+
+    <!-- Second accordéon - Options de recherche -->
+    <div class="accordion-item border-0">
+      <h2 class="accordion-header" id="headingSearch">
+        <button class="accordion-button collapsed search-header-btn" type="button"
+                data-bs-toggle="collapse" data-bs-target="#collapseSearch"
+                aria-expanded="false" aria-controls="collapseSearch">
+          <i class="bi bi-sliders me-2"></i> Options De Recherche
+          <span class="search-badge ms-auto">3 filtres</span>
+        </button>
+      </h2>
+
+      <div id="collapseSearch" class="accordion-collapse show"
+           aria-labelledby="headingSearch" data-bs-parent="#searchAccordion">
+        <div class="accordion-body pt-4 pb-3 px-4" style="background-color: #f8f9fa; border-radius: 0 0 12px 12px;">
+          <form action="/search/tache/" method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <!-- Champ Nom Opération -->
+        <div class="col-md-4">
+          <div class="form-floating">
+            <select class="form-control" name="operation" id="operation">
+              <option value="all">Toutes les opérations</option>
+              {% for operations in liste_operation %}
+              <option value="{{operations.id}}">{{operations.nom}}</option>
+              {% endfor %}
+            </select>
+            <label for="operation" class="fw-semibold">
+              <i class="bi bi-search me-2"></i> Nom Opération
+            </label>
+          </div>
+        </div>
+
+        <!-- Sélecteur Date d'échéance -->
+        <div class="col-md-3">
+          <div class="form-floating">
+            <input type="date" name="echeance" class="form-control" id="echeance">
+            <label for="echeance" class="fw-semibold">
+              <i class="bi bi-exclamation-triangle me-2"></i> Échéance
+            </label>
+          </div>
+        </div>
+
+        <!-- Sélecteur Responsable -->
+        <div class="col-md-3">
+          <div class="form-floating">
+            <select class="form-select" id="personnel" name="personnel">
+              <option value="all">Tous les responsables</option>
+              {% for personnels in personnel %}
+              <option value="{{ personnels.id }}">{{ personnels.nom }}</option>
+              {% endfor %}
+            </select>
+            <label for="personnel" class="fw-semibold">
+              <i class="bi bi-person-gear me-2"></i> Responsable
+            </label>
+          </div>
+        </div>
+
+        <!-- Bouton Rechercher -->
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-primary search-btn w-100 py-3" type="submit" id="myButton" >
+            <span class="search-text">Rechercher</span>
+            <span class="search-icon"><i class="bi bi-search"></i></span>
+          </button>
+        </div>
+      </div>
+    </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<div class="row g-4">
+  {%include 'webpages/ctn_bpf/partials/tache_results.html'%}
+  
+</div>
+
+<style>
+    /* Animation Keyframes */
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.7; }
+        100% { transform: scale(1.1); opacity: 0; }
+    }
+
+    @keyframes float {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+        100% { transform: translateY(0); }
+    }
+
+    /* Card Styles */
+    .card {
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+    }
+
+    /* Avatar Styles */
+    .pulse-border {
+        border: 2px solid rgba(255,255,255,0.3);
+        animation: pulse 2s infinite;
+    }
+
+    .avatar-img {
+        transition: transform 0.3s ease;
+    }
+
+    .card:hover .avatar-img {
+        transform: scale(1.05);
+    }
+
+    /* Progress Bar */
+    .bg-gradient-progress {
+        background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+        transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    }
+
+    /* Button Styles */
+    .btn-action {
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-grow: 1;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .btn-comment {
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #333;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .btn-history {
+        background-color: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        backdrop-filter: blur(5px);
+    }
+
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .btn-action:active {
+        transform: translateY(0);
+    }
+
+    .btn-action i {
+        transition: transform 0.3s ease;
+    }
+
+    .btn-action:hover i {
+        transform: scale(1.1);
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 576px) {
+        .btn-text {
+            display: none;
+        }
+
+        .btn-action i {
+            margin-right: 0 !important;
+            font-size: 1em;
+        }
+    }
+
+    @media (min-width: 577px) and (max-width: 768px) {
+        .btn-action {
+            min-width: 100px;
+            font-size: 0.8rem;
+        }
+    }
+</style>
+
+
+
+
+<style>
+  /* Accordéon personnalisé */
+  .custom-accordion .accordion-button {
+    transition: all 0.3s ease;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+  }
+
+  .custom-accordion .accordion-button:not(.collapsed) {
+    background-color:{{request.user.personnel.color_fond}};
+    color: white;
+  }
+
+  .custom-accordion .accordion-button::after {
+    background-size: 1.2rem;
+    transition: transform 0.3s ease;
+  }
+
+  /* En-tête de recherche */
+  .search-header-btn {
+    background-color: white;
+    font-weight: 500;
+    border: 1px solid #dee2e6;
+    border-radius: 8px !important;
+  }
+
+  .search-header-btn:hover {
+    background-color: #f8f9fa;
+  }
+
+  .search-badge {
+    background-color: #0d6efd;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+  }
+
+  /* Champs de formulaire */
+  .form-floating {
+    position: relative;
+  }
+
+  .form-floating label {
+    color: #495057;
+    opacity: 0.9;
+  }
+
+  .search-input, .priority-select, .personnel-select {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+    height: calc(3.5rem + 2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+
+  .search-input:focus, .priority-select:focus, .personnel-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+  }
+
+  /* Bouton Rechercher */
+  .search-btn {
+    border-radius: 8px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: calc(3.5rem + 2px);
+    border: none;
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+  }
+
+  .search-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+  }
+
+  .search-btn:active {
+    transform: translateY(0);
+  }
+
+  .search-icon {
+    display: inline-block;
+    transition: all 0.3s ease;
+  }
+
+  .search-text {
+    display: inline-block;
+    transition: all 0.3s ease;
+  }
+
+  .search-btn:hover .search-icon {
+    transform: rotate(10deg) scale(1.2);
+  }
+
+  /* Animation lors du clic */
+  @keyframes ripple {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+
+  .search-btn:after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%);
+    transform-origin: 50% 50%;
+  }
+
+  .search-btn:focus:not(:active)::after {
+    animation: ripple 0.6s ease-out;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .search-btn {
+      width: 100%;
+      margin-top: 1rem;
+    }
+  }
+</style>
+
+<script>
+  // Animation du bouton recherche
+  document.querySelector('.search-btn').addEventListener('click', function() {
+    const btn = this;
+
+    // Afficher le loader
+    btn.querySelector('.search-text').classList.add('d-none');
+    btn.querySelector('.search-icon').classList.add('d-none');
+    btn.querySelector('.search-loader').classList.remove('d-none');
+
+    // Simuler une requête (à remplacer par votre logique réelle)
+    setTimeout(function() {
+      btn.querySelector('.search-text').classList.remove('d-none');
+      btn.querySelector('.search-icon').classList.remove('d-none');
+      btn.querySelector('.search-loader').classList.add('d-none');
+
+      // Petite animation de confirmation
+      btn.classList.add('btn-success');
+      btn.style.background = 'linear-gradient(135deg, #198754 0%, #157347 100%)';
+
+      setTimeout(function() {
+        btn.classList.remove('btn-success');
+        btn.style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)';
+      }, 1500);
+    }, 1500);
+  });
+</script>
+
+{% endblock %}

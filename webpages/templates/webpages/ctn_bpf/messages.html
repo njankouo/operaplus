@@ -1,0 +1,222 @@
+<div class="row">
+        <div class="col-lg-12 col-xl-12">
+            <div class="card border-0 shadow-lg mt-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0 text-light">Mise à jour de {{operation.nom}}</h4>
+                    <p class="mb-0 text-white-50">Modifiez les informations de cette opération</p>
+                </div>
+
+                <form method="POST" action="/add_cat_nat/{{ operation.id }}/" class="card-body">
+                    {% csrf_token %}
+
+                    <div class="row g-3 my-4">
+                        <!-- Section Informations de base -->
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3 d-none">
+                                <input type="text" name="code" class="form-control" id="codeInput" value="{{ operation.code }}" required>
+                                <label for="codeInput">Code Opération</label>
+                            </div>
+
+                            <div class="form-floating mb-3 d-none">
+                                <input type="number" name="etat" class="form-control" id="etatInput" value="{{ operation.etat }}" required>
+                                <label for="etatInput">État Opération</label>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input type="text" name="nom" class="form-control" id="nomInput" value="{{ operation.nom }}" required>
+                                <label for="nomInput">Nom Opération</label>
+                            </div>
+
+                            {% if actual_institution.nature != False %}
+                            <div class="form-floating mb-3">
+                                <select name="nature" class="form-select" id="natureSelect">
+                                    <option value=""></option>
+                                    {% for natures in nature %}
+                                    <option value="{{ natures.id }}" {% if natures.id == operation.nature_operation_id %}selected{% endif %}>
+                                        {{natures.intitule}}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <label for="natureSelect">Nature de l'opération</label>
+                            </div>
+                            {% endif %}
+
+                            {% if actual_institution.categorie_op != False %}
+                            <div class="form-floating mb-3">
+                                <select name="categorie" class="form-select" id="categorieSelect">
+                                    <option value=""></option>
+                                    {% for categorie_operations in categorie_operation %}
+                                    <option value="{{ categorie_operations.id }}" {% if categorie_operations.id == operation.categorie_id %}selected{% endif %}>
+                                        {{categorie_operations.intitule}}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <label for="categorieSelect">Catégorie de l'opération</label>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Section Périodes et structure -->
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <select name="annee" class="form-select" id="anneeSelect">
+                                    <option value=""></option>
+                                    {% for periode_oks in periode_ok %}
+                                    <option value="{{ periode_oks.annee }}" {% if periode_oks.id == operation.periode_ok_id %}selected{% endif %}>
+                                        {{periode_oks.annee}}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <label for="anneeSelect">Année</label>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <select name="mois" class="form-select" id="moisSelect">
+                                    <option value=""></option>
+                                    {% for periode_oks in periode_ok %}
+                                    <option value="{{ periode_oks.id }}" {% if operation.periode_ok_id == periode_oks.id %}selected{% endif %}>
+                                        {{periode_oks.nom}}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <label for="moisSelect">Mois</label>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <select name="structure" class="form-select" id="structureSelect">
+                                    <option value=""></option>
+                                    {% for structures in structure %}
+                                    <option value="{{ structures.id }}" {% if operation.structure_id == structures.id %}selected{% endif %}>
+                                        {{structures.nom}}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <label for="structureSelect">Structure</label>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input type="number" name="ponderation" class="form-control" id="ponderationInput" value="{{ operation.ponderation }}">
+                                <label for="ponderationInput">Pondération</label>
+                            </div>
+                        </div>
+
+                        <!-- Section Dates -->
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="date" name="date_debut" class="form-control" id="dateDebutInput" value="{{ operation.date_debut|date:'Y-m-d' }}">
+                                <label for="dateDebutInput">Date Début</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-floating mb-3">
+                                <input type="date" name="date_echeance" class="form-control" id="dateEcheanceInput" value="{{ operation.date_echeance|date:'Y-m-d' }}">
+                                <label for="dateEcheanceInput">Date Échéance</label>
+                            </div>
+                        </div>
+
+                        <!-- Section RACI -->
+                        <div class="col-12">
+                            <h5 class="mb-3 border-bottom pb-2">Responsabilités RACI</h5>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text bg-success text-white w-25">Responsable (R)</span>
+                                        <select name="personnel" class="form-select">
+                                            <option value=""></option>
+                                            {% for personnes in personne %}
+                                            <option value="{{ personnes.id }}" {% if operation.personnel_id == personnes.id %}selected{% endif %}>
+                                                {{personnes.nom}} - {{personnes.prenom}}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text bg-danger text-white w-25">Accountable (A)</span>
+                                        <select name="accountable" class="form-select">
+                                            <option value=""></option>
+                                            {% for personnes in personne %}
+                                            <option value="{{ personnes.id }}" {% if operation.accountable_id == personnes.id %}selected{% endif %}>
+                                                {{personnes.nom}} - {{personnes.prenom}}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text bg-warning text-dark w-25">Consulted (C)</span>
+                                        <select name="consulted" class="form-select">
+                                            <option value=""></option>
+                                            {% for personnes in personne %}
+                                            <option value="{{ personnes.id }}" {% if operation.consulted_id == personnes.id %}selected{% endif %}>
+                                                  {{personnes.nom}} - {{personnes.prenom}}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text bg-info text-white w-25">Informed (I)</span>
+                                        <select name="informed" class="form-select">
+                                            <option value=""></option>
+                                            {% for personnes in personne %}
+                                            <option value="{{ personnes.id }}" {% if operation.informed_id == personnes.id %}selected{% endif %}>
+                                              {{personnes.nom}} - {{personnes.prenom}}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section Formulaires -->
+                        {% if actual_institution.formulaire != False %}
+                        <div class="col-12">
+                            <h5 class="mb-3 border-bottom pb-2">Formulaires de saisie associés</h5>
+
+                            <div class="row g-2">
+                                {% for operations_datasets in operation_dataset %}
+                                <div class="col-md-4 col-lg-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="linked-{{ operations_datasets.id }}"
+                                               name="dataset" value="{{ operations_datasets.id }}" checked>
+                                        <label class="form-check-label" for="linked-{{ operations_datasets.id }}">
+                                            {{ operations_datasets.m_name }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+
+                                {% for dataset_None_operations in dataset_None_operation %}
+                                <div class="col-md-4 col-lg-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="unlinked-{{ dataset_None_operations.id }}"
+                                               name="dataset" value="{{ dataset_None_operations.id }}">
+                                        <label class="form-check-label" for="unlinked-{{ dataset_None_operations.id }}">
+                                            {{ dataset_None_operations.m_name }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="card-footer bg-light d-flex justify-content-between mt-4">
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Retour
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Mettre à jour
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>

@@ -1,0 +1,37 @@
+{% extends vitrine_base %}
+{% block title %}Sécurité des données · OperaPlus{% endblock %}
+{% block meta_description %}Droits d'accès par projet, rôles RACI, mots de passe protégés, journal des actions : découvrez comment OperaPlus protège les données de vos projets.{% endblock %}
+{% block content %}
+{% include "vitrine/_pages.css.html" %}
+{# Vérifiez chaque phrase avec votre équipe technique avant publication. Les lignes « hébergement » et « sauvegardes » ne s'affichent que si vous les renseignez dans settings.VITRINE_SECURITE. #}
+<div class="pg">
+<section class="pg-hero"><div class="op-wrap">
+    <nav aria-label="Fil d'Ariane"><ol class="pg-crumb"><li><a href="/">Accueil</a></li><li><span aria-current="page">Sécurité</span></li></ol></nav>
+    <span class="op-kicker">Confiance</span>
+    <h1>Vos données de projet, protégées.</h1>
+    <p class="lead">Les données MEAL sont sensibles : bénéficiaires, plaintes, budgets. Voici comment OperaPlus les protège au quotidien.</p>
+</div></section>
+<section class="pg-sec"><div class="op-wrap">
+    <div class="pg-cards">
+        <div><i class="fa-solid fa-user-lock"></i><b>Accès par projet</b><p>Chaque utilisateur ne voit que les projets et les données auxquels il est rattaché.</p></div>
+        <div><i class="fa-solid fa-people-arrows"></i><b>Rôles RACI</b><p>Qui saisit, qui valide, qui est informé : les responsabilités sont définies activité par activité.</p></div>
+        <div><i class="fa-solid fa-key"></i><b>Mots de passe protégés</b><p>Les mots de passe ne sont jamais stockés en clair : ils sont chiffrés de façon irréversible.</p></div>
+        <div><i class="fa-solid fa-shield-halved"></i><b>Formulaires protégés</b><p>Chaque envoi de formulaire est vérifié contre les requêtes frauduleuses provenant d'autres sites.</p></div>
+        <div><i class="fa-solid fa-clock-rotate-left"></i><b>Journal des actions</b><p>Les opérations importantes sont tracées pour savoir qui a fait quoi, et quand.</p></div>
+        <div><i class="fa-solid fa-file-circle-check"></i><b>Import contrôlé</b><p>Les fichiers importés sont analysés avant écriture : les anomalies bloquantes sont refusées.</p></div>
+    </div>
+    <div class="pg-prose">
+        {% if securite.hebergement or securite.sauvegardes or securite.chiffrement %}
+        <h2>Hébergement et sauvegardes</h2>
+        <dl>
+            {% if securite.hebergement %}<dt>Hébergement</dt><dd>{{ securite.hebergement }}</dd>{% endif %}
+            {% if securite.sauvegardes %}<dt>Sauvegardes</dt><dd>{{ securite.sauvegardes }}</dd>{% endif %}
+            {% if securite.chiffrement %}<dt>Chiffrement des échanges</dt><dd>{{ securite.chiffrement }}</dd>{% endif %}
+        </dl>
+        {% endif %}
+        <h2>Vos questions</h2>
+        <p>Pour toute question sur la sécurité, l'hébergement ou un audit, <a href="/#contact" style="color:var(--acc);font-weight:700">contactez notre équipe</a>.</p>
+    </div>
+</div></section>
+</div>
+{% endblock %}

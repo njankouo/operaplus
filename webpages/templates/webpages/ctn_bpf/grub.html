@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saisie de données - OPERAPLUS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Style spécifique pour simuler le comportement DHIS2 */
+        .dhis2-input:focus {
+            background-color: #fff9c4 !important; /* Jaune pâle lors de la saisie */
+            outline: 2px solid #276696;
+            border-color: transparent;
+        }
+        header{
+            background-color: {{request.user.personnel.color_fond}};
+        }
+    </style>
+</head>
+<body class="bg-[#f4f7f9] font-sans text-sm text-gray-800">
+
+  <header class="glass-nav text-white h-16 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-lg z-50">
+    <div class="flex items-center gap-4 lg:gap-8">
+        <button id="mobileMenuBtn" class="lg:hidden p-2 hover:bg-white/10 rounded-lg">
+            <i class="fa-solid fa-bars text-xl"></i>
+        </button>
+
+        <a href="/" class="flex items-center gap-3 group transition-all">
+            <div class="bg-white/90 p-1 rounded-lg h-9 w-9 flex items-center justify-center shadow-md">
+                {% if actual_institution.logo %}
+                    <img src="{{ actual_institution.img.url }}" alt="Logo" class="h-full w-full object-contain">
+                {% else %}
+                    <i class="fa fa-university text-[#276696]"></i>
+                {% endif %}
+            </div>
+            <h1 class="hidden sm:block text-[10px] font-black uppercase tracking-widest leading-none">
+                {{ actual_institution.nom|default:"Opera+" }}
+            </h1>
+        </a>
+
+        <nav class="hidden lg:flex items-center gap-1 text-[13px] font-semibold">
+            <a href="/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all">Dashboard</a>
+            <a href="/structures/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all">Unités d'Org</a>
+            <a href="/evaluer/0/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all">Indicateurs</a>
+            <a href="/forms/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all">Collecte De Donnees</a>
+            <a href="/dataelts/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all">DataElements</a>
+        </nav>
+    </div>
+
+    <div class="relative">
+    <button id="userMenuBtn" class="flex items-center gap-2 sm:gap-4 outline-none">
+        <div class="text-right hidden sm:block">
+            <p class="text-[9px] uppercase opacity-60 font-bold">Session active</p>
+            <p class="text-[11px] font-bold">{{ request.user.username }}</p>
+        </div>
+        <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center font-bold text-xs shadow-inner uppercase border-2 border-white/20">
+            {{ request.user.username|slice:'2'|upper }}
+        </div>
+    </button>
+
+    <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 text-slate-700 dark:text-slate-200 z-50">
+        <div class="px-4 py-2 border-b border-slate-100 dark:border-slate-700">
+            <p class="text-xs font-bold">{{ request.user.get_full_name }}</p>
+            <p class="text-[10px] opacity-60">{{ request.user.email }}</p>
+        </div>
+        <a href="/profile/" class="block px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Mon Profil</a>
+        <a href="/configurations_admin/" class="block px-4 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">Paramètres</a>
+        <div class="my-1 border-t border-slate-100 dark:border-slate-700"></div>
+        <a href="/log/1/" class="block px-4 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">Déconnexion</a>
+    </div>
+</div>
+</header>
+
+<div id="mobileMenu" class="hidden lg:hidden fixed top-16 left-0 w-full bg-slate-900/95 backdrop-blur-md p-6 flex flex-col gap-4 text-white z-40 border-b border-white/10">
+    <a href="/structures/" class="block py-2 border-b border-white/10">Unités d'Org</a>
+    <a href="/evaluer/0/" class="block py-2 border-b border-white/10">Indicateurs</a>
+    <a href="/forms/" class="block py-2 border-b border-white/10">Collecte</a>
+    <a href="/dataelts/" class="block py-2 border-b border-white/10">Données</a>
+</div>
+<script>
+    const userBtn = document.getElementById('userMenuBtn');
+    const dropdown = document.getElementById('userDropdown');
+
+    // Basculer l'affichage du menu
+    userBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Empêche la fermeture immédiate
+        dropdown.classList.toggle('hidden');
+    });
+
+    // Fermer si on clique en dehors
+    window.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target) && e.target !== userBtn) {
+            dropdown.classList.add('hidden');
+        }
+    });
+</script>
+<script>
+    const btn = document.getElementById('mobileMenuBtn');
+    const menu = document.getElementById('mobileMenu');
+
+    btn.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+    });
+
+    // Ferme le menu si on redimensionne l'écran vers le mode desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+            menu.classList.add('hidden');
+        }
+    });
+</script>
+    <div class="flex min-h-[calc(100vh-48px)]">
+      
+ <aside class="w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-[calc(100vh-48px)] sticky top-12 hidden lg:flex flex-col shadow-[1px_0_10px_rgba(0,0,0,0.02)] z-40">
+    
+    <div class="p-4 space-y-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center justify-between">
+            <h3 class="font-bold text-slate-400 text-[10px] uppercase tracking-widest">Unité d'organisation</h3>
+        </div>
+        <div class="relative group">
+            <span class="absolute inset-y-0 left-3 flex items-center text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </span>
+            <input type="text" 
+                   id="searchOrgUnit"
+                   onkeyup="filterTree()"
+                   placeholder="Rechercher une unité..." 
+                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none dark:text-slate-200">
+        </div>
+    </div>
+
+    <form method="POST" action="/save_value/" onsubmit="return submitForm('{{ dataset.id }}')" id="myForm{{ dataset.id }}" class="flex flex-col flex-1 overflow-hidden">
+        {% csrf_token %}
+        
+        <div class="flex-1 overflow-y-auto py-4 select-none custom-scrollbar bg-[#fcfdfe] dark:bg-slate-900/50">
+            <ul id="orgUnitTree" class="space-y-0.5 px-3">
+                {% for structures in dataset.m_structures.all %}
+                <li class="tree-node" data-name="{{ structures.nom|lower }}">
+                    <div class="flex items-center group py-1.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
+                        <button type="button" onclick="toggleNode(this)" class="p-1 hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm rounded-md outline-none transition-all mr-1">
+                            <svg class="w-4 h-4 text-slate-400 transition-transform duration-200 transform pointer-events-none rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                        
+                        <div class="flex items-center flex-1">
+                            <input type="checkbox" name="org_units" value="{{ structures.id }}" id="check-{{ structures.id }}" 
+                                   class="custom-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 dark:bg-slate-800 dark:border-slate-600" onchange="updateSelect(this, '{{ structures.nom }}', '{{ structures.id }}')">
+                            <label for="check-{{ structures.id }}" class="ml-2.5 text-[13px] font-semibold text-slate-700 dark:text-slate-300 cursor-pointer group-hover:text-blue-600 transition-colors">
+                                {{ structures.nom }}
+                            </label>
+                        </div>
+                    </div>
+
+                    <ul class="ml-4 border-l-2 border-slate-100 dark:border-slate-800 pl-3 mt-1 space-y-0.5">
+                        {% for sub_line in structures.children.all %}
+                        <li class="tree-node" data-name="{{ sub_line.nom|lower }}">
+                            <div class="flex items-center group py-1.5 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+                                <button type="button" onclick="toggleNode(this)" class="p-1 hover:bg-white dark:hover:bg-slate-700 rounded-md outline-none mr-1">
+                                    <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200 transform pointer-events-none rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </button>
+                                <input type="checkbox" name="org_units" value="{{ sub_line.id }}" id="check-{{ sub_line.id }}" 
+                                       class="custom-checkbox w-3.5 h-3.5 rounded border-slate-300 text-blue-600 dark:bg-slate-800 dark:border-slate-600" onchange="updateSelect(this, '{{ sub_line.nom }}', '{{ sub_line.id }}')">
+                                <label for="check-{{ sub_line.id }}" class="ml-2.5 text-[12px] font-medium text-slate-600 dark:text-slate-400 cursor-pointer group-hover:text-blue-600">{{ sub_line.nom }}</label>
+                            </div>
+
+                            <ul class="ml-4 border-l-2 border-slate-100 dark:border-slate-800 pl-3 mt-1 space-y-0.5">
+    {% for last_child in sub_line.children.all %}
+    <li class="tree-node flex items-center py-1.5 px-2 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg group transition-all" data-name="{{ last_child.nom|lower }}">
+        <!-- CORRECTION ICI : utilisation de last_child.nom et last_child.id -->
+        <input type="checkbox" name="org_units" value="{{ last_child.id }}" id="check-{{ last_child.id }}" 
+               class="custom-checkbox w-3 h-3 rounded border-slate-300 text-blue-600 ml-4 dark:bg-slate-800 dark:border-slate-600" 
+               onchange="updateSelect(this, '{{ last_child.nom|escapejs }}', '{{ last_child.id }}')">
+        <label for="check-{{ last_child.id }}" class="ml-2.5 text-[11.5px] text-slate-500 dark:text-slate-500 group-hover:text-slate-800 dark:group-hover:text-slate-200 cursor-pointer">
+            {{ last_child.nom }}
+        </label>
+    </li>
+    {% endfor %}
+</ul>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+      <div class="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5">
+    
+    <a href="/structures/" 
+       class="w-full flex items-center justify-center gap-2 py-2.5 bg-[#276696] hover:bg-[#1d4d71] text-white text-[11px] font-bold rounded-lg transition-all uppercase tracking-widest shadow-md active:scale-95">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Ajouter unité d'organisation
+    </a>
+
+    <button type="button" 
+            onclick="window.location.reload()" 
+            class="w-full py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-all uppercase tracking-widest shadow-sm">
+        Réinitialiser la vue
+    </button>
+</div>
+
+</aside>
+
+<script>
+function toggleNode(btn) {
+    const parentDiv = btn.parentElement;
+    const subList = parentDiv.nextElementSibling;
+    const icon = btn.querySelector('svg');
+
+    if (subList && subList.tagName === 'UL') {
+        const isHidden = subList.classList.contains('hidden');
+        
+        if (isHidden) {
+            // OUVRIR
+            subList.classList.remove('hidden');
+            icon.style.transform = 'rotate(90deg)';
+            parentDiv.classList.add('bg-blue-50/40', 'dark:bg-slate-800/50');
+        } else {
+            // FERMER
+            subList.classList.add('hidden');
+            icon.style.transform = 'rotate(0deg)';
+            parentDiv.classList.remove('bg-blue-50/40', 'dark:bg-slate-800/50');
+        }
+    }
+}
+
+function filterTree() {
+    const input = document.getElementById('searchOrgUnit');
+    const filter = input.value.toLowerCase();
+    const nodes = document.querySelectorAll('.tree-node');
+
+    nodes.forEach(node => {
+        const name = node.getAttribute('data-name');
+        const subList = node.querySelector('ul');
+        const icon = node.querySelector('button svg');
+
+        if (filter === "") {
+            node.classList.remove('hidden');
+            // Optionnel : on referme tout si on vide la recherche
+            // if(subList) subList.classList.add('hidden');
+            return;
+        }
+
+        if (name.includes(filter)) {
+            node.classList.remove('hidden');
+            
+            // Ouvrir les parents pour montrer le résultat
+            let parent = node.parentElement.closest('.tree-node');
+            while (parent) {
+                parent.classList.remove('hidden');
+                const parentList = parent.querySelector('ul');
+                const parentIcon = parent.querySelector('button svg');
+                if(parentList) parentList.classList.remove('hidden');
+                if(parentIcon) parentIcon.style.transform = 'rotate(90deg)';
+                parent = parent.parentElement.closest('.tree-node');
+            }
+        } else {
+            node.classList.add('hidden');
+        }
+    });
+}
+</script>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+    
+    /* Style Checkbox DHIS2 */
+    .custom-checkbox {
+        @apply cursor-pointer transition-all border-slate-300;
+    }
+    .custom-checkbox:checked {
+        background-color: #276696 !important;
+        border-color: #276696 !important;
+    }
+</style>
+  
+    <input type="hidden" name="generator" value="dSv">
+    <input type="hidden" name="dSv_id" value="{{dataset.id}}">
+    <input type="hidden" name="edit_or_create" value="c">
+    <input type="hidden" name="variables_value" id="variables_value_{{ dataset.id }}">
+    <input type="hidden" name="variables_names" id="variables_names_{{ dataset.id }}">
+    <input type="hidden" name="structures_value" id="structures_value_{{ dataset.id }}">
+    
+    <main class="flex-1 p-4 md:p-8 overflow-x-auto">
+        
+        <div class="bg-white border border-gray-300 rounded-sm shadow-sm p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Année</label>
+                <select class="w-full border border-gray-300 bg-gray-50 p-1.5 rounded focus:ring-1 focus:ring-blue-400 outline-none text-sm" name="period1_saisie" id="annee">
+                    <option value="">Sélectionner l'année</option>
+                    {% for periode_oks in periode_ok %}
+                        <option value="{{ periode_oks.annee }}">{{ periode_oks.annee }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Période (Mois/Trimestre)</label>
+                <select class="w-full border border-gray-300 bg-gray-50 p-1.5 rounded focus:ring-1 focus:ring-blue-400 outline-none font-medium text-sm" name="period2_saisie" id="period">
+                    </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Unité d'organisation</label>
+                <div class="flex space-x-2">
+                    <select class="flex-1 border border-gray-300 bg-gray-50 p-1.5 rounded focus:ring-1 focus:ring-blue-400 outline-none text-sm" name="struc_selec" id="structureSelect">
+                        </select>
+                    <div class="flex shadow-sm rounded overflow-hidden">
+                        <button type="button" class="bg-gray-200 px-3 hover:bg-gray-300 text-gray-700 border-r border-gray-300 transition">«</button>
+                        <button type="button" class="bg-gray-200 px-3 hover:bg-gray-300 text-gray-700 transition">»</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white border border-gray-300 rounded shadow-sm overflow-hidden min-w-[700px]">
+
+                    <style>
+/* --- Style global de la table --- */
+.dhis2-table-container table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+/* --- PREMIÈRE COLONNE (Pivot) --- */
+.dhis2-table-container table td:first-child {
+    background-color: #f8fafc !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    font-size: 13.5px !important;
+    padding-left: 20px !important;
+    border-right: 3px double #cbd5e1 !important; 
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.02);
+}
+
+/* --- MODE SOMBRE : PREMIÈRE COLONNE --- */
+.dark .dhis2-table-container table td:first-child {
+    background-color: #1e293b !important; /* slate-800 */
+    color: #f1f5f9 !important; /* slate-100 */
+    border-right: 3px double #334155 !important; /* slate-700 */
+    border-bottom: 1px solid #334155 !important;
+}
+
+/* --- Cellules standards --- */
+.dhis2-table-container table td {
+    padding: 10px 12px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    vertical-align: middle;
+}
+
+/* --- MODE SOMBRE : Cellules --- */
+.dark .dhis2-table-container table td {
+    background-color: #0f172a !important; /* slate-900 */
+    border-bottom: 1px solid #1e293b !important;
+}
+
+/* --- INPUTS --- */
+.dhis2-table-container table input[type="number"],
+.dhis2-table-container table input[type="text"] {
+    width: 100% !important;
+    height: 40px !important;
+    padding: 0 12px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    text-align: right;
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    transition: all 0.15s ease !important;
+    outline: none !important;
+}
+
+/* --- MODE SOMBRE : INPUTS --- */
+.dark .dhis2-table-container table input {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+}
+
+/* Focus : Le jaune DHIS2 (Adapté pour les deux modes) */
+.dhis2-table-container table input:focus {
+    border-color: #2563eb !important;
+    background-color: #fffde7 !important; 
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+}
+
+.dark .dhis2-table-container table input:focus {
+    background-color: #334155 !important; /* Un peu plus clair que le fond en dark */
+    border-color: #60a5fa !important; /* Bleu plus clair pour contraste */
+}
+
+/* --- État Vide (No Data) --- */
+.dark #no-data-{{ dataset.id }} {
+    background-color: #0f172a !important;
+}
+
+.dark #no-data-{{ dataset.id }} h3 {
+    color: #cbd5e1 !important;
+}
+
+.dark #no-data-{{ dataset.id }} .bg-slate-50 {
+    background-color: #1e293b !important;
+}
+
+/* Masquer le SVG quand la table est injectée */
+.dhis2-table-container:has(table) #no-data-{{ dataset.id }} {
+    display: none !important;
+}
+</style>
+<div class="card-body{{ dataset.id }} w-full min-h-[300px] flex flex-col transition-colors duration-300">
+    <div class="contenu dhis2-table-container w-full overflow-x-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-sm">
+    <div id="no-data-{{ dataset.id }}" class="flex flex-col items-center justify-center py-20 px-4 text-center dark:bg-slate-900 transition-all duration-500">
+    
+    <div class="relative mb-6">
+        <div class="absolute inset-0 rounded-full bg-blue-400 dark:bg-blue-500/20 animate-ping opacity-20"></div>
+        
+     
+            
+            <svg class="w-20 h-20 text-blue-500 dark:text-blue-400 group-hover:text-blue-600 transition-colors" 
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v4m-6 8h12M6 16v2a2 2 0 002 2h8a2 2 0 002-2v-2M6 16a2 2 0 01-2-2v-2a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8l-4 4m4-4l4 4"></path>
+                <circle cx="12" cy="4" r="1" fill="currentColor" class="animate-pulse"></circle>
+            </svg>
+            
+            <span class="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all transform group-hover:-translate-y-2 whitespace-nowrap shadow-xl">
+                CHARGER LE FORMULAIRE
+            </span>
+      
+    </div>
+
+    <h3 class="text-slate-800 dark:text-slate-100 font-black text-2xl tracking-tighter uppercase italic">
+        Saisie non initialisée
+    </h3>
+    
+    <div class="mt-4 flex flex-col items-center">
+        <p class="text-slate-500 dark:text-slate-400 text-sm max-w-xs leading-relaxed font-medium">
+            Sélectionnez une <span class="text-blue-500 font-bold">Unité d'Organisation</span> pour générer les éléments de données.
+        </p>
+        
+        <div class="w-64 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-8 overflow-hidden relative border border-slate-200/50 dark:border-slate-700">
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-400 animate-progress-flow"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Animation Bounce plus fluide et moins haute */
+    @keyframes bounce-custom {
+        0%, 100% { transform: translateY(0); animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+        50% { transform: translateY(-12px); animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95); }
+    }
+    .animate-bounce-custom {
+        animation: bounce-custom 2.4s infinite;
+    }
+
+    @keyframes progress-flow {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    .animate-progress-flow {
+        width: 80%;
+        animation: progress-flow 2s infinite ease-in-out;
+    }
+</style>
+    </div>
+</div>
+
+<style>
+    /* Animation de flottement doux */
+    @keyframes bounce-slow {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-12px); }
+    }
+    .animate-bounce-slow {
+        animation: bounce-slow 3s ease-in-out infinite;
+    }
+
+    /* Animation de la petite barre de chargement */
+    @keyframes loading-bar {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(0%); }
+        100% { transform: translateX(100%); }
+    }
+    .animate-loading-bar {
+        width: 100%;
+        animation: loading-bar 2s infinite linear;
+    }
+
+    /* Style pour masquer quand la table est là */
+    .dhis2-table-container:has(table) #no-data-{{ dataset.id }} {
+        display: none !important;
+    }
+</style>
+
+                     <div class="col-md-6">
+                                                        <label for="" class="text-danger" style="font-weight:bold;display:none">Resultat CalCul *</label>
+                                                           <input type="text" id="indicator-values" name="indicator-values" class="form-control" readonly style="display:none">
+                                        
+                                                      </div>
+                                                                           <div class="col-md-6">
+                                                        
+                                                        <label for="" class="text-danger" style="font-weight:bold;display:none">Code Indicateur *</label>
+                                                            <input type="text" id="indicator-ids" name="indicator-ids" class="form-control" readonly style="display:none">
+                                                      </div>
+                                                      <input type="text" name="elementsArea" id="elementsArea" class="form-control" style="display: none;">
+                                                      <input type="text" name="elements" id="displayArea" class="form-control" style="display: none;">
+                                                       <div id="loadingIndicator" role="alert" aria-live="assertive" aria-hidden="true" style="display: none;">  
+                                    <span>Chargement en cours, veuillez patienter...</span>  
+                                </div> 
+        </div>
+
+       <div class="fixed bottom-8 right-8 z-[120]">
+    <button type="button"
+        id="loadDataButton"
+        data-id="{{dataset.id}}"
+        onclick="loadDataset(this)"
+        class="group relative flex items-center justify-center w-14 h-14 md:w-auto md:h-14 bg-blue-600 hover:bg-blue-700 text-white md:px-6 rounded-full shadow-2xl shadow-blue-600/40 transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none">
+        
+        <span class="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-20"></span>
+        
+        <svg class="w-6 h-6 z-10 transition-transform group-hover:translate-y-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V3.75m0 12.75l-3.75-3.75m3.75 3.75l3.75-3.75M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9" />
+        </svg>
+
+        <span class="font-bold text-sm tracking-wide ml-2 hidden md:block">Charger les données</span>
+
+        <span class="absolute -top-1 -right-1 flex h-4 w-4">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
+        </span>
+    </button>
+</div>
+                <button type="button" 
+                        class="flex-1 md:flex-none px-10 py-2.5 bg-[#276696] text-white rounded hover:bg-[#1d4d71] font-bold shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wide" 
+                        id="myButton{{ dataset.id }}" data-form-id="{{ dataset.id }}">
+                    Enregistrer les données
+                </button>
+            </div>
+        </div>
+    </main>
+</form>
+
+
+    </div>
+ <script>
+            
+                        function submitForm(formId) {  
+                            // Récupérez le formulaire via son ID dynamique  
+                            const myForm = document.getElementById(`myForm${formId}`);  
+                           
+                    
+                            // Vérifiez si le formulaire est valide  
+                            if (myForm.checkValidity()) {  
+                                myForm.submit(); // Soumettez le formulaire  
+                                return true; // Laissez la soumission se produire  
+                            }  
+                            return false; // Empêche la soumission par défaut si le formulaire n'est pas valide  
+                        }  
+                    
+                        // Ajoutez un écouteur d'événements pour le bouton de sauvegarde  
+                        document.querySelectorAll('button[id^="myButton"]').forEach(button => {  
+                       
+                            button.addEventListener('click', function() {  
+                                const formId = this.dataset.formId; // obtenir l'ID du formulaire dynamique   
+                                Swal.fire({  
+                                    title: "<strong>Information</strong>",  
+                                    icon: "info",  
+                                    html: `  
+                                        Les données saisies seront remplacées dans la base de données en cas de doublon. <b>Souhaitez-vous tout de même les enregistrer ?</b>  
+                                    `,  
+                                    showCloseButton: true,  
+                                    showCancelButton: true,  
+                                    focusConfirm: false,  
+                                    confirmButtonText: `  
+                                        <i class="fa fa-thumbs-up"></i> Oui / Yes!  
+                                    `,  
+                                    confirmButtonAriaLabel: "Thumbs up, great!",  
+                                    cancelButtonText: `  
+                                        <i class="fa fa-thumbs-down"></i> Non / No  
+                                    `,  
+                                    cancelButtonAriaLabel: "Thumbs down"  
+                                }).then((result) => {  
+                                    if (result.isConfirmed) {  
+                                        submitForm(formId); // Appelle la fonction de soumission avec l'ID du formulaire  
+                                    }  
+                                });  
+                            });  
+                        });  
+                    
+                            </script> 
+
+                    
+                        
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js" integrity="sha512-ykZ1QQr0Jy/4ZkvKuqWn4iF3lqPZyij9iRv6sGqLRdTPkY69YX6+7wvVGmsdBbiIfN/8OdsI7HABjvEok6ZopQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script>  
+    $(document).ready(function () {  
+        $(".toggle-btn").click(function () {  
+            const id = $(this).data("id");  
+            const subList = $(`#sub-structures-${id}`);  
+            const isVisible = subList.is(":visible");  
+
+            // Animation d'affichage ou de masquage  
+            subList.slideToggle(300, function () {  
+                // Change l'icône du bouton après l'animation  
+                if (isVisible) {  
+                    $(this).siblings(".toggle-btn").removeClass("fa-caret-down").addClass("fa-caret-right");  
+                } else {  
+                    $(this).siblings(".toggle-btn").removeClass("fa-caret-right").addClass("fa-caret-down");  
+                }  
+            });  
+        });  
+    });  
+</script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+    $(document).ready(function() {
+        $('#annee').on('change', function() {
+            var selectedId = $(this).val();
+            
+            $.ajax({
+                url: '/search_period_id/{{dataset.id}}/',  // L'URL correspondant à la vue Django
+                method: 'GET',
+                data: { annee: selectedId },
+                success: function(data) {
+                    var selectInformations = $('#period');
+                    selectInformations.empty(); // Effacer les anciennes options
+                    
+                    // Ajouter les nouvelles options basées sur les données récupérées via AJAX
+                    data.forEach(function(period_id) {
+                        selectInformations.append($('<option>', {
+                            value: period_id.id,
+                            text: period_id.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
+                        }));
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+                }
+            });
+        });
+    });
+    </script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+
+<script type="text/javascript">
+    // Configuration commune des Toasts
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        // On s'assure que le toast est bien visible au-dessus de tout
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+    });
+
+    {% for message in messages %}
+        // On stocke le tag dans une variable JS pour faciliter le débogage
+        let tag = "{{ message.tags }}";
+        let msg = "{{ message|escapejs }}";
+
+        // Logique de sélection d'icône et de couleur
+        let iconType = 'info'; // Par défaut
+        
+        // Django utilise souvent 'debug', 'info', 'success', 'warning', 'error'
+        if (tag.includes('success')) {
+            iconType = 'success';
+        } else if (tag.includes('error') || tag.includes('danger')) {
+            iconType = 'error';
+        } else if (tag.includes('warning')) {
+            iconType = 'warning';
+        } else if (tag.includes('info')) {
+            iconType = 'info';
+        }
+
+        Toast.fire({
+            icon: iconType,
+            title: msg
+        });
+    {% endfor %}
+</script>
+<script>
+    function toggleSubStructures(id) {
+        const subList = document.getElementById(`sub-structures-${id}`);
+        const toggleBtn = document.querySelector(`.toggle-btn[data-id="${id}"]`);
+    
+        if (subList) {
+            if (subList.style.display === "none" || subList.style.display === "") {
+                subList.style.display = "block"; // Affiche les sous-structures
+                toggleBtn.classList.remove("fa-caret-right");
+                toggleBtn.classList.add("fa-caret-down");
+            } else {
+                subList.style.display = "none"; // Cache les sous-structures
+                toggleBtn.classList.remove("fa-caret-down");
+                toggleBtn.classList.add("fa-caret-right");
+            }
+        }
+    }
+    </script>
+
+
+
+
+
+
+
+
+
+
+<script>
+    function updateSelect(checkbox, name, id) {
+        const select = document.getElementById("structureSelect");
+        
+        if (checkbox.checked) {
+            // Créer une nouvelle option
+            const newOption = document.createElement("option");
+            newOption.value = id; // ID de la structure
+            newOption.textContent = name; // Nom de la structure
+            
+            // Ajouter l'option au select
+            select.appendChild(newOption);
+        } else {
+            // Retirer l'option si la case est décochée
+            const optionToRemove = Array.from(select.options).find(option => option.value === id);
+            if (optionToRemove) {
+                select.removeChild(optionToRemove);
+            }
+        }
+    }
+    </script>
+<script>
+function loadDataset(button) {  
+    const datasetId = button.getAttribute('data-id');  
+    const url = `/get_dataset/${datasetId}/`;  
+
+    Swal.fire({  
+        title: 'Chargement...',  
+        text: 'Veuillez patienter pendant le chargement des données.',  
+        allowOutsideClick: false,  
+        showConfirmButton: false,  
+        onBeforeOpen: () => {  
+            Swal.showLoading();  
+        }  
+    });  
+
+    return fetch(url)  // Retourner la promesse de fetch pour permettre le chaînage  
+        .then(response => {  
+            if (!response.ok) {  
+                throw new Error('Erreur lors de la récupération du dataset');  
+            }  
+            return response.json();  
+        })  
+        .then(data => {  
+            const contenu_view = document.querySelector(`.card-body${datasetId} .contenu`);  
+            if (contenu_view) {  
+                contenu_view.innerHTML = data.content ? `<p>${data.content}</p>` : "<p>Aucun contenu disponible.</p>";  
+                initIndic(datasetId);  
+            } else {  
+                console.error('contenu_view est null');  
+            }  
+        })  
+        .catch(error => {  
+            console.error('Erreur:', error);  
+            Swal.fire({  
+                icon: 'error',  
+                title: 'Une erreur est survenue',  
+                text: `Veuillez réessayer. Détails: ${error.message}`,  
+            });  
+        })  
+        .finally(() => {  
+            Swal.close(); // Assurez-vous de fermer l'application Swal après la fin  
+        });  
+}  
+
+document.getElementById('loadDataButton').addEventListener("click", function() {  
+    const datasetId = this.getAttribute('data-id');  
+    loadDataset(this).then(() => {  
+        const selectedYear = document.getElementById('annee').value;   
+        const selectedPeriod = document.getElementById('period').value;  
+        const selectedStructure = document.getElementById('structureSelect').value;  
+
+        // Vérifier si toutes les sélections sont faites  
+        if (!selectedYear || !selectedPeriod || !selectedStructure) {  
+            Swal.fire({  
+                icon: 'warning',  
+                title: 'Attention!',  
+                text: "Veuillez sélectionner l'année, la période et la structure.",  
+                confirmButtonText: 'OK'  
+            });  
+            return;  
+        }  
+
+        const url = `/load_data/${selectedStructure}/${selectedPeriod}/`; // URL pour récupérer les données  
+        
+        // Afficher un indicateur de chargement (optionnel)  
+        Swal.showLoading(); // Utiliser SweetAlert pour afficher l'indicateur de chargement  
+
+        fetch(url)  
+        .then(response => {  
+            if (!response.ok) {  
+                throw new Error('Erreur lors de la récupération des données');  
+            }  
+            return response.json();  
+        })  
+        .then(data => handleData(data))  
+        .catch(error => {  
+            console.error('Erreur lors du chargement des données:', error);  
+            Swal.fire({  
+                icon: 'error',  
+                title: 'Erreur',  
+                text: "Une erreur est survenue. Veuillez réessayer.",  
+            });  
+        })  
+        .finally(() => {  
+            Swal.close(); // Masquer l'indicateur de chargement  
+        });  
+    });  
+});  
+
+function handleData(data) {  
+    if (data.error) {  
+        alert("Erreur lors du chargement des données: " + data.error);  
+        return [];  
+    }  
+
+    const dataArray = data.data || [];  
+    const inputData = dataArray.map(item => ({  
+        name: `D0elt${item.id}`,  
+        date: item.date,  
+        texte: item.texte,  
+        value: item.content,  
+    }));  
+
+    // Vérifier s'il n'y a pas de valeurs  
+    if (inputData.length === 0) {  
+        alert('Aucune valeur trouvée.');  
+
+        const allInputs = document.querySelectorAll('input[type="date"], textarea, input[type="number"]');  
+        allInputs.forEach(input => input.value = '');  // Vider tous les champs  
+
+        return [];  
+    }  
+
+    inputData.forEach(input => {  
+        // Mettre à jour le champ de texte (textarea)  
+        const textAreaElement = document.querySelector(`textarea[name="${input.name}"]`);  
+        if (textAreaElement) {  
+            textAreaElement.value = input.texte || '';  // Ajuste le texte ou le vide si null  
+        } else {  
+            console.warn(`Textarea "${input.name}" introuvable.`);  
+        }  
+
+        // Mettre à jour le champ de nombre  
+        const numberInputElement = document.querySelector(`input[type="number"][name="${input.name}"]`);  
+        if (numberInputElement) {  
+            numberInputElement.value = input.value;  // Ajuster la valeur  
+        } else {  
+            console.warn(`Champ de number "${input.name}" introuvable.`);  
+        }  
+
+        // Mettre à jour le champ de date  
+        const dateInputElement = document.querySelector(`input[type="date"][name="${input.name}"]`);  
+        if (dateInputElement) {  
+            dateInputElement.value = input.date || '';  // Ajuster la date ou la vider si null  
+        } else {  
+            console.warn(`Champ de date "${input.name}" introuvable.`);  
+        }  
+    });  
+
+    console.log('Données traitées:', dataArray);  
+    return dataArray;  
+}
+
+
+// Fonction pour initialiser les indicateurs  
+function initIndic(datasetId) {  
+  
+
+console.log("Fonction initIndic() appelée avec datasetId:", datasetId);  
+
+const indicSelector = document.getElementsByClassName("indicSelector");  
+let indic_value = "";  
+for (let i = 0; i < indicSelector.length; i++) {  
+indic_value += indicSelector[i].getAttribute("data-id") + "#";  
+}  
+
+const institutionId = {{ actual_institution.id }}; // Assurez-vous que `actual_institution` est défini  
+
+$.ajax({  
+url: '/get_elements/',  
+data: {  
+'dataset': datasetId,  
+'type_dataset': '0',  
+'other': 'dI_formula',  
+'institution': institutionId,  
+'value': indic_value  
+},  
+success: function(data) {  
+
+function check_selector(evalu = false) {  
+const indicatorValues = {};  
+
+for (let i = 0; i < indicSelector.length; i++) {  
+indicSelector[i].textContent = data.formulas[i];  
+const indicatorId = indicSelector[i].getAttribute("data-id");  
+
+const tmp_elts = data.data_elts.split("#");  
+// console.log('Les IDs sont :', tmp_elts);
+let elts = [];  
+
+for (let j = 0; j < tmp_elts.length; j++) {  
+    const tp = document.getElementsByName("D0elt" + tmp_elts[j]);  
+    if (tp.length > 0 && tp[0].value) {  
+        // Vérifie si l'élément existe et que sa valeur n'est pas une chaîne vide.  
+        elts.push({ id: tmp_elts[j], value: tp[0].value }); // Récupération des valeurs avec l'ID  
+        // console.log("Valeur de D0elt" + tmp_elts[j] + " :", tp[0].value); // Affichage de la valeur récupérée  
+    } else {  
+        // Attribuer une valeur par défaut de 0 si l'élément est manquant ou si aucune valeur n'est définie.  
+        elts.push({ id: tmp_elts[j], value: 0 });  
+        // console.warn("Élément manquant ou valeur nulle pour D0elt" + tmp_elts[j] + ". Valeur par défaut attribuée : 0");  
+    }  
+}
+
+console.log("Éléments récupérés :", elts);   
+
+// Mettre à jour le displayArea  
+const displayArea = document.getElementById("displayArea");  
+const valuesString = elts.map(item => `"D0elt${item.id}": ${item.value}`).join(', '); // Formater les valeurs  
+displayArea.value = valuesString; // Mettre à jour l'input avec les valeurs formatées  
+
+// Définir la valeur à soumettre dans un champ caché  
+document.getElementById("elementsArea").value = JSON.stringify(elts); // Soumission en format JSON  
+
+// Remplacer les placeholders dans indicSelector avec les valeurs récupérées  
+for (let j = 0; j < elts.length; j++) {  
+indicSelector[i].textContent = indicSelector[i].textContent.replace("$" + elts[j].id + "$", elts[j].value);  
+}  
+
+if (evalu) {  
+try {  
+indicSelector[i].textContent = eval(indicSelector[i].textContent); // Évaluation des calculs  
+const indicatorValue = indicSelector[i].textContent;  
+indicatorValues[indicatorId] = indicatorValue;  
+} catch (error) {  
+console.error("Erreur lors du calcul de l'indicateur :", error);  
+}  
+}  
+}  
+
+// Stocker les valeurs et les identifiants dans les champs cachés du formulaire  
+document.getElementById("indicator-values").value = JSON.stringify(indicatorValues);  
+const indicatorIds = Object.keys(indicatorValues);  
+document.getElementById("indicator-ids").value = JSON.stringify(indicatorIds);  
+
+return indicatorValues;  
+}
+
+
+// Évaluer les sélecteurs d'indicateurs  
+// Attendre que le document soit prêt
+$(document).ready(function() {
+    // Écouter chaque saisie dans les champs de données
+    $(document).on('input change', 'input[name^="D0elt"]', function() {
+        console.log("Changement détecté, recalcul des indicateurs...");
+        check_selector(true); // Appelle votre fonction avec evalu = true
+    });
+
+    // Premier calcul au chargement au cas où il y a déjà des valeurs
+    setTimeout(() => {
+        check_selector(true);
+    }, 1000);
+});
+const variables_selector = document.getElementsByClassName("variableSelector");  
+for (let i = 0; i < variables_selector.length; i++) {  
+const inputs = variables_selector[i].getElementsByTagName("input")[0];  
+if (inputs) {  
+inputs.onchange = function() {  
+try {  
+check_selector(true);  
+} catch (error) {  
+// console.error("Erreur lors de l'évaluation des sélecteurs :", error);  
+check_selector(); // Évaluer sans option  
+}  
+};  
+}  
+}  
+},  
+error: function(xhr, status, error) {  
+// console.error("Erreur AJAX:", status, error);  
+alert("Une erreur est survenue lors de la récupération des éléments. Veuillez réessayer.");  
+}  
+});  
+
+}  
+
+
+
+
+
+
+
+// Fonction pour échapper les caractères HTML (protection XSS)
+function escapeHtml(unsafe) {
+return unsafe
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#039;");
+}
+
+
+
+
+
+
+
+function showLoading() {  
+Swal.fire({  
+title: 'Chargement...',  
+text: 'Veuillez patienter pendant le chargement des données.',  
+allowOutsideClick: false,  
+showConfirmButton: false,  
+didOpen: () => {  
+Swal.showLoading(); // Afficher l'indicateur de chargement  
+}  
+});  
+}  
+
+function hideLoading() {  
+Swal.close(); // Fermer l'alerte de chargement  
+}  
+$(".sidebar-dropdown > a").click(function() {
+  $(".sidebar-submenu").slideUp(200);
+  if (
+    $(this)
+      .parent()
+      .hasClass("active")
+  ) {
+    $(".sidebar-dropdown").removeClass("active");
+    $(this)
+      .parent()
+      .removeClass("active");
+  } else {
+    $(".sidebar-dropdown").removeClass("active");
+    $(this)
+      .next(".sidebar-submenu")
+      .slideDown(200);
+    $(this)
+      .parent()
+      .addClass("active");
+  }
+});
+
+$("#close-sidebar").click(function() {
+    // 1. Ferme la sidebar en retirant la classe 'toggled' du wrapper.
+    $(".page-wrapper").removeClass("toggled"); 
+    
+    // 2. FAIT RÉAPPARAÎTRE la nav en retirant la classe 'toggled'.
+    // Cela annule l'effet "transform: translateY(100%)" défini en CSS.
+    $('.navs').removeClass("toggled"); 
+});
+
+$("#show-sidebar").click(function() {
+    // 1. Ouvre la sidebar en ajoutant la classe 'toggled' au wrapper.
+    $(".page-wrapper").addClass("toggled");
+    
+    // 2. MASQUE la nav en ajoutant la classe 'toggled'.
+    $('.navs').addClass("toggled");
+});
+</script>
+</body>
+</html>

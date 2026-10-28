@@ -1,0 +1,357 @@
+
+ <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<!-- Inclure JQuery si ce n'est pas déjà fait -->
+ {% extends './index.html' %}
+  {% load humanize %}
+  {% load static %}
+
+
+
+  {% block content %}
+
+  <div class="modal fade" id="exampleModal_Operation" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">AJOUTER NATURE OPERATIONS</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+            </button>
+        </div>
+        <div class="modal-body">
+          ...
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+    </form>
+      </div>
+    </div>
+  </div>
+  <!-- <div class="modal fade" id="exampleModal_Categorie" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Gestion Des Categories</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div> -->
+        <div class="modal fade" id="exampleModal_Categorie" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Gestion Des Categories</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                  </button>
+              </div>
+        <div class="modal-body">
+          ...
+
+      </div>
+    </div>
+  </div>
+
+
+      <div class="col-md-12 col-xl-12 col-sm-12 col-lg-12 col-12">
+
+        <!-- <nav>
+          <div class="nav nav-tabs nav-fill" id="nav-tab" role="tablist">
+            <a class="nav-item nav-link active" id="nav-home-tab" data-toggle="tab" href="#nav-home" role="tab" aria-controls="nav-home" aria-selected="true">Configuration Des Finances</a>
+            <a class="nav-item nav-link" id="nav-profile-tab" data-toggle="tab" href="#nav-profile" role="tab" aria-controls="nav-profile" aria-selected="false">Configuration Des Formulaires</a>
+            <a class="nav-item nav-link" id="nav-contact-tab" data-toggle="tab" href="#nav-contact" role="tab" aria-controls="nav-contact" aria-selected="false">Configuration Ponderations</a>
+            <a class="nav-item nav-link" id="nav-about-tab" data-toggle="tab" href="#nav-about" role="tab" aria-controls="nav-about" aria-selected="false">Configuration Des Operations</a>
+            <a class="nav-item nav-link" id="nav-periode-tab" data-toggle="tab" href="#nav-periode" role="tab" aria-controls="nav-periode" aria-selected="false">Configuration Periodes(Mois,Ann&eacute;es etc...)</a>
+
+          </div>
+        </nav> -->
+        <div class="nav-align-top my-4">
+          <ul class="nav nav-pills mb-4" role="tablist">
+            <li class="nav-item">
+              <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#navs-pills-top-home" aria-controls="navs-pills-top-home" aria-selected="true">Configuration Des Elements De Donn&eacute;</button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-pills-top-profile" aria-controls="navs-pills-top-profile" aria-selected="false">Formulaires</button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-pills-top-contact" aria-controls="navs-pills-top-contact" aria-selected="false">Gestion des ponderations</button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-pills-top-about" aria-controls="navs-pills-top-about" aria-selected="false"> Operations</button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-pills-top-periode" aria-controls="navs-pills-top-periode" aria-selected="false"> Periodes(Mois,Ann&eacute;es etc...)</button>
+            </li>
+          </ul>
+          <div class="tab-content">
+            <div class="tab-pane fade show active" id="navs-pills-top-home" role="tabpanel">
+        <!-- <div class="tab-content py-3 px-3 px-sm-0" id="nav-tabContent">
+          <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab"> -->
+        <h5 style="font-weight:bold" class="text-primary">  Configurez Les Groupes D'indicateurs De L'institution {{ actual_institution.nom }}</h5>
+
+        <!-- <div class="p-1">
+            <input id='default_operation' type="checkbox" {% if actual_institution.operation_defaulted %}checked{% endif %}>
+            <label for='default_operation'> Configuration des Options minimale </label>
+        </div> -->
+        <div class="p-1">
+          <a href="/indicator_group/" class="btn btn-light"><i class="fa fa-plus"></i> Indicateur Group </a>
+        </div>
+        <!-- {% if actual_institution.finan_options != None %}
+        <button class="btn btn-dark">Desactiver Gestion Financiere</button>
+        {%endif%} -->
+        </div>
+        <div class="tab-pane fade show " id="navs-pills-top-profile" role="tabpanel">
+        Configurez Le Formulaire A chaque Cadre Logique Du systeme {{ actual_institution.nom }}
+            <!-- <form method="POST" action="/activ_form/{{ actual_institution.id }}/">
+              {%csrf_token%}
+        <button type="submit"class="btn btn-dark">Activer Formulaire</button>
+            </form> -->
+            <div class="row">
+              <div class="col-md-12">
+
+
+                <form method="POST" action="/activ_form/{{ actual_institution.id }}/">
+                  {%csrf_token%}
+            <button type="submit"class="btn btn-dark">Activer L'utilisation Du Formulaire Dans Le Systeme</button>
+                </form>
+              </div>
+            </div>
+                   <div class="card">
+
+                    <div class="card-body">
+
+                      <div class="container">
+                        <div class="col-md-12">
+
+            </div>
+            <div class="table-title">
+              <div class="row">
+                <div class="col-sm-6">
+                  <h6> Configuration Des Formulaires</h6>
+
+                </div>
+                <div class="col-sm-6">
+
+
+              </div>
+              </div>
+            </div>
+            <hr class="bg-dark p-2"/>
+
+            <h5 style="font-weight:bold;font-style:italic">NATURE DES OPERATIONS</h5>
+
+
+       </div>
+       </div>
+       </div>
+        </div>
+        <div class="tab-pane fade show active" id="navs-pills-top-contact" role="tabpanel">
+          <!-- template.html -->
+          <div class="container-fluid py-4">
+            <div class="card shadow-sm">
+              <div class="card-header bg-primary text-white">
+                <h5 class="mb-0 text-light">Configuration des pondérations pour le PTA défini</h5>
+              </div>
+              <div class="card-body">
+                <div id="ponderation-status-container">
+                  <!-- Les messages HTMX apparaîtront ici -->
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+    <p class="mb-0">Définissez et activez les pondérations pour votre institution</p>
+
+    {% if actual_institution.ponderation == False %}
+        <button
+            hx-post='/active/{{actual_institution.id}}/'
+            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+            hx-target="#ponderation-status-container"
+            hx-swap="innerHTML"
+            class="btn btn-success btn-lg d-flex align-items-center"
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title="Activer la pondération pour cette institution"
+            onclick="location.reload()"
+        >
+            <i class="fas fa-check-circle me-2"></i>
+            Activer la Pondération
+        </button>
+    {% else %}
+        <button
+            hx-post='/inactive/{{actual_institution.id}}/'
+            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+            hx-target="#ponderation-status-container"
+            hx-swap="innerHTML"
+            class="btn btn-success btn-lg d-flex align-items-center"
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title="Désactiver la pondération pour cette institution"
+            onclick="location.reload()"
+        >
+            <i class="fas fa-check-circle me-2"></i>
+            Désactiver la pondération
+        </button>
+    {% endif %}
+</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scripts -->
+          <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.6/dist/htmx.min.js"></script>
+          <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+<!-- Inclusion de HTMX -->
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
+<!-- Font Awesome pour les icônes -->
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+
+</div>
+          <div class="tab-pane fade" id="navs-pills-top-periode" role="tabpanel" aria-labelledby="nav-periode-tab">
+            Configuration Periode(Ann&eacute;e,Mois,Trimestre,Semestre etc..........)
+
+            <div class="container">
+              <div class="table-wrapper">
+                <div class="table-title">
+                  <div class="row">
+                    <div class="col-sm-6">
+                      <h2>Gestion Des <b>P&eacute;riodes</b></h2>
+                    </div>
+                    <div class="col-sm-6">
+                          <!-- <a href="#deleteEmployeeModal" class="btn btn-danger" data-toggle="modal"><i class="fa fa-minus">&#xE15C;</i> <span>Supprimer</span></a> -->
+                    </div>
+                  </div>
+                </div>
+
+
+
+              </div>
+            </div>
+
+
+
+
+
+            </div>
+            <div class="tab-pane fade show " id="navs-pills-top-about" role="tabpanel">
+          <h5 class="text-primary" style="font-weight:bold">  Configurez Les Elements Liées Aux Operations Du Systeme {{ actual_institution.nom }}</h5>
+            <form method="POST" action="/add_nature/{{ actual_institution.id }}/">
+							{%csrf_token%}
+							<input type="text" value="True" name="nature" style="display:none">
+								{%if actual_institution.nature != False%}
+									<button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#exampleModal_Operation">Gerer Nature Operation</button>
+
+									{%else%}
+								<button class="btn btn-dark" type="submit">Activer La nature des Op&eacute;rations</button>
+
+								{%endif%}
+							</form>
+
+						<div>
+                            <form method="POST" action="/activ_cat/{{actual_institution.id}}/">
+                                {%csrf_token%}
+
+                                <input type="number" value="{{ actual_institution.id }}" name="institution"style="display:none">
+                                {%if actual_institution.categorie_op != True %}
+                                <button class="btn btn-dark" type="submit">Activer Categorisation</button>
+                            </form>
+                                {%else%}
+                                <button  class="btn btn-dark" type="button" data-bs-toggle="modal" data-bs-target="#exampleModal_Categorie">Gerer Categorisation</button>
+
+                            {%endif%}
+                            <form method="POST"action="/desactive_nature/{{ actual_institution.id }}/">
+                              {%csrf_token%}
+                            <button  class="btn btn-danger" type="submit"><i class="fa fa-minus"></i>Desactiver Nature </button>
+                            </form>
+                            <form method="POST"action="/desactive_categorie/{{ actual_institution.id }}/">
+                              {%csrf_token%}
+                            <button type="submit" class="btn btn-danger"><i class="fa fa-minus"></i> Desactiver Categorie</button>
+                          </form>
+                              <div class="container">
+                                <div class="table-wrapper">
+                                  <div class="table-title">
+                                    <div class="row">
+
+                                      <div class="col-sm-6">
+
+                                    </div>
+                                    </div>
+                                  </div>
+                                  <hr class="bg-dark p-2"/>
+
+
+
+                              <hr class="bg-dark p-2"/>
+
+
+                    </div>
+                  </div>
+        </div>
+        </div>
+
+      </div>
+    </div>
+</div>
+</div>
+</div>
+<!-- <div class="modal fade" id="addEmployeeModal" tabindex="-1" role="dialog" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addEmployeeModalLabel">AJOUTER LES PERIODES</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div> -->
+      <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">AJOUTER LES PERIODES</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                </button>
+            </div>
+      <div class="modal-body">
+        ...
+
+    </div>
+  </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Inclure le JS de DataTables -->
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ {% if message.tags == 'success' %}
+
+<script type="text/javascript">
+ Swal.fire({
+ position: "top-end",
+ icon: "success",
+ title: "{{message}}",
+ showConfirmButton: false,
+ timer: 2000
+});
+</script>
+{%endif%}
+{%endfor%}
+</script>
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ {% if message.tags == 'error' %}
+
+<script type="text/javascript">
+ Swal.fire({
+ position: "top-end",
+ icon: "error",
+ title: "{{message}}",
+ showConfirmButton: false,
+ timer: 5000
+});
+</script>
+{%endif%}
+{%endfor%}
+  {% endblock %}

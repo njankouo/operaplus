@@ -1,0 +1,643 @@
+{%extends './index.html'%}
+{%block main%}
+   
+<style>
+    body {
+        background-color: #F8FAFC; 
+        color: #0F172A;
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up { 
+        animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; 
+    }
+    /* Classes de transition pour le Modal */
+    .modal-backdrop {
+        transition: opacity 0.25s ease-out;
+    }
+    .modal-content {
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-out;
+    }
+</style>
+
+<div class="fixed bottom-6 right-6 z-40 group">
+    <button class="w-12 h-12 bg-white text-slate-700 rounded-xl shadow-md border border-slate-200 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 transition-all duration-300">
+        <i class="fa-solid fa-share-nodes text-lg"></i>
+    </button>
+    <div class="absolute bottom-14 right-0 flex flex-col gap-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out">
+        <a href="https://wa.me/?text=Découvrez%20ces%20membres%20sur%20notre%20plateforme:%20{{ request.build_absolute_uri }}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-[#25D366] text-white rounded-lg shadow-sm hover:scale-105 transition-transform">
+            <i class="fa-brands fa-whatsapp text-lg"></i>
+        </a>
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-[#1877F2] text-white rounded-lg shadow-sm hover:scale-105 transition-transform">
+            <i class="fa-brands fa-facebook-f text-base"></i>
+        </a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-[#0077B5] text-white rounded-lg shadow-sm hover:scale-105 transition-transform">
+            <i class="fa-brands fa-linkedin-in text-base"></i>
+        </a>
+    </div>
+</div>
+
+<div id="mobileMenu" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm transform -translate-x-full transition-transform duration-300 md:hidden">
+    <div id="mobileMenuSidebar" class="w-full max-w-xs bg-white h-full p-6 border-r border-slate-200 flex flex-col justify-between shadow-xl">
+        <div class="space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <span class="text-xs font-bold text-slate-800 tracking-wider">RH <span class="text-orange-500">OPERA+</span></span>
+                <button onclick="toggleMobileMenu()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <button onclick="openHrModal()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs py-3 rounded-xl text-center block shadow-sm transition-all duration-200 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-plus text-xs"></i> Ajouter un Personnel
+                </button>
+            </div>
+        </div>
+        <div class="border-t border-slate-100 pt-4">
+            <span class="text-[10px] font-mono text-slate-400 block tracking-widest">OperaPlus v2.0</span>
+        </div>
+    </div>
+</div>
+
+<main class="max-w-7xl mx-auto px-4 py-6 md:py-8 w-full flex-1 space-y-6 relative z-10">
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-bold text-slate-400 tracking-wider uppercase font-mono">MODULE RH</span>
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-medium border border-slate-200">PROJET INTERNE</span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                Effectifs & Personnels <span class="text-orange-500 font-extrabold">.</span>
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 font-medium">
+                Registre et fiches d'affectation pour l'institution : <span class="text-slate-800 font-semibold">{{actual_institution.nom}}</span>
+            </p>
+        </div>
+        
+        <button onclick="openHrModal()" class="inline-flex bg-slate-900 hover:bg-orange-500 text-white font-bold text-xs py-3 px-5 rounded-xl shadow-sm transition-all duration-200 items-center justify-center gap-2 uppercase tracking-wider shrink-0">
+            <i class="fa-solid fa-user-plus text-xs"></i> Ajouter un Personnel
+        </button>
+    </div>
+
+    <div class="grid grid-cols-3 gap-3 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 sm:pl-4 border-r border-slate-100">
+            <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 text-slate-600">
+                <i class="fa-solid fa-users text-sm"></i>
+            </div>
+            <div class="text-center sm:text-left min-w-0">
+                <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-bold">Effectif Total</span>
+                <span class="text-base sm:text-2xl font-black text-slate-900 font-data">{{members_count}}</span>
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 sm:pl-4 border-r border-slate-100">
+            <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-orange-50 text-orange-600">
+                <i class="fa-solid fa-venus text-sm"></i>
+            </div>
+            <div class="text-center sm:text-left min-w-0">
+                <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-bold">Femmes</span>
+                <span class="text-base sm:text-2xl font-black text-orange-600 font-data">{{country_members_female}}</span>
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 sm:pl-4">
+            <div class="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 text-slate-600">
+                <i class="fa-solid fa-mars text-sm"></i>
+            </div>
+            <div class="text-center sm:text-left min-w-0">
+                <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-bold">Hommes</span>
+                <span class="text-base sm:text-2xl font-black text-slate-900 font-data">{{country_members_male}}</span>
+            </div>
+        </div>
+    </div>
+        
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+            <div>
+                <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-address-book text-slate-400 text-sm"></i>
+                    <span>Index Général des Personnel</span>
+                </h2>
+            </div>
+            <div class="relative w-full sm:w-72">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="memberSearch" placeholder="Rechercher par nom, matricule..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-400 focus:bg-white transition-all placeholder:text-slate-400">
+            </div>
+        </div>
+
+        <div id="memberGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+           {% for members in lines %}
+            <div class="member-card group relative bg-white border border-slate-200/80 hover:border-slate-300 hover:shadow-md rounded-xl p-4 transition-all duration-200 animate-fade-in-up"
+                 data-name="{{ members.nom|lower }}" style="animation-delay: calc({{ forloop.counter0 }} * 40ms);">
+                <div class="absolute top-4 right-4 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full {% if members.sexe == 'F' or members.genre == 'Femme' %}bg-orange-500{% else %}bg-emerald-500{% endif %}"></span>
+                    <span class="text-[9px] font-bold font-mono uppercase text-slate-400 tracking-wider">Actif</span>
+                </div>
+                <div class="flex flex-row items-center gap-4">
+                    <div class="relative shrink-0">
+                        {% if members.photo %}
+                            <div class="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                                <img src="{{ members.photo.url }}" alt="{{ members.nom }}" class="w-full h-full object-cover">
+                            </div>
+                        {% else %}
+                            {% if members.sexe == 'F' or members.genre == 'Femme' %}
+                                <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 font-bold text-sm border border-orange-100 uppercase font-mono">
+                                    {{ members.nom|slice:":2" }}
+                                </div>
+                            {% else %}
+                                <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm border border-slate-200 uppercase font-mono">
+                                    {{ members.nom|slice:":2" }}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                        <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-white text-slate-500 border border-slate-200 rounded-md flex items-center justify-center text-[8px] font-bold shadow-sm">
+                            {% if members.sexe == 'F' or members.genre == 'Femme' %}
+                                <i class="fa-solid fa-venus text-orange-500"></i>
+                            {% else %}
+                                <i class="fa-solid fa-mars text-slate-400"></i>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <h3 class="font-bold text-sm text-slate-900 truncate">
+                            {{ members.nom }}
+                        </h3>
+                        <div class="space-y-0.5 mt-1">
+                            <p class="text-[11px] text-slate-500 flex items-center gap-1 font-medium truncate">
+                                <i class="fa-solid fa-earth-africa text-[10px] text-slate-400"></i>
+                                {{ members.nationalite }}
+                            </p>
+                            <p class="text-[10px] font-mono text-slate-400 tracking-wide">
+                                Enreg. : {{ members.tel}}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span class="text-[9px] font-mono px-2 py-0.5 bg-slate-50 border border-slate-100 text-slate-500 rounded font-semibold uppercase tracking-wider">
+                        Fiche Agent
+                    </span>
+                    <a href="/detail-personnel/{{members.mail}}/" class="text-slate-400 hover:text-orange-500 text-xs font-semibold flex items-center gap-1 transition-colors">
+                        Gérer <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if personnel_filter.has_other_pages %}
+<div class="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6 mt-6 rounded-xl shadow-sm">
+    
+    <!-- Version Mobile (Précédent / Suivant simples) -->
+    <div class="flex flex-1 justify-between sm:hidden">
+        {% if personnel_filter.has_previous %}
+            <a href="?page={{ personnel_filter.previous_page_number }}" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Précédent</a>
+        {% else %}
+            <span class="relative inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">Précédent</span>
+        {% endif %}
+        
+        {% if personnel_filter.has_next %}
+            <a href="?page={{ personnel_filter.next_page_number }}" class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Suivant</a>
+        {% else %}
+            <span class="relative ml-3 inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">Suivant</span>
+        {% endif %}
+    </div>
+
+    <!-- Version Desktop (Numéros de pages complets) -->
+    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+            <p class="text-sm text-slate-700">
+                Page <span class="font-semibold text-slate-900">{{ personnel_filter.number }}</span> sur <span class="font-semibold text-slate-900">{{ num_pages }}</span>
+            </p>
+        </div>
+        <div>
+            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <!-- Bouton Précédent -->
+                {% if personnel_filter.has_previous %}
+                    <a href="?page={{ personnel_filter.previous_page_number }}" class="relative inline-flex items-center rounded-l-md px-2.5 py-2 text-slate-500 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0">
+                        <span class="sr-only">Précédent</span>
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </a>
+                {% else %}
+                    <span class="relative inline-flex items-center rounded-l-md px-2.5 py-2 text-slate-300 ring-1 ring-inset ring-slate-200 bg-slate-50 cursor-not-allowed">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </span>
+                {% endif %}
+
+                <!-- Numéros de pages -->
+                {% for i in page_range %}
+                    {% if personnel_filter.number == i %}
+                        <span aria-current="page" class="relative z-10 inline-flex items-center bg-orange-500 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600">{{ i }}</span>
+                    {% else %}
+                        <a href="?page={{ i }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0">{{ i }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Bouton Suivant -->
+                {% if personnel_filter.has_next %}
+                    <a href="?page={{ personnel_filter.next_page_number }}" class="relative inline-flex items-center rounded-r-md px-2.5 py-2 text-slate-500 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0">
+                        <span class="sr-only">Suivant</span>
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </a>
+                {% else %}
+                    <span class="relative inline-flex items-center rounded-r-md px-2.5 py-2 text-slate-300 ring-1 ring-inset ring-slate-200 bg-slate-50 cursor-not-allowed">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </span>
+                {% endif %}
+            </nav>
+        </div>
+    </div>
+</div>
+{% endif %}
+    </div>
+</main>
+
+<!-- =========================================================================
+    MODAL ERP : AJOUTER UN COLLABORATEUR (Avec prévisualisation d'image)
+========================================================================= -->
+<div id="addHrModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        
+        <!-- Backdrop de fond obscurci -->
+        <div id="modalBackdrop" onclick="closeHrModal()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm opacity-0 modal-backdrop"></div>
+
+        <!-- Conteneur du formulaire -->
+        <div id="modalContent" class="relative z-10 inline-block w-full max-w-lg overflow-hidden text-left align-middle bg-white rounded-2xl shadow-xl border border-slate-200 opacity-0 scale-95 modal-content sm:my-8">
+            
+            <!-- En-tête Modal -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+                        <i class="fa-solid fa-user-plus text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900" id="modal-title">Nouveau Collaborateur</h3>
+                        <p class="text-[11px] text-slate-400 font-medium">Ajouter un agent au registre OPERA+</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeHrModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <!-- Formulaire POST -->
+            <form action="/save_personnel_institution/" method="POST" enctype="multipart/form-data" class="px-6 py-5 space-y-4">
+                {% csrf_token %}
+              
+                  <input type="hidden" name="edit_or_create" id="edit_or_create">
+                  <input type='hidden' name='generator' value='p2'>
+                  <input type="hidden" name="edit_id" id="edit_id">
+                <!-- Champ Caché Matrice -->
+                <input type='hidden' name='matrice' />
+
+                <!-- Champ Nom Complet -->
+                <div class="space-y-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Nom & Prénoms *</label>
+                    <input type="text" name="nom" required placeholder="Ex: Jean Dupont" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-slate-400 focus:bg-white transition-all text-slate-800">
+                </div>
+
+                <!-- Ligne Email & Téléphone -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Adresse Email *</label>
+                        <input type="email" name="mail" required placeholder="Ex: j.dupont@domaine.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-slate-400 focus:bg-white transition-all text-slate-800">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Numéro Téléphone *</label>
+                        <input type="tel" name="tel" required placeholder="Ex: +237 6xx xxx xxx" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-slate-400 focus:bg-white transition-all text-slate-800">
+                    </div>
+                </div>
+
+                <!-- Champ Genre -->
+                <div class="space-y-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Genre *</label>
+                    <select name="sexe" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-slate-400 focus:bg-white transition-all text-slate-800">
+                        <option value="M" selected>Homme</option>
+                        <option value="F">Femme</option>
+                    </select>
+                </div>
+
+                <!-- CHAMPS DYNAMIQUES (Fonction / Responsabilité) -->
+                {% if searches %}
+                <div class="pt-2">
+                    <hr class="border-slate-100">
+                </div>
+                
+                {% for search in searches %}
+                <div class="space-y-1">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                        {{ search.label }} <span class="text-orange-500">*</span>
+                    </label>
+                    
+                    {% if search.values != None %}
+                    <select class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-slate-400 focus:bg-white transition-all text-slate-800" name="{{ search.label }}" required>
+                        <option value="" selected disabled>Sélectionner {{ search.label }}...</option>
+                        {% for v in search.values %}
+                        <option value="{{ v.id }}">{{ v.nom }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <!-- ZONE DE TÉLÉCHARGEMENT ET PRÉVISUALISATION PHOTO -->
+                <div class="space-y-1 pt-2">
+                    <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Photo de profil (Optionnel)</label>
+                    
+                    <div class="relative">
+                        <!-- État par défaut : Zone d'upload vide -->
+                        <div id="uploadPlaceholder" class="border-2 border-dashed border-slate-200 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors flex items-center justify-center gap-2.5 cursor-pointer">
+                            <i class="fa-solid fa-cloud-arrow-up text-slate-400 text-sm"></i>
+                            <span class="text-xs text-slate-500 font-medium">Choisir un fichier image</span>
+                            <input type="file" id="photoInput" name="photo" accept="image/*" onchange="previewImage(event)" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20">
+                        </div>
+
+                        <!-- État Actif : Conteneur de Prévisualisation (Masqué par défaut) -->
+                        <div id="previewContainer" class="hidden border border-slate-200 rounded-xl p-3 bg-slate-50 flex items-center justify-between gap-3 animate-fade-in-up">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-12 h-12 rounded-xl border border-slate-200 overflow-hidden bg-white shrink-0">
+                                    <img id="imageTarget" src="#" alt="Aperçu" class="w-full h-full object-cover">
+                                </div>
+                                <div class="min-w-0">
+                                    <p id="fileName" class="text-xs font-bold text-slate-800 truncate">Fichier sélectionné</p>
+                                    <p id="fileSize" class="text-[10px] font-mono text-slate-400">0 KB</p>
+                                </div>
+                            </div>
+                            <!-- Bouton Supprimer l'image -->
+                            <button type="button" onclick="removePreviewImage()" class="w-7 h-7 bg-white hover:bg-red-50 text-slate-400 hover:text-red-500 border border-slate-200 rounded-lg flex items-center justify-center transition-colors shadow-sm shrink-0">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pied de page Modal / Actions -->
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                    <button type="button" onclick="closeHrModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition-colors">
+                        Annuler
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl shadow-sm transition-colors">
+                        Enregistrer l'agent
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================================
+    LOGIQUE JS AJOUTÉE POUR LA PRÉVISUALISATION
+========================================================================= -->
+<script>
+    function previewImage(event) {
+        const input = event.target;
+        const placeholder = document.getElementById('uploadPlaceholder');
+        const previewContainer = document.getElementById('previewContainer');
+        const imageTarget = document.getElementById('imageTarget');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                // Assigner la source de l'image
+                imageTarget.src = e.target.result;
+                
+                // Mettre à jour les métadonnées de l'interface
+                fileName.textContent = file.name;
+                fileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+                
+                // Basculer l'affichage
+                placeholder.classList.add('hidden');
+                previewContainer.classList.remove('hidden');
+            };
+
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function removePreviewImage() {
+        const input = document.getElementById('photoInput');
+        const placeholder = document.getElementById('uploadPlaceholder');
+        const previewContainer = document.getElementById('previewContainer');
+        const imageTarget = document.getElementById('imageTarget');
+
+        // Reset de l'input file et nettoyage
+        input.value = '';
+        imageTarget.src = '#';
+        
+        // Basculer l'affichage inverse
+        previewContainer.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+    }
+
+    // Modification mineure sur la fonction existante pour nettoyer si on ferme le modal
+    function closeHrModal() {
+        const modal = document.getElementById('addHrModal');
+        const backdrop = document.getElementById('modalBackdrop');
+        const content = document.getElementById('modalContent');
+
+        backdrop.classList.add('opacity-0');
+        content.classList.add('opacity-0', 'scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            removePreviewImage(); // Nettoie la photo à la fermeture
+        }, 250);
+    }
+</script>
+
+<script>
+    const modal = document.getElementById('addHrModal');
+    const backdrop = document.getElementById('modalBackdrop');
+    const content = document.getElementById('modalContent');
+
+    function openHrModal() {
+        // Rendre le conteneur visible
+        modal.classList.remove('hidden');
+        
+        // Laisser le temps au navigateur d'appliquer le display avant de déclencher la transition CSS
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            content.classList.remove('opacity-0', 'scale-95');
+        }, 20);
+    }
+
+    function closeHrModal() {
+        // Lancer les animations de fermeture inverse
+        backdrop.classList.add('opacity-0');
+        content.classList.add('opacity-0', 'scale-95');
+        
+        // Attendre la fin de l'animation CSS avant de repasser en caché
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 250);
+    }
+</script>
+<script>
+    document.getElementById('memberSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.member-card');
+        
+        cards.forEach(card => {
+            const name = card.getAttribute('data-name');
+            card.style.display = name.includes(searchTerm) ? 'block' : 'none';
+        });
+    });
+</script>
+    
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="max-w-7xl mx-auto w-full px-4 pb-6 mt-6 relative z-10 hidden md:block">
+        <div class="flex flex-col sm:flex-row justify-between items-center bg-[#060b19]/60 backdrop-blur-md border border-white/[0.05] rounded-2xl p-4 text-[11px] text-slate-400 gap-3">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-shield-halved text-emerald-400"></i> Donn&eacute;es sécurisées .</span>
+            <span class="font-data bg-white/[0.02] border border-white/[0.05] px-2.5 py-1 rounded text-slate-500 text-[10px]">ENGINE : OPERAPLUS-CORE</span>
+        </div>
+    </footer>
+
+
+    <!-- CODE SCRIPT -->
+    <script>
+        let scene, camera, renderer, globeGroup, animationFrameId;
+        let mouseX = 0, mouseY = 0;
+        let targetX = 0, targetY = 0;
+        let currentBasePriceInXAF = 199000; 
+        let activeCurrency = 'XAF';
+
+        const container = document.getElementById('globe-3d-container');
+
+        // AJOUT 2 : INTERACTION DE SUIVI DE SOURIS POUR LE HALO GLOW DES CARTES SÉAL
+        document.querySelectorAll('.premium-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+
+        // GEOMÉTRIE ET RENDU DE GLOBE PASSIF
+        function initGlobe() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.z = 170;
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            globeGroup = new THREE.Group();
+            scene.add(globeGroup);
+
+            const radius = 85;
+
+            const wireframeGeo = new THREE.SphereGeometry(radius, 18, 18);
+            const wireframeMat = new THREE.MeshBasicMaterial({
+                color: 0x0ea5e9, wireframe: true, transparent: true, opacity: 0.03
+            });
+            const baseSphere = new THREE.Mesh(wireframeGeo, wireframeMat);
+            globeGroup.add(baseSphere);
+
+            const dotCount = 1400;
+            const dotGeometry = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            
+            const colorCyan = new THREE.Color(0x06b6d4);
+            const colorAmber = new THREE.Color(0xf59e0b);
+
+            for (let i = 0; i < dotCount; i++) {
+                const phi = Math.acos(-1 + (2 * i) / dotCount);
+                const theta = Math.sqrt(dotCount * Math.PI) * phi;
+                const lat = (phi * 180) / Math.PI - 90;
+                const lon = ((theta * 180) / Math.PI) % 360 - 180;
+
+                let isLand = false;
+                if (lon > -22 && lon < 52 && lat > -35 && lat < 70) {
+                    if (!(lat > 32 && lat < 45 && lon > -5 && lon < 40)) isLand = true; 
+                }
+                else if (lon >= 52 && lon < 145 && lat > -12 && lat < 75) isLand = true; 
+                else if (lon > -120 && lon < -34 && lat > -55 && lat < 18) isLand = true; 
+                else if (lon > -160 && lon < -60 && lat >= 18 && lat < 72) isLand = true; 
+
+                if (isLand) {
+                    const x = radius * Math.sin(phi) * Math.sin(theta);
+                    const y = radius * Math.cos(phi);
+                    const z = radius * Math.sin(phi) * Math.cos(theta);
+                    positions.push(x, y, z);
+
+                    if (lon > -18 && lon < 50 && lat > -35 && lat < 36) {
+                        colors.push(colorAmber.r, colorAmber.g, colorAmber.b);
+                    } else {
+                        colors.push(colorCyan.r, colorCyan.g, colorCyan.b);
+                    }
+                }
+            }
+
+            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const dotMaterial = new THREE.PointsMaterial({ size: 2.3, vertexColors: true, transparent: true, opacity: 0.75 });
+            const pointsMesh = new THREE.Points(dotGeometry, dotMaterial);
+            globeGroup.add(pointsMesh);
+            
+            globeGroup.rotation.z = 0.4;
+            globeGroup.rotation.x = 0.2;
+
+            window.addEventListener('resize', onWindowResize);
+            container.addEventListener('mousemove', onMouseMove);
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => { if (entry.isIntersecting) animate(); else cancelAnimationFrame(animationFrameId); });
+            }, { threshold: 0.05 });
+            observer.observe(container);
+        }
+
+        function onMouseMove(event) {
+            mouseX = (event.clientX - window.innerWidth / 2) * 0.015;
+            mouseY = (event.clientY - window.innerHeight / 2) * 0.015;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            animationFrameId = requestAnimationFrame(animate);
+            globeGroup.rotation.y += 0.0012; 
+            targetX += (mouseX - targetX) * 0.04;
+            targetY += (mouseY - targetY) * 0.04;
+            globeGroup.rotation.y += targetX * 0.0015;
+            globeGroup.rotation.x += targetY * 0.0015;
+            renderer.render(scene, camera);
+        }
+
+        initGlobe();
+
+
+        function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('-translate-x-full'); }
+        
+     
+      
+      
+        
+      
+
+        window.onclick = function(e) { 
+            if (e.target.matches('#upgradeModal')) closeUpgradeModal();
+            if (e.target.matches('#mobileMenu')) toggleMobileMenu();
+        }
+
+        // Ajoute ceci en bas de ta page pour gérer le clic sur mobile
+document.querySelector('.group').addEventListener('click', function() {
+    this.classList.toggle('active'); // Tu devras adapter le CSS pour gérer la classe .active
+});
+</script>
+{%endblock%}

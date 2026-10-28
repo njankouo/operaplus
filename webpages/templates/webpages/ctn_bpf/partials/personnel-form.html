@@ -1,0 +1,212 @@
+<div class="modal fade" id="exampleModalpersonnel" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      
+      <div class="modal-header bg-light border-bottom-0 p-4">
+        <h5 class="modal-title d-flex align-items-center fw-bold text-dark" id="exampleModalLabel">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user-plus me-2 text-primary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+            <path d="M16 19h6"></path>
+            <path d="M19 16v6"></path>
+            <path d="M6 21v-2a4 4 0 0 1 4 -4h4c.27 0 .533 .026 .788 .076"></path>
+          </svg>
+          Ajouter un nouveau membre du personnel
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4 pt-2">
+        <p class="text-muted small mb-4">Les champs marqués d'un <span class="text-danger">*</span> sont obligatoires.</p>
+
+        <form action="/save_personnel_institution/" enctype="multipart/form-data" data-toggle="validator" role="form" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="edit_or_create" id="edit_or_create">
+          <input type='hidden' name='generator' value='p2'>
+          <input type="hidden" name="edit_id" id="edit_id">
+
+          <div class="row g-3">
+            
+            <div class="col-12 mb-2">
+              <label class="form-label fw-semibold text-secondary d-flex align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-1" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a3 3 0 0 1 3 3v9a3 3 0 0 1 -3 3h-14a3 3 0 0 1 -3 -3v-9a3 3 0 0 1 3 -3" /><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
+                Photo de profil
+              </label>
+              
+              <div class="p-3 border border-2 border-dashed rounded-3 bg-light text-center cursor-pointer" onclick="document.getElementById('photoInput').click();">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-muted mb-2" width="32" height="32" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 18a4.6 4.6 0 0 1 -1.8 -3a4.6 4.6 0 0 1 2.5 -6a4.5 4.5 0 0 1 9 -5h1a4.5 4.5 0 0 1 1 9h-1" /><path d="M9 15l3 -3l3 3" /><path d="M12 12v9" /></svg>
+                <p class="small text-muted mb-1">Cliquer pour choisir un fichier</p>
+                <p class="text-xs text-muted mb-0">PNG, JPG (Max. 2Mo)</p>
+              </div>
+              <input type="file" name="photo" id="photoInput" class="form-control d-none">
+            </div>
+            <div class="mt-3">
+            <img id="photoPreview" 
+                 src="" 
+                 alt="Aperçu" 
+                 class="img-fluid rounded shadow-sm d-none" 
+                 style="max-height: 150px; object-fit: cover;">
+          </div>
+
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Nom <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="nom" required id="codeAct" placeholder="ex: DOE">
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Prénom <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="prenom" required id="nomAct" placeholder="ex: John">
+              </div>
+            </div>
+
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Email <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon text-muted" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" /><path d="M3 7l9 6l9 -6" /></svg>
+                  </span>
+                  <input type="email" name="mail" class="form-control border-start-0 ps-0" id="mail" required placeholder="john.doe@entreprise.com">
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Numéro Téléphone <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon text-muted" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" /></svg>
+                  </span>
+                  <input type="text" name="tel" class="form-control telephone border-start-0 ps-0" required id='tel' placeholder="+225 01020304">
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-8">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Fonction / Responsabilité</label>
+                <input type="text" name="poste" class="form-control" id="poste" placeholder="ex: Développeur Senior">
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Genre <span class="text-danger">*</span></label>
+                <select class="form-select" name="sexe" required>
+                  <option value="" selected disabled>Choisir...</option>
+                  <option value="H">Masculin</option>
+                  <option value="F">Féminin</option>
+                </select>
+              </div>
+            </div>
+
+            {% if searches %}
+            <div class="col-12"><hr class="text-muted opacity-25 my-3"></div>
+            {% endif %}
+
+            <input type='hidden' name='matrice' />
+            {% for search in searches %}
+            <div class="col-sm-12">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">{{search.label}} <span class="text-danger">*</span></label>
+                {% if search.values != None %}
+                <select class="form-select" name="{{search.label}}" required>
+                  <option value="" selected disabled>Sélectionner {{search.label}}...</option>
+                  {% for v in search.values %}
+                  <option value="{{v.id}}">{{v.nom}}</option>
+                  {% endfor %}
+                </select>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+
+          </div>
+
+          <div class="modal-footer px-0 pb-0 pt-4 mt-2 border-top-0">
+            <button type="button" class="btn btn-label-secondary fw-semibold px-4" data-bs-dismiss="modal">
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-primary fw-semibold px-5 shadow-sm d-flex align-items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
+              Enregistrer le profil
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Icônes SVG : taille standardisée */
+  .icon {
+    width: 1rem;
+    height: 1rem;
+    vertical-align: middle;
+  }
+  .modal-header .icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .btn .icon {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  /* Style zone de drop photo */
+  .border-dashed {
+    border-style: dashed !important;
+  }
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  .bg-light:hover {
+    background-color: #f1f3f5 !important; /* Léger survol */
+  }
+  
+  /* Taille de texte extra petite */
+  .text-xs {
+    font-size: 0.75rem;
+  }
+
+  /* Bouton secondaire stylisé (optionnel, sinon utilisez btn-secondary standard) */
+  .btn-label-secondary {
+    color: #6c757d;
+    background-color: #f1f3f5;
+    border-color: transparent;
+  }
+  .btn-label-secondary:hover {
+    background-color: #e2e6ea;
+  }
+</style>
+<script>
+  document.getElementById('photoInput').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('photoPreview');
+
+    if (file) {
+      // Vérification type (optionnel mais recommandé)
+      if (!file.type.startsWith('image/')) {
+        alert("Veuillez choisir une image valide.");
+        return;
+      }
+
+      // Vérification taille (2Mo max)
+      if (file.size > 2 * 1024 * 1024) {
+        alert("L'image ne doit pas dépasser 2Mo.");
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+        preview.classList.remove('d-none');
+      };
+
+      reader.readAsDataURL(file);
+    }
+  });
+</script>

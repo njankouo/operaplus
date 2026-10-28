@@ -1,0 +1,182 @@
+{% extends '../presentation.html' %}
+{% block content %}
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+    :root {
+        --primary: #2563eb;
+        --bg-main: #f1f5f9;
+        --sidebar-width: 280px;
+        --border-color: #e2e8f0;
+        --text-dark: #1e293b;
+        --text-light: #64748b;
+    }
+
+    .org-container {
+        display: flex;
+        height: 95vh;
+        margin: 10px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        overflow: hidden;
+        position: relative;
+    }
+
+    /* SIDEBAR */
+    .independent-aside {
+        width: var(--sidebar-width);
+        background: white;
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        z-index: 10;
+    }
+
+    .independent-aside.collapsed { width: 0; border-right: none; opacity: 0; }
+    .independent-aside.collapsed > * { display: none; }
+
+    /* BOUTON TOGGLE */
+    .toggle-sidebar {
+        position: absolute;
+        top: 20px;
+        left: var(--sidebar-width);
+        transform: translateX(-50%);
+        width: 26px;
+        height: 26px;
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 100;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .collapsed + .toggle-sidebar { left: 20px; }
+
+    /* ZONE GRAPHIQUE */
+    .chart-area { flex: 1; background-color: #f8fafc; overflow: auto; padding: 40px; }
+
+    /* CARTES */
+    .org-card {
+        background: white;
+        border-radius: 10px;
+        padding: 10px;
+        min-width: 220px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+
+    .org-card-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 2px solid var(--primary);
+    }
+
+    .org-card-title { font-weight: 600; font-size: 13px; color: var(--text-dark); text-align: left; }
+    .org-card-sub { font-size: 11px; color: var(--text-light); text-align: left; }
+
+    /* Noeuds Google */
+    .google-visualization-orgchart-node { border: none !important; background: transparent !important; padding: 20px !important; }
+    .google-visualization-orgchart-lineleft { border-left: 2px solid #cbd5e1 !important; }
+    .google-visualization-orgchart-lineright { border-right: 2px solid #cbd5e1 !important; }
+    .google-visualization-orgchart-linebottom { border-bottom: 2px solid #cbd5e1 !important; }
+    .google-visualization-orgchart-linetop { border-top: 2px solid #cbd5e1 !important; }
+
+    /* Empilage vertical : on cache la racine et ses lignes directes */
+    .root-invisible { display: none !important; }
+</style>
+
+<div class="org-container">
+    <aside class="independent-aside collapsed" id="sidebar">
+        <div class="p-3 border-bottom">
+            <h6 class="fw-bold mb-0">Indépendants</h6>
+        </div>
+        <div class="p-2 overflow-auto">
+            {% for line in pages_o %}
+                {% if not line.parent.all %}
+                <div class="d-flex align-items-center p-2 mb-1">
+                    <img src="{% if line.photo %}{{ line.photo.url }}{% else %}https://ui-avatars.com/api/?name={{ line.prenom }}+{{ line.nom }}{% endif %}" 
+                         style="width:30px; height:30px; border-radius:6px; margin-right:10px; object-fit:cover;">
+                    <span style="font-size:12px; font-weight:500;"> {{ line.nom }}</span>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </aside>
+
+    <div class="toggle-sidebar" onclick="toggleSidebar()" id="toggleBtn">
+        <i class="fas fa-chevron-right" id="toggleIcon"></i>
+    </div>
+
+    <div class="chart-area">
+        <div id="org-chart"></div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const icon = document.getElementById('toggleIcon');
+        sidebar.classList.toggle('collapsed');
+        icon.classList.toggle('fa-chevron-right');
+        icon.classList.toggle('fa-chevron-left');
+        setTimeout(drawChart, 350);
+    }
+
+    google.charts.load('current', {packages: ['orgchart']});
+    google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Entity');
+        data.addColumn('string', 'Parent');
+        data.addColumn('string', 'ToolTip');
+
+        var rows = [
+            [{ v: 'GLOBAL_ROOT', f: '<div class="root-invisible">Root</div>' }, '', '']
+        ];
+
+        {% for line in pages_o %}
+            {% if line.parent.all or forloop.first %} 
+            rows.push([
+                {
+                    v: '{{ line.id|escapejs }}', 
+                    f: `<div class="org-card">
+                            <img src="{% if line.photo %}{{ line.photo.url }}{% else %}https://ui-avatars.com/api/?background=2563eb&color=fff&name={{ line.prenom|escapejs }}+{{ line.nom|escapejs }}{% endif %}" class="org-card-avatar">
+                            <div>
+                                <div class="org-card-title"> {{ line.nom|escapejs }}</div>
+                                <div class="org-card-sub">{{ line.fonction|escapejs }}</div>
+                            </div>
+                        </div>`
+                },
+                {% with manager=line.parent.first %}
+                    {% if manager %}
+                        '{{ manager.nom|escapejs }}'
+                    {% else %}
+                        'GLOBAL_ROOT' 
+                    {% endif %}
+                {% endwith %}, 
+                '{{ line.nom|escapejs }}'
+            ]);
+            {% endif %}
+        {% endfor %}
+
+        data.addRows(rows);
+        var chart = new google.visualization.OrgChart(document.getElementById('org-chart'));
+        chart.draw(data, { allowHtml: true, size: 'medium', allowCollapse: true });
+    }
+</script>
+{% endblock %}

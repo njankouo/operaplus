@@ -1,0 +1,113 @@
+{%extends './dataelts.html'%}
+
+{%block content%}
+{%load static%}
+<link rel="stylesheet" href="{%static 'version/datatables.bootstrap5.css'%}">
+<link rel="stylesheet" href="{%static 'version/responsive.bootstrap5.css'%}">
+<div class="container-fluid">
+
+
+<div class="row">
+    <div class="col-12">
+        <div class="card my-4">
+            <div class="card-body">
+                <div class="card-title d-flex justify-content-between">
+                    <h5 style="font-weight: bold; font-family: forte;">Associez Des Structures Aux Groupes De Structure</h5>
+                    <button type="button" class="btn btn-dark " data-bs-toggle="modal" data-bs-target="#basicModal">
+                        <i class="fa fa-plus"></i>
+                        Groupe
+                      </button>
+                </div>
+                <div class="nav-align-top">  
+                    <ul class="nav nav-pills mb-4" role="tablist">  
+                        {% for groupe_structures in groupe_structure %}  
+                            <li class="nav-item">  
+                                <button   
+                                    type="button"   
+                                    class="nav-link {% if forloop.first %}active{% endif %}"   
+                                    role="tab"  
+                                    data-bs-toggle="tab"  
+                                    data-bs-target="#navs-pills-top-home{{ groupe_structures.id }}"  
+                                    aria-controls="navs-pills-top-home{{ groupe_structures.id }}"  
+                                    aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"  
+                                >  
+                                    {{ groupe_structures.nom }}  
+                                </button>  
+                            </li>  
+                        {% endfor %}  
+                    </ul>  
+                        
+                    <div class="tab-content">  
+                        {% for groupe_structures in groupe_structure %}  
+                            <div   
+                                class="tab-pane fade {% if forloop.first %}show active{% endif %}"   
+                                id="navs-pills-top-home{{ groupe_structures.id }}"   
+                                role="tabpanel"   
+                                aria-labelledby="navs-pills-top-home{{ groupe_structures.id }}"  
+                            >  
+                                {% for structures in all_structure_linked %}  
+                          
+                                    <div class="col-sm">  
+                                        <div class="form-check mt-4">  
+                                            <input   
+                                                class="form-check-input"   
+                                                type="checkbox"  
+                                                id="check{{ structures.id }}"   
+                                                {% if structures in groupe_structures.structures.all %} checked {% endif %}  
+                                            />  
+                                            <label class="form-check-label" for="check{{ structures.id }}">  
+                                                {{ structures.nom }}  
+                                            </label>  
+                                        </div>  
+                                    </div>  
+                                {% endfor %}   
+                            </div>  
+                        {% endfor %}  
+                        <!-- <button type="submit" class="btn btn-primary">Associer</button>   -->  
+                    </div>  
+                </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="basicModal" tabindex="-1" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel1">Creer Des Groupes</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <small class="text-primary">En selectionnant Une Structure Cela Prendra En Compte Ses Sous-Structures</small>
+            <form action="add_groupe_structure/" method="post">
+                {%csrf_token%}
+            <div class="col mb-6">
+              <label for="nameBasic" class="form-label" >Nom Groupe</label>
+              <input type="text" id="nameBasic" class="form-control" placeholder="Enter Name" name="groupe_structure" >
+            </div>
+          </div>
+          {% for structures in structure %}  
+          <div class="form-check mt-3">
+           
+            <input class="form-check-input" type="checkbox" value="{{structures.id}}" id="defaultCheck1-{{structures.id}}" name="structure">
+            <label class="form-check-label" for="defaultCheck1-{{structures.id}}"> {{structures.nom}} </label>
+   
+          </div>
+          {%endfor%}
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Fermer
+          </button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+    </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{%static 'version/jquery.js'%}"></script>
+<script src="{%static 'version/bootstrap5.js'%}"></script>
+<script src="{%static 'version/datatables-bootstrap5.js'%}"></script>
+<script src="{%static 'version/tables-datatables-basic.js'%}"></script>
+{%endblock%}

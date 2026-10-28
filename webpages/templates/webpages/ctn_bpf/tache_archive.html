@@ -1,0 +1,81 @@
+{% extends './index.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block main %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate__animated animate__fadeIn">
+
+    <div class="flex items-center gap-3 mb-8 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+        <div class="bg-slate-500 w-1.5 h-8 rounded-full"></div>
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">
+            Tâches Archivées
+        </h1>
+        <span class="bg-slate-100 text-slate-700 border border-slate-200 text-sm font-bold px-3 py-1 rounded-full shadow-sm">
+            {{ operation_detail|length }}
+        </span>
+    </div>
+
+    {% if not operation_detail %}
+        <div class="flex flex-col items-center justify-center py-16 px-4 bg-white rounded-3xl shadow-sm border border-dashed border-slate-300">
+            <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                <i class="fas fa-box-open text-3xl text-slate-300"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-700 mb-2">Aucune archive</h3>
+            <p class="text-slate-500 text-sm text-center">Aucune opération n'est archivée pour l'instant.</p>
+        </div>
+
+    {% else %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for operation_details in operation_detail %}
+            
+            <div class="group relative bg-white rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-200 flex flex-col h-full">
+                
+                <div class="flex justify-between items-start mb-4">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                        <i class="far fa-calendar-alt mr-1.5 text-slate-400"></i> {{ operation_details.date_creation|date:"d M Y"|default:operation_details.date_creation }}
+                    </span>
+                    <span class="text-slate-200 group-hover:text-slate-400 transition-colors">
+                        <i class="fas fa-archive"></i>
+                    </span>
+                </div>
+
+                <h4 class="text-sm font-black text-orange-500 uppercase tracking-wide mb-4 line-clamp-2 min-h-[2.5rem]">
+                    {{ operation_details.nom }}
+                </h4>
+
+                <div class="flex items-center gap-3 mb-6 p-3 bg-slate-50 rounded-xl border border-slate-100 mt-auto">
+                    {% if actual_institution.img and actual_institution.img.url %}
+                        <img src="{{ actual_institution.img.url }}" alt="Logo" class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm">
+                    {% else %}
+                        <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center border-2 border-white shadow-sm">
+                            <i class="fas fa-user text-slate-400 text-xs"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="flex flex-col overflow-hidden">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Réalisée par</span>
+                        <span class="text-sm font-bold text-slate-700 truncate">{{ operation_details.personnel.nom }}</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-auto">
+                    <button type="button" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#exampleModal{{ operation_details.id }}"
+                            class="inline-flex items-center justify-center px-3 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors duration-200 shadow-sm">
+                        <i class="fas fa-history mr-1.5"></i> Historique
+                    </button>
+                    
+                    <a href="/soft_deleted/{{ operation_details.id }}" 
+                       class="inline-flex items-center justify-center px-3 py-2.5 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-xl hover:bg-emerald-500 hover:text-white transition-all duration-200 border border-emerald-100 hover:border-emerald-500 shadow-sm">
+                        <i class="fas fa-undo-alt mr-1.5"></i> Restaurer
+                    </a>
+                </div>
+                
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

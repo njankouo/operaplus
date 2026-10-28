@@ -1,0 +1,110 @@
+<div class="mb-4 flex items-center justify-between">
+    <h6 class="text-sm font-bold text-slate-500 uppercase tracking-widest">Sous-Catégories</h6>
+    <span class="h-px flex-1 ml-4 bg-gradient-to-r from-slate-200 to-transparent"></span>
+</div>
+
+<div class="flex md:grid md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-x-auto pb-4 md:pb-0 no-scrollbar">
+{% for sc in souscategories %}
+    <button
+        data-id="{{ sc.id }}"
+        class="souscat-btn group shrink-0 min-w-[200px] md:min-w-full relative flex items-center justify-between p-4 rounded-2xl border bg-white border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+        
+        <div class="flex items-center gap-3">
+            <div class="indicator w-1 h-6 rounded-full bg-emerald-500 scale-y-0 group-hover:scale-y-100 transition-transform duration-300"></div>
+            
+            <div class="flex flex-col items-start leading-tight">
+                <span class="label-sc text-[10px] font-bold uppercase tracking-tight text-slate-400 group-hover:text-emerald-500 transition-colors">Explorer</span>
+                <span class="name-sc font-bold text-slate-700 group-hover:text-slate-900 transition-colors">
+                    {{ sc.nom }}
+
+                   
+                </span>
+                <span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+                    {{sc.total_archive_sous_categorie}}
+                </span>
+            </div>
+        </div>
+
+        <div class="icon-box bg-slate-50 p-2 rounded-lg group-hover:bg-emerald-50 transition-colors">
+            <i class="fas fa-chevron-right text-[10px] text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all"></i>
+        </div>
+    </button>
+{% empty %}
+    <div class="col-span-full w-full py-8 text-center bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
+        <p class="text-slate-400 text-sm italic">Aucune option disponible ici</p>
+    </div>
+{% endfor %}
+</div>
+
+<style>
+    /* Masquer la barre de défilement mais garder le scroll */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Animation de pulsation lors du chargement */
+    .btn-loading { animation: pulse 1.5s infinite; pointer-events: none; opacity: 0.7; }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(0.98); } 100% { transform: scale(1); } }
+</style>
+<script>
+    document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.souscat-btn');
+    if (!btn) return;
+
+    const scId = btn.dataset.id;
+    const container = document.querySelector('#liste-resultats');
+
+    // Feedback visuel : Bouton en mode "chargement"
+    btn.classList.add('btn-loading');
+    container.style.opacity = '0.5';
+    container.style.filter = 'blur(2px)'; // Petit effet de flou pour le pro
+    container.style.transition = 'all 0.3s ease';
+
+    fetch(`{% url 'filtrer_archives' %}?souscat=${scId}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.text())
+    .then(html => {
+        container.innerHTML = html;
+        container.style.opacity = '1';
+        container.style.filter = 'blur(0px)';
+        btn.classList.remove('btn-loading');
+        updateSousCatActive(btn);
+    })
+    .catch(() => {
+        container.style.opacity = '1';
+        btn.classList.remove('btn-loading');
+    });
+});
+
+function updateSousCatActive(clickedBtn) {
+    document.querySelectorAll('.souscat-btn').forEach(btn => {
+        const isActive = btn === clickedBtn;
+        
+        // Sélecteurs internes
+        const label = btn.querySelector('.label-sc');
+        const name = btn.querySelector('.name-sc');
+        const iconBox = btn.querySelector('.icon-box');
+        const indicator = btn.querySelector('.indicator');
+
+        if (isActive) {
+            btn.classList.replace('bg-white', 'bg-emerald-600');
+            btn.classList.replace('border-slate-100', 'border-emerald-700');
+            btn.classList.add('shadow-lg', 'shadow-emerald-200');
+            label.classList.replace('text-slate-400', 'text-emerald-100');
+            name.classList.replace('text-slate-700', 'text-white');
+            iconBox.classList.replace('bg-slate-50', 'bg-white/20');
+            indicator.classList.replace('bg-emerald-500', 'bg-white');
+            indicator.classList.add('scale-y-100');
+        } else {
+            btn.classList.replace('bg-emerald-600', 'bg-white');
+            btn.classList.replace('border-emerald-700', 'border-slate-100');
+            btn.classList.remove('shadow-lg', 'shadow-emerald-200');
+            label.classList.replace('text-emerald-100', 'text-slate-400');
+            name.classList.replace('text-white', 'text-slate-700');
+            iconBox.classList.replace('bg-white/20', 'bg-slate-50');
+            indicator.classList.replace('bg-white', 'bg-emerald-500');
+            indicator.classList.remove('scale-y-100');
+        }
+    });
+}
+</script>

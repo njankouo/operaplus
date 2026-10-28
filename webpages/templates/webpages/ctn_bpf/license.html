@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activation Élite — ImpactPulse Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        body { background-color: #f8fafc; color: #1e293b; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        tr { transition: all 0.2s ease; }
+        tr:hover { background: rgba(241, 245, 249, 1) !important; }
+        
+        .btn-glow {
+            width: 56px; height: 56px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .btn-glow:hover { transform: scale(1.1); border-color: #059669; color: #059669; }
+    </style>
+</head>
+
+<body class="font-sans antialiased">
+
+<div class="fixed top-8 left-1/2 -translate-x-1/2 z-50">
+    <button class="btn-glow flex items-center justify-center rounded-full text-slate-500">
+        <i class="fa-solid fa-bell text-xl"></i>
+    </button>
+</div>
+
+<main class="min-h-screen p-4 sm:p-12">
+    <div class="max-w-6xl mx-auto space-y-8 pt-12">
+        
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-8">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight uppercase italic">Gestion <span class="text-emerald-600">Élite</span></h1>
+                <p class="text-slate-500 text-sm mt-1">Supervision globale des accès et abonnements actifs.</p>
+            </div>
+            
+            <div class="flex gap-3">
+                <div class="glass-panel rounded-2xl px-6 py-3 border-l-4 border-emerald-500">
+                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Actifs</span>
+                    <div class="text-2xl font-black text-slate-900">{{abonnement_actif}}</div>
+                </div>
+                <div class="glass-panel rounded-2xl px-6 py-3 border-l-4 border-amber-500">
+                    <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">En attente</span>
+                    <div class="text-2xl font-black text-slate-900">{{ abonnement_inactif }}</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex flex-wrap gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+            <div class="flex gap-2">
+                <button class="px-5 py-2 rounded-xl text-xs font-bold uppercase bg-emerald-600 text-white shadow-lg shadow-emerald-200">Tous</button>
+                <button class="px-5 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 transition-all">Actifs</button>
+            </div>
+            <input type="text" placeholder="Filtrer les accès..." class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs w-64 focus:border-emerald-500 outline-none">
+        </div>
+           {% if messages %}
+                {% for message in messages %}
+                <div class="mb-6 p-4 rounded-xl text-xs font-bold {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700{% else %}bg-red-50 text-red-700{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        <div class="glass-panel rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 border-b border-slate-100">
+                    <tr>
+                         <th class="p-5 text-[10px] text-slate-500 uppercase tracking-widest">Preuve</th>
+                      
+                        <th class="p-5 text-[10px] text-slate-500 uppercase tracking-widest">Package</th>
+                        <th class="p-5 text-[10px] text-slate-500 uppercase tracking-widest">Client</th>
+                        <th class="p-5 text-[10px] text-slate-500 uppercase tracking-widest">Validité</th>
+                        <th class="p-5 text-[10px] text-slate-500 uppercase tracking-widest text-center">Statut</th>
+                        <th class="p-5 text-[10px] text-slate-500 uppercase tracking-widest text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for abonnements in abonnement %}
+                    <tr>
+                     <td class="p-5">
+    {% if abonnements.img %}
+    <a href="{{ abonnements.img.url }}" target="_blank">
+        <img src="{{ abonnements.img.url }}" class="w-12 h-12 object-cover rounded-lg shadow-sm hover:scale-110 transition-transform">
+    </a>
+    {% else %}
+    <span class="text-slate-300 text-xs italic">Aucune</span>
+    {% endif %}
+</td>
+                        <td class="p-5 font-bold text-sm text-slate-900">{{ abonnements.package.nom }}</td>
+                        <td class="p-5 text-xs text-slate-600">{{ abonnements.client.nom }}</td>
+                        <td class="p-5 text-xs font-mono text-slate-500">{{ abonnements.date_fin|date:"d/m/Y" }}</td>
+                        <td class="p-5 text-center">
+                            <span class="px-3 py-1 rounded-full text-[9px] font-bold {% if abonnements.est_actif %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">
+                                {% if abonnements.est_actif %}ACTIF{% else %}EN ATTENTE{% endif %}
+                            </span>
+                        </td>
+                        <td class="p-5 text-right">
+    {% if not abonnements.est_actif %}
+    <form action="/activate-abonnement/{{ abonnements.id }}/" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="text-xs bg-slate-900 text-white hover:bg-emerald-600 px-4 py-2 rounded-lg transition-colors">
+            Activer
+        </button>
+    </form>
+    {% endif %}
+</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

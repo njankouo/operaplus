@@ -1,0 +1,446 @@
+{%extends './index.html'%}
+{%block main%}
+<header class="bg-white border-b border-slate-200 px-8 py-6 rounded-t-3xl">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        
+        <div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Planification Stratégique</h1>
+            <p class="text-slate-500 text-sm mt-1">Définissez vos étapes pour structurer la réalisation de votre tâche.</p>
+        </div>
+
+        <div class="flex items-center gap-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <div class="text-right">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Progression</p>
+                <p id="etape-counter" class="text-sm font-black text-indigo-600">0 étape configurée</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-white border-2 border-indigo-100 flex items-center justify-center text-indigo-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+</svg>
+            </div>
+        </div>
+    </div>
+</header>
+  <form method="POST" id="FormTask" class="space-y-4"  enctype="multipart/form-data">
+            {%csrf_token%}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+               <div class="space-y-6">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+        <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+            <div class="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+</svg>
+            </div>
+            <h3 class="text-xs font-black text-slate-800 uppercase tracking-[0.15em]">Informations Générales</h3>
+        </div>
+
+        <div class="space-y-5">
+            <div>
+                <label class="block font-bold text-slate-400 text-[10px] uppercase mb-2">Nom {{sub_entity.nom}}</label>
+                <input type="text" name="nom" class="w-full h-11 px-4 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" placeholder="Entrez le nom...">
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-400 text-[10px] uppercase mb-2">Structure</label>
+                    <select name="structure" class="w-full h-11 px-3 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all bg-white" required>
+                        <option value="">Sélectionner...</option>
+                        {% for s in structure %}<option value="{{ s.id }}">{{ s.nom }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-400 text-[10px] uppercase mb-2">Catégorie</label>
+                    <select name="categorie" class="w-full h-11 px-3 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all bg-white">
+                        <option value="">Sélectionner...</option>
+                        {% for c in categorie_operation %}<option value="{{ c.id }}">{{ c.intitule }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                {% if actual_institution.nature != False %}
+                <div>
+                    <label class="block font-bold text-slate-400 text-[10px] uppercase mb-2">Nature</label>
+                    <select id="nature-select" name="nature" 
+                            hx-get='/search_etape/' hx-target='#list-step' hx-trigger="change"
+                            class="w-full h-11 px-3 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all bg-white">
+                        <option value="">Sélectionner...</option>
+                        {% for n in nature %}<option value="{{ n.id }}">{{ n.intitule }}</option>{% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div class="pt-2">
+                    <label class="block font-bold text-indigo-500 text-[10px] uppercase mb-2 tracking-wider">Intensité Active</label>
+                    <select id="intensite-select" name="intensite" 
+                            hx-get='/search_etape/' hx-target='#list-step' hx-trigger="change" hx-on::after-request="updateDashboard(event)"
+                            class="w-full h-11 px-3 rounded-xl border-2 border-indigo-100 text-sm font-bold text-indigo-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all bg-indigo-50/50">
+                        <option value="">Non défini</option>
+                        <option value="FAIBLE">Faible</option>
+                        <option value="MOYENNE">Moyenne</option>
+                        <option value="GRANDE">Grande</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                <!-- COLONNE CENTRALE (RACI) -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <h6 class="font-black text-slate-700 text-[11px] uppercase tracking-[0.2em]">Responsabilités RACI</h6>
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+    </div>
+
+    <div class="p-6 space-y-5">
+        <div class="group">
+            <label class="flex items-center text-[10px] font-bold text-slate-500 uppercase mb-2">
+                <span class="w-6 h-6 flex items-center justify-center rounded bg-green-100 text-green-700 mr-3 font-black">R</span>
+                Responsable
+            </label>
+            <select name="perso" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:border-green-500 focus:ring-4 focus:ring-green-500/10 outline-none transition-all cursor-pointer">
+                <option value="0">Sélectionner un responsable...</option>
+                {% for perso in personnels %}<option value="{{perso.id}}">{{perso}}</option>{% endfor %}
+            </select>
+        </div>
+
+        <div class="group">
+            <label class="flex items-center text-[10px] font-bold text-slate-500 uppercase mb-2">
+                <span class="w-6 h-6 flex items-center justify-center rounded bg-red-100 text-red-700 mr-3 font-black">A</span>
+                Accountable
+            </label>
+            <select name="accountable" class="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:border-red-500 focus:ring-4 focus:ring-red-500/10 outline-none transition-all cursor-pointer">
+                <option value="0">Qui est le garant ?</option>
+                {% for perso in personnels %}<option value="{{perso.id}}">{{perso}}</option>{% endfor %}
+            </select>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4">
+            <div class="group">
+                <label class="flex items-center text-[10px] font-bold text-slate-500 uppercase mb-2">
+                    <span class="w-6 h-6 flex items-center justify-center rounded bg-yellow-100 text-yellow-700 mr-2 font-black">C</span>
+                    Consulted
+                </label>
+                <select name="consulted" class="w-full h-10 px-2 rounded-lg border border-slate-200 text-xs outline-none">
+                    <option value="0">---</option>
+                    {% for perso in personnels %}<option value="{{perso.id}}">{{perso}}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="group">
+                <label class="flex items-center text-[10px] font-bold text-slate-500 uppercase mb-2">
+                    <span class="w-6 h-6 flex items-center justify-center rounded bg-blue-100 text-blue-700 mr-2 font-black">I</span>
+                    Informed
+                </label>
+                <select name="informed" class="w-full h-10 px-2 rounded-lg border border-slate-200 text-xs outline-none">
+                    <option value="0">---</option>
+                    {% for perso in personnels %}<option value="{{perso.id}}">{{perso}}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+              <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <h6 class="font-black text-slate-700 text-[11px] uppercase tracking-[0.2em]">Financement</h6>
+    </div>
+    <div class="p-6"> 
+        <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
+            {% for source_financements in source_financement %}
+            <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-indigo-300 transition-all">
+                <label class="flex items-center space-x-3 cursor-pointer group">
+                    <input type="checkbox" 
+                           name="source_financement" 
+                           value="{{ source_financements.id }}" 
+                           data-id="{{ source_financements.id }}" 
+                           class="montant-trigger w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all">
+                    <span class="text-slate-700 font-medium">{{ source_financements.nom }}</span>
+                </label>
+
+                <div class="mt-4 hidden" id="montant-container-{{ source_financements.id }}">
+                    <input type="number" 
+                           class="montant-input w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                           id="montant-{{ source_financements.id }}" 
+                           name="montant_source_{{ source_financements.id }}" 
+                           placeholder="Montant (ex: 1000)" 
+                           step="0.01">
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-8 border-t border-slate-200 pt-6">
+            <label class="block text-sm font-bold text-slate-800 mb-2">Montant Total</label>
+            <input type="number" 
+                   class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900" 
+                   name="total_financement" 
+                   id="montant-total" 
+                   readonly 
+                   placeholder="0.00">
+        </div>
+    </div>
+</div>
+            </div>
+
+           
+           <input type="hidden" name="redirect" {% if detail_g_v == True %} value="{{base_val.id}}" {% else %} value="-1" {% endif %}>
+        <input type="hidden" name="RACI_hidden" id="RACI_hidden">
+        <input type="hidden" name="RACI_hidden_roles" id="RACI_hidden_roles">
+        <input type="hidden" name="edit_or_create" value="c">
+        <input type="hidden" name="edit_id" id="edit_id">
+        <input type="hidden" name="generator" value="o">
+        <input type="hidden" name="tache" value="{{tache.id}}">
+        <input type="hidden" name="who_assign" id="who_assign" value="0">
+        <input type="hidden" id="chronogr" name="chronogr">
+    </div>
+
+   
+    <div class="p-8 space-y-8" id="list-step">
+    {%include './etapes.html'%}
+   
+                                
+</div>
+
+ <!-- Footer -->
+    <div class="px-4 py-3 border-t border-slate-300 flex justify-end gap-2 ">
+        <button  class="px-6 py-2 text-[11px] font-bold text-slate-600 border border-slate-300 hover:bg-white uppercase">Annuler</button>
+    <button type="button" id="saveOperation" class="px-6 py-2 text-[11px] font-bold text-white bg-slate-800 hover:bg-black uppercase">
+    <span id="btn-text">Sauvegarder</span>
+    <span id="btn-spinner" class="hidden">Traitement...</span>
+</button>
+    </div>
+</form>
+<div id="statusModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm transition-opacity duration-300">
+    <div class="bg-white rounded-xl p-8 w-full max-w-sm shadow-2xl transform transition-all">
+        <div id="modalIconContainer" class="flex justify-center mb-6"></div>
+        <h3 id="modalTitle" class="text-xl font-semibold text-gray-800 text-center mb-2"></h3>
+        <p id="modalBody" class="text-gray-500 text-center text-sm leading-relaxed"></p>
+        
+        <div id="modalDetails" class="mt-4 p-3 bg-gray-50 rounded-lg text-[10px] text-gray-400 font-mono hidden text-left overflow-x-auto"></div>
+        
+       <button id="closeModal" onclick="document.getElementById('statusModal').classList.add('hidden')" 
+        class="mt-8 w-full py-2.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors">
+            Fermer
+        </button>
+    </div>
+</div>
+<script>
+
+/**
+ * 1. Gestion de l'affichage du Modal
+ */
+async function showModal(title, message, type, details = null) {
+    const modal = document.getElementById('statusModal');
+    const iconContainer = document.getElementById('modalIconContainer');
+    const detailsContainer = document.getElementById('modalDetails');
+    const titleEl = document.getElementById('modalTitle');
+    const bodyEl = document.getElementById('modalBody');
+    const closeBtn = document.getElementById('closeModal');
+
+    const icons = {
+        success: `<div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-bounce"><svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>`,
+        error: `<div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center"><svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>`
+    };
+
+    modal.classList.remove('hidden');
+    titleEl.textContent = title;
+    bodyEl.innerText = message; // innerText respecte les retours à la ligne
+    iconContainer.innerHTML = icons[type] || icons.error;
+
+    if (details) {
+        detailsContainer.textContent = details;
+        detailsContainer.classList.remove('hidden');
+    } else {
+        detailsContainer.classList.add('hidden');
+    }
+    
+    // Le bouton fermer est toujours visible
+    closeBtn.classList.remove('hidden');
+}
+
+/**
+ * 2. Logique de Soumission & Extraction des données
+ */
+document.getElementById('saveOperation').addEventListener('click', async function() {
+    const btn = this;
+    const btnText = document.getElementById('btn-text');
+    const btnSpinner = document.getElementById('btn-spinner');
+    
+    // UI Loading
+    btn.disabled = true;
+    btnText.classList.add('hidden');
+    btnSpinner.classList.remove('hidden');
+
+    // Extraction des données du formulaire
+    const formData = new FormData();
+    document.querySelectorAll('input, select, textarea').forEach(input => {
+        if (input.name) {
+            if ((input.type === 'checkbox' || input.type === 'radio') && !input.checked) return;
+            formData.append(input.name, input.value);
+        }
+    });
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    // Helper pour récupérer le texte des selects pour le résumé
+    const getSelectText = (name) => {
+        const el = document.querySelector(`select[name="${name}"]`);
+        return el ? el.options[el.selectedIndex].text : "Non défini";
+    };
+
+    try {
+        const response = await fetch('/save_operation_step/', {
+            method: 'POST',
+            body: formData,
+            headers: { 'Accept': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Construction du résumé
+            const resume = `Tâche: ${document.querySelector('[name="nom"]')?.value || 'N/A'}
+Responsable: ${getSelectText('perso')}
+Accountable: ${getSelectText('accountable')}`;
+
+            showModal("Opération Validée !", "Données enregistrées avec succès :\n\n" + resume, "success");
+            
+            // Redirection auto après 3s
+            setTimeout(() => { window.location.href = `/taches/${data.tache_id}/`; }, 3000);
+        } else {
+            showModal("Échec de la soumission", data.message || "Erreur lors de l'enregistrement.", "error", `Code: ${response.status}`);
+        }
+    } catch (err) {
+        showModal("Erreur Critique", "Impossible de contacter le serveur.", "error", err.toString());
+    } finally {
+        btn.disabled = false;
+        btnText.classList.remove('hidden');
+        btnSpinner.classList.add('hidden');
+    }
+});
+
+</script>
+<script>
+function updateTotal(evt) {
+    // 1. On récupère le contenu de la réponse (le HTML renvoyé par le serveur)
+    const responseHtml = evt.detail.xhr.responseText;
+    
+    // 2. On crée un élément DOM temporaire pour extraire notre champ caché
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(responseHtml, 'text/html');
+    const hiddenInput = doc.getElementById('new-total-val');
+    
+    if (hiddenInput) {
+        const newValue = hiddenInput.value;
+        
+        // 3. Mise à jour de votre champ principal
+        const mainInput = document.getElementById('days-input');
+        if (mainInput) {
+            mainInput.value = newValue;
+            
+            // 4. Mise à jour de l'affichage dans le header (Total Durée)
+            const headerDisplay = document.getElementById('total-duration-display');
+            if (headerDisplay) {
+                headerDisplay.innerHTML = newValue + ' <span class="text-sm text-slate-400 font-medium ml-1">Jours</span>';
+            }
+            
+            // 5. Calcul final
+            if (typeof calculerDateFin === 'function') {
+                calculerDateFin();
+            }
+        }
+    }
+}
+</script>
+<script>
+    function updateHeaderCounter() {
+        const etapes = document.querySelectorAll('input[name="etape_ids"]');
+        const counter = document.getElementById('etape-counter');
+        const count = etapes.length;
+        
+        if (count > 0) {
+            counter.textContent = count + (count > 1 ? " étapes configurées" : " étape configurée");
+            counter.classList.replace('text-slate-400', 'text-indigo-600');
+        } else {
+            counter.textContent = "Aucune étape définie";
+        }
+    }
+    
+    // Appeler cette fonction après chaque chargement HTMX
+    document.body.addEventListener('htmx:afterSwap', updateHeaderCounter);
+</script>
+<script>
+             
+   document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const totalInput = document.getElementById('montant-total');
+
+    // Fonction pour calculer et mettre à jour le total
+    function calculateTotal() {
+        let total = 0;
+        // Sélectionnez tous les champs de montant visibles
+        const amountInputs = document.querySelectorAll('.montant-input');
+        amountInputs.forEach(input => {
+            // Vérifiez si le champ est visible avant d'ajouter sa valeur
+            if (input.closest('div').style.display !== 'none') {
+                 const value = parseFloat(input.value);
+                 if (!isNaN(value)) {
+                     total += value;
+                 }
+            }
+        });
+        totalInput.value = total.toFixed(2);
+    }
+
+    // Écouteur d'événement sur chaque checkbox
+    checkboxes.forEach(checkbox => {
+        const sourceId = checkbox.dataset.id;
+        const montantContainer = document.getElementById(`montant-container-${sourceId}`);
+        const montantInput = document.getElementById(`montant-${sourceId}`);
+
+        // Gérer la visibilité du champ de montant
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                montantContainer.style.display = 'block';
+                montantInput.addEventListener('input', calculateTotal);
+            } else {
+                montantContainer.style.display = 'none';
+                montantInput.removeEventListener('input', calculateTotal);
+                // Réinitialiser la valeur du champ masqué
+                montantInput.value = '';
+            }
+            // Recalculer le total après un changement
+            calculateTotal();
+        });
+
+        // Ajouter un écouteur initial pour les champs de montant déjà affichés
+        if (montantInput) {
+            montantInput.addEventListener('input', calculateTotal);
+        }
+    });
+
+    // Calcul initial au chargement de la page
+    calculateTotal();
+});
+                                 
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/2.0.7/htmx.min.js" integrity="sha512-IisGoumHahmfNIhP4wUV3OhgQZaaDBuD6IG4XlyjT77IUkwreZL3T3afO4xXuDanSalZ57Un+UlAbarQjNZCTQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+    const daysInput = document.getElementById('days-input');
+    
+    // Vérification de sécurité : on ne fait rien si l'input n'existe pas
+    if (daysInput) {
+        console.log("Input trouvé, mise à jour en cours...");
+        // Logique de mise à jour ici
+        if (typeof calculerDateFin === 'function') {
+            calculerDateFin();
+        }
+    } else {
+        console.warn("L'élément 'days-input' n'est pas présent dans le DOM.");
+    }
+});
+</script>
+{%endblock%}

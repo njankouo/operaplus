@@ -1,0 +1,162 @@
+{% extends './index.html' %}
+{% block main %}
+
+<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
+    
+    <!-- BARRE DE CONTRÔLE ET RECHERCHE STYLE ODOO -->
+    <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-2xs">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+            
+            <!-- TITRE ERP -->
+            <div class="md:col-span-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-md flex items-center justify-center text-white font-bold shadow-2xs" style="background-color: {{ request.user.personnel.color_fond|default:'#714B67' }};">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L3.5 7V17L12 22L20.5 17V7L12 2Z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-slate-800 font-bold text-sm tracking-tight uppercase">MICRO PLAN</h1>
+                        <span class="text-slate-400 text-[11px] font-semibold uppercase tracking-wider block">Opérations</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SÉLECTEUR DE STRUCTURE -->
+            <div class="md:col-span-4">
+                <form id="planification-form" class="m-0">
+                    {% csrf_token %}
+                    <div class="relative flex items-center">
+                        <i class="bx bx-buildings absolute left-3 text-slate-400 text-base"></i>
+                        <select id="structureSelect" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-md pl-9 pr-8 py-2 font-medium outline-none focus:border-indigo-600 focus:bg-white transition-colors appearance-none cursor-pointer" name="structures">
+                            <option disabled selected>Chargement des structures...</option>
+                        </select>
+                        <div class="absolute right-3 pointer-events-none text-slate-400">
+                            <i class="bx bx-chevron-down"></i>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- RECHERCHE DYNAMIQUE -->
+            <div class="md:col-span-5">
+                <div class="relative flex items-center">
+                    <i class="bx bx-search absolute left-3 text-slate-400 text-base"></i>
+                    <input type="text" id="filterInput" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-md pl-9 pr-12 py-2 outline-none focus:border-indigo-600 focus:bg-white transition-colors placeholder:text-slate-400" placeholder="Rechercher par nom, responsable ou budget...">
+                    <span class="absolute right-2.5 bg-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded font-bold min-w-[20px] text-center" id="resultCount">0</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ZONE DE RÉSULTAT ET VUE KANBAN/LISTE -->
+    <div id="result-container" class="transition-all duration-300">
+        <!-- État initial ERP -->
+        <div id="initial-message" class="bg-white border border-slate-200 rounded-lg p-12 text-center shadow-2xs flex flex-col items-center justify-center">
+            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3 border border-slate-200">
+                <i class="bx bx-data text-xl"></i>
+            </div>
+            <h3 class="text-sm font-bold text-slate-700">Aucune structure sélectionnée</h3>
+            <p class="text-xs text-slate-400 mt-1">Veuillez choisir une structure dans le menu ci-dessus pour charger la planification.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-hidden {
+        display: none !important;
+    }
+</style>
+
+<script>
+/**
+ * FILTRE TEMPS RÉEL
+ */
+document.getElementById('filterInput').addEventListener('input', function(e) {
+    const term = e.target.value.toLowerCase();
+    const cards = document.querySelectorAll('#result-container .neo-card, #result-container .operation-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        const text = card.innerText.toLowerCase();
+        const container = card.closest('[class*="col-span"]') || card.parentElement; 
+        if (text.includes(term)) {
+            container.classList.remove('card-hidden');
+            visibleCount++;
+        } else {
+            container.classList.add('card-hidden');
+        }
+    });
+
+    document.getElementById('resultCount').textContent = visibleCount;
+});
+
+/**
+ * LOGIQUE DE CHARGEMENT DES STRUCTURES
+ */
+async function loadStructures() {
+    const select = document.getElementById('structureSelect');
+    try {
+        const response = await fetch('/structure_planification/');
+        const data = await response.json();
+        const structures = data['Vos Structures'];
+
+        select.innerHTML = '<option value="" disabled selected>Sélectionner une structure...</option>';
+        structures.forEach(s => {
+            select.add(new Option(s.nom, s.id));
+        });
+    } catch (e) {
+        select.innerHTML = '<option disabled>Erreur de connexion</option>';
+    }
+}
+
+/**
+ * AUTO-SUBMIT AVEC ÉTAT DE CHARGEMENT STYLE ODOO
+ */
+async function autoSubmit() {
+    const resultContainer = document.getElementById('result-container');
+    const form = document.getElementById('planification-form');
+    const formData = new FormData(form);
+
+    resultContainer.classList.add('opacity-60');
+    resultContainer.innerHTML = `
+        <div class="bg-white border border-slate-200 rounded-lg p-12 text-center shadow-2xs flex flex-col items-center justify-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-2 border-indigo-600 border-t-transparent mb-3"></div>
+            <p class="text-xs font-semibold text-slate-600">Chargement des opérations en cours...</p>
+        </div>
+    `;
+
+    try {
+        const response = await fetch('/planification_all_operations/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') },
+            body: formData
+        });
+        
+        if (!response.ok) throw new Error('Erreur réseau');
+        
+        const html = await response.text();
+        
+        resultContainer.innerHTML = html;
+        resultContainer.classList.remove('opacity-60');
+        
+        const cards = document.querySelectorAll('#result-container .neo-card, #result-container .operation-card');
+        document.getElementById('resultCount').textContent = cards.length;
+        document.getElementById('filterInput').value = ''; 
+    } catch (error) {
+        resultContainer.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-8 text-center text-red-600">
+                <i class="bx bx-error-alt text-2xl mb-2"></i>
+                <p class="text-xs font-bold uppercase tracking-wider">Une erreur est survenue lors de la récupération des données.</p>
+            </div>
+        `;
+        resultContainer.classList.remove('opacity-60');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadStructures);
+document.getElementById('structureSelect').addEventListener('change', autoSubmit);
+</script>
+
+{% endblock %}

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planification Avec Le Gantt</title>
+</head>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" integrity="sha512-jnSuA4Ss2PkkikSOLtYs8BlYIeeIK1h99ty4YfvRPAlzr377vr3CXDb7sb7eEEBYjDtcYj+AjBH3FLv5uSJuXg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>  
+    .structure-item {  
+        margin: 5px 0; /* Ajout d'un léger espacement entre les éléments */  
+    }  
+</style>  
+ 
+<style>  
+    .linked-item,  
+    .unlinked-item {  
+        margin: 5px 0; /* Ajout d'un léger espacement entre les éléments */  
+    }  
+</style>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+              <nav class="navbar navbar-expand-lg bg-body-tertiary">
+                <div class="container-fluid">
+                  <a class="navbar-brand" href="/">
+                    <img style="width:40px;height:40px;border-radius:100%; " src="{{actual_institution.img.url}}">
+            
+
+                    {{actual_institution.sigle}}</a>
+                  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                  </button>
+                  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                   
+                      <li class="nav-item">
+                        <a class="nav-link" href="#" style="font-weight:bold;font-family:forte">Duplication Du Formulaire {{dataset.m_name}}</a>
+                      </li>                           
+                    </ul> 
+                      <button class="btn btn-outline-success" type="button"  data-bs-toggle="modal" data-bs-target="#staticBackdrop">Menu</button>
+                      <!-- Modal -->
+                        <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="staticBackdropLabel">Menu</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body" style="text-decoration: none;">
+                                    <div class="d-flex flex-wrap justify-content-around" style="font-weight: bold;">
+                                    {% if permissions > 0 and not_add == None %}
+                                    <a href="/" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 text-center">  
+                                        <div>  
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="42px" viewBox="0 -960 960 960" width="48px" fill="#531607">  
+                                                <path d="M510-570v-270h330v270H510ZM120-450v-390h330v390H120Zm390 330v-390h330v390H510Zm-390 0v-270h330v270H120Zm60-390h210v-270H180v270Zm390 330h210v-270H570v270Zm0-450h210v-150H570v150ZM180-180h210v-150H180v150Zm210-330Zm180-120Zm0 180ZM390-330Z"/>  
+                                            </svg>  
+                                        </div>  
+                                        <div class="menu_littleWid_text"><strong>Tableau de Bord</strong></div>  
+                                    </a>  
+                                  
+                                    {% elif entity_manage != None and no_simple_user %}
+                                    <a href="/" class=" d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div><i class="fas fa-home fa-2x text-secondy"></i></div>
+                                        <div class="menu_littleWid_text"><small class="">{{entity_manage}} </small></div>
+                                    </a>
+                                    {% endif %}
+                                    {% if permissions > 0 and not_add == None %}
+                                    <a href="/gestionnaire/0/" class="card mx-2 my-2 text-primary col-6 col-md-4 d-block col-lg-3 p-4 text-center">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="42px" viewBox="0 -960 960 960" width="40px" fill="#173660"><path d="M146.67-226.67v-506.66V-226.67Zm0 66.67q-27 0-46.84-19.83Q80-199.67 80-226.67v-506.66q0-27 19.83-46.84Q119.67-800 146.67-800H414l66.67 66.67h332.66q27 0 46.84 19.83Q880-693.67 880-666.67v173.34q-15.67-8-32.5-10.84-16.83-2.83-34.17-1.83v-160.67H453l-66.67-66.66H146.67v506.66h348l-1.34 1.34V-160H146.67ZM560-80v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8.67 9 12.83 20 4.17 11 4.17 22t-4.33 22.5q-4.34 11.5-13.28 20.5L683-80H560Zm300-263-37-37 37 37ZM620-140h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19Z"/></svg>  
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Gestionnaire</i></div>
+                                    </a>
+                                    <a href="/gestionnaire/-1/" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#46152F"><path d="M346.67-120q-27.5 0-47.09-19.58Q280-159.17 280-186.67v-426.66q0-27.5 19.58-47.09Q319.17-680 346.67-680h426.66q27.5 0 47.09 19.58Q840-640.83 840-613.33v426.66q0 27.5-19.58 47.09Q800.83-120 773.33-120H346.67Zm0-396h426.66v-97.33H346.67V-516Zm164 165.33h98.66v-98.66h-98.66v98.66Zm0 164h98.66V-284h-98.66v97.33Zm-164-164H444v-98.66h-97.33v98.66Zm329.33 0h97.33v-98.66H676v98.66Zm-329.33 164H444V-284h-97.33v97.33Zm329.33 0h97.33V-284H676v97.33ZM186.67-280q-27.5 0-47.09-19.58Q120-319.17 120-346.67v-426.66q0-27.5 19.58-47.09Q159.17-840 186.67-840h426.66q27.5 0 47.09 19.58Q680-800.83 680-773.33v60h-66.67v-60H186.67v426.66h60V-280h-60Z"/></svg>
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Aper&ccedil;u : {{last_entity}}</i></div>
+                                    </a>
+                                    <a href="/evaluer/0/" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#18333C"><path d="M344-345.33 209.33-480 344-614.67 390.67-567l-87 87 87 87L344-345.33Zm272 0L569.33-393l87-87-87-87L616-614.67 750.67-480 616-345.33ZM186.67-120q-27 0-46.84-19.83Q120-159.67 120-186.67v-168h66.67v168h168V-120h-168Zm418.66 0v-66.67h168v-168H840v168q0 27-19.83 46.84Q800.33-120 773.33-120h-168ZM120-605.33v-168q0-27 19.83-46.84Q159.67-840 186.67-840h168v66.67h-168v168H120Zm653.33 0v-168h-168V-840h168q27 0 46.84 19.83Q840-800.33 840-773.33v168h-66.67Z"/></svg>
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Cadre Des Resultats</i></div>
+                                    </a>
+        
+        
+                                    <a href="/chaine_indicateurs/"  class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#321D71"><path d="M159.92-120q-47.25 0-80.25-33.06-33-33.05-33-80.27 0-38.34 22.5-68 22.5-29.67 57.5-40.34v-276.66q-35-10.67-57.5-40.34-22.5-29.66-22.5-68 0-47.22 33.08-80.27Q112.82-840 160.08-840q47.25 0 80.25 33.06 33 33.05 33 80.27 0 38.34-22.5 68-22.5 29.67-57.5 40.34v105h253.34v-105q-35-10.67-57.5-40.34-22.5-29.66-22.5-68 0-47.22 33.08-80.27Q432.82-840 480.08-840q47.25 0 80.25 33.06 33 33.05 33 80.27 0 38.34-22.5 68-22.5 29.67-57.5 40.34v105H720q19.83 0 33.25-13.84Q766.67-541 766.67-560v-58.33q-35-10.67-57.5-40.34-22.5-29.66-22.5-68 0-47.22 33.08-80.27Q752.82-840 800.08-840q47.25 0 80.25 33.06 33 33.05 33 80.27 0 38.34-22.5 68-22.5 29.67-57.5 40.34V-560q0 46.67-33.05 80-33.06 33.33-80.28 33.33H513.33v105q35 10.67 57.5 40.34 22.5 29.66 22.5 68 0 47.22-33.08 80.27Q527.18-120 479.92-120q-47.25 0-80.25-33.06-33-33.05-33-80.27 0-38.34 22.5-68 22.5-29.67 57.5-40.34v-105H193.33v105q35 10.67 57.5 40.34 22.5 29.66 22.5 68 0 47.22-33.08 80.27Q207.18-120 159.92-120Zm.08-66.67q19 0 32.83-13.41 13.84-13.42 13.84-33.25 0-19-13.39-32.84Q179.9-280 160.12-280q-19.79 0-33.29 13.83-13.5 13.84-13.5 33.17 0 19.33 13.42 32.83t33.25 13.5ZM160-680q19 0 32.83-13.38 13.84-13.39 13.84-33.17t-13.39-33.28q-13.38-13.5-33.16-13.5-19.79 0-33.29 13.41-13.5 13.42-13.5 33.25 0 19 13.42 32.84Q140.17-680 160-680Zm320 493.33q19 0 32.83-13.41 13.84-13.42 13.84-33.25 0-19-13.84-32.84Q499-280 480-280t-32.83 13.83q-13.84 13.84-13.84 33.17 0 19.33 13.84 32.83 13.83 13.5 32.83 13.5ZM480-680q19 0 32.83-13.38 13.84-13.39 13.84-33.17t-13.84-33.28Q499-773.33 480-773.33t-32.83 13.38q-13.84 13.38-13.84 33.17 0 19.78 13.84 33.28Q461-680 480-680Zm320.33 0q19.34 0 32.84-13.38 13.5-13.39 13.5-33.17t-13.42-33.28q-13.42-13.5-33.25-13.5-19 0-32.83 13.38-13.84 13.38-13.84 33.17 0 19.78 13.84 33.28Q781-680 800.33-680ZM160-233.33Zm0-493.34Zm320 493.34Zm0-493.34Zm320 0Z"/></svg>
+                                            <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#8C1AF6"><path d="M480-80q-121.67 0-200.83-31.5Q200-143 200-218.67q0-75.66 79.17-107.16 79.16-31.5 200.83-31.5 121.67 0 200.83 31.5Q760-294.33 760-218.67q0 75.67-79.17 107.17Q601.67-80 480-80Zm0-84q-115 0-172.67-21-57.66-21-67.33-67.67-4 7-5.33 16.67-1.34 9.67-1.34 17.33 0 49.67 64.84 77.5Q363-113.33 480-113.33q117 0 181.83-27.84 64.84-27.83 64.84-77.5 0-7.66-1.34-17.33-1.33-9.67-5.33-16.67Q709.67-206 652.33-185 595-164 480-164Zm0-33.33q100 0 152.67-16.67 52.66-16.67 52.66-47.33 0-30.67-52.66-46.67Q580-324 480-324q-100 0-153 16t-53 46.67q0 30.66 53 47.33 53 16.67 153 16.67Zm-38-210v-198h-78l154-276v198h78l-154 276Zm38 210Zm0 84Zm0-50.67Z"/></svg> -->
+                                            <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#48752C"><path d="M480-80q-82.33 0-155.33-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.67T80-480q0-84 31-156.5t85.67-126.83L480-480v-400q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82.33-31.5 155.33-31.5 73-85.5 127.34Q709-143 636-111.5T480-80Z"/></svg> -->
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Cha&icirc;ne de R&eacute;sultats</i></div>
+                                    </a>
+                                    {% endif %}
+                                    {% if permissions >= 0 %}
+                                    <a href="/operations/" class="card mx-2 my-2 text-info d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#EA33F7"><path d="M230.67-160q-29.67 0-50.17-20.5T160-230.67q0-29.66 20.5-50.16 20.5-20.5 50.17-20.5 29.66 0 50.16 20.5 20.5 20.5 20.5 50.16 0 29.67-20.5 50.17T230.67-160ZM480-160q-29.67 0-50.17-20.5t-20.5-50.17q0-29.66 20.5-50.16 20.5-20.5 50.17-20.5t50.17 20.5q20.5 20.5 20.5 50.16 0 29.67-20.5 50.17T480-160Zm249.33 0q-29.66 0-50.16-20.5-20.5-20.5-20.5-50.17 0-29.66 20.5-50.16 20.5-20.5 50.16-20.5 29.67 0 50.17 20.5t20.5 50.16q0 29.67-20.5 50.17T729.33-160ZM230.67-409.33q-29.67 0-50.17-20.5T160-480q0-29.67 20.5-50.17t50.17-20.5q29.66 0 50.16 20.5 20.5 20.5 20.5 50.17t-20.5 50.17q-20.5 20.5-50.16 20.5Zm249.33 0q-29.67 0-50.17-20.5T409.33-480q0-29.67 20.5-50.17t50.17-20.5q29.67 0 50.17 20.5t20.5 50.17q0 29.67-20.5 50.17T480-409.33Zm249.33 0q-29.66 0-50.16-20.5-20.5-20.5-20.5-50.17t20.5-50.17q20.5-20.5 50.16-20.5 29.67 0 50.17 20.5T800-480q0 29.67-20.5 50.17t-50.17 20.5ZM230.67-658.67q-29.67 0-50.17-20.5T160-729.33q0-29.67 20.5-50.17t50.17-20.5q29.66 0 50.16 20.5 20.5 20.5 20.5 50.17 0 29.66-20.5 50.16-20.5 20.5-50.16 20.5Zm249.33 0q-29.67 0-50.17-20.5t-20.5-50.16q0-29.67 20.5-50.17T480-800q29.67 0 50.17 20.5t20.5 50.17q0 29.66-20.5 50.16-20.5 20.5-50.17 20.5Zm249.33 0q-29.66 0-50.16-20.5-20.5-20.5-20.5-50.16 0-29.67 20.5-50.17t50.16-20.5q29.67 0 50.17 20.5t20.5 50.17q0 29.66-20.5 50.16-20.5 20.5-50.17 20.5Z"/></svg>
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Grille D'execution</i></div>
+                                        
+                                    </a>
+                                    {% endif %}
+                                
+                                    <a href="/archive_doc/" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#46152F"><path d="M280-280h533.33v-533.33h-66.66v278.66l-95.34-58-95.33 58v-278.66H280V-280Zm0 66.67q-27 0-46.83-19.84Q213.33-253 213.33-280v-533.33q0-27 19.84-46.84Q253-880 280-880h533.33q27 0 46.84 19.83Q880-840.33 880-813.33V-280q0 27-19.83 46.83-19.84 19.84-46.84 19.84H280ZM146.67-80q-27 0-46.84-19.83Q80-119.67 80-146.67v-600h66.67v600h600V-80h-600ZM556-813.33H746.67 556Zm-276 0H813.33 280Z"/></svg>
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Archives</i></div>
+                                    </a>
+                                    {% if permissions > 0 and not_add == None %}
+                                    <a  href="/structures/" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#5985E1"><path d="M208-254v-319.33h66.67V-254H208Zm241.33 0v-319.33H516V-254h-66.67ZM80-640v-62l400-218.67L880-702v62H80Zm149-66.67h502l-251-138-251 138Zm-149 586v-66.66h494q2 16.33 4 32.5 2 16.16 8 34.16H80ZM685.33-418v-155.33H752v122L685.33-418ZM800 0q-69-17-114.5-79.5T640-218v-102l160-80 160 80v102q0 76-45.5 138.5T800 0Zm-23.67-120 141-140.67-32.66-32.66-108.34 107.66L724-238l-32.67 33 85 85ZM229-706.67h502-502Z"/></svg>
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">{{default_struc_name}}</i></div>
+                                    </a>
+                                  
+                                    {% endif %}
+                                    {% if permissions > 0 and not_add == None %}
+                                    <a  href="/personnels/" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <i class="fa fa-users fa-2x"></i>
+                                            <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#AAC1F0"><path d="M226-262q59-42.33 121.33-65.5 62.34-23.17 132.67-23.17 70.33 0 133 23.17T734.67-262q41-49.67 59.83-103.67T813.33-480q0-141-96.16-237.17Q621-813.33 480-813.33t-237.17 96.16Q146.67-621 146.67-480q0 60.33 19.16 114.33Q185-311.67 226-262Zm253.88-184.67q-58.21 0-98.05-39.95Q342-526.58 342-584.79t39.96-98.04q39.95-39.84 98.16-39.84 58.21 0 98.05 39.96Q618-642.75 618-584.54t-39.96 98.04q-39.95 39.83-98.16 39.83ZM480.31-80q-82.64 0-155.64-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.51T80-480.18q0-82.82 31.5-155.49 31.5-72.66 85.83-127Q251.67-817 324.51-848.5T480.18-880q82.82 0 155.49 31.5 72.66 31.5 127 85.83Q817-708.33 848.5-635.65 880-562.96 880-480.31q0 82.64-31.5 155.64-31.5 73-85.83 127.34Q708.33-143 635.65-111.5 562.96-80 480.31-80Zm-.31-66.67q54.33 0 105-15.83t97.67-52.17q-47-33.66-98-51.5Q533.67-284 480-284t-104.67 17.83q-51 17.84-98 51.5 47 36.34 97.67 52.17 50.67 15.83 105 15.83Zm0-366.66q31.33 0 51.33-20t20-51.34q0-31.33-20-51.33T480-656q-31.33 0-51.33 20t-20 51.33q0 31.34 20 51.34 20 20 51.33 20Zm0-71.34Zm0 369.34Z"/></svg> -->
+                                            <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#5985E1"><path d="M208-254v-319.33h66.67V-254H208Zm241.33 0v-319.33H516V-254h-66.67ZM80-640v-62l400-218.67L880-702v62H80Zm149-66.67h502l-251-138-251 138Zm-149 586v-66.66h494q2 16.33 4 32.5 2 16.16 8 34.16H80ZM685.33-418v-155.33H752v122L685.33-418ZM800 0q-69-17-114.5-79.5T640-218v-102l160-80 160 80v102q0 76-45.5 138.5T800 0Zm-23.67-120 141-140.67-32.66-32.66-108.34 107.66L724-238l-32.67 33 85 85ZM229-706.67h502-502Z"/></svg> -->
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Ressources Humaines</i></div>
+                                    </a>
+                                  
+                                    {% endif %}
+                                    <a href="/forms_data/" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center" >
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#18333C"><path d="M480-40 328.67-192H632L480-40ZM146.67-280q-27 0-46.84-19.83Q80-319.67 80-346.67v-426.66q0-27 19.83-46.84Q119.67-840 146.67-840h666.66q27 0 46.84 19.83Q880-800.33 880-773.33v426.66q0 27-19.83 46.84Q840.33-280 813.33-280H146.67Zm0-66.67h666.66v-426.66H146.67v426.66Zm176-56.66H638V-470H322.67v66.67ZM198-526.67h66.67v-66.66H198v66.66Zm124.67 0h66.66v-66.66h-66.66v66.66Zm124 0h66.66v-66.66h-66.66v66.66Zm124.66 0H638v-66.66h-66.67v66.66Zm124 0H762v-66.66h-66.67v66.66ZM198-650h66.67v-66.67H198V-650Zm124.67 0h66.66v-66.67h-66.66V-650Zm124 0h66.66v-66.67h-66.66V-650Zm124.66 0H638v-66.67h-66.67V-650Zm124 0H762v-66.67h-66.67V-650ZM146.67-346.67v-426.66 426.66Z"/></svg>
+                                            <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#999999"><path d="M120-120v-77.33L186.67-264v144H120Zm163.33 0v-237.33L350-424v304h-66.67Zm163.34 0v-304l66.66 67.67V-120h-66.66ZM610-120v-236.33L676.67-423v303H610Zm163.33 0v-397.33L840-584v464h-66.67ZM120-346.33v-94.34l280-278.66 160 160L840-840v94.33L560-465 400-625 120-346.33Z"/></svg> -->
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Saisie de Donnees</i></div>
+                                    </a>
+                                    {% if permissions > 0 and not_add == None %}
+                                    <a href="/configurations/" class="card d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="#BD4C31"><path d="M42-120v-92q0-34 16-56.5t45-36.5q54-26 115.5-43T358-365q78 0 139.5 17T613-305q29 14 45 36.5t16 56.5v92H42Zm60-60h512v-32q0-15-8.5-24.5T585-251q-43-19-96-36.5T358-305q-78 0-131 17.5T131-251q-12 5-20.5 14.5T102-212v32Zm256-245q-66 0-108-43t-42-107h-10q-8 0-14-6t-6-14q0-8 6-14t14-6h10q0-40 20-72t52-52v39q0 6 4.5 10.5T295-685q7 0 11-4.5t4-10.5v-52q8-2 22-3.5t27-1.5q13 0 27 1.5t22 3.5v52q0 6 4 10.5t11 4.5q6 0 10.5-4.5T438-700v-39q32 20 51 52t19 72h10q8 0 14 6t6 14q0 8-6 14t-14 6h-10q0 64-42 107t-108 43Zm0-60q42 0 66-25t24-65H268q0 40 24 65t66 25Zm302 124-2-29q-7-4-14.5-9T630-409l-26 14-22-32 26-19q-2-4-2-7.5v-15q0-3.5 2-7.5l-26-19 22-32 26 14 14-10q7-5 14-9l2-29h40l2 29q7 4 14 9l14 10 26-14 22 32-26 19q2 4 2 7.5v15q0 3.5-2 7.5l26 19-22 32-26-14q-6 5-13.5 10t-14.5 9l-2 29h-40Zm20-62q16 0 27-11t11-27q0-16-11-27t-27-11q-16 0-27 11t-11 27q0 16 11 27t27 11Zm88-155-9-35q-10-4-20.5-11T721-639l-44 16-20-35 35-28q-2-5-3.5-11t-1.5-12q0-6 1.5-12t3.5-11l-35-28 20-35 44 16q7-8 17.5-15.5T759-805l9-35h38l9 35q10 3 20.5 10.5T853-779l44-16 20 35-35 28q2 5 3.5 11t1.5 12q0 6-1.5 12t-3.5 11l35 28-20 35-44-16q-7 8-17.5 15T815-613l-9 35h-38Zm19-73q25 0 41.5-16.5T845-709q0-25-16.5-41.5T787-767q-25 0-41.5 16.5T729-709q0 25 16.5 41.5T787-651ZM358-180Z"/></svg>
+                                            <!-- <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#BD4C31"><path d="M42-120v-98.67q0-33.66 16.33-58.33 16.34-24.67 45.67-39 53-26 115.33-43.33 62.34-17.34 140-17.34 77.67 0 140 17.34Q561.67-342 614.67-316q29.33 14.33 45.66 39 16.34 24.67 16.34 58.33V-120H42Zm66.67-66.67H610v-32q0-13.66-7.5-23Q595-251 584-256q-40.67-18.67-94.83-36.33Q435-310 359.33-310q-75.66 0-129.83 17.67-54.17 17.66-94.83 36.33-11 5-18.5 14.33-7.5 9.34-7.5 23v32ZM359.33-430q-66 0-109.66-44.33-43.67-44.34-43.67-109h-10q-8.33 0-14.17-5.84Q176-595 176-603.33q0-8.34 5.83-14.17 5.84-5.83 14.17-5.83h10q0-41.67 20.67-75 20.66-33.34 54-53.67v38.67q0 7 4.83 11.83t11.83 4.83q7.67 0 12.17-4.83t4.5-11.83V-766q8.33-2.33 21-3.83t25-1.5q12.33 0 25 1.5t21 3.83v52.67q0 7 4.5 11.83t12.17 4.83q7 0 11.83-4.83t4.83-11.83V-752q33.34 20.33 53.34 53.67 20 33.33 20 75h10q8.33 0 14.16 5.83 5.84 5.83 5.84 14.17 0 8.33-5.84 14.16-5.83 5.84-14.16 5.84h-10q0 64.66-43.67 109Q425.33-430 359.33-430Zm0-66.67q39 0 62.84-24.5Q446-545.67 446-583.33H272.67q0 37.66 23.83 62.16t62.83 24.5Zm301.34 136L657.33-390q-6.66-3.33-13.5-7.5-6.83-4.17-12.5-9.17L604.67-394l-21.34-33.33L608-446.67q-1.33-3.66-1.33-7v-14q0-3.33 1.33-7L583.33-494l21.34-33.33 26.66 12.66q6-4.66 12.67-9 6.67-4.33 13.33-7.66l3.34-29.34h40l3.33 29.34q6.67 3.33 13.33 7.66 6.67 4.34 12.67 9l26.67-12.66L778-494l-24.67 19.33q1.34 3.67 1.34 7v14q0 3.34-1.34 7L778-427.33 756.67-394 730-406.67q-5.67 5-12.5 9.17T704-390l-3.33 29.33h-40Zm20-64.66q14.66 0 25-10.34Q716-446 716-460.67q0-14.66-10.33-25-10.34-10.33-25-10.33-14.67 0-25 10.33-10.34 10.34-10.34 25 0 14.67 10.34 25 10.33 10.34 25 10.34ZM763.33-572l-8.66-37.33Q745-613 735.5-619.17q-9.5-6.16-16.17-13.5L676-617.33l-22.67-39.34L688-685.33q-2-5-3-10T684-706q0-5.67 1-10.67t3-10l-34.67-28.66L676-794.67l43.33 15.34q6.67-7.34 16.17-13.84 9.5-6.5 19.17-9.5l8.66-37.33h44l8.67 37.33q9.67 3 19.17 9.5 9.5 6.5 16.16 13.84l43.34-15.34 22.66 39.34-34.66 28.66q2 5 3 10t1 10.67q0 5.67-1 10.67t-3 10l34.66 28.66-22.66 39.34-43.34-15.34q-6.66 7.34-16.16 13.5-9.5 6.17-19.17 9.84L807.33-572h-44Zm22-78.67q23.67 0 39.5-15.83 15.84-15.83 15.84-39.5t-15.84-39.5q-15.83-15.83-39.5-15.83-23.66 0-39.5 15.83Q730-729.67 730-706t15.83 39.5q15.84 15.83 39.5 15.83Zm-426 464Z"/></svg> -->
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Cadre Logique</i></div>
+                                    </a>
+                                    {% endif %}
+                                    {% if permissions > 0 and not_add == None %}
+                                    <a href="/actualite/" class="card mx-2 my-2  d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#48752C"><path d="M333.33-259 480-347l146.67 89-39-166.67 129-112-170-15L480-709l-66.67 156.33-170 15 129 112.34-39 166.33ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-353.33Z"/></svg>
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Actualité</i></div>
+                                    </a>
+                                      <a href="/facturation/"  class="card  d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <i class="fa fa-file-code fa-2x"></i>
+                                            <!-- <svg xmlns="http://www.w3.org/2000/svg" height="42px" viewBox="0 -960 960 960" width="40px" fill="#7CA7D8"><path d="M312.67-614q13.66 0 23.5-9.83 9.83-9.84 9.83-23.5 0-13.67-9.83-23.5-9.84-9.84-23.5-9.84-13.67 0-23.5 9.84-9.84 9.83-9.84 23.5 0 13.66 9.84 23.5Q299-614 312.67-614Zm0 167.33q13.66 0 23.5-9.83Q346-466.33 346-480t-9.83-23.5q-9.84-9.83-23.5-9.83-13.67 0-23.5 9.83-9.84 9.83-9.84 23.5t9.84 23.5q9.83 9.83 23.5 9.83Zm0 167.34q13.66 0 23.5-9.84Q346-299 346-312.67q0-13.66-9.83-23.5-9.84-9.83-23.5-9.83-13.67 0-23.5 9.83-9.84 9.84-9.84 23.5 0 13.67 9.84 23.5 9.83 9.84 23.5 9.84ZM186.67-120q-27 0-46.84-19.83Q120-159.67 120-186.67v-586.66q0-27 19.83-46.84Q159.67-840 186.67-840h454.66L840-641.33v454.66q0 27-19.83 46.84Q800.33-120 773.33-120H186.67Zm0-66.67h586.66v-419.04H606v-167.62H186.67v586.66Zm0-586.66v167.62-167.62V-186.67v-586.66Z"/></svg> -->
+                                        </div>
+                                        <div class="menu_littleWid_text"><i class="" style="font-weight:bold;font-weight:bold">Mise A Jour</i></div>
+                                    </a>
+                                  
+                                  
+                                    <a href="/invoices/" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center" style="color:#b46298;">
+                                        <div><svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#46152F"><path d="M253.33-160q-87.66 0-150.5-62.33Q40-284.67 40-372.33q0-78 48.67-138 48.66-60 126-73.67 21.66-95.33 96-155.33 74.33-60 170.66-60 114.34 0 192.5 81.5Q752-636.33 752-521.33v16q71 1.33 119.5 50.83T920-332.67q0 71-50.83 121.84Q818.33-160 747.33-160h-234q-27 0-46.83-19.83-19.83-19.84-19.83-46.84v-240.66l-76.67 76-47.33-47.34L480-596l157.33 157.33L590-391.33l-76.67-76v240.66h234q44 0 75-31t31-75q0-44-31-75t-75-31h-62v-82.66q0-87-59.83-149.17-59.83-62.17-146.83-62.17-87 0-147.17 62.17-60.17 62.17-60.17 149.17H252q-60.67 0-103 42.66Q106.67-436 106.67-374q0 60.67 42.95 104t103.71 43.33H380V-160H253.33ZM480-446.67Z"/></svg></div>
+                                        <div class="menu_littleWid_text"><small>Rapports</small></div>
+                                    </a>
+                                    <a href="http://metabase.operaplus.org" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center" style="color: brown">
+                                        <div><i class="fas fa-chart-line fa-2x "></i></div>
+                                        <div class="menu_littleWid_text"><small>Analyse de Donnees</small></div>
+                                    </a>
+        
+                                   
+        
+        
+                                   
+        
+                                    <a href="/configurations_admin/" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center" style="color:#a38975;">
+                                        <div><i class="fas fa-cog fa-2x fa-spin"></i></div>
+                                        <div class="menu_littleWid_text"><small>Configurations</small></div>
+                                    </a>
+        
+                                    <a href="/data/" style="color: #12d5a3;" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div><i class="fas fa-database fa-2x "></i></div>
+                                        <div class="menu_littleWid_text"><small> Donn&eacute;es Consolid&eacute;s</small></div>
+                                    </a>
+        
+        
+                                    <a href="/data/" style="color: #130e33;" class="card mx-2 my-2 d-block col-6 col-md-4 col-lg-3 p-4 text-center">
+                                        <div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#6B2346"><path d="M186.67-186.67h586.66V-559L559-773.33H186.67v586.66Zm0 66.67q-27.5 0-47.09-19.58Q120-159.17 120-186.67v-586.66q0-27.5 19.58-47.09Q159.17-840 186.67-840h400L840-586.67v400q0 27.5-19.58 47.09Q800.83-120 773.33-120H186.67Zm92.66-167.33h401.34V-354H279.33v66.67Zm0-159.34h401.34v-66.66H279.33v66.66Zm0-159.33h277.34v-66.67H279.33V-606Zm-92.66 419.33v-586.66 586.66Z"/></svg>
+                                        </div>
+                                        <div class="menu_littleWid_text"><small> Logs</small></div>
+                                    </a>
+        
+                                    {% endif %}
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                             
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                  </div>
+                </div>
+              </nav>
+             <div class="container-fluid">
+       <div class="row">
+    <div class="card my-4">
+        </div>
+        <div class="card-body">
+           
+            <form method="post" action="/duplicate_form/">
+                {%csrf_token%}
+                <textarea name="dataset" id="" class="form-control" style="display: none;">{{data_set.m_formulaire}}</textarea>
+            <div class="col-md-12">
+                <label style="font-weight:bold">Nom du Formulaire</label>
+                <input value="{{data_set.m_name}}" type="text" class="form-control" name="form_name">
+              	
+            </div>
+            
+            <hr class="p-2 bg-dark"/>	
+                    
+                    <div class="col-md-9">
+                        <h4 style="font-weight:bold" class="text-center text-primary my-4">Sélectionnez Les Structures</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h2 style="font-weight:bold; font-family: forte;">Structures Liées :</h2>
+                                <ul>
+                                    {% for v in data_set.m_structures.all %}
+                                        
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="linked-{{ v.id }}" name="structure" value="{{ v.id }}" checked>
+                                                <label class="form-check-label" for="linked-{{ v.id }}">{{ v }}</label>
+                                            </div>
+                                        
+                                    {% empty %}
+                                        <li>Aucune structure liée.</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                    
+                            <div class="col-md-6">
+                                <h2 style="font-weight:bold; font-family: forte;">Structures Non Liées :</h2>
+                                <ul>
+                                    <div id="structures-list">  
+                                        {% for structure in unlinked_structures %}  
+                                            <div class="form-check structure-item">  
+                                                <input class="form-check-input" type="checkbox" id="unlinked-{{ structure.id }}" name="structure" value="{{ structure.id }}">  
+                                                <label class="form-check-label" for="unlinked-{{ structure.id }}">{{ structure.nom }}</label>  
+                                            </div>  
+                                        {% empty %}  
+                                            <li>Toutes les structures sont liées.</li>  
+                                        {% endfor %}  
+                                    </div>  
+                                    <div id="structures-list">  
+                                        {% for structure in unlinked_structures %}  
+                                            <div class="form-check structure-item">  
+                                                <input class="form-check-input" type="checkbox" id="unlinked-{{ structure.id }}" name="structure" value="{{ structure.id }}">  
+                                                <label class="form-check-label" for="unlinked-{{ structure.id }}">{{ structure.nom }}</label>  
+                                            </div>  
+                                        {% empty %}  
+                                            <li>Toutes les structures sont liées.</li>  
+                                        {% endfor %}  
+                                    </div>  
+                                    
+                                    <button id="show-more" style="display: none;" class="btn btn-dark" type="button">Voir plus</button>  
+                                    <button id="show-less" style="display: none;" class="btn btn-dark" type="button">Voir moins</button>  
+                                 
+                                </ul>
+                            </div>
+                        </div>
+                        </div>
+                
+<hr class="p-2 bg-dark"/>
+<h4 style="font-weight:bold" class="text-center text-primary my-4">Sélectionnez Les Elements De Donnees</h4>
+<div class="row">  
+    <div class="col-md-6">  
+        <h5 style="font-weight:bold; font-family: forte;">Éléments De Données Liées :</h5>  
+        <ul id="linked-list">  
+            {% for v in data_set.m_dataelements.all %}  
+                <div class="form-check linked-item">  
+                    <input class="form-check-input" type="checkbox" id="linked-{{ v.id }}" name="element" value="{{ v.id }}" checked>  
+                    <label class="form-check-label" for="linked-{{ v.id }}">{{ v }}</label>  
+                </div>  
+            {% empty %}  
+                <li>Aucun élément lié.</li>  
+            {% endfor %}  
+        </ul>  
+
+        <button id="show-more-linked" style="display: none;" type="button" class="btn btn-dark">Voir plus</button>  
+        <button id="show-less-linked" style="display: none;" type="button" class="btn btn-dark">Voir moins</button>  
+    </div>  
+
+    <div class="col-md-6">  
+        <h2 style="font-weight:bold; font-family: forte;">Éléments Non Liés :</h2>  
+        <ul id="unlinked-list">  
+            {% for elements in unlinked_element %}  
+                <div class="form-check unlinked-item">  
+                    <input class="form-check-input" type="checkbox" id="unlinked-{{ elements.id }}" name="element" value="{{ elements.id }}">  
+                    <label class="form-check-label" for="unlinked-{{ elements.id }}">{{ elements.m_name }}</label>  
+                </div>  
+            {% empty %}  
+                <li>Tous les éléments sont liés.</li>  
+            {% endfor %}  
+        </ul>  
+
+        <button id="show-more-unlinked" style="display: none;" type="button" class="btn btn-dark">Voir plus</button>  
+        <button id="show-less-unlinked" style="display: none;" type="button" class="btn btn-dark">Voir moins</button>  
+    </div>  
+</div>  
+
+</div>
+<hr class="p-2 bg-dark"/>
+<h4 style="font-weight:bold" class="text-center text-primary my-4">Sélectionnez Les Indicateurs</h4>
+<div class="row">  
+    <div class="col-md-6">  
+        <h5 style="font-weight:bold; font-family: forte;">Indicateurs Liés :</h5>  
+        <ul id="linked-indicator-list">  
+            {% for v in data_set.m_indicateurs.all %}  
+                <div class="form-check linked-indicator">  
+                    <input class="form-check-input" type="checkbox" id="linked-{{ v.id }}" name="indicateur" value="{{ v.id }}" checked>  
+                    <label class="form-check-label" for="linked-{{ v.id }}">{{ v }}</label>  
+                </div>  
+            {% empty %}  
+                <li>Aucun Indicateur lié.</li>  
+            {% endfor %}  
+        </ul>  
+
+        <button id="show-more-linked-indicators" style="display: none;"  type="button" class="btn btn-dark">Voir plus</button>  
+        <button id="show-less-linked-indicators" style="display: none;"  type="button" class="btn btn-dark">Voir moins</button>  
+    </div>  
+
+    <div class="col-md-6">  
+        <h2 style="font-weight:bold; font-family: forte;">Indicateurs Non Liés :</h2>  
+        <ul id="unlinked-indicator-list">  
+            {% for indicateurs in unlinked_indicateur %}  
+                <div class="form-check unlinked-indicator">  
+                    <input class="form-check-input" type="checkbox" id="unlinked-{{ indicateurs.id }}" name="indicateur" value="{{ indicateurs.id }}">  
+                    <label class="form-check-label" for="unlinked-{{ indicateurs.id }}">{{ indicateurs.m_name }}</label>  
+                </div>  
+            {% empty %}  
+                <li>Tous les Indicateurs sont liés.</li>  
+            {% endfor %}  
+        </ul>  
+
+        <button id="show-more-unlinked-indicators" style="display: none;" type="button" class="btn btn-dark">Voir plus</button>  
+        <button id="show-less-unlinked-indicators" style="display: none;" type="button" class="btn btn-dark">Voir moins</button>  
+    </div>  
+</div>  
+<hr class="p-2 bg-dark">
+<div class="col-4">
+    <button type="submit" class="btn btn-primary">Dupliquer</button>
+</div>
+
+    </div>
+</div>
+</div>
+    </div>
+</form>
+
+    <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
+        <p class="col-md-4 mb-0 text-body-secondary">© 2024 Company, Inc</p>
+    
+        <a href="/" class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+          <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"></use></svg>
+        </a>
+    
+        <ul class="nav col-md-4 justify-content-end">
+          <li class="nav-item"><a href="/" class="nav-link px-2 text-body-secondary">Dashboard</a></li>
+          <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Deconnexion</a></li>
+          
+          <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">FAQs</a></li>
+      
+        </ul>
+      </footer>
+      <script>  
+        document.addEventListener("DOMContentLoaded", function() {  
+            const items = document.querySelectorAll('.structure-item');  
+            const showMoreButton = document.getElementById('show-more');  
+            const showLessButton = document.getElementById('show-less');  
+    
+            // Masquer tous les éléments au-delà de 10  
+            items.forEach((item, index) => {  
+                if (index >= 10) {  
+                    item.style.display = 'none'; // Masquer l'élément  
+                }  
+            });  
+    
+            // Afficher le bouton 'Voir plus' si nécessaire  
+            if (items.length > 10) {  
+                showMoreButton.style.display = 'block';  
+            }  
+    
+            // Ajouter l'événement click pour le bouton 'Voir plus'  
+            showMoreButton.addEventListener('click', function() {  
+                items.forEach(item => {  
+                    item.style.display = 'block'; // Afficher tous les éléments  
+                });  
+                showMoreButton.style.display = 'none'; // Masquer le bouton après  
+                showLessButton.style.display = 'block'; // Afficher le bouton 'Voir moins'  
+            });  
+    
+            // Ajouter l'événement click pour le bouton 'Voir moins'  
+            showLessButton.addEventListener('click', function() {  
+                items.forEach((item, index) => {  
+                    if (index >= 10) {  
+                        item.style.display = 'none'; // Masquer les éléments au-delà de 10  
+                    }  
+                });  
+                showMoreButton.style.display = 'block'; // Réafficher le bouton 'Voir plus'  
+                showLessButton.style.display = 'none'; // Masquer le bouton 'Voir moins' après  
+            });  
+        });  
+    </script>  
+    
+  
+
+    <script>  
+        document.addEventListener("DOMContentLoaded", function() {  
+            // Gestion des éléments liés  
+            const linkedItems = document.querySelectorAll('.linked-item');  
+            const showMoreButtonLinked = document.getElementById('show-more-linked');  
+            const showLessButtonLinked = document.getElementById('show-less-linked');  
+    
+            // Masquer tous les éléments au-delà de 10  
+            linkedItems.forEach((item, index) => {  
+                if (index >= 10) {  
+                    item.style.display = 'none'; // Masquer l'élément  
+                }  
+            });  
+    
+            // Afficher le bouton 'Voir plus' si nécessaire  
+            if (linkedItems.length > 10) {  
+                showMoreButtonLinked.style.display = 'block';  
+            }  
+    
+            // Ajouter l'événement click pour le bouton 'Voir plus'  
+            showMoreButtonLinked.addEventListener('click', function() {  
+                linkedItems.forEach(item => {  
+                    item.style.display = 'block'; // Afficher tous les éléments  
+                });  
+                showMoreButtonLinked.style.display = 'none'; // Masquer le bouton après  
+                showLessButtonLinked.style.display = 'block'; // Afficher le bouton 'Voir moins'  
+            });  
+    
+            // Ajouter l'événement click pour le bouton 'Voir moins'  
+            showLessButtonLinked.addEventListener('click', function() {  
+                linkedItems.forEach((item, index) => {  
+                    if (index >= 10) {  
+                        item.style.display = 'none'; // Masquer les éléments au-delà des 10 premiers  
+                    }  
+                });  
+                showMoreButtonLinked.style.display = 'block'; // Réafficher le bouton 'Voir plus'  
+                showLessButtonLinked.style.display = 'none'; // Masquer le bouton 'Voir moins'  
+            });  
+    
+    
+            // Gestion des éléments non liés  
+            const unlinkedItems = document.querySelectorAll('.unlinked-item');  
+            const showMoreButtonUnlinked = document.getElementById('show-more-unlinked');  
+            const showLessButtonUnlinked = document.getElementById('show-less-unlinked');  
+    
+            // Masquer tous les éléments au-delà de 10  
+            unlinkedItems.forEach((item, index) => {  
+                if (index >= 10) {  
+                    item.style.display = 'none'; // Masquer l'élément  
+                }  
+            });  
+    
+            // Afficher le bouton 'Voir plus' si nécessaire  
+            if (unlinkedItems.length > 10) {  
+                showMoreButtonUnlinked.style.display = 'block';  
+            }  
+    
+            // Ajouter l'événement click pour le bouton 'Voir plus'  
+            showMoreButtonUnlinked.addEventListener('click', function() {  
+                unlinkedItems.forEach(item => {  
+                    item.style.display = 'block'; // Afficher tous les éléments  
+                });  
+                showMoreButtonUnlinked.style.display = 'none'; // Masquer le bouton après  
+                showLessButtonUnlinked.style.display = 'block'; // Afficher le bouton 'Voir moins'  
+            });  
+    
+            // Ajouter l'événement click pour le bouton 'Voir moins'  
+            showLessButtonUnlinked.addEventListener('click', function() {  
+                unlinkedItems.forEach((item, index) => {  
+                    if (index >= 10) {  
+                        item.style.display = 'none'; // Masquer les éléments au-delà de 10  
+                    }  
+                });  
+                showMoreButtonUnlinked.style.display = 'block'; // Réafficher le bouton 'Voir plus'  
+                showLessButtonUnlinked.style.display = 'none'; // Masquer le bouton 'Voir moins'  
+            });  
+        });  
+    </script>  
+   
+<script>  
+    document.addEventListener("DOMContentLoaded", function() {  
+        // Gestion des indicateurs liés  
+        const linkedIndicators = document.querySelectorAll('.linked-indicator');  
+        const showMoreButtonLinked = document.getElementById('show-more-linked-indicators');  
+        const showLessButtonLinked = document.getElementById('show-less-linked-indicators');  
+
+        // Masquer tous les éléments au-delà de 10  
+        linkedIndicators.forEach((item, index) => {  
+            if (index >= 10) {  
+                item.style.display = 'none'; // Masquer l'élément  
+            }  
+        });  
+
+        // Afficher le bouton 'Voir plus' si nécessaire  
+        if (linkedIndicators.length > 10) {  
+            showMoreButtonLinked.style.display = 'block';  
+        }  
+
+        // Ajouter l'événement click pour le bouton 'Voir plus'  
+        showMoreButtonLinked.addEventListener('click', function() {  
+            linkedIndicators.forEach(item => {  
+                item.style.display = 'block'; // Afficher tous les éléments  
+            });  
+            showMoreButtonLinked.style.display = 'none'; // Masquer le bouton après  
+            showLessButtonLinked.style.display = 'block'; // Afficher le bouton 'Voir moins'  
+        });  
+
+        // Ajouter l'événement click pour le bouton 'Voir moins'  
+        showLessButtonLinked.addEventListener('click', function() {  
+            linkedIndicators.forEach((item, index) => {  
+                if (index >= 10) {  
+                    item.style.display = 'none'; // Masquer les éléments au-delà de 10  
+                }  
+            });  
+            showMoreButtonLinked.style.display = 'block'; // Réafficher le bouton 'Voir plus'  
+            showLessButtonLinked.style.display = 'none'; // Masquer le bouton 'Voir moins'  
+        });  
+
+        // Gestion des indicateurs non liés  
+        const unlinkedIndicators = document.querySelectorAll('.unlinked-indicator');  
+        const showMoreButtonUnlinked = document.getElementById('show-more-unlinked-indicators');  
+        const showLessButtonUnlinked = document.getElementById('show-less-unlinked-indicators');  
+
+        // Masquer tous les éléments au-delà de 10  
+        unlinkedIndicators.forEach((item, index) => {  
+            if (index >= 10) {  
+                item.style.display = 'none'; // Masquer l'élément  
+            }  
+        });  
+
+        // Afficher le bouton 'Voir plus' si nécessaire  
+        if (unlinkedIndicators.length > 10) {  
+            showMoreButtonUnlinked.style.display = 'block';  
+        }  
+
+        // Ajouter l'événement click pour le bouton 'Voir plus'  
+        showMoreButtonUnlinked.addEventListener('click', function() {  
+            unlinkedIndicators.forEach(item => {  
+                item.style.display = 'block'; // Afficher tous les éléments  
+            });  
+            showMoreButtonUnlinked.style.display = 'none'; // Masquer le bouton après  
+            showLessButtonUnlinked.style.display = 'block'; // Afficher le bouton 'Voir moins'  
+        });  
+
+        // Ajouter l'événement click pour le bouton 'Voir moins'  
+        showLessButtonUnlinked.addEventListener('click', function() {  
+            unlinkedIndicators.forEach((item, index) => {  
+                if (index >= 10) {  
+                    item.style.display = 'none'; // Masquer les éléments au-delà de 10  
+                }  
+            });  
+            showMoreButtonUnlinked.style.display = 'block'; // Réafficher le bouton 'Voir plus'  
+            showLessButtonUnlinked.style.display = 'none'; // Masquer le bouton 'Voir moins'  
+        });  
+    });  
+</script>  
+
+	
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js" integrity="sha512-ykZ1QQr0Jy/4ZkvKuqWn4iF3lqPZyij9iRv6sGqLRdTPkY69YX6+7wvVGmsdBbiIfN/8OdsI7HABjvEok6ZopQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+   </body>
+</html>

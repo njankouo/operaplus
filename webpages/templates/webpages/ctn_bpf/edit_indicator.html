@@ -1,0 +1,305 @@
+{% extends './evaluer.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-[#f3f6f8] p-6">
+    <div class="max-w-6xl mx-auto">
+        
+        <!-- Fil d'Ariane / Titre -->
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold text-[#212934] flex items-center gap-2">
+                    <i class="bx bx-edit-alt text-dhis2-blue"></i>
+                    Configuration de l'indicateur
+                </h2>
+                <p class="text-sm text-slate-500">Modifier les propriétés et la logique de calcul de l'indicateur</p>
+            </div>
+            <a href="/evaluer/0/" class="text-sm font-bold text-dhis2-blue hover:underline">
+                <i class="bx bx-arrow-back"></i> Retour à la liste
+            </a>
+        </div>
+
+        <form action="/editions_indicator/{{indicator.id}}/" method="post">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Colonne de gauche : Configuration -->
+                <div class="lg:col-span-2 space-y-6">
+                    
+                    <!-- Détails de base -->
+                    <div class="bg-white border border-[#d5dde5] rounded shadow-sm">
+                        <div class="p-4 border-b border-[#d5dde5] bg-[#fbfcfd]">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600">Détails de base</h3>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Nom de l'indicateur</label>
+                                <input type="text" required class="w-full px-3 py-2 border border-[#d5dde5] rounded focus:ring-1 focus:ring-dhis2-blue outline-none text-sm" 
+                                       name="nature_indicateur" value="{{indicator.m_name}}">
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Nice Name (Alias)</label>
+                                    <input type="text" name="nicename" class="w-full px-3 py-2 border border-[#d5dde5] rounded focus:ring-1 focus:ring-dhis2-blue outline-none text-sm" 
+                                           value="{{indicator.nicename}}" placeholder="Ex: % Couverture">
+                                </div>
+
+<div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Niveau de la pyramide</label>
+                            <select class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500" name="niveau_pyramide">
+                                {%if indicator.niveau_pyramide == "Impact"%}
+                                <option value="Impact" selected>Impact</option>
+                                <option value="Effet" >Effet</option>
+                                    <option value="Produit" >Produit</option>
+                                     <option value="Activité" >Activité</option>
+                                {%elif indicator.niveau_pyramide == "Effet"%}
+                                <option value="Effet" selected>Effet</option>
+                                 <option value="Impact" >Impact</option>
+                               
+                                    <option value="Produit" >Produit</option>
+                                     <option value="Activité" >Activité</option>
+                                {%elif indicator.niveau_pyramide == "Produit"%}
+                                <option value="Produit" selected>Produit</option>
+                                 <option value="Impact" >Impact</option>
+                                <option value="Effet" >Effet</option>
+                                   
+                                     <option value="Activité" >Activité</option>
+                                {%elif indicator.niveau_pyramide == "Activité"%}
+                                <option value="Activité" selected>Activité</option>
+                                 <option value="Impact" >Impact</option>
+                                <option value="Effet" >Effet</option>
+                                    <option value="Produit" >Produit</option>
+                                     
+                                {%else%}
+                                    <option value="Impact" >Impact</option>
+                                    <option value="Effet" >Effet</option>
+                                    <option value="Produit" >Produit</option>
+                                     <option value="Activité" >Activité</option>
+                                {%endif%}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Cible contractuelle</label>
+                            <input type="number" class="w-full border border-slate-200 rounded-lg p-3 text-sm" placeholder="Ex: 100" name="cible" value="{{indicator.cible_contractuelle}}">
+                        </div>
+
+                        <div>
+                           <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Fréquence de collecte</label>
+<select name="frequence" class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500">
+    <option value="Journalière" {% if indicator.frequence_collecte == "Journalière" %}selected{% endif %}>Journalière</option>
+    <option value="Hebdomadaire" {% if indicator.frequence_collecte == "Hebdomadaire" %}selected{% endif %}>Hebdomadaire</option>
+    <option value="Mensuelle" {% if indicator.frequence_collecte == "Mensuelle" %}selected{% endif %}>Mensuelle</option>
+    <option value="Trimestrielle" {% if indicator.frequence_collecte == "Trimestrielle" %}selected{% endif %}>Trimestrielle</option>
+    <option value="Semestrielle" {% if indicator.frequence_collecte == "Semestrielle" %}selected{% endif %}>Semestrielle</option>
+    <option value="Annuelle" {% if indicator.frequence_collecte == "Annuelle" %}selected{% endif %}>Annuelle</option>
+</select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Source de données</label>
+                            <input type="text" class="w-full border border-slate-200 rounded-lg p-3 text-sm" placeholder="Ex: Base de données interne" name="source" value="{{indicator.source_donnees}}">
+                        </div>
+                        <label for="mecanisme_verification" class="block text-xs font-bold text-slate-400 uppercase mb-2">
+                            Mécanisme de vérification
+                        </label>
+                        <textarea 
+                            name="mecanisme_verification" 
+                            id="mecanisme_verification"
+                            class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500" 
+                            rows="3" 
+                            placeholder="Décrivez comment l'indicateur sera vérifié...">{{indicator.mecanisme_verification}}</textarea>
+
+
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-1">Type d'agrégation</label>
+                                    <select name="type" id="type" class="w-full px-3 py-2 border border-[#d5dde5] rounded bg-white text-sm outline-none focus:ring-1 focus:ring-dhis2-blue" required>
+                                        <optgroup label="Numérique">
+                                    <option value="Somme" {% if indicator.type_aggregation == 'Somme' %}selected{% endif %}>Somme</option>
+                                    <option value="Moyenne" {% if indicator.type_aggregation == 'Moyenne' %}selected{% endif %}>Moyenne</option>
+                                    <option value="Minimum" {% if indicator.type_aggregation == 'Minimum' %}selected{% endif %}>Minimum (MIN)</option>
+                                    <option value="Maximum" {% if indicator.type_aggregation == 'Maximum' %}selected{% endif %}>Maximum (MAX)</option>
+                                </optgroup>
+                                <optgroup label="Spécifiques">
+                                    <option value="Dernière valeur" {% if indicator.type_aggregation == 'Dernière valeur' %}selected{% endif %}>Dernière valeur</option>
+                                    <option value="Compteur" {% if indicator.type_aggregation == 'Compteur' %}selected{% endif %}>Compteur</option>
+                                </optgroup>
+                                    </select>
+                                </div>
+
+                            </div>
+
+                                
+                    
+                        </div>
+
+                    </div>
+
+                    <!-- Editeur de Formule avec Clavier Mathématique -->
+                    <div class="bg-white border border-[#d5dde5] rounded shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-[#d5dde5] bg-[#fbfcfd] flex justify-between items-center">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600">Logique de calcul (Numérateur)</h3>
+                            <span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-bold uppercase">Formule Active</span>
+                        </div>
+
+                        <!-- Barre d'outils symboles -->
+                        <div class="px-4 py-2 border-b border-[#d5dde5] bg-slate-50 flex flex-wrap gap-1">
+                            <button type="button" onclick="insertSymbol('num_div', '+')" class="btn-math">+</button>
+                            <button type="button" onclick="insertSymbol('num_div', '-')" class="btn-math">-</button>
+                            <button type="button" onclick="insertSymbol('num_div', '*')" class="btn-math">×</button>
+                            <button type="button" onclick="insertSymbol('num_div', '/')" class="btn-math">÷</button>
+                            <button type="button" onclick="insertSymbol('num_div', '(')" class="btn-math">(</button>
+                            <button type="button" onclick="insertSymbol('num_div', ')')" class="btn-math">)</button>
+                            <div class="w-[1px] h-6 bg-slate-300 mx-1"></div>
+                            <button type="button" onclick="insertSymbol('num_div', 'sum(')" class="btn-math font-mono text-[10px]">sum( )</button>
+                            <button type="button" onclick="insertSymbol('num_div', 'avg(')" class="btn-math font-mono text-[10px]">avg( )</button>
+                            <button type="button" onclick="insertSymbol('num_div', '* 100')" class="btn-math text-[10px] font-bold text-blue-600">×100</button>
+                        </div>
+
+                        <div class="p-4">
+                            <textarea id="num_div" rows="6" 
+                                      class="w-full p-4 font-mono text-base bg-slate-900 text-emerald-400 rounded border border-slate-700 focus:ring-2 focus:ring-dhis2-blue outline-none shadow-inner" 
+                                      name="numerateur">{{indicator.m_numerateur}}</textarea>
+                            <div class="mt-2 flex items-center gap-2 text-xs text-slate-500 italic">
+                                <i class="bx bx-info-circle text-blue-500"></i>
+                                Cliquez sur les opérateurs ci-dessus ou les variables à droite pour construire l'expression.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-end gap-3">
+                        <button type="reset" class="px-6 py-2 border border-[#d5dde5] rounded text-sm font-bold text-slate-600 hover:bg-slate-50">Réinitialiser</button>
+                        <button type="submit" class="px-8 py-2 bg-dhis2-blue text-white rounded text-sm font-bold hover:bg-[#184370] shadow-md transition-all">
+                            <i class="bx bx-save"></i> Enregistrer l'indicateur
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Colonne de droite : Sélecteur de Variables -->
+                <div class="space-y-6">
+                    <div class="bg-white border border-[#d5dde5] rounded shadow-sm h-full flex flex-col" style="max-height: 650px;">
+                        <div class="p-4 border-b border-[#d5dde5] bg-[#fbfcfd]">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3">Éléments de données</h3>
+                            <div class="relative">
+                                <i class="bx bx-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" id="filter" 
+                                       class="w-full pl-9 pr-3 py-2 border border-[#d5dde5] rounded text-xs outline-none focus:border-dhis2-blue" 
+                                       placeholder="Rechercher une variable...">
+                            </div>
+                        </div>
+                        
+                        <div class="flex-grow overflow-y-auto p-2 space-y-1 bg-[#f8fafc]">
+                            {% for d in dataelts %}
+                            <div class="var-item p-2 bg-white border border-transparent rounded hover:border-dhis2-blue hover:shadow-sm cursor-pointer transition-all group"
+                                 onclick="launchVar(this,'num_div')" 
+                                 data-id="{{d.id}}"
+                                 data-name="{{d|lower}}">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2 truncate">
+                                        <div class="w-6 h-6 flex-shrink-0 bg-slate-100 text-slate-500 rounded flex items-center justify-center text-[10px] group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                            V
+                                        </div>
+                                        <span class="text-xs font-medium text-slate-700 truncate">{{d}}</span>
+                                    </div>
+                                    <i class="bx bx-plus-circle text-slate-300 group-hover:text-blue-500"></i>
+                                </div>
+                                <div class="mt-1 text-[9px] text-slate-400 font-mono pl-8 tracking-widest">ID: ${{d.id}}$</div>
+                            </div>
+                            {% empty %}
+                            <p class="text-center text-xs text-slate-400 py-4">Aucune donnée disponible</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .dhis2-blue { color: #1d5288; }
+    .bg-dhis2-blue { background-color: #1d5288; }
+    
+    /* Boutons mathématiques personnalisés */
+    .btn-math {
+        min-width: 38px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background-color: white;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .btn-math:hover {
+        background-color: #f3f4f6;
+        border-color: #9ca3af;
+        color: #111827;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .btn-math:active {
+        background-color: #e5e7eb;
+        transform: translateY(1px);
+    }
+    
+    /* Scrollbar DHIS2 Style */
+    .overflow-y-auto::-webkit-scrollbar { width: 6px; }
+    .overflow-y-auto::-webkit-scrollbar-track { background: #f1f1f1; }
+    .overflow-y-auto::-webkit-scrollbar-thumb { background: #bccad5; border-radius: 10px; }
+    .overflow-y-auto::-webkit-scrollbar-thumb:hover { background: #1d5288; }
+</style>
+
+<script>
+    // Filtrage temps réel des variables
+    document.getElementById('filter').addEventListener('input', function(e) {
+        const term = e.target.value.toLowerCase();
+        const items = document.querySelectorAll('.var-item');
+        
+        items.forEach(item => {
+            const name = item.getAttribute('data-name');
+            item.style.display = name.includes(term) ? 'block' : 'none';
+        });
+    });
+
+    /**
+     * Insère du texte dans le textarea à la position exacte du curseur
+     */
+    function insertAtCursor(textarea, value) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        
+        textarea.value = text.substring(0, start) + value + text.substring(end);
+        
+        // Repositionnement du focus et du curseur
+        textarea.focus();
+        const newCursorPos = start + value.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }
+
+    // Pour l'insertion des variables ($id$)
+    function launchVar(btn, targetId) {
+        const id = btn.getAttribute('data-id');
+        const textarea = document.getElementById(targetId);
+        insertAtCursor(textarea, "$" + id + "$");
+    }
+
+    // Pour l'insertion des symboles mathématiques (avec espaces pour la lisibilité)
+    function insertSymbol(targetId, symbol) {
+        const textarea = document.getElementById(targetId);
+        // On ajoute des espaces autour des opérateurs pour le confort visuel
+        const cleanSymbol = (symbol.length === 1) ? ` ${symbol} ` : `${symbol}`;
+        insertAtCursor(textarea, cleanSymbol);
+    }
+</script>
+{% endblock %}

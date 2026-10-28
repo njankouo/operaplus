@@ -1,0 +1,197 @@
+{% extends './index.html' %}
+{% load static %}
+
+{% block main %}
+
+<div class="max-w-7xl mx-auto p-6 bg-slate-50 min-h-screen">
+    
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Validation Opérationnelle</h1>
+            <p class="text-slate-500 text-sm">Gestion du flux de travail pour : {{ operation.operation.nom }}</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="javascript:history.back()" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium text-sm">Retour</a>
+            {% if operation.operation.accountable == operation.personnel %}
+            <button data-bs-toggle="modal" data-bs-target="#validationModal{{operation.id}}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-sm shadow-md">
+                <i class="fas fa-check-circle mr-2"></i> Valider l'opération
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Matrice RACI</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex items-center p-3 border border-slate-100 rounded-lg bg-slate-50/50">
+                        <img src="{% if operation.personnel.photo %}{{ operation.personnel.photo.url }}{% else %}{% static 'version/images.jpeg' %}{% endif %}" class="w-10 h-10 rounded-full mr-3 border border-white shadow">
+                        <div>
+                            <p class="text-[10px] font-bold text-emerald-600 uppercase">Responsible</p>
+                            <p class="text-sm font-semibold text-slate-800">{{ operation.operation.personnel }}</p>
+                        </div>
+                    </div>
+                    </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Documents & Rapports</h3>
+                <div class="space-y-3">
+                   {% for rapports in rapport %}
+                    {% if operation.operation.id == rapports.operation_id %}
+                    <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg hover:bg-slate-50 transition">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-pdf text-indigo-400 mr-3 text-lg"></i>
+                            <span class="text-sm text-slate-600 font-medium">Rapport du {{ rapports.date_enregistrement|date:"d M Y" }}</span>
+                        </div>
+                        <a href="/download/{{rapports.id}}/" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs underline">Télécharger</a>
+                    </div>
+                    {%endif%}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Progression</h3>
+                
+                <div class="mb-5">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-600">Pondération</span>
+                        <span class="font-bold">{{ operation.operation.ponderation }}%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-slate-400 h-2 rounded-full" style="width: {{ operation.operation.ponderation }}%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-600">Niveau Réalisé</span>
+                        <span class="font-bold text-indigo-600">{{ operation.valeur }}%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-indigo-600 h-2 rounded-full" style="width: {{ operation.valeur }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Historique</h3>
+                <div class="text-xs text-slate-600 space-y-3">
+                    <p><i class="fas fa-clock mr-2 text-slate-400"></i>Soumis le {{ operation.date_realisation|date:"d M Y" }}</p>
+                    <p><i class="fas fa-user mr-2 text-slate-400"></i>Par {{ operation.personnel }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" id="validationModal{{operation.id}}">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+        
+        <div class="px-6 py-4 text-white" style="background-color: {{request.user.personnel.color_fond}};">
+            <div class="flex justify-between items-center">
+                <h5 class="text-lg font-bold">Confirmation de validation</h5>
+                <button onclick="document.getElementById('validationModal{{operation.id}}').classList.add('hidden')" class="text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <form method="POST" action="/validation_transaction/">
+            {% csrf_token %}
+            <div class="p-6 space-y-5">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Commentaire</label>
+                    <textarea name="commentaire" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ajouter un commentaire..." required></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Date de validation</label>
+                    <input type="date" name="date_validation" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-800 mb-2">Progression</label>
+                    <div class="flex items-center gap-3">
+                        <select class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" id="progression_select" name="niveau">
+                            <option value="" selected disabled>-- Sélectionnez un niveau --</option>
+                            <option value="0">0% - Non commencé</option>
+                            <option value="25">25% - En cours</option>
+                            <option value="50">50% - À mi-chemin</option>
+                            <option value="75">75% - Presque terminé</option>
+                            <option value="100">100% - Complété</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label class="flex items-center cursor-pointer gap-3">
+                    <input type="checkbox" id="preciser_checkbox" class="sr-only peer">
+                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:width-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <span class="text-sm font-bold text-gray-700">Préciser la progression (%)</span>
+                </label>
+
+                <div id="preciser_input_group" class="hidden">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Précisez la valeur</label>
+                    <div class="flex border rounded-lg overflow-hidden border-gray-300">
+                        <input name="precision" type="number" id="precision_value" min="0" max="100" class="w-full p-3 outline-none">
+                        <span class="px-4 py-3 text-white font-bold" style="background-color: {{request.user.personnel.color_fond}};">%</span>
+                    </div>
+                </div>
+
+                <input type="hidden" name="operations" value="{{ operation.operation.id }}">
+                <input type="hidden" name="transaction" value="{{ operation.id }}">
+                <input type="hidden" name="mail" value="{{ operation.personnel }}">
+            </div>
+
+            <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
+                <button type="button" onclick="document.getElementById('validationModal{{operation.id}}').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg">Annuler</button>
+                <button type="submit" class="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md">Confirmer la validation</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cette fonction gère tous les modals présents sur la page
+        const modals = document.querySelectorAll('[id^="validationModal"]');
+        
+        modals.forEach(modal => {
+            const progressionSelect = modal.querySelector('#progression_select');
+            const preciserCheckbox = modal.querySelector('#preciser_checkbox');
+            const preciserInputGroup = modal.querySelector('#preciser_input_group');
+            const precisionValueInput = modal.querySelector('#precision_value');
+
+            // Réinitialisation
+            const resetInput = () => {
+                preciserCheckbox.checked = false;
+                preciserInputGroup.classList.add('hidden');
+                precisionValueInput.value = '';
+            };
+
+            // Événement Select
+            progressionSelect.addEventListener('change', () => {
+                if (progressionSelect.value !== '') {
+                    resetInput();
+                }
+            });
+
+            // Événement Checkbox
+            preciserCheckbox.addEventListener('change', () => {
+                if (preciserCheckbox.checked) {
+                    preciserInputGroup.classList.remove('hidden');
+                    progressionSelect.value = '';
+                } else {
+                    preciserInputGroup.classList.add('hidden');
+                    precisionValueInput.value = '';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

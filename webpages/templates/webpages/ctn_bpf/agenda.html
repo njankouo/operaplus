@@ -1,0 +1,2069 @@
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.1.4/sweetalert2.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+{% extends './index.html' %}
+
+{% load static %}
+
+{% load humanize %}
+
+
+{% block main %}
+<div>
+  {% if report == 0 %}
+</div>
+
+
+
+  {% elif report == 1 %}
+  <div class="h2 text-center text-secondary"> <i class="fas fa-check h2"></i> Validations </div>
+  <div class="text-center text-secondary p-1">
+    <span>Rapports - {{operations_name}} a Valider </span>
+  </div>
+  {% elif report == 2 %}
+  <div class="h2 text-center text-secondary"> <i class="fas fa-star h2"></i> Consultations </div>
+  <div class="text-center p-1">
+    <span class="text-secondary">Apportez vos Avis</span>
+  </div>
+  {% elif report == 3 %}
+  <div class="h3 text-center text-danger" style="font-family: quartz">Liste Des {{operations_name}}S Valid&eacute;s   </div>
+
+
+
+  {% else %}
+  <div class="h2 text-center text-secondary"> <i class="fas fa-envelope h2"></i> Messages </div>
+  <div class="text-center p-1">
+    <small class="text-success"></small>
+  </div>
+  {% endif %}
+
+
+  <div class="col-md-12 mb-4">
+    <div class="accordion custom-accordion" id="searchAccordion">
+      <!-- Premier accordéon - Titre -->
+      <div class="accordion-item border-0 mb-3">
+        <h2 class="accordion-header" id="headingTitle">
+          <button class="accordion-button  text-white rounded-3 shadow-sm" type="button"
+                  style="font-size: 1.2rem; font-weight: 500; letter-spacing: 0.5px; background:{{request.user.personnel.color}}">
+            <i class="bi bi-calendar2-check me-2"></i> Opérations Globales Planifiées
+          </button>
+        </h2>
+      </div>
+
+      <!-- Second accordéon - Options de recherche -->
+      <div class="accordion-item border-0">
+        <h2 class="accordion-header" id="headingSearch">
+          <button class="accordion-button collapsed search-header-btn" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#collapseSearch"
+                  aria-expanded="false" aria-controls="collapseSearch">
+            <i class="bi bi-sliders me-2"></i> Options De Recherche
+            <span class="search-badge ms-auto">3 filtres</span>
+          </button>
+        </h2>
+
+        <div id="collapseSearch" class="accordion-collapse collapse"
+             aria-labelledby="headingSearch" data-bs-parent="#searchAccordion">
+          <div class="accordion-body pt-4 pb-3 px-4" style="background-color: #f8f9fa; border-radius: 0 0 12px 12px;">
+            <div class="row g-3">
+              <!-- Champ Nom Opération -->
+              <div class="col-md-4">
+                <div class="form-floating">
+                  <input type="search" class="form-control search-input" id="search"
+                         placeholder=" " style="border-left: 4px solid #0d6efd;">
+                  <label for="search" class="fw-semibold">
+                    <i class="bi bi-search me-2"></i> Nom Opération
+                  </label>
+                </div>
+              </div>
+
+              <!-- Sélecteur Priorité -->
+              <div class="col-md-3">
+                <div class="form-floating">
+                  <input type="date" name="echeance" class="form-control">
+                  <label for="prioritySelect" class="fw-semibold">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Echeance
+                  </label>
+                </div>
+              </div>
+
+              <!-- Sélecteur Responsable -->
+              <div class="col-md-3">
+                <div class="form-floating">
+                  <select class="form-select personnel-select" id="filter_personnel">
+                    <option value="all">Tous</option>
+                    {% for personnels in personnel %}
+                    <option value="{{ personnels.id }}">{{ personnels.nom }}</option>
+                    {% endfor %}
+                  </select>
+                  <label for="filter_personnel" class="fw-semibold">
+                    <i class="bi bi-person-gear me-2"></i> Responsable
+                  </label>
+                </div>
+              </div>
+
+              <!-- Bouton Rechercher -->
+              <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary search-btn w-100 py-3" type="button">
+                  <span class="search-text">Rechercher</span>
+                  <span class="search-icon"><i class="bi bi-search"></i></span>
+                  <span class="search-loader spinner-border spinner-border-sm d-none" role="status"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <style>
+    /* Accordéon personnalisé */
+    .custom-accordion .accordion-button {
+      transition: all 0.3s ease;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    }
+
+    .custom-accordion .accordion-button:not(.collapsed) {
+      background-color:{{request.user.personnel.color_fond}};
+      color: white;
+    }
+
+    .custom-accordion .accordion-button::after {
+      background-size: 1.2rem;
+      transition: transform 0.3s ease;
+    }
+
+    /* En-tête de recherche */
+    .search-header-btn {
+      background-color: white;
+      font-weight: 500;
+      border: 1px solid #dee2e6;
+      border-radius: 8px !important;
+    }
+
+    .search-header-btn:hover {
+      background-color: #f8f9fa;
+    }
+
+    .search-badge {
+      background-color: #0d6efd;
+      color: white;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 50px;
+    }
+
+    /* Champs de formulaire */
+    .form-floating {
+      position: relative;
+    }
+
+    .form-floating label {
+      color: #495057;
+      opacity: 0.9;
+    }
+
+    .search-input, .priority-select, .personnel-select {
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      transition: all 0.3s ease;
+      height: calc(3.5rem + 2px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .search-input:focus, .priority-select:focus, .personnel-select:focus {
+      border-color: #86b7fe;
+      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+
+    /* Bouton Rechercher */
+    .search-btn {
+      border-radius: 8px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      height: calc(3.5rem + 2px);
+      border: none;
+      background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+      box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+    }
+
+    .search-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+    }
+
+    .search-btn:active {
+      transform: translateY(0);
+    }
+
+    .search-icon {
+      display: inline-block;
+      transition: all 0.3s ease;
+    }
+
+    .search-text {
+      display: inline-block;
+      transition: all 0.3s ease;
+    }
+
+    .search-btn:hover .search-icon {
+      transform: rotate(10deg) scale(1.2);
+    }
+
+    /* Animation lors du clic */
+    @keyframes ripple {
+      0% {
+        transform: scale(0);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    .search-btn:after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      opacity: 0;
+      border-radius: 100%;
+      transform: scale(1, 1) translate(-50%);
+      transform-origin: 50% 50%;
+    }
+
+    .search-btn:focus:not(:active)::after {
+      animation: ripple 0.6s ease-out;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .search-btn {
+        width: 100%;
+        margin-top: 1rem;
+      }
+    }
+  </style>
+
+  <script>
+    // Animation du bouton recherche
+    document.querySelector('.search-btn').addEventListener('click', function() {
+      const btn = this;
+
+      // Afficher le loader
+      btn.querySelector('.search-text').classList.add('d-none');
+      btn.querySelector('.search-icon').classList.add('d-none');
+      btn.querySelector('.search-loader').classList.remove('d-none');
+
+      // Simuler une requête (à remplacer par votre logique réelle)
+      setTimeout(function() {
+        btn.querySelector('.search-text').classList.remove('d-none');
+        btn.querySelector('.search-icon').classList.remove('d-none');
+        btn.querySelector('.search-loader').classList.add('d-none');
+
+        // Petite animation de confirmation
+        btn.classList.add('btn-success');
+        btn.style.background = 'linear-gradient(135deg, #198754 0%, #157347 100%)';
+
+        setTimeout(function() {
+          btn.classList.remove('btn-success');
+          btn.style.background = 'linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%)';
+        }, 1500);
+      }, 1500);
+    });
+  </script>
+<div class="container mt-3" style="z-index: 1050; position: relative;">
+   {%include "./notifications/success.html"%}
+</div>
+
+<div class="container">
+<div class="row">
+        {% if report != 1 and report != 2 and report != 3 %}
+        {% for line in lines %}
+<div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+    <div class="card h-100 border-0 custom-card-ghost" 
+         style="--user-color: {{request.user.personnel.color_fond}};">
+        
+        <div class="top-border-accent"></div>
+
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="badge badge-date">
+                    <i class="far fa-calendar-alt me-2"></i>{{ line.date_echeance|date:"d M Y" }}
+                </span>
+                {% if line.has_dataset and actual_institution.formulaire == True %}
+                <div class="status-indicator" title="Nouveau formulaire">
+                    <span class="dot"></span>
+                    <i class="fas fa-file-invoice text-warning"></i>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card-body text-center px-4">
+            <div class="institution-logo-container mb-4">
+                <img src="{{ line.institution.img.url }}" 
+                     alt="{{ line.m_institution.sigle }}" 
+                     class="institution-logo">
+                {% if actual_institution.id == line.m_institution_id %}
+                <div class="vip-badge" title="Institution Actuelle">
+                    <i class="fas fa-certificate"></i>
+                </div>
+                {% endif %}
+            </div>
+
+            <h6 class="operation-title mb-1">{{ line.nom }}</h6>
+            <p class="text-muted small mb-4">{{ line.m_institution.sigle }}</p>
+        </div>
+
+        <div class="card-footer bg-transparent border-0 pb-4 px-4">
+            <div class="d-flex gap-2">
+                <a href="/operations/{{line.id}}" class="btn btn-main-action flex-grow-1">
+                    <i class="fas fa-paper-plane me-2"></i>Soumettre
+                </a>
+                <button class="btn btn-secondary-action" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#exampleModal{{line.id}}">
+                    <i class="fas fa-layer-group"></i>
+                    <span class="ms-1">
+
+                        {{line.nb_total}}
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+<style>
+:root {
+    --card-radius: 20px;
+    --transition-speed: 0.3s;
+}
+
+.custom-card-ghost {
+    background: #ffffff;
+    border: 1px solid #eef0f2 !important; /* Bordure légère par défaut */
+    border-bottom: 3px solid var(--user-color) !important; /* Rappel couleur utilisateur en bas */
+    border-radius: var(--card-radius);
+    transition: all var(--transition-speed) ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.custom-card-ghost:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+    border-color: var(--user-color) !important; /* La bordure s'illumine au survol */
+}
+
+/* Accentuation de la bordure supérieure */
+.top-border-accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--user-color);
+    opacity: 0.1;
+}
+
+/* Badges & Icônes */
+.badge-date {
+    background: rgba(0,0,0,0.04);
+    color: #5a6d7e;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 10px;
+}
+
+.operation-title {
+    color: #2d3436;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+/* Logo de l'institution */
+.institution-logo-container {
+    position: relative;
+    display: inline-block;
+}
+
+.institution-logo {
+    width: 75px;
+    height: 75px;
+    object-fit: cover;
+    border-radius: 22px;
+    padding: 5px;
+    background: #fff;
+    border: 2px solid #f1f3f5; /* Bordure du logo */
+    transition: all var(--transition-speed) ease;
+}
+
+.custom-card-ghost:hover .institution-logo {
+    border-color: var(--user-color);
+}
+
+/* Badge VIP / Actuel */
+.vip-badge {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    background: var(--user-color);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Boutons */
+.btn-main-action {
+    background: var(--user-color);
+    color: #fff;
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-weight: 600;
+    border: none;
+    transition: filter 0.2s;
+}
+
+.btn-main-action:hover {
+    color: #fff;
+    filter: brightness(1.1);
+}
+
+.btn-secondary-action {
+    background: transparent;
+    border: 1.5px solid #eef0f2;
+    color: #5a6d7e;
+    border-radius: 12px;
+    width: 60px;
+    transition: all 0.2s;
+}
+
+.btn-secondary-action:hover {
+    border-color: var(--user-color);
+    color: var(--user-color);
+}
+
+/* Animation Formulaire */
+.status-indicator .dot {
+    height: 8px;
+    width: 8px;
+    background-color: #ff9f43;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+    animation: pulse-orange 2s infinite;
+}
+
+@keyframes pulse-orange {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 159, 67, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 159, 67, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 159, 67, 0); }
+}
+</style>
+
+<div class="modal fade" id="exampleModal{{line.id}}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-primary" id="exampleModalLabel">Commentaire Pour L'operation <b class="text-danger">{{line.nom}}</b></h5>
+        <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button> -->
+      </div>
+      <div class="modal-body">
+        <div class="d-flex flex-wrap text-secondary">
+
+          Date debut: {{line.date_debut}} &nbsp; &nbsp;
+
+          Date Echeance : {{line.date_echeance}}
+
+
+        </div>
+        
+        <div class="container mt-5">
+          <div class="row row-cols-1 row-cols-md-4 g-4">
+            {% for transaction in operation_historic %}
+              {% if line.id == transaction.operation.id %}
+              <div class="col">
+                <div class="card h-100 border-0 shadow-lg hover-3d" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);">
+                  <!-- Card Header -->
+                  <div class="card-header text-white" style="background: {{ request.user.personnel.color_fond }}; border-radius: 15px 15px 0 0 !important;">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <!-- <h6 class="mb-0 text-white fs-6"><i class="fas fa-user-circle me-2"></i>Destiné à {{transaction.m_role}}</h6> -->
+                      <span class="badge bg-white-10 text-white opacity-75 fs-7">
+                                {%if transaction.etape%}
+                                    {{transaction.etape.intitule}}
+                                {%else%}
+                                Numero D'ordre{{ forloop.counter }}
+                                {%endif%}
+                              </span>
+                    </div>
+                  </div>
+
+                  <!-- Card Body -->
+                  <div class="card-body position-relative text-white-80">
+                    <!-- Floating date badge -->
+                    <div class="position-absolute top-0 start-50 translate-middle">
+                      <span class="badge bg-white-10 text-white shadow-sm py-1 px-2 fs-7" style="transform: translateY(-50%);">
+                        <i class="far fa-calendar-alt me-1"></i>
+                       Date Echeance: {{ transaction.date_enregistrement|date:"d M Y" }}
+                      </span>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="mt-4 pt-3">
+                      <div class="timeline-item">
+                        <div class="d-flex">
+                          <div class="timeline-line"></div>
+                          <div>
+                            <div class="timeline-dot"></div>
+                          </div>
+                          <div class="ms-3">
+                            <h6 class="mb-1 text-white fs-7">STATUT ACTUEL</h6>
+                            <p class="text-white-60 mb-2 fs-8">
+                              {%if transaction.etat == False%}
+                              En Attente de validation{%else%}Transaction R&ealis&eacute;e{%endif%}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="d-flex align-items-center mt-3">
+                      <div class="progress" style="height: 6px; width: 100%;">
+                          <div class="progress-bar progress-bar-striped progress-bar-animated bg-white-30" role="progressbar"
+                               aria-valuenow="{{ transaction.valeur }}" aria-valuemin="0" aria-valuemax="100"
+                               style="width: {{ transaction.valeur|floatformat:'-2' }}%;">
+                          </div>
+                      </div>
+                      <span class="ms-2 fw-bold">{{ transaction.valeur|floatformat:"0" }}%</span>
+                  </div>
+                    </div>
+                  </div>
+
+                  <!-- Card Footer -->
+                  {% if transaction.etat == False %}
+    <div class="card-footer bg-transparent border-top-0 d-flex justify-content-end align-items-center py-2">
+        <a href="/send-transaction/{{transaction.id}}/"
+           class="btn btn-sm btn-success rounded-pill px-3 py-1 fs-7 shadow-sm animate__animated animate__pulse animate__infinite"
+           style="animation-duration: 2s; transition: all 0.3s ease;">
+            <i class="fas fa-paper-plane me-1"></i> Soumettre
+        </a>
+    </div>
+{% else %}
+    <div class="card-footer bg-transparent border-top-0 d-flex justify-content-end align-items-center py-2">
+        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1 fs-7 d-flex align-items-center">
+            <i class="fas fa-check-circle me-1 fs-6"></i> Transaction soumise
+        </span>
+    </div>
+{% endif %}
+                </div>
+              </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+
+        <style>
+          /* Base Styles */
+          .text-white-60 { color: rgba(255,255,255,0.6) !important; }
+          .text-white-80 { color: rgba(255,255,255,0.8) !important; }
+          .bg-white-10 { background: rgba(255,255,255,0.1) !important; }
+          .bg-white-30 { background: rgba(255,255,255,0.3) !important; }
+
+          /* Typography */
+          .fs-7 { font-size: 0.75rem !important; }
+          .fs-8 { font-size: 0.65rem !important; }
+
+          /* Card Effects */
+          .hover-3d {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+          }
+          .hover-3d:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.3) !important;
+          }
+
+          /* Timeline */
+          .timeline-item {
+            position: relative;
+          }
+          .timeline-line {
+            position: absolute;
+            height: 100%;
+            width: 1px;
+            background: linear-gradient(to bottom,
+              {{ request.user.personnel.color_fond }}80,
+              transparent);
+            left: 6px;
+          }
+          .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: {{ request.user.personnel.color_fond }};
+            border: 2px solid rgba(0,0,0,0.7);
+            box-shadow: 0 0 0 1px {{ request.user.personnel.color_fond }};
+          }
+
+          /* Progress Bar Animation */
+          .progress-bar-animated {
+            animation: progress 1.8s ease-in-out infinite;
+          }
+
+          @keyframes progress {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+          }
+
+          /* Glass Morphism */
+          .card {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+          }
+        </style>
+    
+                                       <form method="POST" action="/save_comment/" enctype="multipart/form-data">
+                                            {%csrf_token%}
+                                        <div class="modal-body">
+                                            <label class="text-danger">Votre Commentaire *</label>
+                                            <textarea class="form-control"name="commentaire"required></textarea>
+                                             <label class="text-danger">Attachez Un Ou plusieurs fichiers</label>
+                                            <input type="file" class="form-control" name="file[]" multiple id="attachment"  multiple>
+                                              <div class="" id="fileList">
+                                                <p id="files-area">
+                                                    <span id="filesList">
+                                                      <span id="files-names"></span>
+                                                    </span>
+                                                  </p>
+                                                    </div>
+                                              <label class="text-danger">Destinataire *</label>
+                                            <input type="hidden" value='{{ line.id }}' class="form-control" name="operation_id">
+
+                                           <input type="text" class="form-control" name="role" value="{{ line.personnel.nom }}" style="display: none">
+                                                  <select class="form-control" name="email" required>
+                                                    <option> Selectionnez Le destinataire</option>
+                                                      {%for personnels in personnel%}
+                                                    <option value="{{personnels.mail}}">{{personnels.mail}}<b class="text-danger" style="font-style: italic;">|{{personnels.nom}}</b></option>
+                                                    {%endfor%}
+                                                  </select>
+                                                  
+
+                                        </div>
+
+
+
+                                        {{entity_hierachie.m_sub_entity}}
+
+
+                                        <div class="modal-footer">
+                                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                          <button type="submit" class="btn btn-primary">Soumettre</button>
+
+
+                                        </div>
+                                    </form>
+                                
+
+    <!-- Titre avec animation -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="text-dark fw-bold mb-0 animate__animated animate__fadeInDown">Historisation Des Transactions</h5>
+        <div class="animate__animated animate__fadeIn" style="height: 4px; width: 100%; background: linear-gradient(90deg, {{request.user.personnel.color_fond}} 0%, transparent 100%);"></div>
+    </div>
+
+    <!-- Carte RACI avec effet glassmorphisme -->
+    <div class="card border-0 shadow-sm mb-4 animate__animated animate__fadeInUp" style="border-radius: 18px; background: rgba(255,255,255,0.96); overflow: hidden; border: 1px solid rgba(0,0,0,0.08);">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr class="animate__animated animate__fadeIn">
+                        <th class="text-white fw-bold fs-5 py-3 border-0 position-relative" style="background: #2e7d32; z-index: 2;">
+                            <div class="slide-overlay" style="background: linear-gradient(90deg, rgba(46,125,50,0.8) 0%, rgba(76,175,80,0.6) 100%);"></div>
+                            <i class="fas fa-user-check me-2"></i>Responsible
+                            <div class="small fw-light mt-1 opacity-85">{{line.personnel}}</div>
+                        </th>
+                        <th class="text-white fw-bold fs-5 py-3 border-0 position-relative" style="background: #c62828; z-index: 2;">
+                            <div class="slide-overlay" style="background: linear-gradient(90deg, rgba(198,40,40,0.8) 0%, rgba(239,83,80,0.6) 100%);"></div>
+                            <i class="fas fa-user-shield me-2"></i>Accountable
+                            <div class="small fw-light mt-1 opacity-85">{{line.accountable}}</div>
+                        </th>
+                        <th class="text-white fw-bold fs-5 py-3 border-0 position-relative" style="background: #1565c0; z-index: 2;">
+                            <div class="slide-overlay" style="background: linear-gradient(90deg, rgba(21,101,192,0.8) 0%, rgba(66,165,245,0.6) 100%);"></div>
+                            <i class="fas fa-comments me-2"></i>Consulted
+                            <div class="small fw-light mt-1 opacity-85">{{line.consulted}}</div>
+                        </th>
+                        <th class="text-white fw-bold fs-5 py-3 border-0 position-relative" style="background: #f9a825; z-index: 2;">
+                            <div class="slide-overlay" style="background: linear-gradient(90deg, rgba(249,168,37,0.8) 0%, rgba(255,213,79,0.6) 100%);"></div>
+                            <i class="fas fa-info-circle me-2"></i>Informed
+                            <div class="small fw-light mt-1 opacity-85">{{line.informed}}</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="animate__animated animate__fadeIn animate__delay-1s">
+                        <!-- Responsable -->
+                        <td class="border-0 py-3" style="background: rgba(46,125,50,0.03);">
+                            <div class="d-flex align-items-center ps-2">
+                                <div class="position-relative me-3">
+                                    <div class="avatar-hover" style="--hover-color: #2e7d32">
+                                        <img src="{% if line.personnel.photo == '47774_frHGCVr.png' and line.personnel.sexe == 'M' %}{% static 'webpages/ctn_bpf/M.png' %}{% elif line.personnel.photo == '47774_frHGCVr.png' and line.personnel.sexe == 'F' %}{% static 'webpages/ctn_bpf/F.jpg' %}{% elif line.personnel.photo != '47774_frHGCVr.png' %}{{ line.personnel.photo.url }}{% endif %}"
+                                             class="rounded-circle border" width="50" style="border-color: #e8f5e9 !important;">
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="fw-medium mb-1">{{line.personnel.nom}}</p>
+                                    <p class="text-muted small mb-0 d-flex align-items-center">
+                                        <i class="fas fa-envelope me-2" style="color: #2e7d32; font-size: 0.8rem;"></i>
+                                        <span class="truncate">{{line.personnel.mail}}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Accountable -->
+                        <td class="border-0 py-3" style="background: rgba(198,40,40,0.03);">
+                            <div class="d-flex align-items-center ps-2">
+                                <div class="position-relative me-3">
+                                    <div class="avatar-hover" style="--hover-color: #c62828">
+                                        <img src="{% if line.accountable.photo == '47774_frHGCVr.png' and line.accountable.sexe == 'M' %}{% static 'webpages/ctn_bpf/M.png' %}{% elif line.accountable.photo == '47774_frHGCVr.png' and line.accountable.sexe == 'F' %}{% static 'webpages/ctn_bpf/F.jpg' %}{% elif line.accountable.photo != '47774_frHGCVr.png' %}{{ line.accountable.photo.url }}{% endif %}"
+                                             class="rounded-circle border" width="50" style="border-color: #ffebee !important;">
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="fw-medium mb-1">{{line.accountable.nom}}</p>
+                                    <p class="text-muted small mb-0 d-flex align-items-center">
+                                        <i class="fas fa-envelope me-2" style="color: #c62828; font-size: 0.8rem;"></i>
+                                        <span class="truncate">{{line.accountable.mail}}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Consulted -->
+                        <td class="border-0 py-3" style="background: rgba(21,101,192,0.03);">
+                            <div class="d-flex align-items-center ps-2">
+                                <div class="position-relative me-3">
+                                    <div class="avatar-hover" style="--hover-color: #1565c0">
+                                        <img src="{% if line.consulted.photo == '47774_frHGCVr.png' and line.consulted.sexe == 'M' %}{% static 'webpages/ctn_bpf/M.png' %}{% elif line.consulted.photo == '47774_frHGCVr.png' and line.consulted.sexe == 'F' %}{% static 'webpages/ctn_bpf/F.jpg' %}{% elif line.consulted.photo != '47774_frHGCVr.png' %}{{ line.consulted.photo.url }}{% endif %}"
+                                             class="rounded-circle border" width="50" style="border-color: #e3f2fd !important;">
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="fw-medium mb-1">{{line.consulted.nom}}</p>
+                                    <p class="text-muted small mb-0 d-flex align-items-center">
+                                        <i class="fas fa-envelope me-2" style="color: #1565c0; font-size: 0.8rem;"></i>
+                                        <span class="truncate">{{line.consulted.mail}}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Informed -->
+                        <td class="border-0 py-3" style="background: rgba(249,168,37,0.03);">
+                            <div class="d-flex align-items-center ps-2">
+                                <div class="position-relative me-3">
+                                    <div class="avatar-hover" style="--hover-color: #f9a825">
+                                        <img src="{% if line.informed.photo == '47774_frHGCVr.png' and line.informed.sexe == 'M' %}{% static 'webpages/ctn_bpf/M.png' %}{% elif line.informed.photo == '47774_frHGCVr.png' and line.informed.sexe == 'F' %}{% static 'webpages/ctn_bpf/F.jpg' %}{% elif line.informed.photo != '47774_frHGCVr.png' %}{{ line.informed.photo.url }}{% endif %}"
+                                             class="rounded-circle border" width="50" style="border-color: #fff8e1 !important;">
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="fw-medium mb-1">{{line.informed.nom}}</p>
+                                    <p class="text-muted small mb-0 d-flex align-items-center">
+                                        <i class="fas fa-envelope me-2" style="color: #f9a825; font-size: 0.8rem;"></i>
+                                        <span class="truncate">{{line.informed.mail}}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .slide-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        opacity: 0.9;
+        transition: all 0.4s ease;
+    }
+
+    th:hover .slide-overlay {
+        transform: translateX(10px);
+        opacity: 0.7;
+    }
+
+    .avatar-hover {
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .avatar-hover:after {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        border-radius: 50%;
+        border: 2px solid var(--hover-color);
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    .avatar-hover:hover {
+        transform: translateY(-3px);
+    }
+
+    .avatar-hover:hover:after {
+        opacity: 0.6;
+        top: -5px;
+        left: -5px;
+        right: -5px;
+        bottom: -5px;
+    }
+
+    .truncate {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
+        display: inline-block;
+    }
+</style>
+
+    <!-- Section Commentaires -->
+    <div class="card border-0 shadow-lg animate__animated animate__fadeInUp animate__delay-1s" style="border-radius: 15px; backdrop-filter: blur(10px); background: rgba(255,255,255,0.8);">
+        <div class="card-header border-0 py-3" style="background: {{request.user.personnel.color_fond}}; border-radius: 15px 15px 0 0;">
+            <h6 class="mb-0 text-white fw-bold"><i class="fas fa-comments me-2"></i>Commentaires Réalisés</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr class="animate__animated animate__fadeIn">
+                            <th class="text-white py-3 border-0" style="width: 25%; background: {{request.user.color_fond}};">Auteur</th>
+                            <th class="text-white py-3 border-0" style="width: 45%; background: {{request.user.color_fond}};Commentaire</th>
+                            <th class="text-white py-3 border-0" style="width: 20%; background: {{request.user.color_fond}};">Date</th>
+                            <th class="text-white py-3 border-0" style="width: 10%; background: background: {{request.user.color_fond}};border-radius: 0 15px 0 0;">Fichier</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for operation_historics in history %}
+                            {% if operation_historics.m_operation_id == line.id %}
+                            <tr class="animate__animated animate__fadeIn animate__delay-{% cycle '1' '2' '3' %}s">
+                                <!-- Auteur -->
+                                <td class="border-0 py-3">
+                                    <div class="d-flex align-items-center hover-scale">
+                                        <div class="position-relative">
+                                            <img src="{% if line.personnel.photo %}{{line.personnel.photo.url}}{% elif line.accountable.photo %}{{line.accountable.photo.url}}{% elif line.consulted.photo %}{{line.consulted.photo.url}}{% elif line.informed.photo %}{{line.informed.photo.url}}{% endif %}"
+                                                 alt="avatar" class="img-fluid rounded-circle me-2" width="45">
+                                            <span class="position-absolute bottom-0 end-0 p-1 border border-light rounded-circle
+                                                {% if operation_historics.m_role == 'R' %}bg-success
+                                                {% elif operation_historics.m_role == 'A' %}bg-danger
+                                                {% elif operation_historics.m_role == 'C' %}bg-primary
+                                                {% elif operation_historics.m_role == 'I' %}bg-warning
+                                                {% else %}bg-secondary{% endif %}"></span>
+                                        </div>
+                                        <div class="ms-3">
+                                            <span class="badge mb-1
+                                                {% if operation_historics.m_role == 'R' %}bg-success
+                                                {% elif operation_historics.m_role == 'A' %}bg-danger
+                                                {% elif operation_historics.m_role == 'C' %}bg-primary
+                                                {% elif operation_historics.m_role == 'I' %}bg-warning
+                                                {% else %}bg-secondary{% endif %}">
+                                                {% if operation_historics.m_role == "R" %}Responsible
+                                                {% elif operation_historics.m_role == "A" %}Accountable
+                                                {% elif operation_historics.m_role == "C" %}Consulted
+                                                {% elif operation_historics.m_role == "I" %}Informed
+                                                {% else %}{{operation_historics.m_role}}{% endif %}
+                                            </span>
+                                            <p class="text-muted mb-0 small">{{operation_historics.personnel.mail}}</p>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Commentaire -->
+                                <td class="border-0 py-3">
+                                    <div class="comment-box">
+                                        <p class="mb-0 text-dark">{{operation_historics.m_commentaire}}</p>
+                                    </div>
+                                </td>
+
+                                <!-- Date -->
+                                <td class="border-0 py-3">
+                                    <div class="d-flex flex-column">
+                                        <span class="text-dark small">{{ operation_historics.m_date_realisation|date:"d M Y" }}</span>
+                                        <span class="text-muted x-small">({{ operation_historics.m_date_realisation }})</span>
+                                    </div>
+                                </td>
+
+                                <!-- Fichier -->
+                                <td class="border-0 py-3">
+                                    {% if operation_historics.file %}
+                                    <a href="/download_files/{{operation_historics.id}}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 hover-scale">
+                                        <i class="fas fa-download me-1"></i> Télécharger
+                                    </a>
+                                    {% else %}
+                                    <span class="badge bg-light text-muted">Aucun fichier</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+<style>
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate__animated {
+        animation-duration: 0.6s;
+    }
+
+    .hover-scale {
+        transition: all 0.3s ease;
+    }
+
+    .hover-scale:hover {
+        transform: scale(1.02);
+    }
+
+    /* Effets glassmorphisme */
+    .card {
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    }
+
+    /* Style des commentaires */
+    .comment-box {
+        background: rgba(245, 245, 245, 0.7);
+        border-radius: 10px;
+        padding: 10px;
+        border-left: 3px solid {{request.user.personnel.color_fond}};
+    }
+
+    /* Badges modernes */
+    .badge {
+        padding: 5px 10px;
+        border-radius: 50px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+        }
+    }
+</style>
+
+<!-- Include Animate.css -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+                                      <hr class="p-2 bg-dark"/>
+                                  </div>
+   </div>
+</div>
+</div>
+
+
+            <div class="">
+              <a class="d-block my-3" href="/operations/{{o.id}}" >  </a>
+            </div>
+
+          </div>
+          {% empty %}
+          <div class="text-center h1 w-100">
+
+
+
+            <div class="empty-state">
+  <div class="empty-state__content">
+    <div class="empty-state__icon">
+<h4 class="text-danger" style="font-family:quartz">
+      <img src="data:image/png;base64,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" alt="">
+   Aucune {{operations_name}} de prevu Merci !   </h4>
+</div>
+   </div>
+</div>
+
+          </div>
+          <div class="text-center py-3">
+            <a href="/messengers/" style="background-color:pink;" class="text-dark btn"> <i class="fas fa-envelope"></i> Messagerie Personnel</a>
+          </div>
+          {% endfor %}
+
+</div>
+</div>
+</section>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+
+        {% elif report == 1 %}
+
+
+          <div class="mb-4 flex-wrap justify-content-between col-12  h4">
+
+            <section class="section">
+      <div class="row">
+        <div class="col-lg-6">
+    <div class="card border-0" style="background:{{request.user.personnel.color_fond}}">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title text-light mb-0 fw-bold">
+                    <i class="fas fa-tasks me-2"></i>OPÉRATIONS EN ATTENTE
+                </h5>
+                <span class="badge bg-white text-primary rounded-pill">{{ line|length }} en attente</span>
+            </div>
+
+            <div class="operation-list">
+                {% for line in lines %}
+                <div class="operation-card card mb-3 border-0 shadow-sm hover-lift"
+                     style="border-radius: 12px; overflow: hidden;
+                            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);">
+
+                    <div class="card-body p-3">
+                        <div class="row align-items-center g-2">
+                            <!-- Logo Institution -->
+                            <div class="col-auto">
+                                <div class="avatar-hover">
+                                    <img src="{{line.institution.img.url}}"
+                                         alt="Logo {{line.institution.nom}}"
+                                         class="avatar-sm rounded-circle border border-2 border-white shadow-sm">
+                                </div>
+                            </div>
+
+                            <!-- Contenu Principal -->
+                            <div class="col">
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <a href="/decision/o/{{line.id}}/"
+                                           class="text-truncate text-dark fw-bold hover-primary"
+                                           style="max-width: 180px;"
+                                           title="{{line.nom|upper}}">
+                                            {{line.nom|truncatechars:25|upper}}
+                                        </a>
+                                        <!-- {% if actual_institution.id == line.m_institution_id %}
+                                        <span class="badge ms-2 pulse" style='background-color:{{request.user.personnel.color_fond}}'>
+                                            <i class="fas fa-star fa-xs text-white"></i>
+                                        </span>
+                                        {% endif %} -->
+                                    </div>
+
+                                    <div class="d-flex align-items-center text-muted small">
+                                        <i class="fas fa-user-tie me-1"></i>
+                                        <span class="text-truncate" style="max-width: 120px;" title="{{line.personnel}}">
+                                            {{line.personnel}}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Date et Photo -->
+                            <div class="col-auto">
+                                <div class="d-flex align-items-center">
+                                    <small class="text-muted me-2">
+                                        <i class="fas fa-calendar-day me-1"></i>
+                                        {{line.date_creation|date:"d/m/y"}}
+                                    </small>
+                                    <div class="avatar-hover">
+                                        <img src="{{line.personnel.photo.url}}"
+                                             alt="Photo {{line.personnel.nom}}"
+                                             class="avatar-sm rounded-circle border border-2 border-white shadow-sm">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barre de statut animée -->
+                    <div class="status-bar" style="
+                        height: 3px;
+                        background: linear-gradient(90deg, {{request.user.personnel.color_fond}} 0%, #ffffff 100%);
+                        animation: progress 2s ease-in-out infinite alternate;
+                    "></div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="col-md-6">
+  <div class="card border-0 shadow-sm transaction-card-list">
+    <div class="card-header border-0 py-3 d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0 fw-bold text-light">
+        <i class="fas fa-exchange-alt me-2"></i> TRANSACTIONS EN ATTENTE
+      </h5>
+      <!-- <span class="badge bg-primary rounded-pill">{{count_indicateur}} en attente</span> -->
+    </div>
+
+    <div class="card-body p-4">
+     {% for operation_transactions in operation_transaction %}
+  {% if operation_transactions.personnel == operation_transactions.operation.accountable %}
+    <div class="transaction-card card mb-4 border-0 shadow-sm hover-shadow-lg transition-all">
+      <div class="card-body p-4">
+        <div class="row align-items-center">
+          <div class="col-auto position-relative">
+            <div class="transaction-icon bg-light-primary rounded-3 p-3">
+              <img src="{{operation_transactions.institution.img.url}}" alt="Logo {{operation_transactions.institution.nom}}" class="avatar-lg rounded-circle border border-3 border-white shadow">
+            </div>
+          </div>
+
+          <div class="col ps-0" style="min-width: 0;">
+            <div class="d-flex flex-column">
+              <p class="mb-1 fw-bold text-dark d-flex align-items-center">
+                <span class="" title="{{operation_transactions.operation.nom}}">
+                  {{operation_transactions.operation.nom}}
+                </span>
+                <span class="badge bg-light-success ms-2 small">
+                  Niveau:{{operation_transactions.valeur|floatformat:'0'}}%
+                </span>
+              </p>
+              <div class="d-flex align-items-center text-muted">
+                <i class="fas fa-user-tie me-2 text-secondary"></i>
+                <small class="text-truncate" title="{{operation_transactions.m_operation.personnel}}">
+                  {{operation_transactions.personnel}}
+                </small>
+                <i class="fas fa-calendar-day ms-3 me-2"></i>
+                <small>{{operation_transactions.date_enregistrement|date:"d/m/Y"}}</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-auto">
+            <a class="btn btn-validate px-3 py-2 rounded-pill fw-bold" href="/transaction/{{operation_transactions.id}}/">
+              <i class="fas fa-check-circle me-1"></i> Valider
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="progress-bar-animated">
+        <div class="progress-bar-inner"></div>
+      </div>
+    </div>
+  {% endif %}
+{% empty %}
+  <div class="empty-state">
+    <div class="text-center py-5">
+      <div class="empty-state-icon mb-4">
+        <i class="fas fa-database fa-4x"></i>
+      </div>
+      <h4 class="text-muted mb-3 fw-bold">Aucune donnée disponible</h4>
+      <p class="text-muted mb-4">
+        Aucune transaction n'est en attente de validation pour le moment.
+      </p>
+      <div class="d-flex justify-content-center">
+        <div class="pulse-animation"></div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Define CSS Variables for Theming */
+  :root {
+    --main-color: {{ request.user.personnel.color_fond }};
+    --empty-state-color: #dee2e6;
+  }
+
+  /* General Styles */
+  .transaction-card-list .card-header {
+    background: var(--main-color) !important;
+  }
+
+  /* Transaction Card Styles */
+  .transaction-card {
+    transition: all 0.3s ease;
+    border-left: 3px solid var(--main-color);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .transaction-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .transaction-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .transaction-card .badge.bg-light-success {
+    color: var(--main-color) !important;
+  }
+  
+  .transaction-card .fa-calendar-day {
+    color: var(--main-color);
+  }
+
+  /* Validation Button Styles */
+  .btn-validate {
+    background: var(--main-color);
+    color: white; /* Ensure text is readable */
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .btn-validate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(var(--main-color), 0.3); /* Adjust for dynamic color */
+  }
+
+  .btn-validate::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(30deg);
+    transition: all 0.3s ease;
+  }
+
+  .btn-validate:hover::after {
+    left: 100%;
+  }
+
+  /* Progress Bar Styles */
+  .progress-bar-animated {
+    position: relative;
+    height: 4px;
+    background: linear-gradient(90deg, var(--main-color) 0%, #ffffff 100%);
+    overflow: hidden;
+  }
+
+  .progress-bar-inner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 30%;
+    background-color: var(--main-color);
+    animation: progressAnimation 2s infinite linear;
+  }
+
+  /* Empty State Styles */
+  .empty-state {
+    transition: all 0.3s ease;
+  }
+
+  .empty-state-icon {
+    color: var(--empty-state-color) !important;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+  }
+
+  .card:hover .empty-state-icon {
+    opacity: 0.8;
+    transform: translateY(-5px);
+  }
+
+  .pulse-animation {
+    animation: pulse 2s infinite ease-in-out;
+    width: 120px;
+    height: 4px;
+    background: var(--main-color);
+    border-radius: 2px;
+  }
+
+  /* Keyframe Animations */
+  @keyframes progressAnimation {
+    0% {
+      left: -30%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scaleX(0.8);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scaleX(1.1);
+      opacity: 1;
+    }
+    100% {
+      transform: scaleX(0.8);
+      opacity: 0.6;
+    }
+  }
+</style>
+
+
+</div>
+
+<style>
+    .operation-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .avatar-hover img {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .operation-card:hover .avatar-hover img {
+        transform: scale(1.1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .hover-primary:hover {
+        color: {{request.user.personnel.color_fond}} !important;
+    }
+
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: inline-block;
+    }
+
+    @keyframes progress {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 100% 50%; }
+    }
+
+    .pulse {
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(0.95); }
+        70% { transform: scale(1.05); }
+        100% { transform: scale(0.95); }
+    }
+</style>
+
+
+
+
+
+  </section>
+
+
+          </div>
+
+</div>
+   </div>
+</div>
+
+
+{% elif report != 3 and report != 1 and report %}
+          {% for line in lines %}
+
+          <div class="mb-4 flex-wrap justify-content-between col-12  h4">
+
+            <section class="section">
+
+
+                  <div class="row">
+                    <div class="col-lg-12">
+
+                      <div class="candidate-list">
+                        <div class="candidate-list-box card mt-1">
+                          <div class="p-4 card-body">
+                            <div class="align-items-center row">
+                              <div class="col-auto">
+                                <div class="candidate-list-images">
+                                  <a href="#"><img src="{{line.institution.img.url}}" alt="" class="avatar-md img-thumbnail rounded-circle" /></a>
+                                </div>
+                              </div>
+                              <div class="col-lg-7">
+                                <div class="candidate-list-content mt-3 mt-lg-0">
+                                  <h6 class="fs-19 mb-0">
+                                    <a class="primary-link" href="/Avis/c/{{line.id}}" style="font-weight:bold; text-transform:uppercase"> {{line.nom}} </a>
+                                    {%if actual_institution.id == line.m_institution_id%}<span class="badge bg-success ms-1"><i class="fa fa-star align-middle text-light fa-spin"></i></span> {%endif%}
+                                  </h6>
+                                  <p class="text-muted mb-2">{{line.personnel}}</p>
+                                  <ul class="list-inline mb-0 text-muted">
+                                    <li class="list-inline-item"><i class="fa fa-calendar"></i>Attribu&eacute;e le: {{line.date_creation}}</li>
+
+                                  </ul>
+                                </div>
+                              </div>
+                              <div class="col-lg-2">
+                                <div class="mt-2 mt-lg-0 d-flex flex-wrap align-items-start gap-1">
+<a href="#"><img src="{{line.personnel.photo.url}}" alt="" class="avatar-md img-thumbnail rounded-circle" /></a>
+
+                                </div>
+                              </div>
+                            </div>
+
+                          </div>
+                        </div>
+
+
+              </section>
+
+          </div>
+          {% empty %}
+          <div class="text-center h1 w-100">
+            <div class="empty-state">
+  <div class="empty-state__content">
+    <div class="empty-state__icon">
+<h4 class="text-danger" style="font-family:quartz">
+      <img src="data:image/png;base64,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" alt="">
+   Aucun Rapport  Transmit Pour Le Moment Merci !   </h4>
+</div>
+   </div>
+</div>
+
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+    <div class="container">
+    <div class="row">
+
+  {% elif report == 3 %}
+          {% for line in lines %}
+          {%if line.is_deleted == False%}
+<div class="col-md-12">
+  <section class="section">
+      <div class="candidate-list">
+        <div class="candidate-list-box card mt-1">
+            <div class="p-4 card-body">
+                <div class="align-items-center row">
+                  <div class="col-auto">
+                      <div class="candidate-list-images">
+                    <a href="#"><img src="{{line.institution.img.url}}" alt="" class="avatar-md img-thumbnail rounded-circle" /></a>
+                      </div>
+                      </div>
+                      <div class="col-lg-7">
+                    <div class="candidate-list-content mt-3 mt-lg-0">
+                      <h6 class="fs-19 mb-0">
+                      <a class="primary-link" href="/Avis/i/{{line.id}}" style="font-weight:bold; text-transform:uppercase"> {{line.nom}} </a>
+                                    {%if actual_institution.id == line.m_institution_id%}<span class="badge bg-success ms-1"><i class="fa fa-check align-middle text-light"></i></span> {%endif%}
+                                  </h6>
+                                  <p class="text-muted mb-2">{{line.personnel}}</p>
+                                  <ul class="list-inline mb-0 text-muted">
+                                    <li class="list-inline-item"><i class="fa fa-calendar"></i>Attribu&eacute;e le: {{line.date_creation}}</li>
+
+                                  </ul>
+                                </div>
+                              </div>
+                              <div class="col-lg-2">
+                                <div class="mt-2 mt-lg-0 d-flex flex-wrap align-items-start gap-1">
+                                <a href="#"><img src="{{line.personnel.photo.url}}" alt="" class="avatar-md img-thumbnail rounded-circle" /></a>
+
+                                </div>
+                              </div>
+                            </div>
+
+                          </div>
+                        </div>
+
+
+              </section>
+
+          </div>
+          {%endif%}
+
+
+          {% endfor %}
+
+        {% endif %}
+      </div>
+            {% if num_pages > 1 %}
+<nav aria-label="Pagination" class="pagination-container my-5">
+    <ul class="pagination justify-content-center flex-wrap">
+        
+        {# Bouton Précédent #}
+        <li class="page-item {% if not pages_o.has_previous %}disabled{% endif %}">
+            <a class="page-link" href="{% if pages_o.has_previous %}?page={{ pages_o.previous_page_number }}{% else %}#{% endif %}" aria-label="Précédent">
+                <i class="fas fa-chevron-left"></i>
+                <span class="d-none d-sm-inline ms-1">Précédent</span>
+            </a>
+        </li>
+
+        {# Première page #}
+        {% if pages_o.number > 3 %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1">1</a>
+        </li>
+        {% if pages_o.number > 4 %}
+        <li class="page-item disabled d-none d-md-block">
+            <span class="page-link">...</span>
+        </li>
+        {% endif %}
+        {% endif %}
+
+        {# Pages centrales #}
+        {% for num in page_range %}
+            {% if num > 0 %}
+            <li class="page-item {% if pages_o.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {# Dernière page #}
+        {% if pages_o.number < num_pages|add:-2 %}
+        {% if pages_o.number < num_pages|add:-3 %}
+        <li class="page-item disabled d-none d-md-block">
+            <span class="page-link">...</span>
+        </li>
+        {% endif %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ num_pages }}">{{ num_pages }}</a>
+        </li>
+        {% endif %}
+
+        {# Bouton Suivant #}
+        <li class="page-item {% if not pages_o.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{% if pages_o.has_next %}?page={{ pages_o.next_page_number }}{% else %}#{% endif %}" aria-label="Suivant">
+                <span class="d-none d-sm-inline me-1">Suivant</span>
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+<style>
+    :root {
+        --pagin-bg-active: #3498db;
+        --pagin-text: #4a5568;
+        --pagin-border: #e2e8f0;
+        --pagin-hover: #edf2f7;
+    }
+
+    .pagination {
+        gap: 6px; /* Plus d'espace entre les boutons */
+    }
+
+    .page-link {
+        border-radius: 8px !important;
+        min-width: 44px; /* Taille standard pour accessibilité mobile */
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--pagin-border);
+        color: var(--pagin-text);
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 0 12px;
+    }
+
+    /* Effet au survol */
+    .page-link:hover {
+        background-color: var(--pagin-hover);
+        color: #1a202c;
+        transform: translateY(-1px);
+        border-color: #cbd5e0;
+    }
+
+    /* État Actif */
+    .page-item.active .page-link {
+        background-color: var(--pagin-bg-active);
+        border-color: var(--pagin-bg-active);
+        color: white;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.25);
+    }
+
+    /* État Désactivé */
+    .page-item.disabled .page-link {
+        background-color: #f8fafc;
+        color: #cbd5e0;
+        border-color: #f1f5f9;
+        pointer-events: none;
+    }
+
+    /* Optimisation Mobile */
+    @media (max-width: 576px) {
+        .pagination {
+            gap: 4px;
+        }
+        .page-link {
+            min-width: 38px;
+            height: 38px;
+            padding: 0 8px;
+            font-size: 0.85rem;
+        }
+    }
+</style>
+    </div>
+  </div>
+</div>
+
+</section>
+
+</div>
+</div>
+</div>
+</div>
+
+
+
+
+  
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        // Masquer les éléments au chargement de la page
+        $('.cardAll').hide();
+
+        // Fonction pour basculer les éléments et changer le texte du bouton
+        function toggleSearchElements() {
+          $('.cardAll').toggle('slow');
+          var buttonText = $('.btn-dark').text();
+          if (buttonText.trim() === "Masquer Options De Recherche") {
+            $('.btn-dark').text("Afficher Options De Recherche");
+
+          } else {
+            $('.btn-dark').text("Masquer Options De Recherche");
+          }
+        }
+
+        // Attacher la fonction à un événement, par exemple un clic sur un bouton
+        $('.btn-dark').click(function() {
+          toggleSearchElements();
+        });
+      });
+    </script>
+
+
+
+<script>
+
+  $(document).ready(function() {
+    $('#annee').on('change', function() {
+      var selectedId = $(this).val();
+
+      // Effectuer une requête AJAX pour récupérer les informations de la table periodeok en fonction de l'ID de la période sélectionnée
+      $.ajax({
+      url: '/search_period/',  // L'URL correspondant à la vue Django
+      method: 'GET',
+      data: { annee: selectedId },
+      success: function(data) {
+        var selectInformations = $('#period');
+        selectInformations.empty(); // Effacer les anciennes options
+
+        // Ajouter les nouvelles options basées sur les données récupérées via AJAX
+        data.forEach(function(periode_ok_id) {
+        selectInformations.append($('<option>', {
+          value: periode_ok_id.id,
+          text: periode_ok_id.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
+        }));
+        });
+      },
+      error: function(xhr, status, error) {
+        console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+      }
+      });
+    });
+    });
+
+    </script>
+
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+
+
+    <script>
+      function handleData(data) {
+        if (data.error) {
+            console.error('Erreur:', data.error);
+            alert("Erreur lors du chargement des données: " + data.error);
+            return [];
+        }
+
+        const dataArray = data.data || [];
+        const inputData = dataArray.map(item => ({
+            name: `D0elt${item.id}`,  // Ajouter 'D0elt' devant 'item.id'
+            value: item.content        // Supposant que 'item' a une propriété 'value'
+        }));
+
+        // Vérifier s'il n'y a pas de valeurs
+        if (inputData.length === 0) {
+            toastr.warning('Il n\'y a aucune valeur à traiter.', 'Aucune valeur trouvée');
+
+            // Vider tous les champs d'entrée
+            const allInputs = document.querySelectorAll('input[name^="D0elt"]');
+            allInputs.forEach(input => {
+                input.value = '';  // Vider le champ
+            });
+
+            return [];
+        }
+
+        // Mettre à jour les champs d'entrée
+        inputData.forEach(input => {
+            console.log(`Recherche du champ: ${input.name}`); // Ajoutez ceci pour déboguer
+
+            const inputElement = document.querySelector(`input[name="${input.name}"]`);
+            if (inputElement) {
+                inputElement.value = input.value;
+            } else {
+                console.warn(`Champ d'entrée "${input.name}" introuvable.`);
+            }
+        });
+
+        console.log('Données traitées:', dataArray);
+        return dataArray;
+    }
+
+
+      function loadDataset(button) {
+        const datasetId = button.getAttribute('data-id');
+        const url = `/get_dataset/${datasetId}/`;
+
+        Swal.fire({
+            title: 'Chargement...',
+            text: 'Veuillez patienter pendant le chargement des données.',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            onBeforeOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur lors de la récupération du dataset');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const modalBody = document.querySelector(`.bd-example-modal-lg${datasetId} .modal-body`);
+                if (modalBody) {
+                    if (data.content) {
+                        modalBody.innerHTML = `<p>${data.content}</p>`; // Affichage du contenu
+
+
+                    } else {
+                        modalBody.innerHTML = "<p>Aucun contenu disponible.</p>";
+                    }
+                    initIndic(datasetId);
+                    Swal.close();
+                } else {
+                    console.error('modalBody est null');
+                    Swal.close();
+                }
+            })
+            .catch(error => {
+                const modalBody = document.querySelector(`.bd-example-modal-lg${datasetId} .modal-body`);
+                if (modalBody) {
+                    modalBody.innerHTML = "<p>Erreur lors du chargement des données. Veuillez réessayer.</p>";
+                }
+                console.error('Erreur:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Une erreur est survenue',
+                    text: 'Veuillez réessayer.',
+                });
+            });
+    }
+
+
+      // Fonction pour échapper les caractères HTML (protection XSS)
+function escapeHtml(unsafe) {
+  return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
+
+function showLoading() {
+  Swal.fire({
+      title: 'Chargement...',
+      text: 'Veuillez patienter pendant le chargement des données.',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+          Swal.showLoading(); // Afficher l'indicateur de chargement
+      }
+  });
+}
+
+function hideLoading() {
+  Swal.close(); // Fermer l'alerte de chargement
+}
+
+document.getElementById('loadDataButton').addEventListener('click', function() {
+  const selectedYear = document.getElementById('annee').value;
+  const selectedPeriod = document.getElementById('period').value;
+  const selectedStructure = document.getElementById('structure').value;
+
+  // Vérifier si toutes les sélections sont faites
+  if (!selectedYear || !selectedPeriod || !selectedStructure) {
+      Swal.fire({
+          icon: 'warning',
+          title: 'Attention!',
+          text: "Veuillez sélectionner l'année, la période et la structure.",
+          confirmButtonText: 'OK'
+      });
+      return;
+  }
+
+  const url = `/load_data/${selectedStructure}/${selectedPeriod}/`; // URL pour récupérer les données
+  showLoading(); // Afficher l'indicateur de chargement
+
+  // Afficher le div avec animation
+  const div = document.getElementById('dF_Div_mob');
+  div.classList.add('show'); // Ajouter la classe 'show' pour afficher le div
+
+  fetch(url)
+      .then(response => {
+          if (!response.ok) {
+              throw new Error('Erreur lors de la récupération des données');
+          }
+          return response.json();
+      })
+      .then(data => handleData(data))
+      .catch(error => {
+          console.error('Erreur lors du chargement des données:', error);
+          Swal.fire({
+              icon: 'error',
+              title: 'Erreur',
+              text: "Une erreur est survenue. Veuillez réessayer.",
+          });
+      })
+      .finally(() => {
+          hideLoading(); // Masquer l'indicateur de chargement
+      });
+});
+
+
+// Fonction pour initialiser les indicateurs
+function initIndic(datasetId) {
+  console.log("Fonction initIndic() appelée avec datasetId:", datasetId);
+
+  const indicSelector = document.getElementsByClassName("indicSelector");
+  let indic_value = "";
+  for (let i = 0; i < indicSelector.length; i++) {
+      indic_value += indicSelector[i].getAttribute("data-id") + "#";
+  }
+
+  const institutionId = {{ actual_institution.id }}; // Assurez-vous que `actual_institution` est défini
+
+  $.ajax({
+      url: '/get_elements/',
+      data: {
+          'dataset': datasetId,
+          'type_dataset': '0',
+          'other': 'dI_formula',
+          'institution': institutionId,
+          'value': indic_value
+      },
+      success: function(data) {
+          function check_selector(evalu = false) {
+              const indicatorValues = {};
+
+              for (let i = 0; i < indicSelector.length; i++) {
+                  indicSelector[i].textContent = data.formulas[i];
+                  const indicatorId = indicSelector[i].getAttribute("data-id");
+
+                  const tmp_elts = data.data_elts.split("#");
+                  console.log('les ids sont:', tmp_elts);
+                  let elts = [];
+
+                  for (let j = 0; j < tmp_elts.length; j++) {
+                      const tp = document.getElementsByName("D0elt" + tmp_elts[j]);
+                      if (tp.length > 0) {
+                          elts.push({ id: tmp_elts[j], value: tp[0].value }); // Récupération des valeurs avec l'ID
+                          console.log("Valeur de D0elt" + tmp_elts[j] + " :", tp[0].value); // Affichage de la valeur récupérée
+
+                        } else {
+                          console.warn("Élément manquant pour D0elt" + tmp_elts[j]);
+                      }
+                  }
+
+                  console.log("Éléments récupérés :", elts);
+
+                  // Mettre à jour le displayArea
+                  const displayArea = document.getElementById("displayArea");
+                  const valuesString = elts.map(item => `"D0elt" ${item.id}: ${item.value}`).join(', '); // Formater les valeurs
+                  displayArea.value = valuesString; // Mettre à jour l'input avec les valeurs formatées
+
+                  // Définir la valeur à soumettre dans un champ caché
+                  document.getElementById("elementsArea").value = JSON.stringify(elts); // Soumission en format JSON
+
+                  // Remplacer les placeholders dans indicSelector avec les valeurs récupérées
+                  for (let j = 0; j < elts.length; j++) {
+                      indicSelector[i].textContent = indicSelector[i].textContent.replace("$" + tmp_elts[j] + "$", elts[j].value);
+                  }
+
+                  if (evalu) {
+                      try {
+                          indicSelector[i].textContent = eval(indicSelector[i].textContent); // Évaluation des calculs
+                          const indicatorValue = indicSelector[i].textContent;
+                          indicatorValues[indicatorId] = indicatorValue;
+                      } catch (error) {
+                          console.error("Erreur lors du calcul de l'indicateur :", error);
+                      }
+                  }
+              }
+
+              // Stocker les valeurs et les identifiants dans les champs cachés du formulaire
+              document.getElementById("indicator-values").value = JSON.stringify(indicatorValues);
+              const indicatorIds = Object.keys(indicatorValues);
+              document.getElementById("indicator-ids").value = JSON.stringify(indicatorIds);
+
+              return indicatorValues;
+          }
+
+          // Évaluer les sélecteurs d'indicateurs
+          check_selector(true);
+
+          const variables_selector = document.getElementsByClassName("variableSelector");
+          for (let i = 0; i < variables_selector.length; i++) {
+              const inputs = variables_selector[i].getElementsByTagName("input")[0];
+              if (inputs) {
+                  inputs.onchange = function() {
+                      try {
+                          check_selector(true);
+                      } catch (error) {
+                          console.error("Erreur lors de l'évaluation des sélecteurs :", error);
+                          check_selector(); // Évaluer sans option
+                      }
+                  };
+              }
+          }
+      },
+      error: function(xhr, status, error) {
+          console.error("Erreur AJAX:", status, error);
+          alert("Une erreur est survenue lors de la récupération des éléments. Veuillez réessayer.");
+      }
+  });
+}
+
+// Ajout d'un gestionnaire d'événements pour chaque bouton ayant 'loadDatasetButton' comme ID
+document.querySelectorAll('.btn.button-pulse').forEach(button => {
+  button.addEventListener('click', function() {
+      loadDataset(this);
+  });
+});
+
+
+
+
+  </script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+  <script>
+    function submitForm() {
+        // Récupérez le formulaire par son ID
+        const myForm = document.getElementById('myForm');
+
+        // Vérifiez si le formulaire est valide
+        if (myForm.checkValidity()) {
+            myForm.submit(); // Soumettez le formulaire
+        }
+        return false; // Empêche la soumission par défaut
+    }
+
+    // Ajoutez un écouteur d'événements au bouton
+    document.getElementById('myButton').addEventListener('click', function() {
+        Swal.fire({
+            title: "<strong>Information</strong>",
+            icon: "info",
+            html: `
+                Les données saisies seront remplacées dans la base de données en cas de doublon. <b>Souhaitez-vous tout de même les enregistrer ?</b>
+            `,
+            showCloseButton: true,
+            showCancelButton: true,
+            focusConfirm: false,
+            confirmButtonText: `
+                <i class="fa fa-thumbs-up"></i> Oui / Yes!
+            `,
+            confirmButtonAriaLabel: "Thumbs up, great!",
+            cancelButtonText: `
+                <i class="fa fa-thumbs-down"></i> Non / No
+            `,
+            cancelButtonAriaLabel: "Thumbs down"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                submitForm(); // Appelle la fonction de soumission
+            }
+        });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+  new TomSelect("#structure",{
+    create: true,
+    sortField: {
+      field: "text",
+      direction: "asc"
+    }
+  });
+</script>
+{% endblock %}

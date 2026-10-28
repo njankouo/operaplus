@@ -1,0 +1,2346 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opera+ - Plateforme Moderne de suivi-evaluation</title>
+    {%load static%}
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="{%static 'staticsfiles/css/presentation.css'%}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+ 
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
+  
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+  
+</head>
+
+<body class="font-sans antialiased text-gray-800 bg-gray-50">
+    
+    <div id="custom-cursor"></div>
+<div id="custom-cursor-outline"></div>
+<div id="progress-bar" class="fixed top-0 left-0 h-1 z-50 bg-emerald-500 transition-all duration-150 " style="width: 0%"></div>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<nav class="fixed top-0 left-0 right-0 z-[100] glass-nav border-b border-gray-100 h-20">
+  <div class="container mx-auto px-4 lg:px-12">
+    <div class="flex items-center justify-between h-20">
+
+    <a href="/" class="flex items-center space-x-5 group shrink-0 py-2">
+ <div class="relative">
+  <div class="absolute -inset-2 bg-gradient-to-tr from-emerald-400 via-blue-500 to-purple-600 rounded-[22px] blur-md opacity-10 group-hover:opacity-40 group-hover:blur-xl transition-all duration-700"></div>
+  
+  <div class="relative w-16 h-16 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl border border-white/40 dark:border-white/10 
+              -rotate-3 shadow-[5px_5px_15px_rgba(0,0,0,0.08)] 
+              group-hover:rotate-0 group-hover:scale-110 group-hover:shadow-emerald-500/20 
+              transition-all duration-500 ease-out overflow-hidden">
+    
+    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+    
+    <img src="{{organisations.icone.url}}" 
+         class="w-12 h-12 object-contain relative z-10 transition-transform duration-500 group-hover:scale-110" 
+         alt="Opera Logo"/>
+  </div>
+</div>
+  <div class="flex flex-col">
+    <div class="overflow-hidden">
+      <span class="block text-3xl lg:text-4xl font-black tracking-tighter bg-gradient-to-r from-emerald-500 via-blue-600 to-purple-600 bg-[length:200%_auto] bg-clip-text text-transparent group-hover:bg-right transition-all duration-1000 ease-in-out">
+       {{organisations.nom}}
+      </span>
+    </div>
+    
+    <div class="flex items-center space-x-2">
+      <span class="text-[9px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.3em] leading-none transition-colors group-hover:text-emerald-500">
+        Digital <span class="text-blue-500">System</span> For Meal
+      </span>
+      <div class="relative flex h-1.5 w-1.5">
+        <div class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></div>
+        <div class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></div>
+      </div>
+    </div>
+  </div>
+</a>
+
+     <!-- Menu desktop -->
+<div class="hidden lg:flex items-center bg-gray-50/80 backdrop-blur border border-gray-200/50 p-1.5 rounded-2xl shadow-sm">
+
+  <!-- À PROPOS (Mega Menu) -->
+  <div class="relative group">
+    
+    <button class="nav-link flex items-center space-x-2 px-5 py-2 text-sm font-bold text-gray-700 hover:text-emerald-600 transition-all rounded-xl hover:bg-white">
+      <i class="fas fa-info-circle opacity-50"></i>
+      <span>À propos</span>
+      <i class="fas fa-chevron-down text-xs opacity-60"></i>
+    </button>
+
+    <!-- Mega Menu -->
+    <div class="absolute left-1/2 -translate-x-1/2 mt-6 w-[700px] bg-white rounded-3xl shadow-2xl border border-gray-100 
+                opacity-0 invisible group-hover:opacity-100 group-hover:visible 
+                translate-y-4 group-hover:translate-y-0 transition-all duration-300 z-[120] overflow-hidden">
+
+      <div class="grid grid-cols-2 gap-6 p-6">
+
+       <!-- COLONNE 1 : OperaPlus -->
+<div>
+  <h3 class="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">
+    OperaPlus
+  </h3>
+
+  <!-- Présentation -->
+  <a href="/operaplus/" class="flex items-start space-x-3 p-3 rounded-xl hover:bg-emerald-50 transition group/item">
+    <div class="bg-emerald-100 text-emerald-600 p-2 rounded-lg">
+      <i class="fas fa-layer-group"></i>
+    </div>
+    <div>
+      <p class="font-semibold text-gray-800 group-hover/item:text-emerald-600">
+        Présentation
+      </p>
+      <p class="text-xs text-gray-500">
+        Découvrez la plateforme OperaPlus
+      </p>
+    </div>
+  </a>
+
+  <!-- GIF Preview -->
+  <div class="mt-4 rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition">
+    <img 
+      src="https://media.giphy.com/media/3o7TKsQ8U4fJ9W6Q9y/giphy.gif" 
+      alt="Présentation OperaPlus"
+      class="w-full h-40 object-cover"
+    />
+  </div>
+
+  <!-- Petit texte -->
+  <p class="text-xs text-gray-400 mt-2">
+    Aperçu rapide de la plateforme en action
+  </p>
+</div>
+
+        <!-- COLONNE 2 : MEAL Afrique -->
+        <div>
+          <h3 class="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">
+            MEAL Afrique
+          </h3>
+
+          <div class="space-y-1">
+              <a href="{% url 'meal-about-use' %}" 
+   class="group flex items-center space-x-4 p-4 rounded-2xl hover:bg-white/5 border border-transparent hover:border-blue-500/20 transition-all duration-300 backdrop-blur-sm">
+    
+    <div class="relative">
+        <div class="bg-blue-500/10 text-blue-400 p-3 rounded-xl group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
+            <i class="fas fa-users text-lg"></i>
+        </div>
+        <span class="absolute -top-1 -right-1 flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+        </span>
+    </div>
+
+    <div class="flex flex-col">
+        <p class="font-bold text-gray-200 group-hover:text-blue-400 transition-colors duration-300 tracking-wide">
+            Qui Sommes-Nous ?
+        </p>
+        <span class="text-[10px] uppercase tracking-widest text-gray-500 group-hover:text-gray-300 transition-colors">
+            Notre ADN & Notre Mission
+        </span>
+    </div>
+
+    <div class="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 text-orange-500 pl-2">
+        <i class="fas fa-chevron-right text-sm"></i>
+    </div>
+</a>
+            <a href="{%url 'meal-vision' %}" class="flex items-start space-x-3 p-3 rounded-xl hover:bg-blue-50 transition">
+              <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                <i class="fas fa-eye"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-800">Vision</p>
+                <p class="text-xs text-gray-500">Notre ambition à long terme</p>
+              </div>
+            </a>
+
+            <a href="{%url 'meal-mission' %}" class="flex items-start space-x-3 p-3 rounded-xl hover:bg-blue-50 transition">
+              <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                <i class="fas fa-bullseye"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-800">Mission</p>
+                <p class="text-xs text-gray-500">Ce que nous faisons au quotidien</p>
+              </div>
+            </a>
+
+            <a href="/meal-domaines/" class="flex items-start space-x-3 p-3 rounded-xl hover:bg-blue-50 transition">
+              <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                <i class="fas fa-globe-africa"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-800">Domaines</p>
+                <p class="text-xs text-gray-500">Nos domaines d’intervention</p>
+              </div>
+            </a>
+
+            <a href="/meal-activites/" class="flex items-start space-x-3 p-3 rounded-xl hover:bg-blue-50 transition">
+              <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                <i class="fas fa-tasks"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-800">Activités</p>
+                <p class="text-xs text-gray-500">Nos actions concrètes</p>
+              </div>
+            </a>
+
+            <a href="/meal-valeurs/" class="flex items-start space-x-3 p-3 rounded-xl hover:bg-blue-50 transition">
+              <div class="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                <i class="fas fa-heart"></i>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-800">Valeurs</p>
+                <p class="text-xs text-gray-500">Nos principes fondamentaux</p>
+              </div>
+            </a>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="bg-gradient-to-r from-emerald-50 via-white to-blue-50 px-6 py-4 border-t flex items-center justify-between">
+        <p class="text-xs text-gray-500">
+          Organisation engagée pour l’impact social
+        </p>
+        <a href="/contact/" class="text-xs font-semibold text-emerald-600 hover:underline">
+          Nous contacter →
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AUTRES LIENS -->
+  <a href="/actualities/" class="nav-link flex items-center space-x-2 px-5 py-2 text-sm font-bold text-gray-700 hover:text-emerald-600 transition-all rounded-xl hover:bg-white">
+    <i class="fas fa-newspaper opacity-50"></i>
+    <span>Actualités</span>
+  </a>
+
+  <a href="/mediatheque/" class="nav-link flex items-center space-x-2 px-5 py-2 text-sm font-bold text-gray-700 hover:text-blue-600 transition-all rounded-xl hover:bg-white">
+    <i class="fas fa-photo-video opacity-50"></i>
+    <span>Médiathèque</span>
+  </a>
+
+  <a href="/team/" class="nav-link flex items-center space-x-2 px-5 py-2 text-sm font-bold text-gray-700 hover:text-emerald-600 transition-all rounded-xl hover:bg-white">
+    <i class="fas fa-user-friends opacity-50"></i>
+    <span>Team</span>
+  </a>
+
+</div>
+
+      <!-- Right buttons -->
+      <div class="flex items-center space-x-3">
+      
+        <a href="/log_account/" class="hidden sm:flex items-center px-6 py-2.5 text-emerald-600 border-2 border-emerald-100 rounded-2xl font-bold text-sm hover:bg-emerald-50 transition-all active:scale-95">
+          <i class="fas fa-lock-open mr-2 text-emerald-400"></i> Acces Utilisateurs
+        </a>
+
+        <!-- Mobile Hamburger -->
+        <button id="mobile-menu-btn" class="lg:hidden w-11 h-11 flex items-center justify-center bg-gray-100 rounded-xl text-gray-600 hover:bg-emerald-600 hover:text-white transition-all duration-300">
+          <i class="fas fa-bars-staggered"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<style>
+/* Glassmorphism navbar */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Smooth hover on nav links */
+.nav-link:hover {
+  transform: translateY(-2px);
+  transition: all 0.3s ease-in-out;
+}
+
+/* Icon hover effect */
+.group-hover/item i {
+  transform: scale(1.1);
+  transition: all 0.3s ease;
+}
+
+/* Dropdown fade + slide */
+.group-hover\:opacity-100 {
+  transition: all 0.3s ease;
+}
+</style>
+<div id="mobile-drawer" class="fixed inset-0 z-[150] invisible">
+    <div id="drawer-overlay" class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"></div>
+    
+    <div id="drawer-content" class="absolute right-0 top-0 bottom-0 w-[280px] bg-white shadow-2xl flex flex-col p-6">
+        <div class="flex items-center justify-between mb-8">
+            <span class="font-bold text-gray-400 uppercase tracking-widest text-xs">Menu Principal</span>
+            <button id="close-menu" class="w-9 h-9 flex items-center justify-center bg-gray-100 rounded-full text-gray-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 space-y-2 overflow-y-auto">
+            <a href="/" class="flex items-center space-x-4 p-4 rounded-xl bg-emerald-50 text-emerald-700 font-bold">
+                <i class="fas fa-home w-5"></i><span>Accueil</span>
+            </a>
+            <a href="/actualities/" class="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold">
+                <i class="fas fa-newspaper w-5 opacity-50"></i><span>Actualités</span>
+            </a>
+            <a href="/mediatheque/" class="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold">
+                <i class="fas fa-photo-video w-5 opacity-50"></i><span>Médiathèque</span>
+            </a>
+            <a href="/team/" class="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold">
+                <i class="fas fa-users w-5 opacity-50"></i><span>Team</span>
+            </a>
+
+            <div class="pt-6 mt-4 border-t border-gray-100">
+                <span class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Système MEAL</span>
+                <div class="space-y-2">
+                    <a href="/objectifs/" class="flex items-center p-3 border border-gray-100 rounded-xl hover:border-emerald-500 transition-all">
+                        <i class="fas fa-bullseye text-emerald-500 mr-3"></i>
+                        <span class="text-sm font-bold">Objectifs</span>
+                    </a>
+                    <a href="/fonctionnalite/" class="flex items-center p-3 border border-gray-100 rounded-xl hover:border-blue-500 transition-all">
+                        <i class="fas fa-cogs text-blue-500 mr-3"></i>
+                        <span class="text-sm font-bold">Fonctionnalités</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-6">
+            <a href="/log_account/" class="w-full flex items-center justify-center p-4 bg-gray-900 text-white rounded-xl font-bold shadow-lg active:scale-95 transition-all">
+                <i class="fas fa-lock-open mr-2 text-emerald-400"></i> Accès Utilisateurs
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="h-20"></div>
+
+
+{%block content%}
+
+
+
+<section id="actualites" class="relative w-full pt-16 lg:pt-0 overflow-hidden bg-slate-900">
+        <div class="carousel-wrapper relative w-full" x-data="mealCarousel({{ actualite|length|default:1 }})" x-init="init()">
+            <div class="carousel-track flex h-[75vh] md:h-[85vh] lg:h-screen transition-transform duration-1000 ease-in-out" 
+                 :style="`transform: translateX(-${current * 100}%)`" 
+                 @mouseenter="pause()" @mouseleave="resume()">
+
+                {% for item in actualite %}
+                <div class="carousel-slide w-full flex-shrink-0 relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent z-20"></div>
+                    <div class="absolute inset-0 w-full h-full z-10">
+                        {% if item.photos %}
+                        <img src="{{ item.photos.url }}" class="w-full h-full object-cover brightness-75 scale-105" alt="{{ item.intitule }}">
+                        {% else %}
+                        <div class="w-full h-full bg-slate-800 flex items-center justify-center"><i class="fas fa-image text-6xl text-white/20"></i></div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="absolute inset-0 flex items-center justify-start px-6 md:px-16 lg:px-24 z-30 pointer-events-none">
+                        <div class="max-w-2xl text-white pointer-events-auto">
+                            <div class="inline-flex items-center bg-emerald-500/90 px-4 py-2 rounded-xl font-bold text-sm mb-6">
+                                <i class="fas fa-star mr-2"></i> À LA UNE
+                            </div>
+                            <h2 class="text-3xl md:text-5xl lg:text-5xl font-black mb-6 leading-tight drop-shadow-lg">
+                                {{ item.intitule|safe }}
+                            </h2>
+                            <p class="text-lg md:text-xl text-gray-200 mb-8 line-clamp-3 font-light">
+                                {{ item.description|safe|striptags }}
+                            </p>
+                            <div class="flex flex-wrap gap-4">
+                               <a href="{{item.get_absolute_url}}" 
+   class="group relative inline-flex items-center px-8 py-4 bg-white text-emerald-950 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] hover:shadow-emerald-900/10 hover:-translate-y-1 transition-all duration-500 overflow-hidden">
+    
+    <div class="absolute inset-0 bg-emerald-50 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out"></div>
+
+    <span class="relative z-10 text-sm md:text-base font-black uppercase tracking-[0.15em] font-sans antialiased">
+        Lire l'article
+        <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-emerald-600 transition-all duration-500 group-hover:w-full"></span>
+    </span>
+
+    <i class="fas fa-arrow-right relative z-10 ml-4 text-emerald-600 transform transition-transform duration-500 group-hover:translate-x-2"></i>
+</a>
+                                 <a href="/Inscription-meal-afrique/" class="px-8 py-4 bg-white text-emerald-900 font-bold rounded-2xl hover:bg-emerald-50 transition-all flex items-center">
+                                    <i class="fas fa-user-friends opacity-50"></i>
+                                    <span>Rejoindre Team Meal-Afrique</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="carousel-slide w-full flex-shrink-0 h-screen bg-slate-800 flex items-center justify-center">
+                    <p class="text-white opacity-50">Aucune actualité disponible.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button @click="prev()" class="absolute left-4 top-1/2 -translate-y-1/2 z-40 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button @click="next()" class="absolute right-4 top-1/2 -translate-y-1/2 z-40 w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </section>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<section 
+    x-data="{ 
+        shown: false,
+        users: 0, projects: 0, countries: 0,
+        animateNumbers() {
+            this.animateValue('users', 0, {{members}}, 2000);
+            this.animateValue('projects', 0, {{institution_count}}, 1500);
+            this.animateValue('countries', 0, {{total_countries}}, 1200);
+        },
+        animateValue(prop, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                this[prop] = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+    }" 
+    x-init="
+        setTimeout(() => shown = true, 100);
+        $watch('shown', value => { if(value) setTimeout(() => animateNumbers(), 800) });
+    "
+    class="relative min-h-screen bg-[#04060a] font-['Inter',_sans-serif] pt-16 pb-24 px-6 overflow-hidden"
+>
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div class="absolute -top-[10%] -right-[5%] w-[600px] h-[600px] bg-blue-950/20 rounded-full blur-[120px] opacity-50"></div>
+        <div class="absolute bottom-[10%] -left-[10%] w-[500px] h-[500px] bg-orange-950/10 rounded-full blur-[120px] opacity-30"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto relative z-10">
+        
+        <div class="mb-8 text-center lg:text-left">
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-2 tracking-tight leading-tight relative inline-block">
+                Qui sommes-<span class="text-transparent bg-clip-text bg-gradient-to-br from-blue-400 via-indigo-300 to-purple-400">nous ?</span>
+                <svg class="absolute -bottom-2 left-0 w-full h-3" viewBox="0 0 200 20" preserveAspectRatio="none">
+                    <path d="M0,10 C50,20 150,0 200,10" stroke="#f97316" stroke-width="3" fill="transparent"/>
+                </svg>
+            </h1>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-12 items-start">
+            
+            <div 
+                class="order-2 lg:order-1 space-y-8"
+                x-show="shown"
+                x-transition:enter="transition ease-out duration-1000 delay-300"
+                x-transition:enter-start="opacity-0 -translate-x-10"
+                x-transition:enter-end="opacity-100 translate-x-0"
+            >
+                <div class="prose prose-xl max-w-none">
+                    <p class="text-2xl sm:text-3xl font-semibold leading-tight text-slate-100">
+                        <span class="text-blue-400 font-extrabold text-shadow-blue">MEAL Afrique</span> est le catalyseur de l'excellence en 
+                        <span class="relative inline-block text-white">
+                            <span class="relative z-10 italic font-bold">Suivi & Évaluation</span>
+                            <span class="absolute bottom-1 left-0 w-full h-3 bg-orange-500/30 -z-10 rounded-sm blur-sm"></span>
+                        </span>
+                    </p>
+                    <p class="text-base sm:text-lg text-slate-300 leading-relaxed mt-4">
+                        Nous formons un écosystème dynamique où l'expertise rencontre l'innovation. En connectant les acteurs du développement, nous transformons les données en décisions stratégiques.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-6 pt-2">
+                    <div class="relative group">
+                        <div class="text-4xl sm:text-5xl font-black text-white tracking-tighter flex items-center">
+                            <span x-text="users">0</span><span class="text-blue-500 ml-1">+</span>
+                        </div>
+                        <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mt-1 group-hover:text-blue-400 transition-colors">Utilisateurs</p>
+                        <div class="absolute -bottom-1 left-0 w-8 h-0.5 bg-blue-500/50 rounded-full"></div>
+                    </div>
+                    <div class="relative group">
+                        <div class="text-4xl sm:text-5xl font-black text-white tracking-tighter flex items-center">
+                            <span x-text="projects">0</span><span class="text-orange-500 ml-1">+</span>
+                        </div>
+                        <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mt-1 group-hover:text-orange-400 transition-colors">Projets</p>
+                        <div class="absolute -bottom-1 left-0 w-8 h-0.5 bg-orange-500/50 rounded-full"></div>
+                    </div>
+                    <div class="relative group col-span-2 sm:col-span-1">
+                        <div class="text-4xl sm:text-5xl font-black text-white tracking-tighter flex items-center">
+                            <span x-text="countries">0</span><span class="text-purple-500 ml-1">+</span>
+                        </div>
+                        <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mt-1 group-hover:text-purple-400 transition-colors">Pays</p>
+                        <div class="absolute -bottom-1 left-0 w-8 h-0.5 bg-purple-500/50 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div 
+                class="order-1 lg:order-2 relative lg:-mt-12 perspective-container"
+                x-show="shown"
+                x-transition:enter="transition ease-out duration-1000 delay-500"
+                x-transition:enter-start="opacity-0 translate-y-10"
+                x-transition:enter-end="opacity-100 translate-y-0"
+            >
+                <div 
+                    x-data="{ 
+                        rotateX: -15, rotateY: -25, glareX: 30, glareY: 30, glareOpacity: 0.4,
+                        activeSlide: 0,
+                        slides: [
+                            {icon: 'synergy', title: 'Synergie', text: 'Connecter les experts pour démultiplier l\'impact.'},
+                            {icon: 'agility', title: 'Agilité', text: 'Adapter les méthodes aux réalités du terrain.'},
+                            {icon: 'impact', title: 'Impact', text: 'Transformer les données en décisions durables.'}
+                        ],
+                        updateMouse(e) {
+                            const rect = $el.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+                            this.rotateY = -25 + (x - rect.width/2) / 12; 
+                            this.rotateX = -15 + (y - rect.height/2) / -12;
+                            this.glareX = (x / rect.width) * 100;
+                            this.glareY = (y / rect.height) * 100;
+                        },
+                        resetMouse() {
+                            this.rotateX = -15; this.rotateY = -25;
+                            this.glareOpacity = 0.4; this.glareX = 30; this.glareY = 30;
+                        }
+                    }"
+                    x-init="setInterval(() => activeSlide = (activeSlide + 1) % slides.length, 5000)"
+                    @mousemove="updateMouse($event); glareOpacity = 0.7"
+                    @mouseleave="resetMouse()"
+                    :style="`transform: rotateX(${rotateX}deg) rotateY(${rotateY}deg);`"
+                    class="relative z-20 w-full max-w-[340px] lg:max-w-md mx-auto aspect-square rounded-[2.5rem] transition-transform duration-300 ease-out 3d-tilted-card-left cursor-pointer"
+                >
+                    <div class="absolute inset-[-2px] rounded-[2.6rem] overflow-hidden z-0 anime-aura-blur opacity-80 pointer-events-none">
+                        <div class="anime-aura-gradient"></div>
+                    </div>
+
+                    <div class="absolute inset-0 rounded-[2.5rem] bg-white/[0.03] backdrop-blur-[40px] border border-white/20 shadow-2xl z-10 overflow-hidden win11-glass-effect">
+                        <div class="absolute inset-0 z-20 pointer-events-none transition-opacity duration-300"
+                            :style="`opacity: ${glareOpacity}; background: radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 65%);`"
+                        ></div>
+
+                        <div class="relative z-30 h-full w-full overflow-hidden p-8 lg:p-12 transform-style-3d flex items-center justify-center">
+                            <template x-for="(slide, index) in slides" :key="index">
+                                <div 
+                                    class="absolute flex flex-col items-center justify-center text-center transition-all duration-1000 ease-in-out h-full"
+                                    x-show="activeSlide === index"
+                                    x-transition:enter="transition ease-out duration-1000"
+                                    x-transition:enter-start="opacity-0 translate-y-12 scale-95"
+                                    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                    x-transition:leave="transition ease-in duration-800"
+                                    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                                    x-transition:leave-end="opacity-0 -translate-y-12 scale-95"
+                                >
+                                    <div class="mb-6 inline-block p-5 rounded-3xl backdrop-blur-md bg-white/5 border border-white/10 translateZ-40 shadow-inner group overflow-hidden relative">
+                                        <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                        
+                                        <svg x-show="slide.icon === 'synergy'" class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="url(#iconGradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                        
+                                        <svg x-show="slide.icon === 'agility'" class="w-12 h-12 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="url(#iconGradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                        
+                                        <svg x-show="slide.icon === 'impact'" class="w-12 h-12 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="url(#iconGradient)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                    </div>
+
+                                    <h4 class="text-3xl lg:text-4xl font-extrabold tracking-tight mb-3 glass-text-premium translateZ-50" :data-text="slide.title" x-text="slide.title"></h4>
+                                    
+                                    <p class="text-sm lg:text-base text-slate-200 font-medium tracking-wide glass-subtext translateZ-30 px-4" x-text="slide.text"></p>
+                                </div>
+                            </template>
+
+                            <div class="absolute bottom-6 left-0 w-full flex justify-center gap-2 z-40 translateZ-20">
+                                <template x-for="(slide, index) in slides" :key="index">
+                                    <button 
+                                        @click="activeSlide = index"
+                                        class="h-1.5 rounded-full transition-all duration-300"
+                                        :class="activeSlide === index ? 'w-6 bg-white' : 'w-2 bg-white/30 hover:bg-white/60'"
+                                    ></button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-4/5 h-8 bg-black/80 rounded-full blur-3xl z-0 3d-shadow-cast-left"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<svg width="0" height="0" class="absolute">
+    <defs>
+        <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8" />
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0.2" />
+        </linearGradient>
+    </defs>
+</svg>
+
+<style>
+    .perspective-container { perspective: 2000px; }
+    .transform-style-3d { transform-style: preserve-3d; }
+    .3d-tilted-card-left { transform-style: preserve-3d; will-change: transform; }
+    
+    /* Profondeur des éléments enfants pour l'effet parallaxe */
+    .translateZ-20 { transform: translateZ(20px); }
+    .translateZ-30 { transform: translateZ(30px); }
+    .translateZ-40 { transform: translateZ(40px); }
+    .translateZ-50 { transform: translateZ(50px); }
+
+    .anime-aura-blur { filter: blur(50px); transform: translateZ(-10px); }
+    .anime-aura-gradient {
+        width: 150%; height: 150%; position: absolute; top: -25%; left: -25%;
+        background: conic-gradient(from 0deg, #ff4500, #00e5ff, #7000ff, #ff0055, #ff4500);
+        animation: rotateAura 10s linear infinite;
+    }
+    @keyframes rotateAura { 100% { transform: rotate(360deg); } }
+
+    .win11-glass-effect { background-image: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%); }
+    
+    /* Texte style verre poli premium */
+    .glass-text-premium {
+        background: linear-gradient(135deg, #ffffff 20%, #dbeafe 70%, #a5b4fc 100%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        position: relative;
+    }
+    /* Lueur diffuse derrière le texte pour effet de réfraction */
+    .glass-text-premium::after {
+        content: attr(data-text); position: absolute; left: 0; top: 0; z-index: -1;
+        color: white; filter: blur(15px); opacity: 0.4;
+    }
+    
+    .glass-subtext { text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .3d-shadow-cast-left { transform: translateZ(-80px) rotateX(90deg) scaleY(0.3) translateX(5%); opacity: 0.6; }
+    .text-shadow-blue { text-shadow: 0 0 25px rgba(59, 130, 246, 0.5); }
+    
+    [x-cloak] { display: none !important; }
+</style>
+
+<section class="relative min-h-screen bg-gradient-to-br from-white via-blue-50/30 to-orange-50 overflow-hidden py-20 lg:py-5">
+
+  <!-- Blobs -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute -top-40 -right-40 w-80 h-80 bg-orange-300/30 rounded-full blur-lg animate-blob animation-delay-1000"></div>
+    <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300/30 rounded-full blur-lg animate-blob animation-delay-3000"></div>
+    <div class="absolute top-40 left-1/4 w-64 h-64 bg-orange-200/30 rounded-full blur-lg animate-blob animation-delay-5000"></div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+
+      <!-- IMAGE -->
+      <div class="relative group rounded-3xl shadow-2xl scroll-reveal-lg h-[28rem] lg:h-[32rem] overflow-hidden">
+        <img 
+          src="{% static 'vision.jpeg' %}" 
+          class="absolute inset-0 w-full h-full object-cover z-30 transition-transform duration-700 group-hover:scale-110"
+        />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent z-20"></div>
+
+        <div class="absolute bottom-8 left-8 w-64 p-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl z-40">
+          <div class="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-blue-400/20 rounded-2xl blur"></div>
+          <div class="relative flex items-center text-orange-900 font-black text-xl">
+            <div class="w-3 h-3 bg-orange-400 rounded-full mr-3 animate-ping"></div>
+            Vision 
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTENT -->
+      <div class="space-y-12 scroll-reveal">
+
+       <div class="space-y-10">
+
+  <!-- TITLE -->
+  <div class="text-center max-w-2xl mx-auto">
+    <h2 class="text-4xl lg:text-5xl font-black text-gray-900">
+      Notre <span class="text-orange-500">Vision</span>
+    </h2>
+    <p class="text-gray-600 mt-4 text-lg">
+      Construire une Afrique moderne, guidée par les données, ancrée dans ses valeurs et tournée vers un impact durable.
+    </p>
+  </div>
+
+  <!-- GRID -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+    {% for item in vision_words %}
+    <div class="vision-card group scroll-reveal
+      {% if forloop.counter|divisibleby:2 %}slide-right{% else %}slide-left{% endif %}">
+
+      <!-- ICON -->
+      <div class="icon-box">
+        {% if item.icon == "cpu" %}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="4" y="4" width="16" height="16" rx="3"/>
+          <path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/>
+        </svg>
+        {% elif item.icon == "chart" %}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M3 17l6-6 4 4 8-8"/>
+        </svg>
+        {% elif item.icon == "leaf" %}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M5 21c10-2 14-10 14-16-6 0-14 4-16 14"/>
+        </svg>
+        {% elif item.icon == "database" %}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/>
+          <path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5"/>
+          <path d="M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/>
+        </svg>
+        {% elif item.icon == "book" %}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M4 19c0-2 2-3 4-3h12"/>
+          <path d="M4 5c0-2 2-3 4-3h12v16H8c-2 0-4 1-4 3z"/>
+        </svg>
+        {% elif item.icon == "target" %}
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2"/>
+        </svg>
+        {% endif %}
+      </div>
+
+      <!-- TEXT -->
+      <h3 class="title">
+        {{ item.text }}
+      </h3>
+
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+        
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+/* BLOBS */
+@keyframes blob {
+  0% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(30px,-40px) scale(1.1); }
+  66% { transform: translate(-20px,20px) scale(0.9); }
+  100% { transform: translate(0,0) scale(1); }
+}
+.animate-blob { animation: blob 7s infinite; }
+.animation-delay-1000 { animation-delay: 1s; }
+.animation-delay-3000 { animation-delay: 3s; }
+.animation-delay-5000 { animation-delay: 5s; }
+
+/* FLOAT (animation continue) */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+.float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* SCROLL */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 0.8s ease;
+}
+.scroll-reveal.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ENTRÉES */
+.slide-left { transform: translateX(-50px); }
+.slide-right { transform: translateX(50px); }
+.fall-down { transform: translateY(-50px); }
+
+.scroll-reveal.active.slide-left,
+.scroll-reveal.active.slide-right,
+.scroll-reveal.active.fall-down {
+  transform: translate(0);
+}
+
+/* HOVER GLOW */
+.group:hover {
+  box-shadow: 0 10px 30px rgba(249,115,22,0.2),
+              0 5px 15px rgba(59,130,246,0.15);
+}
+</style>
+<style>
+  /* CARD */
+.vision-card {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 30px;
+  text-align: center;
+  border: 1px solid rgba(249,115,22,0.1);
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ICON */
+.icon-box {
+  width: 60px;
+  height: 60px;
+  margin: auto;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,#f97316,#3b82f6);
+  color: white;
+  transition: all 0.4s ease;
+}
+
+.icon-box svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* TITLE */
+.title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* HOVER PREMIUM */
+.vision-card:hover {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+}
+
+.vision-card:hover .icon-box {
+  transform: scale(1.15) rotate(5deg);
+}
+
+/* LIGHT EFFECT */
+.vision-card::before {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.4),
+    transparent
+  );
+  transform: rotate(25deg);
+  transition: 0.6s;
+}
+
+.vision-card:hover::before {
+  top: 100%;
+  left: 100%;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const els = document.querySelectorAll('.scroll-reveal');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          entry.target.classList.add('active');
+        }, i * 120);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  els.forEach(el => observer.observe(el));
+});
+</script>
+
+<section id="domaines-institutionnels" class="relative bg-[#04060a] py-10 overflow-hidden border-t border-white/5">
+    
+    <div class="absolute z-0 top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-6 relative z-30">
+        
+        <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+            <div  class="relative">
+                <h2 class="text-5xl md:text-5xl font-black text-white tracking-tight leading-tight">
+                    Nos <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-emerald-400 to-blue-500 bg-[length:200%_auto] animate-gradient">Projets</span>
+                </h2>
+                <div class="h-1.5 w-24 bg-gradient-to-r from-blue-600 to-emerald-500 mt-4 rounded-full shadow-[0_0_20px_rgba(37,99,235,0.3)]"></div>
+            </div>
+            
+            <div class="flex gap-3" data-aos="fade-left">
+                <button id="inst-prev" class="w-14 h-14 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center text-white hover:bg-blue-600 hover:border-blue-500 transition-all duration-300 backdrop-blur-xl group shadow-lg">
+                    <i class="fas fa-chevron-left group-hover:-translate-x-1 transition-transform"></i>
+                </button>
+                <button id="inst-next" class="w-14 h-14 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center text-white hover:bg-blue-600 hover:border-blue-500 transition-all duration-300 backdrop-blur-xl group shadow-lg">
+                    <i class="fas fa-chevron-right group-hover:translate-x-1 transition-transform"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="inst-carousel" class="flex gap-8 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-16 pt-5 px-4">
+            {% for item in institution %}
+            <div class="js-inst-item snap-center shrink-0 w-[85vw] md:w-[380px] group relative transition-all duration-700 scale-[0.9] opacity-40">
+                
+                <div class="absolute inset-0 bg-blue-500/20 rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+                <div class="relative bg-white/[0.03] backdrop-blur-xl border border-white/10 p-5 rounded-[2.5rem] overflow-hidden transition-all duration-700 group-hover:-translate-y-4 group-hover:border-white/20">
+                    
+                    <div class="relative h-64 w-full rounded-[1.8rem] overflow-hidden mb-6 shadow-2xl">
+                        {% if item.img %}
+                            <img src="{{ item.img.url }}" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="{{ item.nom }}">
+                        {% else %}
+                            <div class="w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">
+                                <i class="fas fa-university text-4xl"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#04060a]/80 via-transparent to-transparent"></div>
+                        
+                        <div class="absolute top-4 left-4">
+                            <span class="px-4 py-1.5 bg-blue-600/90 backdrop-blur-md text-white rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/20">
+                                Partenaire
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="px-2 pb-2 text-center md:text-left">
+                        <h3 class="text-2xl font-bold text-white mb-4 line-clamp-1 group-hover:text-blue-400 transition-colors">
+                            {{ item.nom }}
+                        </h3>
+
+                        <div class="flex items-center justify-between border-t border-white/5 pt-5">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Statut: Actif</span>
+                                <span class="text-sm font-extrabold text-emerald-400 italic">Déployé</span>
+                            </div>
+                            
+                            <a href="{{item.get_absolute_url}}" class="w-12 h-12 bg-white text-[#04060a] rounded-2xl flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all duration-500 shadow-xl group/btn">
+                                <i class="fas fa-arrow-right group-hover/btn:rotate-[-45deg] transition-transform"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<style>
+/* Masquer la scrollbar */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Animation du dégradé de texte */
+@keyframes gradientText {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+.animate-gradient {
+    animation: gradientText 6s ease infinite;
+}
+
+/* État Actif du Carousel (Géré par JS) */
+.js-inst-item.is-active {
+    transform: scale(1.05);
+    opacity: 1;
+    z-index: 20;
+}
+.js-inst-item.is-active > div {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const carousel = document.getElementById('inst-carousel');
+    const items = document.querySelectorAll('.js-inst-item');
+    const prevBtn = document.getElementById('inst-prev');
+    const nextBtn = document.getElementById('inst-next');
+    
+    let currentIndex = 0;
+    let autoPlay;
+
+    const updateActive = () => {
+        const center = carousel.scrollLeft + (carousel.offsetWidth / 2);
+        items.forEach((item) => {
+            const itemCenter = item.offsetLeft + (item.offsetWidth / 2);
+            if (Math.abs(itemCenter - center) < item.offsetWidth / 2) {
+                item.classList.add('is-active');
+            } else {
+                item.classList.remove('is-active');
+            }
+        });
+    };
+
+    const scrollToIndex = (index) => {
+        if (index < 0) index = items.length - 1;
+        if (index >= items.length) index = 0;
+        currentIndex = index;
+        
+        const targetItem = items[currentIndex];
+        carousel.scrollTo({
+            left: targetItem.offsetLeft - (carousel.offsetWidth / 2) + (targetItem.offsetWidth / 2),
+            behavior: 'smooth'
+        });
+    };
+
+    const startAuto = () => {
+        autoPlay = setInterval(() => {
+            currentIndex++;
+            scrollToIndex(currentIndex);
+        }, 5000);
+    };
+
+    // Events
+    carousel.addEventListener('scroll', updateActive);
+    
+    nextBtn.addEventListener('click', () => { 
+        clearInterval(autoPlay); 
+        currentIndex++;
+        scrollToIndex(currentIndex); 
+        startAuto(); 
+    });
+
+    prevBtn.addEventListener('click', () => { 
+        clearInterval(autoPlay); 
+        currentIndex--;
+        scrollToIndex(currentIndex); 
+        startAuto(); 
+    });
+
+    // Initialisation
+    setTimeout(updateActive, 100);
+    startAuto();
+});
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<section class="py-5 bg-slate-50 relative overflow-hidden min-h-screen flex items-center font-['Plus_Jakarta_Sans']">
+  
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-200/20 rounded-full blur-[100px]"></div>
+    <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-orange-200/20 rounded-full blur-[100px]"></div>
+  </div>
+
+  <div class="max-w-[1600px] mx-auto px-6 flex flex-col xl:flex-row items-center justify-center gap-16 relative z-10">
+    
+    <div class="hidden xl:block flex-1 animate-float">
+      <div class="relative group">
+        <div class="absolute inset-0 border-[1px] border-slate-200 rounded-[3rem] translate-x-6 translate-y-6 transition-transform duration-700 group-hover:translate-x-3 group-hover:translate-y-3"></div>
+        <div class="relative w-[420px] h-[580px] rounded-[2.8rem] overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] transition-all duration-700">
+          <img src="{% static 'mission.jpeg' %}" alt="Mission" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/10 to-transparent"></div>
+          
+          <div class="absolute bottom-8 left-8 right-8 p-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl">
+            <p class="text-white text-sm font-medium leading-relaxed opacity-90">
+              Engagés pour un impact durable et une excellence opérationnelle à travers toute l'Afrique.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-[1.5] flex items-center justify-center min-h-[850px] w-full">
+      <div class="orbit-system relative w-[780px] h-[780px] flex items-center justify-center group">
+
+        <div class="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div class="w-48 h-48 lg:w-60 lg:h-60 p-2 bg-white rounded-full shadow-2xl pointer-events-auto">
+            <div class="w-full h-full bg-slate-900 rounded-full flex flex-col items-center justify-center text-white relative overflow-hidden group/center transition-transform duration-700 hover:scale-105">
+                <div class="absolute inset-0 bg-gradient-to-tr from-blue-900 via-indigo-900 to-slate-900 animate-gradient-slow"></div>
+                <div class="relative z-10 flex flex-col items-center">
+                    <div class="w-12 h-[2px] bg-indigo-500 mb-4 transition-all group-hover/center:w-20"></div>
+                    <span class="text-[10px] uppercase tracking-[0.5em] font-bold text-indigo-400 mb-2">MEAL-Afrique</span>
+                    <span class="text-2xl lg:text-3xl font-extrabold tracking-tighter text-center leading-[0.9]">NOTRE<br><span class="text-indigo-200">MISSION</span></span>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rotating-container relative w-full h-full flex items-center justify-center animate-orbit group-hover:pause-animation">
+            
+            <svg class="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-40 transition-opacity duration-500 group-hover:opacity-100">
+                {% for item in mission_items %}
+                <line class="connector-line 
+                    {% if forloop.counter0|divisibleby:3 %}line-blue
+                    {% elif forloop.counter|add:1|divisibleby:3 %}line-white
+                    {% else %}line-orange{% endif %}" 
+                    stroke-width="1.5" />
+                {% endfor %}
+            </svg>
+
+            {% for item in mission_items %}
+            {% cycle 'card-blue' 'card-white' 'card-orange' as card_theme silent %}
+            <div class="mission-card absolute group/card {{ card_theme }}"
+                 style="--i:{{ forloop.counter0 }}; --n:{{ mission_items|length }};">
+              
+              <div class="card-content w-[175px] h-[210px] bg-white/70 backdrop-blur-xl rounded-[2.5rem] border-[1px] border-white/60 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] flex flex-col items-center justify-center p-6 transition-all duration-700 animate-counter-orbit group-hover:pause-animation group-hover/card:bg-white group-hover/card:-translate-y-4">
+                
+                <div class="relative mb-5">
+                    <div class="icon-box w-16 h-16 rounded-[1.2rem] flex items-center justify-center relative z-10 transition-all duration-500 shadow-sm">
+                       <i class="fa-solid {% if forloop.counter0|divisibleby:3 %}fa-chart-line{% elif forloop.counter|add:1|divisibleby:3 %}fa-shield-halved{% else %}fa-lightbulb{% endif %} text-xl"></i>
+                    </div>
+                    <div class="absolute -inset-2 border-2 border-transparent border-t-current opacity-0 group-hover/card:opacity-20 group-hover/card:rotate-180 transition-all duration-1000 rounded-full"></div>
+                </div>
+                
+                <h3 class="text-[13px] font-bold text-slate-800 leading-tight text-center px-2">
+                  {{ item.text|upper }}
+                </h3>
+
+                <div class="absolute bottom-6 flex gap-1">
+                    <span class="w-1 h-1 rounded-full bg-slate-300 transition-all group-hover/card:w-4 group-hover/card:bg-current"></span>
+                    <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-20 md:py-24 bg-white font-['Plus_Jakarta_Sans'] overflow-hidden relative">
+  <!-- Background subtil -->
+  <div class="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-orange-50 opacity-40"></div>
+
+  
+
+     <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 relative z-10">
+   <div class="text-center mb-20 lg:mb-28 relative">
+  <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tight leading-tight relative inline-block">
+   Huit piliers <span class="text-indigo-600">d'impact réel.</span>
+    <!-- Trait curviligne SVG -->
+    <svg class="absolute -bottom-3 left-1/2 -translate-x-1/2 w-full h-6" viewBox="0 0 200 20" preserveAspectRatio="none">
+      <path d="M0,10 C50,20 150,0 200,10" stroke="#f97316" stroke-width="3" fill="transparent"/>
+    </svg>
+  </h1>
+  <p class="text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
+     Découvrez nos domaines d'intervention stratégiques, là où la donnée rencontre le changement humain.
+   
+  </p>
+</div>
+
+    <!-- Grille -->
+    <div class="grid grid-cols-1 md:grid-cols-8 lg:grid-cols-12 gap-6 auto-rows-[minmax(180px,220px)] md:auto-rows-[220px]">
+
+      <!-- Carte 1: Suivi des projets (grande) -->
+      <div class="md:col-span-8 lg:col-span-8 md:row-span-2 bento-card photo-card group relative overflow-hidden rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-700 [--i:1]">
+        <img src="{%static 'domaine.jpeg'%}"
+             alt="Suivi de projet terrain"
+             class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 motion-reduce:transition-none">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent backdrop-blur-sm"></div>
+        <div class="relative z-20 h-full flex flex-col justify-end p-8 md:p-12 text-white">
+          <div class="flex items-center gap-4 mb-5">
+            <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-2xl shadow-2xl shadow-indigo-500/30 group-hover:animate-spin-slow">
+              <i class="fa-solid fa-people-arrows" aria-hidden="true"></i>
+            </div>
+            <h3 class="font-['Oswald'] text-4xl uppercase tracking-tight">Suivi des projets</h3>
+          </div>
+          <p class="text-slate-100 text-lg max-w-xl leading-relaxed opacity-90 group-hover:opacity-100 transition-all">
+            Mise en place de systèmes de collecte de données en temps réel pour garantir l'exécution et l'ajustement agile des interventions.
+          </p>
+        </div>
+      </div>
+
+      <!-- Carte 2: Évaluation d'impact -->
+      <div class="md:col-span-4 lg:col-span-4 md:row-span-2 bento-card photo-card group rounded-3xl overflow-hidden shadow-xl border border-slate-100 relative [--i:2]">
+        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=600&auto=format&fit=crop"
+             alt="Analyse d'évaluation"
+             class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 motion-reduce:transition-none">
+        <div class="absolute inset-0 bg-slate-950/50 group-hover:bg-slate-950/70 transition-all duration-500 backdrop-blur"></div>
+        <div class="relative z-20 h-full flex flex-col justify-between p-8 md:p-10 text-white">
+          <i class="fa-solid fa-chart-line text-3xl text-indigo-300 group-hover:scale-110 transition-transform" aria-hidden="true"></i>
+          <div>
+            <h3 class="font-['Oswald'] text-3xl uppercase tracking-tight mb-3">Évaluation d'Impact</h3>
+            <p class="text-slate-200 text-base leading-relaxed">Mesurer les effets réels pour éclairer la prise de décision stratégique.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Carte 3: Digitalisation -->
+      <div class="md:col-span-4 lg:col-span-4 bento-card photo-card group rounded-3xl overflow-hidden shadow-xl relative [--i:3]">
+        <img src="https://images.unsplash.com/photo-1603791440384-56cd371ee9a7?q=80&w=600&auto=format&fit=crop"
+             alt="Digitalisation"
+             class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+        <div class="absolute inset-0 bg-indigo-900/40 group-hover:bg-indigo-900/60 transition-all duration-500 backdrop-blur"></div>
+        <div class="relative z-20 h-full flex flex-col justify-end p-8 text-white">
+          <div class="flex items-center gap-4 mb-5">
+            <div class="w-12 h-12 bg-indigo-500 rounded-2xl flex items-center justify-center text-xl shadow-lg group-hover:animate-spin-slow">
+              <i class="fa-solid fa-laptop-code"></i>
+            </div>
+            <h3 class="font-['Oswald'] text-2xl uppercase tracking-tight">Digitalisation</h3>
+          </div>
+          <p class="text-slate-100 text-sm md:text-base leading-relaxed">Intégrer les outils numériques pour améliorer l’efficacité des interventions sur le terrain.</p>
+        </div>
+      </div>
+
+      <!-- Carte 4: Formation -->
+      <div class="md:col-span-4 lg:col-span-4 bento-card photo-card group rounded-3xl overflow-hidden shadow-xl relative [--i:4]">
+        <img src="{%static 'formation.png'%}"
+             alt="Formation"
+             class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+        <div class="absolute inset-0 bg-purple-900/40 group-hover:bg-purple-900/60 transition-all duration-500 backdrop-blur"></div>
+        <div class="relative z-20 h-full flex flex-col justify-end p-8 text-white">
+          <div class="flex items-center gap-4 mb-5">
+            <div class="w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center text-xl shadow-lg group-hover:animate-spin-slow">
+              <i class="fa-solid fa-chalkboard-user"></i>
+            </div>
+            <h3 class="font-['Oswald'] text-2xl uppercase tracking-tight">Formation</h3>
+          </div>
+          <p class="text-slate-100 text-sm md:text-base leading-relaxed">Renforcer les capacités locales pour assurer un impact durable.</p>
+        </div>
+      </div>
+
+      <!-- Carte 5: Partenariats -->
+      <div class="md:col-span-4 lg:col-span-4 bento-card photo-card group rounded-3xl overflow-hidden shadow-xl relative [--i:5]">
+        <img src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=600&auto=format&fit=crop"
+             alt="Partenariats"
+             class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+        <div class="absolute inset-0 bg-green-900/40 group-hover:bg-green-900/60 transition-all duration-500 backdrop-blur"></div>
+        <div class="relative z-20 h-full flex flex-col justify-end p-8 text-white">
+          <div class="flex items-center gap-4 mb-5">
+            <div class="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center text-xl shadow-lg group-hover:animate-spin-slow">
+              <i class="fa-solid fa-handshake"></i>
+            </div>
+            <h3 class="font-['Oswald'] text-2xl uppercase tracking-tight">Partenariats</h3>
+          </div>
+          <p class="text-slate-100 text-sm md:text-base leading-relaxed">Collaborer avec les acteurs locaux pour maximiser l’impact.</p>
+        </div>
+      </div>
+
+      <!-- Carte 6: Innovation -->
+      <div class="md:col-span-4 lg:col-span-4 bento-card photo-card group rounded-3xl overflow-hidden shadow-xl relative [--i:6]">
+        <img src="https://images.unsplash.com/photo-1605902711622-cfb43c4430b9?q=80&w=600&auto=format&fit=crop"
+             alt="Innovation"
+             class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+        <div class="absolute inset-0 bg-yellow-900/40 group-hover:bg-yellow-900/60 transition-all duration-500 backdrop-blur"></div>
+        <div class="relative z-20 h-full flex flex-col justify-end p-8 text-white">
+          <div class="flex items-center gap-4 mb-5">
+            <div class="w-12 h-12 bg-yellow-600 rounded-2xl flex items-center justify-center text-xl shadow-lg group-hover:animate-spin-slow">
+              <i class="fa-solid fa-lightbulb"></i>
+            </div>
+            <h3 class="font-['Oswald'] text-2xl uppercase tracking-tight">Innovation</h3>
+          </div>
+          <p class="text-slate-100 text-sm md:text-base leading-relaxed">Explorer de nouvelles méthodes et outils pour optimiser les interventions.</p>
+        </div>
+      </div>
+
+      <!-- Carte 7: Communication -->
+      <div class="md:col-span-4 lg:col-span-4 bento-card photo-card group rounded-3xl overflow-hidden shadow-xl relative [--i:7]">
+        <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=600&auto=format&fit=crop"
+             alt="Communication"
+             class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+        <div class="absolute inset-0 bg-pink-900/40 group-hover:bg-pink-900/60 transition-all duration-500 backdrop-blur"></div>
+        <div class="relative z-20 h-full flex flex-col justify-end p-8 text-white">
+          <div class="flex items-center gap-4 mb-5">
+            <div class="w-12 h-12 bg-pink-600 rounded-2xl flex items-center justify-center text-xl shadow-lg group-hover:animate-spin-slow">
+              <i class="fa-solid fa-bullhorn"></i>
+            </div>
+            <h3 class="font-['Oswald'] text-2xl uppercase tracking-tight">Communication</h3>
+          </div>
+          <p class="text-slate-100 text-sm md:text-base leading-relaxed">Partager les résultats et bonnes pratiques pour inspirer et mobiliser.</p>
+        </div>
+      </div>
+
+      <!-- Carte 8: Impact social -->
+      <div class="md:col-span-4 lg:col-span-4 bento-card photo-card group rounded-3xl overflow-hidden shadow-xl relative [--i:8]">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=600&auto=format&fit=crop"
+             alt="Impact social"
+             class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110">
+        <div class="absolute inset-0 bg-indigo-900/40 group-hover:bg-indigo-900/60 transition-all duration-500 backdrop-blur"></div>
+        <div class="relative z-20 h-full flex flex-col justify-end p-8 text-white">
+          <div class="flex items-center gap-4 mb-5">
+            <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-xl shadow-lg group-hover:animate-spin-slow">
+              <i class="fa-solid fa-globe-africa"></i>
+            </div>
+            <h3 class="font-['Oswald'] text-2xl uppercase tracking-tight">Impact social</h3>
+          </div>
+          <p class="text-slate-100 text-sm md:text-base leading-relaxed">Mesurer et partager l’impact humain et social de chaque projet.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<style>
+  .bento-card {
+    animation: revealBlock 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
+    animation-delay: calc(0.15s * var(--i, 1));
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    perspective: 1000px;
+  }
+  @keyframes revealBlock {
+    from { opacity: 0; transform: translateY(30px) scale(0.95) rotateX(-2deg);}
+    to { opacity: 1; transform: translateY(0) scale(1) rotateX(0);}
+  }
+  .bento-card:hover {
+    transform: translateY(-12px) scale(1.02) rotateX(5deg) rotateY(5deg);
+  }
+  .bento-card:focus-visible {
+    outline: 3px solid #4f46e5;
+    outline-offset: 4px;
+  }
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .group:hover .animate-spin-slow {
+    animation: spin-slow 3s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bento-card, .group-hover\\:scale-110 { transition: none !important; transform: none !important; }
+  }
+</style>
+<section class="relative bg-gradient-to-br from-slate-50 via-slate-100/50 to-blue-50/30 py-24 lg:py-5 overflow-hidden min-h-screen">
+  <div class="absolute top-20 left-1/4 w-96 h-96 bg-blue-200/30 rounded-full mix-blend-multiply blur-3xl opacity-50 animate-blob"></div>
+  <div class="absolute bottom-20 right-1/4 w-96 h-96 bg-orange-200/40 rounded-full mix-blend-multiply blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
+  <div class="absolute top-1/2 right-1/2 w-72 h-72 bg-teal-200/30 rounded-full mix-blend-multiply blur-3xl opacity-40 animate-blob animation-delay-4000"></div>
+
+  <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 relative z-10">
+   <div class="text-center mb-20 lg:mb-28 relative">
+  <span class="inline-block px-4 py-2 mb-6 text-xs font-bold tracking-widest text-blue-600 uppercase bg-gradient-to-r from-blue-100 to-blue-200 rounded-full shadow-lg backdrop-blur-sm border border-blue-200">
+    Ce qui nous anime
+  </span>
+  <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 mb-6 tracking-tight leading-tight relative inline-block">
+    Parcourez Nos 
+    <span class="bg-gradient-to-r from-blue-600 via-orange-500 to-teal-500 bg-clip-text text-transparent animate-gradient-x">Activités</span>
+    <!-- Trait curviligne SVG -->
+    <svg class="absolute -bottom-3 left-1/2 -translate-x-1/2 w-full h-6" viewBox="0 0 200 20" preserveAspectRatio="none">
+      <path d="M0,10 C50,20 150,0 200,10" stroke="#f97316" stroke-width="3" fill="transparent"/>
+    </svg>
+  </h1>
+  <p class="text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
+    Découvrez automatiquement nos Activités, formations et projets impactants pour le Suivi, Évaluation, Redevabilité et Apprentissage en Afrique.
+  </p>
+</div>
+
+    
+
+    <div class="horizontal-timeline-wrapper h-[75vh] lg:h-[80vh] relative overflow-hidden rounded-[2.5rem] shadow-[0_35px_60px_-15px_rgba(0,0,0,0.1)] bg-white/40 backdrop-blur-xl border border-white/80 group">
+      
+      <div class="absolute top-1/2 left-0 w-full h-1 bg-slate-200 transform -translate-y-1/2 z-0">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-400 via-orange-400 to-teal-400 opacity-30 blur-sm"></div>
+      </div>
+
+      <div class="horizontal-timeline-track flex items-center h-full py-12 px-8 lg:px-32 overflow-x-auto scrollbar-hide snap-x snap-proximity">
+        {% for item in timeline_items %}
+        <div class="timeline-item-horizontal flex-shrink-0 w-[320px] lg:w-[400px] snap-center relative z-10 px-4 transition-all duration-700" data-index="{{ forloop.counter0 }}">
+          
+          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[180px] lg:-translate-y-[220px] w-16 h-16 lg:w-20 lg:h-20 z-20">
+            <div class="marker-active w-full h-full rounded-2xl flex items-center justify-center text-white shadow-xl transition-all duration-500 {{ item.color|default:'bg-slate-800' }} border-4 border-white">
+              <i class="fa-solid {{ item.icon|default:'fa-star' }} text-xl lg:text-2xl transition-transform group-hover:scale-110"></i>
+            </div>
+            <div class="absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-16 lg:h-24 bg-gradient-to-b from-slate-300 to-transparent"></div>
+          </div>
+
+          <div class="glass-card bg-white/90 backdrop-blur-2xl p-8 rounded-[2rem] shadow-xl border border-white flex flex-col h-[380px] lg:h-[420px] transition-all duration-500 hover:shadow-2xl hover:-translate-y-2">
+            <div class="flex-1">
+              <div class="flex justify-between items-start mb-6">
+                <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-50 rounded-lg border border-blue-100">
+                  {{ item.category|default:"Impact" }}
+                </span>
+                <span class="text-slate-400 font-mono text-sm">#0{{ forloop.counter }}</span>
+              </div>
+              <h3 class="text-xl lg:text-2xl font-black text-slate-900 mb-4 leading-tight">
+                {{ item.title }}
+              </h3>
+              <p class="text-slate-600 text-sm lg:text-base leading-relaxed line-clamp-5">
+                {{ item.desc }}
+              </p>
+            </div>
+
+            {% if item.link %}
+            <a href="{{ item.link }}" class="mt-6 flex items-center gap-2 font-bold text-orange-600 hover:text-orange-700 transition-colors group/btn">
+              <span>Voir le projet</span>
+              <i class="fas fa-arrow-right text-sm transition-transform group-hover/btn:translate-x-1"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="w-full text-center opacity-50">
+          <i class="fas fa-history text-6xl mb-4"></i>
+          <p class="font-bold">Aucune étape à afficher pour le moment.</p>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="progress-bar-container mb-7 lg:mb-16 max-w-4xl mx-auto">
+      <div class="h-2.5 bg-slate-200/50 rounded-full overflow-hidden shadow-inner border border-white/50">
+        <div class="h-full bg-gradient-to-r from-blue-500 via-orange-400 to-teal-500 rounded-full w-0 progress-fill transition-all duration-500 ease-out"></div>
+      </div>
+      <div class="flex justify-between text-[10px] font-bold uppercase tracking-tighter text-slate-400 mt-3 px-1">
+        <span>D&ecute;but</span>
+        <span>Fin</span>
+      </div>
+    </div>
+      <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 z-30 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button id="prevBtn" class="w-12 h-12 rounded-full bg-white/80 shadow-lg flex items-center justify-center text-slate-700 hover:bg-orange-500 hover:text-white transition-all">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button id="nextBtn" class="w-12 h-12 rounded-full bg-white/80 shadow-lg flex items-center justify-center text-slate-700 hover:bg-orange-500 hover:text-white transition-all">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-8 flex justify-between items-center px-4">
+      <div class="flex items-center gap-3">
+        <div class="flex gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500/50"></span>
+        </div>
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Auto-Scroll <span id="playStatus" class="text-emerald-600">Actif</span></span>
+      </div>
+      <div class="text-[10px] font-black text-slate-400">SERA TIMELINE V1.0</div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  @keyframes blob {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+  }
+  .animate-blob { animation: blob 7s infinite; }
+  .animation-delay-2000 { animation-delay: 2s; }
+  .animation-delay-4000 { animation-delay: 4s; }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  /* État inactif - délavé */
+  .timeline-item-horizontal:not(.is-active) {
+    opacity: 0.4;
+    filter: grayscale(0.5) blur(1px);
+    transform: scale(0.9);
+  }
+  
+  /* État actif - focus */
+  .timeline-item-horizontal.is-active {
+    opacity: 1;
+    filter: grayscale(0) blur(0);
+    transform: scale(1.05);
+    z-index: 50;
+  }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const track = document.querySelector('.horizontal-timeline-track');
+  const items = document.querySelectorAll('.timeline-item-horizontal');
+  const progressFill = document.querySelector('.progress-fill');
+  const playStatus = document.getElementById('playStatus');
+
+  let currentIndex = 0;
+  const totalItems = items.length;
+
+  const updateUI = () => {
+    items.forEach((item, index) => {
+      item.classList.toggle('is-active', index === currentIndex);
+    });
+
+    // Update progress bar
+    const progress = ((currentIndex + 1) / totalItems) * 100;
+    progressFill.style.width = `${progress}%`;
+
+    // Scroll smoothly to item
+    const target = items[currentIndex];
+    const offset = target.offsetLeft - (track.clientWidth / 2) + (target.clientWidth / 2);
+    track.scrollTo({ left: offset, behavior: 'smooth' });
+  };
+
+  const nextSlide = () => {
+    currentIndex = (currentIndex + 1) % totalItems;
+    updateUI();
+  };
+
+  // Auto-scroll infini
+  setInterval(nextSlide, 4000);
+
+  // Initialisation
+  updateUI();
+  playStatus.textContent = "Actif";
+  playStatus.classList.add('text-emerald-600');
+});
+</script>
+
+<style>
+/* --- ANIMATIONS CORE --- */
+@keyframes orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes counter-orbit { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+@keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+@keyframes gradient-move { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+.animate-orbit { animation: orbit 50s linear infinite; }
+.animate-counter-orbit { animation: counter-orbit 50s linear infinite; }
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-gradient-slow { background-size: 200% 200%; animation: gradient-move 8s ease infinite; }
+.pause-animation { animation-play-state: paused !important; }
+
+/* --- STRUCTURE --- */
+.orbit-system { --radius: 340px; }
+.mission-card {
+  width: 175px; height: 210px; top: 50%; left: 50%; margin-top: -105px; margin-left: -87px;
+  --angle: calc(var(--i) * (360deg / var(--n)));
+  transform: translate(calc(cos(var(--angle) - 90deg) * var(--radius)), calc(sin(var(--angle) - 90deg) * var(--radius)));
+  transition: opacity 0.5s ease;
+}
+
+/* Effet de focus : les autres cartes s'estompent au survol */
+.rotating-container:has(.mission-card:hover) .mission-card:not(:hover) {
+  opacity: 0.3;
+  filter: blur(2px);
+}
+
+/* --- THEMES DE COULEURS --- */
+.card-blue { color: #3b82f6; }
+.card-blue .icon-box { background: #f0f7ff; color: #3b82f6; }
+.card-blue:hover .card-content { border-color: #3b82f6; box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.3); }
+
+.card-white { color: #64748b; }
+.card-white .icon-box { background: #f8fafc; color: #64748b; }
+.card-white:hover .card-content { border-color: #94a3b8; box-shadow: 0 25px 50px -12px rgba(148, 163, 184, 0.3); }
+
+.card-orange { color: #f97316; }
+.card-orange .icon-box { background: #fff7ed; color: #f97316; }
+.card-orange:hover .card-content { border-color: #f97316; box-shadow: 0 25px 50px -12px rgba(249, 115, 22, 0.3); }
+
+/* --- CONNECTEURS --- */
+.connector-line { stroke-dasharray: 4 4; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+.line-blue { stroke: #3b82f6; }
+.line-white { stroke: #cbd5e1; }
+.line-orange { stroke: #f97316; }
+
+.mission-card:hover ~ svg line { opacity: 0.1; } /* On cache les autres lignes */
+.card-blue:hover ~ svg .line-blue, .card-white:hover ~ svg .line-white, .card-orange:hover ~ svg .line-orange { 
+  opacity: 1; stroke-width: 3px; stroke-dasharray: 0; filter: drop-shadow(0 0 8px currentColor);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 1280px) { .orbit-system { --radius: 270px; } .mission-card { width: 140px; height: 180px; } }
+@media (max-width: 768px) { 
+  .orbit-system { --radius: 170px; width: 400px; height: 400px; } 
+  .mission-card { width: 100px; height: 130px; margin-top: -65px; margin-left: -50px; }
+  .mission-card h3 { font-size: 0.65rem; }
+  .icon-box { width: 40px; height: 40px; margin-bottom: 0.5rem; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const updateConnectors = () => {
+    const container = document.querySelector('.orbit-system');
+    const lines = container.querySelectorAll('.connector-line');
+    const rect = container.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const radius = parseFloat(getComputedStyle(container).getPropertyValue('--radius'));
+
+    lines.forEach((line, i) => {
+      const angle = (i * 360 / lines.length - 90) * (Math.PI / 180);
+      line.setAttribute('x1', centerX);
+      line.setAttribute('y1', centerY);
+      line.setAttribute('x2', centerX + radius * Math.cos(angle));
+      line.setAttribute('y2', centerY + radius * Math.sin(angle));
+    });
+  };
+  updateConnectors();
+  window.addEventListener('resize', updateConnectors);
+});
+</script>
+<style>
+  :root {
+    --total-items: {{ valeurs|length }};
+    --radius-desktop: 320px;
+    --orbit-speed: 50s;
+    
+    /* Palette */
+    --color-primary: #1e40af; 
+    --color-primary-light: #eff6ff; 
+    --color-accent: #f97316; 
+    --color-text-main: #1f2937; 
+    --color-text-muted: #64748b; 
+    --color-bg-card: rgba(255, 255, 255, 0.9);
+  }
+
+  .valeurs-scene {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: 
+      radial-gradient(circle at 10% 10%, rgba(30, 64, 175, 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 90% 90%, rgba(249, 115, 22, 0.05) 0%, transparent 40%),
+      #ffffff;
+    padding: 4rem 1rem;
+    min-height: 850px;
+  }
+
+  .orbit-wrapper {
+    position: relative;
+    width: 0; height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: orbit-rotation var(--orbit-speed) linear infinite;
+    will-change: transform;
+  }
+
+  .valeurs-scene:hover .orbit-wrapper,
+  .valeurs-scene:hover .value-card {
+    animation-play-state: paused;
+  }
+
+  @keyframes orbit-rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .value-node {
+    position: absolute;
+    width: 240px;
+    left: calc(var(--radius-desktop) * cos(var(--angle-unitless) * 1deg));
+    top: calc(var(--radius-desktop) * sin(var(--angle-unitless) * 1deg));
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+
+  .value-card {
+    background: var(--color-bg-card);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    padding: 1.75rem 1.5rem;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    animation: counter-rotation var(--orbit-speed) linear infinite;
+  }
+
+  @keyframes counter-rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(-360deg); }
+  }
+
+  .orbit-wrapper:hover .value-card {
+    opacity: 0.3;
+    filter: blur(1px) grayscale(50%);
+    transform: scale(0.95);
+  }
+
+  .value-node:hover .value-card {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: scale(1.1) translateY(-10px);
+    box-shadow: 0 25px 50px -12px rgba(30, 64, 175, 0.15);
+    border-color: var(--color-accent);
+    background: #ffffff;
+  }
+
+  .card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    animation: icon-float 3s ease-in-out infinite;
+  }
+
+  @keyframes icon-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .card-title {
+    font-weight: 800;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    color: var(--color-primary);
+    margin-bottom: 0.75rem;
+  }
+
+  .card-title::after {
+    content: '';
+    display: block;
+    width: 30px;
+    height: 3px;
+    background: var(--color-accent);
+    margin: 0.5rem auto 0;
+  }
+
+  /* 🔵 HUB CENTRAL AVEC BATTEMENT */
+  .center-hub {
+    position: absolute;
+    z-index: 20;
+    width: 140px;
+    height: 140px;
+    background: var(--color-primary);
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 8px solid #ffffff;
+
+    animation: heartbeat-pulse 2.5s ease-in-out infinite;
+  }
+
+  /* 💓 ANIMATION BATTEMENT */
+  @keyframes heartbeat-pulse {
+    0% {
+      transform: scale(1);
+      box-shadow: 
+        0 0 0 0 rgba(30, 64, 175, 0.4),
+        0 0 0 0 rgba(249, 115, 22, 0.3);
+    }
+
+    40% {
+      transform: scale(1.08);
+      box-shadow: 
+        0 0 0 20px rgba(30, 64, 175, 0.1),
+        0 0 0 40px rgba(249, 115, 22, 0.08);
+    }
+
+    70% {
+      transform: scale(0.98);
+      box-shadow: 
+        0 0 0 30px rgba(255, 255, 255, 0.2),
+        0 0 0 60px rgba(249, 115, 22, 0.05);
+    }
+
+    100% {
+      transform: scale(1);
+      box-shadow: 
+        0 0 0 0 rgba(30, 64, 175, 0),
+        0 0 0 0 rgba(249, 115, 22, 0);
+    }
+  }
+
+  /* 🌊 ONDE QUI SE PROPAGE */
+  .center-hub::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(249,115,22,0.4) 0%, transparent 70%);
+    animation: ripple 3s infinite;
+    z-index: -1;
+  }
+
+  @keyframes ripple {
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    70% {
+      transform: scale(2.2);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
+
+  .svg-guidelines {
+    position: absolute;
+    width: calc(var(--radius-desktop) * 2.5);
+    height: calc(var(--radius-desktop) * 2.5);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  @media (max-width: 1024px) {
+    .valeurs-scene { min-height: auto; }
+    .svg-guidelines, .center-hub { display: none; }
+
+    .orbit-wrapper {
+      animation: none;
+      width: 100%;
+      max-width: 600px;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .value-node {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+      width: 100%;
+    }
+
+    .value-card {
+      animation: none !important;
+      display: flex;
+      align-items: center;
+      text-align: left;
+      gap: 1.5rem;
+      opacity: 1 !important;
+      filter: none !important;
+    }
+  }
+  /* 🟠 TITRE */
+  .valeurs-header {
+  position: absolute;
+  top: 20px; /* légèrement remonté */
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  width: auto;
+  z-index: 30;
+  padding: 0 1rem;
+}
+
+.valeurs-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  position: relative;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+  /* ✨ Soulignement curviligne */
+  .valeurs-title::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -10px;
+    width: 120%;
+    height: 20px;
+    transform: translateX(-50%);
+    background: none;
+    border-bottom: 4px solid var(--color-accent);
+    border-radius: 50%;
+    animation: underline-wave 3s ease-in-out infinite;
+  }
+
+  @keyframes underline-wave {
+    0%, 100% { transform: translateX(-50%) scaleX(1); }
+    50% { transform: translateX(-50%) scaleX(1.2); }
+  }
+</style>
+
+<section class="valeurs-scene">
+ <div class="valeurs-header">
+    <h2 class="valeurs-title">Nos Valeurs Meal-Afrique</h2>
+  </div>
+  <svg class="svg-guidelines" viewBox="0 0 800 800">
+    <circle cx="400" cy="400" r="320" stroke="rgba(30, 64, 175, 0.1)" stroke-width="1" fill="none" stroke-dasharray="10 5"/>
+  </svg>
+  <!-- 🟠 TITRE -->
+ 
+  <div class="center-hub">
+    <span class="text-[10px] uppercase tracking-widest opacity-80">Nos</span>
+    <span class="text-2xl font-black italic">Valeurs</span>
+    <span class="text-[10px] uppercase tracking-widest opacity-80">MEAL-AFRIQUE</span>
+  </div>
+
+  <div class="orbit-wrapper">
+    {% for v in valeurs %}
+      <div class="value-node" style="--angle-unitless: calc({{ forloop.counter0 }} * 360 / var(--total-items));">
+        <article class="value-card">
+          <div class="card-icon">{{ v.icon }}</div>
+          <div>
+            <h3 class="card-title">{{ v.title }}</h3>
+            <p>{{ v.desc }}</p>
+          </div>
+        </article>
+      </div>
+    {% endfor %}
+  </div>
+
+</section>
+
+
+<section class="bg-slate-950 py-24 relative overflow-hidden">
+  <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full filter blur-[120px]"></div>
+
+  <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+    
+    <div class="relative w-full max-w-[300px] md:max-w-[450px] mx-auto pt-4 group">
+        <div class="absolute inset-0 bg-orange-500/20 blur-[100px] rounded-full group-hover:bg-orange-500/30 transition-all duration-1000"></div>
+        
+        <svg id="globe" class="relative w-full h-full aspect-square opacity-90 drop-shadow-[0_0_30px_rgba(249,115,22,0.3)] cursor-grab active:cursor-grabbing"></svg>
+    </div>
+
+    <div class="relative group legend-container">
+      <div class="absolute -inset-1 bg-gradient-to-r from-orange-500/20 to-blue-500/10 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+
+      <div class="relative p-8 md:p-12 bg-white/5 dark:bg-slate-900/40 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/5">
+        
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
+          <div>
+            <h3 class="text-2xl md:text-3xl font-black tracking-tighter text-white flex items-center gap-3">
+              <span class="relative">
+                Répartition Géographique
+                <span class="absolute -bottom-2 left-0 w-1/2 h-1 bg-orange-500 rounded-full"></span>
+              </span>
+            </h3>
+            <p class="text-slate-500 text-[10px] mt-4 font-bold uppercase tracking-[0.3em]">Data Monitoring & Evaluation</p>
+          </div>
+          
+          <div class="flex items-center gap-2 px-4 py-2 bg-orange-500/10 border border-orange-500/20 rounded-full shadow-lg shadow-orange-500/5">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+            </span>
+            <span class="text-[10px] font-black text-orange-400 uppercase tracking-widest">Live Database</span>
+          </div>
+        </div>
+
+        <div id="globe-legend" class="grid grid-cols-2 gap-4">
+          </div>
+
+        <div class="mt-10 pt-8 border-t border-white/5 flex items-center justify-between">
+            <span class="text-slate-500 text-xs font-medium">Total zones couvertes</span>
+            <span class="text-white font-black text-xl tracking-tighter">{{total_countries}} Pays</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/topojson@3"></script>
+
+<script>
+  const config = {
+    speed: 0.5, // Degrés par frame
+    verticalTilt: -20,
+    horizontalTilt: 0
+  };
+
+  async function initGlobe() {
+    const isDark = document.documentElement.classList.contains('dark') || true; // Forcé dark pour le thème Slate-950
+    
+    // --- Tooltip Stylisé ---
+    let tooltip = d3.select("#globe-tip");
+    if (tooltip.empty()) {
+        tooltip = d3.select("body").append("div")
+            .attr("id", "globe-tip")
+            .attr("class", "fixed pointer-events-none opacity-0 z-[100] transition-opacity duration-300")
+            .style("position", "absolute");
+    }
+
+    const globeContainer = document.getElementById('globe');
+    let width = globeContainer.getBoundingClientRect().width || 400;
+    let height = width;
+
+    const svg = d3.select("#globe")
+        .attr("viewBox", `0 0 ${width} ${height}`)
+        .attr("preserveAspectRatio", "xMidYMid meet");
+    
+    svg.selectAll("*").remove();
+
+    // --- Projection Orthographique ---
+    const projection = d3.geoOrthographic()
+        .scale(width / 2.2)
+        .translate([width / 2, height / 2])
+        .rotate([-40, config.verticalTilt]);
+
+    const path = d3.geoPath().projection(projection);
+
+    try {
+        // Simulation ou Fetch des données
+        // Note: remplace l'URL par ton endpoint réel
+        const [worldData, memberStats] = await Promise.all([
+            d3.json("https://unpkg.com/world-atlas@2.0.2/countries-110m.json"),
+            // Simulation si l'URL n'existe pas encore pour le test
+            fetch('/count-members-of-countries/').then(res => res.json()).catch(() => ({
+                "682": { name: "Arabie Saoudite", total: 450, flag_code: "sa" },
+                "120": { name: "Cameroun", total: 1200, flag_code: "cm" },
+                "SEN": { name: "Sénégal", total: 850, flag_code: "sn" } // Exemple ID string
+            }))
+        ]);
+
+        const countries = topojson.feature(worldData, worldData.objects.countries).features
+            .filter(d => d.id !== undefined);
+
+        const g = svg.append("g");
+
+        // --- Dessin des pays ---
+        const worldPaths = g.selectAll("path")
+            .data(countries)
+            .enter()
+            .append("path")
+            .attr("d", path)
+            .attr("class", "transition-colors duration-500")
+            .attr("fill", d => {
+                const id = d.id.toString().padStart(3,'0');
+                return memberStats[id] ? '#f97316' : '#1e293b'; 
+            })
+            .style("stroke", "rgba(255,255,255,0.05)")
+            .style("cursor", d => memberStats[d.id.toString().padStart(3,'0')] ? "pointer" : "default")
+            
+            .on("mouseover", function(event, d) {
+                const id = d.id.toString().padStart(3,'0');
+                const data = memberStats[id];
+                if (!data) return;
+
+                d3.select(this).attr("fill", "#fb923c");
+                
+                tooltip.html(`
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-900/90 border border-white/10 backdrop-blur-md shadow-2xl">
+                        <img src="https://flagcdn.com/w40/${data.flag_code}.png" class="w-8 h-auto rounded shadow-sm">
+                        <div>
+                            <div class="text-white font-black text-sm">${data.name}</div>
+                            <div class="text-orange-400 font-bold text-[10px] uppercase tracking-tighter">${data.total} membres actifs</div>
+                        </div>
+                    </div>
+                `).style("opacity", 1);
+            })
+            .on("mousemove", event => {
+                tooltip.style("left", (event.pageX + 20) + "px")
+                       .style("top", (event.pageY - 20) + "px");
+            })
+            .on("mouseleave", function(event, d) {
+                const id = d.id.toString().padStart(3,'0');
+                d3.select(this).attr("fill", memberStats[id] ? '#f97316' : '#1e293b');
+                tooltip.style("opacity", 0);
+            });
+
+        // --- Injection dans TA légende existante (id="globe-legend") ---
+        const legendContainer = document.getElementById('globe-legend');
+        if (legendContainer) {
+            legendContainer.innerHTML = ""; // Clear
+            Object.keys(memberStats).forEach(id => {
+                const data = memberStats[id];
+                legendContainer.innerHTML += `
+                    <div class="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-orange-500/30 transition-all group cursor-default">
+                        <img src="https://flagcdn.com/w20/${data.flag_code}.png" class="rounded-sm grayscale group-hover:grayscale-0 transition-all">
+                        <div class="flex flex-col">
+                            <span class="text-white text-xs font-bold">${data.name}</span>
+                            <span class="text-orange-500 text-[10px] font-black">${data.total} membres</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Animation de rotation ---
+        let timer = d3.timer(() => {
+            const current = projection.rotate();
+            projection.rotate([current[0] + config.speed, current[1]]);
+            worldPaths.attr("d", path);
+        });
+
+    } catch (error) {
+        console.error("Globe Error:", error);
+    }
+  }
+
+  // Lancement après chargement du DOM
+  document.addEventListener('DOMContentLoaded', initGlobe);
+</script>
+
+
+    
+    <section id="documents" class="py-5 bg-gradient-to-b from-white to-slate-50">
+        <div class="container mx-auto px-6">
+            
+
+       <div class="container mx-auto px-6 relative z-10">
+        <div class="max-w-3xl mb-10">
+            <h2 class="text-indigo-600 font-bold tracking-widest uppercase text-sm mb-4">📚Ressource</h2>
+            <h3 class="text-4xl md:text-5xl font-black text-slate-900 leading-tight">
+              Bibliothèque MEAL complète pour le <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-emerald-500">Pilotage Stratégique</span>
+            </h3>
+        </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {% for archives in archives_s %}
+                <div class="group bg-white rounded-3xl p-8 border border-slate-100 shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col h-full">
+                    <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-emerald-500 group-hover:text-white transition-colors duration-500">
+                        <i class="fas fa-file-pdf text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">{{ archives.titre }}</h3>
+                    <p class="text-slate-600 text-sm mb-8 flex-grow">{{ archives.description|truncatechars:100 }}</p>
+                    
+                    <div class="pt-6 border-t border-slate-50 flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-400 uppercase">
+                            {% if archives.file %}
+    
+                            {{ archives.file.name }}
+                        {% else %}
+                            Pas de document
+                        {% endif %}
+                        </span>
+                        <a href="{{ archives.file.url|default:'#' }}" download class="flex items-center px-4 py-2 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-emerald-600 transition-colors">
+                            <i class="fas fa-download mr-2"></i> Télécharger
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+ 
+    <div class="container mx-auto px-6 mt-10 lg:mt-12 text-center">
+        <a href="/mediatheque/" class="inline-flex items-center px-12 py-3 bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 text-white font-black text-xl rounded-3xl hover:shadow-3xl hover:scale-105 transition-all duration-700 shadow-2xl">
+            <i class="fas fa-folder-open mr-4 text-2xl"></i>
+            Explorer Tous les Documents
+            <i class="fas fa-arrow-right ml-4 w-6 h-6"></i>
+        </a>
+    </div>
+</section>
+<section class="w-screen -ml-4 sm:-ml-6 lg:-ml-8 py-20 lg:py-10 bg-slate-50 overflow-hidden relative">
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-emerald-200/20 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl delay-700 animate-pulse"></div>
+
+    <div class="container mx-auto px-6 lg:px-8 relative z-10">
+        <div class="text-center mb-16 lg:mb-24 max-w-3xl mx-auto">
+            <span class="inline-flex items-center px-4 py-1.5 mb-6 text-xs font-bold tracking-widest uppercase bg-emerald-100 text-emerald-700 rounded-full border border-emerald-200">
+                <span class="relative flex h-2 w-2 mr-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Aide & Support
+            </span>
+            <h2 class="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
+                Questions <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-blue-600">Fréquentes</span>
+            </h2>
+            <p class="text-lg text-slate-600 leading-relaxed">
+                Tout ce que vous devez savoir sur la plateforme MEAL pour piloter vos projets avec efficacité.
+            </p>
+        </div>
+
+        <div class="max-w-3xl mx-auto space-y-4">
+            
+            <div class="faq-item group bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-300 transition-all duration-300" data-state="closed">
+                <button class="faq-toggle w-full p-6 lg:p-8 flex items-center justify-between text-left focus:outline-none">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+                            <svg class="w-5 h-5 text-slate-500 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-lg font-bold text-slate-800 tracking-tight">Comment créer un compte MEAL ?</h4>
+                    </div>
+                    <div class="ml-4 flex-shrink-0">
+                        <svg class="chevron w-5 h-5 text-slate-400 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </button>
+                <div class="faq-content overflow-hidden transition-all duration-500 max-h-0">
+                    <div class="px-6 lg:px-8 pb-8 pt-2 border-t border-slate-50">
+                        <div class="p-6 bg-slate-50 rounded-xl border border-slate-100">
+                            <p class="text-slate-600 leading-relaxed mb-4">
+                                Le processus est simple et sécurisé pour garantir l'intégrité des données :
+                            </p>
+                            <ul class="space-y-3">
+                                <li class="flex items-center text-slate-700 font-medium">
+                                    <span class="w-6 h-6 flex items-center justify-center bg-emerald-100 text-emerald-600 rounded-full text-xs mr-3">1</span>
+                                    Cliquez sur le bouton d'inscription
+                                </li>
+                                <li class="flex items-center text-slate-700 font-medium">
+                                    <span class="w-6 h-6 flex items-center justify-center bg-emerald-100 text-emerald-600 rounded-full text-xs mr-3">2</span>
+                                    Remplissez vos accès professionnels
+                                </li>
+                                <li class="flex items-center text-slate-700 font-medium">
+                                    <span class="w-6 h-6 flex items-center justify-center bg-emerald-100 text-emerald-600 rounded-full text-xs mr-3">3</span>
+                                    Validez votre email de confirmation
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-item group bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-blue-300 transition-all duration-300" data-state="closed">
+                <button class="faq-toggle w-full p-6 lg:p-8 flex items-center justify-between text-left focus:outline-none">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
+                            <svg class="w-5 h-5 text-slate-500 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-lg font-bold text-slate-800 tracking-tight">Quels sont les tarifs de la plateforme ?</h4>
+                    </div>
+                    <div class="ml-4 flex-shrink-0">
+                        <svg class="chevron w-5 h-5 text-slate-400 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </button>
+                <div class="faq-content overflow-hidden transition-all duration-500 max-h-0">
+                    <div class="px-6 lg:px-8 pb-8 pt-2 border-t border-slate-50">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                            <div class="p-4 border border-emerald-100 bg-emerald-50/50 rounded-xl text-center">
+                                <p class="text-sm font-bold text-emerald-700 uppercase">Standard</p>
+                                <p class="text-2xl font-black text-slate-900">Gratuit</p>
+                                <p class="text-xs text-slate-500">Pour les petites équipes</p>
+                            </div>
+                            <div class="p-4 border border-blue-100 bg-blue-50/50 rounded-xl text-center">
+                                <p class="text-sm font-bold text-blue-700 uppercase">Entreprise</p>
+                                <p class="text-2xl font-black text-slate-900">Sur mesure</p>
+                                <p class="text-xs text-slate-500">Contactez-nous</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="mt-20 text-center">
+            <div class="inline-flex flex-col items-center">
+                <p class="text-slate-500 mb-6">Vous avez encore des doutes ?</p>
+                <a href="/contact" class="group relative px-8 py-4 bg-slate-900 text-white font-bold rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] hover:-translate-y-1">
+                    <span class="relative z-10 flex items-center">
+                        Discuter avec un expert
+                        <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </span>
+                    <div class="absolute inset-0 bg-gradient-to-r from-emerald-500 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
+
+
+
+
+
+{%endblock%}
+
+<div id="form-response"></div>
+ <footer class="relative bg-[#0a0f1d] text-gray-400 pt-20 pb-10 overflow-hidden">
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="container mx-auto px-6 relative z-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+            
+            <div class="space-y-6">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <i class="fas fa-chart-line text-white text-lg"></i>
+                    </div>
+                    <span class="text-2xl font-black text-white tracking-tight">Opera<span class="text-blue-500">+</span></span>
+                </div>
+                <p class="text-gray-400 leading-relaxed text-sm">
+                    La plateforme MEAL la plus innovante pour transformer vos données en impact réel. Conçue pour l'excellence opérationnelle des institutions culturelles.
+                </p>
+                <div class="flex space-x-3">
+                    <a href="#" class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center hover:bg-blue-600 hover:text-white hover:-translate-y-1 transition-all duration-300 shadow-xl">
+                        <i class="fab fa-facebook-f text-sm"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center hover:bg-sky-400 hover:text-white hover:-translate-y-1 transition-all duration-300 shadow-xl">
+                        <i class="fab fa-twitter text-sm"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center hover:bg-blue-700 hover:text-white hover:-translate-y-1 transition-all duration-300 shadow-xl">
+                        <i class="fab fa-linkedin-in text-sm"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center hover:bg-red-600 hover:text-white hover:-translate-y-1 transition-all duration-300 shadow-xl">
+                        <i class="fab fa-youtube text-sm"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-white font-bold text-sm uppercase tracking-[0.2em] mb-8">Système MEAL</h3>
+                <ul class="space-y-4">
+                    <li><a href="#home" class="flex items-center group text-sm hover:text-white transition-colors"><i class="fas fa-chevron-right text-[10px] mr-2 text-blue-500 opacity-0 group-hover:opacity-100 transition-all -ml-4 group-hover:ml-0"></i>Accueil</a></li>
+                    <li><a href="#institutions" class="flex items-center group text-sm hover:text-white transition-colors"><i class="fas fa-chevron-right text-[10px] mr-2 text-blue-500 opacity-0 group-hover:opacity-100 transition-all -ml-4 group-hover:ml-0"></i>Institutions</a></li>
+                    <li><a href="#fonctionnalites" class="flex items-center group text-sm hover:text-white transition-colors"><i class="fas fa-chevron-right text-[10px] mr-2 text-blue-500 opacity-0 group-hover:opacity-100 transition-all -ml-4 group-hover:ml-0"></i>Fonctionnalités</a></li>
+                    <li><a href="#objectifs" class="flex items-center group text-sm hover:text-white transition-colors"><i class="fas fa-chevron-right text-[10px] mr-2 text-blue-500 opacity-0 group-hover:opacity-100 transition-all -ml-4 group-hover:ml-0"></i>Objectifs</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h3 class="text-white font-bold text-sm uppercase tracking-[0.2em] mb-8">Ressources</h3>
+                <ul class="space-y-4">
+                    <li><a href="#" class="hover:text-white text-sm transition-colors duration-300 flex items-center"><i class="fas fa-book-open mr-2 text-blue-500/50"></i>Documentation</a></li>
+                    <li><a href="#" class="hover:text-white text-sm transition-colors duration-300 flex items-center"><i class="fas fa-headset mr-2 text-blue-500/50"></i>Support Technique</a></li>
+                    <li><a href="#" class="hover:text-white text-sm transition-colors duration-300 flex items-center"><i class="fas fa-shield-alt mr-2 text-blue-500/50"></i>Confidentialité</a></li>
+                </ul>
+            </div>
+
+            <div class="bg-gray-800/30 p-8 rounded-3xl border border-gray-800 shadow-inner">
+                <h3 class="text-white font-bold text-sm uppercase tracking-[0.2em] mb-6">Contact direct</h3>
+                <ul class="space-y-4 text-sm">
+                    <li class="flex items-start">
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0 mr-4">
+                            <i class="fas fa-map-marker-alt text-blue-500"></i>
+                        </div>
+                        <span>Yaoundé, <br><span class="text-gray-500">Cameroun</span></span>
+                    </li>
+                    <li class="flex items-center">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mr-4">
+                            <i class="fas fa-phone-alt text-emerald-500"></i>
+                        </div>
+                        <span class="font-mono text-[13px]">+237 699 07 25 61</span>
+                    </li>
+                    <li class="flex items-center">
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0 mr-4">
+                            <i class="fas fa-envelope text-purple-500"></i>
+                        </div>
+                        <span class="text-xs">operaplus@beininfo.org</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="pt-10 border-t border-gray-800/60 flex flex-col md:flex-row justify-between items-center text-[12px] tracking-wide">
+            <div class="mb-4 md:mb-0">
+                <p>&copy; 2026 <span class="text-white font-bold">Opera+</span>. Développé avec excellence par <a href="https://beininfo.org" class="text-blue-500 hover:underline">Bein Info</a>.</p>
+            </div>
+            <div class="flex space-x-8 uppercase font-bold text-gray-500">
+                <a href="#" class="hover:text-white transition-colors">Politique Cookies</a>
+                <a href="#" class="hover:text-white transition-colors">Mentions</a>
+                <a href="#" class="hover:text-white transition-colors">CGU</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script src="{%static 'staticsfiles/js/presentation.js'%}"></script>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+
+
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  
+
+</body>
+</html>

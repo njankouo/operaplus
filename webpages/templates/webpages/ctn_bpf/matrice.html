@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Matrice RACI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    @keyframes fadeInUp {
+      from { opacity:0; transform:translateY(20px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+    .fade-in-up { animation: fadeInUp .5s ease-out both; }
+  </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+<header class="text-white shadow-xl sticky top-0 z-40" style='background-color:{{request.user.personnel.color_fond}}'>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3">
+    
+    <!-- Section gauche : Logo + Titre -->
+    <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+      <a href="/" class="px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-700/90 hover:bg-gray-600 rounded-full transition-all text-xs sm:text-sm shadow-md whitespace-nowrap">
+        ⬅️ Dashboard
+      </a>
+      <h1 class="text-xl sm:text-2xl font-bold truncate">{{ actual_institution.sigle }}</h1>
+    </div>
+
+    <!-- Titre complet (desktop seulement) -->
+    <div class="hidden sm:block sm:flex-1">
+      <h1 class="text-2xl font-bold text-center">📌 Matrice RACI</h1>
+    </div>
+
+    <!-- Section droite : Boutons d'action -->
+    <div class="flex gap-2 flex-nowrap">
+      <a class="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-semibold text-xs sm:text-sm transition-all shadow-md flex-1 sm:flex-none text-center hover:scale-105 hover:shadow-lg" 
+         href="/gantt/" 
+         style='background-color:{{request.user.personnel.color_fond}}'>
+        📊 Gantt
+      </a>
+      <a class="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-semibold text-xs sm:text-sm transition-all shadow-md flex-1 sm:flex-none text-center hover:scale-105 hover:shadow-lg" 
+         href="/generate-pdf-raci/" 
+         style='background-color:{{request.user.personnel.color_fond}}'>
+        📄 PDF
+      </a>
+    </div>
+  </div>
+</header>
+
+
+  <main class="p-8 fade-in-up">
+    <div class="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl p-8">
+
+      <!-- HEADER MATRICE -->
+      <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+
+        <h2 class="text-xl font-bold text-gray-800">
+          📊 Matrice RACI — Tâches du projet
+        </h2>
+
+        <!-- Search Field -->
+        <div class="relative">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="🔍 Rechercher une tâche…"
+            class="pl-10 pr-4 py-2 border rounded-full shadow focus:ring-2 focus:ring-blue-400 outline-none"
+          />
+          <span class="absolute left-3 top-2.5 text-gray-400">🔎</span>
+        </div>
+      </div>
+
+      <!-- Légende -->
+      <div class="flex flex-wrap gap-3 mb-8">
+        <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold shadow">R — Responsible</span>
+        <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-semibold shadow">A — Accountable</span>
+        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full font-semibold shadow">C — Consulted</span>
+        <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full font-semibold shadow">I — Informed</span>
+      </div>
+
+      <!-- TABLE -->
+      <div class="overflow-x-auto rounded-2xl border border-gray-200 shadow hover:shadow-xl transition">
+  <table class="min-w-full border-collapse">
+   <thead>
+  <tr class="text-white"
+      style="background-color: {{ request.user.personnel.color_fond }}">
+
+    <!-- Tâche -->
+    <th class="px-4 py-3 text-left text-sm font-semibold">
+      <div class="flex items-center gap-2">
+        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-white/20">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               class="h-4 w-4 text-yellow-300"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m2 0a2 2 0 100-4H7a2 2 0 100 4h10zM5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <span>Tâche</span>
+      </div>
+    </th>
+
+    <!-- R -->
+    <th class="px-3 py-3 text-center">
+      <span class="inline-flex h-7 w-7 items-center justify-center rounded-full
+                   bg-red-500/90 text-white text-xs font-bold shadow-sm"
+            title="Responsable">
+        R
+      </span>
+    </th>
+
+    <!-- A -->
+    <th class="px-3 py-3 text-center">
+      <span class="inline-flex h-7 w-7 items-center justify-center rounded-full
+                   bg-blue-500/90 text-white text-xs font-bold shadow-sm"
+            title="Accountable">
+        A
+      </span>
+    </th>
+
+    <!-- C -->
+    <th class="px-3 py-3 text-center">
+      <span class="inline-flex h-7 w-7 items-center justify-center rounded-full
+                   bg-green-500/90 text-white text-xs font-bold shadow-sm"
+            title="Consulted">
+        C
+      </span>
+    </th>
+
+    <!-- I -->
+    <th class="px-3 py-3 text-center">
+      <span class="inline-flex h-7 w-7 items-center justify-center rounded-full
+                   bg-yellow-500/90 text-white text-xs font-bold shadow-sm"
+            title="Informed">
+        I
+      </span>
+    </th>
+
+  </tr>
+</thead>
+
+
+   <tbody id="taskTable" class="text-gray-700">
+  {% regroup operation by tache.m_nom as task_groups %}
+  {% for group in task_groups %}
+    <tr class="task-group-header bg-gray-50 border-t-2 border-blue-200">
+      <td colspan="5" class="p-4 font-bold text-lg text-blue-900">
+       <div class="flex items-center gap-3 rounded-lg bg-blue-50 px-4 py-2 text-blue-900 shadow-sm">
+  <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500">
+    <svg class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+      <path fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd" />
+    </svg>
+  </div>
+
+  <div class="flex flex-col">
+    <span class="font-semibold text-sm">
+      {{ group.grouper }}
+    </span>
+    <span class="text-xs text-blue-600">
+      {{ group.list|length }} opération{{ group.list|length|pluralize }}
+    </span>
+  </div>
+</div>
+
+      </td>
+    </tr>
+    {% for operations in group.list %}
+     <tr class="border-b hover:bg-gray-50 transition task-row"
+          onclick="openModal(this)"
+          data-id="{{ operations.id }}"
+          data-r="{{ operations.personnel.id|default:'' }}"
+          data-a="{{ operations.accountable.id|default:'' }}"
+          data-c="{{ operations.consulted.id|default:'' }}"
+          data-i="{{ operations.informed.id|default:'' }}"
+          data-name="{{ operations.nom|escapejs }}"
+          
+          >
+          
+          
+        <!-- Tâche - Compact + "small tâche" rouge -->
+        <td class="p-3 font-medium task-name text-sm">
+          <div class="font-semibold text-gray-900 mb-1 leading-tight">{{ operations.nom }}</div>
+          
+          <!-- Small tâche en rouge -->
+          {% comment %} <div class="text-red-600 font-bold text-xs uppercase tracking-wide mb-1 flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+           {{operations.tache.m_nom}}
+          </div> {% endcomment %}
+
+
+          <!-- Dates compact -->
+          <div class="text-gray-500 text-xs italic">
+            {{ operations.date_debut|date:"d/m" }} — {{ operations.date_echeance|date:"d/m/Y" }}
+          </div>
+
+
+          <!-- Statut badges plus petits -->
+          {% if operations.statut == 1 %}
+            <span class="inline-block mt-1 px-2 py-0.5 text-white text-xs font-bold rounded-full bg-blue-500">
+              En cours
+            </span>
+          {% elif operations.statut == 2 %}
+            <span class="inline-block mt-1 px-2 py-0.5 text-white text-xs font-bold rounded-full bg-green-500">
+              Terminé
+            </span>
+          {% else %}
+            <span class="inline-block mt-1 px-2 py-0.5 text-white text-xs font-bold rounded-full bg-gray-500">
+              À faire
+            </span>
+          {% endif %}
+        </td>
+
+
+        <!-- R - Avatars plus petits -->
+        <td class="p-3 text-center">
+          {% if operations.personnel %}
+          <div class="raci-cell flex justify-center" data-role="R">
+            <div class="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs shadow cursor-pointer">
+              {% if operations.personnel.photo %}
+                <img src="{{ operations.personnel.photo.url }}" class="w-5 h-5 rounded-full object-cover">
+              {% else %}
+                <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                  <svg class="w-3 h-3 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="8" r="3"/>
+                    <path d="M4 20c0-4 4-7 8-7s8 3 8 7v1H4v-1z"/>
+                  </svg>
+                </div>
+              {% endif %}
+              <span class="truncate max-w-20">{{ operations.personnel.nom|truncatechars:10 }}</span>
+            </div>
+          </div>
+          {% endif %}
+        </td>
+
+
+        <!-- A - Compact -->
+        <td class="p-3 text-center">
+          {% if operations.accountable %}
+          <div class="raci-cell flex justify-center" data-role="A">
+            <div class="flex items-center gap-1 bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full text-xs shadow cursor-pointer">
+              {% if operations.accountable.photo %}
+                <img src="{{ operations.accountable.photo.url }}" class="w-5 h-5 rounded-full object-cover">
+              {% else %}
+                <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                  <svg class="w-3 h-3 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="8" r="3"/>
+                    <path d="M4 20c0-4 4-7 8-7s8 3 8 7v1H4v-1z"/>
+                  </svg>
+                </div>
+              {% endif %}
+              <span class="truncate max-w-20">{{ operations.accountable.nom|truncatechars:10 }}</span>
+            </div>
+          </div>
+          {% endif %}
+        </td>
+
+
+        <!-- C - Compact -->
+        <td class="p-3 text-center">
+          {% if operations.consulted %}
+          <div class="raci-cell flex justify-center" data-role="C">
+            <div class="flex items-center gap-1 bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs shadow cursor-pointer">
+              {% if operations.consulted.photo %}
+                <img src="{{ operations.consulted.photo.url }}" class="w-5 h-5 rounded-full object-cover">
+              {% else %}
+                <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                  <svg class="w-3 h-3 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="8" r="3"/>
+                    <path d="M4 20c0-4 4-7 8-7s8 3 8 7v1H4v-1z"/>
+                  </svg>
+                </div>
+              {% endif %}
+              <span class="truncate max-w-20">{{ operations.consulted.nom|truncatechars:10 }}</span>
+            </div>
+          </div>
+          {% endif %}
+        </td>
+
+
+        <!-- I - Compact -->
+        <td class="p-3 text-center">
+          {% if operations.informed %}
+          <div class="raci-cell flex justify-center" data-role="I">
+            <div class="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs shadow cursor-pointer">
+              {% if operations.informed.photo %}
+                <img src="{{ operations.informed.photo.url }}" class="w-5 h-5 rounded-full object-cover">
+              {% else %}
+                <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                  <svg class="w-3 h-3 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="8" r="3"/>
+                    <path d="M4 20c0-4 4-7 8-7s8 3 8 7v1H4v-1z"/>
+                  </svg>
+                </div>
+              {% endif %}
+              <span class="truncate max-w-20">{{ operations.informed.nom|truncatechars:10 }}</span>
+            </div>
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  {% endfor %}
+</tbody>
+
+  </table>
+</div>
+
+    </div>
+  
+    
+  </main>
+
+  <!-- FLOATING ACTION BUTTON -->
+<!-- Bouton flottant -->
+<button
+  id="fab"
+  class="fixed bottom-8 right-8 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-3xl transition transform hover:scale-110 active:scale-95" style='background-color:{{request.user.personnel.color_fond}}'>
+  +
+</button>
+
+<!-- Modal moderne avec Tailwind CSS uniquement -->
+<div id="modalOp" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4 animate-fadeIn">
+  <div class="bg-white/95 backdrop-blur-xl rounded-3xl w-full max-w-6xl max-h-[95vh] overflow-y-auto shadow-2xl border border-white/20">
+    <!-- Header moderne -->
+    <div class="sticky top-0  text-white rounded-t-3xl p-8 pb-6 border-b border-white/20" style='background-color:{{request.user.personnel.color_fond}}'>
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight mb-2">📋 Nouvelle Tâche</h2>
+          <p class="text-blue-100 text-sm opacity-90">Remplissez les détails pour créer votre activité</p>
+        </div>
+        <button id="closeModal" class="p-3 rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-300 text-white hover:text-gray-900 text-2xl font-bold hover:scale-110">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <form onsubmit="saveOperation(this)" class="p-8 space-y-8" action="/save_gestion/" id="addFormAction" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+       <input type="hidden" name="generator" value="o">
+        <input type="hidden" name="edit_or_create" value="c">
+        <input type="hidden" name="who_assign" id="who_assign" value="0">
+        <input type="hidden" id="chronogr" name="chronogr">
+        <input type="hidden" name="RACI_hidden" id="RACI_hidden">
+        <input type="hidden" name="RACI_hidden_roles" id="RACI_hidden_roles">
+
+        <input type='hidden' name='matrice' value='is_matrix' />
+      
+      <!-- Grille principale 2 colonnes -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Colonne 1 : Détails & Délais -->
+        <div class="space-y-6">
+          
+          <!-- Card Détails Activité -->
+          <div class="bg-white/80 backdrop-blur-sm rounded-3xl border border-white/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 p-1">
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-6 py-4 rounded-t-2xl">
+              <h6 class="text-xl font-bold text-gray-800 flex items-center">
+                <i class="fas fa-info-circle text-blue-500 mr-3"></i>
+                Détails de l'activité
+              </h6>
+            </div>
+            <div class="p-6">
+              <div class="space-y-5">
+                <div class="form-group">
+                  <label class="text-sm font-semibold text-gray-700 mb-2 block">Nom </label>
+                  <input type="text" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 placeholder-gray-400 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm" name="nom" id="nomAct" required>
+                </div>
+                
+                <div>
+                  <label class="text-sm font-semibold text-gray-700 mb-2 block">🏢 Structure</label>
+                  <select name="structure" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm" required>
+                    <option value="">Sélectionnez une structure...</option>
+                    {% for structures in structure %}
+                    <option value="{{ structures.id }}">{{ structures.nom }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                  <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">🏢 Entite</label>
+                  <select name="tache" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm" required>
+                    
+                   {%for entitys in task_entities%}
+                    <option value="{{entitys.id}}">
+                      
+                      {%if entitys.m_nom%}
+                      
+                      {{entitys.m_nom}}
+
+                      {%else%}
+                      {{entitys}}
+                      {%endif%}
+                    
+                    </option>
+                   {%endfor%}
+                  </select>
+                </div>
+           
+
+
+                {% if actual_institution.default_options != True %}
+                <input type="hidden" name="operation_aggregates" id="operation_aggregates">
+                {% for th in actual_institution.operations_modules.fill_fields %}
+                <div>
+                  <label class="text-sm font-semibold text-gray-700 mb-2 block">{{th.field}}</label>
+                  {% if th.type == 'string' or th.type == 'text' or th.type == 'char' %}
+                  <input type="text" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 placeholder-gray-400 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm agg1">
+                  {% elif th.type == 'int' or th.type == 'number' %}
+                  <input type="number" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 placeholder-gray-400 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm agg1">
+                  {% elif th.type == 'choix' %}
+                  <div class="mb-3"><small class="text-gray-500 text-xs">Les valeurs doivent être séparées par des sauts de ligne</small></div>
+                  <textarea class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 placeholder-gray-400 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm agg1" rows="3"></textarea>
+                  {% elif th.type == 'file' or th.type == 'image' %}
+                  <input type="file" name="{{th.field}}_nam" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 agg1">
+                  {% endif %}
+                </div>
+                {% endfor %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Délais & Fréquence -->
+          <div class="bg-white/80 backdrop-blur-sm rounded-3xl border border-white/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 p-1">
+            <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-200 px-6 py-4 rounded-t-2xl">
+              <h6 class="text-xl font-bold text-emerald-800 flex items-center">
+                <i class="fas fa-clock text-emerald-500 mr-3"></i>
+                Délais & Fréquence
+              </h6>
+            </div>
+            <div class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                <div>
+                  <label class="text-sm font-semibold text-gray-700 mb-2 block">📅 Date de début</label>
+                  <input type="date" name="date_debut" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 placeholder-gray-400 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm flatpickr" value="{{date_du_jour}}" id="date_debut">
+                </div>
+                <div>
+                  <label class="text-sm font-semibold text-gray-700 mb-2 block">⏰ Date d'échéance</label>
+                  <input type="date" name="date_echeance" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 placeholder-gray-400 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm flatpickr" id='date_fin'>
+                </div>
+              </div>
+              
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">⏳ Jours pour la réalisation</label>
+                <div class="flex rounded-2xl bg-white/80 border-2 border-gray-200 overflow-hidden shadow-sm">
+                  <button class="flex items-center justify-center px-4 py-3 font-semibold transition-all duration-300 border-r-2 border-gray-200 hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200 hover:scale-105" type="button" id="btn-minus" title="Diminuer">
+                    <i class="fas fa-minus text-gray-600"></i>
+                  </button>
+                  <input type="number" class="flex-1 px-6 py-3 text-center font-bold text-lg border-0 bg-transparent focus:outline-none" value="1" min="1" max="365" id="days-input" name="nombre_jour" value="{{total_duration}}">
+                  <button class="flex items-center justify-center px-4 py-3 font-semibold transition-all duration-300 border-l-2 border-gray-200 hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200 hover:scale-105" type="button" id="btn-plus" title="Augmenter">
+                    <i class="fas fa-plus text-gray-600"></i>
+                  </button>
+                </div>
+              </div>
+
+              {%if actual_institution.is_frequency%}
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">🔄 Fréquence de suivi (jours)</label>
+                <input type="number" name="frequence" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 placeholder-gray-400 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm">
+              </div>
+              {%endif%}
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                {% if actual_institution.nature != False %}
+                <div>
+                  <label class="text-sm font-semibold text-gray-700 mb-2 block">🌊 Nature</label>
+                  <select id="nature-select" name="nature" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm" hx-get='/search_etape/' hx-target='#list-step' hx-trigger="change">
+                    <option value="">Sélectionnez...</option>
+                    {% for natures in nature %}
+                    <option value="{{ natures.id }}">{{natures.intitule}}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                {% endif %}
+                <div>
+                  <label class="text-sm font-semibold text-gray-700 mb-2 block">⚡ Priorité</label>
+                  <select name="priorite" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm">
+                    <option value="Normale">Normale</option>
+                    <option value="Basse">Basse</option>
+                    <option value="Haute">Haute</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Colonne 2 : RACI & Financement -->
+        <div class="space-y-6">
+          
+          <!-- Card RACI -->
+          <div class="bg-white/80 backdrop-blur-sm rounded-3xl border border-white/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 p-1">
+            <div class="bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-200 px-6 py-4 rounded-t-2xl">
+              <h6 class="text-xl font-bold text-purple-800 flex items-center">
+                <i class="fas fa-users-cog text-purple-500 mr-3"></i>
+                Gestion RACI
+              </h6>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="flex items-center mb-3">
+                  <span class="w-8 h-8 bg-green-500 text-white mr-3 rounded-full text-sm font-bold flex items-center justify-center shadow-lg">R</span>
+                  <span class="font-semibold text-gray-700">Principal Responsable</span>
+                </label>
+                <select name="perso" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm">
+                  <option value="0">Non défini</option>
+                  {% for perso in personnels %}
+                  <option value="{{perso.id}}">{{perso}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="flex items-center mb-3">
+                  <span class="w-8 h-8 bg-red-500 text-white mr-3 rounded-full text-sm font-bold flex items-center justify-center shadow-lg">A</span>
+                  <span class="font-semibold text-gray-700">Accountable</span>
+                </label>
+                <select name="accountable" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm">
+                  <option value="0">Non défini</option>
+                  {% for perso in personnels %}
+                  <option value="{{perso.id}}">{{perso}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="flex items-center mb-3">
+                  <span class="w-8 h-8 bg-yellow-500 text-white mr-3 rounded-full text-sm font-bold flex items-center justify-center shadow-lg">C</span>
+                  <span class="font-semibold text-gray-700">Consulted</span>
+                </label>
+                <select name="consulted" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm">
+                  <option value="0">Non défini</option>
+                  {% for perso in personnels %}
+                  <option value="{{perso.id}}">{{perso}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="flex items-center mb-3">
+                  <span class="w-8 h-8 bg-blue-500 text-white mr-3 rounded-full text-sm font-bold flex items-center justify-center shadow-lg">I</span>
+                  <span class="font-semibold text-gray-700">Informed</span>
+                </label>
+                <select name="informed" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm">
+                  <option value="0">Non défini</option>
+                  {% for perso in personnels %}
+                  <option value="{{perso.id}}">{{perso}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="md:col-span-2">
+                <label class="flex items-center mb-3">
+                  <span class="w-8 h-8 bg-gray-600 text-white mr-3 rounded-full text-sm font-bold flex items-center justify-center shadow-lg">M</span>
+                  <span class="font-semibold text-gray-700">Manager</span>
+                </label>
+                <select name="participant" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm">
+                  <option value="0">Non défini</option>
+                  {% for perso in personnels %}
+                  <option value="{{perso.id}}">{{perso}}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Financement -->
+          <div class="bg-white/80 backdrop-blur-sm rounded-3xl border border-white/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 p-1">
+            <div class="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 px-6 py-4 rounded-t-2xl">
+              <h6 class="text-xl font-bold text-amber-800 flex items-center">
+                <i class="fas fa-dollar-sign text-amber-500 mr-3"></i>
+                Mode de Financement
+              </h6>
+            </div>
+            <div class="p-6">
+              <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {% for source_financements in source_financement %}
+                  <div class="financement-item p-4 rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-300 hover:-translate-y-1 group">
+                    <label class="flex items-center cursor-pointer relative p-3 rounded-xl group-hover:bg-blue-50 transition-colors duration-200">
+                      <input type="checkbox" name="source_financement" value="{{ source_financements.id }}" data-id="{{ source_financements.id }}" data-nom="{{ source_financements.nom }}" class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 focus:outline-none transition-all duration-200 mr-3">
+                      <span class="text-sm font-semibold text-gray-800 ml-1 flex-1">{{ source_financements.nom }}</span>
+                    </label>
+                    <div class="mt-3 montant-container opacity-0 invisible h-0 scale-95 transition-all duration-300" id="montant-container-{{ source_financements.id }}">
+                      <label class="text-xs font-semibold text-gray-600 mb-2 block flex items-center">
+                        <i class="fas fa-coins text-amber-500 mr-2"></i>
+                        Montant pour {{ source_financements.nom }}
+                      </label>
+                      <input type="number" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-100/50 focus:outline-none transition-all duration-300 text-gray-800 placeholder-gray-400 font-medium shadow-sm montant-input" id="montant-{{ source_financements.id }}" name="montant_source_{{ source_financements.id }}" placeholder="0.00" step="0.01">
+                    </div>
+                  </div>
+                  {% empty %}
+                  <div class="col-span-full text-center py-12">
+                    <div class="empty-state-icon mb-4">
+                      <i class="fas fa-wallet fa-3x text-gray-300"></i>
+                    </div>
+                    <h4 class="text-gray-500 font-bold mb-2">Aucune source disponible</h4>
+                    <p class="text-gray-400 text-sm">Aucune source de financement pour le moment.</p>
+                  </div>
+                  {% endfor %}
+                </div>
+                
+                <div class="pt-4 border-t border-gray-200">
+                  <label class="text-sm font-bold text-gray-800 mb-3 block flex items-center">
+                    <i class="fas fa-calculator text-amber-500 mr-2"></i>
+                    Montant Total
+                  </label>
+                  <input type="number" class="w-full px-6 py-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 text-2xl font-bold text-emerald-800 shadow-lg focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100/50 focus:outline-none transition-all duration-300" name="total_financement" id="montant-total" readonly placeholder="0.00">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section Compléments -->
+      <div class="bg-white/80 backdrop-blur-sm rounded-3xl border border-white/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 p-1">
+        <div class="bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-200 px-6 py-4 rounded-t-2xl">
+          <h6 class="text-xl font-bold text-indigo-800 flex items-center">
+            <i class="fas fa-cog text-indigo-500 mr-3"></i>
+            Informations Complémentaires
+          </h6>
+        </div>
+      <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Colonne 1: Catégorie -->
+  <div>
+    <label class="text-sm font-semibold text-gray-700 mb-2 block">🏷️ Catégorie</label>
+    <select name="categorie" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm">
+      <option value="">Sélectionnez...</option>
+      {% for categorie_operations in categorie_operation %}
+      <option value="{{ categorie_operations.id }}">{{categorie_operations.intitule}}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Colonne 2: Mode Notification -->
+  <div>
+    <label class="text-sm font-semibold text-gray-700 mb-2 block">🔔 Mode Notification</label>
+    <select name="notification" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm">
+      <option value="Email">Email</option>
+      <option value="SMS">SMS</option>
+      <option value="Push">Notification Push</option>
+    </select>
+  </div>
+</div>
+
+         
+
+          <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+         
+          
+          {%if actual_institution.is_step%}
+          <div>
+            <label class="text-sm font-semibold text-gray-700 mb-2 block">📊 Intensité</label>
+            <select id="intensite-select" name="intensite" class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 focus:outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 hover:-translate-y-px shadow-sm" hx-get='/search_etape/' hx-target='#list-step' hx-trigger="change" hx-vals='js:{nature: document.getElementById("nature-select").value}'>
+              <option>Non défini</option>
+              <option value="FAIBLE">Faible</option>
+              <option value="MOYENNE">Moyenne</option>
+              <option value="GRANDE">Grande</option>
+            </select>
+          </div>
+          {%endif%}
+
+          <div id="list-step" class="lg:col-span-2">
+            {%include 'webpages/ctn_bpf/etape_nature.html'%}
+          </div>
+        </div>
+      </div>
+
+    
+
+        <div class="bg-white/80 backdrop-blur-sm rounded-3xl border border-gray-200 shadow-xl overflow-hidden">
+
+  <!-- Header -->
+  <div class="flex items-center p-6 border-b border-gray-200">
+    <i class="fas fa-file-alt mr-3 text-indigo-500"></i>
+    <span class="font-semibold text-gray-800">📄 Formulaires associés</span>
+
+    <i class="fas fa-chevron-down ml-auto transition-transform duration-300 rotate-0 data-[state=open]:rotate-180"
+       data-state="open"></i>
+  </div>
+
+  <!-- Body -->
+  <div class="p-8">
+
+    {% if actual_institution.formulaire != False %}
+    <div class="mb-6">
+      <label class="text-sm font-semibold text-gray-700 mb-4 block">📋 Formulaires</label>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {% for datasets in dataset %}
+        <label class="flex items-center p-4 rounded-xl border-2 border-gray-200 hover:border-indigo-300 hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer group">
+          <input type="checkbox" name="dataset[]" value="{{ datasets.id }}"
+                 class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 mr-3">
+          <span class="text-sm font-medium text-gray-700 group-hover:text-indigo-700 truncate">
+            {{datasets.m_name}}
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label class="text-sm font-semibold text-gray-700 mb-2 block">📅 Année</label>
+        <select name="annee"
+                class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 shadow-sm">
+          <option value="">Sélectionnez...</option>
+          {% for periode in period %}
+          <option value="{{ periode.annee }}">{{ periode.annee }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="text-sm font-semibold text-gray-700 mb-2 block">📆 Mois</label>
+        <select name="mois"
+                class="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 bg-white/80 backdrop-blur-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 outline-none transition-all duration-300 text-gray-800 font-medium hover:border-gray-300 shadow-sm">
+          <option value="">Sélectionnez...</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+  
+
+
+    
+      <!-- Footer -->
+      <div class="sticky bottom-0 bg-white/80 backdrop-blur-md pt-8 pb-4 border-t border-gray-200 mt-8 flex flex-col sm:flex-row gap-4 justify-end">
+       
+        <button type="submit" class="px-12 py-3 font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-300">
+          <i class="fas fa-save mr-2"></i>
+          Enregistrer la Tâche
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<div id="modal_member" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4 max-w-full">
+  <div class="bg-white rounded-3xl p-8 max-w-full max-w-md shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-300">
+    
+    <!-- Header avec icône et titre -->
+    <div class="flex items-center gap-3 mb-8">
+     
+      <div>
+        <h2 class="text-xl font-bold text-gray-900" id="idOperation"></h2>
+         
+        <small class="text-sm text-gray-500">Attribuez les responsabilités aux membres</small>
+        <p class="text-sm text-gray-500 text-bold" id='modalTitle'>Rôles RACI</p>
+      </div>
+    </div>
+    <form method="POST" id="raciForm">
+    {% csrf_token %}
+    <!-- Formulaire RACI avec labels et helpers -->
+    <div class="space-y-6">
+      <!-- RÔLE RESPONSABLE -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+          <span class="w-6 h-6 bg-red-100 text-red-600 rounded-lg flex items-center justify-center font-bold text-xs">R</span>
+          Responsable (exécute la tâche)
+        </label>
+        <select id='rSelect' class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-md bg-gray-50/50" name='personnel'>
+          <option value="">Sélectionner un membre...</option>
+          {% for member in members %}
+         
+            <option value="{{ member.id }}" >{{ member.nom }} {{ member.prenom }}</option>
+          
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- RÔLE ACCOUNTABLE -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+          <span class="w-6 h-6 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center font-bold text-xs">A</span>
+          Accountable (responsable final)
+        </label>
+        <select id='aSelect' class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-md bg-gray-50/50" name='accountable'>
+          <option value="">Sélectionner un membre...</option>
+          {% for member in members %}
+            <option value="{{ member.id }}" >{{ member.nom }} {{ member.prenom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- RÔLE CONSULTED -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+          <span class="w-6 h-6 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold text-xs">C</span>
+          Consulté (apporte expertise)
+        </label>
+        <select id='cSelect' class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-md bg-gray-50/50" name='consulted'>
+          <option value="">Sélectionner un membre...</option>
+          {% for member in members %}
+            <option value="{{ member.id }}" >{{ member.nom }} {{ member.prenom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- RÔLE INFORMED -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+          <span class="w-6 h-6 bg-green-100 text-green-600 rounded-lg flex items-center justify-center font-bold text-xs">I</span>
+          Informé (reçoit mises à jour)
+        </label>
+        <select  id='iSelect' class="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-md bg-gray-50/50" name="informed">
+          <option value="">Sélectionner un membre...</option>
+          {% for member in members %}
+    <option value="{{ member.id }}"
+     
+    >
+      {{ member.nom }} {{ member.prenom }}
+    </option>
+  {% endfor %}
+        </select>
+       
+      </div>
+    </div>
+
+    <!-- Actions avec états hover -->
+    <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+      <button id='closeModalBtn'  type='button'
+              class="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        Annuler
+      </button>
+   
+      <button type="submit" 
+              class="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        Modifier les rôles
+      </button>
+    </div>
+    </form>
+  </div>
+</div>
+<!-- Scripts uniquement -->
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function() {
+  // Select2 avec Tailwind
+  $('.select2').select2({
+    placeholder: "Sélectionnez une option",
+    allowClear: true,
+    dropdownParent: $('#modal'),
+    width: '100%'
+  });
+ document.getElementById('searchInput').addEventListener('input', e => {
+      const search = e.target.value.toLowerCase();
+      document.querySelectorAll('.task-row').forEach(row => {
+        const task = row.querySelector('.task-name').innerText.toLowerCase();
+        row.style.display = task.includes(search) ? '' : 'none';
+      });
+    });
+
+  // Calcul total financement
+  const checkboxes = document.querySelectorAll('input[type="checkbox"][data-id]');
+  const totalInput = document.getElementById('montant-total');
+
+  function calculateTotal() {
+    let total = 0;
+    document.querySelectorAll('.montant-input').forEach(input => {
+      const container = input.closest('.montant-container');
+      if (container && container.style.display !== 'none' && container.classList.contains('opacity-100')) {
+        const value = parseFloat(input.value) || 0;
+        total += value;
+      }
+    });
+    totalInput.value = total.toFixed(2);
+  }
+
+  checkboxes.forEach(checkbox => {
+    const sourceId = checkbox.dataset.id;
+    const container = document.getElementById(`montant-container-${sourceId}`);
+    const input = document.getElementById(`montant-${sourceId}`);
+
+    checkbox.addEventListener('change', function() {
+      if (this.checked) {
+        container.classList.remove('opacity-0', 'invisible', 'h-0', 'scale-95');
+        container.classList.add('opacity-100', 'visible', 'h-auto', 'scale-100');
+        input.addEventListener('input', calculateTotal);
+      } else {
+        container.classList.add('opacity-0', 'invisible', 'h-0', 'scale-95');
+        container.classList.remove('opacity-100', 'visible', 'h-auto', 'scale-100');
+        input.value = '';
+      }
+      calculateTotal();
+    });
+
+    if (input) input.addEventListener('input', calculateTotal);
+  });
+
+  // Boutons +/- jours
+  document.getElementById('btn-plus').addEventListener('click', () => {
+    const input = document.getElementById('days-input');
+    input.value = Math.min(365, parseInt(input.value) + 1);
+  });
+  
+  document.getElementById('btn-minus').addEventListener('click', () => {
+    const input = document.getElementById('days-input');
+    input.value = Math.max(1, parseInt(input.value) - 1);
+  });
+
+  calculateTotal();
+});
+</script>
+
+<style>
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+</style>
+
+<!-- Script pour ouvrir/fermer le modal -->
+
+
+  <!-- MODAL RACI AMÉLIORÉ -->
+
+
+  <script>
+
+
+const modal_member = document.getElementById("modal_member");
+const overlay = document.getElementById("modal");
+const raciForm = document.getElementById("raciForm");
+
+
+
+function openModal(row) {
+
+  const id = row.dataset.id;
+  const OperationName = row.dataset.name;
+
+  raciForm.action = `/update_raci/${id}/`;
+
+  document.getElementById("rSelect").value = row.dataset.r || "";
+  document.getElementById("aSelect").value = row.dataset.a || "";
+  document.getElementById("cSelect").value = row.dataset.c || "";
+  document.getElementById("iSelect").value = row.dataset.i || "";
+  document.getElementById('idOperation').textContent = OperationName;
+
+  modal_member.classList.remove("hidden");
+  overlay.classList.remove("hidden");
+}
+
+const closeBtn = document.getElementById("closeModalBtn");
+
+function closeModalMember() {
+  modal_member.classList.add("hidden");
+}
+
+closeBtn.addEventListener("click", closeModalMember);
+    
+  </script>
+<script>
+  const fab = document.getElementById('fab');
+  const modal = document.getElementById('modalOp');
+  const closeModal = document.getElementById('closeModal');
+
+  fab.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+  });
+
+  closeModal.addEventListener('click', () => {
+    modal.classList.add('hidden');
+  });
+
+  // Fermer si l'utilisateur clique en dehors du modal
+  window.addEventListener('click', (e) => {
+    if(e.target === modal){
+      modal.classList.add('hidden');
+    }
+  });
+</script>
+
+
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ {% if message.tags == 'success' %}
+
+<script type="text/javascript">
+ Swal.fire({
+ position: "top-end",
+ icon: "success",
+ title: "{{message}}",
+ showConfirmButton: false,
+ timer: 2000
+});
+</script>
+{%endif%}
+{%endfor%}
+</script>
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ {% if message.tags == 'error' %}
+
+<script type="text/javascript">
+ Swal.fire({
+ position: "top-end",
+ icon: "error",
+ title: "{{message}}",
+ showConfirmButton: false,
+ timer: 5000
+});
+</script>
+{%endif%}
+{%endfor%}
+
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ {% if message.tags == 'info' %}
+
+<script type="text/javascript">
+ Swal.fire({
+ position: "top-end",
+ icon: "info",
+ title: "{{message}}",
+ showConfirmButton: false,
+ timer: 5000
+});
+</script>
+{%endif%}
+{%endfor%}
+ <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sélection des éléments du DOM
+      const daysInput = document.getElementById('days-input');
+      const startDateInput = document.getElementById('date_debut');
+      const endDateInput = document.getElementById('date_fin');
+      const btnMinus = document.getElementById('btn-minus');
+      const btnPlus = document.getElementById('btn-plus');
+
+      /**
+       * Calcule et met à jour la date de fin en fonction de la date de début
+       * et du nombre de jours saisis.
+       */
+      const updateEndDate = () => {
+          const startDate = startDateInput.valueAsDate;
+          const daysToAdd = parseInt(daysInput.value, 10);
+
+          // S'assure que les valeurs sont valides
+          if (!startDate || isNaN(daysToAdd)) {
+              endDateInput.value = '';
+              return;
+          }
+
+          const endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + daysToAdd);
+          endDateInput.valueAsDate = endDate;
+      };
+
+      /**
+       * Met à jour le nombre de jours en fonction de la date de début et de fin.
+       */
+      const updateDaysFromDates = () => {
+          const startDate = startDateInput.valueAsDate;
+          const endDate = endDateInput.valueAsDate;
+
+          // S'assure que les valeurs sont valides
+          if (!startDate || !endDate || endDate < startDate) {
+              daysInput.value = '';
+              return;
+          }
+
+          const timeDifference = endDate.getTime() - startDate.getTime();
+          const dayDifference = Math.ceil(timeDifference / (1000 * 3600 * 24));
+          daysInput.value = dayDifference;
+      };
+
+      /**
+       * Met à jour le nombre de jours et recalcule la date de fin.
+       * @param {number} delta - La valeur à ajouter ou soustraire (1 ou -1).
+       */
+      const updateDays = (delta) => {
+          let currentValue = parseInt(daysInput.value, 10);
+          const min = parseInt(daysInput.min, 10) || 1;
+          const max = parseInt(daysInput.max, 10) || 365;
+
+          currentValue += delta;
+
+          // Limite la valeur entre min et max
+          if (currentValue >= min && currentValue <= max) {
+              daysInput.value = currentValue;
+              updateEndDate();
+          }
+      };
+
+      // Écouteurs d'événements pour les boutons
+      btnMinus.addEventListener('click', () => updateDays(-1));
+      btnPlus.addEventListener('click', () => updateDays(1));
+
+      // Écouteurs pour les champs de saisie
+      const relevantInputs = [daysInput, startDateInput];
+      relevantInputs.forEach(input => input.addEventListener('change', updateEndDate));
+      daysInput.addEventListener('input', updateEndDate);
+
+      // Nouvel écouteur pour mettre à jour le nombre de jours lorsque la date de fin change
+      endDateInput.addEventListener('change', updateDaysFromDates);
+
+
+      // Initialisation
+      startDateInput.valueAsDate = new Date();
+      updateEndDate();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,1712 @@
+{% load pwa %}{% load opera_stats vitrine %}
+<!DOCTYPE html>
+<html lang="{% block lang %}fr{% endblock %}" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ===== Correctif (ajout) : les menus restent fermés au chargement, même avant que Tailwind (CDN) ne soit prêt ===== -->
+    <style>
+        /* Centre de ressources : visible uniquement quand il est ouvert */
+        #assistance-menu:not(.assistance-menu-active) { opacity: 0 !important; transform: scale(.5) !important; pointer-events: none !important; visibility: hidden; }
+        #assistance-menu { transform-origin: bottom right; }
+        /* Menu mobile plein écran : fermé tant qu'il n'est pas activé */
+        #mobile-fullscreen-menu:not(.mobile-menu-active) { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+        #mobile-fullscreen-menu { position: fixed; inset: 0; background: rgba(9, 9, 11, .98); }
+        /* Menu déroulant « Fonctionnalités » : uniquement au survol */
+        #nav-wrapper nav .group > div.absolute { visibility: hidden; opacity: 0; }
+        #nav-wrapper nav .group:hover > div.absolute, #nav-wrapper nav .group:focus-within > div.absolute { visibility: visible; opacity: 1; }
+        /* Pas d'animation parasite pendant le chargement */
+        html:not(.op-ready) #assistance-menu, html:not(.op-ready) #mobile-fullscreen-menu, html:not(.op-ready) #nav-wrapper nav .group > div.absolute { transition: none !important; }
+    </style>
+
+    {% load static %}
+    {# ===== RÉFÉRENCEMENT NATUREL (ajout) — blocs remplaçables dans les pages enfants : title, meta_description, og_title, og_image, robots, extra_seo ===== #}
+    <title>{% block title %}OperaPlus · Logiciel MEAL de suivi-évaluation des projets{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Planifiez, collectez sur le terrain même hors-ligne, calculez vos indicateurs et rendez compte : OperaPlus réunit tout le cycle MEAL des ONG et projets.{% endblock %}">
+    <meta name="robots" content="{% block robots %}index, follow, max-image-preview:large, max-snippet:-1{% endblock %}">
+    <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+    {% block hreflang %}{% if request.path == "/" %}
+    <link rel="alternate" hreflang="fr" href="{{ request.scheme }}://{{ request.get_host }}/">
+    <link rel="alternate" hreflang="en" href="{{ request.scheme }}://{{ request.get_host }}/en/">
+    <link rel="alternate" hreflang="x-default" href="{{ request.scheme }}://{{ request.get_host }}/">{% endif %}{% endblock %}
+    <meta name="author" content="OperaPlus">
+    <meta name="application-name" content="OperaPlus">
+    <meta name="theme-color" content="#0F1B2D">
+    <meta name="format-detection" content="telephone=no">
+    <!-- Partage sur les réseaux (Facebook, LinkedIn, WhatsApp) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="OperaPlus">
+    <meta property="og:locale" content="{% block og_locale %}fr_FR{% endblock %}">
+    <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+    <meta property="og:title" content="{% block og_title %}OperaPlus · Le cycle MEAL complet dans un seul outil{% endblock %}">
+    <meta property="og:description" content="Planification, collecte terrain hors-ligne, indicateurs calculés et redevabilité pour les ONG, projets et ministères.">
+    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% block og_image %}{% static 'og-operaplus.png' %}{% endblock %}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="OperaPlus, plateforme MEAL de suivi-évaluation">
+    <!-- X / Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="OperaPlus · Le cycle MEAL complet dans un seul outil">
+    <meta name="twitter:description" content="Planification, collecte hors-ligne, indicateurs et redevabilité pour les ONG et projets.">
+    <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'og-operaplus.png' %}">
+    <!-- Connexions anticipées vers les CDN (chargement plus rapide) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <!-- Données structurées : organisation, site et logiciel -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "{{ request.scheme }}://{{ request.get_host }}/#organisation",
+          "name": "OperaPlus",
+          "url": "{{ request.scheme }}://{{ request.get_host }}/",
+          "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'og-operaplus.png' %}"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "{{ request.scheme }}://{{ request.get_host }}/#site",
+          "url": "{{ request.scheme }}://{{ request.get_host }}/",
+          "name": "OperaPlus",
+          "inLanguage": "fr",
+          "publisher": { "@id": "{{ request.scheme }}://{{ request.get_host }}/#organisation" }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "OperaPlus",
+          "applicationCategory": "BusinessApplication",
+          "applicationSubCategory": "Suivi-évaluation (MEAL)",
+          "operatingSystem": "Web, Android, iOS",
+          "description": "Plateforme MEAL : planification, collecte terrain hors-ligne, calcul des indicateurs, tableaux de bord et redevabilité.",
+          "url": "{{ request.scheme }}://{{ request.get_host }}/",
+          "inLanguage": "fr",
+          "publisher": { "@id": "{{ request.scheme }}://{{ request.get_host }}/#organisation" }
+        }
+      ]
+    }
+    </script>
+    {% block extra_seo %}{% endblock %}
+    {% progressive_web_app_meta %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script defer src="https://unpkg.com/topojson-client@3"></script>
+<script defer src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        html, body {
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            
+        }
+        a, button, [role="button"], .cursor-pointer-trigger { cursor: pointer !important; }
+        .reveal-text { opacity: 0; transform: translateY(20px); animation: revealUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .delay-1 { animation-delay: 0.3s; }
+        .delay-2 { animation-delay: 0.5s; }
+        .delay-3 { animation-delay: 0.7s; }
+        @keyframes revealUp { to { opacity: 1; transform: translateY(0); } }
+        
+        /* Menu Mobile */
+        .mobile-menu-active { opacity: 1 !important; pointer-events: auto !important; visibility: visible !important; }
+        .mobile-link { transform: translateY(20px); opacity: 0; transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease; }
+        .mobile-menu-active .mobile-link { transform: translateY(0); opacity: 1; }
+        
+        /* Menu Assistance */
+        .assistance-menu-active { opacity: 1 !important; transform: translateY(0) scale(1) !important; pointer-events: auto !important; }
+    </style>
+    <!-- Styles partagés du site vitrine (accueil, fonctionnalités, pages légales) -->
+<style>
+    :root { --ink: #0F1B2D; --ink-2: #1B2B44; --acc: #EA580C; --acc-2: #C2410C; --ok: #2A8A7D; --line: #E6EAF0; --muted: #5B6676; --bg: #F6F7F9; }
+    .op-home { color: var(--ink); background: #fff; }
+    .op-wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+    .op-kicker { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--acc); }
+    .op-kicker::before { content: ""; width: 22px; height: 2px; border-radius: 2px; background: var(--acc); }
+    .op-h2 { font-size: clamp(28px, 3.4vw, 42px); line-height: 1.12; letter-spacing: -.03em; font-weight: 800; color: var(--ink); margin: 14px 0 0; }
+    .op-lead { color: var(--muted); font-size: 17px; line-height: 1.65; margin-top: 16px; max-width: 560px; }
+    .op-btn { display: inline-flex; align-items: center; gap: 10px; height: 52px; padding: 0 24px; border-radius: 14px; font-weight: 700; font-size: 15px; transition: transform .2s, background .2s, box-shadow .2s, color .2s; }
+    .op-btn.primary { background: var(--acc); color: #fff; box-shadow: 0 14px 28px -16px var(--acc); }
+    .op-btn.primary:hover { background: var(--acc-2); transform: translateY(-2px); }
+    .op-btn.ghost { color: var(--ink); border: 1px solid var(--line); background: #fff; }
+    .op-btn.ghost:hover { border-color: var(--ink); transform: translateY(-2px); }
+    .op-btn i { transition: transform .2s; }
+    .op-btn:hover i { transform: translateX(3px); }
+
+    /* ---------------- HÉROS ---------------- */
+    .op-hero { padding: 150px 0 80px; background: linear-gradient(180deg, #fff 0%, var(--bg) 100%); border-bottom: 1px solid var(--line); }
+    .op-hero-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 56px; align-items: center; }
+    .op-hero h1 { font-size: clamp(34px, 4.1vw, 54px); line-height: 1.04; letter-spacing: -.04em; font-weight: 800; margin: 18px 0 0; color: var(--ink); }
+    .op-hero h1 .hl { color: var(--acc); }
+    .op-rotate { display: inline-block; min-width: 1ch; border-bottom: 4px solid var(--acc); padding-bottom: 2px; transition: opacity .25s, transform .25s; }
+    .op-rotate.out { opacity: 0; transform: translateY(8px); }
+    .op-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 30px; }
+    .op-trust { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 30px; color: var(--muted); font-size: 13px; font-weight: 600; }
+    .op-trust span { display: inline-flex; align-items: center; gap: 8px; }
+    .op-trust i { color: var(--ok); }
+
+    /* aperçu produit (vrai HTML, pas d'image) */
+    .op-app { background: #fff; border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 40px 80px -40px rgba(15,27,45,.35); overflow: hidden; }
+    .op-app-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: #FBFCFD; }
+    .op-app-bar i { width: 10px; height: 10px; border-radius: 50%; background: #E2E6EC; }
+    .op-app-bar b { margin-left: 10px; font-size: 12px; color: var(--muted); font-weight: 600; }
+    .op-app-body { display: grid; grid-template-columns: 54px 1fr; }
+    .op-app-side { background: var(--ink); padding: 14px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .op-app-side span { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.6); font-size: 12px; }
+    .op-app-side span.on { background: var(--acc); color: #fff; }
+    .op-app-main { padding: 18px; display: grid; gap: 14px; }
+    .op-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .op-kpi { border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+    .op-kpi small { display: block; font-size: 11px; color: var(--muted); font-weight: 600; }
+    .op-kpi strong { display: block; font-size: 22px; font-weight: 800; letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .op-kpi em { font-style: normal; font-size: 11px; font-weight: 700; color: var(--ok); }
+    .op-chart { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+    .op-chart-h { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 12px; }
+    .op-chart-h .lg { display: flex; gap: 12px; } .op-chart-h .lg span { display: inline-flex; align-items: center; gap: 6px; }
+    .op-chart-h .lg span::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--c); }
+    .op-bars { height: 120px; display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; align-items: end; }
+    .op-bar { position: relative; height: 100%; display: flex; align-items: end; gap: 3px; }
+    .op-bar i { flex: 1; border-radius: 5px 5px 2px 2px; background: var(--c); height: 0; transition: height 1s cubic-bezier(.2,.8,.2,1); }
+    .op-bars-x { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; margin-top: 6px; font-size: 10px; color: #98A2B3; text-align: center; font-weight: 600; }
+    .op-tasks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .op-task { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 12px; font-weight: 600; }
+    .op-task b { margin-left: auto; font-size: 11px; padding: 3px 8px; border-radius: 999px; }
+    .op-task .late { background: #FDECE7; color: #C2410C; } .op-task .ok { background: #E6F4F1; color: var(--ok); }
+
+    /* ---------------- CHIFFRES ---------------- */
+    .op-stats { background: var(--ink); color: #fff; }
+    .op-stats .op-wrap { display: grid; grid-template-columns: repeat(4, 1fr); }
+    .op-stat { padding: 34px 24px; border-left: 1px solid rgba(255,255,255,.1); }
+    .op-stat:first-child { border-left: 0; }
+    .op-stat strong { display: block; font-size: 38px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+    .op-stat strong sup { font-size: 18px; color: var(--acc); margin-left: 2px; }
+    .op-stat > span { display: block; margin-top: 6px; color: rgba(255,255,255,.65); font-size: 14px; font-weight: 500; }
+
+    /* ---------------- CYCLE MEAL ---------------- */
+    .op-sec { padding: 100px 0; }
+    .op-sec.alt { background: var(--bg); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .op-sec-head { display: flex; justify-content: space-between; align-items: end; gap: 30px; flex-wrap: wrap; margin-bottom: 44px; }
+    .op-cycle { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: st; }
+    .op-step { position: relative; padding: 26px 22px 24px; border: 1px solid var(--line); border-radius: 20px; background: #fff; transition: border-color .25s, transform .25s, box-shadow .25s; cursor: default; }
+    .op-step::before { counter-increment: st; content: "0" counter(st); font-size: 13px; font-weight: 800; color: #98A2B3; }
+    .op-step::after { content: ""; position: absolute; left: 22px; right: 22px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--acc); transform: scaleX(0); transform-origin: left; transition: transform .4s ease; }
+    .op-step:hover, .op-step.on { border-color: #D5DAE2; transform: translateY(-4px); box-shadow: 0 24px 40px -30px rgba(15,27,45,.45); }
+    .op-step:hover::after, .op-step.on::after { transform: scaleX(1); }
+    .op-step i { display: flex; width: 46px; height: 46px; border-radius: 14px; align-items: center; justify-content: center; margin: 16px 0 16px; font-size: 18px; color: var(--ink); background: var(--bg); transition: background .25s, color .25s; }
+    .op-step.on i, .op-step:hover i { background: var(--ink); color: #fff; }
+    .op-step h3 { font-size: 18px; font-weight: 800; margin: 0; }
+    .op-step p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 8px 0 0; }
+
+    /* ---------------- MODULES ---------------- */
+    .op-mods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; }
+    .op-mod { background: #fff; padding: 30px; transition: background .25s; }
+    .op-mod:hover { background: #FBFCFD; }
+    .op-mod i { font-size: 20px; color: var(--acc); }
+    .op-mod h3 { font-size: 17px; font-weight: 800; margin: 16px 0 6px; }
+    .op-mod p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0; }
+    .op-mod a { display: inline-flex; gap: 6px; align-items: center; margin-top: 14px; font-size: 13px; font-weight: 700; color: var(--ink); }
+    .op-mod a:hover { color: var(--acc); }
+
+    /* ---------------- DÉMO VIDÉO (vos ids conservés) ---------------- */
+    #showcase-operaplus { padding: 100px 0 !important; background: #fff !important; }
+    #showcase-operaplus h2 { font-size: clamp(28px, 3.4vw, 42px) !important; letter-spacing: -.03em; font-weight: 300 !important; margin-bottom: 28px !important; }
+    #nav-steps { display: inline-flex !important; gap: 4px !important; padding: 5px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); font-size: 12px !important; letter-spacing: .08em !important; }
+    #nav-steps .step-btn { padding: 10px 18px; border-radius: 12px; color: var(--muted); }
+    #nav-steps .step-btn.active { background: #fff; color: var(--ink) !important; box-shadow: 0 6px 14px -8px rgba(15,27,45,.35); }
+    #nav-steps .step-btn span { background: var(--acc) !important; }
+    #video-desc { font-style: normal !important; font-size: 15px !important; color: var(--muted) !important; }
+    #showcase-operaplus .rounded-2xl { border-radius: 22px !important; border: 1px solid var(--line) !important; box-shadow: 0 40px 80px -46px rgba(15,27,45,.55) !important; }
+
+    /* ---------------- PRÉSENCE (carte réelle des membres) ---------------- */
+    .op-map { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: center; }
+    .op-map-box { aspect-ratio: 1; max-width: 420px; margin: 0 auto; width: 100%; }
+    .op-map-box svg { width: 100%; height: 100%; }
+    .op-map-box svg circle { display: none; }              /* halo dégradé retiré */
+    .op-legend { display: flex; gap: 18px; margin-top: 22px; font-size: 13px; color: var(--muted); font-weight: 600; }
+    .op-legend span { display: inline-flex; gap: 8px; align-items: center; } .op-legend span::before { content: ""; width: 12px; height: 12px; border-radius: 3px; background: var(--c); }
+
+    /* ---------------- FAQ (accordéon) ---------------- */
+    .op-faq { display: grid; grid-template-columns: .8fr 1.2fr; gap: 60px; align-items: start; }
+    .op-faq details { border-bottom: 1px solid var(--line); padding: 4px 0; }
+    .op-faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 22px 0; font-size: 17px; font-weight: 700; color: var(--ink); }
+    .op-faq summary::-webkit-details-marker { display: none; }
+    .op-faq summary::after { content: "+"; width: 32px; height: 32px; flex-shrink: 0; border-radius: 10px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 500; transition: transform .25s, background .25s, color .25s; }
+    .op-faq details[open] summary::after { transform: rotate(45deg); background: var(--ink); color: #fff; border-color: var(--ink); }
+    .op-faq details p { color: var(--muted); font-size: 15px; line-height: 1.7; margin: -6px 0 22px; max-width: 620px; }
+    .op-help { padding: 30px; border-radius: 22px; background: var(--ink); color: #fff; margin-top: 28px; }
+    .op-help h4 { font-size: 18px; font-weight: 800; margin: 0; } .op-help p { color: rgba(255,255,255,.7); font-size: 14px; margin: 8px 0 18px; }
+    .op-help a { color: #fff; font-weight: 700; font-size: 14px; display: inline-flex; gap: 8px; align-items: center; border-bottom: 2px solid var(--acc); padding-bottom: 2px; }
+
+    /* ---------------- APPEL FINAL + MEAL AFRIQUE ---------------- */
+    .op-final { padding: 0 0 100px; }
+    .op-final-box { display: grid; grid-template-columns: 1.3fr 1fr; gap: 0; border-radius: 26px; overflow: hidden; border: 1px solid var(--line); }
+    .op-final-l { background: var(--ink); color: #fff; padding: 50px; }
+    .op-final-l h2 { font-size: clamp(26px, 3vw, 38px); line-height: 1.12; letter-spacing: -.03em; font-weight: 800; margin: 14px 0 0; }
+    .op-final-l p { color: rgba(255,255,255,.7); margin: 14px 0 26px; font-size: 16px; }
+    .op-final-r { background: var(--bg); padding: 50px; display: flex; flex-direction: column; justify-content: center; }
+    .op-final-r h3 { font-size: 20px; font-weight: 800; margin: 12px 0 8px; } .op-final-r p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 18px; }
+    .op-final-r a { font-weight: 700; color: var(--ink); display: inline-flex; gap: 8px; align-items: center; }
+    .op-final-r a:hover { color: var(--acc); }
+
+    /* ===== Héros pleine largeur, couleur dominante (inspiration Slack) ===== */
+    .op-hero { background: var(--ink) !important; border-bottom: 0 !important; padding: 150px 0 0 !important; position: relative; }
+    .op-hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: #fff; }
+    .op-hero .op-wrap { position: relative; z-index: 1; }
+    .op-hero h1, .op-hero .op-lead { color: #fff; } .op-hero .op-lead { color: rgba(255,255,255,.72); }
+    .op-hero .op-btn.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.28); }
+    .op-hero .op-btn.ghost:hover { border-color: #fff; }
+    .op-hero .op-trust { color: rgba(255,255,255,.7); } .op-hero .op-trust i { color: #5EEAD4; }
+    .op-hero .op-rotate { border-color: var(--acc); }
+    .op-hero-grid { align-items: end !important; }
+    .op-hero-grid > div:first-child { padding-bottom: 150px; }
+    .op-hero .op-app { margin-bottom: 30px; box-shadow: 0 50px 90px -40px rgba(0,0,0,.6); }
+    .op-for { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 26px; }
+    .op-for span { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.8); border: 1px solid rgba(255,255,255,.18); padding: 6px 12px; border-radius: 999px; }
+    .op-stats { background: #fff !important; color: var(--ink) !important; border-bottom: 1px solid var(--line); }
+    .op-stat { border-color: var(--line) !important; } .op-stat > span { color: var(--muted) !important; }
+
+    /* ===== Une solution par profil (onglets, inspiration Slack) ===== */
+    .op-roles-tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 36px; }
+    .op-roles-tabs button { border: 0; background: none; padding: 14px 6px; margin-right: 22px; font-size: 15px; font-weight: 700; color: var(--muted); cursor: pointer; position: relative; display: inline-flex; gap: 10px; align-items: center; }
+    .op-roles-tabs button::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--acc); transform: scaleX(0); transition: transform .3s; }
+    .op-roles-tabs button.on { color: var(--ink); } .op-roles-tabs button.on::after { transform: scaleX(1); }
+    .op-roles-tabs button .bar { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: rgba(234,88,12,.35); }
+    .op-role { display: none; grid-template-columns: 1fr 1.1fr; gap: 50px; align-items: center; }
+    .op-role.on { display: grid; animation: opFade .45s ease both; }
+    @keyframes opFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .op-role h3 { font-size: clamp(24px, 2.6vw, 32px); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; margin: 0; }
+    .op-role ul { list-style: none; padding: 0; margin: 22px 0 26px; display: grid; gap: 14px; }
+    .op-role li { display: flex; gap: 12px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+    .op-role li i { color: var(--ok); margin-top: 4px; }
+    .op-role-ui { background: var(--bg); border: 1px solid var(--line); border-radius: 22px; padding: 22px; display: grid; gap: 12px; }
+    .op-row { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font-size: 13px; font-weight: 600; }
+    .op-row .ic { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--ink); color: #fff; font-size: 13px; flex-shrink: 0; }
+    .op-row .ic.acc { background: var(--acc); } .op-row .ic.ok { background: var(--ok); }
+    .op-row small { display: block; color: var(--muted); font-weight: 500; font-size: 12px; margin-top: 2px; }
+    .op-row b { margin-left: auto; font-size: 11px; padding: 4px 9px; border-radius: 999px; background: var(--bg); color: var(--ink); white-space: nowrap; }
+    .op-row b.late { background: #FDECE7; color: #C2410C; } .op-row b.ok { background: #E6F4F1; color: var(--ok); }
+    .op-prog { height: 8px; border-radius: 8px; background: #E6EAF0; overflow: hidden; margin-top: 8px; } .op-prog i { display: block; height: 100%; border-radius: 8px; background: var(--ink); }
+
+    /* ===== Modules (inspiration openIMIS : briques nommées) ===== */
+    .op-mod .tag { display: inline-block; margin-top: 12px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--bg); padding: 4px 8px; border-radius: 6px; }
+
+    /* ===== Ressources (inspiration openIMIS : documentation, communauté) ===== */
+    .op-res { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .op-res a { display: flex; flex-direction: column; gap: 10px; padding: 26px; border: 1px solid var(--line); border-radius: 20px; background: #fff; transition: border-color .25s, transform .25s, box-shadow .25s; }
+    .op-res a:hover { border-color: #D5DAE2; transform: translateY(-4px); box-shadow: 0 24px 40px -30px rgba(15,27,45,.45); }
+    .op-res i.big { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: var(--bg); color: var(--ink); }
+    .op-res h3 { font-size: 17px; font-weight: 800; margin: 6px 0 0; } .op-res p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0; flex: 1; }
+    .op-res span.go { font-size: 13px; font-weight: 700; color: var(--acc); display: inline-flex; gap: 6px; align-items: center; }
+    @media (max-width: 980px) { .op-role.on { grid-template-columns: 1fr; } .op-res { grid-template-columns: 1fr; } .op-hero-grid > div:first-child { padding-bottom: 40px; } }
+
+    /* ================= DYNAMISME (ajout) ================= */
+    /* mot du titre surligné comme au marqueur */
+    .op-hero .op-rotate { border-bottom: 0 !important; color: var(--ink); padding: 0 .18em; margin: 0 .04em; border-radius: 10px;
+        background: linear-gradient(var(--acc), var(--acc)) no-repeat left center / 100% 100%; transition: background-size .35s ease, opacity .25s, transform .25s; }
+    .op-hero .op-rotate.out { background-size: 0% 100%; opacity: 1; transform: none; color: transparent; }
+    .op-hero h1 .hl { color: #fff; text-decoration: underline; text-decoration-color: var(--acc); text-decoration-thickness: 6px; text-underline-offset: 8px; }
+
+    /* aperçu vivant : notifications qui arrivent, chiffres qui bougent */
+    .op-app { position: relative; }
+    .op-live { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: 11px; font-weight: 700; color: var(--ok); }
+    .op-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); animation: opBlink 1.6s ease-in-out infinite; }
+    @keyframes opBlink { 50% { opacity: .25; } }
+    .op-toasts { position: absolute; right: 14px; top: 54px; width: 270px; display: grid; gap: 8px; z-index: 3; pointer-events: none; }
+    .op-toast { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: #fff; border: 1px solid var(--line);
+        box-shadow: 0 18px 30px -16px rgba(15,27,45,.45); font-size: 12px; font-weight: 600; color: var(--ink);
+        animation: opToastIn .5s cubic-bezier(.2,.9,.3,1.2) both; }
+    .op-toast.bye { animation: opToastOut .35s ease forwards; }
+    .op-toast .av { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 800; }
+    .op-toast small { display: block; color: var(--muted); font-weight: 500; font-size: 11px; }
+    @keyframes opToastIn { from { opacity: 0; transform: translateX(30px) scale(.96); } to { opacity: 1; transform: none; } }
+    @keyframes opToastOut { to { opacity: 0; transform: translateY(-8px) scale(.97); } }
+    .op-kpi strong.bump { animation: opBump .5s ease; }
+    @keyframes opBump { 40% { transform: translateY(-3px); color: var(--acc); } }
+
+    /* bande orange à grands chiffres */
+    .op-stats { background: var(--acc) !important; color: #fff !important; border: 0 !important; }
+    .op-stat { border-color: rgba(255,255,255,.25) !important; padding: 44px 28px !important; }
+    .op-stat strong { font-size: clamp(40px, 4.6vw, 64px) !important; color: #fff; }
+    .op-stat strong sup { color: var(--ink) !important; }
+    .op-stat > span { color: rgba(255,255,255,.88) !important; font-weight: 600 !important; }
+
+    /* bandeau typographique qui défile */
+    .op-band { background: var(--ink); color: #fff; overflow: hidden; padding: 26px 0; border-top: 1px solid rgba(255,255,255,.06); }
+    .op-band-track { display: flex; width: max-content; animation: opMarq 32s linear infinite; }
+    .op-band:hover .op-band-track { animation-play-state: paused; }
+    .op-band span { font-size: clamp(34px, 5vw, 68px); font-weight: 800; letter-spacing: -.03em; padding: 0 28px; white-space: nowrap; display: inline-flex; align-items: center; gap: 56px; }
+    .op-band span:nth-child(even) { color: transparent; -webkit-text-stroke: 1.5px rgba(255,255,255,.55); }
+    .op-band span::after { content: "/"; font-size: .8em; font-weight: 300; color: var(--acc); -webkit-text-stroke: 0; }
+    @keyframes opMarq { to { transform: translateX(-50%); } }
+
+    /* cycle : récit au défilement, l'écran de droite reste fixe et change */
+    .op-story { display: grid; grid-template-columns: 1fr 1.1fr; gap: 60px; }
+    .op-story-steps { display: grid; gap: 0; }
+    .op-story-step { min-height: 62vh; display: flex; flex-direction: column; justify-content: center; padding: 30px 0 30px 28px; border-left: 3px solid var(--line); transition: border-color .4s, opacity .4s; opacity: .35; }
+    .op-story-step.on { border-color: var(--acc); opacity: 1; }
+    .op-story-step em { font-style: normal; font-size: 13px; font-weight: 800; color: var(--acc); letter-spacing: .1em; }
+    .op-story-step h3 { font-size: clamp(26px, 3vw, 38px); font-weight: 800; letter-spacing: -.03em; margin: 10px 0 12px; line-height: 1.1; }
+    .op-story-step p { color: var(--muted); font-size: 16px; line-height: 1.65; margin: 0; max-width: 460px; }
+    .op-story-view { position: sticky; top: 130px; align-self: start; border-radius: 26px; background: var(--ink); padding: 28px; overflow: hidden; display: grid; }
+    .op-screen { grid-area: 1 / 1; background: #fff; border-radius: 18px; padding: 20px; display: grid; gap: 12px; align-content: start;
+                 opacity: 0; transform: translateY(24px) scale(.98); transition: opacity .5s ease, transform .6s cubic-bezier(.2,.8,.2,1); }
+    .op-screen.on { opacity: 1; transform: none; }
+    .op-screen h4 { margin: 0 0 4px; font-size: 13px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .op-screen .op-row { transition: transform .4s; }
+    .op-screen.on .op-row { animation: opRowIn .5s cubic-bezier(.2,.8,.2,1) both; }
+    .op-screen.on .op-row:nth-child(3) { animation-delay: .08s; } .op-screen.on .op-row:nth-child(4) { animation-delay: .16s; } .op-screen.on .op-row:nth-child(5) { animation-delay: .24s; }
+    @keyframes opRowIn { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+    .op-gauge { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .op-gauge div { border: 1px solid var(--line); border-radius: 14px; padding: 12px; text-align: center; font-size: 11px; color: var(--muted); font-weight: 700; }
+    .op-gauge svg { width: 70px; height: 70px; display: block; margin: 0 auto 4px; }
+    .op-gauge circle.v { transition: stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1); }
+
+    /* modules : la case se remplit au survol */
+    .op-mod { position: relative; overflow: hidden; }
+    .op-mod::before { content: ""; position: absolute; inset: 0; background: var(--ink); transform: translateY(101%); transition: transform .4s cubic-bezier(.2,.8,.2,1); }
+    .op-mod > * { position: relative; transition: color .3s; }
+    .op-mod:hover::before { transform: none; }
+    .op-mod:hover h3, .op-mod:hover a { color: #fff; } .op-mod:hover p { color: rgba(255,255,255,.72); }
+    .op-mod:hover .tag { background: rgba(255,255,255,.12); color: #fff; }
+    .op-mod i { display: inline-block; transition: transform .4s cubic-bezier(.34,1.56,.64,1); } .op-mod:hover i { transform: scale(1.25) rotate(-8deg); }
+    .op-mod { padding: 36px 32px !important; } .op-mod i { font-size: 26px !important; }
+
+    /* boutons : flèche qui glisse + léger éclat */
+    .op-btn.primary { position: relative; overflow: hidden; }
+    .op-btn.primary::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent); transform: skewX(-20deg); transition: left .6s; }
+    .op-btn.primary:hover::after { left: 130%; }
+
+    @media (max-width: 980px) {
+        .op-story { grid-template-columns: 1fr; } .op-story-view { display: none; } .op-story-step { min-height: 0; opacity: 1; }
+        .op-toasts { right: 10px; top: auto; bottom: 10px; width: 240px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .op-band-track { animation: none; } .op-toast { animation: none; } }
+
+
+    /* ================= MENU « FONCTIONNALITÉS » (ajout) ================= */
+    #nav-wrapper nav .group > div.absolute { width: min(880px, calc(100vw - 40px)) !important; left: 50% !important; transform: translateX(-38%) !important; padding: 14px !important; border-radius: 22px !important; border-color: #E6EAF0 !important; box-shadow: 0 30px 60px -24px rgba(15,27,45,.35) !important; }
+    #nav-wrapper nav .group > div.absolute > .grid { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
+    .op-feat { display: flex !important; gap: 14px !important; align-items: flex-start; padding: 12px !important; border-radius: 14px !important; transition: background .2s !important; }
+    .op-feat:hover { background: #FFF4EC !important; }
+    .op-feat-orig > div:first-of-type { display: none !important; }                         /* son icône d'origine est remplacée par l'illustration animée */
+    .op-feat-orig h4, .op-feat b { display: block; font-size: 13px !important; font-weight: 800 !important; color: #0F1B2D !important; text-transform: none !important; letter-spacing: -.01em; }
+    .op-feat-orig p, .op-feat small { display: block; font-size: 12px !important; line-height: 1.45; color: #5B6676 !important; margin-top: 3px !important; font-weight: 500; }
+    .op-feat-ill { width: 52px; height: 52px; flex-shrink: 0; border-radius: 14px; background: #F6F7F9; border: 1px solid #E6EAF0; display: flex; align-items: center; justify-content: center; transition: background .25s, border-color .25s; }
+    .op-feat:hover .op-feat-ill { background: #fff; border-color: #FBD3B8; }
+    .op-feat-ill svg { width: 38px; height: 38px; overflow: visible; }
+    .op-feat-ill .s { fill: none; stroke: #0F1B2D; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .op-feat-ill .f { fill: #EA580C; } .op-feat-ill .f2 { fill: #0F1B2D; }
+    .op-feat-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 14px 16px; border-radius: 14px; background: #0F1B2D; color: #fff; font-size: 13px; font-weight: 600; }
+    .op-feat-foot i { color: #EA580C; margin-right: 6px; }
+    .op-feat-foot a { color: #fff; font-weight: 800; display: inline-flex; gap: 6px; align-items: center; }
+    .op-feat-foot a:hover { color: #FDBA74; }
+    /* animations : en boucle quand le menu est ouvert, plus marquées au survol de la ligne */
+    .group:hover .op-feat-ill * , .group:focus-within .op-feat-ill * { animation-play-state: running; }
+    .op-feat-ill * { animation-play-state: paused; transform-box: fill-box; }
+    .op-feat .a1 { animation: opLine 2.4s ease-in-out infinite; transform-origin: left; } .op-feat .a2 { animation: opLine 2.4s .3s ease-in-out infinite; transform-origin: left; } .op-feat .a3 { animation: opLine 2.4s .6s ease-in-out infinite; transform-origin: left; }
+    @keyframes opLine { 0%, 15% { transform: scaleX(0); } 45%, 100% { transform: scaleX(1); } }
+    .op-feat .up { animation: opUp 1.6s ease-in-out infinite; } @keyframes opUp { 50% { transform: translateY(-4px); } }
+    .op-feat .ring { animation: opRing 2s ease-in-out infinite; transform-origin: center; } @keyframes opRing { 50% { transform: scale(1.18); } }
+    .op-feat .dart { stroke-dasharray: 22; animation: opDart 2.4s ease-in-out infinite; } @keyframes opDart { 0% { stroke-dashoffset: 22; } 40%, 100% { stroke-dashoffset: 0; } }
+    .op-feat .g1, .op-feat .g2, .op-feat .g3 { transform-origin: left; animation: opLine 2.6s ease-in-out infinite; } .op-feat .g2 { animation-delay: .25s; } .op-feat .g3 { animation-delay: .5s; }
+    .op-feat .b1, .op-feat .b2, .op-feat .b3 { transform-origin: bottom; animation: opBar 2.2s ease-in-out infinite; } .op-feat .b2 { animation-delay: .2s; } .op-feat .b3 { animation-delay: .4s; }
+    @keyframes opBar { 0%, 10% { transform: scaleY(.2); } 50%, 100% { transform: scaleY(1); } }
+    .op-feat .needle { transform-origin: 0% 100%; animation: opNeedle 2.4s ease-in-out infinite; } @keyframes opNeedle { 0% { transform: rotate(-75deg); } 60%, 100% { transform: rotate(0); } }
+    .op-feat .prog { transform-origin: left; animation: opLine 2s ease-in-out infinite; }
+    .op-feat .c1 { animation: opPop 2.4s ease-in-out infinite; transform-origin: left bottom; } .op-feat .c2 { animation: opPop 2.4s .5s ease-in-out infinite; transform-origin: right bottom; }
+    @keyframes opPop { 0%, 10% { transform: scale(.6); opacity: 0; } 35%, 100% { transform: none; opacity: 1; } }
+    .op-feat .p1, .op-feat .p2, .op-feat .p3, .op-feat .p4 { transform-origin: center; animation: opTile 2.8s ease-in-out infinite; } .op-feat .p2 { animation-delay: .2s; } .op-feat .p3 { animation-delay: .4s; } .op-feat .p4 { animation-delay: .6s; }
+    @keyframes opTile { 0%, 20%, 100% { transform: scale(1); } 10% { transform: scale(.82); } }
+    .op-feat .sh { animation: opUp 2s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .op-feat-ill * { animation: none !important; } }
+    @media (max-width: 1100px) { #nav-wrapper nav .group > div.absolute > .grid { grid-template-columns: repeat(2, 1fr) !important; } }
+
+    /* menu mobile : explication sous chaque lien */
+    .mobile-link small { display: block; font-size: 13px; font-weight: 500; color: #94A3B8; margin-top: 2px; }
+
+    /* ================= CHIFFRES PLUS FINS ================= */
+    .op-stats { background: #fff !important; color: var(--ink) !important; border-bottom: 1px solid var(--line) !important; }
+    .op-stats .op-wrap { padding-top: 6px; padding-bottom: 6px; }
+    .op-stat { padding: 30px 26px !important; border-color: var(--line) !important; }
+    .op-stat strong { font-size: clamp(26px, 2.4vw, 34px) !important; font-weight: 700 !important; letter-spacing: -.02em !important; color: var(--ink) !important; }
+    .op-stat strong sup { font-size: 14px !important; color: var(--acc) !important; font-weight: 700; }
+    .op-stat > span { font-size: 13px !important; color: var(--muted) !important; font-weight: 500 !important; margin-top: 4px !important; }
+    .op-stat::before { content: ""; display: block; width: 22px; height: 3px; border-radius: 3px; background: var(--acc); margin-bottom: 14px; }
+
+    .op-stats .op-wrap.op-stats-live { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important; }
+    .op-stats .op-stats-note { display: flex !important; justify-content: flex-start; font-size: 12px; color: var(--muted); font-weight: 600; padding-bottom: 18px !important; margin: 0 auto; display: flex; align-items: center; gap: 8px; }
+    .op-stats-note i { font-size: 7px; color: var(--ok); animation: opBlink 1.6s ease-in-out infinite; }
+    /* ================= BANDEAU QUI DÉFILE : discret ================= */
+    .op-band { background: var(--bg) !important; color: var(--ink) !important; padding: 16px 0 !important; border-top: 1px solid var(--line) !important; border-bottom: 1px solid var(--line); }
+    .op-band-track { animation-duration: 45s !important; }
+    .op-band span { font-size: 14px !important; font-weight: 700 !important; letter-spacing: .16em !important; text-transform: uppercase; color: var(--muted) !important; -webkit-text-stroke: 0 !important; padding: 0 22px !important; gap: 44px !important; }
+    .op-band span::after { content: "" !important; width: 6px; height: 6px; border-radius: 50%; background: var(--acc); }
+
+
+    /* ================= PARTENAIRES ================= */
+    .op-logos { padding: 34px 0; border-bottom: 1px solid var(--line); background: #fff; }
+    .op-logos p { text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 18px; }
+    .op-logos ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 22px 48px; }
+    .op-logos img { height: 34px; width: auto; max-width: 150px; object-fit: contain; filter: grayscale(1); opacity: .65; transition: filter .3s, opacity .3s; }
+    .op-logos a:hover img, .op-logos img:hover { filter: none; opacity: 1; }
+
+    /* ================= AVANT / AVEC ================= */
+    .op-vs { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 26px; overflow: hidden; }
+    .op-vs > div { padding: 38px; }
+    .op-vs .avant { background: #FBFCFD; } .op-vs .avec { background: var(--ink); color: #fff; position: relative; }
+    .op-vs h3 { margin: 0 0 22px; font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .op-vs .avant h3 { color: var(--muted); }
+    .op-vs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+    .op-vs li { display: flex; gap: 12px; font-size: 15px; line-height: 1.5; }
+    .op-vs .avant li { color: var(--muted); } .op-vs .avant li i { color: #C2410C; margin-top: 3px; }
+    .op-vs .avec li { color: rgba(255,255,255,.9); } .op-vs .avec li i { color: #5EEAD4; margin-top: 3px; }
+    .op-vs .avant li span { text-decoration: line-through; text-decoration-color: rgba(194,65,12,.4); }
+    .op-vs .avec li { opacity: 0; transform: translateX(-10px); transition: opacity .5s, transform .5s; }
+    .op-vs.seen .avec li { opacity: 1; transform: none; }
+    .op-vs.seen .avec li:nth-child(2) { transition-delay: .12s; } .op-vs.seen .avec li:nth-child(3) { transition-delay: .24s; } .op-vs.seen .avec li:nth-child(4) { transition-delay: .36s; } .op-vs.seen .avec li:nth-child(5) { transition-delay: .48s; }
+
+    /* ================= DÉMARRAGE ================= */
+    .op-start { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; position: relative; }
+    .op-start::before { content: ""; position: absolute; left: 8%; right: 8%; top: 27px; height: 2px; background: repeating-linear-gradient(90deg, var(--line) 0 8px, transparent 8px 14px); }
+    .op-start::after { content: ""; position: absolute; left: 8%; top: 27px; height: 2px; width: 0; background: var(--acc); transition: width 1.6s cubic-bezier(.2,.8,.2,1); }
+    .op-start.seen::after { width: 84%; }
+    .op-start div { position: relative; padding: 0 22px; text-align: center; }
+    .op-start b.n { position: relative; z-index: 1; display: flex; width: 56px; height: 56px; margin: 0 auto 18px; border-radius: 50%; align-items: center; justify-content: center; background: #fff; border: 2px solid var(--ink); font-size: 18px; font-weight: 800; transition: background .4s, color .4s, border-color .4s; }
+    .op-start.seen div:nth-child(1) b.n { background: var(--ink); color: #fff; transition-delay: .2s; }
+    .op-start.seen div:nth-child(2) b.n { background: var(--ink); color: #fff; transition-delay: .8s; }
+    .op-start.seen div:nth-child(3) b.n { background: var(--acc); border-color: var(--acc); color: #fff; transition-delay: 1.4s; }
+    .op-start h3 { font-size: 18px; font-weight: 800; margin: 0 0 8px; } .op-start p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 auto; max-width: 280px; }
+
+    /* ================= SIMULATEUR + CONTACT ================= */
+    .op-deal { display: grid; grid-template-columns: .95fr 1.05fr; gap: 0; border-radius: 28px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 40px 80px -50px rgba(15,27,45,.45); }
+    .op-sim { background: var(--ink); color: #fff; padding: 42px; }
+    .op-sim h3 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 12px 0 6px; } .op-sim > p { color: rgba(255,255,255,.65); font-size: 14px; margin: 0 0 26px; }
+    .op-range { margin-bottom: 22px; }
+    .op-range label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; color: rgba(255,255,255,.8); margin-bottom: 10px; }
+    .op-range output { color: #fff; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .op-range input[type=range] { width: 100%; accent-color: var(--acc); height: 6px; }
+    .op-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 24px; }
+    .op-toggles label { cursor: pointer; } .op-toggles input { position: absolute; opacity: 0; pointer-events: none; }
+    .op-toggles span { display: inline-flex; gap: 8px; align-items: center; padding: 9px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2); font-size: 13px; font-weight: 700; color: rgba(255,255,255,.8); transition: all .2s; }
+    .op-toggles input:checked + span { background: #fff; color: var(--ink); border-color: #fff; }
+    .op-toggles input:focus-visible + span { outline: 2px solid var(--acc); outline-offset: 2px; }
+    .op-reco { border-radius: 18px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); padding: 20px; }
+    .op-reco small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--acc); }
+    .op-reco b { display: block; font-size: 20px; margin: 6px 0 10px; }
+    .op-reco ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; color: rgba(255,255,255,.75); }
+    .op-reco li i { color: #5EEAD4; margin-right: 8px; }
+    .op-form { background: #fff; padding: 42px; }
+    .op-form h3 { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 12px 0 22px; }
+    .op-fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .op-field { display: grid; gap: 6px; } .op-field.full { grid-column: 1 / -1; }
+    .op-field label { font-size: 13px; font-weight: 700; color: #344054; }
+    .op-field input, .op-field select, .op-field textarea { width: 100%; border: 1px solid #D0D5DD; border-radius: 12px; padding: 12px 14px; font: inherit; font-size: 15px; color: var(--ink); background: #fff; transition: border-color .2s, box-shadow .2s; }
+    .op-field textarea { min-height: 120px; resize: vertical; }
+    .op-field input:focus, .op-field select:focus, .op-field textarea:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 4px rgba(15,27,45,.08); }
+    .op-field input:user-invalid, .op-field textarea:user-invalid { border-color: #C2410C; }
+    .op-hp { position: absolute !important; left: -10000px !important; width: 1px; height: 1px; overflow: hidden; }
+    .op-consent { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--muted); line-height: 1.5; margin: 16px 0 20px; }
+    .op-consent input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--ink); flex-shrink: 0; }
+    .op-consent a { color: var(--ink); font-weight: 700; text-decoration: underline; }
+    .op-form .op-btn.primary { border: 0; cursor: pointer; width: 100%; justify-content: center; }
+    .op-form .op-btn.primary[disabled] { opacity: .6; cursor: wait; }
+    .op-alert { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-radius: 14px; font-size: 14px; font-weight: 600; margin-bottom: 18px; }
+    .op-alert.success { background: #E6F4F1; color: var(--ok); } .op-alert.error { background: #FDECE7; color: #C2410C; }
+
+    /* ================= TÉMOIGNAGES ================= */
+    .op-quotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+    .op-quote { margin: 0; padding: 30px; border-radius: 22px; border: 1px solid var(--line); background: #fff; display: flex; flex-direction: column; gap: 22px; }
+    .op-quote blockquote { margin: 0; font-size: 17px; line-height: 1.6; color: var(--ink); font-weight: 500; }
+    .op-quote blockquote::before { content: "“"; display: block; font-size: 54px; line-height: .6; color: var(--acc); font-weight: 800; margin-bottom: 10px; }
+    .op-quote figcaption { display: flex; gap: 12px; align-items: center; margin-top: auto; }
+    .op-quote img, .op-quote .ini { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .op-quote .ini { display: flex; align-items: center; justify-content: center; background: var(--ink); color: #fff; font-weight: 800; }
+    .op-quote b { display: block; font-size: 14px; } .op-quote small { color: var(--muted); font-size: 13px; }
+
+    /* ================= ACTUALITÉS MEAL AFRIQUE ================= */
+    .op-news { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 40px; }
+    .op-news a { display: flex; flex-direction: column; gap: 10px; padding: 20px; border-radius: 18px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); color: #fff; transition: background .2s, transform .2s; }
+    .op-news a:hover { background: rgba(255,255,255,.1); transform: translateY(-3px); }
+    .op-news small { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #F4B860; }
+    .op-news b { font-size: 15px; line-height: 1.4; }
+    .op-mod a.more { margin-top: 14px; }
+
+    /* ================= PIED DE PAGE ================= */
+    .op-foot { background: var(--ink); color: rgba(255,255,255,.7); padding: 70px 0 30px; font-size: 14px; }
+    .op-foot-grid { display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); gap: 34px; }
+    .op-foot h2 { color: #fff; font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin: 0 0 16px; }
+    .op-foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .op-foot a { color: rgba(255,255,255,.7); transition: color .2s; } .op-foot a:hover { color: #fff; }
+    .op-foot-brand b { display: block; color: #fff; font-size: 22px; font-weight: 800; margin-bottom: 10px; } .op-foot-brand b span { color: var(--acc); }
+    .op-foot-brand p { line-height: 1.7; max-width: 300px; margin: 0 0 18px; }
+    .op-foot-bottom { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,.1); margin-top: 50px; padding-top: 24px; font-size: 13px; }
+    .op-foot-bottom nav { display: flex; gap: 20px; flex-wrap: wrap; }
+    .op-lang { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,.15); }
+    .op-lang a { padding: 4px 10px; border-radius: 7px; font-weight: 700; font-size: 12px; } .op-lang a[aria-current] { background: #fff; color: var(--ink); }
+
+    /* ================= BANDEAU D'INFORMATION COOKIES ================= */
+    .op-cookie { position: fixed; left: 20px; bottom: 20px; z-index: 98; max-width: 420px; display: none; gap: 14px; align-items: flex-start; padding: 18px; border-radius: 18px; background: #fff; border: 1px solid var(--line); box-shadow: 0 30px 60px -24px rgba(15,27,45,.45); color: var(--ink); font-size: 13px; line-height: 1.55; }
+    .op-cookie.on { display: flex; animation: opToastIn .4s ease both; }
+    .op-cookie i.fa-cookie-bite { font-size: 20px; color: var(--acc); margin-top: 2px; }
+    .op-cookie a { color: var(--ink); font-weight: 700; text-decoration: underline; }
+    .op-cookie button { margin-top: 10px; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 800; font-size: 13px; background: var(--ink); color: #fff; cursor: pointer; }
+
+    @media (max-width: 980px) {
+        .op-vs, .op-deal { grid-template-columns: 1fr; } .op-start { grid-template-columns: 1fr; gap: 30px; } .op-start::before, .op-start::after { display: none; }
+        .op-news { grid-template-columns: 1fr; } .op-foot-grid { grid-template-columns: 1fr 1fr; } .op-foot-brand { grid-column: 1 / -1; }
+    }
+    @media (max-width: 600px) { .op-fgrid { grid-template-columns: 1fr; } .op-sim, .op-form, .op-vs > div { padding: 28px; } .op-cookie { left: 12px; right: 12px; max-width: none; } }
+
+    /* ================= COMMUNAUTÉ MEAL AFRIQUE (ajout) ================= */
+    .op-comm { position: relative; padding: 110px 0; background: #0E3B35; color: #fff; overflow: hidden; }
+    .op-comm .op-wrap { position: relative; display: grid; grid-template-columns: 1.05fr 1fr; gap: 64px; align-items: center; }
+    .op-comm .op-kicker { color: #F4B860; } .op-comm .op-kicker::before { background: #F4B860; }
+    .op-comm h2 { font-size: clamp(32px, 4vw, 52px); line-height: 1.06; letter-spacing: -.035em; font-weight: 800; margin: 16px 0 0; }
+    .op-comm h2 em { font-style: normal; color: #F4B860; }
+    .op-comm .op-lead { color: rgba(255,255,255,.75); }
+    .op-comm-perks { list-style: none; padding: 0; margin: 28px 0 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
+    .op-comm-perks li { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.5; color: rgba(255,255,255,.9); }
+    .op-comm-perks li i { width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: rgba(244,184,96,.16); color: #F4B860; font-size: 13px; }
+    .op-comm .op-btn.primary { background: #F4B860; color: #0E3B35; box-shadow: 0 16px 30px -16px rgba(244,184,96,.8); }
+    .op-comm .op-btn.primary:hover { background: #F7C77E; }
+    .op-comm .op-btn.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.3); }
+    .op-comm .op-btn.ghost:hover { border-color: #fff; }
+    /* carte « membre » */
+    .op-card-m { position: relative; background: #fff; color: var(--ink); border-radius: 24px; padding: 26px; box-shadow: 0 50px 90px -40px rgba(0,0,0,.6); transform: rotate(-1.5deg); transition: transform .5s cubic-bezier(.2,.8,.2,1); }
+    .op-card-m:hover { transform: rotate(0) translateY(-4px); }
+    .op-card-m-h { display: flex; align-items: center; gap: 14px; padding-bottom: 18px; border-bottom: 1px dashed var(--line); }
+    .op-card-m-logo { width: 52px; height: 52px; border-radius: 14px; background: #0E3B35; color: #F4B860; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; letter-spacing: -.02em; }
+    .op-card-m-h b { display: block; font-size: 17px; font-weight: 800; } .op-card-m-h small { color: var(--muted); font-size: 12px; font-weight: 600; }
+    .op-card-m-h .op-pill { margin-left: auto; font-size: 11px; font-weight: 800; padding: 5px 10px; border-radius: 999px; background: #E6F4F1; color: var(--ok); }
+    .op-card-m ul { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 10px; }
+    .op-card-m li { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; font-size: 13px; font-weight: 700; transition: border-color .2s, transform .2s; }
+    .op-card-m li:hover { border-color: #0E3B35; transform: translateX(4px); }
+    .op-card-m li i { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; flex-shrink: 0; }
+    .op-card-m li small { display: block; color: var(--muted); font-weight: 500; font-size: 12px; margin-top: 2px; }
+    .op-card-m li .ar { margin-left: auto; color: #98A2B3; }
+    .op-stamp { position: absolute; right: -22px; bottom: -26px; width: 92px; height: 92px; border-radius: 50%; background: #F4B860; color: #0E3B35; display: flex; align-items: center; justify-content: center; text-align: center;
+                font-size: 11px; font-weight: 800; line-height: 1.15; text-transform: uppercase; letter-spacing: .04em; transform: rotate(12deg); box-shadow: 0 14px 30px -14px rgba(0,0,0,.5); animation: opSpin 14s linear infinite; }
+    @keyframes opSpin { to { transform: rotate(372deg); } }
+    @media (max-width: 980px) { .op-comm .op-wrap { grid-template-columns: 1fr; } .op-comm-perks { grid-template-columns: 1fr; } .op-card-m { transform: none; } .op-stamp { right: 8px; } }
+    @media (prefers-reduced-motion: reduce) { .op-stamp { animation: none; } }
+
+    /* apparition au défilement (sobre) */
+    .op-in { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+    .op-in.seen { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .op-in { opacity: 1; transform: none; transition: none; } .op-bar i { transition: none; } }
+
+    /* bouton d'assistance : couleur pleine au lieu du dégradé */
+    #assistance-fab { background: var(--acc) !important; box-shadow: 0 16px 30px -14px rgba(234,88,12,.7) !important; }
+
+    @media (max-width: 980px) {
+        .op-hero-grid, .op-map, .op-faq, .op-final-box { grid-template-columns: 1fr; }
+        .op-cycle { grid-template-columns: 1fr 1fr; } .op-mods { grid-template-columns: 1fr 1fr; }
+        .op-stats .op-wrap { grid-template-columns: 1fr 1fr; } .op-stat:nth-child(3) { border-left: 0; }
+        .op-hero { padding-top: 120px; }
+    }
+    @media (max-width: 600px) {
+        .op-cycle, .op-mods, .op-tasks { grid-template-columns: 1fr; } .op-kpis { grid-template-columns: 1fr 1fr 1fr; }
+        .op-final-l, .op-final-r { padding: 30px; } .op-sec { padding: 70px 0; }
+        .op-app-body { grid-template-columns: 1fr; } .op-app-side { display: none; }
+    }
+</style>
+</head>
+<body class="font-sans antialiased text-gray-200 bg-slate-100 overflow-x-hidden" id="body-root">
+{# ===== Adresse du site MEAL Afrique : à renseigner UNE fois ici (remplacez "#") ===== #}
+{% firstof meal_afrique_url "#" as MEAL_AFRIQUE %}
+{# ===== Adresse de votre documentation (remplacez "#") ===== #}
+{% firstof documentation_url "#" as DOC_URL %}
+
+   
+
+  
+
+<header id="main-header" class=" backdrop-blur-md fixed top-4 left-0 right-0 z-50 transition-all duration-700 px-4 flex flex-col items-center">
+    <div id="nav-wrapper" class="w-full max-w-6xl flex items-center justify-between transition-all duration-500 ease-out px-4 sm:px-6 py-3 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/50 relative">
+        
+        <div class="flex items-center gap-x-3 cursor-pointer">
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-600 shadow-md shadow-orange-600/20">
+                <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z" />
+                </svg>
+            </div>
+            <a href="/" class="text-xl font-bold tracking-tight text-slate-900">Opera<span class="text-orange-600">Plus</span></a>
+        </div>
+        
+        <nav class="hidden md:flex items-center gap-x-2">
+            <div class="group relative">
+                <button class="flex items-center gap-x-1.5 text-xs uppercase font-bold tracking-wider text-slate-600 group-hover:text-orange-600 transition-colors px-3 py-2 rounded-lg hover:bg-orange-50">
+                    Fonctionnalités
+                    <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-orange-600 transition-transform duration-300 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                </button>
+
+                <div class="absolute top-full left-1/2 -translate-x-1/4 mt-2 w-[540px] invisible opacity-0 scale-95 group-hover:visible group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 bg-white border border-slate-100 rounded-2xl p-4 shadow-2xl z-[100]">
+                    <div class="grid grid-cols-2 gap-3">
+                        <a href="#" class="flex gap-x-3 p-3 rounded-xl hover:bg-orange-50 transition-all group/item op-feat op-feat-orig" data-feat="collecte">
+                            <span class="op-feat-ill" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="14" y="6" width="20" height="36" rx="4" class="s"/><rect x="18" y="13" width="12" height="3" rx="1.5" class="f a1"/><rect x="18" y="19" width="9" height="3" rx="1.5" class="f a2"/><rect x="18" y="25" width="12" height="3" rx="1.5" class="f a3"/><path d="M38 14v8m-3-3 3 3 3-3" class="s up"/></svg></span>
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V10.12" /></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-900 uppercase">Collecte terrain</h4>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Saisie et centralisation des données.</p>
+                            </div>
+                        </a>
+                        <a href="/fonctionnalites/indicateurs/" class="op-feat" data-feat="indicateurs">
+                            <span class="op-feat-ill" aria-hidden="true"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="16" class="s"/><circle cx="24" cy="24" r="9" class="s ring"/><circle cx="24" cy="24" r="3" class="f"/><path d="M24 24 38 10" class="s dart"/></svg></span>
+                            <span><b>Indicateurs & cibles</b><small>Indicateurs reliés au cadre logique, comparés à leurs cibles par période et par zone.</small></span>
+                        </a>
+                        <a href="/fonctionnalites/planification-raci/" class="op-feat" data-feat="planification">
+                            <span class="op-feat-ill" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="8" y="12" width="20" height="5" rx="2.5" class="f g1"/><rect x="16" y="21" width="22" height="5" rx="2.5" class="f2 g2"/><rect x="12" y="30" width="16" height="5" rx="2.5" class="f g3"/><path d="M8 40h32" class="s"/></svg></span>
+                            <span><b>Planification & RACI</b><small>Activités, échéances et rôles Responsable · Approbateur · Consulté · Informé.</small></span>
+                        </a>
+                        <a href="/fonctionnalites/tableaux-de-bord/" class="op-feat" data-feat="tableaux">
+                            <span class="op-feat-ill" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 40h32" class="s"/><rect x="11" y="24" width="6" height="16" rx="2" class="f b1"/><rect x="21" y="16" width="6" height="24" rx="2" class="f2 b2"/><rect x="31" y="10" width="6" height="30" rx="2" class="f b3"/></svg></span>
+                            <span><b>Tableaux de bord</b><small>Vues physique, technique et financière, mises à jour en continu.</small></span>
+                        </a>
+                        <a href="/fonctionnalites/calcul-indicateurs/" class="op-feat" data-feat="calcul">
+                            <span class="op-feat-ill" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 32a16 16 0 0 1 32 0" class="s"/><path d="M24 32 33 20" class="s needle"/><circle cx="24" cy="32" r="3" class="f"/></svg></span>
+                            <span><b>Calcul des indicateurs</b><small>Choisissez la période, l’unité et les indicateurs : le calcul se fait en un clic.</small></span>
+                        </a>
+                        <a href="/fonctionnalites/import-intelligent/" class="op-feat" data-feat="import">
+                            <span class="op-feat-ill" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M14 6h14l8 8v28H14z" class="s"/><path d="M28 6v8h8" class="s"/><rect x="18" y="30" width="14" height="4" rx="2" class="s"/><rect x="18" y="30" width="14" height="4" rx="2" class="f prog"/></svg></span>
+                            <span><b>Import intelligent</b><small>Fichiers Excel ou CSV contrôlés étape par étape, anomalies signalées avant l’import.</small></span>
+                        </a>
+                        <a href="/fonctionnalites/redevabilite/" class="op-feat" data-feat="redevabilite">
+                            <span class="op-feat-ill" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 12h24v14H18l-6 5v-5H8z" class="s c1"/><path d="M22 22h18v12h-3v4l-5-4H22z" class="f2 c2"/></svg></span>
+                            <span><b>Redevabilité</b><small>Plaintes et retours des bénéficiaires suivis jusqu’à leur clôture.</small></span>
+                        </a>
+                        <a href="/fonctionnalites/multi-projets/" class="op-feat" data-feat="projets">
+                            <span class="op-feat-ill" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="8" y="8" width="14" height="14" rx="3" class="f p1"/><rect x="26" y="8" width="14" height="14" rx="3" class="s p2"/><rect x="8" y="26" width="14" height="14" rx="3" class="s p3"/><rect x="26" y="26" width="14" height="14" rx="3" class="f2 p4"/></svg></span>
+                            <span><b>Multi-projets</b><small>Plusieurs projets et institutions rattachées, chacun avec ses couleurs et ses équipes.</small></span>
+                        </a>
+                        <a href="/fonctionnalites/archives-apprentissage/" class="op-feat" data-feat="archives">
+                            <span class="op-feat-ill" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M8 16h12l3 4h17v18H8z" class="s"/><path d="M12 12h12l3 4" class="s sh"/><path d="M16 29h16" class="s"/></svg></span>
+                            <span><b>Archives & apprentissage</b><small>Documents, rapports et leçons apprises classés et retrouvables en quelques secondes.</small></span>
+                        </a>
+                        </div>
+                        <div class="op-feat-foot">
+                            <span><i class="fa-regular fa-circle-play"></i> Voir OperaPlus en action en 2 minutes</span>
+                            <a href="#showcase-operaplus">Regarder la démo <i class="fa-solid fa-arrow-right"></i></a>
+                        </div>
+                </div>
+            </div>
+
+            <a href="/a-propos/" class="text-xs uppercase font-bold tracking-wider text-slate-600 hover:text-orange-600 px-3 py-2 rounded-lg hover:bg-orange-50">À Propos</a>
+             <a href="/annonces/" class="text-xs uppercase font-bold tracking-wider text-slate-600 hover:text-orange-600 px-3 py-2 rounded-lg hover:bg-orange-50">Annonces</a>
+            <a href="/packages/" class="text-xs uppercase font-bold tracking-wider text-slate-600 hover:text-orange-600 px-3 py-2 rounded-lg hover:bg-orange-50">Tarifs</a>
+        </nav>
+        
+        <div class="hidden sm:flex items-center gap-x-4">
+            <a href="/demos/" class="text-xs font-semibold text-slate-600 hover:text-slate-900 px-3 py-2">Demande DEMO</a>
+            <a href="/log_account/" class="rounded-xl bg-orange-600 hover:bg-orange-700 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-orange-600/20">Démarrer</a>
+        </div>
+        
+        <button id="mobile-menu-btn" class="md:hidden text-slate-900 p-2 z-[10001]">
+            <span id="line-1" class="block w-5 h-[2px] bg-slate-900 mb-1.5 transition-transform"></span>
+            <span id="line-2" class="block w-5 h-[2px] bg-slate-900 transition-transform"></span>
+        </button>
+    </div>
+</header>
+<div id="mobile-fullscreen-menu" class="fixed inset-0 bg-zinc-950/98 backdrop-blur-3xl z-[90] flex flex-col justify-center px-6 pointer-events-none opacity-0 invisible transition-all duration-500">
+    <div class="flex flex-col gap-y-4 text-left max-w-md mx-auto w-full">
+        <span class="text-xs font-bold uppercase tracking-widest text-orange-500 border-b border-orange-900/30 pb-3">Navigation Écosystème</span>
+        
+        <a href="#" class="mobile-link flex items-center gap-x-4 text-lg font-bold text-white hover:text-orange-400 py-1.5 transition-colors">
+            <div class="p-2 bg-orange-950/50 rounded-lg text-orange-400"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V10.12" /></svg></div>
+            <span>Collecte terrain<small>Saisie hors-ligne et synchronisation</small></span>
+        </a>
+        <a href="#" class="mobile-link flex items-center gap-x-4 text-lg font-bold text-white hover:text-orange-400 py-1.5 transition-colors">
+            <div class="p-2 bg-orange-950/50 rounded-lg text-orange-400"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z" /></svg></div>
+            <span>Indicateurs & Suivi<small>Cibles, réalisations et tableaux de bord</small></span>
+        </a>
+        <a href="#" class="mobile-link flex items-center gap-x-4 text-lg font-bold text-white hover:text-orange-400 py-1.5 transition-colors">
+            <div class="p-2 bg-orange-950/50 rounded-lg text-orange-400"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg></div>
+            <span>Apprentissage continu<small>Leçons apprises et archives</small></span>
+        </a>
+        <a href="#" class="mobile-link flex items-center gap-x-4 text-lg font-bold text-white hover:text-orange-400 py-1.5 transition-colors">
+            <div class="p-2 bg-orange-950/50 rounded-lg text-orange-400"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" /></svg></div>
+            <span>Redevabilité automatisée<small>Plaintes, retours et rapports</small></span>
+        </a>
+
+        <div class="flex flex-col gap-y-1 mt-2 pt-4 border-t border-zinc-800">
+            <a href="#" class="text-sm font-semibold text-slate-300 hover:text-white py-2">À Propos</a>
+            <a href="#" class="text-sm font-semibold text-slate-300 hover:text-white py-2">Tarifs</a>
+        </div>
+
+        <div class="mobile-link flex flex-col gap-y-3 mt-4 pt-4 border-t border-orange-900/40">
+            <a href="#" class="w-full text-center rounded-xl bg-orange-600 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-orange-600/20">Accès Démo Gratuit</a>
+            <a href="#" class="w-full text-center py-3 text-sm font-semibold text-slate-400 border border-orange-900/30 rounded-xl bg-zinc-900/50">Espace Client</a>
+        </div>
+    </div>
+</div>
+
+    {% block content %}
+<!-- ======================================================================
+     PAGE D'ACCUEIL OPERAPLUS — refonte (sobre, sans effets « IA »)
+     Dominante : encre #0F1B2D · Accent : orange #EA580C · Touche : vert #2A8A7D
+     ====================================================================== -->
+{# styles de la page déplacés dans <head> pour être partagés par toutes les pages vitrine #}
+
+<div class="op-home">
+
+<!-- ================= HÉROS ================= -->
+<section class="op-hero" id="globe-3d-container">
+    <div class="op-wrap op-hero-grid">
+        <div>
+            <span class="op-kicker">Plateforme MEAL intégrée</span>
+            <h1>Pilotez la <span class="hl">performance</span> de vos projets, de la <span class="op-rotate" id="opRotate">collecte</span> à la décision.</h1>
+            <p class="op-lead">Planification, suivi, évaluation et redevabilité dans un seul outil. Vos équipes collectent sur le terrain, vos tableaux de bord se mettent à jour.</p>
+            <div class="op-cta">
+                <a href="/log_account/" class="op-btn primary">Démarrer maintenant <i class="fa-solid fa-arrow-right"></i></a>
+                <a href="/demos/" class="op-btn ghost"><i class="fa-regular fa-circle-play"></i> Demander une démo</a>
+            </div>
+            <div class="op-trust">
+                <span><i class="fa-solid fa-wifi"></i>Collecte hors-ligne</span>
+                <span><i class="fa-solid fa-file-export"></i>Exports PDF · Excel</span>
+                <span><i class="fa-solid fa-shield-halved"></i>Données sécurisées</span>
+            </div>
+            <div class="op-for"><span>ONG</span><span>Projets de développement</span><span>Ministères</span><span>Bailleurs</span></div>
+        </div>
+
+        <!-- Aperçu de l'application -->
+        <div class="op-app op-in" aria-hidden="true" id="opApp">
+            <div class="op-app-bar"><i></i><i></i><i></i><b>OperaPlus · Tableau de bord</b><span class="op-live">En direct</span></div>
+            <div class="op-toasts" id="opToasts"></div>
+            <div class="op-app-body">
+                <div class="op-app-side">
+                    <span class="on"><i class="fa-solid fa-gauge-high"></i></span><span><i class="fa-solid fa-sitemap"></i></span>
+                    <span><i class="fa-solid fa-bullseye"></i></span><span><i class="fa-solid fa-database"></i></span><span><i class="fa-solid fa-users"></i></span>
+                </div>
+                <div class="op-app-main">
+                    <div class="op-kpis">
+                        <div class="op-kpi"><small>Indicateurs suivis</small><strong data-count="128">0</strong><em>▲ 12 ce mois</em></div>
+                        <div class="op-kpi"><small>Réalisation</small><strong data-count="76" data-suffix="%">0</strong><em>▲ 4 pts</em></div>
+                        <div class="op-kpi"><small>Saisies terrain</small><strong data-count="2340">0</strong><em>▲ 318</em></div>
+                    </div>
+                    <div class="op-chart">
+                        <div class="op-chart-h"><span>Réalisé vs cible</span><span class="lg"><span style="--c:var(--ink)">Réalisé</span><span style="--c:#D5DAE2">Cible</span></span></div>
+                        <div class="op-bars" id="opBars"></div>
+                        <div class="op-bars-x"><span>Jan</span><span>Fév</span><span>Mar</span><span>Avr</span><span>Mai</span><span>Juin</span><span>Juil</span><span>Août</span></div>
+                    </div>
+                    <div class="op-tasks">
+                        <div class="op-task"><i class="fa-regular fa-clock" style="color:#C2410C"></i>Rapport trimestriel<b class="late">J-2</b></div>
+                        <div class="op-task"><i class="fa-regular fa-circle-check" style="color:var(--ok)"></i>Enquête de base<b class="ok">Validé</b></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= PARTENAIRES (uniquement ceux qui ont donné leur accord, voir l'admin) ================= -->
+{% vitrine_partenaires as partenaires %}
+{% if partenaires %}
+<section class="op-logos" aria-label="Ils utilisent OperaPlus">
+    <div class="op-wrap">
+        <p>Ils pilotent leurs projets avec OperaPlus</p>
+        <ul>{% for p in partenaires %}<li>{% if p.site %}<a href="{{ p.site }}" rel="noopener nofollow" target="_blank">{% endif %}<img src="{{ p.logo.url }}" alt="{{ p.nom }}" loading="lazy" decoding="async" width="150" height="34">{% if p.site %}</a>{% endif %}</li>{% endfor %}</ul>
+    </div>
+</section>
+{% endif %}
+
+<!-- ================= CHIFFRES (dynamiques, agrégés, mis en cache — voir templatetags/opera_stats.py) ================= -->
+{% opera_stats as st %}
+<section class="op-stats" aria-label="OperaPlus en chiffres">
+    {% if st.liste|length >= 3 %}
+    <div class="op-wrap op-stats-live">
+        {% for c in st.liste|slice:":5" %}
+        <div class="op-stat"><strong><span data-count="{{ c.valeur }}"{% if c.plus %} data-suffix="+"{% endif %}>{{ c.display }}</span></strong><span>{{ c.libelle }}</span></div>
+        {% endfor %}
+    </div>
+    <p class="op-stats-note op-wrap"><i class="fa-solid fa-circle"></i> Chiffres réels de la plateforme, mis à jour automatiquement</p>
+    {% else %}
+    <div class="op-wrap">
+        <div class="op-stat"><strong><span data-count="4">4</span></strong><span>étapes du cycle MEAL réunies</span></div>
+        <div class="op-stat"><strong><span data-count="100">100</span><sup>%</sup></strong><span>responsive, même hors-ligne</span></div>
+        <div class="op-stat"><strong><span data-count="3">3</span></strong><span>formats d'export : PDF, Excel, JSON</span></div>
+        <div class="op-stat"><strong>24/7</strong><span>accompagnement de l'équipe</span></div>
+    </div>
+    {% endif %}
+</section>
+
+<div class="op-band" aria-hidden="true"><div class="op-band-track">
+    <span>Collecte hors-ligne</span><span>Cadre logique</span><span>Rôles RACI</span><span>Calcul des indicateurs</span><span>Import Excel &amp; CSV</span><span>Tableaux de bord</span><span>Plaintes &amp; retours</span><span>Exports PDF</span>
+    <span>Collecte hors-ligne</span><span>Cadre logique</span><span>Rôles RACI</span><span>Calcul des indicateurs</span><span>Import Excel &amp; CSV</span><span>Tableaux de bord</span><span>Plaintes &amp; retours</span><span>Exports PDF</span>
+</div></div>
+
+<!-- ================= UNE SOLUTION PAR PROFIL ================= -->
+<section class="op-sec">
+    <div class="op-wrap">
+        <div class="op-sec-head op-in" style="margin-bottom:26px">
+            <div><span class="op-kicker">Pour chaque équipe</span><h2 class="op-h2">Chacun voit ce qui compte pour lui.</h2></div>
+        </div>
+        <div class="op-roles-tabs" id="opRoleTabs" role="tablist">
+            <button type="button" class="on" data-role="0"><i class="fa-solid fa-user-tie"></i>Chef de projet<span class="bar"></span></button>
+            <button type="button" data-role="1"><i class="fa-solid fa-chart-line"></i>Chargé·e S&amp;E<span class="bar"></span></button>
+            <button type="button" data-role="2"><i class="fa-solid fa-person-hiking"></i>Agent terrain<span class="bar"></span></button>
+            <button type="button" data-role="3"><i class="fa-solid fa-landmark"></i>Direction &amp; bailleurs<span class="bar"></span></button>
+        </div>
+
+        <div class="op-role on">
+            <div><h3>Gardez la main sur les échéances et les responsabilités.</h3>
+                <ul><li><i class="fa-solid fa-check"></i>Activités, échéances et rôles RACI au même endroit.</li>
+                    <li><i class="fa-solid fa-check"></i>Alertes automatiques dès qu'une tâche prend du retard.</li>
+                    <li><i class="fa-solid fa-check"></i>Tableau de bord physique, technique et financier.</li></ul>
+                <a href="/demos/" class="op-btn ghost">Voir une démo <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="op-role-ui">
+                <div class="op-row"><span class="ic acc"><i class="fa-regular fa-clock"></i></span><span>Rapport trimestriel<small>Responsable : équipe S&amp;E</small></span><b class="late">En retard · 2 j</b></div>
+                <div class="op-row"><span class="ic"><i class="fa-solid fa-list-check"></i></span><span>Distribution de kits<small>Approbateur : chef de projet</small></span><b>Dans 5 j</b></div>
+                <div class="op-row"><span class="ic ok"><i class="fa-solid fa-check"></i></span><span>Formation des relais<small>Terminée</small></span><b class="ok">Validé</b></div>
+            </div>
+        </div>
+        <div class="op-role">
+            <div><h3>Des indicateurs calculés, pas recopiés.</h3>
+                <ul><li><i class="fa-solid fa-check"></i>Cadre logique et indicateurs reliés aux formulaires.</li>
+                    <li><i class="fa-solid fa-check"></i>Calcul par période et par unité organisationnelle.</li>
+                    <li><i class="fa-solid fa-check"></i>Contrôle des anomalies avant chaque import.</li></ul>
+                <a href="/demos/" class="op-btn ghost">Voir une démo <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="op-role-ui">
+                <div class="op-row" style="display:block">Taux d'achèvement primaire<div class="op-prog"><i style="width:72%"></i></div><small>72 % · cible 80 %</small></div>
+                <div class="op-row" style="display:block">Ménages ayant accès à l'eau<div class="op-prog"><i style="width:58%;background:var(--acc)"></i></div><small>58 % · cible 75 %</small></div>
+                <div class="op-row" style="display:block">Plaintes traitées sous 15 jours<div class="op-prog"><i style="width:91%;background:var(--ok)"></i></div><small>91 % · cible 90 %</small></div>
+            </div>
+        </div>
+        <div class="op-role">
+            <div><h3>Collectez partout, même sans réseau.</h3>
+                <ul><li><i class="fa-solid fa-check"></i>Formulaires simples sur téléphone.</li>
+                    <li><i class="fa-solid fa-check"></i>Saisie hors-ligne, envoi automatique au retour du réseau.</li>
+                    <li><i class="fa-solid fa-check"></i>Import de fichiers Excel ou CSV en un clic.</li></ul>
+                <a href="/demos/" class="op-btn ghost">Voir une démo <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="op-role-ui">
+                <div class="op-row"><span class="ic"><i class="fa-solid fa-clipboard-list"></i></span><span>Questionnaire ménage<small>12 fiches en attente d'envoi</small></span><b>Hors-ligne</b></div>
+                <div class="op-row"><span class="ic ok"><i class="fa-solid fa-cloud-arrow-up"></i></span><span>Synchronisation<small>Réseau retrouvé</small></span><b class="ok">Envoyé</b></div>
+                <div class="op-row"><span class="ic acc"><i class="fa-solid fa-file-import"></i></span><span>Import registre.xlsx<small>3 anomalies à corriger</small></span><b class="late">À revoir</b></div>
+            </div>
+        </div>
+        <div class="op-role">
+            <div><h3>Une vue claire pour décider et rendre compte.</h3>
+                <ul><li><i class="fa-solid fa-check"></i>Synthèse de tous les projets et institutions rattachées.</li>
+                    <li><i class="fa-solid fa-check"></i>Rapports prêts à partager en PDF ou Excel.</li>
+                    <li><i class="fa-solid fa-check"></i>Suivi des plaintes et retours des bénéficiaires.</li></ul>
+                <a href="/packages/" class="op-btn ghost">Voir les offres <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="op-role-ui">
+                <div class="op-row"><span class="ic"><i class="fa-solid fa-folder-open"></i></span><span>Portefeuille<small>Tous les projets actifs</small></span><b>Vue d'ensemble</b></div>
+                <div class="op-row"><span class="ic acc"><i class="fa-solid fa-file-pdf"></i></span><span>Rapport annuel<small>Généré automatiquement</small></span><b>PDF</b></div>
+                <div class="op-row"><span class="ic ok"><i class="fa-solid fa-scale-balanced"></i></span><span>Redevabilité<small>Plaintes suivies jusqu'à leur clôture</small></span><b class="ok">À jour</b></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= AVANT / AVEC ================= -->
+<section class="op-sec">
+    <div class="op-wrap">
+        <div class="op-sec-head op-in">
+            <div><span class="op-kicker">La différence</span><h2 class="op-h2">Fini les fichiers éparpillés.</h2></div>
+            <p class="op-lead" style="margin:0">Ce qui change au quotidien pour une équipe MEAL.</p>
+        </div>
+        <div class="op-vs op-in" id="opVs">
+            <div class="avant">
+                <h3><i class="fa-regular fa-folder-open"></i>Sans OperaPlus</h3>
+                <ul>
+                    <li><i class="fa-solid fa-xmark"></i><span>Des fichiers Excel envoyés par e-mail, en plusieurs versions</span></li>
+                    <li><i class="fa-solid fa-xmark"></i><span>Des indicateurs recopiés à la main chaque trimestre</span></li>
+                    <li><i class="fa-solid fa-xmark"></i><span>Des retards découverts au moment du rapport</span></li>
+                    <li><i class="fa-solid fa-xmark"></i><span>Des plaintes notées sur papier, sans suivi</span></li>
+                    <li><i class="fa-solid fa-xmark"></i><span>Des rapports qui prennent des jours</span></li>
+                </ul>
+            </div>
+            <div class="avec">
+                <h3><i class="fa-solid fa-chart-simple" style="color:var(--acc)"></i>Avec OperaPlus</h3>
+                <ul>
+                    <li><i class="fa-solid fa-check"></i>Une seule base, à jour pour toute l'équipe</li>
+                    <li><i class="fa-solid fa-check"></i>Des indicateurs calculés à partir des données validées</li>
+                    <li><i class="fa-solid fa-check"></i>Une alerte dès qu'une activité prend du retard</li>
+                    <li><i class="fa-solid fa-check"></i>Chaque plainte suivie jusqu'à sa clôture</li>
+                    <li><i class="fa-solid fa-check"></i>Des rapports PDF ou Excel générés en un clic</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= CYCLE MEAL (récit au défilement) ================= -->
+<section class="op-sec alt">
+    <div class="op-wrap">
+        <div class="op-sec-head op-in">
+            <div><span class="op-kicker">Le cycle complet</span><h2 class="op-h2">Un seul outil, du plan au rapport.</h2></div>
+            <p class="op-lead" style="margin:0">Chaque étape alimente la suivante : rien à ressaisir, tout reste traçable.</p>
+        </div>
+        <div class="op-story" id="opStory">
+            <div class="op-story-steps">
+                <div class="op-story-step on" data-s="0"><em>01 · PLANIFICATION</em><h3>Posez le cadre une fois pour toutes.</h3><p>Cadre logique, activités, cibles et responsables RACI : chaque membre sait ce qu'il doit faire et pour quand.</p></div>
+                <div class="op-story-step" data-s="1"><em>02 · SUIVI</em><h3>Le terrain remonte tout seul.</h3><p>Formulaires sur téléphone, saisie hors-ligne, synchronisation au retour du réseau et validation en un clic.</p></div>
+                <div class="op-story-step" data-s="2"><em>03 · ÉVALUATION</em><h3>Les indicateurs se calculent pendant que vous dormez.</h3><p>Réalisé contre cible, par période et par zone, avec des baromètres lisibles d'un coup d'œil.</p></div>
+                <div class="op-story-step" data-s="3"><em>04 · REDEVABILITÉ</em><h3>Rendez compte sans courir après les chiffres.</h3><p>Plaintes et retours suivis jusqu'à leur clôture, rapports PDF ou Excel prêts à partager.</p></div>
+            </div>
+            <div class="op-story-view" aria-hidden="true">
+                <div class="op-screen on"><h4>Plan d'activités</h4>
+                    <div class="op-row"><span class="ic"><i class="fa-solid fa-diagram-project"></i></span><span>Résultat 1 · Accès à l'eau<small>4 activités · 3 responsables</small></span><b>R · A · C · I</b></div>
+                    <div class="op-row"><span class="ic acc"><i class="fa-regular fa-calendar"></i></span><span>Forage de 12 points d'eau<small>Échéance : mars</small></span><b>Planifié</b></div>
+                    <div class="op-row"><span class="ic ok"><i class="fa-solid fa-user-check"></i></span><span>Comités de gestion formés<small>Responsable : coordination</small></span><b class="ok">En cours</b></div></div>
+                <div class="op-screen"><h4>Collecte terrain</h4>
+                    <div class="op-row"><span class="ic"><i class="fa-solid fa-mobile-screen"></i></span><span>Questionnaire ménage<small>Saisi hors-ligne</small></span><b>12 fiches</b></div>
+                    <div class="op-row"><span class="ic ok"><i class="fa-solid fa-cloud-arrow-up"></i></span><span>Synchronisation<small>Réseau retrouvé</small></span><b class="ok">Envoyé</b></div>
+                    <div class="op-row"><span class="ic acc"><i class="fa-solid fa-circle-check"></i></span><span>Validation superviseur<small>2 fiches à corriger</small></span><b class="late">À revoir</b></div></div>
+                <div class="op-screen"><h4>Baromètres</h4>
+                    <div class="op-gauge">
+                        <div><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#E6EAF0" stroke-width="4"/><circle class="v" cx="18" cy="18" r="15" fill="none" stroke="#0F1B2D" stroke-width="4" stroke-linecap="round" stroke-dasharray="94.2" stroke-dashoffset="94.2" data-v="72" transform="rotate(-90 18 18)"/></svg>Achèvement · 72 %</div>
+                        <div><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#E6EAF0" stroke-width="4"/><circle class="v" cx="18" cy="18" r="15" fill="none" stroke="#EA580C" stroke-width="4" stroke-linecap="round" stroke-dasharray="94.2" stroke-dashoffset="94.2" data-v="58" transform="rotate(-90 18 18)"/></svg>Accès à l'eau · 58 %</div>
+                        <div><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#E6EAF0" stroke-width="4"/><circle class="v" cx="18" cy="18" r="15" fill="none" stroke="#2A8A7D" stroke-width="4" stroke-linecap="round" stroke-dasharray="94.2" stroke-dashoffset="94.2" data-v="91" transform="rotate(-90 18 18)"/></svg>Plaintes traitées · 91 %</div>
+                    </div>
+                    <div class="op-row" style="display:block">Ménages ayant accès à l'eau<div class="op-prog"><i style="width:58%;background:var(--acc)"></i></div><small>58 % · cible 75 %</small></div></div>
+                <div class="op-screen"><h4>Redevabilité</h4>
+                    <div class="op-row"><span class="ic acc"><i class="fa-solid fa-comment-dots"></i></span><span>Plainte n°214<small>Distribution · village de Bonamoussadi</small></span><b class="ok">Clôturée</b></div>
+                    <div class="op-row"><span class="ic"><i class="fa-solid fa-file-pdf"></i></span><span>Rapport trimestriel<small>Généré automatiquement</small></span><b>PDF</b></div>
+                    <div class="op-row"><span class="ic ok"><i class="fa-solid fa-share-nodes"></i></span><span>Partagé avec le bailleur<small>Aujourd'hui</small></span><b class="ok">Envoyé</b></div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= DÉMO VIDÉO ================= -->
+<section id="showcase-operaplus" class="relative w-full bg-white py-5 overflow-hidden op-sec">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto text-center mb-16">
+            <span class="op-kicker">En action</span>
+            <h2 class="text-3xl font-light text-slate-900 mb-12">
+                Performance unifiée : <span class="font-bold">OperaPlus</span>
+            </h2>
+            <div id="nav-steps" class="flex items-center justify-center gap-8 text-[10px] uppercase tracking-[0.2em] font-black">
+                <button data-video="form" data-text="Concevez des formulaires intelligents en quelques clics." class="step-btn active flex items-center gap-2 transition-all">
+                    <span class="w-2 h-2 rounded-full bg-blue-600"></span> Formulaire
+                </button>
+                <button data-video="collect" data-text="Centralisez vos flux de données en temps réel." class="step-btn flex items-center gap-2 transition-all text-slate-400 hover:text-slate-900">
+                    <span class="w-2 h-2 rounded-full bg-orange-500"></span> Collecte
+                </button>
+                <button data-video="plan" data-text="Planifiez et visualisez vos tâches avec précision." class="step-btn flex items-center gap-2 transition-all text-slate-400 hover:text-slate-900">
+                    <span class="w-2 h-2 rounded-full bg-emerald-600"></span> Planification
+                </button>
+            </div>
+            <p id="video-desc" class="mt-8 text-sm text-slate-500 italic transition-opacity duration-300">
+                Concevez des formulaires intelligents en quelques clics.
+            </p>
+        </div>
+        <div class="relative w-full max-w-5xl mx-auto">
+            <div class="relative rounded-2xl border border-slate-100 bg-slate-900 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.2)] overflow-hidden">
+                <video id="display-video" aria-label="Démonstration d'OperaPlus : formulaires, collecte et planification" preload="metadata" 
+                    src="{%static 'OPERAPLUS.mp4'%}" 
+                    autoplay loop muted playsinline 
+                    class="w-full aspect-video object-cover transition-opacity duration-500">
+                </video>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    const video = document.getElementById('display-video');
+    const desc = document.getElementById('video-desc');
+    const buttons = document.querySelectorAll('.step-btn');
+    const section = document.getElementById('showcase-operaplus');
+
+    const observerOptions = { root: null, threshold: 0.3 };
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                video.play().catch(e => console.log("Lecture auto bloquée par le navigateur"));
+                observer.unobserve(section);
+            }
+        });
+    }, observerOptions);
+    observer.observe(section);
+
+    buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.classList.contains('active')) return;
+            buttons.forEach(b => { b.classList.remove('active', 'text-slate-900'); b.classList.add('text-slate-400'); });
+            btn.classList.add('active', 'text-slate-900');
+            btn.classList.remove('text-slate-400');
+            video.style.opacity = 0;
+            desc.style.opacity = 0;
+            setTimeout(() => {
+                video.src = `{% static '${btn.dataset.video}.mp4' %}`;
+                desc.textContent = btn.dataset.text;
+                video.load();
+                video.play();
+                video.style.opacity = 1;
+                desc.style.opacity = 1;
+            }, 300);
+        });
+    });
+</script>
+
+<!-- ================= MODULES ================= -->
+<section class="op-sec" id="fonctionnalites">
+    <div class="op-wrap">
+        <div class="op-sec-head op-in">
+            <div><span class="op-kicker">Fonctionnalités</span><h2 class="op-h2">Des modules qui s'assemblent selon vos besoins.</h2></div>
+            <a href="/packages/" class="op-btn ghost">Voir les offres <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+        <div class="op-mods op-in">
+            <div class="op-mod"><i class="fa-solid fa-database"></i><h3>Collecte terrain</h3><p>Formulaires sur mobile, synchronisés dès le retour du réseau.</p><span class="tag">Module Collecte</span><a class="more" href="/fonctionnalites/collecte-terrain/">En savoir plus <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="op-mod"><i class="fa-solid fa-bullseye"></i><h3>Indicateurs & suivi</h3><p>Cibles, réalisations et calcul automatique par période et par zone.</p><span class="tag">Module Indicateurs</span><a class="more" href="/fonctionnalites/indicateurs/">En savoir plus <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="op-mod"><i class="fa-solid fa-list-check"></i><h3>Planification</h3><p>Activités, échéances, responsables RACI et alertes de retard.</p><span class="tag">Module Planification</span><a class="more" href="/fonctionnalites/planification-raci/">En savoir plus <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="op-mod"><i class="fa-solid fa-chart-pie"></i><h3>Tableaux de bord</h3><p>Physique, technique et financier, à jour en permanence.</p><span class="tag">Module Pilotage</span><a class="more" href="/fonctionnalites/tableaux-de-bord/">En savoir plus <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="op-mod"><i class="fa-solid fa-comments"></i><h3>Redevabilité</h3><p>Plaintes, retours des bénéficiaires et suivi de leur traitement.</p><span class="tag">Module Redevabilité</span><a class="more" href="/fonctionnalites/redevabilite/">En savoir plus <i class="fa-solid fa-arrow-right"></i></a></div>
+            <div class="op-mod"><i class="fa-solid fa-lightbulb"></i><h3>Apprentissage</h3><p>Leçons apprises et archives documentaires consultables.</p><span class="tag">Module Archives</span><a class="more" href="/fonctionnalites/archives-apprentissage/">En savoir plus <i class="fa-solid fa-arrow-right"></i></a></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= DÉMARRAGE EN 3 ÉTAPES ================= -->
+<section class="op-sec alt">
+    <div class="op-wrap">
+        <div class="op-sec-head op-in" style="justify-content:center;text-align:center">
+            <div><span class="op-kicker">Démarrage</span><h2 class="op-h2">Opérationnel en trois étapes.</h2></div>
+        </div>
+        <div class="op-start op-in" id="opStart">
+            <div><b class="n">1</b><h3>Créez votre espace</h3><p>Votre institution, vos projets et vos équipes, en quelques minutes.</p></div>
+            <div><b class="n">2</b><h3>Paramétrez votre cadre</h3><p>Structures, périodes, cadre logique et indicateurs, ou import de vos fichiers.</p></div>
+            <div><b class="n">3</b><h3>Collectez et pilotez</h3><p>Le terrain saisit, les tableaux de bord se mettent à jour, vous décidez.</p></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= SIMULATEUR + CONTACT (formulaire protégé) ================= -->
+<section class="op-sec" id="contact">
+    <div class="op-wrap">
+        <div class="op-sec-head op-in">
+            <div><span class="op-kicker">Parlons de votre projet</span><h2 class="op-h2">Estimez votre besoin, nous vous répondons sous 48 h.</h2></div>
+        </div>
+        <div class="op-deal op-in">
+            <div class="op-sim" aria-labelledby="simTitre">
+                <span class="op-kicker">Simulateur</span>
+                <h3 id="simTitre">Votre configuration</h3>
+                <p>Ajustez les curseurs : la configuration conseillée s'affiche et remplit le formulaire.</p>
+                <div class="op-range"><label for="simProjets">Projets suivis <output id="simProjetsV">3</output></label><input type="range" id="simProjets" min="1" max="50" value="3"></div>
+                <div class="op-range"><label for="simUsers">Utilisateurs <output id="simUsersV">15</output></label><input type="range" id="simUsers" min="1" max="500" step="1" value="15"></div>
+                <div class="op-toggles" role="group" aria-label="Besoins">
+                    <label><input type="checkbox" id="simOffline" checked><span><i class="fa-solid fa-wifi"></i>Collecte hors-ligne</span></label>
+                    <label><input type="checkbox" id="simImport"><span><i class="fa-solid fa-file-import"></i>Import de données existantes</span></label>
+                    <label><input type="checkbox" id="simPlaintes"><span><i class="fa-solid fa-scale-balanced"></i>Gestion des plaintes</span></label>
+                </div>
+                <div class="op-reco" aria-live="polite">
+                    <small>Configuration conseillée</small>
+                    <b id="simReco">Équipe projet</b>
+                    <ul id="simList"></ul>
+                </div>
+            </div>
+            <form class="op-form" method="post" action="/contact/envoyer/" id="opContactForm" novalidate>
+                {% csrf_token %}
+                <span class="op-kicker">Contact</span>
+                <h3>Recevoir une proposition</h3>
+                {% for message in messages %}
+                <div class="op-alert {% if message.tags == 'error' %}error{% else %}success{% endif %}" role="status"><i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"></i>{{ message }}</div>
+                {% endfor %}
+                <div class="op-fgrid">
+                    <div class="op-field"><label for="cNom">Nom complet</label><input id="cNom" name="nom" type="text" maxlength="120" autocomplete="name" required></div>
+                    <div class="op-field"><label for="cEmail">E-mail professionnel</label><input id="cEmail" name="email" type="email" maxlength="254" autocomplete="email" required></div>
+                    <div class="op-field"><label for="cOrg">Organisation</label><input id="cOrg" name="organisation" type="text" maxlength="160" autocomplete="organization"></div>
+                    <div class="op-field"><label for="cBesoin">Votre besoin</label>
+                        <select id="cBesoin" name="besoin"><option value="demo">Démonstration</option><option value="devis">Proposition / devis</option><option value="support">Support</option><option value="autre">Autre</option></select></div>
+                    <div class="op-field full"><label for="cMsg">Message</label><textarea id="cMsg" name="message" minlength="10" maxlength="3000" required placeholder="Parlez-nous de vos projets, de vos équipes et de vos délais."></textarea></div>
+                </div>
+                <input type="hidden" name="projets" id="cProjets" value="3">
+                <input type="hidden" name="utilisateurs" id="cUsers" value="15">
+                <input type="hidden" name="jeton" value="{% vitrine_jeton %}">
+                <div class="op-hp" aria-hidden="true"><label for="cSite">Ne pas remplir</label><input id="cSite" name="site_web" type="text" tabindex="-1" autocomplete="off"></div>
+                <label class="op-consent"><input type="checkbox" name="consentement" value="on" required><span>J'accepte que mes informations soient utilisées pour répondre à ma demande. <a href="/confidentialite/">Confidentialité</a></span></label>
+                <button type="submit" class="op-btn primary">Envoyer ma demande <i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- ================= TÉMOIGNAGES (uniquement publiés avec accord, voir l'admin) ================= -->
+{% vitrine_temoignages as temoignages %}
+{% if temoignages %}
+<section class="op-sec alt" aria-labelledby="titreTemoignages">
+    <div class="op-wrap">
+        <div class="op-sec-head op-in"><div><span class="op-kicker">Témoignages</span><h2 class="op-h2" id="titreTemoignages">Ce qu'en disent les équipes.</h2></div></div>
+        <div class="op-quotes">
+            {% for t in temoignages %}
+            <figure class="op-quote op-in">
+                <blockquote>{{ t.citation }}</blockquote>
+                <figcaption>{% if t.photo %}<img src="{{ t.photo.url }}" alt="{{ t.auteur }}" loading="lazy" decoding="async" width="46" height="46">{% else %}<span class="ini" aria-hidden="true">{{ t.auteur|slice:":1"|upper }}</span>{% endif %}
+                    <span><b>{{ t.auteur }}</b><small>{{ t.fonction }} · {{ t.organisation }}</small></span></figcaption>
+            </figure>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- ================= PRÉSENCE ================= -->
+<section class="op-sec alt">
+    <div class="op-wrap op-map">
+        <div class="op-in">
+            <span class="op-kicker">Présence</span>
+            <h2 class="op-h2">Des équipes qui pilotent sur le terrain.</h2>
+            <p class="op-lead">La carte montre les pays où OperaPlus compte des membres. Plus la couleur est intense, plus ils sont nombreux.</p>
+            <div class="op-legend"><span style="--c:#3b82f6">Quelques membres</span><span style="--c:#eab308">Moyen</span><span style="--c:#f97316">Nombreux</span></div>
+        </div>
+        <div class="op-map-box op-in"><svg id="globe" class="w-full h-full"></svg></div>
+    </div>
+</section>
+
+<script>
+    async function initGlobe() {
+        const globeContainer = document.getElementById('globe');
+        if (!globeContainer) return;
+        const isDark = document.documentElement.classList.contains('dark');
+        let width = globeContainer.clientWidth || 400;
+        let height = width;
+        const svg = d3.select("#globe").attr("viewBox", `0 0 ${width} ${height}`);
+        const colorScale = d3.scaleLinear().domain([0, 50, 100]).range(['#3b82f6', '#eab308', '#f97316']);
+        const projection = d3.geoOrthographic().scale(width / 2.1).translate([width / 2, height / 2]).rotate([-15, -10]);
+        const path = d3.geoPath().projection(projection);
+        try {
+            const [worldData, memberStats] = await Promise.all([
+                d3.json("https://unpkg.com/world-atlas@2.0.2/countries-110m.json"),
+                fetch('/count-members-of-countries/').then(res => res.json())
+            ]);
+            const countries = topojson.feature(worldData, worldData.objects.countries).features;
+            svg.append("path").datum({ type: "Sphere" }).attr("d", path).attr("fill", "#ffffff").attr("stroke", "#E6EAF0");
+            const worldPaths = svg.selectAll("path.c").data(countries).enter().append("path").attr("class", "c")
+                .attr("d", path)
+                .attr("fill", d => { const data = memberStats[d.id?.toString().padStart(3,'0')]; return data ? colorScale(data.total) : (isDark ? '#334155' : '#E2E6EC'); })
+                .attr("stroke", isDark ? "#1e293b" : "#ffffff").attr("stroke-width", 0.8);
+            const sphere = svg.select("path");
+            d3.timer(() => { const r = projection.rotate(); projection.rotate([r[0] + 0.15, r[1]]); worldPaths.attr("d", path); });
+        } catch (error) { console.error("Erreur Globe:", error); }
+    }
+    window.addEventListener('load', initGlobe);
+</script>
+
+<!-- ================= RESSOURCES ================= -->
+<section class="op-sec">
+    <div class="op-wrap">
+        <div class="op-sec-head op-in">
+            <div><span class="op-kicker">Ressources</span><h2 class="op-h2">Apprenez, partagez, progressez.</h2></div>
+        </div>
+        <div class="op-res op-in">
+            <a href="{{ DOC_URL }}"><i class="big fa-solid fa-book"></i><h3>Documentation</h3><p>Guides de paramétrage, cadre logique, formulaires et calcul des indicateurs.</p><span class="go">Lire la documentation <i class="fa-solid fa-arrow-right"></i></span></a>
+            <a href="/#showcase-operaplus"><i class="big fa-solid fa-circle-play"></i><h3>Tutoriels &amp; études de cas</h3><p>Des vidéos courtes et des exemples tirés de projets réels.</p><span class="go">Voir la démo vidéo <i class="fa-solid fa-arrow-right"></i></span></a>
+            <a href="{{ MEAL_AFRIQUE }}" class="op-res-meal" rel="noopener"><i class="big fa-solid fa-people-group"></i><h3>Communauté MEAL Afrique</h3><p>Actualités, débats et échanges entre professionnels du suivi-évaluation.</p><span class="go">Rejoindre la communauté <i class="fa-solid fa-arrow-right"></i></span></a>
+        </div>
+    </div>
+</section>
+
+<!-- ================= COMMUNAUTÉ MEAL AFRIQUE ================= -->
+<section class="op-comm" id="communaute-meal-afrique" aria-labelledby="titre-meal-afrique">
+    <div class="op-wrap">
+        <div class="op-in">
+            <span class="op-kicker">Communauté MEAL Afrique</span>
+            <h2 id="titre-meal-afrique">Rejoignez les professionnels du <em>suivi-évaluation</em> en Afrique.</h2>
+            <p class="op-lead">MEAL Afrique est le journal et la communauté des praticiens MEAL. Partagez vos pratiques, suivez les débats et faites connaître votre expertise.</p>
+            <ul class="op-comm-perks">
+                <li><i class="fa-solid fa-comments"></i><span>Débats entre experts sur les méthodes et les outils</span></li>
+                <li><i class="fa-solid fa-newspaper"></i><span>Actualités et dépêches du secteur</span></li>
+                <li><i class="fa-regular fa-calendar"></i><span>Agenda des formations et événements</span></li>
+                <li><i class="fa-solid fa-id-badge"></i><span>Profil expert visible par les organisations</span></li>
+            </ul>
+            <div class="op-cta" style="margin-top:0">
+                <a href="{{ MEAL_AFRIQUE }}" class="op-btn primary" rel="noopener">Rejoindre la communauté <i class="fa-solid fa-arrow-right"></i></a>
+                <a href="{{ MEAL_AFRIQUE }}" class="op-btn ghost" rel="noopener">Découvrir le journal</a>
+            </div>
+        </div>
+        <div class="op-in" aria-hidden="true">
+            <div class="op-card-m">
+                <span class="op-stamp">Membre<br>MEAL<br>Afrique</span>
+                <div class="op-card-m-h">
+                    <span class="op-card-m-logo">MA</span>
+                    <span><b>MEAL Afrique</b><small>Journal &amp; communauté</small></span>
+                    <span class="op-pill">Ouvert à tous</span>
+                </div>
+                <ul>
+                    <li><i class="fa-solid fa-comments" style="background:#0E3B35"></i><span>Débats<small>Échangez avec vos pairs</small></span><i class="fa-solid fa-arrow-right ar"></i></li>
+                    <li><i class="fa-solid fa-newspaper" style="background:var(--acc)"></i><span>Dépêches<small>L'essentiel du secteur</small></span><i class="fa-solid fa-arrow-right ar"></i></li>
+                    <li><i class="fa-regular fa-calendar" style="background:var(--ok)"></i><span>Agenda<small>Formations et événements</small></span><i class="fa-solid fa-arrow-right ar"></i></li>
+                    <li><i class="fa-solid fa-id-badge" style="background:var(--ink)"></i><span>Profil expert<small>Faites connaître vos compétences</small></span><i class="fa-solid fa-arrow-right ar"></i></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% meal_afrique_actus 3 as actus %}
+    {% if actus %}
+    <div class="op-wrap" style="display:block">
+        <div class="op-news">
+            {% for a in actus %}<a href="{{ a.lien }}" rel="noopener" target="_blank"><small>{{ a.categorie }}</small><b>{{ a.titre }}</b></a>{% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+<!-- ================= FAQ ================= -->
+<section id="faq" class="op-sec alt">
+    <div class="op-wrap op-faq">
+        <div class="op-in">
+            <span class="op-kicker">Questions fréquentes</span>
+            <h2 class="op-h2">Tout savoir sur OperaPlus</h2>
+            <div class="op-help">
+                <h4>Besoin d'aide ?</h4>
+                <p>Notre équipe technique est disponible 24/7 pour accompagner votre transformation.</p>
+                <a href="/#contact">Contacter le support <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+        </div>
+        <div class="op-in">
+            <details open><summary>Comment fonctionne la collecte ?</summary><p>Une architecture modulaire qui permet de synchroniser vos données sur le terrain même sans réseau, avec une remontée automatique dès la reconnexion.</p></details>
+            <details><summary>Puis-je exporter mes indicateurs ?</summary><p>Nos outils BI permettent des exports personnalisés en PDF, Excel ou JSON, parfaitement adaptés à vos exigences de reporting institutionnel.</p></details>
+            <details><summary>OperaPlus est-il compatible mobile ?</summary><p>100% responsive et optimisé pour le travail hors-ligne, OperaPlus est conçu pour les équipes mobiles évoluant dans des contextes complexes.</p></details>
+            <details><summary>Combien de temps pour démarrer ?</summary><p>Créez votre compte, paramétrez votre structure et vos périodes, puis importez vos indicateurs : l'équipe vous accompagne à chaque étape.</p></details>
+        </div>
+    </div>
+</section>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Comment fonctionne la collecte ?", "acceptedAnswer": { "@type": "Answer", "text": "Une architecture modulaire qui permet de synchroniser vos données sur le terrain même sans réseau, avec une remontée automatique dès la reconnexion." } },
+    { "@type": "Question", "name": "Puis-je exporter mes indicateurs ?", "acceptedAnswer": { "@type": "Answer", "text": "Nos outils BI permettent des exports personnalisés en PDF, Excel ou JSON, parfaitement adaptés à vos exigences de reporting institutionnel." } },
+    { "@type": "Question", "name": "OperaPlus est-il compatible mobile ?", "acceptedAnswer": { "@type": "Answer", "text": "100% responsive et optimisé pour le travail hors-ligne, OperaPlus est conçu pour les équipes mobiles évoluant dans des contextes complexes." } },
+    { "@type": "Question", "name": "Combien de temps pour démarrer ?", "acceptedAnswer": { "@type": "Answer", "text": "Créez votre compte, paramétrez votre structure et vos périodes, puis importez vos indicateurs : l'équipe vous accompagne à chaque étape." } }
+  ]
+}
+</script>
+<noscript><style>.op-in { opacity: 1 !important; transform: none !important; } .op-screen { opacity: 1; transform: none; position: relative; }</style></noscript>
+
+<!-- ================= APPEL FINAL + LIEN MEAL AFRIQUE ================= -->
+<section class="op-final">
+    <div class="op-wrap">
+        <div class="op-final-box op-in">
+            <div class="op-final-l">
+                <span class="op-kicker">Prêt à commencer ?</span>
+                <h2>Transformez vos données en décisions dès aujourd'hui.</h2>
+                <p>Essayez OperaPlus avec votre propre projet.</p>
+                <div class="op-cta" style="margin-top:0">
+                    <a href="/log_account/" class="op-btn primary">Démarrer maintenant <i class="fa-solid fa-arrow-right"></i></a>
+                    <a href="/packages/" class="op-btn ghost" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.25)">Découvrir les offres</a>
+                </div>
+            </div>
+            <div class="op-final-r">
+                <span class="op-kicker" style="color:var(--ok)">Communauté</span>
+                <h3>MEAL Afrique</h3>
+                <p>Actualités, débats et ressources des professionnels du suivi-évaluation sur le continent.</p>
+                <!-- Adresse définie en haut de <body> (MEAL_AFRIQUE) -->
+                <a href="{{ MEAL_AFRIQUE }}" id="opMealAfrique" rel="noopener">Rejoindre la communauté <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</section>
+</div>
+
+<script>
+/* Animations sobres : apparition au défilement, compteurs, barres, mot qui change, cycle */
+(function () {
+    var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('seen'); io.unobserve(e.target); } });
+    }, { threshold: .15 }) : null;
+    document.querySelectorAll('.op-in').forEach(function (el, i) { el.style.transitionDelay = (i % 4) * 70 + 'ms'; io ? io.observe(el) : el.classList.add('seen'); });
+
+    function count(el) {
+        var end = +el.dataset.count, suf = el.dataset.suffix || '', t0 = null;
+        function step(t) { t0 = t0 || t; var p = Math.min((t - t0) / 1200, 1), v = Math.round(end * (1 - Math.pow(1 - p, 3)));
+            el.textContent = v.toLocaleString('fr-FR') + suf; if (p < 1) requestAnimationFrame(step); }
+        requestAnimationFrame(step);
+    }
+    var cio = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { count(e.target); cio.unobserve(e.target); } });
+    }, { threshold: .5 }) : null;
+    document.querySelectorAll('[data-count]').forEach(function (el) { cio ? cio.observe(el) : count(el); });
+
+    /* barres réalisé / cible */
+    var bars = document.getElementById('opBars');
+    if (bars) {
+        var R = [42, 55, 48, 63, 70, 66, 78, 84], C = [50, 55, 60, 65, 70, 75, 80, 85];
+        bars.innerHTML = R.map(function (r, i) { return '<div class="op-bar"><i style="--c:var(--ink)" data-h="' + r + '"></i><i style="--c:#D5DAE2" data-h="' + C[i] + '"></i></div>'; }).join('');
+        setTimeout(function () { bars.querySelectorAll('i').forEach(function (b, i) { setTimeout(function () { b.style.height = b.dataset.h + '%'; }, i * 40); }); }, 400);
+    }
+
+    /* mot du titre qui change */
+    var rot = document.getElementById('opRotate'), words = ['collecte', 'planification', 'évaluation', 'redevabilité'], k = 0;
+    if (rot && !matchMedia('(prefers-reduced-motion: reduce)').matches) setInterval(function () {
+        rot.classList.add('out'); setTimeout(function () { k = (k + 1) % words.length; rot.textContent = words[k]; rot.classList.remove('out'); }, 260);
+    }, 2600);
+
+    /* profils : onglets avec barre de progression, avancent seuls jusqu'au premier clic */
+    var tabs = [].slice.call(document.querySelectorAll('#opRoleTabs button')), panes = [].slice.call(document.querySelectorAll('.op-role')), rIdx = 0, auto = true, DUR = 6000, t0 = performance.now();
+    function showRole(i) { rIdx = i; tabs.forEach(function (b, j) { b.classList.toggle('on', j === i); b.setAttribute('aria-selected', j === i); b.querySelector('.bar').style.width = '0'; }); panes.forEach(function (p, j) { p.classList.toggle('on', j === i); }); t0 = performance.now(); }
+    tabs.forEach(function (b, i) { b.addEventListener('click', function () { auto = false; showRole(i); }); });
+    (function tick(now) {
+        if (auto && tabs.length) { var p = (now - t0) / DUR; tabs[rIdx].querySelector('.bar').style.width = Math.min(p, 1) * 100 + '%'; if (p >= 1) showRole((rIdx + 1) % tabs.length); }
+        else tabs.forEach(function (b) { b.querySelector('.bar').style.width = '0'; });
+        requestAnimationFrame(tick);
+    })(performance.now());
+
+    /* aperçu vivant : notifications et chiffres */
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var feed = [
+        ['AN', '#2A8A7D', 'Aïcha a soumis 12 fiches', 'Questionnaire ménage · Kribi'],
+        ['IN', '#EA580C', 'Indicateur mis à jour', 'Accès à l\'eau : 58 % → 61 %'],
+        ['JB', '#0F1B2D', 'Jean a validé une activité', 'Formation des relais'],
+        ['!', '#C2410C', 'Échéance dans 2 jours', 'Rapport trimestriel'],
+        ['ML', '#2A8A7D', 'Mireille a clôturé une plainte', 'Plainte n°214']
+    ], fi = 0, box = document.getElementById('opToasts');
+    function pushToast() {
+        if (!box || document.hidden) return;
+        var f = feed[fi++ % feed.length], t = document.createElement('div'); t.className = 'op-toast';
+        t.innerHTML = '<span class="av" style="background:' + f[1] + '">' + f[0] + '</span><span>' + f[2] + '<small>' + f[3] + '</small></span>';
+        box.appendChild(t);
+        var all = box.querySelectorAll('.op-toast:not(.bye)'); if (all.length > 2) { var old = all[0]; old.classList.add('bye'); setTimeout(function () { old.remove(); }, 360); }
+        var k = document.querySelectorAll('#opApp .op-kpi strong'), target = k[fi % 3];
+        if (target && target.dataset.count) { var v = +target.dataset.count + (fi % 3 === 1 ? 1 : 12); target.dataset.count = v;
+            target.textContent = v.toLocaleString('fr-FR') + (target.dataset.suffix || ''); target.classList.remove('bump'); void target.offsetWidth; target.classList.add('bump'); }
+        var bs = document.querySelectorAll('#opBars .op-bar i:first-child'), lb = bs[bs.length - 1];
+        if (lb) lb.style.height = Math.min(96, parseFloat(lb.style.height || 80) + 2) + '%';
+    }
+    if (!reduce) { setTimeout(pushToast, 1600); setInterval(pushToast, 3200); }
+
+    /* récit du cycle : l'étape visible pilote l'écran de droite */
+    var sSteps = [].slice.call(document.querySelectorAll('.op-story-step')), screens = [].slice.call(document.querySelectorAll('.op-screen'));
+    function setScreen(i) {
+        sSteps.forEach(function (x, j) { x.classList.toggle('on', j === i); });
+        screens.forEach(function (x, j) { x.classList.toggle('on', j === i); });
+        if (i === 2) document.querySelectorAll('.op-gauge circle.v').forEach(function (c) { c.style.strokeDashoffset = 94.2 * (1 - c.dataset.v / 100); });
+    }
+    if ('IntersectionObserver' in window && sSteps.length) {
+        var sio = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) setScreen(+e.target.dataset.s); }); }, { rootMargin: '-45% 0px -45% 0px' });
+        sSteps.forEach(function (x) { sio.observe(x); });
+    }
+
+    /* avant/avec et démarrage : animés à l'apparition */
+    ['opVs', 'opStart'].forEach(function (id) { var el = document.getElementById(id); if (!el) return;
+        if ('IntersectionObserver' in window) { var o = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { el.classList.add('seen'); o.disconnect(); } }, { threshold: .3 }); o.observe(el); } else el.classList.add('seen'); });
+
+    /* simulateur : configuration conseillée + préremplissage du formulaire */
+    var sp = document.getElementById('simProjets'), su = document.getElementById('simUsers');
+    function sim() {
+        if (!sp) return;
+        var p = +sp.value, u = +su.value, off = document.getElementById('simOffline').checked, imp = document.getElementById('simImport').checked, pl = document.getElementById('simPlaintes').checked;
+        document.getElementById('simProjetsV').textContent = p; document.getElementById('simUsersV').textContent = u;
+        var nom = p <= 2 && u <= 20 ? 'Équipe projet' : (p <= 10 && u <= 120 ? 'Organisation' : 'Institution & réseau');
+        document.getElementById('simReco').textContent = nom;
+        var l = [p + (p > 1 ? ' espaces projet' : ' espace projet'), u + ' comptes utilisateurs avec rôles RACI', 'Tableaux de bord physique, technique et financier'];
+        if (off) l.push('Collecte mobile hors-ligne'); if (imp) l.push('Accompagnement à l\'import de vos fichiers'); if (pl) l.push('Module plaintes et redevabilité');
+        if (p > 10) l.push('Vue portefeuille multi-projets');
+        document.getElementById('simList').innerHTML = l.map(function (x) { return '<li><i class="fa-solid fa-check"></i>' + x.replace(/</g, '&lt;') + '</li>'; }).join('');
+        document.getElementById('cProjets').value = p; document.getElementById('cUsers').value = u;
+        var msg = document.getElementById('cMsg');
+        if (msg && (!msg.value || msg.dataset.auto)) { msg.value = 'Bonjour, nous suivons ' + p + ' projet(s) avec environ ' + u + ' utilisateur(s). Configuration souhaitée : ' + nom + '.'; msg.dataset.auto = '1'; }
+    }
+    if (sp) { [sp, su].forEach(function (x) { x.addEventListener('input', sim); }); ['simOffline', 'simImport', 'simPlaintes'].forEach(function (id) { document.getElementById(id).addEventListener('change', sim); }); sim();
+        var m = document.getElementById('cMsg'); m.addEventListener('input', function () { delete m.dataset.auto; }); }
+
+    /* formulaire : vérification avant envoi, pas de double envoi */
+    var cf = document.getElementById('opContactForm');
+    if (cf) cf.addEventListener('submit', function (e) {
+        if (!cf.checkValidity()) { e.preventDefault(); cf.reportValidity(); return; }
+        var b = cf.querySelector('button[type=submit]'); b.disabled = true; b.innerHTML = 'Envoi en cours…';
+    });
+
+    /* cycle : l'étape active avance seule, s'arrête au survol */
+    var steps = [].slice.call(document.querySelectorAll('#opCycle .op-step')), cur = 0, paused = false;
+    steps.forEach(function (s, i) { s.addEventListener('mouseenter', function () { paused = true; steps.forEach(function (x) { x.classList.toggle('on', x === s); }); cur = i; });
+                                   s.addEventListener('mouseleave', function () { paused = false; }); });
+    setInterval(function () { if (paused) return; cur = (cur + 1) % steps.length; steps.forEach(function (x, i) { x.classList.toggle('on', i === cur); }); }, 2600);
+})();
+</script>
+    {% endblock %}
+
+<!-- ===================== PIED DE PAGE (ajout, commun à toutes les pages publiques) ===================== -->
+<footer class="op-foot" role="contentinfo">
+    <div class="op-wrap">
+        <div class="op-foot-grid">
+            <div class="op-foot-brand">
+                <b>Opera<span>Plus</span></b>
+                <p>La plateforme MEAL qui réunit planification, collecte terrain, indicateurs et redevabilité.</p>
+                <a href="/log_account/" class="op-btn primary" style="height:44px;font-size:14px">Démarrer <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <nav aria-label="Fonctionnalités">
+                <h2>Fonctionnalités</h2>
+                <ul>{% vitrine_fonctionnalites as fl %}{% for f in fl|slice:":5" %}<li><a href="/fonctionnalites/{{ f.slug }}/">{{ f.court }}</a></li>{% endfor %}</ul>
+            </nav>
+            <nav aria-label="Plus de modules">
+                <h2>Modules</h2>
+                <ul>{% for f in fl|slice:"5:" %}<li><a href="/fonctionnalites/{{ f.slug }}/">{{ f.court }}</a></li>{% endfor %}</ul>
+            </nav>
+            <nav aria-label="OperaPlus">
+                <h2>OperaPlus</h2>
+                <ul><li><a href="/a-propos/">À propos</a></li><li><a href="/packages/">Tarifs</a></li><li><a href="/demos/">Demander une démo</a></li><li><a href="/annonces/">Annonces</a></li><li><a href="/securite/">Sécurité des données</a></li></ul>
+            </nav>
+            <nav aria-label="Communauté">
+                <h2>Communauté</h2>
+                <ul><li><a href="{{ MEAL_AFRIQUE }}" rel="noopener">MEAL Afrique</a></li><li><a href="/#contact">Contact</a></li><li><a href="/log_account/">Espace client</a></li></ul>
+            </nav>
+        </div>
+        <div class="op-foot-bottom">
+            <span>© {% now "Y" %} OperaPlus. Tous droits réservés.</span>
+            <nav aria-label="Informations légales"><a href="/mentions-legales/">Mentions légales</a><a href="/confidentialite/">Confidentialité</a><a href="/sitemap.xml">Plan du site</a>
+                <span class="op-lang"><a href="/" hreflang="fr" lang="fr" {% if request.path != "/en/" %}aria-current="true"{% endif %}>FR</a><a href="/en/" hreflang="en" lang="en" {% if request.path == "/en/" %}aria-current="true"{% endif %}>EN</a></span></nav>
+        </div>
+    </div>
+</footer>
+
+<!-- Information cookies : uniquement des cookies techniques, aucun suivi -->
+<div class="op-cookie" id="opCookie" role="region" aria-label="Information sur les cookies">
+    <i class="fa-solid fa-cookie-bite" aria-hidden="true"></i>
+    <div>Ce site utilise uniquement des cookies techniques, nécessaires à la sécurité des formulaires et à la connexion. Aucun suivi publicitaire. <a href="/confidentialite/">En savoir plus</a><br>
+        <button type="button" id="opCookieOk">J'ai compris</button></div>
+</div>
+<script>
+(function () {
+    var k = 'op-cookie-ok', b = document.getElementById('opCookie'); if (!b) return;
+    var vu = false; try { vu = localStorage.getItem(k) === '1'; } catch (e) {}
+    if (!vu) setTimeout(function () { b.classList.add('on'); }, 1500);
+    document.getElementById('opCookieOk').addEventListener('click', function () { b.classList.remove('on'); try { localStorage.setItem(k, '1'); } catch (e) {} });
+})();
+</script>
+
+<style>
+    /* La classe qui définit le rebond */
+    .bounce-transition {
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+</style>
+
+<div class="fixed bottom-6 right-6 z-[99] flex flex-col items-end gap-y-3">
+    <div id="assistance-menu" class="bounce-transition opacity-0 scale-50 pointer-events-none bg-slate-900/95 backdrop-blur-xl border border-slate-800 p-4 rounded-2xl shadow-2xl w-72 flex flex-col gap-y-2 origin-bottom-right">
+        <h4 class="text-xs font-bold uppercase tracking-widest text-emerald-400 border-b border-slate-800 pb-2 mb-1 flex items-center justify-between">
+            Centre de ressources MEAL
+            <span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+        </h4>
+        
+        <a href="#" class="flex items-center gap-x-3 text-xs text-slate-300 hover:text-white py-2 px-2.5 rounded-xl hover:bg-slate-800/60 transition-colors group">
+            <i class="fa-solid fa-book text-emerald-500 text-sm w-4"></i> Documentation Framework
+        </a>
+        <a href="#" class="flex items-center gap-x-3 text-xs text-slate-300 hover:text-white py-2 px-2.5 rounded-xl hover:bg-slate-800/60 transition-colors group">
+            <i class="fa-solid fa-headset text-emerald-500 text-sm w-4"></i> Contacter un Expert
+        </a>
+        <a href="#" class="flex items-center gap-x-3 text-xs text-slate-300 hover:text-white py-2 px-2.5 rounded-xl hover:bg-slate-800/60 transition-colors group">
+            <i class="fa-solid fa-circle-play text-orange-500 text-sm w-4"></i> Études de Cas & Tutoriels
+        </a>
+    </div>
+
+    <button id="assistance-fab" class="h-14 w-14 rounded-full bg-gradient-to-br from-emerald-500 to-orange-500 flex items-center justify-center text-white shadow-xl shadow-slate-950/50 hover:scale-105 active:scale-90 transition-all duration-300" aria-label="Assistance">
+        <i id="fab-icon" class="fa-solid fa-comments text-lg transition-transform duration-500"></i>
+    </button>
+</div>
+
+<script>
+    const fab = document.getElementById('assistance-fab');
+    const menu = document.getElementById('assistance-menu');
+    const icon = document.getElementById('fab-icon');
+
+    fab.addEventListener('click', () => {
+        // Toggle des classes d'état
+        const isClosed = menu.classList.contains('opacity-0');
+        
+        if (isClosed) {
+            // Ouvrir avec rebond
+            menu.classList.remove('opacity-0', 'scale-50', 'pointer-events-none');
+            menu.classList.add('opacity-100', 'scale-100');
+            icon.classList.add('rotate-180');
+            setTimeout(() => {
+                icon.classList.remove('fa-comments');
+                icon.classList.add('fa-xmark');
+            }, 150);
+        } else {
+            // Fermer avec rebond
+            menu.classList.add('opacity-0', 'scale-50', 'pointer-events-none');
+            menu.classList.remove('opacity-100', 'scale-100');
+            icon.classList.remove('rotate-180');
+            setTimeout(() => {
+                icon.classList.add('fa-comments');
+                icon.classList.remove('fa-xmark');
+            }, 150);
+        }
+    });
+</script>
+<style>
+    #canvas-wrapper {
+    width: 100%;
+    height: 500px; /* Assurez-vous d'avoir une hauteur fixe */
+    position: relative;
+}
+</style>
+
+    
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-fullscreen-menu');
+        const line1 = document.getElementById('line-1');
+        const line2 = document.getElementById('line-2');
+        let isMenuOpen = false;
+
+        function toggleMenu() {
+            isMenuOpen = !isMenuOpen;
+            if (isMenuOpen) {
+                mobileMenu.classList.add('mobile-menu-active');
+                line1.style.transform = 'rotate(45deg) translateY(5px)';
+                line2.style.transform = 'rotate(-45deg) translateY(-5px)';
+                document.getElementById('body-root').classList.add('overflow-hidden');
+            } else {
+                mobileMenu.classList.remove('mobile-menu-active');
+                line1.style.transform = 'none';
+                line2.style.transform = 'none';
+                document.getElementById('body-root').classList.remove('overflow-hidden');
+            }
+        }
+
+        mobileBtn.addEventListener('click', toggleMenu);
+        
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => { if(isMenuOpen) toggleMenu(); });
+        });
+
+        const fabBtn = document.getElementById('assistance-fab');
+        const assistanceMenu = document.getElementById('assistance-menu');
+        const fabIcon = document.getElementById('fab-icon');
+        let isFabOpen = false;
+
+        fabBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isFabOpen = !isFabOpen;
+            if (isFabOpen) {
+                assistanceMenu.classList.add('assistance-menu-active');
+                fabIcon.className = 'fa-solid fa-xmark text-lg rotate-90';
+            } else {
+                assistanceMenu.classList.remove('assistance-menu-active');
+                fabIcon.className = 'fa-solid fa-comments text-lg';
+            }
+        });
+
+        window.addEventListener('click', () => {
+            if (isFabOpen) {
+                isFabOpen = false;
+                assistanceMenu.classList.remove('assistance-menu-active');
+                fabIcon.className = 'fa-solid fa-comments text-lg';
+            }
+        });
+    </script>
+  <script>
+    let scene, camera, renderer, globeGroup, pointsMesh;
+    let time = 0;
+    const wrapper = document.getElementById('canvas-wrapper');
+
+    function initGlobe() {
+        if (!wrapper) return;
+        
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 1, 1000);
+        camera.position.z = 250; 
+
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+        wrapper.appendChild(renderer.domElement);
+
+        globeGroup = new THREE.Group();
+        scene.add(globeGroup);
+
+        const radius = 75;
+        const dotCount = 3000;
+        const positions = [], colors = [], directions = [];
+
+        for (let i = 0; i < dotCount; i++) {
+            const phi = Math.acos(-1 + (2 * i) / dotCount);
+            const theta = Math.sqrt(dotCount * Math.PI) * phi;
+            const x = radius * Math.sin(phi) * Math.cos(theta);
+            const y = radius * Math.sin(phi) * Math.sin(theta);
+            const z = radius * Math.cos(phi);
+
+            const lat = (phi * 180 / Math.PI) - 90;
+            const lon = (theta * 180 / Math.PI) % 360 - 180;
+            const isLand = (lon > -22 && lon < 52 && lat > -35 && lat < 70) || (lon >= 52 && lon < 145 && lat > -12 && lat < 75) || (lon > -120 && lon < -34 && lat > -55 && lat < 18);
+
+            if (isLand) {
+                positions.push(x, y, z);
+                // On stocke la direction de chaque point (vers l'extérieur)
+                const norm = Math.sqrt(x*x + y*y + z*z);
+                directions.push(x/norm, y/norm, z/norm);
+                
+                const isAmber = (lon > -12 && lon < 45 && lat > -30 && lat < 35);
+                colors.push(isAmber ? 0.96 : 0.06, isAmber ? 0.62 : 0.72, isAmber ? 0.04 : 0.50);
+            }
+        }
+
+        const dotGeometry = new THREE.BufferGeometry();
+        dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        // On garde la position originale pour la reconstitution
+        dotGeometry.setAttribute('originalPosition', new THREE.Float32BufferAttribute(positions, 3));
+        dotGeometry.setAttribute('direction', new THREE.Float32BufferAttribute(directions, 3));
+
+        pointsMesh = new THREE.Points(dotGeometry, new THREE.PointsMaterial({ 
+            size: 1.8, vertexColors: true, transparent: true, opacity: 0.8 
+        }));
+        globeGroup.add(pointsMesh);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+            
+            // L'effet d'explosion est basé sur une onde sinusoïdale
+            // 0 = Globe formé, 1 = Globe explosé
+            const progress = (Math.sin(time * 0.5) + 1) / 2; 
+            const explosionForce = progress * 60; // Distance de dispersion
+
+            const pos = pointsMesh.geometry.attributes.position;
+            const orig = pointsMesh.geometry.attributes.originalPosition;
+            const dir = pointsMesh.geometry.attributes.direction;
+
+            for (let i = 0; i < pos.count; i++) {
+                pos.setX(i, orig.getX(i) + dir.getX(i) * explosionForce);
+                pos.setY(i, orig.getY(i) + dir.getY(i) * explosionForce);
+                pos.setZ(i, orig.getZ(i) + dir.getZ(i) * explosionForce);
+            }
+            pos.needsUpdate = true;
+            
+            globeGroup.rotation.y += 0.005;
+            renderer.render(scene, camera);
+        }
+        animate();
+    }
+    window.addEventListener("load", initGlobe);
+</script>
+<!-- ===== Correctif (ajout) : un seul état pour le centre de ressources ===== -->
+<script>
+    (function () {
+        /* Les transitions ne sont activées qu'une fois la page affichée */
+        window.addEventListener('load', function () { requestAnimationFrame(function () { document.documentElement.classList.add('op-ready'); }); });
+
+        /* Deux gestionnaires se disputaient le bouton : l'état de référence est la classe assistance-menu-active.
+           On réaligne l'autre jeu de classes et l'icône après chaque clic. */
+        var fabB = document.getElementById('assistance-fab'), menuB = document.getElementById('assistance-menu'), iconB = document.getElementById('fab-icon');
+        if (!fabB || !menuB || !iconB) return;
+        function sync() {
+            var open = menuB.classList.contains('assistance-menu-active');
+            menuB.classList.toggle('opacity-0', !open); menuB.classList.toggle('scale-50', !open); menuB.classList.toggle('pointer-events-none', !open);
+            menuB.classList.toggle('opacity-100', open); menuB.classList.toggle('scale-100', open);
+            iconB.className = open ? 'fa-solid fa-xmark text-lg rotate-90 transition-transform duration-500' : 'fa-solid fa-comments text-lg transition-transform duration-500';
+            fabB.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        window.addEventListener('click', function () { setTimeout(sync, 160); }, true);   // capture : vu même si le bouton bloque la propagation
+        menuB.addEventListener('click', function (e) { e.stopPropagation(); });   // cliquer dans le menu ne le ferme pas
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && menuB.classList.contains('assistance-menu-active')) { fabB.click(); }
+        });
+        sync();
+    })();
+</script>
+</body>
+</html>

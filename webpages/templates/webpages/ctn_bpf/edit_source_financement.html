@@ -1,0 +1,41 @@
+{% extends './index.html' %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4 p-md-5">
+            <div class="text-center mb-4">
+                <h5 class="fw-bold text-primary">Mise à Jour Source de Financement</h5>
+                <hr class="w-25 mx-auto mt-3 mb-4 border-primary">
+            </div>
+
+            <form method="POST" action="/update_source_financement/">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="code" class="form-label text-secondary">Code</label>
+                        <input type="text" class="form-control form-control-lg" value="{{source_financement.sigle}}" id="code" name="code" placeholder="Entrez le code" required>
+                    </div>
+                    <input type="hidden" class="form-control form-control-lg" value="{{source_financement.id}}"  name="id" placeholder="Entrez le code" required>
+
+                    <div class="col-md-6">
+                        <label for="libelle" class="form-label text-secondary">Libellé</label>
+                        <input type="text" class="form-control form-control-lg" value="{{source_financement.nom}}" id="libelle" name="libelle" placeholder="Entrez le libellé" required>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label for="description" class="form-label text-secondary">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="4" placeholder="Ajoutez une description" value="{{source_financement.description}}"></textarea>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                        <i class="fas fa-save me-2"></i>Mise a Jour
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

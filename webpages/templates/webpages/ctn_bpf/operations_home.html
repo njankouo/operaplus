@@ -1,0 +1,4062 @@
+<style>
+    #chartdiv {
+      width: 100%;
+      height: 310px;
+    }
+    </style>
+
+{% extends './index.html' %}
+{% load static %}
+<script src="{%static 'highchart/highcharts.js'%}"></script>
+
+{% block extra_header %}
+<link href="{% static 'webpages/ctn_bpf/barometer.css' %}" rel="stylesheet" type="text/css">
+
+<!-- ===================== CHARTE 60 / 30 / 10 (ajout) ===================== -->
+<style>
+    :root {
+        --nav-bg-color:   {{ request.user.personnel.color_fond|default:'#1e293b' }};   /* DOMINANTE 60 % */
+        --primary-color:  {{ request.user.personnel.color|default:'#4361ee' }};        /* ACCENT 30 %    */
+        --tertiary-color: {{ request.user.personnel.color_tiers|default:'#FACC15' }};  /* TOUCHE 10 %    */
+        --nav-ink: #FFFFFF; --accent-ink: #FFFFFF;
+        --sbx-ok: #2A8A7D; --sbx-warn: #E48B0C; --sbx-danger: #E35A33;
+        --sbx-radius: 18px;
+        --sbx-shadow: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -18px rgba(15,23,42,.30);
+    }
+
+    /* ---- Fond de page teinté par la dominante ---- */
+    body { background-color: color-mix(in srgb, var(--nav-bg-color) 7%, #f8fafc) !important; }
+
+    /* ---- Bandeau d'en-tête : la dominante s'impose ---- */
+    #main_content .section_canver > div.rounded-1:first-child {
+        background-color: var(--nav-bg-color) !important;
+        border-radius: 24px !important; padding: 26px 30px 22px !important; margin: 8px 0 18px;
+        border-bottom: 5px solid var(--tertiary-color);
+        box-shadow: 0 18px 40px -22px var(--nav-bg-color);
+    }
+    #main_content .section_canver > div.rounded-1:first-child h5 {
+        color: var(--nav-ink) !important; font-size: 1.65rem !important; font-weight: 800 !important;
+        letter-spacing: -.01em; border-bottom: 0 !important; margin: 0 !important; padding: 0 !important; line-height: 1.25;
+    }
+    #main_content .section_canver > div.rounded-1:first-child h5 small {
+        display: inline-flex; align-items: center; gap: 8px; margin-top: 12px;
+        font-size: .95rem !important; font-weight: 700; letter-spacing: 0; text-transform: none;
+        color: var(--accent-ink) !important; background: var(--primary-color);
+        padding: 6px 14px; border-radius: 999px;
+    }
+
+    /* ---- Cartes : sobres, ombre douce, liseré dominante ---- */
+    #main_content .card {
+        border: 1px solid color-mix(in srgb, var(--nav-bg-color) 12%, #e5e7eb) !important;
+        border-radius: var(--sbx-radius) !important; box-shadow: var(--sbx-shadow) !important; background: #fff;
+    }
+    #main_content .card[style*="borderGlow"] {
+        animation: none !important; border: 0 !important;
+        border-top: 6px solid var(--nav-bg-color) !important;
+        box-shadow: 0 1px 2px rgba(15,23,42,.05), 0 18px 40px -20px color-mix(in srgb, var(--nav-bg-color) 60%, transparent) !important;
+    }
+    #main_content .card .chart-title {
+        color: var(--nav-bg-color) !important; font-weight: 800 !important; font-size: 1.05rem !important;
+        text-transform: none; position: relative; padding-bottom: 12px;
+    }
+    html.sbx-light-dom #main_content .card .chart-title { color: color-mix(in srgb, var(--nav-bg-color) 35%, #111) !important; }
+    #main_content .card .chart-title::after {
+        content: ""; position: absolute; left: 50%; bottom: 0; width: 44px; height: 4px; border-radius: 4px;
+        transform: translateX(-50%); background: var(--tertiary-color);
+    }
+    #main_content .card .chart-title i { color: var(--primary-color); margin-right: 6px; }
+    #main_content .card-header {
+        background: var(--nav-bg-color) !important; color: var(--nav-ink) !important;
+        border-bottom: 3px solid var(--tertiary-color) !important;
+    }
+    #main_content .card-header .text-light, #main_content .card-header h4 { color: var(--nav-ink) !important; }
+    #main_content .value-display { color: var(--primary-color) !important; }
+
+    /* ---- Titre de section "Gestionnaire" ---- */
+    #main_content h2.text-uppercase { color: var(--nav-bg-color) !important; letter-spacing: .02em !important; }
+    html.sbx-light-dom #main_content h2.text-uppercase { color: color-mix(in srgb, var(--nav-bg-color) 35%, #111) !important; }
+    #main_content .title-underline { background: var(--tertiary-color) !important; height: 4px !important; border-radius: 4px; }
+
+    /* ---- Cartes des gestionnaires ---- */
+    #main_content .card-container { background: transparent !important; gap: 20px !important; }
+    #main_content .card-item {
+        background: var(--nav-bg-color) !important; border-radius: 20px !important;
+        box-shadow: 0 16px 34px -20px var(--nav-bg-color) !important;
+        border-bottom: 5px solid var(--tertiary-color);
+    }
+    #main_content .card-item .card-header { border-bottom: 1px solid color-mix(in srgb, var(--nav-ink) 15%, transparent) !important; }
+    #main_content .card-item .card-title { font-size: 1rem; font-weight: 800; color: var(--nav-ink) !important; text-shadow: none !important; }
+    #main_content .card-item .info-item {
+        background: color-mix(in srgb, var(--nav-ink) 9%, transparent) !important;
+        border-left: 4px solid var(--primary-color) !important; border-radius: 12px !important;
+    }
+    #main_content .card-item .info-label, #main_content .card-item .info-value,
+    #main_content .card-item .text-light { color: var(--nav-ink) !important; }
+    #main_content .card-item .info-label { opacity: .8; font-size: .8rem !important; letter-spacing: .04em; }
+    #main_content .card-item .info-value { font-weight: 800 !important; }
+
+    /* ---- Boutons et statuts ---- */
+    .btn-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; color: var(--accent-ink) !important; border-radius: 12px; }
+    .btn-primary:hover { filter: brightness(.92); }
+    .btn-success { background-color: var(--sbx-ok) !important; border-color: var(--sbx-ok) !important; }
+    .btn-warning { background-color: var(--sbx-warn) !important; border-color: var(--sbx-warn) !important; color: #fff !important; }
+    #main_content .text-success { color: var(--sbx-ok) !important; }
+    #main_content .text-warning { color: var(--sbx-warn) !important; }
+    #main_content .text-danger { color: var(--sbx-danger) !important; }
+
+    /* ---- Panneau "Configuration Interface" et fenêtres ---- */
+    #offcanvasSettings .offcanvas-header { background: var(--nav-bg-color) !important; color: var(--nav-ink) !important; border-bottom: 4px solid var(--tertiary-color); }
+    #offcanvasSettings .offcanvas-header .text-info { color: var(--tertiary-color) !important; }
+    html.sbx-light-dom #offcanvasSettings .btn-close-white { filter: none; }
+    .modal-header { border-top: 5px solid var(--nav-bg-color); }
+
+    /* ---- Dominante claire : textes blancs passés en foncé ---- */
+    html.sbx-light-dom #main_content [style*="background"] .text-light,
+    html.sbx-light-dom #main_content [style*="background"].text-light { color: #111 !important; }
+
+    /* ---- Associations (panneau) ---- */
+    .sbx-roles { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .sbx-role { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #475569; background: #f1f5f9; border-radius: 999px; padding: 4px 10px; }
+    .sbx-role i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .sbx-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-height: 320px; overflow-y: auto; padding: 2px; }
+    .sbx-preset { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px; border: 2px solid #e2e8f0; border-radius: 14px; background: #fff; cursor: pointer; transition: border-color .15s, transform .15s; }
+    .sbx-preset:hover { border-color: #94a3b8; transform: translateY(-1px); }
+    .sbx-preset.is-on { border-color: #0f172a; }
+    .sbx-preset-swatch { display: flex; width: 100%; height: 34px; border-radius: 8px; overflow: hidden; }
+    .sbx-preset-swatch span:nth-child(1) { flex: 6; } .sbx-preset-swatch span:nth-child(2) { flex: 3; } .sbx-preset-swatch span:nth-child(3) { flex: 1; }
+    .sbx-preset-name { font-size: 11px; font-weight: 700; color: #334155; text-align: center; line-height: 1.2; }
+
+    @media (prefers-reduced-motion: reduce) { #main_content .title-underline { animation: none !important; } }
+</style>
+<script>
+    /* Couleur de texte lisible selon la clarté de la dominante et de l'accent */
+    (function () {
+        function ink(hex) {
+            var h = String(hex || '#000').trim().replace('#', '');
+            if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+            var c = [0, 2, 4].map(function (i) { var v = parseInt(h.substr(i, 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+            return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) > 0.42 ? '#111111' : '#FFFFFF';
+        }
+        window.sbxInk = ink;
+        window.sbxApplyInk = function () {
+            var cs = getComputedStyle(document.documentElement), r = document.documentElement.style;
+            var dom = cs.getPropertyValue('--nav-bg-color'), acc = cs.getPropertyValue('--primary-color');
+            r.setProperty('--nav-ink', ink(dom)); r.setProperty('--accent-ink', ink(acc));
+            document.documentElement.classList.toggle('sbx-light-dom', ink(dom) === '#111111');
+        };
+        window.sbxApplyInk();
+
+        /* Couleurs par défaut des graphiques : dominante, accent, touche, puis statuts */
+        function palette() {
+            var cs = getComputedStyle(document.documentElement);
+            return ['--nav-bg-color', '--primary-color', '--tertiary-color', '--sbx-ok', '--sbx-warn', '--sbx-danger']
+                .map(function (v) { return cs.getPropertyValue(v).trim(); });
+        }
+        window.Apex = window.Apex || {}; window.Apex.colors = palette();          // ApexCharts sans couleurs imposées
+
+        /* Highcharts : palette par défaut dès que la bibliothèque est chargée */
+        var hc;
+        if (window.Highcharts) { try { window.Highcharts.setOptions({ colors: palette() }); } catch (e) {} }
+        else try {
+            Object.defineProperty(window, 'Highcharts', {
+                configurable: true,
+                get: function () { return hc; },
+                set: function (v) { hc = v; try { v && v.setOptions && v.setOptions({ colors: palette() }); } catch (e) {} }
+            });
+        } catch (e) {}
+
+        /* ECharts : remplace les 3 couleurs codées en dur Planifié / Déclaré / Validé */
+        var ec;
+        function patchEcharts(v) {
+            if (!v || !v.init || v.__sbx) return;
+            v.__sbx = true;
+            var init = v.init;
+            v.init = function () {
+                var chart = init.apply(this, arguments), set = chart.setOption;
+                chart.setOption = function (opt) {
+                    try {
+                        var p = palette(), map = { '#2196f3': p[2], '#ff9800': p[1], '#4caf50': p[0] };
+                        (function walk(o) {
+                            if (!o || typeof o !== 'object') return;
+                            Object.keys(o).forEach(function (k) {
+                                var x = o[k];
+                                if (typeof x === 'string' && map[x.toLowerCase()]) o[k] = map[x.toLowerCase()];
+                                else if (x && typeof x === 'object') walk(x);
+                            });
+                        })(opt);
+                    } catch (e) {}
+                    return set.apply(this, arguments);
+                };
+                return chart;
+            };
+        }
+        if (window.echarts) patchEcharts(window.echarts);
+        else try {
+            Object.defineProperty(window, 'echarts', {
+                configurable: true,
+                get: function () { patchEcharts(ec); return ec; },   // la bibliothèque se remplit après l'affectation
+                set: function (v) { ec = v; }
+            });
+        } catch (e) {}
+    })();
+</script>
+<!-- ===================== FIN CHARTE ===================== -->
+{% endblock %}
+{% block content %}
+
+
+
+
+
+<div id='main_content' {% if permissions == 0 %} class='d-flex' style="flex-direction: column-reverse;" {% endif %}>
+    
+    
+    {% if permissions > 0 %}
+    
+    <div class="pl-2 mb-3 d-none">
+        <div class="h5 title_div" style="width:99%;border-bottom:1Px solid #aaa;color:#aaa;font-family:quartz">Informations G&eacute;n&eacute;rales - {{actual_institution}} </div>
+
+    </div>
+    <div style="display:none;"  class="mt-4 mb-5">
+        <div class="h4">
+            Evolution - {{type_entity}}
+        </div>
+        <div id="myChartpro_block" style="min-height:300px;" class="flex-wrap d-flex">
+        </div>
+    </div>
+    
+      <div class="btn-group">
+    
+
+
+      </div>
+
+    <div  class="justify-content-center row ">
+        <div style="" class="col-lg-12 col-md-12 col-12 bg-lightgreen">
+            <div class='section_canver pt-1 col-12 col-lg-12'>
+                <div style="background-color: {{request.user.personnel.color_fond}};" class="rounded-1">
+                    
+            
+                <h5 class="text-light fw-bold mb-4 p-2 border-bottom border-3 border-light animate__fadeInSlideUp" style="text-transform: capitalize;">
+                    {% if request.user.personnel.is_finance %}
+                      Tableau de bord finance {{ actual_institution.nom }} <br/>
+                     <small class='text-light ' style="font-family: MaPolicePerso">taux d'execution financier: {{actual_institution.taux_financier_valide}}%</small>
+
+                    {% elif request.user.personnel.is_process %}
+                      Tableau de bord process {{ actual_institution.nom }}<br/>
+                         <small class="text-light " style="font-family: MaPolicePerso">taux d'execution physique: {{actual_institution.process_valid}}%</small>
+                
+
+
+                      {% elif request.user.personnel.is_technic %}
+                      Tableau de bord technique {{ actual_institution.nom }}<br/>
+
+                     
+                         <small class="text-light " style="font-family: MaPolicePerso">taux d'execution technique:  <span id='performance-global'></span></small>
+                      
+                    {% endif %}
+                </h5>
+                    </div>
+                <style>
+                    @keyframes fadeInSlideUp {
+                        from {
+                            opacity: 0;
+                            transform: translateY(20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+
+                    .animate__fadeInSlideUp {
+                        animation: fadeInSlideUp 0.8s ease-in-out forwards;
+                    }
+                </style>
+{%if actual_institution.ponderation%}
+<style>
+
+    .card {
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border-radius: 12px;
+        overflow: hidden;
+        border: none;
+    }
+    .card-header {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        color: white;
+        border-bottom: none;
+        font-weight: 600;
+        padding: 1rem;
+    }
+    .card-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.5em 0.75em;
+        border-radius: 50px;
+        font-weight: 500;
+    }
+    .value-display {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2575fc;
+        margin-top: 0.5rem;
+    }
+</style>
+<div class="row" data-aos="fade-up">
+    {% if request.user.personnel.is_process %}
+        <div class="col-md-8">
+            <div class='card my-4' style='
+                border: 2px solid {{request.user.personnel.color_fond}};
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 0 10px {{request.user.personnel.color_fond}}, 0 0 20px {{request.user.personnel.color_fond}};
+                animation: borderGlow 3s infinite alternate;
+            '>
+                <div class="card-body">
+                    <h5 class="chart-title" style="text-align: center; color: {{request.user.personnel.color}}; font-weight: 600; margin-bottom: 20px;">
+                           
+                           
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                       
+                        </a>
+                        <i class="fas fa-chart-line"></i> Taux D'execution Physique validé
+                    </h5>
+                    <div id="chartdiv" class="text-light"></div>
+                </div>
+                <div style='
+                    position: absolute;
+                    top: -50%;
+                    left: -50%;
+                    width: 200%;
+                    height: 200%;
+                '></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+                    <div class="card my-4">
+                        <div class="card-body">
+                            
+                         <h5 class="chart-title" style="text-align: center; color: {{request.user.personnel.color}}; font-weight: 600; margin-bottom: 20px;">
+                        <i class="fas fa-chart-line"></i> Taux D'execution Physique Declar&eacute;
+                    </h5>
+                    <div id="chartdivs" style="height: 20%;" class="my-4 mx-5"></div>
+                    </div>
+                        
+                    </div>
+              
+        </div>
+    {% endif %}
+
+
+
+    <div class="row" data-aos="fade-up">
+    {% if request.user.personnel.is_technic %}
+        <div class="col-md-8">
+            <div class='card my-4' style='
+                border: 2px solid {{request.user.personnel.color_fond}};
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 0 10px {{request.user.personnel.color_fond}}, 0 0 20px {{request.user.personnel.color_fond}};
+                animation: borderGlow 3s infinite alternate;
+            '>
+                <div class="card-body">
+                    <h5 class="chart-title" style="text-align: center; color: {{request.user.personnel.color}}; font-weight: 600; margin-bottom: 20px;">
+                        <i class="fas fa-chart-line"></i> Taux D'execution  Technique
+                    </h5>
+                    <!-- <div id="chartdiv" class="text-light"></div> -->
+                     <div id="chartdiv_technic" style="width: 100%; height: 250px;"></div>
+                 
+                </div>
+
+    <div id="legendContainer">
+        </div>
+                <div style='
+                    position: absolute;
+                    top: -50%;
+                    left: -50%;
+                    width: 200%;
+                    height: 200%;
+                '></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+                    <div class="card my-4" style="height: 90%;">
+                        <div class="card-body">
+                      
+                    <!-- <div id="chartdivs" style="height: 700%;" class="my-4 mx-5"></div> -->
+                    <canvas id="taux_execution_technique" ></canvas>
+                    
+                    </div>
+                        
+                    </div>
+              
+        </div>
+    {% endif %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+<style>
+    /* --- Légende améliorée --- */
+    #legendContainer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 15px;
+        font-family: "Roboto", sans-serif;
+        font-size: 0.95em;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #f8f8f8;
+        padding: 6px 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .legend-color-box {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 1px solid #ccc;
+    }
+</style>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+  
+ 
+<script src="https://cdn.amcharts.com/lib/4/core.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
+<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
+    {% if request.user.personnel.is_finance %}
+        <div class="col-md-8">
+            <div class='card my-4' style='
+                border: 2px solid {{request.user.personnel.color_fond}};
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 0 10px {{request.user.personnel.color_fond}}, 0 0 20px {{request.user.personnel.color_fond}};
+                animation: borderGlow 3s infinite alternate;
+            '>
+                <div class="card-body">
+                    <h5 class="chart-title" style="text-align: center; color: {{request.user.personnel.color}}; font-weight: 600; margin-bottom: 20px;">
+                        <i class="fas fa-coins"></i> Taux D'execution Financier validé
+                    </h5>
+                    <div id="chart_finance" class="text-light"></div>
+                </div>
+                <div style='
+                    position: absolute;
+                    top: -50%;
+                    left: -50%;
+                    width: 200%;
+                    height: 200%;
+                '></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card my-4" style="border-color: {{request.user.personnel.color_fond}};" >
+                <div class="card-body">
+                     <h5 class="chart-title" style="text-align: center; color: {{request.user.personnel.color}}; font-weight: 600; margin-bottom: 20px;">
+                        <i class="fas fa-coins"></i> Taux D'execution Financier Declar&eacute;
+                    </h5>
+                    <div id="chart_finance_declare" style="height: 700%;" class="my-4"></div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+<!-- <div class="execution-rate-display">
+<div class="execution-rate-content">
+<span class="execution-rate-label"  style="font-family:MaPolicePerso">{%if request.user.personnel.is_process%}TAUX D'EXÉCUTION PHYSIQUE (TEP){%elif request.user.personnel.is_finance%}TAUX D'EXÉCUTION FINANCIER (TEF){%else%}---{%endif%}</span>
+<span class="execution-rate-value">
+    <label><small> Progression G&eacute;n&eacute;ral</small>   :{%if request.user.personnel.is_process%}{{actual_institution.process_valid}}  {%elif request.user.personnel.is_finance%}{{actual_institution.taux_financier_valide}} {%else%}----{%endif%}</label> <label class="{% if actual_progression < 25 %} text-danger {% elif actual_progression < 75 %} text-warning {% else %} text-success {% endif %}">  </label>{%endif%}
+
+    <span class="percent-symbol">%</span></span>
+</div>
+<div class="execution-rate-progress">
+<div class="progress-bar" style="width: {{actual_institution.process|default:'0'}}%"></div>
+</div>
+</div> -->
+
+<style>
+#chartdivs {
+  width: 80%;
+  height: 500px;
+}
+#chart_finance{
+
+  width: 100%;
+  height: 310px;
+}
+
+</style>
+<style>
+.execution-rate-display {
+background: {{request.user.personnel.color_fond}};
+border-radius: 16px;
+padding: 24px;
+box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+position: relative;
+overflow: hidden;
+border: 1px solid rgba(255, 255, 255, 0.1);
+width:98%;
+}
+
+.execution-rate-display::before {
+content: '';
+position: absolute;
+top: -50%;
+left: -50%;
+width: 200%;
+height: 200%;
+background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+animation: rotate 15s linear infinite;
+}
+
+.execution-rate-content {
+position: relative;
+z-index: 2;
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
+
+.execution-rate-label {
+font-family: 'Montserrat', sans-serif;
+font-size: 14px;
+font-weight: 700;
+letter-spacing: 2px;
+text-transform: uppercase;
+color: rgba(255, 255, 255, 0.7);
+margin-bottom: 4px;
+}
+
+.execution-rate-value {
+font-family: 'Poppins', sans-serif;
+font-size: 48px;
+font-weight: 800;
+color: #fff;
+line-height: 1;
+display: flex;
+align-items: flex-start;
+}
+
+.percent-symbol {
+font-size: 24px;
+font-weight: 600;
+margin-left: 2px;
+opacity: 0.8;
+}
+
+.execution-rate-progress {
+position: relative;
+height: 6px;
+background: rgba(255, 255, 255, 0.1);
+border-radius: 3px;
+margin-top: 20px;
+overflow: hidden;
+}
+
+.progress-bar {
+height: 100%;
+background: linear-gradient(90deg, #3a7bd5 0%, #00d2ff 100%);
+border-radius: 3px;
+transition: width 1s ease-out;
+position: relative;
+}
+
+.progress-bar::after {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: linear-gradient(90deg,
+transparent 0%,
+rgba(255,255,255,0.3) 50%,
+transparent 100%);
+animation: shine 2s infinite;
+}
+
+@keyframes rotate {
+from { transform: rotate(0deg); }
+to { transform: rotate(360deg); }
+}
+
+@keyframes shine {
+0% { transform: translateX(-100%); }
+100% { transform: translateX(100%); }
+}
+</style>
+
+
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/modules/export-data.js"></script>
+<script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
+
+
+    <style>
+        @keyframes borderGlow {
+            0% {
+                box-shadow: 0 0 10px {{request.user.personnel.color_fond}}, 0 0 20px {{request.user.personnel.color}};
+            }
+            100% {
+                box-shadow: 0 0 20px {{request.user.personnel.color_fond}}, 0 0 40px {{request.user.personnel.color}}, 0 0 60px {{request.user.personnel.color}};
+            }
+        }
+
+        @keyframes shine {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+            }
+        }
+    </style>
+
+                <div class="card-footer">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <span class="badge bg-danger">0-50%</span>
+                        </div>
+                        <div class="col-4">
+                            <span class="badge bg-warning">50-80%</span>
+                        </div>
+                        <div class="col-4">
+                            <span class="badge bg-success">80-100%</span>
+                        </div>
+                    </div>
+
+
+
+
+
+<script>
+    am4core.ready(function() {
+        // Appliquer les thèmes
+        am4core.useTheme(am4themes_animated);
+
+        // Créer une instance de graphique
+        var chart = am4core.create("chartdiv", am4charts.GaugeChart);
+        chart.hiddenState.properties.opacity = 0;
+        chart.innerRadius = am4core.percent(60);
+        chart.responsive.enabled = true;
+        chart.padding(20, 20, 20, 20);
+
+        // Créer un axe de valeur
+        var axis = chart.xAxes.push(new am4charts.ValueAxis());
+        axis.min = 0;
+        axis.max = 100;
+        axis.strictMinMax = true;
+
+        // Simplifier le style de l'axe
+        axis.renderer.axisFills.template.disabled = true;
+        axis.renderer.ticks.template.disabled = true;
+        axis.renderer.labels.template.fontSize = 10;
+        axis.renderer.grid.template.strokeOpacity = 0.05;
+        axis.renderer.line.strokeOpacity = 0.5;
+        axis.renderer.line.strokeWidth = 2;
+        axis.renderer.line.stroke = am4core.color("#ffffff");
+
+        // Palette de couleurs
+        var colors = {
+            critique: "#e76f51",
+            faible: "#f4a261",
+            moyen: "#2a9d8f",
+            acceptable: "#264653"
+        };
+
+        // Créer des plages de couleurs
+        function createRange(axis, start, end, color) {
+            var range = axis.axisRanges.create();
+            range.value = start;
+            range.endValue = end;
+            range.axisFill.fillOpacity = 1;
+            range.axisFill.fill = am4core.color(color);
+            range.axisFill.zIndex = -1;
+            range.label.disabled = true;
+            return range;
+        }
+
+        createRange(axis, 0, 20, colors.critique);
+        createRange(axis, 20, 40, colors.faible);
+        createRange(axis, 40, 80, colors.moyen);
+        createRange(axis, 80, 100, colors.acceptable);
+
+        // Créer l'aiguille
+        var hand = chart.hands.push(new am4charts.ClockHand());
+        hand.radius = am4core.percent(90);
+        hand.startWidth = 15;
+        hand.pin.radius = 12;
+        hand.pin.disabled = false;
+        hand.fill = am4core.color("{{request.user.personnel.color}}");
+        hand.stroke = am4core.color("{{request.user.personnel.color}}");
+        hand.pin.fill = am4core.color("{{request.user.personnel.color}}");
+
+        // Ajouter le label de valeur centrale
+        var label = chart.radarContainer.createChild(am4core.Label);
+        label.horizontalCenter = "middle";
+        label.verticalCenter = "bottom";
+        label.fontSize = 40;
+        label.fontWeight = "bold";
+        label.dy = 50;
+        label.fill = am4core.color("{{request.user.personnel.color}}");
+
+        // Ajouter le label de description
+        var descLabel = chart.radarContainer.createChild(am4core.Label);
+        descLabel.text = "Niveau d'exécution";
+        descLabel.horizontalCenter = "middle";
+        descLabel.verticalCenter = "bottom";
+        descLabel.fontSize = 16;
+        descLabel.fontWeight = "normal";
+        descLabel.dy = 15;
+        descLabel.fill = am4core.color("{{request.user.personnel.color}}");
+
+        // Créer la légende
+        var legend = new am4charts.Legend();
+        legend.parent = chart.chartContainer;
+        // legend.data = [
+        //     { name: "Critique (0-20%)", fill: am4core.color(colors.critique) },
+        //     { name: "Faible (20-40%)", fill: am4core.color(colors.faible) },
+        //     { name: "Moyen (40-80%)", fill: am4core.color(colors.moyen) },
+        //     { name: "Acceptable (80-100%)", fill: am4core.color(colors.acceptable) }
+        // ];
+        legend.itemContainers.template.togglable = false;
+        legend.labels.template.fill = am4core.color("{{request.user.personnel.color}}");
+        legend.valueLabels.template.fill = am4core.color("{{request.user.personnel.color}}");
+        legend.markers.template.width = 20;
+        legend.markers.template.height = 20;
+
+        // Positionnement de la légende
+        legend.align = "center";
+        legend.valign = "top";
+        legend.marginTop = 20;
+        legend.contentAlign = "center";
+
+        // Fonction pour mettre à jour le graphique
+        function updateChart(value) {
+            let niveauExecution = value;
+            hand.showValue(niveauExecution, 1500, am4core.ease.cubicOut);
+            label.text = niveauExecution.toFixed(1) + "%";
+
+            if (niveauExecution < 20) {
+                label.fill = am4core.color(colors.critique);
+            } else if (niveauExecution < 40) {
+                label.fill = am4core.color(colors.faible);
+            } else if (niveauExecution < 80) {
+                label.fill = am4core.color(colors.moyen);
+            } else {
+                label.fill = am4core.color(colors.acceptable);
+            }
+        }
+
+        // Fonction pour récupérer les données de l'API Django
+        function fetchData() {
+            const url = "/api/process_valid/";
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Données reçues :', data);
+                if (data.status === 'success' && data.data !== undefined) {
+                    updateChart(data.data);
+                } else {
+                    console.error("Format de données invalide de l'API :", data);
+                    updateChart(0);
+                }
+            })
+            .catch(error => {
+                console.error("Erreur lors de la récupération des données :", error);
+                updateChart(0);
+            });
+        }
+
+        // Initialisation
+        fetchData();
+       
+        chart.appear(1500, 100);
+
+        window.addEventListener('resize', function() {
+            chart.invalidateSize();
+        });
+    });
+</script>
+<script>
+    am4core.ready(function() {
+        // Appliquer les thèmes
+        am4core.useTheme(am4themes_animated);
+
+        // Créer une instance de graphique
+        var chart = am4core.create("chart_finance", am4charts.GaugeChart);
+        chart.hiddenState.properties.opacity = 0;
+        chart.innerRadius = am4core.percent(70); // Augmenté pour un design plus épuré
+        chart.responsive.enabled = true;
+        chart.padding(15, 15, 15, 15); // Padding réduit pour maximiser l'espace utile
+
+        // Ajouter un fond arrondi au conteneur du graphique
+        chart.background.cornerRadius = 15;
+        chart.background.fill = am4core.color("#f8f9fa");
+        chart.background.fillOpacity = 0.7;
+        chart.background.stroke = am4core.color("{{request.user.personnel.color}}");
+        chart.background.strokeOpacity = 0.2;
+        chart.background.strokeWidth = 1;
+
+        // Créer un axe de valeur
+        var axis = chart.xAxes.push(new am4charts.ValueAxis());
+        axis.min = 0;
+        axis.max = 100;
+        axis.strictMinMax = true;
+
+        // Amélioration du style de l'axe
+        axis.renderer.axisFills.template.disabled = true;
+        axis.renderer.ticks.template.disabled = true;
+        axis.renderer.labels.template.fontSize = 11;
+        axis.renderer.labels.template.fill = am4core.color("#495057");
+        axis.renderer.labels.template.fontWeight = "500";
+        axis.renderer.grid.template.strokeOpacity = 0.1;
+        axis.renderer.line.strokeOpacity = 0.7;
+        axis.renderer.line.strokeWidth = 2.5;
+        axis.renderer.line.stroke = am4core.color("{{request.user.personnel.color}}");
+
+        // Palette de couleurs améliorée avec dégradés
+        var colors = {
+            critique: "#e76f51",
+            faible: "#f4a261",
+            moyen: "#2a9d8f",
+            acceptable: "#264653"
+        };
+
+        // Créer des plages de couleurs avec dégradés
+        function createRange(axis, start, end, color) {
+            var range = axis.axisRanges.create();
+            range.value = start;
+            range.endValue = end;
+            range.axisFill.fillOpacity = 0.9;
+
+            // Créer un dégradé pour un effet plus moderne
+            var gradient = new am4core.LinearGradient();
+            gradient.addColor(am4core.color(color));
+            gradient.addColor(am4core.color(am4core.colors.brighten(am4core.color(color), 0.2)));
+            range.axisFill.fill = gradient;
+
+            range.axisFill.zIndex = -1;
+            range.label.disabled = true;
+
+            // Ajouter un effet d'ombre subtil
+            range.axisFill.filter = new am4core.DropShadowFilter();
+            range.axisFill.filter.opacity = 0.2;
+            range.axisFill.filter.blur = 4;
+
+            return range;
+        }
+
+        createRange(axis, 0, 20, colors.critique);
+        createRange(axis, 20, 40, colors.faible);
+        createRange(axis, 40, 80, colors.moyen);
+        createRange(axis, 80, 100, colors.acceptable);
+
+        // Amélioration de l'aiguille
+        var hand = chart.hands.push(new am4charts.ClockHand());
+        hand.radius = am4core.percent(85); // Légèrement réduit pour plus d'élégance
+        hand.startWidth = 12;
+        hand.pin.radius = 10;
+        hand.pin.disabled = false;
+
+        // Utiliser un dégradé pour l'aiguille
+        var handGradient = new am4core.LinearGradient();
+        handGradient.addColor(am4core.color("{{request.user.personnel.color}}"));
+        handGradient.addColor(am4core.color(am4core.colors.brighten(am4core.color("{{request.user.personnel.color}}"), -0.2)));
+        hand.fill = handGradient;
+        hand.stroke = am4core.color(am4core.colors.brighten(am4core.color("{{request.user.personnel.color}}"), -0.3));
+        hand.strokeWidth = 1;
+
+        hand.pin.fill = am4core.color("{{request.user.personnel.color}}");
+        hand.pin.stroke = am4core.color(am4core.colors.brighten(am4core.color("{{request.user.personnel.color}}"), -0.3));
+        hand.pin.strokeWidth = 1.5;
+
+        // Ajouter un effet d'ombre à l'aiguille
+        hand.filter = new am4core.DropShadowFilter();
+        hand.filter.opacity = 0.3;
+        hand.filter.blur = 3;
+        hand.filter.dy = 1;
+
+        // Ajouter le label de valeur centrale avec style amélioré
+        var label = chart.radarContainer.createChild(am4core.Label);
+        label.horizontalCenter = "middle";
+        label.verticalCenter = "bottom";
+        label.fontSize = 42;
+        label.fontWeight = "800";
+        label.dy = 60;
+        label.fill = am4core.color("{{request.user.personnel.color}}");
+
+        // Ajouter un effet d'ombre subtil au texte
+        label.filter = new am4core.DropShadowFilter();
+        label.filter.opacity = 0.2;
+        label.filter.blur = 3;
+
+        // Ajouter le label de description avec style amélioré
+        var descLabel = chart.radarContainer.createChild(am4core.Label);
+        descLabel.text = "NIVEAU D'EXÉCUTION";
+        descLabel.horizontalCenter = "middle";
+        descLabel.verticalCenter = "bottom";
+        descLabel.fontSize = 14;
+        descLabel.fontWeight = "600";
+        descLabel.dy = 20;
+        descLabel.letterSpacing = 1.2;
+        descLabel.fill = am4core.color("#495057");
+
+        // Ajouter un indicateur de statut textuel
+        var statusLabel = chart.radarContainer.createChild(am4core.Label);
+        statusLabel.horizontalCenter = "middle";
+        statusLabel.verticalCenter = "bottom";
+        statusLabel.fontSize = 16;
+        statusLabel.fontWeight = "bold";
+        statusLabel.dy = -10;
+        statusLabel.fill = am4core.color("#495057");
+
+        // Créer la légende avec style amélioré
+        var legend = new am4charts.Legend();
+        legend.parent = chart.chartContainer;
+        legend.itemContainers.template.togglable = false;
+        legend.labels.template.fill = am4core.color("#495057");
+        legend.labels.template.fontSize = 12;
+        legend.valueLabels.template.fill = am4core.color("#495057");
+        legend.valueLabels.template.fontSize = 12;
+        legend.markers.template.width = 22;
+        legend.markers.template.height = 22;
+        legend.markers.template.cornerRadius = 3;
+
+        // Positionnement de la légende
+        legend.align = "center";
+        legend.valign = "top";
+        legend.marginTop = 25;
+        legend.marginBottom = 15;
+        legend.contentAlign = "center";
+
+        // Ajouter un fond à la légende
+        legend.background.fill = am4core.color("#ffffff");
+        legend.background.fillOpacity = 0.7;
+        legend.background.cornerRadius = 8;
+        legend.background.padding(10, 10, 10, 10);
+        legend.background.stroke = am4core.color("#dee2e6");
+        legend.background.strokeWidth = 1;
+
+        // Fonction pour mettre à jour le graphique
+        function updateChart(value) {
+            let niveauExecution = value;
+            hand.showValue(niveauExecution, 1500, am4core.ease.cubicOut);
+            label.text = niveauExecution.toFixed(1) + "%";
+
+            // Mettre à jour le statut textuel
+            let statusText = "";
+            let statusColor = "";
+
+            if (niveauExecution < 20) {
+                label.fill = am4core.color(colors.critique);
+                statusText = "CRITIQUE";
+                statusColor = colors.critique;
+            } else if (niveauExecution < 40) {
+                label.fill = am4core.color(colors.faible);
+                statusText = "FAIBLE";
+                statusColor = colors.faible;
+            } else if (niveauExecution < 80) {
+                label.fill = am4core.color(colors.moyen);
+                statusText = "MOYEN";
+                statusColor = colors.moyen;
+            } else {
+                label.fill = am4core.color(colors.acceptable);
+                statusText = "EXCELLENT";
+                statusColor = colors.acceptable;
+            }
+
+            statusLabel.text = statusText;
+            statusLabel.fill = am4core.color(statusColor);
+        }
+
+        // Fonction pour récupérer les données de l'API Django
+        function fetchData() {
+            const url = "/api/taux_valid/";
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Données reçues :', data);
+                if (data.status === 'success' && data.data !== undefined) {
+                    updateChart(data.data);
+                } else {
+                    console.error("Format de données invalide de l'API :", data);
+                    updateChart(0);
+                }
+            })
+            .catch(error => {
+                console.error("Erreur lors de la récupération des données :", error);
+                updateChart(0);
+            });
+        }
+
+        // Initialisation
+        fetchData();
+        
+        chart.appear(1500, 100);
+
+        window.addEventListener('resize', function() {
+            chart.invalidateSize();
+        });
+    });
+</script>
+
+{%endif%}
+
+
+            </div>
+    </div>
+
+
+        </div>
+
+
+
+    
+
+
+
+
+
+<!-- Resources -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    // Initial chart setup
+    var options = {
+        chart: {
+            height: 1000,
+            type: "radialBar",
+            animations: { // Enable animations for the chart
+                enabled: true,
+                easing: 'easeinout',
+                speed: 800,
+                animateGradually: {
+                    enabled: true,
+                    delay: 150
+                },
+                dynamicAnimation: {
+                    enabled: true,
+                    speed: 350
+                }
+            }
+        },
+        series: [67], // Initial placeholder value
+        colors: ["#d4d83c"],
+        plotOptions: {
+            radialBar: {
+                hollow: {
+                    margin: 0,
+                    size: "70%",
+                    background: "{{request.user.personnel.color_fond}}"
+                },
+                track: {
+                    dropShadow: {
+                        enabled: true,
+                        top: 2,
+                        left: 0,
+                        blur: 4,
+                        opacity: 0.15
+                    }
+                },
+                dataLabels: {
+                    name: {
+                        offsetY: -10,
+                        color: "#fff",
+                        fontSize: "16px"
+                    },
+                    value: {
+                        color: "#fff",
+                        fontSize: "90px",
+                        show: true,
+                        formatter: function(val) { // Add a formatter to potentially style the value
+                            return val + '%';
+                        }
+                    }
+                }
+            }
+        },
+        fill: {
+            type: "gradient",
+            gradient: {
+                shade: "white",
+                type: "vertical",
+                gradientToColors: ["{{request.user.personnel.color_fond}}"],
+                stops: [0, 100]
+            }
+        },
+        stroke: {
+            lineCap: "round"
+        },
+        labels: ["TEP DECLARE (Process)"]
+    };
+
+    var chart = new ApexCharts(document.querySelector("#chartdivs"), options);
+    chart.render();
+
+    // Function to update the chart with new data
+    function updateChart(value) {
+        chart.updateSeries([value]);
+    }
+
+    // Function to handle fetching data and updating the chart
+    function fetchData() {
+        const endpoints = [
+            '/api/count_process/',
+            window.location.origin + '/api/count_process/'
+        ];
+
+        let attempts = 0;
+
+        function tryFetch(url) {
+            fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    cache: 'no-cache'
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Data received:', data);
+                    const value = data.data || data.value || data.count || 0;
+                    updateChart(value);
+                })
+                .catch(error => {
+                    attempts++;
+                    if (attempts < endpoints.length) {
+                        console.log(`Attempt ${attempts} failed, trying next endpoint`);
+                        tryFetch(endpoints[attempts]);
+                    } else {
+                        console.log("All attempts failed, using fallback value");
+                        console.error("Error fetching data:", error);
+                        updateChart(50);
+                    }
+                });
+        }
+        tryFetch(endpoints[0]);
+    }
+
+    fetchData();
+  
+
+    // Add a simple CSS animation for a continuous subtle effect (optional, but adds dynamism)
+    // You'd typically put this in a <style> tag in your HTML head or a CSS file
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.02); opacity: 0.95; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        #chartdivs .apexcharts-radialbar-series path {
+            animation: pulse 2s infinite alternate;
+            transform-origin: center center;
+        }
+        .apexcharts-datalabel-value {
+            transition: transform 0.3s ease-in-out, font-size 0.3s ease-in-out;
+        }
+        /* Optional: Add a class to apply on update for a pop effect */
+        .apexcharts-datalabel-value.pop {
+            transform: scale(1.1);
+        }
+    `;
+    document.head.appendChild(style);
+
+    // To make the percentage pop on update, we'll need a small tweak.
+    // ApexCharts might re-render the label, so a direct class toggle is tricky.
+    // However, the `dynamicAnimation` in ApexCharts handles the value change smoothly already.
+    // The CSS `transition` on `.apexcharts-datalabel-value` will make the text change smoothly.
+
+});
+</script>
+
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+
+           
+            
+<script>
+    // Passer la valeur via JSON
+    var financialData = {
+        // S'assurer que la conversion en float se fait correctement, même avec une virgule.
+        taux_financier: parseFloat("{{ actual_institution.taux_financier_declare|default:0 }}".replace(',', '.')) || 0
+    };
+    
+    console.log("Données financières:", financialData);
+    
+    var tauxFinancier = financialData.taux_financier;
+
+    // Assurez-vous que le taux est bien entre 0 et 100 pour un graphique de progression
+    // Si votre taux est déjà un pourcentage (ex: 75 pour 75%), alors c'est bon.
+    // Si c'est une proportion (ex: 0.75 pour 75%), il faut le multiplier par 100.
+    // Supposons ici que c'est déjà un pourcentage ou sera géré par toFixed(2)
+    // Pour ApexCharts, la valeur doit être un nombre entre 0 et 100.
+    if (tauxFinancier > 100) tauxFinancier = 100;
+    if (tauxFinancier < 0) tauxFinancier = 0;
+
+
+    var options = {
+        series: [parseFloat(tauxFinancier.toFixed(2))], // Arrondi à 2 décimales pour l'affichage
+        chart: {
+            height: 380, // Légèrement plus haut pour l'espace des labels
+            type: 'radialBar',
+            offsetY: 0, // Ajuster l'offset pour un meilleur centrage
+            fontFamily: 'Roboto, sans-serif', // Police moderne
+        },
+        plotOptions: {
+            radialBar: {
+                startAngle: -135,
+                endAngle: 135,
+                hollow: {
+                    margin: 0,
+                    size: '70%', // Taille du cercle intérieur
+                    background: '#fff', // Fond du cercle intérieur
+                    image: undefined,
+                    imageOffsetX: 0,
+                    imageOffsetY: 0,
+                    position: 'front',
+                    dropShadow: { // Ajout d'une ombre subtile au cercle intérieur
+                        enabled: true,
+                        top: 3,
+                        left: 0,
+                        blur: 4,
+                        opacity: 0.1
+                    }
+                },
+                track: {
+                    show: true,
+                    background: '#FFEBEE', // Rouge très clair pour la partie non remplie
+                    strokeWidth: '97%', // La piste occupe presque tout l'espace
+                    opacity: 1,
+                    margin: 5, // Espace entre la piste et le segment rempli
+                    dropShadow: { // Ombre subtile pour la piste
+                        enabled: true,
+                        top: 0,
+                        left: 0,
+                        blur: 5,
+                        opacity: 0.05
+                    }
+                },
+                dataLabels: {
+                    showOn: 'always',
+                    name: {
+                        show: true,
+                        fontSize: '18px', // Taille plus grande pour le label
+                        fontWeight: '600',
+                        color: '#666666', // Couleur plus douce
+                        offsetY: 20 // Positionner le label au-dessus du pourcentage
+                    },
+                    value: {
+                        show: true,
+                        fontSize: '48px', // Très grande taille pour le pourcentage
+                        fontWeight: '700',
+                        color: '#333333', // Couleur foncée pour le contraste
+                        offsetY: -10, // Positionner le pourcentage au centre
+                        formatter: function (val) {
+                            return val.toFixed(1) + "%"; // Afficher une décimale pour le pourcentage
+                        }
+                    },
+                    total: { // Option pour un total si besoin, désactivé ici
+                        show: false,
+                    }
+                }
+            }
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shade: 'dark',
+                type: 'horizontal',
+                shadeIntensity: 0.5,
+                gradientToColors: ['#00E396'], // Vert plus clair pour le dégradé
+                inverseColors: true,
+                opacityFrom: 1,
+                opacityTo: 1,
+                stops: [0, 100]
+            },
+            colors: ['#008FFB'] // Couleur de base du dégradé (bleu vif, sera remplacé par le vert)
+        },
+        // Surcharge pour s'assurer que le vert est utilisé
+        colors: ['#00C853'], // Vert dominant pour la partie remplie
+        stroke: {
+            lineCap: 'round', // Bouts arrondis pour les barres
+            width: 8 // Épaisseur de la ligne
+        },
+        labels: ['Taux Financier'], // Texte au-dessus du pourcentage
+        title: {
+            // Titre pour le graphique
+            align: 'center',
+            margin: 10,
+            offsetX: 0,
+            offsetY: 0,
+            floating: false,
+            style: {
+                fontSize: '20px',
+                fontWeight: 'bold',
+                fontFamily: 'Roboto, sans-serif',
+                color: '#333333'
+            },
+        },
+        tooltip: { // Amélioration du tooltip
+            enabled: true,
+            y: {
+                formatter: function (val) {
+                    return val.toFixed(2) + "%";
+                }
+            },
+            style: {
+                fontFamily: 'Roboto, sans-serif',
+            }
+        },
+        responsive: [{
+            breakpoint: 480,
+            options: {
+                chart: {
+                    height: 300
+                },
+                plotOptions: {
+                    radialBar: {
+                        dataLabels: {
+                            value: {
+                                fontSize: '36px'
+                            },
+                            name: {
+                                fontSize: '14px'
+                            }
+                        }
+                    }
+                }
+            }
+        }]
+    };
+    
+    var chart = new ApexCharts(document.querySelector("#chart_finance_declare"), options);
+    chart.render();
+</script>
+
+
+
+</div>
+
+
+<div class="col-md-12">
+    <div class="card" >
+      <div class="row">
+    <div class="col-md-6 col-12">
+    <div class="card h-100"> <div class="card-body">
+            <h5 class="card-title text-center">Statistiques d'opérations</h5>
+            
+            <div class="chart-wrapper" style="min-height: 400px; width: 100%;">
+                {% if request.user.personnel.is_process %}
+                    <div id="contains"></div>
+                {% elif request.user.personnel.is_finance %}
+                    <div id="container_evolution_finance"></div>
+                {% elif request.user.personnel.is_technic %}
+                    <div id="container_evolution_technic"></div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+        <div class="col-md-6 col-12">
+
+          <div class="card-body">
+
+            <div class="d-flex mb-4 align-items-center">
+              <div class="flex-shrink-0">
+                   {%if request.user.personnel.is_process%}
+                <canvas id="chartContainer" style="height: 350px; width: 110%;"></canvas>
+
+                    {%endif%}
+                   {%if request.user.personnel.is_finance %}
+                   <div class="chart-container" style="position: relative; height:400px; width:100%">
+                <div id="container_finance"></div>
+            </div>
+                  {%endif%}
+                     {%if request.user.personnel.is_technic%}
+                  <div id='containers_partitions_technic'></div>
+                  {%endif%}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const apiUrl = '/financement_budget/';
+    const chartContainer = document.getElementById('container_finance');
+
+    if (!chartContainer) return;
+
+    fetch(apiUrl)
+        .then(response => response.ok ? response.json() : Promise.reject(response))
+        .then(data => {
+            if (!data || data.length === 0) {
+                chartContainer.innerHTML = '<p class="text-center mt-5">Aucune donnée disponible.</p>';
+                return;
+            }
+
+            const labels = data.map(item => item.name);
+            const values = data.map(item => parseFloat(item.value) || 0);
+
+            // Palette de base
+            const baseColors = ['#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0', '#009688'];
+
+            const options = {
+                series: values,
+                chart: {
+                    type: 'donut',
+                    height: '100%'
+                },
+                labels: labels,
+                // Logique de couleur conditionnelle
+                colors: values.map((val, index) => {
+                    return val === 0 ? '#FF0000' : (baseColors[index] || '#607D8B');
+                }),
+                stroke: {
+                    show: true,
+                    width: 2,
+                    colors: ['#fff']
+                },
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            size: '70%',
+                            labels: {
+                                show: true,
+                                total: {
+                                    show: true,
+                                    label: 'TOTAL',
+                                    formatter: function (w) {
+                                        return w.globals.seriesTotals.reduce((a, b) => a + b, 0).toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (value) {
+                            return value === 0 ? "⚠️ Aucune donnée (0)" : value.toLocaleString();
+                        }
+                    }
+                }
+            };
+
+            const chart = new ApexCharts(chartContainer, options);
+            chart.render();
+        })
+        .catch(error => {
+            console.error("Erreur:", error);
+            chartContainer.innerHTML = `<p class="text-danger text-center">Erreur de chargement.</p>`;
+        });
+});
+</script>
+<style>
+#container_finance {
+    height: 400px !important;
+}
+</style>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const chartContainer = document.getElementById('container_evolution_finance');
+    if (!chartContainer) return;
+
+    // Récupération de la devise depuis Django
+    const symboleDevise = "{% for devises in devise %}{% if actual_institution.devise %}{{ devises.symbole }}{% endif %}{% endfor %}";
+
+    fetch('/repartition_financement_budget/')
+        .then(response => {
+            if (!response.ok) throw new Error('Erreur réseau');
+            return response.json();
+        })
+        .then(data => {
+            const categories = data.map(item => item.name);
+            const planifieData = data.map(item => parseFloat(item.montant_planifie) || 0);
+            const declareData = data.map(item => parseFloat(item.montant_declare) || 0);
+            const valideData = data.map(item => parseFloat(item.montant_valide) || 0);
+
+            const options = {
+                series: [
+                    { name: 'Montant Planifié', data: planifieData },
+                    { name: 'Montant Déclaré', data: declareData },
+                    { name: 'Montant Executé', data: valideData }
+                ],
+                chart: {
+                    type: 'bar',
+                    height: 400,
+                    toolbar: { show: true },
+                    background: '#FFFFFF'
+                },
+                colors: ['#4CAF50', '#49224D', '#2196F3'],
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%',
+                        borderRadius: 4,
+                        // Gestion de la couleur rouge si la valeur est 0
+                        colors: {
+                            ranges: [{
+                                from: 0,
+                                to: 0,
+                                color: '#FF0000'
+                            }]
+                        }
+                    },
+                },
+                dataLabels: { enabled: false },
+                stroke: {
+                    show: true,
+                    width: 2,
+                    colors: ['transparent']
+                },
+                title: {
+                    text: 'EXECUTION FINANCIÈRE',
+                    align: 'left',
+                    style: { fontSize: '22px', fontWeight: 'bold', color: '#333' }
+                },
+                subtitle: {
+                    text: 'Comparaison des montants par catégorie',
+                    align: 'left'
+                },
+                xaxis: {
+                    categories: categories,
+                    axisBorder: { show: true, color: '#CCC' }
+                },
+                yaxis: {
+                    title: { text: `Montant (${symboleDevise})` },
+                    labels: {
+                        formatter: (val) => new Intl.NumberFormat('fr-FR').format(val)
+                    }
+                },
+                fill: { opacity: 1 },
+                tooltip: {
+                    y: {
+                        formatter: (val) => {
+                            const formatted = new Intl.NumberFormat('fr-FR').format(val);
+                            return val === 0 ? `⚠️ 0 ${symboleDevise}` : `${formatted} ${symboleDevise}`;
+                        }
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'right'
+                }
+            };
+
+            const chart = new ApexCharts(chartContainer, options);
+            chart.render();
+        })
+        .catch(error => console.error('Erreur Fetch:', error));
+});
+</script>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+
+
+      </div>
+    </div>
+  </div>
+
+
+
+
+<div class="d-flex align-items-center mb-4" style="width: 100%;">
+    <div class="flex-grow-1 position-relative">
+        <h2 class="mb-0 fw-bold text-uppercase" style="
+            color: #1a2a4f;
+            letter-spacing: 1px;
+            position: relative;
+            display: inline-block;
+            padding-bottom: 10px;
+        ">
+            Gestionnaire {{type_entity}}
+
+            <!-- Barre de soulignement animée -->
+            <span class="title-underline" style="
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 3px;
+                background: {{request.user.personnel.color_fond}};
+                transform-origin: left;
+                transform: scaleX(0.8);
+                transition: transform 0.3s ease;
+            "></span>
+        </h2>
+    </div>
+
+    <!-- Élément décoratif optionnel -->
+    <div style="
+        width: 30px;
+        height: 30px;
+        background: {{request.user.personnel.color_fond}};
+        margin-left: 15px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    ">
+        <i class="fas fa-pen text-white" style="font-size: 14px;"></i>
+    </div>
+</div>
+
+<style>
+    .title-underline {
+        animation: underlineGrow 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes underlineGrow {
+        0% { transform: scaleX(0.8); }
+        100% { transform: scaleX(1); }
+    }
+
+    h2:hover .title-underline {
+        transform: scaleX(1);
+        animation: none;
+    }
+</style>
+
+
+<div  style="width:100%;" class=" py-3 col-lg-12 d-f">
+
+{%if request.user.personnel.is_finance%}
+    
+        
+<div id="gestionnaire" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+
+{%endif%}
+
+{%if request.user.personnel.is_process%}
+    
+        
+<div id="gestionnaire_process" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+
+{%endif%}
+
+
+
+
+<script src="https://code.highcharts.com/highcharts-3d.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+
+
+
+{% for entity in pages_o %}
+<div class="mb-3 d-flex flex-wrap justify-content-center col-lg-12">
+   
+    <a class="d-block col-lg-4 col-md-6 col-sm-12" href="/gestionnaire/0/{{entity.entity.id}}"
+    {%if request.user.personnel.is_process%}
+       data-entity-name="{{ entity.entity.get_name }}"
+       data-ponderation="{{ entity.entity.ponderation|default:0 }}"
+       data-niveau-execution="{{ entity.entity.resultat_niveau_execution|default:0 }}"
+       data-niveau-execution-valide="{{ entity.entity.resultat_niveau_execution_valide|default:0 }}
+
+       {%elif request.user.personnel.is_finance%}
+
+              data-entity-name="{{ entity.entity.get_name }}"
+       data-montant-planifiee="{{ entity.entity.montant_planifiee|default:0 }}"
+       data-montant-declare="{{ entity.entity.montant_declare|default:0 }}"
+       data-montant-valide="{{ entity.entity.montant_valide|default:0 }}"
+
+       {%endif%}">
+
+        <div class="col-12 d-none">
+            <center><img style="max-width:250px;height:220px;" src="{% if entity.entity.m_type_entity.is_pic_represented %}{% if entity.entity.m_pic_represented.url != None %}{{entity.entity.m_pic_represented.url}}{% else %}{{actual_institution.img.url}}{% endif %}{% else %}{{actual_institution.img.url}}{% endif %}" class="card-img-top" alt="..."></center>
+            <div class="card-body">
+                <p class="col-lg-12 card-text p-0 m-0">
+                    <div class="pt-2 text-center h4">{{ entity.entity.get_name }}</div>
+                </p>
+            </div>
+        </div>
+    </a>
+</div>
+{% endfor %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+ <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chartDom = document.getElementById('gestionnaire_process');
+    if (!chartDom) return;
+
+    // Initialisation de l'instance ECharts
+    const myChart = echarts.init(chartDom);
+
+    // 1. Collecte des données depuis le DOM
+    const categories = [];
+    const ponderationData = [];
+    const executionData = [];
+    const executionValidatedData = [];
+    
+    const entityLinks = document.querySelectorAll('a[data-entity-name]');
+    entityLinks.forEach(link => {
+        categories.push(link.getAttribute('data-entity-name'));
+        ponderationData.push(parseFloat(link.getAttribute('data-ponderation')) || 0);
+        executionData.push(parseFloat(link.getAttribute('data-niveau-execution')) || 0);
+        executionValidatedData.push(parseFloat(link.getAttribute('data-niveau-execution-valide')) || 0);
+    });
+
+    // 2. Configuration du graphique
+    const option = {
+        title: {
+            text: "TAUX D'EXÉCUTION PHYSIQUE",
+            left: 'center',
+            textStyle: { fontSize: 16 }
+        },
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' }
+        },
+        legend: {
+            bottom: '0',
+            data: ['Pondération', 'Exécution Déclarée', 'Exécution Validée']
+        },
+        grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '10%',
+            containLabel: true
+        },
+        xAxis: {
+            type: 'category',
+            data: categories,
+            axisLabel: { interval: 0, rotate: 30 }
+        },
+        yAxis: {
+            type: 'value',
+            name: '%',
+            min: 0,
+            max: 100
+        },
+        series: [
+            {
+                name: 'Pondération',
+                type: 'bar',
+                emphasis: { focus: 'series' },
+                data: ponderationData,
+                itemStyle: { color: '#2196F3' }
+            },
+            {
+                name: 'Exécution Déclarée',
+                type: 'bar',
+                emphasis: { focus: 'series' },
+                data: executionData,
+                itemStyle: { color: '#FF9800' }
+            },
+            {
+                name: 'Exécution Validée',
+                type: 'bar',
+                emphasis: { focus: 'series' },
+                data: executionValidatedData,
+                itemStyle: { color: '#4CAF50' }
+            }
+        ]
+    };
+
+    // 3. Application de la configuration
+    myChart.setOption(option);
+
+    // 4. Responsivité : Redimensionner le graphique quand la fenêtre change
+    window.addEventListener('resize', function() {
+        myChart.resize();
+    });
+});
+</script>
+
+
+
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chartDom = document.getElementById('gestionnaire');
+    if (!chartDom) return;
+
+    const myChart = echarts.init(chartDom);
+
+    // 1. Collecte des données
+    const categories = [];
+    const dataPlanifiee = [];
+    const dataDeclaree = [];
+    const dataValide = [];
+
+    const entities = document.querySelectorAll('a[data-entity-name]');
+    entities.forEach(function(entity) {
+        categories.push(entity.getAttribute('data-entity-name'));
+        dataPlanifiee.push(parseFloat(entity.getAttribute('data-montant-planifiee')) || 0);
+        dataDeclaree.push(parseFloat(entity.getAttribute('data-montant-declare')) || 0);
+        dataValide.push(parseFloat(entity.getAttribute('data-montant-valide')) || 0);
+    });
+
+    // 2. Calcul des totaux pour l'anneau (Pie)
+    const totalP = dataPlanifiee.reduce((a, b) => a + b, 0);
+    const totalD = dataDeclaree.reduce((a, b) => a + b, 0);
+    const totalV = dataValide.reduce((a, b) => a + b, 0);
+
+    // 3. Configuration
+    const option = {
+        title: {
+            text: 'BUDGETISATION GLOBALE',
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' }
+        },
+        legend: {
+            bottom: '5%',
+            data: ['Montant Planifié', 'Montant Déclaré', 'Montant Validé']
+        },
+        grid: {
+            top: '15%',
+            left: '3%',
+            right: '4%',
+            bottom: '15%',
+            containLabel: true
+        },
+        xAxis: {
+            type: 'category',
+            data: categories,
+            axisLabel: { interval: 0, rotate: 20 }
+        },
+        yAxis: {
+            type: 'value',
+            name: 'Montant'
+        },
+        series: [
+            {
+                name: 'Montant Planifié',
+                type: 'bar',
+                data: dataPlanifiee,
+                itemStyle: { color: '#2196F3' }
+            },
+            {
+                name: 'Montant Déclaré',
+                type: 'bar',
+                data: dataDeclaree,
+                itemStyle: { color: '#FF9800' }
+            },
+            {
+                name: 'Montant Validé',
+                type: 'bar',
+                data: dataValide,
+                itemStyle: { color: '#4CAF50' }
+            },
+            // Le graphique en anneau (Donut) intégré
+            {
+                name: 'Répartition Totale',
+                type: 'pie',
+                radius: ['15%', '30%'], // Anneau
+                center: ['85%', '20%'], // Positionné en haut à droite
+                data: [
+                    { value: totalP, name: 'Planifié', itemStyle: { color: '#2196F3' } },
+                    { value: totalD, name: 'Déclaré', itemStyle: { color: '#FF9800' } },
+                    { value: totalV, name: 'Validé', itemStyle: { color: '#4CAF50' } }
+                ],
+                label: { show: false }, // On cache les labels pour ne pas encombrer
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }
+        ]
+    };
+
+    myChart.setOption(option);
+
+    // 4. Responsivité
+    window.addEventListener('resize', function() {
+        myChart.resize();
+    });
+});
+</script>
+
+<div class="card-container">
+
+    {% for entity in pages_o %}
+    <a class="card-item" href="/gestionnaire/0/{{ entity.entity.id }}">
+        <div class="card-header">
+            <small class="card-title text-light" style="font-family:MaPolicePerso">
+                {%if entity.entity.m_nom%}
+                 {{ entity.entity.m_nom }}
+                {%else%}
+                 {{ entity.entity.get_name }}
+                {%endif%}
+               
+            
+            </small>
+        </div>
+        <div class="card-body">
+            {% if request.user.personnel.is_process %}
+            <div class="info-item" style="font-family: MaPolicePerso;">
+                    <small class="info-label text-light"  style="font-family:MaPolicePerso">Exécution Valid&eacute;</small>
+                    <span class="info-value text-light"  style="font-family:MaPolicePerso">
+                     
+                    {{ entity.entity.resultat_niveau_execution_valide }}%</span>
+                </div>
+                <div class="info-item my-2" style="font-family: MaPolicePerso;">
+                    <small class="info-label text-light"  style="font-family:MaPolicePerso">Exécution Declar&eacute;</small>
+                    <span class="info-value text-light"  style="font-family:MaPolicePerso">
+                     
+                    {{ entity.entity.resultat_niveau_execution }}%</span>
+                </div>
+            {% elif request.user.personnel.is_finance %}
+                <div class="info-grid">
+                    <div class="info-item" style="font-family: MaPolicePerso;">
+                        <span class="info-label text-light">Planifié</span>
+                        <span class="info-value text-light"  style="font-family:MaPolicePerso">
+                        <i class="fa fa-coins"></i>
+                        {{ entity.entity.montant_planifiee|floatformat:'-2' }} {%for devises in devise%}{%if actual_institution.devise%} {{devises.symbole}}  {%endif%}{%endfor%}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label text-light"  style="font-family:MaPolicePerso">Déclaré</span>
+                        <span class="info-value text-light"  style="font-family:MaPolicePerso">
+                          <i class="fa fa-coins"></i>
+                        {{ entity.entity.montant_declare|floatformat:'-2' }} {%for devises in devise%}{%if actual_institution.devise%} {{devises.symbole}}  {%endif%}{%endfor%}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label text-light"  style="font-family:MaPolicePerso">Validé</span>
+                        <span class="info-value text-light"  style="font-family:MaPolicePerso">
+                          <i class="fa fa-coins"></i>
+                        {{ entity.entity.montant_valide|floatformat:'-2' }} {%for devises in devise%}{%if actual_institution.devise%} {{devises.symbole}}  {%endif%}{%endfor%}</span>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<style>
+/* Conteneur principal */
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 25px;
+    padding: 20px;
+    background-color: #f8f9fa; /* Arrière-plan clair pour le contraste */
+}
+
+/* Élément de la carte */
+.card-item {
+    text-decoration: none;
+    color: #343a40;
+    width: 280px;
+    background-color: {{request.user.personnel.color_fond}}; 
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Effet de survol */
+.card-item:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* En-tête de la carte */
+.card-header {
+    background: {{request.user.personnel.color_fond}}; /* Dégradé élégant */
+    color: white;
+    padding: 20px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    text-align: center;
+}
+
+.card-title {
+    
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Corps de la carte */
+.card-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: center; /* Centrer le contenu verticalement */
+}
+
+/* Styles pour les informations de processus */
+.info-box {
+    text-align: center;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: white; 
+}
+
+.info-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    display: block;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.info-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #495057;
+}
+
+/* Styles pour la grille financière */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.info-item {
+    background-color: white;
+    padding: 12px;
+    border-left: 4px solid #007bff;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.info-item .info-label {
+    font-size: 0.9rem;
+    color: #495057;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.info-item .info-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+/* Ajustements pour les écrans plus petits */
+@media (max-width: 768px) {
+    .card-item {
+        width: 100%;
+    }
+}
+</style>
+
+  <div id="sample" style="font-family:MaPolicePerso;width:100%;position: relative;">
+          <div id="myDiagramDiv" style="font-family:MaPolicePerso;background-color: rgb(242, 242, 242); border: 3px solid {{request.user.personnel.color_fond}}; width: 100%; height: 200px; position: relative; -webkit-tap-highlight-color: rgba(255, 255, 255, 0); cursor: auto;"><canvas tabindex="0" width="1229" height="681" style="position: absolute; top: 0px; left: 0px; z-index: 2; user-select: none; touch-action: none; width: 1229px; height: 681px; cursor: auto;">This text is displayed if your browser does not support the Canvas HTML element.</canvas><div style="position: absolute; overflow: auto; width: 1246px; height: 698px; z-index: 1;"><div style="position: absolute; width: 1621.95px; height: 778.214px;"></div></div></div>  
+      <div class="card">
+        <div class="card-body">
+
+            <div class="card-header">
+                <h4 style="font-family:MaPolicePerso" class="text-light">Chaine De Resultats</h4>
+            </div>
+            
+        
+      <div id="localDiagram"  style="margin-top:30px;font-family:MaPolicePerso;background-color: white; border: 3px solid {{request.user.personnel.color_fond}}; width: 100%; height: 500px; position: relative;"> </div>
+    </div>
+</div>
+</div>
+
+ <script src="https://unpkg.com/gojs@2.2.14/release/go.js"></script>
+    <script id="code">
+      ImgBlock = document.getElementById("ImgBlock");
+      var img_absol;
+    function init() {
+
+      // Since 2.2 you can also author concise templates with method chaining instead of GraphObject.make
+      // For details, see https://gojs.net/latest/intro/buildingObjects.html
+      const $ = go.GraphObject.make;  // for conciseness in defining templates
+
+    function nodeClicked(e, obj) {  // executed by click and doubleclick handlers
+      /*var evt = e.copy();
+      var node = obj.part;
+      var type = evt.clickCount === 2 ? "Double-Clicked: " : "Clicked: ";
+      var msg = type + node.data.key + ". ";
+      */
+      var evt = e.copy();
+
+      //ocument.getElementById("myStatus").textContent = msg;
+    }
+
+      myFullDiagram =
+        $(go.Diagram, "myDiagramDiv",  // each diagram refers to its DIV HTML element by id
+          {
+            initialAutoScale: go.Diagram.UniformToFill,  // automatically scale down to show whole tree
+            maxScale: 0.3,
+            allowZoom:true,
+            contentAlignment: go.Spot.Center,  // center the tree in the viewport
+            isReadOnly: true,  // don't allow user to change the diagram
+            "animationManager.isEnabled": false,
+            layout: $(go.TreeLayout,
+              { angle: 90, sorting: go.TreeLayout.SortingAscending }),
+            maxSelectionCount: 1,  // only one node may be selected at a time in each diagram
+            // when the selection changes, update the myLocalDiagram view
+            "ChangedSelection": showLocalOnFullClick
+          });
+
+      myLocalDiagram =  // this is very similar to the full Diagram
+        $(go.Diagram, "localDiagram",
+          {
+            autoScale: go.Diagram.UniformToFill,
+            contentAlignment: go.Spot.Center,
+            isReadOnly: true,
+            layout: $(go.TreeLayout,
+              { angle: 90, sorting: go.TreeLayout.SortingAscending }),
+            "LayoutCompleted": e => {
+              var sel = e.diagram.selection.first();
+              if (sel !== null) myLocalDiagram.scrollToRect(sel.actualBounds);
+            },
+            maxSelectionCount: 1,
+            // when the selection changes, update the contents of the myLocalDiagram
+            "ChangedSelection": showLocalOnLocalClick
+          });
+
+      // Define a node template that is shared by both diagrams
+ var myNodeTemplate2 =
+        $(go.Node, "Auto",
+          {maxSize: new go.Size(260,250) },
+          { locationSpot: go.Spot.Center },
+          new go.Binding("text", "key", go.Binding.toString),  // for sorting
+          $(go.Shape, "RoundedRectangle",
+            new go.Binding("fill", "color"),
+            { stroke: null }),
+          /*$(go.TextBlock,
+            { margin: 5 },
+            new go.Binding("text", "name", k => k)),*/
+  $(go.Panel, "Vertical",
+    { position: new go.Point(0, 0)},
+    $(go.TextBlock, { margin: 5 }, new go.Binding("text", "name", k => k), { font: "12px Ubuntu", stroke: "white" }),
+    $(go.TextBlock,  new go.Binding("text", "objectif", k => k), { alignment: go.Spot.Center }, { font: "15px Ubuntu", stroke: "white" }),
+  ));
+
+      var myNodeTemplate =
+        $(go.Node, "Auto",
+          { 
+           //click: nodeClicked,
+          locationSpot: go.Spot.Center },
+          new go.Binding("text", "key", go.Binding.toString),  // for sorting
+          $(go.Shape, "Circle",
+            new go.Binding("fill", "color"),
+            { stroke: null }),
+          /*$(go.TextBlock,
+            { margin: 5 },
+            new go.Binding("text", "name", k => k)),*/
+  $(go.Panel, "Vertical",
+    { position: new go.Point(0, 0)},
+      {maxSize: new go.Size(200, 200) },
+    $(go.TextBlock, { margin: 5 }, new go.Binding("text", "name", k => k), { font: "11px Ubuntu", stroke: "white" }),
+    $(go.TextBlock,  { margin: 5 }, new go.Binding("text", "objectif", k => k), { alignment: go.Spot.Center }, { font: "18px Ubuntu", stroke: "white" }, {overflow:go.TextBlock.OverflowEllipsis}),
+     $(go.TextBlock,  { margin: 5 }, new go.Binding("text", "l", k => ""), { alignment: go.Spot.Center }, { font: "12px Ubuntu", stroke: "white" }),
+    $(go.TextBlock,  { margin: 5 },  {cursor: "pointer"}, {click: function(e, obj) {alert  (new go.Binding("text", "key", go.Binding.toString));document.location=(obj.part.data.link);} },  new go.Binding("text", "indi1",function(k){return " * " +"Voir les Fiches d'Indicateurs"+ " * ";}), { alignment: go.Spot.Center }, { font: "16px Ubuntu", stroke: "white", isUnderline:"underline" }, new go.Binding("isUnderline", "underline"),
+             { margin: 4 },)
+  ));
+      myFullDiagram.nodeTemplate = myNodeTemplate2;
+      myLocalDiagram.nodeTemplate = myNodeTemplate;
+
+
+      // Define a basic link template, not selectable, shared by both diagrams
+      var myLinkTemplate =
+        $(go.Link,
+          { routing: go.Link.Normal, selectable: false },
+          $(go.Shape,
+            { strokeWidth: 1 })
+        );
+      myFullDiagram.linkTemplate = myLinkTemplate;
+      myLocalDiagram.linkTemplate = myLinkTemplate;
+
+      // Create the full tree diagram
+      setupDiagram();
+
+      // Create a part in the background of the full diagram to highlight the selected node
+      highlighter =
+        $(go.Part, "Auto",
+          {
+            layerName: "Background",
+            selectable: true,
+            isInDocumentBounds: false,
+            locationSpot: go.Spot.Center
+          },
+          $(go.Shape, "Ellipse",
+            {
+              fill: $(go.Brush, "Radial", { 0.0: "{{request.user.personnel.color_fond}}", 1.0: "white" }),
+              stroke: null,
+              desiredSize: new go.Size(200, 200)
+            })
+        );
+      myFullDiagram.add(highlighter);
+
+      // Start by focusing the diagrams on the node at the top of the tree.
+      // Wait until the tree has been laid out before selecting the root node.
+      myFullDiagram.addDiagramListener("InitialLayoutCompleted", e => {
+        var node0 = myFullDiagram.findPartForKey(0);
+        if (node0 !== null) node0.isSelected = true;
+        showLocalOnFullClick();
+      });
+
+    myFullDiagram.commitTransaction("highlight search");
+    //myFullDiagram.makeImage();
+    img_absol = myFullDiagram.makeImage({
+             scale: 1,
+             background: "{{request.user.personnel.color_fond}}"
+          });
+
+
+
+    //ImgBlock.innerHTML += "<img src='"+img_absol.src+"'> ";
+
+    }
+
+    // Make the corresponding node in the full diagram to that selected in the local diagram selected,
+    // then call showLocalOnFullClick to update the local diagram.
+    function showLocalOnLocalClick() {
+      var selectedLocal = myLocalDiagram.selection.first();
+      if (selectedLocal !== null) {
+        // there are two separate Nodes, one for each Diagram, but they share the same key value
+        myFullDiagram.select(myFullDiagram.findPartForKey(selectedLocal.data.key));
+      }
+    }
+
+    function showLocalOnFullClick() {
+      var node = myFullDiagram.selection.first();
+
+      if (node !== null) {
+        // make sure the selected node is in the viewport
+        myFullDiagram.scrollToRect(node.actualBounds);
+        // move the large yellow node behind the selected node to highlight it
+        highlighter.location = node.location;
+        // create a new model for the local Diagram
+        var model = new go.TreeModel();
+        // add the selected node and its children and grandchildren to the local diagram
+        var nearby = node.findTreeParts(3);  // three levels of the (sub)tree
+        // add parent and grandparent
+        var parent = node.findTreeParentNode();
+        if (parent !== null) {
+          nearby.add(parent);
+          var grandparent = parent.findTreeParentNode();
+          if (grandparent !== null) {
+            nearby.add(grandparent);
+          }
+        }
+        // create the model using the same node data as in myFullDiagram's model
+        nearby.each(n => {
+          if (n instanceof go.Node) model.addNodeData(n.data);
+        });
+        myLocalDiagram.model = model;
+        // select the node at the diagram's focus
+        var selectedLocal = myLocalDiagram.findPartForKey(node.data.key);
+        if (selectedLocal !== null) selectedLocal.isSelected = true;
+      }
+    }
+
+    // Create the tree model containing TOTAL nodes, with each node having a variable number of children
+    function setupDiagram(total) {
+      if (total === undefined) total = {{this_entities.count}};  // default to 100 nodes
+      var nodeDataArray = [];
+      var colors = [];
+      var color_i = 0;
+      nodeDataArray.push({
+          key: 0,
+          color: "{{request.user.personnel.color_fond}}",
+          name:"{{actual_institution}}".replace("&#x27;","' "),
+          objectif:'{{actual_institution.nom}}'.replace("&#x27;","' ")
+      });
+
+      colors.push("{{request.user.personnel.color_fond}}");colors.push("{{request.user.personnel.color_fond}}");colors.push("{{request.user.personnel.color_fond}}");colors.push("{{request.user.personnel.color_fond}}");colors.push("{{request.user.personnel.color_fond}}");
+      colors.push("{{request.user.personnel.color_fond}}");colors.push("brown");
+      {% for enti in this_entities %}
+      i_color = ({{forloop.counter}} % colors.length);
+      {% for line in enti.m_entity_type.lines %}
+        nodeDataArray.push({
+          key: {{line.id}},
+          color: {% if line.resultat_niveau_execution_valide ==  0 %} "#abababff" {% elif line.resultat_niveau_execution_valide  < 50 %} "#ba0e16ff" {% elif line.resultat_niveau_execution_valide  < 80  %} "#F5E427"  {% else %} "#11bf8eff" {% endif %},
+          name:"{{line.m_nom}}".replace("&#x27;","' "),
+          link:"/indic/{{line.id}}",
+          {% if line.get_objectif != None %}objectif:"Objectif : {{line.get_objectif}}".replace("&#x27;","' ") + "\n"+"Progression : {%if request.user.personnel.is_process%}{{line.resultat_niveau_execution_valide}}{%else%}{{line.taux_financier_valide|floatformat:'-2'}} {%endif%}%",{% else %}objectif:"Progression :{%if request.user.personnel.is_process%} {{line.resultat_niveau_execution_valide}}{%else%}{{line.taux_financier_valide|floatformat:'-2'}} {%endif%} %",{% endif %}
+          {% for indi in line.get_indicateurs %}
+          indi{{forloop.counter}}:"{{indi}}",
+          {% endfor %}
+          {% if line.sup_entity != None %} parent:{{line.sup_entity.id}} {% else %} parent:0 {% endif %}
+        });
+      {% endfor %}
+      var j = 0;
+      for (var i = 1; i < total; i++) {
+        var data = nodeDataArray[i];
+        //data.parent = j;
+        if (Math.random() < 0.3) j++;  // this controls the likelihood that there are enough children
+      }
+      {% endfor %}
+      
+      myFullDiagram.model = new go.TreeModel(nodeDataArray);
+
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+
+    // the Search functionality highlights all of the nodes that have at least one data property match a RegExp
+    function searchDiagram() {
+      //alert("dfd")
+      
+      // called by button
+      var input = document.getElementById("mySearch");
+      if (!input) return;
+      console.log(myFullDiagram.findNodesByExample({name:function(n){return n == input.value;}}))
+      myFullDiagram.focus();
+
+      myFullDiagram.startTransaction("highlight search");
+
+      if (input.value) {
+        // search four different data properties for the string, any of which may match for success
+        // create a case insensitive RegExp from what the user typed
+        var safe = input.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        var regex = new RegExp(safe, "i");
+        var results = myFullDiagram.findNodesByExample({ text: regex },
+          { nation: regex },
+          { title: regex },
+          { headOf: regex },
+          { objectif: regex});
+        myFullDiagram.highlightCollection(results);
+        // try to center the diagram at the first node that was found
+        if (results.count > 0) myFullDiagram.centerRect(results.first().actualBounds);
+      } else {  // empty string only clears highlighteds collection
+        myFullDiagram.clearHighlighteds();
+    }
+
+
+
+}
+
+
+
+function printTree(num,prec="#"){
+      a = document.getElementById("print_link")
+      a.style = "display: none";
+      a.href = img_absol.src;
+      a.download = "Chaine de Resultats";
+      a.click();
+}
+
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+        {% for entity in pages_o %}
+
+
+        <div class=" mb-3 d-flex flex-wrap justify-content-center col-lg-12">
+             {%comment%}
+             <a class="d-block col-lg-4 col-md-6 col-sm-12" href="/gestionnaire/0/{{entity.entity.id}}">
+
+                <div class="col-12">
+                    <center><img style="max-width:250px;height:220px;" src="{% if entity.entity.m_type_entity.is_pic_represented %} {% if entity.entity.m_pic_represented.url != None %}{{entity.entity.m_pic_represented.url}} {% else %} {{actual_institution.img.url}} {% endif %}{% else %} {{actual_institution.img.url}} {% endif  %}" class="card-img-top" alt="..."></center>
+                    <div class="card-body">
+                        <p class="col-lg-12 card-text p-0 m-0">
+                            <div class="pt-2 text-center h4">{{entity.entity.get_name}}
+                            </div>
+
+                            <div class="d-flex justify-content-center">
+
+                                {%if request.user.personnel.is_process%}
+                                {{entity.entity.resultat_niveau_execution}}%
+                                {%elif request.user.personnel.is_finance%}
+                                    {{entity.entity.montant_planifiee}}
+                                {{entity.entity.montant_declare}}
+                                {{entity.entity.montant_valide}}
+                                {%else%}
+
+                                <div class="progress_launcher" data-id="{{entity.entity.id}}"></div>
+
+                                {%endif%}
+
+                                </div>
+                            </p>
+                        </div>
+                    </div>
+                </a>
+                {%endcomment%}
+                {% block programm_content %}
+                {%comment%}
+                <div class="col-lg-8 col-md-6 col-sm-12 mb-4">
+        <div class="card shadow-sm border-0 overflow-hidden" style="max-height:365px; background: {{request.user.personnel.color_fond}}">
+            <div class="card-body p-0">
+                {% if type_entity.is_tache %}
+                    <!-- Version Tâche -->
+                    <div class="p-3">
+                        {% for tache in entity.values %}
+                        <div class="mb-4 animate__animated animate__fadeIn">
+                            <!-- En-tête de tâche -->
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3" style="border-color: rgba(255,255,255,0.2)!important;">
+                                <h5 class="mb-0 font-weight-bold text-light">{{tache}}</h5>
+                                <span class="badge bg-white text-dark">{{tache.m_date_modif|date:"d/m/Y"}}</span>
+                            </div>
+
+                            <!-- Barre de progression principale -->
+                            <div class="progress_launcher mb-3" data-id="{{entity.entity.id}}"></div>
+
+                            <!-- Liste des opérations -->
+                            <div class="json_ope">
+                                {% for operation in tache.sub_entities %}
+                                    {% if request.user.personnel in operation.get_personnel or permissions > 4 %}
+                                        <a href="/operations/{{operation.id}}/" class="operation-card d-block p-2 mb-2 rounded text-decoration-none text-light
+                                            {% if operation.etat == '2' %}bg-success bg-opacity-20
+                                            {% elif operation.etat == '0' %}bg-warning bg-opacity-20
+                                            {% else %}bg-info bg-opacity-10{% endif %}">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    {% if operation.etat == '2' %}
+                                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                                    {% elif operation.etat == '0' %}
+                                                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-clock text-info me-2"></i>
+                                                    {% endif %}
+                                                    {{operation}}
+                                                </div>
+                                                <div class="progress_launcher-sm" data-id="{{operation.id}}"></div>
+                                            </div>
+                                        </a>
+                                    {% else %}
+                                        <div class="operation-card d-block p-2 mb-2 rounded bg-secondary bg-opacity-10">
+                                            <div class="d-flex justify-content-between align-items-center text-muted">
+                                                <div>
+                                                    <i class="fas fa-circle-notch me-2"></i>
+                                                    {{operation}}
+                                                </div>
+                                                <div>
+                                                    <a href="/decision/o/{{operation.id}}/" class="text-muted small">Non attribuée</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+
+                            <!-- Opérations terminées -->
+                            {% for operation in tache.operations %}
+                                {% if operation.progression == 100 %}
+                                    <div class="p-2 mb-2 rounded bg-success bg-opacity-10">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="text-success">
+                                                <i class="fas fa-file-alt me-2"></i>
+                                                <small>{{operation}}</small>
+                                            </div>
+                                            <div>
+                                                <small class="text-success">Rapport technique disponible</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                {% else %}
+                    <!-- Version Autre Entité -->
+                    <div class="p-3">
+                        {% for tache in entity.values %}
+                        <div class="mb-4 animate__animated animate__fadeIn">
+                            <!-- En-tête -->
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3" style="border-color: rgba(255,255,255,0.2)!important;">
+                                <h5 class="mb-0">
+                                    <a href="/gestionnaire/{{nature}}/{{tache.id}}" class="text-light text-decoration-none font-weight-bold">{{tache}}</a>
+                                </h5>
+                                <span class="badge bg-white text-dark">{{tache.m_date_modif|date:"d/m/Y"}}</span>
+                            </div>
+
+                            <!-- Bouton de validation -->
+                            {% if tache.progression == 100 and permissions > 1 %}
+                                {% if tache.is_rapported == False %}
+                                    <button class="btn btn-sm btn-outline-light mb-3 w-100 animate__animated animate__pulse animate__infinite"
+                                            onclick="loadTaches('a1',this);"
+                                            data-tache="{{tache.id}}"
+                                            data-toggle='modal'
+                                            data-target="#valid_SupLogic">
+                                        <i class="fas fa-check-circle me-2"></i>Valider {{entity.entity.get_name}}
+                                    </button>
+                                {% else %}
+                                    <div class="alert alert-success mb-3 py-2 text-center small">
+                                        <i class="fas fa-check-circle me-2"></i>Validée •
+                                        <a href="/gestionnaire/a1/{{tache.id}}/" class="text-decoration-none">Voir le Rapport</a>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+
+                            <!-- Sous-entités -->
+                            <div class="json_ope">
+                                {% for sub in tache.sub_entities %}
+                                    <a href="/gestionnaire/{{next_nature}}/{{sub.id}}" class="subentity-card d-block p-2 mb-2 rounded text-decoration-none text-light bg-white bg-opacity-10 hover-scale">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="text-truncate">
+                                                <i class="fas fa-chevron-circle-right me-2 text-info"></i>
+                                                {{sub}}
+                                            </div>
+                                            <div>
+                                                {% if request.user.personnel.is_process %}
+                                                    <span class="badge bg-primary">{{sub.resultat_niveau_execution}}%</span>
+                                                {% elif request.user.personnel.is_finance %}
+
+                                                        <span class="badge bg-primary">{{sub.taux_financier_valide}}%</span>
+
+                                                    <div class="progress_launcher-sm" data-id="{{sub.id}}"></div>
+
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </a>
+                                {% empty %}
+                                    <div class="text-center py-2 text-muted">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        {{type_entity}} non assigné
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+{%endcomment%}
+
+
+    <style>
+        .hover-scale {
+            transition: all 0.2s ease;
+        }
+        .hover-scale:hover {
+            transform: scale(1.02);
+            background-color: rgba(255,255,255,0.15)!important;
+        }
+        .operation-card {
+            transition: all 0.3s ease;
+        }
+        .operation-card:hover {
+            transform: translateX(5px);
+        }
+        .progress_launcher-sm {
+            width: 80px;
+            height: 8px;
+        }
+        .animate__animated {
+            animation-duration: 0.5s;
+        }
+    </style>
+
+
+
+
+
+
+                {% endblock %}
+            </div>
+
+
+            <style>
+             /* Styles personnalisés pour le FAB */
+             .fab-container {
+                     position: fixed;
+                     bottom: 30px;
+                     right: 30px;
+                     z-index: 1000;
+             }
+
+             .fab-main {
+                     width: 60px;
+                     height: 60px;
+                     border-radius: 50%;
+                
+                     color: white;
+                     border: none;
+                     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+                     display: flex;
+                     align-items: center;
+                     justify-content: center;
+                     cursor: pointer;
+                     transition: all 0.3s ease;
+                     position: relative;
+                     overflow: hidden;
+                     animation: pulse 2s infinite;
+             }
+
+             .fab-main:hover {
+                     transform: scale(1.1) rotate(10deg);
+                     box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+             }
+
+             .fab-main:active {
+                     transform: scale(0.95);
+             }
+
+             .fab-main i {
+                     font-size: 24px;
+                     transition: all 0.3s ease;
+             }
+
+             .fab-main:hover i {
+                     transform: rotate(45deg);
+             }
+
+             .fab-options {
+                     position: absolute;
+                     bottom: 70px;
+                     right: 0;
+                     opacity: 0;
+                     visibility: hidden;
+                     transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                     transform: translateY(20px);
+             }
+
+             .fab-container.open .fab-options {
+                     opacity: 1;
+                     visibility: visible;
+                     transform: translateY(0);
+             }
+
+             .fab-option {
+                     width: 50px;
+                     height: 50px;
+                     border-radius: 50%;
+                     background: white;
+                     color: #2575fc;
+                     margin-bottom: 10px;
+                     display: flex;
+                     align-items: center;
+                     justify-content: center;
+                     box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+                     cursor: pointer;
+                     transition: all 0.3s ease;
+                     transform: scale(0.8);
+                     opacity: 0;
+             }
+
+             .fab-container.open .fab-option {
+                     transform: scale(1);
+                     opacity: 1;
+             }
+
+             .fab-option:nth-child(1) {
+                     transition-delay: 0.1s;
+             }
+
+             .fab-option:nth-child(2) {
+                     transition-delay: 0.2s;
+             }
+
+             .fab-option:nth-child(3) {
+                     transition-delay: 0.3s;
+             }
+
+             .fab-option:hover {
+                     transform: scale(1.1) !important;
+                     background: #2575fc;
+                     color: white;
+             }
+
+             .fab-tooltip {
+                     position: absolute;
+                     right: 70px;
+                     background: #333;
+                     color: white;
+                     padding: 5px 10px;
+                     border-radius: 4px;
+                     font-size: 12px;
+                     white-space: nowrap;
+                     opacity: 0;
+                     pointer-events: none;
+                     transition: all 0.3s ease;
+             }
+
+             .fab-option:hover .fab-tooltip {
+                     opacity: 1;
+                     right: 60px;
+             }
+
+             /* Animation de pulsation */
+             @keyframes pulse {
+                     0% {
+                             box-shadow: 0 0 0 0 rgba(106, 17, 203, 0.7);
+                     }
+                     70% {
+                             box-shadow: 0 0 0 15px rgba(106, 17, 203, 0);
+                     }
+                     100% {
+                             box-shadow: 0 0 0 0 rgba(106, 17, 203, 0);
+                     }
+             }
+
+             /* Effet de vague au clic */
+             .fab-main:after {
+                     content: "";
+                     display: block;
+                     position: absolute;
+                     width: 100%;
+                     height: 100%;
+                     top: 0;
+                     left: 0;
+                     pointer-events: none;
+                     background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+                     background-repeat: no-repeat;
+                     background-position: 50%;
+                     transform: scale(10, 10);
+                     opacity: 0;
+                     transition: transform .5s, opacity 1s;
+             }
+
+             .fab-main:active:after {
+                     transform: scale(0, 0);
+                     opacity: .3;
+                     transition: 0s;
+             }
+     </style>
+            <div class="fab-container">
+         <div class="fab-options">
+
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=engineering" />
+
+         </div>
+         
+           <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
+
+      <div class="erp-control-stack">
+         <div class="fab-wrapper mb-3">
+        <div class="glow-orbit"></div> 
+        <button class="fab-erp fab-analysis"  title="Analyse PTF"  data-toggle="modal" data-target="#exampleModal"
+       >
+            <i class="fa-solid fa-chart-simple"></i>
+            <span class="fab-tooltip">Process-Technic-Finance</span>
+         </button>
+    </div>
+    {%if request.user.personnel.is_technic%}
+  <div class="fab-wrapper mb-3">
+    <div class="glow-orbit"></div> 
+    <form method="POST" action="{% url 'update-tet' %}">
+        {% csrf_token %}
+        <button type="submit" class="fab-erp fab-analysis" title="Mettre à jour les taux">
+            <i class="fa-solid fa-rotate"></i> 
+            <span class="fab-tooltip">Actualiser Performance Techniques</span>
+        </button>
+    </form>
+</div>
+{%endif%}
+    <div class="fab-wrapper">
+        <button class="fab-erp fab-settings" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSettings" title="Personnalisation">
+            <i class="fa-solid fa-sliders-h"></i>
+            <span class="fab-tooltip">Configuration</span>
+        </button>
+    </div>
+
+</div>
+
+<style>
+    /* Conteneur principal */
+    .erp-control-stack {
+        position: fixed;
+        right: 20px;
+        bottom: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 1060;
+    }
+
+    .fab-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Style de base des boutons FAB */
+    .fab-erp {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+        cursor: pointer;
+        position: relative;
+        z-index: 5;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    /* Couleurs spécifiques */
+    .fab-analysis {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+
+    .fab-settings {
+        background: {{request.user.personnel.color_fond|default:'#4361ee'}};
+        width: 44px; /* Un peu plus petit pour la hiérarchie */
+        height: 44px;
+    }
+
+    /* --- EFFET CERCLE LUMINEUX TOURNANT --- */
+    .glow-orbit {
+        position: absolute;
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        padding: 2px;
+        background: conic-gradient(from 0deg, transparent 0%, #38bdf8 50%, transparent 100%);
+        animation: rotateGlow 2s linear infinite;
+        z-index: 1;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: destination-out;
+        mask-composite: exclude;
+    }
+
+    @keyframes rotateGlow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Tooltips au survol */
+    .fab-tooltip {
+        position: absolute;
+        right: 65px;
+        background: #1e293b;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        opacity: 0;
+        transform: translateX(10px);
+        transition: all 0.3s ease;
+        pointer-events: none;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .fab-wrapper:hover .fab-tooltip {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    /* Effets de survol bouton */
+    .fab-erp:hover {
+        transform: scale(1.1);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+
+    .fab-analysis:hover {
+        background: #000;
+    }
+</style>
+     </div>
+        
+
+<div class="offcanvas offcanvas-start border-0 shadow" tabindex="-1" id="offcanvasSettings" style="width: 400px;">
+    <div class="offcanvas-header bg-dark text-white">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-cog fa-spin me-2 text-info"></i>
+            <h5 class="offcanvas-title fw-bold" id="offcanvasLabel">Configuration Interface</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+
+    <div class="offcanvas-body bg-light">
+        <form action="/color/" method="POST" id="settingsForm">
+            {% csrf_token %}
+            <input type="hidden" name="personnel_id" value="{{request.user.personnel.id}}">
+
+            <div class="settings-group mb-4">
+                <label class="section-title">Identité Visuelle</label>
+                
+                <div class="card border-0 shadow-sm p-3 mb-2">
+                    <label class="form-label small fw-bold">Couleur Accent (Action)</label>
+                    <div class="d-flex align-items-center">
+                        <input type="color" class="form-control form-control-color border-0 me-3" 
+                               id="primaryColor" name="color" value="{{ request.user.personnel.color|default:'#4361ee' }}">
+                        <div class="flex-grow-1">
+                            <code class="small text-muted" id="hexPrimaryText">{{ request.user.personnel.color|default:'#4361ee' }}</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm p-3">
+                    <label class="form-label small fw-bold">Fond Navigation</label>
+                    <div class="d-flex align-items-center">
+                        <input type="color" class="form-control form-control-color border-0 me-3" 
+                               id="backgroundColor" name="color_fond" value="{{ request.user.personnel.color_fond|default:'#1e293b' }}">
+                        <div class="flex-grow-1">
+                            <code class="small text-muted" id="hexBackText">{{ request.user.personnel.color_fond|default:'#1e293b' }}</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Associations 60 / 30 / 10 (ajout) ===== -->
+            <div class="settings-group mb-4">
+                <label class="section-title">Associations de couleurs</label>
+                <div class="card border-0 shadow-sm p-3">
+                    <div class="sbx-roles" aria-hidden="true">
+                        <span class="sbx-role"><i style="background:var(--nav-bg-color)"></i>Dominante 60 %</span>
+                        <span class="sbx-role"><i style="background:var(--primary-color)"></i>Accent 30 %</span>
+                        <span class="sbx-role"><i style="background:var(--tertiary-color)"></i>Touche 10 %</span>
+                    </div>
+                    <div class="sbx-presets" id="sbxPanelPresets"></div>
+                    <div class="d-flex align-items-center mt-3">
+                        <input type="color" class="form-control form-control-color border-0 me-3" id="sbxTiersColor" name="color_tiers" value="{{ request.user.personnel.color_tiers|default:'#FACC15' }}">
+                        <div class="flex-grow-1">
+                            <label class="form-label small fw-bold mb-0" for="sbxTiersColor">Couleur de touche (10 %)</label><br>
+                            <code class="small text-muted" id="sbxTiersText">{{ request.user.personnel.color_tiers|default:'#FACC15' }}</code>
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">Dominante = Fond Navigation · Accent = Couleur Accent. Aperçu immédiat.</small>
+                </div>
+            </div>
+            <!-- ===== Fin associations ===== -->
+
+            <div class="settings-group mb-4">
+                <label class="section-title">Seuils de Performance (Suivi-Éval)</label>
+                <div class="card border-0 shadow-sm p-3">
+                    <div class="row g-2 text-center">
+                        <div class="col-4">
+                            <input type="color" class="form-control form-control-color w-100" name="color_success" value="#10b981">
+                            <span class="mini-text text-success fw-bold">Atteint</span>
+                        </div>
+                        <div class="col-4">
+                            <input type="color" class="form-control form-control-color w-100" name="color_warning" value="#f59e0b">
+                            <span class="mini-text text-warning fw-bold">Alerte</span>
+                        </div>
+                        <div class="col-4">
+                            <input type="color" class="form-control form-control-color w-100" name="color_danger" value="#ef4444">
+                            <span class="mini-text text-danger fw-bold">Retard</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group mb-4">
+                <label class="section-title">Lecture & Données</label>
+                <div class="card border-0 shadow-sm p-3">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <label class="small fw-bold">Taille du texte</label>
+                            <span id="fontVal" class="badge bg-secondary">14px</span>
+                        </div>
+                        <input type="range" class="form-range" id="fontSizeRange" name="font_size" min="12" max="20" value="14">
+                    </div>
+
+                    <div>
+                        <label class="small fw-bold">Style de police</label>
+                        <select class="form-select form-select-sm border-0 bg-light" id="fontFamilySelect" name="font_family">
+                            <option value="'Inter', sans-serif">Standard (Moderne)</option>
+                            <option value="'JetBrains Mono', monospace">Précision (Chiffres)</option>
+                            <option value="'Open Sans', sans-serif">Confort de lecture</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sticky-bottom bg-light pt-3">
+                <button class="btn btn-primary w-100 py-2 fw-bold shadow-sm mb-2" type="submit">
+                    <i class="fas fa-save me-2"></i>Sauvegarder la configuration
+                </button>
+                <button type="button" class="btn btn-outline-secondary w-100 btn-sm border-0" data-bs-dismiss="offcanvas">
+                    Ignorer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Global Look & Feel */
+    :root {
+        --erp-font-size: 14px;
+    }
+
+    .section-title {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+
+    .mini-text { font-size: 0.7rem; }
+
+    /* Custom Form Elements */
+    .form-control-color {
+        width: 48px;
+        height: 38px;
+        padding: 2px;
+        border-radius: 6px !important;
+        cursor: pointer;
+    }
+
+    .form-control-color::-webkit-color-swatch {
+        border-radius: 4px;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .card { transition: all 0.2s ease; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; }
+
+    #fabMain:hover { transform: scale(1.1) rotate(15deg); }
+
+    /* Style for real-time preview (injecté via JS) */
+    .preview-active-text { font-size: var(--erp-font-size) !important; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Gestion des couleurs et codes hexadécimaux
+    const colorInputs = [
+        { id: 'primaryColor', text: 'hexPrimaryText' },
+        { id: 'backgroundColor', text: 'hexBackText' }
+    ];
+
+    colorInputs.forEach(item => {
+        const input = document.getElementById(item.id);
+        const textLabel = document.getElementById(item.text);
+        
+        input.addEventListener('input', function() {
+            textLabel.textContent = this.value.toUpperCase();
+            // Optionnel : Changer la couleur du FAB en temps réel
+            if(this.id === 'backgroundColor') {
+                document.getElementById('fabMain').style.background = this.value;
+            }
+        });
+    });
+
+    // 2. Aperçu Typographie en temps réel
+    const fontRange = document.getElementById('fontSizeRange');
+    const fontValLabel = document.getElementById('fontVal');
+    const fontFamilySelect = document.getElementById('fontFamilySelect');
+
+    fontRange.addEventListener('input', function() {
+        const size = this.value + 'px';
+        fontValLabel.textContent = size;
+        // Applique à tout le corps du document (preview immédiate)
+        document.body.style.fontSize = size;
+    });
+
+    fontFamilySelect.addEventListener('change', function() {
+        document.body.style.fontFamily = this.value;
+    });
+
+    // 3. Animation du bouton au clic
+    document.getElementById('settingsForm').addEventListener('submit', function() {
+        const btn = this.querySelector('button[type="submit"]');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Application...';
+        btn.classList.replace('btn-primary', 'btn-success');
+    });
+});
+</script>
+
+             <style>
+                    .color-palette {
+                        max-width: 800px;
+                        margin: 2rem auto;
+                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                        border-radius: 15px;
+                        overflow: hidden;
+                        transition: all 0.3s ease;
+                    }
+
+                    .color-palette:hover {
+                        transform: translateY(-5px);
+                        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+                    }
+
+                    .palette-header {
+                        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+                        color: white;
+                        padding: 1.5rem;
+                        text-align: center;
+                    }
+
+
+
+                    .color-option {
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+                        margin-bottom: 1.5rem;
+                    }
+
+                    .color-option:hover {
+                        transform: scale(1.03);
+                        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+                    }
+
+                    .color-preview {
+                        height: 100px;
+                        transition: all 0.5s ease;
+                    }
+
+                    .color-info {
+                        padding: 1rem;
+                        background: white;
+                    }
+
+                    .color-hex {
+                        font-family: 'Courier New', monospace;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    }
+
+                    .color-hex:hover {
+                        color: #2575fc;
+                        transform: scale(1.05);
+                    }
+
+                    .custom-color-input {
+                        height: 60px;
+                        border: none;
+                        box-shadow: none;
+                        padding: 0;
+                        cursor: pointer;
+                    }
+
+                    .custom-color-input::-webkit-color-swatch {
+                        border: none;
+                        border-radius: 10px;
+                    }
+
+                    .custom-color-input::-webkit-color-swatch-wrapper {
+                        padding: 0;
+                    }
+
+                    .color-copy-btn {
+                        opacity: 0;
+                        transition: all 0.3s ease;
+                    }
+
+                    .color-option:hover .color-copy-btn {
+                        opacity: 1;
+                    }
+
+                    /* Animation when color is copied */
+                    @keyframes flash {
+                        0% { background-color: inherit; }
+                        50% { background-color: #ffffff; }
+                        100% { background-color: inherit; }
+                    }
+
+                    .copied {
+                        animation: flash 0.5s;
+                    }
+                </style>
+         <!-- Bootstrap JS Bundle with Popper -->
+         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    </div>
+
+  </div>
+</div>
+
+            {% endfor %}
+
+            {% if nb_top_entity == 0 %}
+            {% if permissions > 4 %}
+            <div class="">
+                <h3 class="card-title text-center"> Vous n'avez encore rien plannifiÃ©</h3>
+                <div class="card-body">
+                    <div class="text-centers"><a href="/gestionnaire/p/" class="btn btn-primary">CrÃ©er un {{top_entity}}</a></div>
+                </div>
+            </div>
+            {% else %}
+            <div class="">
+                <h3 class="card-title text-center"> Vous n'etes impliquÃ© actuellement dans aucun {{top_entity}}</h3>
+                <div class="card-body d-flex">
+                    <div class="text-centers"><a href="/gestionnaire/p/" class="btn btn-success">Contacter la Hierachie</a></div>
+                    <div>&nbsp;&nbsp;</div>
+                    <div class="text-centers"><a href="/gestionnaire/p/" class="btn btn-warning">Contacter Opera +</a></div>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+
+    </div>
+
+
+
+</div>
+</div>
+
+
+
+
+
+</div>
+
+</div>
+</div>
+
+
+<div class="modal fade "id="valid_SupLogic" tabindex="-1" role="dialog" aria-hidden="true" >
+    <div class="modal-dialog" style="justify-content:flex-start;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <!--button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button-->
+                <h4 class="modal-title">Rapport - <span class="h4 text-info attendu-modal"></span></h4>
+                <button type="button" class="close waves-effect waves-light" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">Ã—</span>
+                </button>
+            </div>
+            <form method="POST" id='save_valid_rapport' action="/save_valid_rapport/">
+                {% csrf_token %}
+                <div class="modal-body d-flex justify-content-between">
+                    <div style="padding-right:10px;">
+                        <!-- border-right:2px solid #aaa; -->
+                        <label class="text-center h5"> Objectifs {{type_entity}} </label>
+                        {% block expected_divs %}
+                        <div class='attendu-modal'>
+                        </div>
+                        {% endblock %}
+                    </div>
+                    <div style="padding-left:10px;">
+                        <label class="text-center h5"> Informations Ã  Rapporter </label>
+
+                        <div class='attendu-modal'>
+
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="resultat_realise" name="resultat_realise" value="">
+                <input type="hidden" name="value" id="tache_realisee">
+                <input type="hidden" name="nature" value="{{nature}}">
+                <input type="hidden" name="institution" value="{{actual_institution.id}}">
+                <div class="modal-footer">
+                    <input type="submit" class="btn btn-success" value="Enregistrer le Rapport" name="">
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- ===================== ASSOCIATIONS : script (ajout) ===================== -->
+<script>
+    (function () {
+        var form = document.querySelector('#offcanvasSettings form');
+        var grid = document.getElementById('sbxPanelPresets');
+        if (!form || !grid) return;
+        var accent = form.querySelector('input[name="color"]'),
+            fond = form.querySelector('input[name="color_fond"]'),
+            tiers = form.querySelector('input[name="color_tiers"]'),
+            root = document.documentElement;
+        // [nom, DOMINANTE 60 % → Fond Navigation, ACCENT 30 % → Couleur Accent, TOUCHE 10 %]
+        var PRESETS = [
+            ['Bleu-noir · Rouge néon · Cyan','#0A1124','#FF2E63','#00C2FF'],['Argent · Aubergine · Marigold','#BFC5CE','#4B1D3F','#EAA221'],
+            ['Brun · Argent · Lavande pâle','#5A3825','#C0C6CF','#DCD0FF'],['Bleu royal · Blanc pur · Rouge','#2340B5','#FFFFFF','#E11D2E'],
+            ['Bleu · Vert · Rouge','#1D4ED8','#16A34A','#DC2626'],['Noir · Vert · Cyan électrique','#0A0A0A','#22C55E','#00F0FF'],
+            ['Jaune · Noir · Violet','#FACC15','#111111','#7C3AED'],['Marron · Argent · Violet','#5B3A29','#C0C6CF','#7C3AED'],
+            ['Violet · Jaune · Noir','#5B21B6','#FACC15','#111111'],['MEAL · Sarcelle · Safran','#123A37','#E48B0C','#E35A33'],
+            ['Cameroun · Vert · Rouge','#007A5E','#CE1126','#FCD116'],['Noir · Or · Ivoire','#0B0B0F','#D4A017','#F5F5F4'],
+            ['Bleu roi · Or · Blanc','#1D4ED8','#FBBF24','#F8FAFC'],['Bordeaux · Or · Crème','#7F1D1D','#E9C46A','#FFF7E6'],
+            ['Émeraude · Noir · Or','#047857','#111827','#FBBF24'],['Orange · Noir · Blanc','#EA580C','#111111','#FFFFFF'],
+            ['Rouge · Noir · Or','#B91C1C','#111111','#FBBF24'],['Rose · Prune · Or','#DB2777','#3B0A2A','#FBBF24'],
+            ['Marine · Corail · Sable','#0B2545','#FB7185','#F4D6A0'],['Turquoise · Marine · Corail','#0E9F9A','#0B2545','#FF7A59'],
+            ['Ciel · Marine · Jaune','#0284C7','#0B2545','#FACC15'],['Indigo · Jaune · Blanc','#3730A3','#FDE047','#FFFFFF'],
+            ['Lavande · Prune · Menthe','#7C6BD9','#2A1033','#6EE7B7'],['Prune · Argent · Rose','#4A1D5C','#CBD5E1','#EC4899'],
+            ['Moutarde · Pétrole · Brique','#D4A017','#0D3B4C','#C1440E'],['Terre cuite · Crème · Vert','#9A3412','#FDE7C8','#15803D'],
+            ['Olive · Ocre · Crème','#4D5B23','#CA8A04','#F5EBDD'],['Kaki · Noir · Orange','#6B6B3A','#111111','#F97316'],
+            ['Chocolat · Caramel · Turquoise','#3E2723','#D97706','#2DD4BF'],['Café · Crème · Cuivre','#4B3621','#F3E5C8','#B45309'],
+            ['Forêt · Or · Lin','#14532D','#EAB308','#EDE4D3'],['Sarcelle · Sable · Corail','#2A8A7D','#F4A261','#E35A33'],
+            ['Corail · Ardoise · Sable','#E35A33','#1E293B','#F4D6A0'],['Argent · Noir · Rouge','#9CA3AF','#111827','#DC2626'],
+            ['Graphite · Orange · Glacier','#1F2937','#F97316','#93C5FD'],['Acier · Cyan · Lime','#334155','#22D3EE','#A3E635']
+        ];
+        function same(a, b) { return (a || '').toLowerCase() === (b || '').toLowerCase(); }
+        function setVal(input, v) {
+            if (!input || !v) return;
+            input.value = v;
+            input.dispatchEvent(new Event('input', { bubbles: true }));   // vos scripts existants mettent à jour le code hexa
+        }
+        function refresh() {
+            if (accent) root.style.setProperty('--primary-color', accent.value);
+            if (fond) root.style.setProperty('--nav-bg-color', fond.value);
+            if (tiers) { root.style.setProperty('--tertiary-color', tiers.value); var t = document.getElementById('sbxTiersText'); if (t) t.textContent = tiers.value; }
+            if (window.sbxApplyInk) window.sbxApplyInk();
+            grid.querySelectorAll('.sbx-preset').forEach(function (b) {
+                b.classList.toggle('is-on', same(b.dataset.fond, fond && fond.value) && same(b.dataset.accent, accent && accent.value) && same(b.dataset.tiers, tiers && tiers.value));
+            });
+        }
+        grid.innerHTML = PRESETS.map(function (p) {
+            return '<button type="button" class="sbx-preset" data-fond="' + p[1] + '" data-accent="' + p[2] + '" data-tiers="' + p[3] + '" title="' + p[0] + '" aria-label="' + p[0] + '">' +
+                '<span class="sbx-preset-swatch"><span style="background:' + p[1] + '"></span><span style="background:' + p[2] + '"></span><span style="background:' + p[3] + '"></span></span>' +
+                '<span class="sbx-preset-name">' + p[0] + '</span></button>';
+        }).join('');
+        grid.addEventListener('click', function (e) {
+            var b = e.target.closest('.sbx-preset'); if (!b) return;
+            setVal(fond, b.dataset.fond); setVal(accent, b.dataset.accent); setVal(tiers, b.dataset.tiers); refresh();
+        });
+        [accent, fond, tiers].forEach(function (i) { if (i) i.addEventListener('input', refresh); });
+        refresh();
+    })();
+</script>
+<!-- ===================== FIN ASSOCIATIONS ===================== -->
+{% endblock %}
+
+{% block script %}
+
+
+
+<script>
+    // Obtenir le contexte du graphique
+    var chrt = document.getElementById("chart").getContext("2d");
+
+    // Initialiser le graphique
+    var chartId = new Chart(chrt, {
+       type: 'doughnut',
+       data: {
+          labels: ["Non Effectuées", "Validées", "Archivées", "En Attente"],
+          datasets: [{
+             label: "Sujets de tutoriels en ligne",
+             data: [9, 13, 35, 40],
+             backgroundColor: ['yellow', 'pink', 'lightgreen', 'blue'],
+             hoverOffset: 10
+          }],
+       },
+       options: {
+          responsive: false,
+          plugins: {
+             title: {
+                display: true,
+                text: 'Évolution des Opérations',
+                fontSize: 24,
+                fontColor: '#333333'
+             },
+             legend: {
+                position: 'bottom',
+                labels: {
+                   fontColor: '#333333',
+                   fontSize: 14,
+                   boxWidth: 12,
+                   padding: 20
+                }
+             }
+          }
+       }
+    });
+
+    // Requête AJAX pour obtenir le nombre d'opérations non effectuées
+    $.ajax({
+       url: '/count_operations/',
+       method: 'GET',
+       success: function(response) {
+          var nonEffectuees = response.count;
+          console.log("Nombre d'opérations non effectuées : " + nonEffectuees);
+          // Mettre à jour le graphique avec le nombre d'opérations non effectuées
+          chartId.data.datasets[0].data[0] = nonEffectuees;
+          chartId.update();
+       },
+       error: function(error) {
+          console.log(error);
+       }
+    });
+
+    // Requête AJAX pour obtenir le nombre d'opérations validées
+    $.ajax({
+       url: '/count_persos/',
+       method: 'GET',
+       success: function(response) {
+          var valide = response.count_persos;
+          console.log("Nombre d'opérations validées : " + valide);
+          // Mettre à jour le graphique avec le nombre d'opérations validées
+          chartId.data.datasets[0].data[1] = valide;
+          chartId.update();
+       },
+       error: function(error) {
+          console.log(error);
+       }
+    });
+
+    // Requête AJAX pour obtenir le nombre d'opérations archivées
+    $.ajax({
+       url: '/count_restored/',
+       method: 'GET',
+       success: function(response) {
+          var archive = response.count_restore;
+          console.log("Nombre d'opérations archivées : " + archive);
+          // Mettre à jour le graphique avec le nombre d'opérations archivées
+          chartId.data.datasets[0].data[2] = archive;
+          chartId.update();
+       },
+       error: function(error) {
+          console.log(error);
+       }
+    });
+
+    // Requête AJAX pour obtenir le nombre d'opérations en attente
+    $.ajax({
+        url: '/count_attente_operation/',
+        method: 'GET',
+        success: function(response) {
+           var attente = response.attente;
+           console.log("Nombre d'opérations en attente : " + attente);
+           // Mettre à jour le graphique avec le nombre d'opérations en attente
+           chartId.data.datasets[0].data[3] = attente;
+           chartId.update();
+        },
+        error: function(error) {
+           console.log(error);
+        }
+    });
+</script>
+
+
+
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/modules/dumbbell.js"></script>
+<script src="https://code.highcharts.com/modules/lollipop.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/modules/export-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const canvasElement = document.getElementById('chartContainer');
+
+    if (!canvasElement) {
+        console.error("Le canvas 'chartContainer' est introuvable");
+        return;
+    }
+
+    fetch('/api_count_operations_by_nature/')
+        .then(response => response.ok ? response.json() : Promise.reject(response))
+        .then(data => {
+            if (!data || Object.keys(data).length === 0) {
+                canvasElement.outerHTML = '<p style="text-align:center;">Aucune donnée disponible.</p>';
+                return;
+            }
+
+            // Transformer les données
+            const labels = Object.keys(data);
+            const values = Object.values(data).map(v => parseFloat(v) || 0);
+
+            const ctx = canvasElement.getContext('2d');
+
+            new Chart(ctx, {
+                type: 'doughnut', // Doughnut équivalent du pie 3D
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: [
+                            '#4CAF50', '#2196F3', '#FF9800', '#E91E63',
+                            '#9C27B0', '#009688', '#FF5722', '#607D8B'
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '40%', // Taille du trou central du doughnut
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Operations Par Nature',
+                            font: { size: 16 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.parsed;
+                                    let total = context.dataset.data.reduce((a,b) => a+b, 0);
+                                    let percent = ((value / total)*100).toFixed(1);
+                                    return `${context.label}: ${value} (${percent}%)`;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+        })
+        .catch(error => {
+            console.error("Erreur Fetch:", error);
+            canvasElement.outerHTML = `<p style="color:red;text-align:center;">Erreur de chargement: ${error.message}</p>`;
+        });
+});
+</script>
+
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+    <script>
+        am5.ready(function() {
+            // Créer l'élément racine
+            var root = am5.Root.new("chartdiv");
+
+            // Définir les thèmes
+            root.setThemes([
+                am5themes_Animated.new(root)
+            ]);
+
+            // Créer le graphique radar
+            var chart = root.container.children.push(am5radar.RadarChart.new(root, {
+                panX: false,
+                panY: false,
+                startAngle: 160,
+                endAngle: 380
+            }));
+
+            // Créer l'axe et son rendu
+            var axisRenderer = am5radar.AxisRendererCircular.new(root, {
+                innerRadius: -60
+            });
+
+            axisRenderer.grid.template.setAll({
+                stroke: root.interfaceColors.get("background"),
+                visible: true,
+                strokeOpacity: 0.8
+            });
+
+            var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+                maxDeviation: 0,
+                min: 0,
+                max: 100,
+                strictMinMax: true,
+                renderer: axisRenderer
+            }));
+
+            var axisDataItem = xAxis.makeDataItem({});
+            var clockHand = am5radar.ClockHand.new(root, {
+                pinRadius: am5.percent(20),
+                radius: am5.percent(100),
+                bottomWidth: 40
+            });
+
+            var bullet = axisDataItem.set("bullet", am5xy.AxisBullet.new(root, {
+                sprite: clockHand
+            }));
+
+            xAxis.createAxisRange(axisDataItem);
+
+            var label = chart.radarContainer.children.push(am5.Label.new(root, {
+                fill: am5.color(0xffffff),
+                centerX: am5.percent(50),
+                textAlign: "center",
+                centerY: am5.percent(50),
+                fontSize: "3em"
+            }));
+
+            // Initial value
+            axisDataItem.set("value", 0);
+
+            bullet.get("sprite").on("rotation", function () {
+                var value = axisDataItem.get("value");
+                var fill = am5.color(0x000000);
+
+                xAxis.axisRanges.each(function (axisRange) {
+                    if (value >= axisRange.get("value") && value <= axisRange.get("endValue")) {
+                        fill = axisRange.get("axisFill").get("fill");
+                    }
+                });
+
+                label.set("text", Math.round(value).toString());
+
+                clockHand.pin.animate({ key: "fill", to: fill, duration: 500, easing: am5.ease.out(am5.ease.cubic) });
+                clockHand.hand.animate({ key: "fill", to: fill, duration: 500, easing: am5.ease.out(am5.ease.cubic) });
+            });
+
+            // Fetch operations percentage from the server
+            // Fetch operations percentage from the server
+function fetchOperationsPercentage() {
+    const dateDebut = document.querySelector('input[name="date_debut"]').value;
+    const dateFin = document.querySelector('input[name="date_fin"]').value;
+    const date_f = document.getElementById("date_f");
+
+    const date_d = document.getElementById("date_d");
+    const progressions = document.getElementById("progressions");
+
+    date_f.textContent=dateFin;
+    date_d.textContent=dateDebut;
+    $.ajax({
+        url: '/calculators_operations/', // Update with the correct URL
+        type: 'POST', // Change to POST since you're sending data
+        data: {
+            date_debut: dateDebut,
+            date_fin: dateFin,
+            csrfmiddlewaretoken: '{{ csrf_token }}' // Include CSRF token for security
+        },
+        dataType: 'json',
+        success: function(data) {
+            var operationsPercentage = data.operations_percentage;
+            progressions.textContent=operationsPercentage+"%";
+            // console.log(operationsPercentage);
+            axisDataItem.animate({
+                key: "value",
+                to: operationsPercentage,
+                duration: 500,
+                easing: am5.ease.out(am5.ease.cubic)
+            });
+        },
+        error: function(xhr, status, error) {
+            console.error('Error fetching data:', error);
+        }
+    });
+
+
+}
+
+            // Créer les plages d'axes
+            var bandsData = [
+                { title: "Critique", color: "#ee1f25", lowScore: 0, highScore: 20 },
+                { title: "Faible", color: "#f04922", lowScore: 20, highScore: 40 },
+                { title: "Moyen", color: "#fdae19", lowScore: 40, highScore: 60 },
+                { title: "Bon", color: "#f3eb0c", lowScore: 60, highScore: 80 },
+                { title: "Excellent", color: "#b0d136", lowScore: 80, highScore: 100 }
+            ];
+
+            am5.array.each(bandsData, function (data) {
+                var axisRange = xAxis.createAxisRange(xAxis.makeDataItem({}));
+                axisRange.setAll({
+                    value: data.lowScore,
+                    endValue: data.highScore
+                });
+
+                axisRange.get("axisFill").setAll({
+                    visible: true,
+                    fill: am5.color(data.color),
+                    fillOpacity: 0.8
+                });
+
+                axisRange.get("label").setAll({
+                    text: data.title,
+                    inside: true,
+                    radius: 15,
+                    fontSize: "0.9em",
+                    fill: root.interfaceColors.get("background")
+                });
+            });
+
+            // Animation à l'ouverture
+            chart.appear(1000, 100);
+        }); // Fin de am5.ready()
+    </script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    Promise.all([
+        fetch('/api_count_operations_by_categorie/').then(r => r.json()),
+        fetch('/api_count_operations/').then(r => r.json())
+    ]).then(([operationsByCategory, validOperations]) => {
+
+        // Transformation avec sécurité anti-NaN
+        const labels = operationsByCategory.map(item => item.name || "Inconnu");
+        const dataOperations = operationsByCategory.map(item => Number(item.y) || 0);
+        const dataValid = validOperations.map(item => Number(item.y) || 0);
+
+        const options = {
+            chart: {
+                type: 'bar',
+                height: 400, // Hauteur fixe en pixels
+                animations: { enabled: true }
+            },
+            series: [
+                { name: "Total", data: dataOperations },
+                { name: "Valides", data: dataValid }
+            ],
+            xaxis: { categories: labels },
+            colors: ['#2196F3', '#4CAF50'],
+            plotOptions: {
+                bar: { columnWidth: '60%' }
+            }
+        };
+
+        // On vide le conteneur avant d'afficher (au cas où)
+        const container = document.querySelector("#contains");
+        container.innerHTML = ''; 
+        
+        const chart = new ApexCharts(container, options);
+        chart.render();
+
+    }).catch(err => console.error("Erreur détaillée:", err));
+});
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Appel vers votre URL Django
+    fetch('/indicator-entity/')
+        .then(response => response.json())
+        .then(data => {
+            Highcharts.chart('container_evolution_technic', {
+                chart: { type: 'column' },
+                title: { text: 'Performance des Indicateurs par Entité' },
+                xAxis: {
+                    categories: data.categories,
+                    crosshair: true
+                },
+                yAxis: {
+                    min: 0,
+                    title: { text: 'Nombre d\'indicateurs' }
+                },
+                tooltip: { shared: true },
+                series: data.series // Les séries formatées en Python
+            });
+        })
+        .catch(error => console.error('Erreur lors du chargement des données:', error));
+});
+</script>
+
+<script>
+(function (H) {
+    H.seriesTypes.pie.prototype.animate = function (init) {
+        const series = this,
+            chart = series.chart,
+            points = series.points,
+            { animation } = series.options,
+            { startAngleRad } = series;
+
+        function fanAnimate(point, startAngleRad) {
+            const graphic = point.graphic, args = point.shapeArgs;
+            if (graphic && args) {
+                graphic.attr({ start: startAngleRad, end: startAngleRad, opacity: 1 })
+                    .animate({ start: args.start, end: args.end }, 
+                    { duration: animation.duration / points.length }, 
+                    function () {
+                        if (points[point.index + 1]) fanAnimate(points[point.index + 1], args.end);
+                        if (point.index === series.points.length - 1) {
+                            series.dataLabelsGroup.animate({ opacity: 1 }, void 0, function () {
+                                points.forEach(p => p.opacity = 1);
+                                series.update({ enableMouseTracking: true }, false);
+                                chart.update({
+                                    plotOptions: {
+                                        pie: { innerSize: '60%', borderRadius: 4 } // Plus fin pour le look ERP
+                                    }
+                                });
+                            });
+                        }
+                    });
+            }
+        }
+        if (init) { points.forEach(p => p.opacity = 0); } 
+        else { fanAnimate(points[0], startAngleRad); }
+    };
+}(Highcharts));
+
+Highcharts.chart('containers_partitions_technic', {
+    chart: {
+        type: 'pie',
+        backgroundColor: 'transparent'
+    },
+    title: {
+        text: 'Répartition des Performances',
+        style: { fontWeight: 'bold', color: '#333' }
+    },
+    subtitle: {
+        text: 'Analyse par seuils d\'exécution'
+    },
+    tooltip: {
+        pointFormat: '{point.name}: <b>{point.y}</b> indicateurs'
+    },
+    plotOptions: {
+        pie: {
+            allowPointSelect: true,
+            borderWidth: 0,
+            cursor: 'pointer',
+            dataLabels: {
+                enabled: true,
+                format: '{point.name}', // Nettoyage : plus de pourcentages ici
+                style: { fontWeight: '500', fontSize: '12px' },
+                distance: 15
+            }
+        }
+    },
+    series: [{
+        enableMouseTracking: false,
+        animation: { duration: 2000 },
+        colorByPoint: true,
+        data: [{
+            name: 'Faible (0-50%)',
+            y: 15, // Remplacez par vos données dynamiques
+            color: '#e55353' // Rouge ERP
+        }, {
+            name: 'Moyen (50-80%)',
+            y: 25,
+            color: '#f9b115' // Orange/Jaune ERP
+        }, {
+            name: 'Élevé (80-100%)',
+            y: 40,
+            color: '#2eb85c' // Vert ERP
+        }]
+    }]
+});
+</script>
+<script>
+    // --- INITIALISATION AMCHARTS 5 ---
+    var root = am5.Root.new("chartdiv_technic");
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    var chart = root.container.children.push(
+        am5radar.RadarChart.new(root, {
+            startAngle: -180,
+            endAngle: 0,
+            innerRadius: am5.percent(30)
+        })
+    );
+
+    var axisRenderer = am5radar.AxisRendererCircular.new(root, { innerRadius: -80 });
+    axisRenderer.grid.template.setAll({ forceHidden: true });
+    
+    var xAxis = chart.xAxes.push(
+        am5xy.ValueAxis.new(root, {
+            min: 0, max: 100,
+            strictMinMax: true,
+            renderer: axisRenderer
+        })
+    );
+
+    // --- LE POINTEUR (L'AIGUILLE) - RESTE À 0 PAR DÉFAUT ---
+    var axisDataItem = xAxis.makeDataItem({ value: 0 });  // ✅ Démarre à 0 (loading)
+    var clockHand = am5radar.ClockHand.new(root, {
+        pinRadius: am5.percent(10),
+        radius: am5.percent(95),
+        bottomWidth: 10
+    });
+
+    var bullet = axisDataItem.set("bullet", am5xy.AxisBullet.new(root, {
+        sprite: clockHand
+    }));
+
+    xAxis.createAxisRange(axisDataItem);
+
+    // --- LABELS DE TEXTE (DYNAMIQUE) ---
+    var valueLabel = chart.children.push(am5.Label.new(root, {
+        centerX: am5.percent(50), x: am5.percent(50), y: am5.percent(95),
+        fontSize: "2.5em", fontWeight: "900",
+        text: "--"  // ✅ Loading initial
+    }));
+
+    var riskLabel = chart.children.push(am5.Label.new(root, {
+        centerX: am5.percent(50), x: am5.percent(50), y: am5.percent(82),
+        fontSize: "1.1em", fontWeight: "600",
+        text: "Chargement..."  // ✅ Loading initial
+    }));
+
+    // Écouteur de rotation pour mettre à jour les textes
+    bullet.get("sprite").on("rotation", function() {
+        var value = axisDataItem.get("value");
+        
+        var fill = am5.color(0x555555);
+        var title = "Indéfini";
+
+        xAxis.axisRanges.each(function(range) {
+            if (value >= range.get("value") && value <= range.get("endValue")) {
+                fill = range.get("axisFill").get("fill");
+                title = range.get("axisFill").get("tooltipText");
+            }
+        });
+
+        valueLabel.set("fill", fill);
+        riskLabel.setAll({ text: title, fill: fill });
+    });
+
+    // --- BANDES DE COULEURS ---
+    var bandsData = [
+        { title: "Critique", color: am5.color(0xf44336), from: 0, to: 30 },
+        { title: "Insuffisant", color: am5.color(0xff9800), from: 30, to: 50 },
+        { title: "Moyen", color: am5.color(0xffc107), from: 50, to: 75 },
+        { title: "Bon", color: am5.color(0x8bc34a), from: 75, to: 90 },
+        { title: "Excellent", color: am5.color(0x5cb85c), from: 90, to: 100 }
+    ];
+
+    am5.array.each(bandsData, function(data) {
+        var range = xAxis.createAxisRange(xAxis.makeDataItem({ value: data.from, endValue: data.to }));
+        range.get("axisFill").setAll({
+            visible: true, fill: data.color, fillOpacity: 0.9, tooltipText: data.title
+        });
+    });
+
+    // --- FONCTION DE RÉCUPÉRATION DES DONNÉES (AVEC OSCILLATION ERP) ---
+    async function refreshPerformance() {
+        try {
+            // ✅ Loading state (aiguille déjà à 0, textes mis à jour)
+            valueLabel.set("text", "--");
+            riskLabel.set("text", "Chargement...");
+
+            const response = await fetch('/performance_technique/');
+            const data = await response.json();
+
+            const targetValue = data.score_global;
+            
+            // Étape 1 : Overshoot (oscillation ERP-style)
+            axisDataItem.animate({
+                key: "value",
+                to: targetValue * 1.1,
+                duration: 1500,
+                easing: am5.ease.out(am5.ease.elastic)
+            });
+
+            // Étape 2 : Stabilisation au target
+            setTimeout(() => {
+                axisDataItem.animate({
+                    key: "value",
+                    to: targetValue,
+                    duration: 800,
+                    easing: am5.ease.out(am5.ease.cubic)
+                });
+            }, 1500);
+
+            // Mise à jour bandeau HTML
+            document.getElementById('performance-global').innerHTML = `
+                ${data.score_global}<span class="text-lg ml-0.5 opacity-80">%</span>
+            `;
+
+        } catch (error) {
+            console.error("Erreur de synchro:", error);
+            valueLabel.set("text", "ERR");
+            riskLabel.set("text", "Erreur");
+        }
+    }
+
+    // Lancement
+    document.addEventListener('DOMContentLoaded', () => {
+        refreshPerformance();
+        // Rafraîchir toutes les 5 minutes
+        setInterval(refreshPerformance, 300000);
+    });
+</script>
+
+<script src="https://unpkg.com/gojs@2.2.14/release/go.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    fetch('/performance-evolutive/') 
+        .then(response => response.json())
+        .then(apiData => {
+            const numerateur = apiData.atteints || 0;
+            const denominateur = apiData.total || 0;
+            const perc = apiData.score_global || 0;
+
+            // Couleurs ERP (Plus saturées)
+            const COLORS = ['#2eb85c', '{{request.user.personnel.color_fond|default:"#f9b115"}}', '#e55353'];
+            const activeColor = perc < 70 ? COLORS[2] : perc < 90 ? COLORS[1] : COLORS[0];
+
+            new Chart(document.getElementById('taux_execution_technique'), {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [numerateur, Math.max(0, denominateur - numerateur)],
+                        backgroundColor: [activeColor, '#ebedef'], // Gris clair standard ERP pour le vide
+                        borderWidth: 0,
+                        cutout: '80%' // Épaisseur équilibrée
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    animation: { duration: 1500 }
+                },
+                plugins: [{
+                    id: 'centerTextERP',
+                    afterDraw(chart) {
+                        const { width, height, ctx } = chart;
+                        ctx.save();
+                        
+                        const centerX = width / 2;
+                        const centerY = height / 2;
+
+                        // 1. Dessin du Score Principal (ex: 45 / 60)
+                        const mainFontSize = (height / 110).toFixed(2);
+                        ctx.font = `bold ${mainFontSize}em "Inter", "Segoe UI", Roboto, sans-serif`;
+                        ctx.textBaseline = "middle";
+                        ctx.textAlign = "center";
+                        ctx.fillStyle = "#212529"; // Noir pro
+                        ctx.fillText(`${numerateur} / ${denominateur}`, centerX, centerY - 5);
+
+                        // 2. Dessin du Libellé (Petit texte en dessous)
+                        const subFontSize = (height / 280).toFixed(2);
+                        ctx.font = `500 ${subFontSize}em "Inter", sans-serif`;
+                        ctx.fillStyle = "#768192"; // Gris muet type ERP
+                        ctx.fillText("INDICATEURS ATTEINTS", centerX, centerY + (height / 10));
+                        
+                        ctx.restore();
+                    }
+                }]
+            });
+        })
+        .catch(err => console.error("Erreur de chargement ERP:", err));
+</script>
+{% block script_rapport %}
+
+{% endblock %}
+
+{% endblock %}

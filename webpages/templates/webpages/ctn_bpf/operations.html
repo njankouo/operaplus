@@ -1,0 +1,1028 @@
+{% extends './entities.html' %}
+
+{% block table %}
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6 border-b border-slate-200 pb-8">
+    <div class="space-y-1">
+        <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Tâches planifiées</h1>
+        <p class="text-slate-500 text-sm font-medium">Gérez et suivez l'exécution de vos opérations stratégiques.</p>
+        <div class="h-1 w-20 bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full mt-2"></div>
+    </div>
+    
+    <div class="flex flex-wrap items-center gap-3">
+        <button onclick="monModalP.showModal()" class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-all active:scale-95 shadow-sm">
+            <i class="bx bx-check-double text-lg"></i>
+            <span>Pondération</span>
+        </button>
+
+        <button onclick="monModalV.showModal()" class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-300">
+            <i class="bx bx-plus text-lg"></i>
+            <span>Ajouter {{ sub_entity.nom }}</span>
+        </button>
+    </div>
+</div>
+
+<dialog id="monModalV" class="p-0 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 w-full max-w-lg backdrop:bg-slate-900/20 backdrop-blur-sm animate-in fade-in zoom-in-95 duration-300">
+    <div class="p-8">
+      <div class="text-center mb-8">
+    <div class="mx-auto w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-900 mb-4">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+    </div>
+    <h2 class="text-xl font-black text-slate-900">Mode de planification</h2>
+    <p class="text-slate-500 text-sm mt-1">Sélectionnez la méthode de saisie souhaitée</p>
+</div>
+        
+        <form method="GET" id="formPlanification" class="space-y-4">
+            <label class="relative flex items-center gap-4 p-5 bg-white border-2 border-slate-100 rounded-2xl cursor-pointer hover:border-blue-200 transition-all has-[:checked]:border-blue-500 has-[:checked]:shadow-lg has-[:checked]:shadow-blue-500/10">
+                <input type="radio" name="planification_type" value="simple" checked class="peer sr-only">
+                <div class="w-5 h-5 rounded-full border-2 border-slate-300 peer-checked:border-blue-600 peer-checked:bg-blue-600 transition-all flex items-center justify-center">
+                    <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                </div>
+                <div class="flex-1">
+                    <span class="block text-sm font-black text-slate-900">Planification rapide</span>
+                    <span class="text-[11px] text-slate-500">Formulaire unique pour saisie immédiate.</span>
+                </div>
+            </label>
+
+            <label class="relative flex items-center gap-4 p-5 bg-white border-2 border-slate-100 rounded-2xl cursor-pointer hover:border-emerald-200 transition-all has-[:checked]:border-emerald-500 has-[:checked]:shadow-lg has-[:checked]:shadow-emerald-500/10">
+                <input type="radio" name="planification_type" value="etapes" class="peer sr-only">
+                <div class="w-5 h-5 rounded-full border-2 border-slate-300 peer-checked:border-emerald-500 peer-checked:bg-emerald-500 transition-all flex items-center justify-center">
+                    <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                </div>
+                <div class="flex-1">
+                    <span class="block text-sm font-black text-slate-900">Planification guidée</span>
+                    <span class="text-[11px] text-slate-500">Parcours structuré étape par étape.</span>
+                </div>
+            </label>
+
+            <div class="mt-8 flex gap-3">
+                <button type="button" onclick="monModalV.close()" class="flex-1 px-5 py-3 text-xs font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all">Annuler</button>
+                <button type="submit" class="flex-1 px-6 py-3 bg-slate-900 hover:bg-black text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]">Continuer</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<script>
+    document.getElementById('formPlanification').addEventListener('submit', function(e) {
+        // 1. Empêcher la soumission automatique du formulaire
+        e.preventDefault();
+
+        // 2. Récupérer la valeur choisie
+        const type = document.querySelector('input[name="planification_type"]:checked').value;
+
+        if (type === 'etapes') {
+            // Redirection vers la page de planification par étapes
+            window.location.href = "/define-etape/{{base_val.id}}/"; 
+        } else {
+            // Si "simple" est choisi :
+            // A. Fermer le modal de choix actuel
+            document.getElementById('monModalV').close();
+            
+            // B. Ouvrir le modal de saisie rapide (monModalP)
+            monModal.showModal();
+        }
+    });
+</script>
+
+<dialog id="monModalP" class="p-0 rounded-none shadow-xl w-full max-w-4xl border border-slate-400 overflow-hidden outline-none bg-slate-50">
+    <div class="px-4 py-3 bg-slate-800 text-white flex justify-between items-center">
+        <h2 class="text-xs font-bold uppercase tracking-widest">Validation des Pond&eacute;rations</h2>
+        <button onclick="document.getElementById('monModalP').close()" class="text-slate-300 hover:text-white font-bold text-[10px] uppercase transition">
+            Fermer [Esc]
+        </button>
+    </div>
+
+    <div class="p-4 max-h-[80vh] overflow-y-auto custom-scrollbar" id="addActionModal">
+
+        <form action="/validation_ponderation_operation/" method="post" class="ponderation-form space-y-6">
+    {% csrf_token %}
+
+    <div class="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+        <table class="w-full text-left border-collapse bg-white">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr class="text-xs uppercase tracking-wider text-slate-500">
+                    <th class="px-6 py-4 font-bold">Nom</th>
+                    <th class="px-6 py-4 font-bold">Pondération actuelle</th>
+                    <th class="px-6 py-4 font-bold">Nouvelle pondération</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for entitys in lines %}
+                <tr class="entity-row hover:bg-slate-50 transition-colors animate-fade-in">
+                    <td class="px-6 py-4 font-bold text-slate-800 text-sm">{{ entitys.nom }}</td>
+                    <td class="px-6 py-4 font-medium text-slate-600">{{ entitys.ponderation|default:"0" }}%</td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center border border-slate-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+                                    <input type="number" 
+                                           name="ponderation_{{ entitys.id }}"
+                                           value="{{ entitys.ponderation|default:'0' }}"
+                                           class="w-20 px-3 py-2 outline-none text-sm font-bold text-slate-700 ponderation-input"
+                                           min="0" max="100" step="1"
+                                           oninput="calculateTotals()">
+                                    <span class="px-3 bg-slate-100 text-slate-400 text-xs font-bold border-l">%</span>
+                                </div>
+                            </div>
+                            <input type="range" 
+                                   min="0" max="100" 
+                                   value="{{ entitys.ponderation|default:'0' }}"
+                                   class="w-full h-2 accent-blue-600 cursor-pointer"
+                                   oninput="this.parentElement.querySelector('input').value=this.value; calculateTotals()">
+                        </div>
+                        <input type="hidden" name="entity_ids" value="{{ entitys.id }}">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            
+            <tfoot class="bg-slate-900 text-white">
+                <tr>
+                    <th colspan="2" class="px-6 py-4 text-right uppercase tracking-widest text-sm">Total</th>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-4">
+                            <input type="text" id="totalPonderations"
+                                   class="w-24 px-3 py-2 bg-slate-800 border-none rounded-lg font-black text-center text-white outline-none"
+                                   readonly>
+                            <div id="totalAlert" class="text-xs font-bold px-2 py-1 rounded"></div>
+                        </div>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="flex justify-end pt-4">
+        <button type="submit" id="validatePonderation" 
+                class="flex items-center gap-2 px-8 py-3 text-white font-bold rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95"
+                style="background-color: {{request.user.personnel.color}};">
+            <span class="btn-text">Valider</span>
+            <span class="btn-icon">✓</span>
+        </button>
+    </div>
+</form>
+    </div>
+</dialog>
+
+                              <script>
+                                function calculateTotals() {
+                                  let inputs = document.getElementsByClassName('ponderation-input');
+                                  let total = 0;
+                                  let allValid = true;
+
+                                  // Animate each input change
+                                  for (let input of inputs) {
+                                    let value = parseInt(input.value) || 0;
+                                    total += value;
+
+                                    // Validate individual inputs
+                                    if (value < 0 || value > 100) {
+                                      input.classList.add('is-invalid');
+                                      allValid = false;
+                                    } else {
+                                      input.classList.remove('is-invalid');
+                                    }
+                                  }
+
+                                  let totalInput = document.getElementById('totalPonderations');
+                                  let alertDiv = document.getElementById('totalAlert');
+                                  let submitBtn = document.getElementById('validatePonderation');
+
+                                  totalInput.value = total + "%";
+
+                                  if (total === 100 && allValid) {
+                                    totalInput.classList.remove('is-invalid');
+                                    totalInput.classList.add('is-valid');
+                                    alertDiv.innerHTML = '<span class="text-success">Total valide ✓</span>';
+                                    alertDiv.classList.add('show');
+                                    submitBtn.disabled = false;
+
+                                    // Add celebration effect
+                                    totalInput.classList.add('pulse-animation');
+                                    setTimeout(() => {
+                                      totalInput.classList.remove('pulse-animation');
+                                    }, 1500);
+                                  } else {
+                                    totalInput.classList.remove('is-valid');
+                                    totalInput.classList.add('is-invalid');
+
+                                    if (!allValid) {
+                                      alertDiv.innerHTML = '<span class="text-danger">Certaines valeurs sont invalides</span>';
+                                    } else {
+                                      alertDiv.innerHTML = `<span class="text-danger">Le total doit être 100% (actuellement ${total}%)</span>`;
+                                    }
+
+                                    alertDiv.classList.add('show');
+                                    submitBtn.disabled = true;
+                                  }
+                                }
+
+                                // Initialize on load
+                                document.addEventListener('DOMContentLoaded', function() {
+                                  calculateTotals();
+
+                                  // Add animation to rows with delay
+                                  const rows = document.querySelectorAll('.entity-row');
+                                  rows.forEach((row, index) => {
+                                    row.style.animationDelay = `${index * 0.1}s`;
+                                  });
+
+                                  // Animate total row after all others
+                                  const totalRow = document.querySelector('.total-row');
+                                  totalRow.style.animationDelay = `${rows.length * 0.1 + 0.2}s`;
+                                  totalRow.classList.add('animate__fadeInUp');
+                                });
+
+                                // Sync range sliders with number inputs
+                                document.querySelectorAll('.ponderation-slider input[type="range"]').forEach(slider => {
+                                  const numberInput = slider.previousElementSibling.querySelector('input[type="number"]');
+                                  slider.addEventListener('input', () => {
+                                    numberInput.value = slider.value;
+                                    // Trigger animation on the input
+                                    numberInput.classList.add('animate__animated', 'animate__pulse');
+                                    setTimeout(() => {
+                                      numberInput.classList.remove('animate__animated', 'animate__pulse');
+                                    }, 500);
+                                  });
+                                });
+                              </script>
+<style>
+    /* Personnalisation de la barre de défilement pour un look ERP */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* couleur slate-300 */
+    border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* couleur slate-400 */
+}
+</style>
+<div id="canvas-wrapper"></div>
+<dialog id="monModal" class="p-0 rounded-none shadow-xl w-full max-w-7xl border border-slate-400 overflow-hidden outline-none bg-slate-50">
+    <div class="px-4 py-3 bg-slate-800 text-white flex justify-between items-center">
+        <h2 class="text-xs font-bold uppercase tracking-widest">Nouvelle Tache - Enregistrement Système</h2>
+        <button onclick="document.getElementById('monModal').close()" class="text-slate-300 hover:text-white font-bold text-[10px] uppercase transition">
+            Fermer [Esc]
+        </button>
+    </div>
+
+    <div class="p-4 max-h-[80vh] overflow-y-auto custom-scrollbar" id="addActionModal">
+            <form method="POST" id="FormTask" class="space-y-4"  enctype="multipart/form-data">
+            {%csrf_token%}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+                <!-- COLONNE GAUCHE (Données principales) -->
+                <div class="space-y-4">
+                    <div class="bg-white border border-slate-300 p-4">
+                        <h3 class="text-[11px] font-black text-slate-500 uppercase border-b border-slate-200 pb-2 mb-3">Informations Générales</h3>
+                        <div class="space-y-3">
+
+                            <div>
+                                <label class="block font-bold text-slate-700 text-[10px] uppercase mb-1">Nom {{sub_entity.nom}}</label>
+                                 <input type="text" name="nom" class="w-full h-8 text-sm border border-slate-300 rounded-none px-2" >
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-700 text-[10px] uppercase mb-1">Structure</label>
+                                <select name="structure" class="w-full h-8 text-sm border border-slate-300 rounded-none px-2" required>
+                                    <option value=""></option>
+                                    {% for structures in structure %}<option value="{{ structures.id }}">{{ structures.nom }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-slate-700 text-[10px] uppercase mb-1">Catégorie</label>
+                                <select name="categorie" class="w-full h-8 text-sm border border-slate-300 rounded-none px-2">
+                                    <option value=""></option>
+                                    {% for categorie_operations in categorie_operation %}<option value="{{ categorie_operations.id }}">{{categorie_operations.intitule}}</option>{% endfor %}
+                                </select>
+                            </div>
+                            {% if actual_institution.nature != False %}
+                            <div>
+                                <label class="block font-bold text-slate-700 text-[10px] uppercase mb-1">Nature</label>
+                                <select id="nature-select" name="nature" class="w-full h-8 text-sm border border-slate-300 rounded-none px-2" hx-get='/search_etape/' hx-target='#list-step' hx-trigger="change">
+                                    <option value=""></option>
+                                    {% for natures in nature %}<option value="{{ natures.id }}">{{natures.intitule}}</option>{% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Délais -->
+                    <div class="bg-white border border-slate-300">
+                        <div class="bg-slate-100 px-4 py-2 border-b border-slate-300 text-[10px] font-bold text-slate-600 uppercase">Délais & Fréquence</div>
+                        <div class="p-4 space-y-3">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block font-bold text-[10px] uppercase text-slate-500 mb-1">Début</label>
+                                    <input type="date" name="date_debut" class="w-full h-8 text-sm border border-slate-300 rounded-none px-2" id="date_debut" oninput="window.calculateCascade()">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-[10px] uppercase text-slate-500 mb-1">Échéance</label>
+                                    <input type="date" name="date_echeance" class="w-full h-8 text-sm border border-slate-300 rounded-none px-2" id='date_fin'>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block font-bold text-[10px] uppercase text-slate-500 mb-1">Jours de réalisation</label>
+                                <div class="flex items-center border border-slate-300 h-8">
+                                    <button class="px-3 h-full bg-slate-100 hover:bg-slate-200 border-r border-slate-300" type="button" id="btn-minus">-</button>
+                                    <input type="number" class="w-full text-center border-0 h-full text-sm" value="{{duration}}" id="days-input" name="nombre_jour">
+                                    <button class="px-3 h-full bg-slate-100 hover:bg-slate-200 border-l border-slate-300" type="button" id="btn-plus">+</button>
+                                </div>
+                                
+                            <div class="space-y-1 py-5">
+                                <label class="block font-bold text-[10px] uppercase text-slate-500">Fréquence de suivi (jours)</label>
+                                <input 
+                                    type="number" 
+                                    name="frequence" 
+                                    class="w-full h-8 text-sm border border-slate-300 rounded-none px-2 focus:border-slate-500 outline-none transition-colors"
+                                    placeholder="0"
+                                >
+                            </div>
+                         
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLONNE CENTRALE (RACI) -->
+              <div class="bg-white border border-slate-300 shadow-none">
+            
+    <div class="bg-slate-800 px-4 py-2 border-b border-slate-300">
+        <h6 class="font-bold text-white text-xs uppercase m-0 tracking-wide">Gestion des Responsabilités (RACI)</h6>
+    </div>
+    <div class="p-4 space-y-4">
+        
+        <div>
+            <label class="block text-[10px] font-bold text-green-700 uppercase mb-1.5 flex items-center">
+                <span class="bg-green-600 text-white px-2 py-0.5 rounded-sm mr-2 shadow-sm">R</span> Principal Responsable
+            </label>
+            <select name="perso" class="w-full h-9 text-sm border border-slate-300 rounded-none px-2 focus:border-slate-500 focus:ring-0 outline-none transition-colors select2">
+                <option value="0">--- Non Défini ---</option>
+                {% for perso in personnels %}<option value="{{perso.id}}">{{perso.full_name}}</option>{% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-bold text-red-700 uppercase mb-1.5 flex items-center">
+                <span class="bg-red-600 text-white px-2 py-0.5 rounded-sm mr-2 shadow-sm">A</span> Accountable
+            </label>
+            <select name="accountable" class="w-full h-9 text-sm border border-slate-300 rounded-none px-2 focus:border-slate-500 focus:ring-0 outline-none transition-colors select2">
+                <option value="0">--- Non Défini ---</option>
+                {% for perso in personnels %}<option value="{{perso.id}}">{{perso.full_name}}</option>{% endfor %}
+            </select>
+        </div>
+
+    <!-- Champ Consulted (C) -->
+    <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+        <label class="block text-[11px] font-bold text-amber-700 uppercase mb-2 flex items-center">
+            <span class="bg-amber-600 text-white px-2 py-0.5 rounded-md mr-2 shadow-xs font-mono text-[10px]">C</span> Consulté (Consulted)
+        </label>
+        
+        <!-- Conteneur défilant pour les checkboxes -->
+        <div class="max-h-48 overflow-y-auto space-y-1.5 p-2 bg-white border border-slate-200 rounded-lg shadow-inner">
+            {% for perso in personnels %}
+                <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-amber-50/50 cursor-pointer transition-colors text-xs text-slate-700 select-none">
+                    <input type="checkbox" name="consulted" value="{{perso.id}}" class="w-4 h-4 text-amber-600 border-slate-300 rounded focus:ring-amber-500 accent-amber-600 cursor-pointer">
+                    <span class="font-medium">{{perso.full_name}}</span>
+                </label>
+            {% empty %}
+                <p class="text-xs text-slate-400 text-center py-4">Aucun personnel disponible</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Champ Informed (I) -->
+    <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+        <label class="block text-[11px] font-bold text-blue-700 uppercase mb-2 flex items-center">
+            <span class="bg-blue-600 text-white px-2 py-0.5 rounded-md mr-2 shadow-xs font-mono text-[10px]">I</span> Informé (Informed)
+        </label>
+        
+        <!-- Conteneur défilant pour les checkboxes -->
+        <div class="max-h-48 overflow-y-auto space-y-1.5 p-2 bg-white border border-slate-200 rounded-lg shadow-inner">
+            {% for perso in personnels %}
+                <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-blue-50/50 cursor-pointer transition-colors text-xs text-slate-700 select-none">
+                    <input type="checkbox" name="informed" value="{{perso.id}}" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 accent-blue-600 cursor-pointer">
+                    <span class="font-medium">{{perso.full_name}}</span>
+                </label>
+            {% empty %}
+                <p class="text-xs text-slate-400 text-center py-4">Aucun personnel disponible</p>
+            {% endfor %}
+        </div>
+    </div>
+
+        <div>
+            <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1.5 flex items-center">
+                <span class="bg-slate-700 text-white px-2 py-0.5 rounded-sm mr-2 shadow-sm">M</span> Manager
+            </label>
+            <select name="participant" class="w-full h-9 text-sm border border-slate-300 rounded-none px-2 focus:border-slate-500 focus:ring-0 outline-none transition-colors select2">
+                <option value="0">--- Non Défini ---</option>
+                {% for perso in personnels %}<option value="{{perso.id}}">{{perso.full_name}}</option>{% endfor %}
+            </select>
+        </div>
+
+    </div>
+</div>
+                <div class="bg-white border border-slate-300 rounded-xl overflow-hidden shadow-sm">
+    <div class="bg-slate-100 px-4 py-3 border-b border-slate-300 text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+        Financement
+    </div>
+    <div class="p-6"> <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
+            {% for source_financements in source_financement %}
+            <div class="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-indigo-300 transition-all">
+                <label class="flex items-center space-x-3 cursor-pointer group">
+                    <input type="checkbox" 
+                           name="source_financement" 
+                           value="{{ source_financements.id }}" 
+                           data-id="{{ source_financements.id }}" 
+                           class="montant-trigger w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all">
+                    <span class="text-slate-700 font-medium">{{ source_financements.nom }}</span>
+                </label>
+
+                <div class="mt-4 hidden" id="montant-container-{{ source_financements.id }}">
+                    <input type="number" 
+                           class="montant-input w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" 
+                           id="montant-{{ source_financements.id }}" 
+                           name="montant_source_{{ source_financements.id }}" 
+                           placeholder="Montant (ex: 1000)" 
+                           step="0.01">
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-8 border-t border-slate-200 pt-6">
+            <label class="block text-sm font-bold text-slate-800 mb-2">Montant Total</label>
+            <input type="number" 
+                   class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900" 
+                   name="total_financement" 
+                   id="montant-total" 
+                   readonly 
+                   placeholder="0.00">
+        </div>
+    </div>
+</div>
+            </div>
+
+           
+           <input type="hidden" name="redirect" {% if detail_g_v == True %} value="{{base_val.id}}" {% else %} value="-1" {% endif %}>
+        <input type="hidden" name="RACI_hidden" id="RACI_hidden">
+        <input type="hidden" name="RACI_hidden_roles" id="RACI_hidden_roles">
+        <input type="hidden" name="edit_or_create" value="c">
+        <input type="hidden" name="edit_id" id="edit_id">
+        <input type="hidden" name="generator" value="o">
+        <input type="hidden" name="tache" value="{{base_val.id}}">
+        <input type="hidden" name="who_assign" id="who_assign" value="0">
+        <input type="hidden" id="chronogr" name="chronogr">
+    </div>
+
+    <!-- Footer -->
+    <div class="px-4 py-3 border-t border-slate-300 flex justify-end gap-2 bg-slate-100">
+        <button onclick="closeModal()" class="px-6 py-2 text-[11px] font-bold text-slate-600 border border-slate-300 hover:bg-white uppercase">Annuler</button>
+        <button 
+    type="button" 
+    onclick="document.getElementById('FormTask').dispatchEvent(new Event('submit'))" 
+    id="saveOperation"
+    class="px-6 py-2 text-[11px] font-bold text-white bg-slate-800 hover:bg-black uppercase">
+    Sauvegarder
+</button>
+    </div>
+</form>
+</dialog>
+<style>
+  /* Animation d'entrée/sortie fluide */
+dialog[open] {
+    animation: modalAppear 0.3s ease-out;
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    transition: backdrop-filter 0.3s;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+</style>
+
+<script>
+  const modal = document.getElementById('monModalP');
+
+  // Fermeture en cliquant sur le fond
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModalP();
+    }
+  });
+
+  // Fonction de fermeture avec délai pour laisser passer l'animation
+  function closeModalP() {
+    modal.style.opacity = '0';
+    modal.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      modal.close();
+      modal.style.opacity = '';
+      modal.style.transform = '';
+    }, 300); // 300ms correspond à la durée de l'animation CSS
+  }
+
+  // Si vous avez un bouton "Fermer" à l'intérieur, remplacez son onclick par :
+  // onclick="closeModal()"
+</script>
+
+<script>
+  const modal = document.getElementById('monModal');
+
+  // Fermeture en cliquant sur le fond
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+
+  // Fonction de fermeture avec délai pour laisser passer l'animation
+  function closeModal() {
+    modal.style.opacity = '0';
+    modal.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      modal.close();
+      modal.style.opacity = '';
+      modal.style.transform = '';
+    }, 300); // 300ms correspond à la durée de l'animation CSS
+  }
+
+  // Si vous avez un bouton "Fermer" à l'intérieur, remplacez son onclick par :
+  // onclick="closeModal()"
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const dialogForm = document.getElementById('monModal');
+    const dialogSuccess = document.getElementById('meal-opera');
+    const formTask = document.getElementById('FormTask');
+    const submitBtn = document.getElementById('saveOperation');
+
+    if (submitBtn && formTask) {
+        submitBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            // État de chargement
+            const originalText = submitBtn.innerText;
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Enregistrement en cours...";
+
+            const formData = new FormData(formTask);
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+            try {
+                const response = await fetch('/save_operation/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    // 1. Fermer le formulaire
+                    dialogForm.close();
+
+                    // 2. Mettre à jour les informations du succès
+                    // Note : Assurez-vous que les noms (get) correspondent aux attributs 'name' de vos inputs
+                    document.getElementById('res-budget').innerText = `${formData.get('total_financement') || '0'} FCFA`;
+                    document.getElementById('res-date-debut').innerText = formData.get('date_debut') || '--';
+                    document.getElementById('res-date-fin').innerText = formData.get('date_echeance') || '--';
+
+                    // 3. Ouvrir la modale de succès
+                    dialogSuccess.showModal();
+
+                    // 4. Réinitialiser le formulaire
+                    formTask.reset();
+                } else {
+                    throw new Error(data.message || "Une erreur est survenue");
+                }
+            } catch (err) {
+                console.error("Erreur:", err);
+                alert("Attention : " + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
+            }
+        });
+    }
+});
+</script>
+<script>
+             
+   document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const totalInput = document.getElementById('montant-total');
+
+    // Fonction pour calculer et mettre à jour le total
+    function calculateTotal() {
+        let total = 0;
+        // Sélectionnez tous les champs de montant visibles
+        const amountInputs = document.querySelectorAll('.montant-input');
+        amountInputs.forEach(input => {
+            // Vérifiez si le champ est visible avant d'ajouter sa valeur
+            if (input.closest('div').style.display !== 'none') {
+                 const value = parseFloat(input.value);
+                 if (!isNaN(value)) {
+                     total += value;
+                 }
+            }
+        });
+        totalInput.value = total.toFixed(2);
+    }
+
+    // Écouteur d'événement sur chaque checkbox
+    checkboxes.forEach(checkbox => {
+        const sourceId = checkbox.dataset.id;
+        const montantContainer = document.getElementById(`montant-container-${sourceId}`);
+        const montantInput = document.getElementById(`montant-${sourceId}`);
+
+        // Gérer la visibilité du champ de montant
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                montantContainer.style.display = 'block';
+                montantInput.addEventListener('input', calculateTotal);
+            } else {
+                montantContainer.style.display = 'none';
+                montantInput.removeEventListener('input', calculateTotal);
+                // Réinitialiser la valeur du champ masqué
+                montantInput.value = '';
+            }
+            // Recalculer le total après un changement
+            calculateTotal();
+        });
+
+        // Ajouter un écouteur initial pour les champs de montant déjà affichés
+        if (montantInput) {
+            montantInput.addEventListener('input', calculateTotal);
+        }
+    });
+
+    // Calcul initial au chargement de la page
+    calculateTotal();
+});
+                                 
+</script>
+<script>
+    console.log("Script chargé !"); 
+
+   window.calculateCascade = function() {
+    const startDateInput = document.getElementById('date_debut');
+    console.log("Appel de calculateCascade ! Valeur :", startDateInput.value);
+
+    if (!startDateInput.value) return;
+
+    // On récupère toutes les lignes du tableau
+    const rows = document.querySelectorAll('table tbody tr');
+    
+    // IMPORTANT : On repart de la date de début à chaque fois
+    let currentRefDate = new Date(startDateInput.value);
+
+    rows.forEach((row) => {
+        const durationInput = row.querySelector('input[type="number"][name*="duree"]');
+        const endDateInput = row.querySelector('.date-input');
+
+        if (durationInput && endDateInput) {
+            const days = parseInt(durationInput.value) || 0;
+            
+            // On ajoute les jours à la date de référence actuelle
+            currentRefDate.setDate(currentRefDate.getDate() + days);
+
+            // Formatage YYYY-MM-DD
+            const y = currentRefDate.getFullYear();
+            const m = String(currentRefDate.getMonth() + 1).padStart(2, '0');
+            const d = String(currentRefDate.getDate()).padStart(2, '0');
+            
+            endDateInput.value = `${y}-${m}-${d}`;
+            
+            // Note : currentRefDate est maintenant la date de fin de CETTE ligne,
+            // elle servira de base pour la ligne SUIVANTE (effet cascade).
+        }
+    });
+};
+</script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sélection des éléments du DOM
+      const daysInput = document.getElementById('days-input');
+      const startDateInput = document.getElementById('date_debut');
+      const endDateInput = document.getElementById('date_fin');
+      const btnMinus = document.getElementById('btn-minus');
+      const btnPlus = document.getElementById('btn-plus');
+
+      /**
+       * Calcule et met à jour la date de fin en fonction de la date de début
+       * et du nombre de jours saisis.
+       */
+
+
+      const updateEndDate = () => {
+          const startDate = startDateInput.valueAsDate;
+          const daysToAdd = parseInt(daysInput.value, 10);
+
+          // S'assure que les valeurs sont valides
+          if (!startDate || isNaN(daysToAdd)) {
+              endDateInput.value = '';
+              return;
+          }
+
+          const endDate = new Date(startDate);
+          endDate.setDate(startDate.getDate() + daysToAdd);
+          endDateInput.valueAsDate = endDate;
+      };
+
+      /**
+       * Met à jour le nombre de jours en fonction de la date de début et de fin.
+       */
+      const updateDaysFromDates = () => {
+          const startDate = startDateInput.valueAsDate;
+          const endDate = endDateInput.valueAsDate;
+
+          // S'assure que les valeurs sont valides
+          if (!startDate || !endDate || endDate < startDate) {
+              daysInput.value = '';
+              return;
+          }
+
+          const timeDifference = endDate.getTime() - startDate.getTime();
+          const dayDifference = Math.ceil(timeDifference / (1000 * 3600 * 24));
+          daysInput.value = dayDifference;
+      };
+
+      /**
+       * Met à jour le nombre de jours et recalcule la date de fin.
+       * @param {number} delta - La valeur à ajouter ou soustraire (1 ou -1).
+       */
+      const updateDays = (delta) => {
+          let currentValue = parseInt(daysInput.value, 10);
+          const min = parseInt(daysInput.min, 10) || 1;
+          const max = parseInt(daysInput.max, 10) || 365;
+
+          currentValue += delta;
+
+          // Limite la valeur entre min et max
+          if (currentValue >= min && currentValue <= max) {
+              daysInput.value = currentValue;
+              updateEndDate();
+          }
+      };
+
+      // Écouteurs d'événements pour les boutons
+      btnMinus.addEventListener('click', () => updateDays(-1));
+      btnPlus.addEventListener('click', () => updateDays(1));
+
+      // Écouteurs pour les champs de saisie
+      const relevantInputs = [daysInput, startDateInput];
+      relevantInputs.forEach(input => input.addEventListener('change', updateEndDate));
+      daysInput.addEventListener('input', updateEndDate);
+
+      // Nouvel écouteur pour mettre à jour le nombre de jours lorsque la date de fin change
+      endDateInput.addEventListener('change', updateDaysFromDates);
+
+
+      // Initialisation
+      startDateInput.valueAsDate = new Date();
+      updateEndDate();
+    });
+</script>
+<dialog id="meal-opera" class="backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm p-0 bg-transparent border-none outline-none overflow-visible">
+    <div class="bg-white w-full max-w-sm mx-4 rounded-3xl shadow-2xl overflow-hidden transform transition-all">
+        <div class="p-8 text-center">
+            <div class="mb-6 flex justify-center">
+                <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="white" viewBox="0 0 16 16">
+                        <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-bold text-slate-900 mb-2">Opération Planifiée</h2>
+            <p class="text-sm text-slate-500 mb-6">L'entrée a été synchronisée avec succès dans <strong>OPERAPLUS</strong>.</p>
+
+            <div class="grid grid-cols-3 gap-2 mb-6 text-left">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <label class="text-[9px] uppercase font-bold text-slate-400">Budget</label>
+                    <div id="res-budget" class="text-xs font-bold text-slate-800">--</div>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <label class="text-[9px] uppercase font-bold text-slate-400">Début</label>
+                    <div id="res-date-debut" class="text-xs font-bold text-slate-800">--</div>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <label class="text-[9px] uppercase font-bold text-slate-400">Fin</label>
+                    <div id="res-date-fin" class="text-xs font-bold text-slate-800">--</div>
+                </div>
+            </div>
+
+            <button type="button" onclick="document.getElementById('meal-opera').close()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition">
+                Continuer la saisie
+            </button>
+        </div>
+    </div>
+</dialog>
+<div class="space-y-6">
+    {% for line in lines %}
+    <div class="group bg-white border border-slate-200 rounded-3xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+        
+        <div class="flex items-center justify-between p-5 text-white" 
+             style="background: linear-gradient(135deg, {{ request.user.personnel.color_fond }} 0%, {{ request.user.personnel.color_fond }}dd 100%);">
+            
+            <button onclick="document.getElementById('collapse{{line.id}}').classList.toggle('hidden')" 
+                    class="flex items-center gap-4 flex-grow text-left">
+                <div class="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                </div>
+                <span class="text-lg font-bold tracking-tight">{{ line }}</span>
+            </button>
+
+            <div class="flex items-center gap-1 ml-4 bg-white/20 p-1.5 rounded-xl backdrop-blur-sm border border-white/10">
+               <a href="/ajouter-formulaire/{{line.id}}/" class="p-2 hover:bg-white/30 rounded-lg transition-all" title="Formulaire">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </a>
+
+                <a href="/editer-tache/{{line.id}}/" class="p-2 hover:bg-white/30 rounded-lg transition-all" title="Modifier">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </a>
+                <a href="/duplicate_operation/{{line.id}}/" class="p-2 hover:bg-white/30 rounded-lg transition-all" title="Dupliquer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                </a>
+                <a href="/alert-supression/{{line.id}}/" class="p-2 hover:bg-red-500/80 rounded-lg transition-all" title="Supprimer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </a>
+                <span class="mx-2 px-3 py-1 bg-white/20 rounded-full text-xs font-bold border border-white/10">{{ line.ponderation }}%</span>
+            </div>
+        </div>
+
+        <div id="collapse{{line.id}}" class="hidden p-6 bg-slate-50 border-t border-slate-100">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div class="font-black text-lg text-blue-600">{{ line.niveau_execution }}%</div>
+                    <div class="text-[10px] uppercase font-bold text-slate-400">Déclaré</div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div class="font-black text-lg text-green-600">{{ line.resultat_niveau_execution }}</div>
+                    <div class="text-[10px] uppercase font-bold text-slate-400">Résultat</div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div class="font-black text-lg text-yellow-600">{{ line.niveau_execution_valide }}%</div>
+                    <div class="text-[10px] uppercase font-bold text-slate-400">Validé</div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm text-center">
+                    <div class="font-black text-lg text-indigo-600">{{ line.resultat_niveau_execution_valide }}</div>
+                    <div class="text-[10px] uppercase font-bold text-slate-400">R. Validé</div>
+                </div>
+            </div>
+            <a href="/detail-gantt/{{line.id}}/" class="inline-flex items-center text-indigo-600 font-bold text-sm hover:underline">
+                Voir fréquence de suivi 
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<!-- MODAL PREMIUM -->
+
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- SCRIPT DU GLOBE THREE.JS -->
+<script>
+    (function() {
+        function initGlobe() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            if (!wrapper) return; 
+
+            if (typeof THREE === 'undefined') {
+                console.warn("Three.js n'est pas chargé sur cette page.");
+                return;
+            }
+
+            let scene, camera, renderer, globeGroup, pointsMesh;
+            let time = 0;
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 1, 1000);
+            camera.position.z = 250; 
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+            wrapper.appendChild(renderer.domElement);
+
+            globeGroup = new THREE.Group();
+            scene.add(globeGroup);
+
+            const radius = 75;
+            const dotCount = 3000;
+            const positions = [], colors = [], directions = [];
+
+            for (let i = 0; i < dotCount; i++) {
+                const phi = Math.acos(-1 + (2 * i) / dotCount);
+                const theta = Math.sqrt(dotCount * Math.PI) * phi;
+                const x = radius * Math.sin(phi) * Math.cos(theta);
+                const y = radius * Math.sin(phi) * Math.sin(theta);
+                const z = radius * Math.cos(phi);
+
+                const lat = (phi * 180 / Math.PI) - 90;
+                const lon = (theta * 180 / Math.PI) % 360 - 180;
+                const isLand = (lon > -22 && lon < 52 && lat > -35 && lat < 70) || (lon >= 52 && lon < 145 && lat > -12 && lat < 75) || (lon > -120 && lon < -34 && lat > -55 && lat < 18);
+
+                if (isLand) {
+                    positions.push(x, y, z);
+                    const norm = Math.sqrt(x*x + y*y + z*z);
+                    directions.push(x/norm, y/norm, z/norm);
+                    const isAmber = (lon > -12 && lon < 45 && lat > -30 && lat < 35);
+                    colors.push(isAmber ? 0.96 : 0.06, isAmber ? 0.62 : 0.72, isAmber ? 0.04 : 0.50);
+                }
+            }
+
+            const dotGeometry = new THREE.BufferGeometry();
+            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            dotGeometry.setAttribute('originalPosition', new THREE.Float32BufferAttribute(positions, 3));
+            dotGeometry.setAttribute('direction', new THREE.Float32BufferAttribute(directions, 3));
+
+            pointsMesh = new THREE.Points(dotGeometry, new THREE.PointsMaterial({ 
+                size: 1.8, vertexColors: true, transparent: true, opacity: 0.8 
+            }));
+            globeGroup.add(pointsMesh);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                time += 0.01;
+                const progress = (Math.sin(time * 0.5) + 1) / 2; 
+                const explosionForce = progress * 60;
+
+                const pos = pointsMesh.geometry.attributes.position;
+                const orig = pointsMesh.geometry.attributes.originalPosition;
+                const dir = pointsMesh.geometry.attributes.direction;
+
+                for (let i = 0; i < pos.count; i++) {
+                    pos.setX(i, orig.getX(i) + dir.getX(i) * explosionForce);
+                    pos.setY(i, orig.getY(i) + dir.getY(i) * explosionForce);
+                    pos.setZ(i, orig.getZ(i) + dir.getZ(i) * explosionForce);
+                }
+                pos.needsUpdate = true;
+                globeGroup.rotation.y += 0.005;
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        window.addEventListener("DOMContentLoaded", initGlobe);
+    })();
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const messages = [
+        {% for message in messages %}
+        {
+            text: "{{ message|escapejs }}",
+            type: "{{ message.tags|default:'info' }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    messages.forEach((msg) => {
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: msg.type === 'success' || msg.type === 'error' || msg.type === 'warning' ? msg.type : 'info',
+            title: msg.text,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: "#1f2937",
+            color: "#fff",
+            showClass: { popup: 'animate__animated animate__fadeInRight' },
+            hideClass: { popup: 'animate__animated animate__fadeOutRight' }
+        });
+    });
+});
+</script>
+{% endblock %}

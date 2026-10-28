@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO de base -->
+    {%load static%}
+    <title>Opera+ | Plateforme d'Ingénierie MEAL | {{ pays_nom }}</title>
+    <meta name="description" content="Découvrez les membres et les statistiques de la communauté MEAL Afrique en {{ pays_nom }}. Une plateforme d'ingénierie dédiée à l'impact et aux données.">
+    
+    <!-- Open Graph (Facebook, LinkedIn, WhatsApp) -->
+    <meta property="og:title" content="Membres MEAL Afrique | {{ pays_nom }} | Opera+">
+    <meta property="og:description" content="Consultez les membres de la communauté MEAL Afrique en {{ pays_nom }}. Analyse, données et profils des acteurs du changement.">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Opera+ MEAL Afrique">
+    <!-- Remplacez l'URL ci-dessous par le lien vers votre image de partage (1200x630px) -->
+    <meta property="og:image" content="{%static 'logo-meal.jpg'%}">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Membres MEAL Afrique | {{ pays_nom }} | Opera+">
+    <meta name="twitter:description" content="Découvrez les membres et les statistiques MEAL Afrique en {{ pays_nom }}.">
+    <meta name="twitter:image" content="{%static 'logo-meal.jpg'%}">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icons Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-data { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Effet de brillance Glossy */
+        .btn-glossy { position: relative; overflow: hidden; }
+        .btn-glossy::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 30%;
+            height: 200%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(25deg);
+            transition: none;
+        }
+        .btn-glossy:hover::after { left: 130%; transition: all 0.8s ease-in-out; }
+        
+        /* Effet de Halo Lumineux Dynamique Mouse-Tracking */
+        .premium-card { position: relative; background: rgba(11, 16, 31, 0.4); overflow: hidden; }
+        .premium-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(800px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(245, 158, 11, 0.06), transparent 40%);
+            z-index: 1;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #040712; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-[#030610] text-slate-100 min-h-screen antialiased flex flex-col justify-between relative overflow-x-hidden pb-24 md:pb-0 selection:bg-emerald-500 selection:text-slate-950">
+
+    <!-- CANVAS GLOBE 3D CONTEXTUEL INTERACTIF -->
+    <div id="globe-3d-container" class="fixed inset-0 w-full h-full opacity-[0.22] z-0"></div>
+
+    <!-- LUMINESCENCES DE FOND ATYPIQUES -->
+    <div class="absolute top-[-5%] left-[15%] w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-amber-500/10 rounded-full blur-[100px] sm:blur-[130px] pointer-events-none z-0"></div>
+    <div class="absolute bottom-[15%] right-[15%] w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-emerald-500/10 rounded-full blur-[100px] sm:blur-[130px] pointer-events-none z-0"></div>
+
+ <!-- ANIMATIONS AUTONOMES SUPPLÉMENTAIRES (À insérer dans vos styles) -->
+<style>
+    @keyframes pulseGlow {
+        0%, 100% { shadow: 0 0 15px rgba(249, 115, 22, 0.2); border-color: rgba(249, 115, 22, 0.3); }
+        50% { shadow: 0 0 25px rgba(249, 115, 22, 0.5); border-color: rgba(249, 115, 22, 0.7); }
+    }
+    .animate-pulse-glow {
+        animation: pulseGlow 3s ease-in-out infinite;
+    }
+</style>
+
+<!-- NAVIGATION HEADER INTELLIGENTE AUTONOME -->
+<header class="bg-black/80 backdrop-blur-2xl border-b border-white/[0.06] h-16 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-40 shadow-2xl">
+    <div class="flex items-center gap-3 sm:gap-4">
+        <!-- Bouton Menu Mobile Interactif -->
+        <button onclick="toggleMobileMenu()" class="md:hidden text-slate-400 hover:text-orange-500 p-2 text-lg focus:outline-none active:scale-95 transition-colors duration-300">
+            <i class="fa-solid fa-bars-staggered"></i>
+        </button>
+        
+        <!-- Logo & Identité Visuelle Premium -->
+        <div class="flex items-center gap-2 sm:gap-3">
+            <!-- Icône Logo avec lueur autonome orange -->
+            <div class="bg-gradient-to-tr from-orange-600 to-orange-400 h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center text-black shadow-lg shadow-orange-500/20 relative overflow-hidden group">
+                <i class="fa-solid fa-diagram-nested text-xs sm:text-sm"></i>
+                <div class="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+            </div>
+            <div>
+                <span class="text-xs sm:text-sm font-black tracking-widest text-white block uppercase">
+                    MEAL <span class="text-orange-500">AFRIQUE</span>
+                </span>
+                <!-- Indicateur Live Connecté permanent -->
+                <span class="text-[8px] sm:text-[9px] text-slate-400 font-extrabold block flex items-center gap-1.5 font-mono uppercase tracking-wider">
+                    <span class="relative flex h-1.5 w-1.5">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-orange-500"></span>
+                    </span>
+                    System // {{pays_nom}}
+                </span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Conteneur global du bouton de partage -->
+<div class="fixed bottom-6 right-6 z-50 group">
+    
+    <!-- Bouton principal (Trigger) -->
+    <button class="w-14 h-14 bg-[#0b0c10] text-orange-500 rounded-full shadow-[0_10px_30px_rgba(249,115,22,0.15)] border border-orange-500/30 flex items-center justify-center hover:border-orange-500 hover:bg-orange-500 hover:text-black transition-all duration-500">
+        <i class="fa-solid fa-share-nodes text-xl group-hover:rotate-12 transition-transform duration-300"></i>
+    </button>
+
+    <!-- Menu de partage (masqué par défaut, visible au survol) -->
+    <div class="absolute bottom-16 right-0 flex flex-col gap-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-out">
+        
+        <!-- WhatsApp -->
+        <a href="https://wa.me/?text=Découvrez%20ces%20membres%20sur%20notre%20plateforme:%20{{ request.build_absolute_uri }}" target="_blank"
+           class="w-12 h-12 flex items-center justify-center bg-[#25D366] text-white rounded-full shadow-lg hover:scale-110 transition-transform">
+            <i class="fa-brands fa-whatsapp text-xl"></i>
+        </a>
+
+        <!-- Facebook -->
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank"
+           class="w-12 h-12 flex items-center justify-center bg-[#1877F2] text-white rounded-full shadow-lg hover:scale-110 transition-transform">
+            <i class="fa-brands fa-facebook-f text-lg"></i>
+        </a>
+
+        <!-- LinkedIn -->
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" target="_blank"
+           class="w-12 h-12 flex items-center justify-center bg-[#0077B5] text-white rounded-full shadow-lg hover:scale-110 transition-transform">
+            <i class="fa-brands fa-linkedin-in text-lg"></i>
+        </a>
+    </div>
+</div>
+
+<!-- MENU RESPONSIVE MOBILE SANS LOGOS PARASITES -->
+<div id="mobileMenu" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-md transform -translate-x-full transition-transform duration-500 md:hidden">
+    <div id="mobileMenuSidebar" class="w-full max-w-xs bg-[#0b0c10] h-full p-6 border-r border-white/[0.05] flex flex-col justify-between shadow-2xl relative">
+        
+        <!-- Contenu Haut Menu Mobile -->
+        <div class="space-y-6">
+            <!-- Rappel Logo Interne Menu Mobile -->
+            <div class="flex items-center justify-between border-b border-white/[0.05] pb-4">
+                <span class="text-xs font-black text-white tracking-widest">MENU <span class="text-orange-500">PILOTAGE</span></span>
+                <button onclick="toggleMobileMenu()" class="text-slate-500 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Action Majeure : Inscription Adaptée -->
+            <div class="space-y-3">
+                <a href="/Inscription-meal-afrique/" class="w-full bg-orange-500 hover:bg-white text-black font-black text-xs py-3.5 rounded-xl uppercase tracking-widest text-center block shadow-lg shadow-orange-500/10 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-plus text-sm"></i> S'inscrire au système
+                </a>
+            </div>
+        </div>
+
+        <!-- Pied du Menu Mobile Technologique -->
+        <div class="border-t border-white/[0.05] pt-4">
+            <span class="text-[9px] font-mono text-slate-600 block uppercase tracking-widest">MealAfrique Afrique</span>
+        </div>
+    </div>
+</div>
+
+    <!-- CONTENU TECHNIQUE PRINCIPAL -->
+    <main class="max-w-7xl mx-auto px-4 py-6 md:py-10 w-full flex-1 space-y-6 md:space-y-8 relative z-10">
+        {%block content%}
+     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6 bg-slate-950 p-6 rounded-2xl">
+    <div class="space-y-1.5 text-center lg:text-left">
+        <h1 class="text-xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+            Système Intégré de Pilotage <span class="text-orange-500">MEALAFRIQUE</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto lg:mx-0">
+            Statistiques membres de la communauté Meal {{pays_nom}}
+        </p>
+    </div>
+    
+    <a href="/Inscription-meal-afrique/" class="hidden lg:flex bg-orange-500 hover:bg-black hover:text-white border-2 border-orange-500 text-black font-extrabold text-xs py-3 px-6 rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all duration-300 items-center justify-center gap-2.5 uppercase tracking-wider shrink-0">
+        <i class="fa-solid fa-user-plus text-sm"></i> Retour
+    </a>
+      <a href="/liste-email/" class="hidden lg:flex bg-orange-500 hover:bg-black hover:text-white border-2 border-orange-500 text-black font-extrabold text-xs py-3 px-6 rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all duration-300 items-center justify-center gap-2.5 uppercase tracking-wider shrink-0">
+      Liste Email
+    </a>
+</div>
+     <!-- BANDEAU DE STATISTIQUES GLOBALES (KPI) -->
+<div class="grid grid-cols-3 gap-2 sm:gap-4 bg-black/40 backdrop-blur-md border border-white/[0.05] p-3 sm:p-4 rounded-2xl">
+    <!-- Total Membres -->
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-1 sm:gap-3 sm:pl-4 border-r border-white/[0.05]">
+        <!-- Changement ici : 'flex' au lieu de 'hidden sm:flex', et taille adaptée 'w-6 h-6 sm:w-8 sm:h-8' -->
+        <div class="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-white/10 text-white mt-0.5">
+            <i class="fa-solid fa-users text-xs sm:text-sm"></i>
+        </div>
+        <div class="text-center sm:text-left">
+            <span class="block text-[9px] sm:text-xs text-slate-400 uppercase tracking-wider font-semibold">Membres</span>
+            <span class="text-sm sm:text-xl font-bold text-white font-data">{{members_count}}</span>
+        </div>
+    </div>
+
+    <!-- Femmes -->
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-1 sm:gap-3 sm:pl-4 border-r border-white/[0.05]">
+        <!-- Changement ici aussi -->
+        <div class="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-orange-500/10 text-orange-500 mt-0.5">
+            <i class="fa-solid fa-venus text-xs sm:text-sm"></i>
+        </div>
+        <div class="text-center sm:text-left">
+            <span class="block text-[9px] sm:text-xs text-slate-400 uppercase tracking-wider font-semibold">Femmes</span>
+            <span class="text-sm sm:text-xl font-bold text-orange-500 font-data">{{country_members_female}}</span>
+        </div>
+    </div>
+
+    <!-- Hommes -->
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-1 sm:gap-3 sm:pl-4">
+        <!-- Changement ici aussi -->
+        <div class="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-white/10 text-slate-300 mt-0.5">
+            <i class="fa-solid fa-mars text-xs sm:text-sm"></i>
+        </div>
+        <div class="text-center sm:text-left">
+            <span class="block text-[9px] sm:text-xs text-slate-400 uppercase tracking-wider font-semibold">Hommes</span>
+            <span class="text-sm sm:text-xl font-bold text-white font-data">{{country_members_male}}</span>
+        </div>
+    </div>
+</div>
+       
+
+  <!-- SECTION LISTE DES MEMBRES -->
+<div class="space-y-6  text-white p-6 rounded-3xl border border-white/[0.05]">
+    
+    <!-- En-tête de la liste avec Barre de recherche -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/[0.05] pb-5">
+        <div>
+            <h2 class="text-xl font-bold tracking-tight flex items-center gap-2 flex-wrap">
+                <span>Membres de la communauté</span>
+                <span class="text-xs px-2.5 py-1 bg-orange-500/10 border border-orange-500/30 rounded-lg text-orange-400 font-mono tracking-wide uppercase shadow-[0_0_15px_rgba(249,115,22,0.1)]">
+                    {{ pays_nom }}
+                </span>
+            </h2>
+        </div>
+        <!-- Barre de recherche -->
+        <div class="relative w-full sm:w-72">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="memberSearch" placeholder="Rechercher un membre..." class="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-orange-500 transition-colors placeholder:text-slate-500">
+        </div>
+    </div>
+
+    <!-- Grille des membres -->
+ <!-- N'OUBLIEZ PAS enctype="multipart/form-data" pour autoriser l'envoi de fichiers -->
+<form id="emailForm" method="POST" action="{% url 'send_emails' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- BARRE D'ACTIONS -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6 p-4 bg-slate-900/60 border border-white/10 rounded-2xl backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <button type="button" id="selectAllBtn" onclick="toggleSelectAll()" class="px-4 py-2 text-xs font-semibold text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all flex items-center gap-2">
+                <i class="fa-solid fa-check-double text-orange-500"></i>
+                <span id="selectAllText">Tout sélectionner</span>
+            </button>
+            <span id="selectedCount" class="text-xs text-slate-400 font-mono">0 sélectionné(s)</span>
+        </div>
+
+        <button type="button" id="openModalBtn" onclick="openEmailModal()" disabled class="px-5 py-2.5 text-xs font-bold text-black bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all shadow-[0_0_15px_rgba(249,115,22,0.3)] flex items-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i>
+            Rédiger l'e-mail
+        </button>
+    </div>
+
+    <!-- GRILLE DES MEMBRES -->
+    <div id="memberGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-1">
+        {% for members in member %}
+        <div class="member-card group relative bg-transparent border border-white/[0.08] hover:border-orange-500/30 rounded-2xl p-5 overflow-hidden animate-fade-in-up transition-all duration-300 cursor-pointer select-none"
+             data-name="{{ members.nom|lower }}"
+             onclick="toggleMemberSelection(this, event)"
+             style="animation-delay: calc({{ forloop.counter0 }} * 80ms);">
+            
+            <!-- CHECKBOX CACHÉE -->
+            <div class="absolute top-3 right-3 z-30">
+                <input type="checkbox" name="selected_members" value="{{ members.id }}" class="member-checkbox hidden" onchange="updateCounter()">
+                <div class="check-indicator w-6 h-6 rounded-lg border border-white/20 bg-slate-900/80 flex items-center justify-center transition-all">
+                    <i class="fa-solid fa-check text-xs text-black opacity-0 transition-opacity"></i>
+                </div>
+            </div>
+
+            <!-- ÉCLAIRAGE AUTONOME -->
+            <div class="absolute -right-12 -top-12 w-28 h-28 bg-orange-500/[0.06] rounded-full blur-2xl pointer-events-none animate-glow-autonomous"></div>
+            <div class="absolute -left-12 -bottom-12 w-28 h-28 bg-white/[0.02] rounded-full blur-2xl pointer-events-none animate-glow-autonomous" style="animation-delay: 3s;"></div>
+
+            <div class="flex flex-col items-center text-center sm:flex-row sm:text-left gap-4 relative z-10">
+                <!-- AVATAR -->
+                <div class="relative shrink-0">
+                    {% if members.photo %}
+                        <div class="w-16 h-16 rounded-2xl overflow-hidden border {% if members.sexe == 'F' or members.genre == 'Femme' %}border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]{% else %}border-white/10{% endif %}">
+                            <img src="{{ members.photo.url }}" alt="{{ members.nom }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                        </div>
+                    {% else %}
+                        {% if members.sexe == 'F' or members.genre == 'Femme' %}
+                            <div class="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-400 font-black text-lg border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)] uppercase tracking-wider">
+                                {{ members.nom|slice:":2" }}
+                            </div>
+                        {% else %}
+                            <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-slate-300 font-black text-lg border border-white/10 uppercase tracking-wider">
+                                {{ members.nom|slice:":2" }}
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- BADGE GENRE -->
+                    {% if members.sexe == 'F' or members.genre == 'Femme' %}
+                        <span class="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-orange-500 text-black border-2 border-[#0b0c10] rounded-xl flex items-center justify-center text-xs z-20">
+                            <i class="fa-solid fa-venus"></i>
+                        </span>
+                    {% else %}
+                        <span class="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-white text-black border-2 border-[#0b0c10] rounded-xl flex items-center justify-center text-xs z-20">
+                            <i class="fa-solid fa-mars"></i>
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <!-- CONTENU -->
+                <div class="w-full min-w-0 flex-1">
+                    <div class="flex items-center justify-center sm:justify-start gap-1.5 mb-1.5">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full {% if members.sexe == 'F' or members.genre == 'Femme' %}bg-orange-400{% else %}bg-emerald-400{% endif %} opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 {% if members.sexe == 'F' or members.genre == 'Femme' %}bg-orange-500{% else %}bg-emerald-500{% endif %}"></span>
+                        </span>
+                        <span class="text-[9px] uppercase tracking-widest text-orange-500/80 font-black">Membre Connecté</span>
+                    </div>
+
+                    <h3 class="font-black text-base text-white truncate tracking-tight group-hover:text-orange-400 transition-colors duration-300">
+                        {{ members.nom }}
+                    </h3>
+
+                    <div class="flex flex-col gap-0.5 mt-1">
+                        <p class="text-xs text-slate-400 flex items-center justify-center sm:justify-start gap-1 truncate font-medium">
+                            <i class="fa-solid fa-location-dot text-[10px] text-orange-500"></i>
+                            {{ members.nationalite }}
+                        </p>
+                        <p class="text-[10px] text-slate-500 font-mono mt-1.5 tracking-wider">
+                            Cod. {{ members.date_enregistrement|date:"d.m.Y" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LIGNE LASER -->
+            <div class="absolute bottom-0 left-0 h-[2px] w-full bg-gradient-to-r from-transparent via-orange-500 to-transparent animate-laser" style="animation-delay: calc({{ forloop.counter0 }} * 500ms);"></div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- MODAL DE RÉDACTION AVEC ATTACHEMENT -->
+    <div id="emailModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="bg-slate-900 border border-white/10 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+            <h3 class="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-envelope text-orange-500"></i>
+                Envoyer un e-mail
+            </h3>
+            <p class="text-xs text-slate-400 mb-4">Saisissez le sujet, le message et joignez un fichier si nécessaire.</p>
+
+            <!-- Objet -->
+            <div class="mb-4">
+                <label for="sujet" class="block text-xs font-semibold text-slate-300 mb-1.5">Objet du message :</label>
+                <input type="text" id="sujet" name="sujet" required placeholder="Ex: Information importante " 
+                       class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors">
+            </div>
+
+            <!-- Message -->
+            <div class="mb-4">
+                <label for="message" class="block text-xs font-semibold text-slate-300 mb-1.5">Corps du message :</label>
+                <textarea id="message" name="message" rows="4" required placeholder="Rédigez votre message ici..." 
+                          class="w-full bg-slate-800 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors resize-none"></textarea>
+            </div>
+
+            <!-- PIÈCE JOINT / FICHIER -->
+            <div class="mb-6">
+                <label for="piece_jointe" class="block text-xs font-semibold text-slate-300 mb-1.5">Pièce jointe (optionnel) :</label>
+                <input type="file" id="piece_jointe" name="piece_jointe" 
+                       class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-orange-500/10 file:text-orange-400 hover:file:bg-orange-500/20 file:cursor-pointer border border-white/10 bg-slate-800 rounded-xl cursor-pointer focus:outline-none">
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeEmailModal()" class="px-4 py-2 text-xs font-semibold text-slate-400 bg-white/5 hover:bg-white/10 rounded-xl transition-colors">
+                    Annuler
+                </button>
+                <button type="submit" class="px-5 py-2 text-xs font-bold text-black bg-orange-500 hover:bg-orange-400 rounded-xl shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    Confirmer et envoyer
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+ <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  {% if messages %}
+      {% for message in messages %}
+          {% if message.tags == 'success' and message.message == 'premiere_connexion' %}
+          <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                  Swal.fire({
+                      title: 'Connexion établie',
+                      html: `
+                          <div class="text-left py-2">
+                              <p class="text-slate-600 text-sm mb-6">Bienvenue dans votre environnement de travail <strong>{{ request.user.personnel.nom }}</strong>.</p>
+                              <div class="space-y-3">
+                                  <div class="flex items-center gap-3">
+                                      <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                      <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Système MEAL prêt</span>
+                                  </div>
+                                  <div class="flex items-center gap-3">
+                                      <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                      <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Connexion sécurisée</span>
+                                  </div>
+                              </div>
+                          </div>
+                      `,
+                      confirmButtonText: 'Accéder au tableau de bord',
+                      confirmButtonColor: '#0f172a',
+                      buttonsStyling: true,
+                      allowOutsideClick: false,
+                      customClass: {
+                          popup: 'rounded-3xl border border-slate-100 shadow-xl p-6',
+                          title: 'text-left text-xl font-bold text-slate-900 pt-2',
+                          confirmButton: 'w-full py-3.5 rounded-xl font-semibold uppercase tracking-widest text-[10px] bg-slate-900 text-white hover:bg-slate-800 transition-colors'
+                      }
+                  });
+              });
+          </script>
+          {% elif message.tags == 'success' %}
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              Swal.fire({
+                icon: 'success',
+                title: 'Succès !',
+                text: '{{ message }}',
+                confirmButtonColor: '#4f46e5'
+              });
+            });
+          </script>
+          {% elif message.tags == 'error' %}
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: '{{ message }}',
+                confirmButtonColor: '#e11d48'
+              });
+            });
+          </script>
+          {% endif %}
+      {% endfor %}
+  {% endif %}
+<script>
+function toggleMemberSelection(card, event) {
+    const checkbox = card.querySelector('.member-checkbox');
+    checkbox.checked = !checkbox.checked;
+    updateCardUI(card, checkbox.checked);
+    updateCounter();
+}
+
+function updateCardUI(card, isChecked) {
+    const indicator = card.querySelector('.check-indicator');
+    const icon = indicator.querySelector('i');
+    
+    if (isChecked) {
+        card.classList.add('border-orange-500', 'bg-orange-500/10');
+        indicator.classList.add('bg-orange-500', 'border-orange-500');
+        icon.classList.remove('opacity-0');
+    } else {
+        card.classList.remove('border-orange-500', 'bg-orange-500/10');
+        indicator.classList.remove('bg-orange-500', 'border-orange-500');
+        icon.classList.add('opacity-0');
+    }
+}
+
+function updateCounter() {
+    const checkedCount = document.querySelectorAll('.member-checkbox:checked').length;
+    const openModalBtn = document.getElementById('openModalBtn');
+    const countText = document.getElementById('selectedCount');
+    
+    countText.textContent = `${checkedCount} sélectionné(s)`;
+    openModalBtn.disabled = checkedCount === 0;
+}
+
+function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('.member-checkbox');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    
+    checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+        const card = cb.closest('.member-card');
+        updateCardUI(card, !allChecked);
+    });
+    
+    document.getElementById('selectAllText').textContent = !allChecked ? 'Tout désélectionner' : 'Tout sélectionner';
+    updateCounter();
+}
+
+function openEmailModal() {
+    document.getElementById('emailModal').classList.remove('hidden');
+}
+
+function closeEmailModal() {
+    document.getElementById('emailModal').classList.add('hidden');
+}
+</script>
+</div>
+
+<style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); filter: blur(4px); }
+        to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+    .animate-fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+    @keyframes ambientGlow {
+        0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.3; }
+        50% { transform: scale(1.3) translate(-10px, 10px); opacity: 0.6; }
+    }
+    .animate-glow-autonomous { animation: ambientGlow 6s ease-in-out infinite; }
+
+    @keyframes laserSweep {
+        0% { transform: translateX(-100%); }
+        30%, 100% { transform: translateX(100%); }
+    }
+    .animate-laser { animation: laserSweep 4s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+</style>
+
+<script>
+    document.getElementById('memberSearch').addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.member-card');
+        
+        cards.forEach(card => {
+            const name = card.getAttribute('data-name');
+            card.style.display = name.includes(searchTerm) ? 'block' : 'none';
+        });
+    });
+</script>
+        {%endblock%}
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="max-w-7xl mx-auto w-full px-4 pb-6 mt-6 relative z-10 hidden md:block">
+        <div class="flex flex-col sm:flex-row justify-between items-center bg-[#060b19]/60 backdrop-blur-md border border-white/[0.05] rounded-2xl p-4 text-[11px] text-slate-400 gap-3">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-shield-halved text-emerald-400"></i> Donn&eacute;es sécurisées .</span>
+            <span class="font-data bg-white/[0.02] border border-white/[0.05] px-2.5 py-1 rounded text-slate-500 text-[10px]">ENGINE : MEAL-AFRIQUE-CORE.2026</span>
+        </div>
+    </footer>
+
+
+    <!-- CODE SCRIPT -->
+    <script>
+        let scene, camera, renderer, globeGroup, animationFrameId;
+        let mouseX = 0, mouseY = 0;
+        let targetX = 0, targetY = 0;
+        let currentBasePriceInXAF = 199000; 
+        let activeCurrency = 'XAF';
+
+        const container = document.getElementById('globe-3d-container');
+
+        // AJOUT 2 : INTERACTION DE SUIVI DE SOURIS POUR LE HALO GLOW DES CARTES SÉAL
+        document.querySelectorAll('.premium-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+
+        // GEOMÉTRIE ET RENDU DE GLOBE PASSIF
+        function initGlobe() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.z = 170;
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            globeGroup = new THREE.Group();
+            scene.add(globeGroup);
+
+            const radius = 85;
+
+            const wireframeGeo = new THREE.SphereGeometry(radius, 18, 18);
+            const wireframeMat = new THREE.MeshBasicMaterial({
+                color: 0x0ea5e9, wireframe: true, transparent: true, opacity: 0.03
+            });
+            const baseSphere = new THREE.Mesh(wireframeGeo, wireframeMat);
+            globeGroup.add(baseSphere);
+
+            const dotCount = 1400;
+            const dotGeometry = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            
+            const colorCyan = new THREE.Color(0x06b6d4);
+            const colorAmber = new THREE.Color(0xf59e0b);
+
+            for (let i = 0; i < dotCount; i++) {
+                const phi = Math.acos(-1 + (2 * i) / dotCount);
+                const theta = Math.sqrt(dotCount * Math.PI) * phi;
+                const lat = (phi * 180) / Math.PI - 90;
+                const lon = ((theta * 180) / Math.PI) % 360 - 180;
+
+                let isLand = false;
+                if (lon > -22 && lon < 52 && lat > -35 && lat < 70) {
+                    if (!(lat > 32 && lat < 45 && lon > -5 && lon < 40)) isLand = true; 
+                }
+                else if (lon >= 52 && lon < 145 && lat > -12 && lat < 75) isLand = true; 
+                else if (lon > -120 && lon < -34 && lat > -55 && lat < 18) isLand = true; 
+                else if (lon > -160 && lon < -60 && lat >= 18 && lat < 72) isLand = true; 
+
+                if (isLand) {
+                    const x = radius * Math.sin(phi) * Math.sin(theta);
+                    const y = radius * Math.cos(phi);
+                    const z = radius * Math.sin(phi) * Math.cos(theta);
+                    positions.push(x, y, z);
+
+                    if (lon > -18 && lon < 50 && lat > -35 && lat < 36) {
+                        colors.push(colorAmber.r, colorAmber.g, colorAmber.b);
+                    } else {
+                        colors.push(colorCyan.r, colorCyan.g, colorCyan.b);
+                    }
+                }
+            }
+
+            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const dotMaterial = new THREE.PointsMaterial({ size: 2.3, vertexColors: true, transparent: true, opacity: 0.75 });
+            const pointsMesh = new THREE.Points(dotGeometry, dotMaterial);
+            globeGroup.add(pointsMesh);
+            
+            globeGroup.rotation.z = 0.4;
+            globeGroup.rotation.x = 0.2;
+
+            window.addEventListener('resize', onWindowResize);
+            container.addEventListener('mousemove', onMouseMove);
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => { if (entry.isIntersecting) animate(); else cancelAnimationFrame(animationFrameId); });
+            }, { threshold: 0.05 });
+            observer.observe(container);
+        }
+
+        function onMouseMove(event) {
+            mouseX = (event.clientX - window.innerWidth / 2) * 0.015;
+            mouseY = (event.clientY - window.innerHeight / 2) * 0.015;
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            animationFrameId = requestAnimationFrame(animate);
+            globeGroup.rotation.y += 0.0012; 
+            targetX += (mouseX - targetX) * 0.04;
+            targetY += (mouseY - targetY) * 0.04;
+            globeGroup.rotation.y += targetX * 0.0015;
+            globeGroup.rotation.x += targetY * 0.0015;
+            renderer.render(scene, camera);
+        }
+
+        initGlobe();
+
+
+        function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('-translate-x-full'); }
+        
+     
+      
+      
+        
+      
+
+        window.onclick = function(e) { 
+            if (e.target.matches('#upgradeModal')) closeUpgradeModal();
+            if (e.target.matches('#mobileMenu')) toggleMobileMenu();
+        }
+
+        // Ajoute ceci en bas de ta page pour gérer le clic sur mobile
+document.querySelector('.group').addEventListener('click', function() {
+    this.classList.toggle('active'); // Tu devras adapter le CSS pour gérer la classe .active
+});
+    </script>
+</body>
+</html>

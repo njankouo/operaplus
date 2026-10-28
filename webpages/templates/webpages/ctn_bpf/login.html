@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion · OperaPlus</title>
+    <!-- ===== Ajouts : page privée (non indexée), thème, police ===== -->
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Connectez-vous à votre espace OperaPlus pour piloter vos projets MEAL.">
+    <meta name="theme-color" content="#0F1B2D">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --c-green: #059669; --c-orange: #ea580c; }
+        body { background-color: #f8fafc; color: #1e293b; font-family: sans-serif; }
+        
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(0, 0, 0, 0.05); 
+            transition: transform 0.1s ease-out;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+        }
+        .input-pro { background: #ffffff; border: 1px solid #e2e8f0; color: #1e293b; }
+        .input-pro:focus { border-color: var(--c-green); outline: none; box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1); }
+        .loader { border: 2px solid #e2e8f0; border-top: 2px solid var(--c-green); border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+    <!-- ===================== CONNEXION : design harmonisé avec l'accueil (ajout) ===================== -->
+    <style>
+        :root { --ink: #0F1B2D; --acc: #EA580C; --acc-2: #C2410C; --ok: #2A8A7D; --line: #E6EAF0; --muted: #5B6676; --bg: #F6F7F9; }
+        body { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif !important; background: var(--bg) !important; color: var(--ink) !important; }
+        main { padding: 0 !important; display: grid !important; grid-template-columns: 1.05fr 1fr; align-items: stretch !important; }
+
+        /* ---- panneau de gauche : la marque ---- */
+        .lg-side { position: relative; background: var(--ink); color: #fff; padding: 48px 56px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
+        .lg-side::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--acc); }
+        .lg-brand { display: inline-flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 800; color: #fff; text-decoration: none; }
+        .lg-brand i { width: 42px; height: 42px; border-radius: 12px; background: var(--acc); display: flex; align-items: center; justify-content: center; font-size: 17px; }
+        .lg-brand span { color: var(--acc); }
+        .lg-pitch h1 { font-size: clamp(30px, 3.2vw, 44px); line-height: 1.08; letter-spacing: -.035em; font-weight: 800; margin: 0; }
+        .lg-pitch h1 em { font-style: normal; color: var(--ink); background: var(--acc); padding: 0 .15em; border-radius: 8px; }
+        .lg-pitch p { color: rgba(255,255,255,.7); font-size: 16px; line-height: 1.65; margin: 18px 0 0; max-width: 440px; }
+        .lg-points { list-style: none; padding: 0; margin: 30px 0 0; display: grid; gap: 14px; }
+        .lg-points li { display: flex; gap: 12px; align-items: center; font-size: 14px; font-weight: 600; color: rgba(255,255,255,.88);
+                        opacity: 0; transform: translateX(-10px); animation: lgIn .6s cubic-bezier(.2,.8,.2,1) forwards; }
+        .lg-points li:nth-child(2) { animation-delay: .12s; } .lg-points li:nth-child(3) { animation-delay: .24s; }
+        .lg-points li i { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.08); color: #5EEAD4; font-size: 13px; }
+        @keyframes lgIn { to { opacity: 1; transform: none; } }
+        /* petite carte vivante : rappelle le tableau de bord */
+        .lg-live { margin-top: 34px; max-width: 360px; background: #fff; color: var(--ink); border-radius: 18px; padding: 16px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); }
+        .lg-live-h { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+        .lg-live-h b { color: var(--ok); display: inline-flex; gap: 6px; align-items: center; } .lg-live-h b::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); animation: lgBlink 1.6s infinite; }
+        @keyframes lgBlink { 50% { opacity: .25; } }
+        .lg-bars { display: flex; align-items: end; gap: 8px; height: 70px; }
+        .lg-bars i { flex: 1; border-radius: 5px 5px 2px 2px; background: var(--ink); height: 0; animation: lgBar 1s cubic-bezier(.2,.8,.2,1) forwards; }
+        .lg-bars i:nth-child(even) { background: #D5DAE2; }
+        @keyframes lgBar { to { height: var(--h); } }
+        .lg-foot { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: rgba(255,255,255,.55); }
+        .lg-foot a { color: rgba(255,255,255,.75); text-decoration: none; } .lg-foot a:hover { color: #fff; }
+
+        /* ---- panneau de droite : le formulaire ---- */
+        .lg-right { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px 24px; min-height: 100vh; }
+        #loginCard { transform: none !important; box-shadow: 0 30px 70px -40px rgba(15,27,45,.35) !important; border: 1px solid var(--line) !important; background: #fff !important;
+                     backdrop-filter: none !important; border-radius: 26px !important; padding: 44px !important; max-width: 460px !important; animation: lgCard .6s cubic-bezier(.2,.8,.2,1) both; }
+        @keyframes lgCard { from { opacity: 0; transform: translateY(14px); } }
+        #loginCard > div:first-child { text-align: left !important; margin-bottom: 30px !important; }
+        #loginCard > div:first-child > div:first-child { justify-content: flex-start !important; }
+        #loginCard > div:first-child .bg-orange-600 { background: var(--acc) !important; border-radius: 14px !important; box-shadow: 0 12px 24px -12px var(--acc) !important; }
+        #loginCard h2 { text-transform: none !important; font-size: 28px !important; letter-spacing: -.03em !important; font-weight: 800 !important; color: var(--ink) !important; }
+        #loginCard h2 + p { text-transform: none !important; letter-spacing: 0 !important; font-size: 14px !important; font-weight: 500 !important; color: var(--muted) !important; margin-top: 6px !important; }
+        #loginForm label { text-transform: none !important; letter-spacing: 0 !important; font-size: 13px !important; font-weight: 700 !important; color: #344054 !important; display: block; }
+        .input-pro { border: 1px solid #D0D5DD !important; border-radius: 14px !important; padding: 15px 16px !important; font-size: 15px !important; color: var(--ink) !important; transition: border-color .2s, box-shadow .2s !important; }
+        .input-pro::placeholder { color: #98A2B3; }
+        .input-pro:focus { border-color: var(--ink) !important; box-shadow: 0 0 0 4px rgba(15,27,45,.08) !important; }
+        #loginForm .relative > button[onclick="togglePass()"] { top: 36px !important; width: 34px; height: 34px; right: 10px !important; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #98A2B3 !important; }
+        #loginForm .relative > button[onclick="togglePass()"]:hover { background: var(--bg); color: var(--ink) !important; }
+        #loginForm .relative .input-pro { padding-right: 52px !important; }
+        .lg-caps { display: none; margin-top: 8px; font-size: 12px; font-weight: 600; color: #B45309; } .lg-caps.on { display: flex; gap: 6px; align-items: center; }
+        #loginForm > div:nth-of-type(3) { text-transform: none !important; letter-spacing: 0 !important; font-size: 13px !important; }
+        #loginForm > div:nth-of-type(3) a:first-child { color: var(--muted) !important; } #loginForm > div:nth-of-type(3) a:first-child:hover { color: var(--acc) !important; }
+        #loginForm > div:nth-of-type(3) a:last-child { color: var(--ink) !important; } #loginForm > div:nth-of-type(3) a:last-child:hover { color: var(--acc) !important; }
+        #submitBtn { background: var(--acc) !important; border-radius: 14px !important; padding: 16px !important; font-size: 15px !important; letter-spacing: 0 !important; text-transform: none !important; font-weight: 800 !important;
+                     box-shadow: 0 16px 30px -16px var(--acc); transition: background .2s, transform .2s !important; }
+        #submitBtn:hover { background: var(--acc-2) !important; transform: translateY(-1px); }
+        #submitBtn:disabled { opacity: .8; cursor: wait; transform: none; }
+        #submitBtn .loader { border-color: rgba(255,255,255,.35) !important; border-top-color: #fff !important; }
+        #loginForm > div:last-child { border-top: 0 !important; padding-top: 0 !important; position: relative; margin-top: 40px !important; }
+        #loginForm > div:last-child::before { content: "ou continuer avec"; position: absolute; left: 0; right: 0; top: -22px; text-align: center; font-size: 12px; font-weight: 600; color: #98A2B3; }
+        #loginForm > div:last-child a { text-transform: none !important; font-size: 14px !important; font-weight: 700 !important; color: var(--ink) !important; border-radius: 12px !important; border-color: #D0D5DD !important; padding: 12px !important; transition: border-color .2s, background .2s !important; }
+        #loginForm > div:last-child a:hover { background: var(--bg) !important; border-color: var(--ink) !important; }
+        #loginForm > div:last-child .fa-google { color: #EA4335; } #loginForm > div:last-child .fa-microsoft { color: #00A4EF; }
+        .lg-secure { margin-top: 22px; display: flex; gap: 8px; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #98A2B3; }
+        .lg-secure i { color: var(--ok); }
+        .lg-back { margin-top: 18px; font-size: 13px; font-weight: 700; color: var(--muted); text-decoration: none; display: inline-flex; gap: 8px; align-items: center; }
+        .lg-back:hover { color: var(--ink); }
+        @media (max-width: 960px) { main { grid-template-columns: 1fr; } .lg-side { display: none; } .lg-right { min-height: 100vh; } #loginCard { padding: 30px 24px !important; } }
+        @media (prefers-reduced-motion: reduce) { .lg-points li, .lg-bars i, #loginCard { animation: none !important; opacity: 1; transform: none; } .lg-bars i { height: var(--h); } }
+    </style>
+</head>
+<body class="antialiased">
+
+    <main class="min-h-screen flex items-center justify-center p-6">
+        <aside class="lg-side" aria-hidden="false">
+            <a href="/" class="lg-brand"><i class="fa-solid fa-chart-line"></i><b style="font-weight:800">Opera<span>Plus</span></b></a>
+            <div class="lg-pitch">
+                <h1>Bon retour.<br>Vos projets <em>vous attendent</em>.</h1>
+                <p>Retrouvez vos indicateurs, vos activités et les dernières saisies du terrain, là où vous les avez laissés.</p>
+                <ul class="lg-points">
+                    <li><i class="fa-solid fa-chart-column"></i>Tableaux de bord à jour</li>
+                    <li><i class="fa-solid fa-bell"></i>Alertes RACI et échéances</li>
+                    <li><i class="fa-solid fa-wifi"></i>Collecte terrain, même hors-ligne</li>
+                </ul>
+                <div class="lg-live" aria-hidden="true">
+                    <div class="lg-live-h"><span>Réalisé vs cible</span><b>En direct</b></div>
+                    <div class="lg-bars"><i style="--h:45%"></i><i style="--h:52%"></i><i style="--h:58%;animation-delay:.08s"></i><i style="--h:60%;animation-delay:.08s"></i><i style="--h:68%;animation-delay:.16s"></i><i style="--h:70%;animation-delay:.16s"></i><i style="--h:82%;animation-delay:.24s"></i><i style="--h:85%;animation-delay:.24s"></i></div>
+                </div>
+            </div>
+            <div class="lg-foot"><a href="/">Accueil</a><a href="/securite/">Sécurité</a><a href="/confidentialite/">Confidentialité</a><span>© OperaPlus</span></div>
+        </aside>
+        <div class="lg-right">
+        <div id="loginCard" class="glass-card p-10 rounded-3xl w-full max-w-lg">
+            <div class="mb-8 text-center">
+                <div class="flex justify-center mb-4">
+                    <div class="h-12 w-12 bg-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-600/20">
+                        <i class="fa-solid fa-chart-line text-white text-xl"></i>
+                    </div>
+                </div>
+                <h2 class="text-3xl font-black text-slate-900 tracking-tighter uppercase">Connexion</h2>
+                <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">Accédez à votre espace OperaPlus</p>
+            </div>
+
+            <form id="loginForm" class="space-y-6" method="POST" action="/log/">
+                {% csrf_token %}
+                
+                <div class="space-y-2">
+                    <label for="email" class="text-[9px] uppercase tracking-widest font-bold text-slate-400">Adresse e-mail</label>
+                    <input type="email" name="email" required class="input-pro w-full p-4 text-sm rounded-xl" placeholder="expert@institution.org" id="email" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="254" autofocus>
+                </div>
+
+                <div class="space-y-2 relative">
+                    <label for="password" class="text-[9px] uppercase tracking-widest font-bold text-slate-400">Mot de passe</label>
+                    <input type="password" id="password" name="password" required class="input-pro w-full p-4 text-sm rounded-xl" placeholder="••••••••••••" autocomplete="current-password" maxlength="128">
+                    <button type="button" onclick="togglePass()" class="absolute right-4 top-9 text-slate-400 hover:text-emerald-600" aria-label="Afficher ou masquer le mot de passe">
+                        <i id="eyeIcon" class="fa-solid fa-eye"></i>
+                    </button>
+                    <p class="lg-caps" id="lgCaps" role="status"><i class="fa-solid fa-triangle-exclamation"></i>Majuscules activées</p>
+                </div>
+
+                <div class="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest">
+                    <a href="/bad_auth/" class="text-slate-400 hover:text-orange-600 transition-colors">Mot de passe oublié ?</a>
+                    <a href="" class="text-emerald-600 hover:text-emerald-800 transition-colors">Créer un compte</a>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full py-4 bg-slate-900 text-white font-black uppercase tracking-[0.2em] text-[11px] hover:bg-slate-700 transition-all flex items-center justify-center gap-3 rounded-xl">
+                    <span id="btnText">Se connecter</span>
+                    <div id="loader" class="loader hidden"></div>
+                </button>
+
+                <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                    <a href="" class="flex items-center justify-center gap-2 py-3 border border-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-all uppercase rounded-lg">
+                        <i class="fab fa-google"></i> Google
+                    </a>
+                    <a href="" class="flex items-center justify-center gap-2 py-3 border border-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-all uppercase rounded-lg">
+                        <i class="fab fa-microsoft"></i> Microsoft
+                    </a>
+                </div>
+            </form>
+            <p class="lg-secure"><i class="fa-solid fa-lock"></i>Connexion chiffrée · vos données restent privées</p>
+        </div>
+        <a href="/" class="lg-back"><i class="fa-solid fa-arrow-left"></i> Retour à l'accueil</a>
+        </div>
+    </main>
+
+    <script>
+        function togglePass() {
+            const p = document.getElementById('password');
+            const eye = document.getElementById('eyeIcon');
+            p.type = p.type === 'password' ? 'text' : 'password';
+            eye.classList.toggle('fa-eye');
+            eye.classList.toggle('fa-eye-slash');
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const btn = document.getElementById('submitBtn');
+            const loader = document.getElementById('loader');
+            const btnText = document.getElementById('btnText');
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+            btnText.innerText = "Vérification...";
+        });
+
+        // Effet tilt 3D léger
+        const card = document.getElementById('loginCard');
+        document.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth / 2 - e.clientX) / 50;
+            const y = (window.innerHeight / 2 - e.clientY) / 50;
+            card.style.transform = `rotateY(${-x}deg) rotateX(${y}deg)`;
+        });
+    </script>
+    <!-- ===== Ajouts : confort et sécurité côté navigateur ===== -->
+    <script>
+    (function () {
+        var pw = document.getElementById('password'), caps = document.getElementById('lgCaps'), em = document.getElementById('email');
+        function capsCheck(e) { if (e.getModifierState) caps.classList.toggle('on', e.getModifierState('CapsLock')); }
+        pw.addEventListener('keydown', capsCheck); pw.addEventListener('keyup', capsCheck); pw.addEventListener('blur', function () { caps.classList.remove('on'); });
+        document.getElementById('loginForm').addEventListener('submit', function () { em.value = em.value.trim().toLowerCase(); }, true);
+        /* au retour arrière, le bouton redevient utilisable et le mot de passe est effacé */
+        window.addEventListener('pageshow', function (e) {
+            if (!e.persisted) return;
+            var b = document.getElementById('submitBtn'); b.disabled = false;
+            document.getElementById('loader').classList.add('hidden'); document.getElementById('btnText').innerText = 'Se connecter'; pw.value = '';
+        });
+        /* l'effet d'inclinaison 3D est neutralisé par le style (transform: none) pour un rendu plus calme */
+    })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const messages = [
+        {% for message in messages %}
+        {
+            text: "{{ message|escapejs }}",
+            type: "{{ message.tags|default:'info' }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    messages.forEach((msg) => {
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: msg.type === 'success' || msg.type === 'error' || msg.type === 'warning' ? msg.type : 'info',
+            title: msg.text,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: "#1f2937",
+            color: "#fff",
+            showClass: { popup: 'animate__animated animate__fadeInRight' },
+            hideClass: { popup: 'animate__animated animate__fadeOutRight' }
+        });
+    });
+});
+</script>
+</body>
+</html>

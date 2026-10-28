@@ -1,0 +1,194 @@
+{% for message in messages %}
+<div class="modal fade glass-modal" id="messageModal-{{ forloop.counter }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card {% if message.tags %}{{ message.tags }}{% endif %}">
+            
+            <div class="glass-shimmer"></div>
+
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="glass-icon-container">
+                        <div class="glass-icon-bg"></div>
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title h6 fw-bold mb-0">
+                            {% if message.tags == 'success' %}Succès
+                            {% elif message.tags == 'warning' %}Attention
+                            {% else %}Information{% endif %}
+                        </h5>
+                        <span class="glass-subtitle">Notification Système</span>
+                    </div>
+                </div>
+                
+            </div>
+
+            <div class="modal-body pt-3 pb-4">
+                <p class="glass-text mb-0">{{ message|safe }}</p>
+            </div>
+
+            <div class="modal-footer border-0 p-0">
+                <button class="glass-btn-action" data-bs-dismiss="modal">Compris</button>
+            </div>
+
+            <div class="glass-progress">
+                <div class="glass-progress-bar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modalId = 'messageModal-{{ forloop.counter }}';
+    const modalEl = document.getElementById(modalId);
+    if (modalEl) {
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+        
+        // Auto-close synchronisé avec l'animation CSS (5 secondes)
+        setTimeout(() => {
+            if (modalEl.classList.contains('show')) modal.hide();
+        }, 5000);
+    }
+});
+</script>
+{% endfor %}
+
+<style>
+:root {
+    --glass-transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --display-time: 5s;
+}
+
+/* MODAL BACKDROP */
+.glass-modal {
+    backdrop-filter: blur(8px);
+    transition: var(--glass-transition);
+}
+
+/* CARD BASE */
+.glass-card {
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.07);
+    animation: glassScaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes glassScaleIn {
+    from { transform: scale(0.9) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* EFFET DE REFLET (SHIMMER) */
+.glass-shimmer {
+    position: absolute;
+    top: -100%; left: -100%;
+    width: 300%; height: 300%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.03), transparent);
+    transform: rotate(25deg);
+    animation: shimmer 6s infinite linear;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    from { transform: translate(-50%, -50%) rotate(25deg); }
+    to { transform: translate(50%, 50%) rotate(25deg); }
+}
+
+/* ICON SYSTEM */
+.glass-icon-container {
+    position: relative;
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    font-size: 20px;
+    z-index: 1;
+}
+
+.glass-icon-bg {
+    position: absolute;
+    inset: 0; border-radius: 14px;
+    opacity: 0.2;
+    z-index: -1;
+    animation: pulseIcon 2s infinite;
+}
+
+@keyframes pulseIcon {
+    0% { transform: scale(1); opacity: 0.2; }
+    50% { transform: scale(1.1); opacity: 0.3; }
+    100% { transform: scale(1); opacity: 0.2; }
+}
+
+/* TEXT STYLES */
+.modal-title { letter-spacing: -0.02em; }
+.glass-subtitle { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.5; }
+.glass-text { font-size: 15px; font-weight: 400; color: rgba(255,255,255,0.9); }
+
+/* BUTTON */
+.glass-btn-action {
+    width: 100%;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    font-weight: 600;
+    transition: var(--glass-transition);
+}
+
+.glass-btn-action:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* PROGRESS BAR */
+.glass-progress {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 4px;
+    background: rgba(0,0,0,0.1);
+}
+
+.glass-progress-bar {
+    height: 100%;
+    width: 100%;
+    transform-origin: left;
+    animation: progressLinear var(--display-time) linear forwards;
+}
+
+@keyframes progressLinear {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+}
+
+/* DYNAMIC COLORS (DARK MODE BY DEFAULT) */
+.success .glass-icon-container { color: #10b981; }
+.success .glass-icon-bg { background: #10b981; }
+.success .glass-progress-bar { background: #10b981; box-shadow: 0 0 10px #10b981; }
+
+.warning .glass-icon-container { color: #f59e0b; }
+.warning .glass-icon-bg { background: #f59e0b; }
+.warning .glass-progress-bar { background: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+
+.info .glass-icon-container { color: #3b82f6; }
+.info .glass-icon-bg { background: #3b82f6; }
+.info .glass-progress-bar { background: #3b82f6; box-shadow: 0 0 10px #3b82f6; }
+
+/* LIGHT MODE OVERRIDES */
+@media (prefers-color-scheme: light) {
+    .glass-card {
+        background: rgba(255, 255, 255, 0.75);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    .glass-text { color: #1f2937; }
+    .modal-title { color: #111827; }
+    .glass-btn-action { 
+        background: rgba(0, 0, 0, 0.03); 
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        color: #111827;
+    }
+}
+</style>

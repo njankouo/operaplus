@@ -1,0 +1,176 @@
+{% extends './main.html' %}
+{% load static %}
+
+{% block style %}
+<style>
+    :root {
+        --color-primary: #3498db;
+        --color-secondary: #2c3e50;
+        --color-text: #555;
+        --color-bg-light: #ecf0f1;
+        --color-border: #bdc3c7;
+        --shadow-subtle: 0 4px 15px rgba(0, 0, 0, 0.08);
+        --radius-large: 12px;
+    }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--color-bg-light);
+        color: var(--color-text);
+        line-height: 1.6;
+    }
+    .form-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+    .card-form {
+        background: #fff;
+        border-radius: var(--radius-large);
+        box-shadow: var(--shadow-subtle);
+        padding: 40px;
+        max-width: 600px;
+        width: 100%;
+        text-align: center;
+        position: relative;
+    }
+    .form-header {
+        margin-bottom: 25px;
+    }
+    .form-header h1 {
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--color-secondary);
+        margin: 0;
+    }
+    .form-header .subtitle {
+        color: #95a5a6;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+    .form-group {
+        text-align: left;
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--color-secondary);
+    }
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .form-control:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        outline: none;
+    }
+    .btn {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    .btn-success {
+        background-color: var(--color-primary);
+        color: #fff;
+    }
+    .btn-success:hover {
+        background-color: #2980b9;
+        transform: translateY(-2px);
+    }
+    .action-link {
+        margin-bottom: 30px;
+        display: block;
+    }
+    .action-link a {
+        font-size: 14px;
+        color: var(--color-primary);
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.3s ease;
+    }
+    .action-link a:hover {
+        color: var(--color-secondary);
+    }
+    .logo-badge {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+    }
+    .logo-badge img {
+        height: 40px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-wrapper">
+    <div class="card-form">
+        <div class="logo-badge">
+            <img src="{% static 'path/to/opera-logo.png' %}" alt="Opera Logo">
+        </div>
+
+        <div class="action-link">
+            {% if edit == 1 %}
+            <a class="btn" href="/configurations/">Retourner à l'Écran de Configuration</a>
+            {% else %}
+            <a class="btn" href="/institution/">Retourner aux Configurations</a>
+            {% endif %}
+        </div>
+
+        <form method="POST" action="/edit_nature_up/{{ nature.id }}/">
+            {% csrf_token %}
+            <div class="form-header">
+                <h1 class="text-primary">
+                    {% if edit == 1 %}
+                    Modifier la Nature
+                    {% else %}
+                    Ajouter une Nature
+                    {% endif %}
+                </h1>
+                <p class="subtitle">
+                    {% if edit == 1 %}
+                    Mettez à jour les informations de base de votre institution.
+                    {% else %}
+                    Entité au sein de laquelle sera déployé l'outil de Suivi et d'Évaluation des Plans d'Action.
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label for="id_nom">Nature</label>
+                <input type="text" value="{{ nature.intitule }}" class="form-control" name="nom" id="id_nom" required>
+            </div>
+            
+            <button type="submit" class="btn btn-success">Enregistrer les modifications</button>
+        </form>
+    </div>
+</div>
+
+<footer class="mt-2 footer">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6">
+                2024 © BeinInfo.
+            </div>
+            <div class="col-sm-6">
+                <div class="text-sm-right">
+                    <a href="/main/" class="text-primary">À Propos</a> | 
+                    <a href="/main/" class="text-success">Aide</a> | 
+                    Design &amp; Develop by Beinfos Plus
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+{% endblock %}

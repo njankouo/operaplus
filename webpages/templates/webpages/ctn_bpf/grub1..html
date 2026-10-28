@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opera+</title>
+    {%load static%}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" integrity="sha512-jnSuA4Ss2PkkikSOLtYs8BlYIeeIK1h99ty4YfvRPAlzr377vr3CXDb7sb7eEEBYjDtcYj+AjBH3FLv5uSJuXg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="{%static 'version/boxicons.css'%}" />
+
+    <!--Core CSS -->
+    <link rel="stylesheet" href="{%static 'version/core.css'%}" />
+    <link rel="stylesheet" href="{%static 'version/theme-default.css'%}" />
+    
+    
+    <link rel="stylesheet" href="{%static 'version/demo.css'%}" />
+    
+    <!--Vendor CSS-->
+    <link rel="stylesheet" href="{%static 'version/perfect-scrollbar.css'%}" />
+    
+<!--! Template customizer & Theme config files MUST be included after core stylesheets and helpers.js in the <head> section -->
+  <script src="{%static 'version/helpers.js'%}"></script>
+
+  <!--? Config:  Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file.  -->
+  <script src="{%static 'version/config.js'%}"></script>
+  <!-- beautify ignore:start -->    
+</head>
+<style>
+
+
+
+
+
+em {
+   font-style: normal;
+   font-weight: bold;
+}
+
+a {
+   text-decoration: none;
+   color: inherit;
+} 
+
+/* Layout */
+.s-layout {
+   display: flex;
+   width: 100%;
+
+   height: 100vh; /* ou une autre hauteur appropriée */
+   overflow-y: auto; /* permet le défilement vertical */
+}
+
+
+/* Sidebar */
+.s-sidebar__trigger {
+   z-index: 2;
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 4em;
+   background: #192b3c;
+}
+
+.s-sidebar__trigger > i {
+   display: inline-block;
+   margin: 1.5em 0 0 1.5em;
+   color: #f07ab0;
+}
+
+.s-sidebar__nav {
+    position: fixed;
+    top: 0;
+    left: -15em; /* Hors de l'écran */
+    height: 100vh;
+    width: 15em;
+    background: #243e56;
+    color: rgba(8, 8, 8, 0.7);
+    overflow-y: scroll; /* Permet le défilement */
+    scrollbar-width: none; /* Pour Firefox */
+}
+
+.s-sidebar__nav::-webkit-scrollbar {
+    display: none; /* Pour Chrome, Safari et Edge */
+}
+
+.s-sidebar__nav:hover,
+.s-sidebar__nav:focus,
+.s-sidebar__trigger:focus + .s-sidebar__nav,
+.s-sidebar__trigger:hover + .s-sidebar__nav {
+   left: 0;
+}
+
+
+.s-sidebar__nav ul li {
+   width: 100%;
+}
+
+.s-sidebar__nav-link {
+   position: relative;
+   display: inline-block;
+   width: 90%;
+   height: 4em;
+}
+
+.s-sidebar__nav-link em {
+   position: absolute;
+   top: 50%;
+ 
+   transform: translateY(-50%);
+}
+
+.s-sidebar__nav-link:hover {
+   background: #ecf1f5;
+}
+
+.s-sidebar__nav-link > i {
+   position: absolute;
+   top: 0;
+   left: 0;
+   display: inline-block;
+   width: 4em;
+   height: 4em;
+}
+
+.s-sidebar__nav-link > i::before {
+   position: absolute;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+}
+
+/* Mobile First */
+@media (min-width: 12em) {
+   .s-layout__content {
+      margin-left: 14em;
+   }
+   
+   /* Sidebar */
+   .s-sidebar__trigger {
+      width: 4em;
+   }
+   
+   .s-sidebar__nav {
+      width: 4em;
+      left: 0;
+   }
+   
+   .s-sidebar__nav:hover,
+   .s-sidebar__nav:focus,
+   .s-sidebar__trigger:hover + .s-sidebar__nav,
+   .s-sidebar__trigger:focus + .s-sidebar__nav {
+      width: 15em;
+   }
+}
+
+@media (min-width: 18em) {
+   .s-layout__content {
+      margin-left: 15em;
+   }
+   
+   /* Sidebar */
+   .s-sidebar__trigger {
+      display: none
+   }
+   
+   .s-sidebar__nav {
+      width: 15em;
+   }
+   
+   .s-sidebar__nav ul {
+      top: 1.3em;
+   }
+}
+
+
+
+.s-sidebar__nav img {
+    margin-bottom: 15px; /* Spacing below the image */
+}
+
+.s-sidebar__nav-link {
+    color: #03161b; /* Light text color */
+    text-decoration: none; /* Remove underline */
+    display: flex;
+    align-items: center; /* Center items vertically */
+    padding: 10px;
+    border-radius: 5px; /* Rounded corners for links */
+    transition: background-color 0.3s; /* Smooth transition */
+}
+
+.s-sidebar__nav-link:hover {
+    background-color: #d1dadf; /* Hover effect */
+}
+
+.toggle-btn {
+    cursor: pointer; /* Pointer cursor for toggle buttons */
+    transition: transform 0.2s; /* Smooth rotation */
+}
+
+.toggle-btn:hover {
+    color: #1abc9c; /* Change color on hover */
+}
+
+.sub-structures {
+    margin-left: 20px; /* Indent sub-structures */
+    padding-left: 10px; /* Padding for sub-structures */
+}
+
+input[type="checkbox"] {
+    margin-right: 10px; /* Space between checkbox and label */
+}
+
+label {
+    color: #000405; /* Light label color */
+    transition: color 0.3s; /* Smooth color transition */
+}
+
+label:hover {
+    color: #1abc9c; /* Change color on hover */
+}
+
+@media (max-width: 768px) {
+    .s-sidebar__nav {
+        padding: 15px; /* Adjust padding for smaller screens */
+    }
+}
+
+
+
+
+.s-sidebar__nav {
+    background: #141E30;  /* fallback for old browsers */
+background: -webkit-linear-gradient(to right, #243B55, #141E30);  /* Chrome 10-25, Safari 5.1-6 */
+background: linear-gradient(to right, #243B55, #141E30); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+border-radius: 1px; /* Rounded corners */
+    padding: 1rem;
+    border-right: 1px solid #dee2e6; /* Bordure droite */
+}
+
+.s-sidebar__nav ul {
+    list-style-type: none; /* Supprime les puces */
+    padding-left: 0; /* Supprime le padding */
+    font-size: 13px;
+}
+
+.s-sidebar__nav li {
+    margin: 0.5rem 0; /* Espacement entre les éléments */
+}
+
+.s-sidebar__nav a {
+    text-decoration: none; /* Supprime le soulignement */
+    color: rgba(3, 3, 8, 0.534); /* Couleur du texte */
+    display: flex; /* Utilise Flexbox pour aligner les éléments */
+    align-items: center; /* Centre verticalement */
+}
+
+.s-sidebar__nav a:hover {
+    background-color: #0a3158; /* Couleur de survol */
+    border-radius: 0.25rem; /* Arrondi des coins */
+}
+
+.sub-structures {
+    padding-left: 1.5rem; /* Indentation pour les sous-éléments */
+}
+@keyframes swing {
+  0% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(10deg);
+  }
+  30% {
+    transform: rotate(0deg);
+  }
+  40% {
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(0deg);
+  }
+  60% {
+    transform: rotate(5deg);
+  }
+  70% {
+    transform: rotate(0deg);
+  }
+  80% {
+    transform: rotate(-5deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes sonar {
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+body {
+  font-size: 0.9rem;
+}
+.page-wrapper .sidebar-wrapper,
+.sidebar-wrapper .sidebar-brand > a,
+.sidebar-wrapper .sidebar-dropdown > a:after,
+.sidebar-wrapper .sidebar-menu .sidebar-dropdown .sidebar-submenu li a:before,
+.sidebar-wrapper ul li a i,
+.page-wrapper .page-content,
+.sidebar-wrapper .sidebar-search input.search-menu,
+.sidebar-wrapper .sidebar-search .input-group-text,
+.sidebar-wrapper .sidebar-menu ul li a,
+#show-sidebar,
+#close-sidebar {
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -ms-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+}
+
+/*----------------page-wrapper----------------*/
+
+.page-wrapper {
+  height: 100vh;
+}
+
+.page-wrapper .theme {
+  width: 40px;
+  height: 40px;
+  display: inline-block;
+  border-radius: 4px;
+  margin: 2px;
+}
+
+.page-wrapper .theme.chiller-theme {
+  background: #1e2229;
+}
+
+/*----------------toggeled sidebar----------------*/
+
+.page-wrapper.toggled .sidebar-wrapper {
+  left: 0px;
+}
+
+@media screen and (min-width: 768px) {
+  .page-wrapper.toggled .page-content {
+    padding-left: 300px;
+  }
+}
+/*----------------show sidebar button----------------*/
+#show-sidebar {
+  position: fixed;
+  left: 0;
+  top: 10px;
+  border-radius: 0 4px 4px 0px;
+  width: 35px;
+  transition-delay: 0.3s;
+}
+.page-wrapper.toggled #show-sidebar {
+  left: -40px;
+}
+/*----------------sidebar-wrapper----------------*/
+
+.sidebar-wrapper {
+  width: 260px;
+  height: 100%;
+  max-height: 100%;
+  position: fixed;
+  top: 0;
+  left: -300px;
+  z-index: 999;
+}
+
+.sidebar-wrapper ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-wrapper a {
+  text-decoration: none;
+}
+
+/*----------------sidebar-content----------------*/
+
+.sidebar-content {
+  max-height: calc(100% - 30px);
+  height: calc(100% - 30px);
+  overflow-y: auto;
+  position: relative;
+}
+
+.sidebar-content.desktop {
+  overflow-y: hidden;
+}
+
+/*--------------------sidebar-brand----------------------*/
+
+.sidebar-wrapper .sidebar-brand {
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-wrapper .sidebar-brand > a {
+  text-transform: uppercase;
+  font-weight: bold;
+  flex-grow: 1;
+}
+
+.sidebar-wrapper .sidebar-brand #close-sidebar {
+  cursor: pointer;
+  font-size: 20px;
+}
+/*--------------------sidebar-header----------------------*/
+
+.sidebar-wrapper .sidebar-header {
+  padding: 20px;
+  overflow: hidden;
+}
+
+.sidebar-wrapper .sidebar-header .user-pic {
+  float: left;
+  width: 60px;
+  padding: 2px;
+  border-radius: 12px;
+  margin-right: 15px;
+  overflow: hidden;
+}
+
+.sidebar-wrapper .sidebar-header .user-pic img {
+  object-fit: cover;
+  height: 100%;
+  width: 100%;
+}
+
+.sidebar-wrapper .sidebar-header .user-info {
+  float: left;
+}
+
+.sidebar-wrapper .sidebar-header .user-info > span {
+  display: block;
+}
+
+.sidebar-wrapper .sidebar-header .user-info .user-role {
+  font-size: 12px;
+}
+
+.sidebar-wrapper .sidebar-header .user-info .user-status {
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.sidebar-wrapper .sidebar-header .user-info .user-status i {
+  font-size: 8px;
+  margin-right: 4px;
+  color: #5cb85c;
+}
+
+/*-----------------------sidebar-search------------------------*/
+
+.sidebar-wrapper .sidebar-search > div {
+  padding: 10px 20px;
+}
+
+/*----------------------sidebar-menu-------------------------*/
+
+.sidebar-wrapper .sidebar-menu {
+  padding-bottom: 10px;
+}
+
+.sidebar-wrapper .sidebar-menu .header-menu span {
+  font-weight: bold;
+  font-size: 14px;
+  padding: 15px 20px 5px 20px;
+  display: inline-block;
+}
+
+.sidebar-wrapper .sidebar-menu ul li a {
+  display: inline-block;
+  width: 100%;
+  text-decoration: none;
+  position: relative;
+  padding: 8px 30px 8px 20px;
+}
+
+.sidebar-wrapper .sidebar-menu ul li a i {
+  margin-right: 10px;
+  font-size: 12px;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.sidebar-wrapper .sidebar-menu ul li a:hover > i::before {
+  display: inline-block;
+  animation: swing ease-in-out 0.5s 1 alternate;
+}
+
+.sidebar-wrapper .sidebar-menu .sidebar-dropdown > a:after {
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  content: "\f105";
+  font-style: normal;
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  background: 0 0;
+  position: absolute;
+  right: 15px;
+  top: 14px;
+}
+
+.sidebar-wrapper .sidebar-menu .sidebar-dropdown .sidebar-submenu ul {
+  padding: 5px 0;
+}
+
+.sidebar-wrapper .sidebar-menu .sidebar-dropdown .sidebar-submenu li {
+  padding-left: 25px;
+  font-size: 13px;
+}
+
+.sidebar-wrapper .sidebar-menu .sidebar-dropdown .sidebar-submenu li a:before {
+  content: "\f111";
+  font-family: "Font Awesome 5 Free";
+  font-weight: 400;
+  font-style: normal;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin-right: 10px;
+  font-size: 8px;
+}
+
+.sidebar-wrapper .sidebar-menu ul li a span.label,
+.sidebar-wrapper .sidebar-menu ul li a span.badge {
+  float: right;
+  margin-top: 8px;
+  margin-left: 5px;
+}
+
+.sidebar-wrapper .sidebar-menu .sidebar-dropdown .sidebar-submenu li a .badge,
+.sidebar-wrapper .sidebar-menu .sidebar-dropdown .sidebar-submenu li a .label {
+  float: right;
+  margin-top: 0px;
+}
+
+.sidebar-wrapper .sidebar-menu .sidebar-submenu {
+  display: none;
+}
+
+.sidebar-wrapper .sidebar-menu .sidebar-dropdown.active > a:after {
+  transform: rotate(90deg);
+  right: 17px;
+}
+
+/*--------------------------side-footer------------------------------*/
+
+.sidebar-footer {
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  display: flex;
+}
+
+.sidebar-footer > a {
+  flex-grow: 1;
+  text-align: center;
+  height: 30px;
+  line-height: 30px;
+  position: relative;
+}
+
+.sidebar-footer > a .notification {
+  position: absolute;
+  top: 0;
+}
+
+.badge-sonar {
+  display: inline-block;
+  background: #980303;
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+  position: absolute;
+  top: 0;
+}
+
+.badge-sonar:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 2px solid #980303;
+  opacity: 0;
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  animation: sonar 1.5s infinite;
+}
+
+/*--------------------------page-content-----------------------------*/
+
+.page-wrapper .page-content {
+  display: inline-block;
+  width: 100%;
+
+  padding-top: 10px;
+}
+
+.page-wrapper .page-content > div {
+  padding: 10px 10px;
+}
+
+.page-wrapper .page-content {
+  overflow-x: hidden;
+}
+
+/*------scroll bar---------------------*/
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 7px;
+}
+::-webkit-scrollbar-button {
+  width: 0px;
+  height: 0px;
+}
+::-webkit-scrollbar-thumb {
+  background: #525965;
+  border: 0px none #ffffff;
+  border-radius: 0px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #525965;
+}
+::-webkit-scrollbar-thumb:active {
+  background: #525965;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+  border: 0px none #ffffff;
+  border-radius: 50px;
+}
+::-webkit-scrollbar-track:hover {
+  background: transparent;
+}
+::-webkit-scrollbar-track:active {
+  background: transparent;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+
+/*-----------------------------chiller-theme-------------------------------------------------*/
+
+.chiller-theme .sidebar-wrapper {
+   color:black;
+}
+
+.chiller-theme .sidebar-wrapper .sidebar-header,
+.chiller-theme .sidebar-wrapper .sidebar-search,
+.chiller-theme .sidebar-wrapper .sidebar-menu {
+    border-top: 1px solid #3a3f48;
+}
+
+.chiller-theme .sidebar-wrapper .sidebar-search input.search-menu,
+.chiller-theme .sidebar-wrapper .sidebar-search .input-group-text {
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.chiller-theme .sidebar-wrapper .sidebar-header .user-info .user-role,
+.chiller-theme .sidebar-wrapper .sidebar-header .user-info .user-status,
+.chiller-theme .sidebar-wrapper .sidebar-search input.search-menu,
+.chiller-theme .sidebar-wrapper .sidebar-search .input-group-text,
+.chiller-theme .sidebar-wrapper .sidebar-brand>a,
+.chiller-theme .sidebar-wrapper .sidebar-menu ul li a,
+.chiller-theme .sidebar-footer>a {
+    color: #818896;
+}
+
+.chiller-theme .sidebar-wrapper .sidebar-menu ul li:hover>a,
+.chiller-theme .sidebar-wrapper .sidebar-menu .sidebar-dropdown.active>a,
+.chiller-theme .sidebar-wrapper .sidebar-header .user-info,
+.chiller-theme .sidebar-wrapper .sidebar-brand>a:hover,
+.chiller-theme .sidebar-footer>a:hover i {
+    color: #b8bfce;
+}
+
+.page-wrapper.chiller-theme.toggled #close-sidebar {
+    color: #bdbdbd;
+}
+
+.page-wrapper.chiller-theme.toggled #close-sidebar:hover {
+    color: #ffffff;
+}
+
+.chiller-theme .sidebar-wrapper ul li:hover a i,
+.chiller-theme .sidebar-wrapper .sidebar-dropdown .sidebar-submenu li a:hover:before,
+.chiller-theme .sidebar-wrapper .sidebar-search input.search-menu:focus+span,
+.chiller-theme .sidebar-wrapper .sidebar-menu .sidebar-dropdown.active a i {
+    color: #16c7ff;
+    text-shadow:0px 0px 10px rgba(22, 199, 255, 0.5);
+}
+
+.chiller-theme .sidebar-wrapper .sidebar-menu ul li a i,
+.chiller-theme .sidebar-wrapper .sidebar-menu .sidebar-dropdown div,
+.chiller-theme .sidebar-wrapper .sidebar-search input.search-menu,
+.chiller-theme .sidebar-wrapper .sidebar-search .input-group-text {
+    background: #3a3f48;
+}
+
+.chiller-theme .sidebar-wrapper .sidebar-menu .header-menu span {
+    color: #6c7b88;
+}
+
+.chiller-theme .sidebar-footer {
+    background: #3a3f48;
+    box-shadow: 0px -1px 5px #282c33;
+    border-top: 1px solid #464a52;
+}
+
+.chiller-theme .sidebar-footer>a:first-child {
+    border-left: none;
+}
+
+.chiller-theme .sidebar-footer>a:last-child {
+    border-right: none;
+}
+
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.1.4/sweetalert2.min.css">  
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"/>
+<link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css">
+  <!-- or -->
+  <link rel="stylesheet"
+  href="https://unpkg.com/boxicons@latest/css/boxicons.min.css">
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+           
+                 
+                    <div class="page-wrapper chiller-theme">
+                     <style>
+    /* 1. Définition de l'animation de pulsation (pulse) */
+    @keyframes pulse-animation {
+        0% {
+            transform: scale(1);
+            /* Couleur de l'ombre assortie à btn-primary (Bleu Bootstrap) */
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.4); 
+        }
+        70% {
+            transform: scale(1.05);
+            /* L'ombre s'étend et devient transparente */
+            box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); 
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+        }
+    }
+
+    /* 2. Application de l'animation et du style du bouton */
+    .animated-sidebar-button {
+        animation: pulse-animation 2s infinite; 
+        /* S'assurer que le bouton est parfaitement circulaire et de taille fixe */
+        width: 40px; 
+        height: 40px; 
+        border-radius: 50%; 
+        /* Le padding de 'btn' est souvent en cause, donc nous le forçons à zéro */
+        padding: 0 !important; 
+        /* S'assurer que l'icône a une taille claire */
+        font-size: 1rem; 
+    }
+</style>
+
+<a id="show-sidebar" 
+   class="btn btn-primary animated-sidebar-button d-flex justify-content-center align-items-center" 
+   href="#">
+    <i class="fas fa-chevron-left"></i>
+</a>
+                       <nav id="sidebar" class="sidebar-wrapper" style="background:{{request.user.personnel.color}}; color: white;">
+    <div class="sidebar-content">
+
+        <div class="sidebar-header">
+         
+            {% if actual_institution.img.url %}
+            <div class="sidebar-brand">
+                <a href="#">
+                    <img style="width:40px;height:40px;border-radius:100%; margin-right: 10px;" src="{{actual_institution.img.url}}" alt="Logo">
+                    <span class="brand-title">Opera+
+                </a>
+                <div id="close-sidebar">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            {% endif %}
+       
+
+            <div class="sidebar-title-section" style="padding: 20px 15px 10px 15px; font-size: 1.2em; font-weight: bold; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <i class="fas fa-sitemap mr-2"></i> Sélection des Structures
+            </div>
+        </div>
+        <div class="sidebar-menu">
+            <ul>
+                {% for structures in structure %}
+                <li>
+                    <a class="s-sidebar__nav-link" href="#0" onclick="toggleSubStructures({{ structures.id }})">
+                        <em>
+                            <i class="fa fa-caret-right toggle-btn text-info" data-id="{{ structures.id }}"></i>
+                            <input type="checkbox" id="checkbox-{{ structures.id }}" onchange="updateSelect(this, '{{ structures.nom }}', '{{ structures.id }}')">
+                            <label for="checkbox-{{ structures.id }}" class="text-light"> {{ structures.nom }} </label>
+                        </em>
+                    </a>
+                    <ul id="sub-structures-{{ structures.id }}" class="sub-structures" style="display: none;">
+                        {% for sub_line in structures.children.all %}
+                        <li>
+                            <a class="s-sidebar__nav-link mx-3" href="#0" onclick="toggleSubStructures({{ sub_line.id }})">
+                                <em>
+                                    <i class="fa fa-caret-right mr-2 toggle-btn text-info fa-2x" data-id="{{ sub_line.id }}"></i>
+                                    <input type="checkbox" id="checkbox-{{ sub_line.id }}" onchange="updateSelect(this, '{{ sub_line.nom }}', '{{ sub_line.id }}')">
+                                    <label for="checkbox-{{ sub_line.id }}" class="text-light">{{ sub_line.nom }}</label>
+                                </em>
+                            </a>
+                            <ul id="sub-structures-{{ sub_line.id }}" class="sub-structures" style="display: none;">
+                                {% for sub_sub_sub_line in sub_line.children.all %}
+                                <li>
+                                    <a class="s-sidebar__nav-link mx-3" href="#0">
+                                        <em>
+                                            <input type="checkbox" id="checkbox-{{ sub_sub_sub_line.id }}" onchange="updateSelect(this, '{{ sub_sub_sub_line.nom }}', '{{ sub_sub_sub_line.id }}')">
+                                            <label for="checkbox-{{ sub_sub_sub_line.id }}">{{ sub_sub_sub_line.nom }}</label>
+                                        </em> </a>
+                                </li>
+                                {% empty %}
+                                <li class="text-white small py-1 px-3">Aucune sous-sous-structure disponible.</li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        {% empty %}
+                        <li class="text-white small py-1 px-3">Aucune sous-structure disponible.</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                {% endfor %}
+
+            </ul>
+        </div>
+        </div>
+
+</nav>
+             <!-- sidebar-wrapper  -->
+                         
+                        <main class="page-content">
+                            <!-- <div class="card ">
+                              <div id="close-sidebar">
+                                <svg xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="#4B77D1"><path d="M120-120v-193h60v133h133v60H120Zm527 0v-60h133v-133h60v193H647ZM120-647v-193h193v60H180v133h-60Zm660 0v-133H647v-60h193v193h-60Z"/></svg>
+                                <h6 style="font-weight: bold;" >Saisie Des Données: {{dataset.m_name}}</h6>
+                                
+                              </div>
+                                    
+                                        
+                                    
+                                               
+                              </div> -->
+                              <nav class="navbar navbar-expand-lg navbar-dark rounded-start " style="background-color:{{request.user.personnel.color_fond}}">
+                                <div class="container-fluid  d-flex">
+                                 <a class="navbar-brand" href="/">{{dataset.m_name}}</a>
+                                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-ex-7">
+                                 <span class="navbar-toggler-icon"></span>
+                                 </button>
+                              
+                                 <div class="collapse navbar-collapse" id="navbar-ex-7">
+                                 <div class="navbar-nav me-auto">
+                                  <div id="close-sidebar">
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#4B77D1"><path d="M120-120v-200h80v120h120v80H120Zm520 0v-80h120v-120h80v200H640ZM120-640v-200h200v80H200v120h-80Zm640 0v-120H640v-80h200v200h-80Z"/></svg>
+                                </div>
+                                   
+                                 </div>
+                                 <ul class="navbar-nav ms-lg-auto">
+                                    <li class="nav-item">
+                                       <!-- <a class="nav-link" href="javascript:void(0)"><i class="tf-icons navbar-icon bx bx-user"></i> Profile</a> -->
+                                       <button id="loadDataButton" data-id="{{dataset.id}}" class="btn btn-light mx-2" type="button" onclick="loadDataset(this)">
+                                        
+                                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#4B77D1"><path d="M480-120q-151 0-255.5-46.5T120-280v-400q0-66 105.5-113T480-840q149 0 254.5 47T840-680v400q0 67-104.5 113.5T480-120Zm0-479q89 0 179-25.5T760-679q-11-29-100.5-55T480-760q-91 0-178.5 25.5T200-679q14 30 101.5 55T480-599Zm0 199q42 0 81-4t74.5-11.5q35.5-7.5 67-18.5t57.5-25v-120q-26 14-57.5 25t-67 18.5Q600-528 561-524t-81 4q-42 0-82-4t-75.5-11.5Q287-543 256-554t-56-25v120q25 14 56 25t66.5 18.5Q358-408 398-404t82 4Zm0 200q46 0 93.5-7t87.5-18.5q40-11.5 67-26t32-29.5v-98q-26 14-57.5 25t-67 18.5Q600-328 561-324t-81 4q-42 0-82-4t-75.5-11.5Q287-343 256-354t-56-25v99q5 15 31.5 29t66.5 25.5q40 11.5 88 18.5t94 7Z"/></svg>
+                                       SAISIR</button>
+                                     
+                                    </li>
+                                  
+                                  
+                                 </ul>
+                                 </div>
+                                </div>
+                              </nav>
+                              <div class="row">
+                                <div class="col-md-12">
+                                  <div class="accordion" id="accordionWithIcon">
+                                    
+                                    
+                                  
+                                    
+                                    <div class="accordion-item card">
+                                      <h2 class="accordion-header d-flex align-items-center" style="font-weight: bold;">
+                                        <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionWithIcon-3" aria-expanded="false">
+                                          <i class="bx bx-data me-4"></i>
+                                        D&eacute;roulez Pour Selectionner Le(s) Formulaires Et Switcher
+                                        </button>
+                                      </h2>
+                                      <div id="accordionWithIcon-3" class="accordion-collapse collapse" >
+                                        <div class="accordion-body">
+                                          {%for all_datasets in all_dataset%}
+                                          {%if all_datasets.id == dataset.id%}
+                                          {%else%}
+                                          <a type="button" class="btn btn-outline-dark mx-2 my-2" href="/grub_form/{{ all_datasets.id }}/">
+                                            <i class="tf-icons bx bx-data bx-18px me-2"></i> {{all_datasets.m_name}}
+                                          </a>
+                                          {%endif%}
+                                          {%endfor%}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    </div>
+                                </div>
+                              </div>
+                            
+                                  </nav>
+                                 
+                                     
+                              
+                                  <form method="POST" action="/save_value/" class="card" onsubmit="return submitForm('{{ dataset.id }}')" id="myForm{{ dataset.id }}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="generator" value="dSv">
+                                    <input type="hidden" name="dSv_id" value="{{dataset.id}}">
+                                    <input type="hidden" name="edit_or_create" value="c">
+                                    <input type="hidden" name="variables_value" id="variables_value" >
+                                    <input type="hidden" name="variables_names" id="variables_names" >
+                                    <input type="hidden" name="structures_value" id="structures_value" >
+                                    
+                                    
+                                    <div class="container-fluid">
+                                      <div class="row">
+
+                                      
+                                            <div class="col-md-12 my-4">
+                                             
+                                   
+                              
+                                 
+                                                <div class="row">
+                                                    <div class="col-md-4 col-sm-12 mb-3">
+                                                        <label for="annee" class="text-dark" style="font-weight:bold;"> <small> Année *</small></label>
+                                                        <select class="form-control" name="period1_saisie" id="annee">
+                                                            <option>Selectionnez L'année</option>
+                                                            {% for periode_oks in periode_ok %}
+                                                                <option value="{{ periode_oks.annee }}">{{ periode_oks.annee }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-4 col-sm-12 mb-3">
+                                                        <label for="period" class="text-dark" style="font-weight:bold"> <small>Période Saisie *</small> </label>
+                                                        <select class="form-control" name="period2_saisie" id="period">
+                                                            <!-- Options will be populated here -->
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-4 col-sm-12 mb-3">
+                                                        <label for="period" class="text-dark" style="font-weight:bold"> <small>Structure *</small> </label>
+                                                      <select name="struc_selec" id="structureSelect" class="form-control">
+                                                 
+                                                      </select>
+                                                        <!-- <button  data-id="{{ dataset.id }}"class="btn btn-dark my-4" type="button">Renseigner Data</button> -->
+                                                    </div>
+                                                 
+                                                    <div class="col-md-6">
+                                                        <label for="" class="text-danger" style="font-weight:bold;display:none">Resultat CalCul *</label>
+                                                           <input type="text" id="indicator-values" name="indicator-values" class="form-control" readonly style="display:none">
+                                        
+                                                      </div>
+                                                                           <div class="col-md-6">
+                                                        
+                                                        <label for="" class="text-danger" style="font-weight:bold;display:none">Code Indicateur *</label>
+                                                            <input type="text" id="indicator-ids" name="indicator-ids" class="form-control" readonly style="display:none">
+                                                      </div>
+                                                      <input type="text" name="elementsArea" id="elementsArea" class="form-control" style="display: none;">
+                                                      <input type="text" name="elements" id="displayArea" class="form-control" style="display: none;">
+                                            </div>
+                                        </div>
+                                       
+                                        <div class="card-body{{ dataset.id }}">
+                                            <!-- <button class="btn btn-success my-2 text-light"  type="button" style="float: right;"><i class="fa fa-download"></i>&nbsp;Afficher</button> -->
+                                            <div class="contenu" style="overflow-y: auto; padding: 0;  width: 100%;">
+                                                <!-- The content will be loaded here -->
+                                            </div>
+                                            
+                                        </div>
+                                  
+                                    <div class="p-2">
+                                        <button type="button" class="btn btn-primary"   id="myButton{{ dataset.id }}" data-form-id="{{ dataset.id }}"> Enregistrer</button>
+                                    </div>
+                                </form>
+                                <div id="loadingIndicator" role="alert" aria-live="assertive" aria-hidden="true" style="display: none;">  
+                                    <span>Chargement en cours, veuillez patienter...</span>  
+                                </div> 
+                          
+<style>
+  /* Styles CSS personnalisés pour la navigation (Version Améliorée) */
+
+/* Définition des variables pour une gestion facile des couleurs */
+:root {
+    --navbar-bg: {{request.user.personnel.color_fond}}; /* Fond sombre (gris foncé/noir Bootstrap) */
+    --link-color: #adb5bd; /* Couleur de lien par défaut (gris clair) */
+    --active-color: #0d6efd; /* Bleu Primaire Bootstrap */
+    --text-active: #ffffff;
+    --text-hover: #ffffff;
+    --hover-bg: rgba(255, 255, 255, 0.15); /* Légèrement plus opaque que l'original */
+}
+
+.navbar-bottom-custom {
+    /* Assure une belle superposition */
+    z-index: 99;
+    /* Utilise une couleur de fond par défaut (si la variable Django n'est pas définie) */
+    background-color: var(--navbar-bg) !important; 
+}
+
+/* Style général des liens */
+.navbar-bottom-custom .nav-link {
+    color: var(--link-color); /* Utilisation de la variable */
+    padding: 0.5rem 0.65rem; /* Augmente légèrement le padding pour une meilleure zone de clic */
+    transition: color 0.3s, background-color 0.3s, transform 0.3s, box-shadow 0.3s;
+    border-radius: 50px; /* Coins très arrondis pour les liens */
+    text-decoration: none; /* Assure qu'il n'y ait pas de soulignement inattendu */
+    display: flex; /* Flexbox pour centrer plus proprement le contenu */
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Styles pour l'icône */
+.navbar-bottom-custom .nav-link i {
+    font-size: 1.3rem; /* L'icône est légèrement plus grande et cohérente */
+    margin-bottom: 0.2rem !important; /* Réduit l'espace entre icône et texte */
+}
+
+/* Effet de survol (hover) */
+.navbar-bottom-custom .nav-link:hover {
+    color: var(--text-hover);
+    background-color: var(--hover-bg); 
+    /* Petite translation au survol pour un effet subtil */
+    transform: translateY(-2px); 
+}
+
+/* Style pour l'élément actif (la "bulle") */
+.navbar-bottom-custom .nav-link.active {
+    color: var(--text-active); 
+    background-color: var(--active-color); 
+    /* Retour à l'échelle normale après le survol, mais avec une ombre plus forte */
+    transform: scale(1); 
+    /* Box Shadow plus marqué pour le relief et le statut actif */
+    box-shadow: 0 6px 12px rgba(13, 110, 253, 0.6); 
+    font-weight: 600; /* Le texte actif est plus lisible */
+}
+/* NOUVEAU CSS : Gestion du masquage de la navbar */
+
+/* Par défaut, la navbar est visible en bas */
+.navbar-bottom-custom {
+    /* Ajout d'une transition pour le mouvement (rétraction) */
+    transition: transform 0.3s ease-in-out, background-color 0.3s;
+    /* Assure qu'elle soit bien collée en bas */
+    transform: translateY(0); 
+}
+
+/* Style appliqué lorsque la classe 'toggled' est ajoutée par le JS */
+.navbar-bottom-custom.toggled {
+    /* Déplace la navbar juste en dessous du bord inférieur de l'écran */
+    transform: translateY(100%); 
+}
+</style>
+<div class="container">
+    <nav class="navbar navbar-expand-lg fixed-bottom rounded-top-4 shadow-lg navbar-bottom-custom navs" 
+         role="navigation" 
+         aria-label="Navigation Principale Inférieure"
+         style="background-color:{{request.user.personnel.color_fond }}">
+        <div class="container-fluid">
+            <ul class="navbar-nav nav-justified w-100">
+
+                <li class="nav-item mx-1"> 
+                    <a class="nav-link text-center active" aria-current="page" href="/">
+                        <i class="fas fa-home mb-1"></i>
+                        <span class="d-none d-sm-inline-block">Tableau de bord</span>
+                    </a>
+                </li>
+
+                <li class="nav-item mx-1">
+                    <a class="nav-link text-center" href="/forms_data/">
+                        <i class="fas fa-file-alt mb-1"></i> <span class="d-none d-sm-inline-block">Collecte des données</span>
+                    </a>
+                </li>
+
+                 <li class="nav-item mx-1">
+                    <a class="nav-link text-center" href="/dataelts/">
+                        <i class="fas fa-database mb-1"></i> <span class="d-none d-sm-inline-block">Éléments de données</span>
+                    </a>
+                </li>
+
+                <li class="nav-item mx-1">
+                    <a class="nav-link text-center" href="/evaluer/0/">
+                        <i class="fas fa-chart-line mb-1"></i> <span class="d-none d-sm-inline-block">Indicateurs</span>
+                    </a>
+                </li>
+
+                <li class="nav-item mx-1">
+                    <a class="nav-link text-center" href="/configurations_admin/">
+                        <i class="fas fa-cog mb-1"></i>
+                        <span class="d-none d-sm-inline-block">Paramètres</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div style="height: 100vh;">
+        </div>
+    <footer class="py-3 my-4">
+        <ul class="nav justify-content-center border-bottom pb-3 mb-3">
+            <li class="nav-item"><a href="/" class="nav-link px-2 text-muted">Accueil</a></li>
+            <li class="nav-item"><a href="#" class="nav-link px-2 text-muted">Déconnexion</a></li>
+            <li class="nav-item"><a href="#" class="nav-link px-2 text-muted">FAQs</a></li>
+        </ul>
+        <p class="text-center text-muted">© 2024 BeinInfo+</p>
+    </footer>
+</div>
+                              </div>
+                            </div>
+                            </div>
+                          </div>
+                      
+                        </main>
+                        <!-- page-content" -->
+                      </div>
+                      <!-- page-wrapper -->
+                    <!-- Content -->
+                  
+                    <script>
+            
+                        function submitForm(formId) {  
+                            // Récupérez le formulaire via son ID dynamique  
+                            const myForm = document.getElementById(`myForm${formId}`);  
+                           
+                    
+                            // Vérifiez si le formulaire est valide  
+                            if (myForm.checkValidity()) {  
+                                myForm.submit(); // Soumettez le formulaire  
+                                return true; // Laissez la soumission se produire  
+                            }  
+                            return false; // Empêche la soumission par défaut si le formulaire n'est pas valide  
+                        }  
+                    
+                        // Ajoutez un écouteur d'événements pour le bouton de sauvegarde  
+                        document.querySelectorAll('button[id^="myButton"]').forEach(button => {  
+                       
+                            button.addEventListener('click', function() {  
+                                const formId = this.dataset.formId; // obtenir l'ID du formulaire dynamique   
+                                Swal.fire({  
+                                    title: "<strong>Information</strong>",  
+                                    icon: "info",  
+                                    html: `  
+                                        Les données saisies seront remplacées dans la base de données en cas de doublon. <b>Souhaitez-vous tout de même les enregistrer ?</b>  
+                                    `,  
+                                    showCloseButton: true,  
+                                    showCancelButton: true,  
+                                    focusConfirm: false,  
+                                    confirmButtonText: `  
+                                        <i class="fa fa-thumbs-up"></i> Oui / Yes!  
+                                    `,  
+                                    confirmButtonAriaLabel: "Thumbs up, great!",  
+                                    cancelButtonText: `  
+                                        <i class="fa fa-thumbs-down"></i> Non / No  
+                                    `,  
+                                    cancelButtonAriaLabel: "Thumbs down"  
+                                }).then((result) => {  
+                                    if (result.isConfirmed) {  
+                                        submitForm(formId); // Appelle la fonction de soumission avec l'ID du formulaire  
+                                    }  
+                                });  
+                            });  
+                        });  
+                    
+                            </script> 
+
+                    
+                        
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js" integrity="sha512-ykZ1QQr0Jy/4ZkvKuqWn4iF3lqPZyij9iRv6sGqLRdTPkY69YX6+7wvVGmsdBbiIfN/8OdsI7HABjvEok6ZopQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script>  
+    $(document).ready(function () {  
+        $(".toggle-btn").click(function () {  
+            const id = $(this).data("id");  
+            const subList = $(`#sub-structures-${id}`);  
+            const isVisible = subList.is(":visible");  
+
+            // Animation d'affichage ou de masquage  
+            subList.slideToggle(300, function () {  
+                // Change l'icône du bouton après l'animation  
+                if (isVisible) {  
+                    $(this).siblings(".toggle-btn").removeClass("fa-caret-down").addClass("fa-caret-right");  
+                } else {  
+                    $(this).siblings(".toggle-btn").removeClass("fa-caret-right").addClass("fa-caret-down");  
+                }  
+            });  
+        });  
+    });  
+</script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+	$(document).ready(function() {
+		$('#annee').on('change', function() {
+			var selectedId = $(this).val();
+			
+			$.ajax({
+				url: '/search_period_id/',  // L'URL correspondant à la vue Django
+				method: 'GET',
+				data: { annee: selectedId },
+				success: function(data) {
+					var selectInformations = $('#period');
+					selectInformations.empty(); // Effacer les anciennes options
+					
+					// Ajouter les nouvelles options basées sur les données récupérées via AJAX
+					data.forEach(function(period_id) {
+						selectInformations.append($('<option>', {
+							value: period_id.id,
+							text: period_id.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
+						}));
+					});
+				},
+				error: function(xhr, status, error) {
+					console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+				}
+			});
+		});
+	});
+	</script>
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  {% if message.tags == 'error' %}
+
+<script type="text/javascript">
+    Swal.fire({
+  position: "top-end",
+  icon: "error",
+  title: "{{message}}",
+  showConfirmButton: false,
+  timer: 4000
+});
+</script>
+{%endif%}
+{%endfor%}
+{% for message in messages %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  {% if message.tags == 'success' %}
+
+<script type="text/javascript">
+    Swal.fire({
+  position: "top-end",
+  icon: "success",
+  title: "{{message}}",
+  showConfirmButton: false,
+  timer: 2000
+});
+</script>
+{%endif%}
+{%endfor%}
+<script>
+    function toggleSubStructures(id) {
+        const subList = document.getElementById(`sub-structures-${id}`);
+        const toggleBtn = document.querySelector(`.toggle-btn[data-id="${id}"]`);
+    
+        if (subList) {
+            if (subList.style.display === "none" || subList.style.display === "") {
+                subList.style.display = "block"; // Affiche les sous-structures
+                toggleBtn.classList.remove("fa-caret-right");
+                toggleBtn.classList.add("fa-caret-down");
+            } else {
+                subList.style.display = "none"; // Cache les sous-structures
+                toggleBtn.classList.remove("fa-caret-down");
+                toggleBtn.classList.add("fa-caret-right");
+            }
+        }
+    }
+    </script>
+
+
+
+
+
+
+
+
+
+
+<script>
+    function updateSelect(checkbox, name, id) {
+        const select = document.getElementById("structureSelect");
+        
+        if (checkbox.checked) {
+            // Créer une nouvelle option
+            const newOption = document.createElement("option");
+            newOption.value = id; // ID de la structure
+            newOption.textContent = name; // Nom de la structure
+            
+            // Ajouter l'option au select
+            select.appendChild(newOption);
+        } else {
+            // Retirer l'option si la case est décochée
+            const optionToRemove = Array.from(select.options).find(option => option.value === id);
+            if (optionToRemove) {
+                select.removeChild(optionToRemove);
+            }
+        }
+    }
+    </script>
+<script>
+function loadDataset(button) {  
+    const datasetId = button.getAttribute('data-id');  
+    const url = `/get_dataset/${datasetId}/`;  
+
+    Swal.fire({  
+        title: 'Chargement...',  
+        text: 'Veuillez patienter pendant le chargement des données.',  
+        allowOutsideClick: false,  
+        showConfirmButton: false,  
+        onBeforeOpen: () => {  
+            Swal.showLoading();  
+        }  
+    });  
+
+    return fetch(url)  // Retourner la promesse de fetch pour permettre le chaînage  
+        .then(response => {  
+            if (!response.ok) {  
+                throw new Error('Erreur lors de la récupération du dataset');  
+            }  
+            return response.json();  
+        })  
+        .then(data => {  
+            const contenu_view = document.querySelector(`.card-body${datasetId} .contenu`);  
+            if (contenu_view) {  
+                contenu_view.innerHTML = data.content ? `<p>${data.content}</p>` : "<p>Aucun contenu disponible.</p>";  
+                initIndic(datasetId);  
+            } else {  
+                console.error('contenu_view est null');  
+            }  
+        })  
+        .catch(error => {  
+            console.error('Erreur:', error);  
+            Swal.fire({  
+                icon: 'error',  
+                title: 'Une erreur est survenue',  
+                text: `Veuillez réessayer. Détails: ${error.message}`,  
+            });  
+        })  
+        .finally(() => {  
+            Swal.close(); // Assurez-vous de fermer l'application Swal après la fin  
+        });  
+}  
+
+document.getElementById('loadDataButton').addEventListener("click", function() {  
+    const datasetId = this.getAttribute('data-id');  
+    loadDataset(this).then(() => {  
+        const selectedYear = document.getElementById('annee').value;   
+        const selectedPeriod = document.getElementById('period').value;  
+        const selectedStructure = document.getElementById('structureSelect').value;  
+
+        // Vérifier si toutes les sélections sont faites  
+        if (!selectedYear || !selectedPeriod || !selectedStructure) {  
+            Swal.fire({  
+                icon: 'warning',  
+                title: 'Attention!',  
+                text: "Veuillez sélectionner l'année, la période et la structure.",  
+                confirmButtonText: 'OK'  
+            });  
+            return;  
+        }  
+
+        const url = `/load_data/${selectedStructure}/${selectedPeriod}/`; // URL pour récupérer les données  
+        
+        // Afficher un indicateur de chargement (optionnel)  
+        Swal.showLoading(); // Utiliser SweetAlert pour afficher l'indicateur de chargement  
+
+        fetch(url)  
+        .then(response => {  
+            if (!response.ok) {  
+                throw new Error('Erreur lors de la récupération des données');  
+            }  
+            return response.json();  
+        })  
+        .then(data => handleData(data))  
+        .catch(error => {  
+            console.error('Erreur lors du chargement des données:', error);  
+            Swal.fire({  
+                icon: 'error',  
+                title: 'Erreur',  
+                text: "Une erreur est survenue. Veuillez réessayer.",  
+            });  
+        })  
+        .finally(() => {  
+            Swal.close(); // Masquer l'indicateur de chargement  
+        });  
+    });  
+});  
+
+function handleData(data) {  
+    if (data.error) {  
+        alert("Erreur lors du chargement des données: " + data.error);  
+        return [];  
+    }  
+
+    const dataArray = data.data || [];  
+    const inputData = dataArray.map(item => ({  
+        name: `D0elt${item.id}`,  
+        date: item.date,  
+        texte: item.texte,  
+        value: item.content,  
+    }));  
+
+    // Vérifier s'il n'y a pas de valeurs  
+    if (inputData.length === 0) {  
+        alert('Aucune valeur trouvée.');  
+
+        const allInputs = document.querySelectorAll('input[type="date"], textarea, input[type="number"]');  
+        allInputs.forEach(input => input.value = '');  // Vider tous les champs  
+
+        return [];  
+    }  
+
+    inputData.forEach(input => {  
+        // Mettre à jour le champ de texte (textarea)  
+        const textAreaElement = document.querySelector(`textarea[name="${input.name}"]`);  
+        if (textAreaElement) {  
+            textAreaElement.value = input.texte || '';  // Ajuste le texte ou le vide si null  
+        } else {  
+            console.warn(`Textarea "${input.name}" introuvable.`);  
+        }  
+
+        // Mettre à jour le champ de nombre  
+        const numberInputElement = document.querySelector(`input[type="number"][name="${input.name}"]`);  
+        if (numberInputElement) {  
+            numberInputElement.value = input.value;  // Ajuster la valeur  
+        } else {  
+            console.warn(`Champ de number "${input.name}" introuvable.`);  
+        }  
+
+        // Mettre à jour le champ de date  
+        const dateInputElement = document.querySelector(`input[type="date"][name="${input.name}"]`);  
+        if (dateInputElement) {  
+            dateInputElement.value = input.date || '';  // Ajuster la date ou la vider si null  
+        } else {  
+            console.warn(`Champ de date "${input.name}" introuvable.`);  
+        }  
+    });  
+
+    console.log('Données traitées:', dataArray);  
+    return dataArray;  
+}
+
+
+// Fonction pour initialiser les indicateurs  
+function initIndic(datasetId) {  
+  
+
+console.log("Fonction initIndic() appelée avec datasetId:", datasetId);  
+
+const indicSelector = document.getElementsByClassName("indicSelector");  
+let indic_value = "";  
+for (let i = 0; i < indicSelector.length; i++) {  
+indic_value += indicSelector[i].getAttribute("data-id") + "#";  
+}  
+
+const institutionId = {{ actual_institution.id }}; // Assurez-vous que `actual_institution` est défini  
+
+$.ajax({  
+url: '/get_elements/',  
+data: {  
+'dataset': datasetId,  
+'type_dataset': '0',  
+'other': 'dI_formula',  
+'institution': institutionId,  
+'value': indic_value  
+},  
+success: function(data) {  
+
+function check_selector(evalu = false) {  
+const indicatorValues = {};  
+
+for (let i = 0; i < indicSelector.length; i++) {  
+indicSelector[i].textContent = data.formulas[i];  
+const indicatorId = indicSelector[i].getAttribute("data-id");  
+
+const tmp_elts = data.data_elts.split("#");  
+// console.log('Les IDs sont :', tmp_elts);
+let elts = [];  
+
+for (let j = 0; j < tmp_elts.length; j++) {  
+    const tp = document.getElementsByName("D0elt" + tmp_elts[j]);  
+    if (tp.length > 0 && tp[0].value) {  
+        // Vérifie si l'élément existe et que sa valeur n'est pas une chaîne vide.  
+        elts.push({ id: tmp_elts[j], value: tp[0].value }); // Récupération des valeurs avec l'ID  
+        // console.log("Valeur de D0elt" + tmp_elts[j] + " :", tp[0].value); // Affichage de la valeur récupérée  
+    } else {  
+        // Attribuer une valeur par défaut de 0 si l'élément est manquant ou si aucune valeur n'est définie.  
+        elts.push({ id: tmp_elts[j], value: 0 });  
+        // console.warn("Élément manquant ou valeur nulle pour D0elt" + tmp_elts[j] + ". Valeur par défaut attribuée : 0");  
+    }  
+}
+
+console.log("Éléments récupérés :", elts);   
+
+// Mettre à jour le displayArea  
+const displayArea = document.getElementById("displayArea");  
+const valuesString = elts.map(item => `"D0elt${item.id}": ${item.value}`).join(', '); // Formater les valeurs  
+displayArea.value = valuesString; // Mettre à jour l'input avec les valeurs formatées  
+
+// Définir la valeur à soumettre dans un champ caché  
+document.getElementById("elementsArea").value = JSON.stringify(elts); // Soumission en format JSON  
+
+// Remplacer les placeholders dans indicSelector avec les valeurs récupérées  
+for (let j = 0; j < elts.length; j++) {  
+indicSelector[i].textContent = indicSelector[i].textContent.replace("$" + elts[j].id + "$", elts[j].value);  
+}  
+
+if (evalu) {  
+try {  
+indicSelector[i].textContent = eval(indicSelector[i].textContent); // Évaluation des calculs  
+const indicatorValue = indicSelector[i].textContent;  
+indicatorValues[indicatorId] = indicatorValue;  
+} catch (error) {  
+console.error("Erreur lors du calcul de l'indicateur :", error);  
+}  
+}  
+}  
+
+// Stocker les valeurs et les identifiants dans les champs cachés du formulaire  
+document.getElementById("indicator-values").value = JSON.stringify(indicatorValues);  
+const indicatorIds = Object.keys(indicatorValues);  
+document.getElementById("indicator-ids").value = JSON.stringify(indicatorIds);  
+
+return indicatorValues;  
+}
+
+
+// Évaluer les sélecteurs d'indicateurs  
+check_selector(true);  
+
+const variables_selector = document.getElementsByClassName("variableSelector");  
+for (let i = 0; i < variables_selector.length; i++) {  
+const inputs = variables_selector[i].getElementsByTagName("input")[0];  
+if (inputs) {  
+inputs.onchange = function() {  
+try {  
+check_selector(true);  
+} catch (error) {  
+// console.error("Erreur lors de l'évaluation des sélecteurs :", error);  
+check_selector(); // Évaluer sans option  
+}  
+};  
+}  
+}  
+},  
+error: function(xhr, status, error) {  
+// console.error("Erreur AJAX:", status, error);  
+alert("Une erreur est survenue lors de la récupération des éléments. Veuillez réessayer.");  
+}  
+});  
+
+}  
+
+
+
+
+
+
+
+// Fonction pour échapper les caractères HTML (protection XSS)
+function escapeHtml(unsafe) {
+return unsafe
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#039;");
+}
+
+
+
+
+
+
+
+function showLoading() {  
+Swal.fire({  
+title: 'Chargement...',  
+text: 'Veuillez patienter pendant le chargement des données.',  
+allowOutsideClick: false,  
+showConfirmButton: false,  
+didOpen: () => {  
+Swal.showLoading(); // Afficher l'indicateur de chargement  
+}  
+});  
+}  
+
+function hideLoading() {  
+Swal.close(); // Fermer l'alerte de chargement  
+}  
+$(".sidebar-dropdown > a").click(function() {
+  $(".sidebar-submenu").slideUp(200);
+  if (
+    $(this)
+      .parent()
+      .hasClass("active")
+  ) {
+    $(".sidebar-dropdown").removeClass("active");
+    $(this)
+      .parent()
+      .removeClass("active");
+  } else {
+    $(".sidebar-dropdown").removeClass("active");
+    $(this)
+      .next(".sidebar-submenu")
+      .slideDown(200);
+    $(this)
+      .parent()
+      .addClass("active");
+  }
+});
+
+$("#close-sidebar").click(function() {
+    // 1. Ferme la sidebar en retirant la classe 'toggled' du wrapper.
+    $(".page-wrapper").removeClass("toggled"); 
+    
+    // 2. FAIT RÉAPPARAÎTRE la nav en retirant la classe 'toggled'.
+    // Cela annule l'effet "transform: translateY(100%)" défini en CSS.
+    $('.navs').removeClass("toggled"); 
+});
+
+$("#show-sidebar").click(function() {
+    // 1. Ouvre la sidebar en ajoutant la classe 'toggled' au wrapper.
+    $(".page-wrapper").addClass("toggled");
+    
+    // 2. MASQUE la nav en ajoutant la classe 'toggled'.
+    $('.navs').addClass("toggled");
+});
+</script>
+
+</body>
+</html>

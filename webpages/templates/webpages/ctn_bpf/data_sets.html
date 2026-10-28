@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance OPERAPLUS - DataSet Configuration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #f5f5f5; }
+        .dhis2-blue { background-color: #2c6693; }
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
+        
+        /* Style Arborescence */
+        .tree-branch { position: relative; }
+        .tree-branch::before { 
+            content: ""; position: absolute; left: -15px; top: -10px; bottom: 15px; 
+            width: 1px; background: #cbd5e1; 
+        }
+        
+        /* Items Basculables */
+        .dual-list-item { transition: all 0.1s; user-select: none; border-bottom: 1px solid #f3f4f6; }
+        .dual-list-item:hover { background-color: #eff6ff; }
+        .selected-list .dual-list-item:hover { background-color: #fee2e2; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+<div class="max-w-[1440px] mx-auto min-h-screen flex flex-col shadow-2xl bg-white">
+    
+    <!-- HEADER DHIS2 -->
+    <header class="dhis2-blue text-white p-4 flex items-center justify-between border-b border-blue-900 shrink-0">
+        <div class="flex flex-col">
+            <span class="text-[10px] uppercase tracking-[0.2em] opacity-80 font-bold">Maintenance</span>
+            <h1 class="text-xl font-medium uppercase">Gestion du Jeu de Données</h1>
+        </div>
+        <div class="flex items-center gap-4 text-xs font-bold uppercase tracking-tighter opacity-70">
+            Standard Meta-Data Interface
+        </div>
+    </header>
+
+    <form onsubmit="loadDataSet()" action="/save_design/" method="POST" id="dataset-form" class="flex flex-1 overflow-hidden">
+        {% csrf_token %}
+
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="w-72 bg-[#f4f6f8] border-r border-gray-200 flex flex-col shrink-0">
+            <nav class="p-2 space-y-1 mt-4 flex-1">
+                <button type="button" data-step="0" class="step-btn active w-full text-left px-4 py-3 text-sm font-semibold border-l-4 border-[#2c6693] bg-white text-[#2c6693] shadow-sm">
+                    1. Informations générales
+                </button>
+                <button type="button" data-step="1" class="step-btn w-full text-left px-4 py-3 text-sm font-medium text-gray-500 border-l-4 border-transparent hover:bg-gray-200">
+                    2. Éléments de données
+                </button>
+                <button type="button" data-step="2" class="step-btn w-full text-left px-4 py-3 text-sm font-medium text-gray-500 border-l-4 border-transparent hover:bg-gray-200">
+                    3. Indicateurs
+                </button>
+                <button type="button" data-step="3" class="step-btn w-full text-left px-4 py-3 text-sm font-medium text-gray-500 border-l-4 border-transparent hover:bg-gray-200">
+                    4. Acces
+                </button>
+                <button type="button" data-step="4" class="step-btn w-full text-left px-4 py-3 text-sm font-medium text-gray-500 border-l-4 border-transparent hover:bg-gray-200">
+                    5. Unit&eacute; D'organisation
+                </button>
+            </nav>
+            <div class="p-6 bg-gray-50 border-t border-gray-200 text-center">
+                <p class="text-[9px] text-gray-400 font-black uppercase tracking-widest leading-tight">Configuration Framework v1.2</p>
+            </div>
+        </aside>
+
+        <!-- ZONE DE TRAVAIL -->
+        <main class="flex-1 flex flex-col relative bg-white">
+            <div class="p-10 flex-1 overflow-y-auto">
+                
+                <!-- ÉTAPE 0 : GÉNÉRAL -->
+                <section id="step-0-content" class="step-section space-y-8">
+                    <div class="border-b border-gray-100 pb-4 flex justify-between items-center">
+                        <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Configuration Métadonnées</h2>
+                    </div>
+                    <div class="grid grid-cols-2 gap-10">
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-gray-600 uppercase italic">Nom du Dataset *</label>
+                            <input type="text" name="form_name" value="{{ dataset|default:'' }}" required class="w-full border border-gray-300 p-2 text-sm focus:border-[#2c6693] outline-none shadow-sm transition">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-gray-600 uppercase italic">Périodicité *</label>
+                            <select name="periode" required class="w-full border border-gray-300 p-2 text-sm bg-white shadow-sm focus:border-[#2c6693] outline-none">
+                                <option value="">Sélectionnez la période...</option>
+                                {% for p in periode %}
+                                    <option value="{{ p.id }}">{{ p.m_value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="p-6 bg-gray-50 border border-gray-200 rounded flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-700 uppercase">Mode de saisie</h4>
+                            <p class="text-xs text-gray-500">Activer la double saisie pour augmenter la qualité des données.</p>
+                        </div>
+                        <select name="double" class="border border-gray-300 p-2 text-sm bg-white rounded outline-none">
+                            <option value="False">Simple Saisie</option>
+                            <option value="True">Double Saisie</option>
+                        </select>
+                    </div>
+                </section>
+
+                <!-- ÉTAPE 1 : ÉLÉMENTS DE DONNÉES (DUAL LIST) -->
+                <section id="step-1-content" class="step-section hidden space-y-4">
+                    <div class="flex justify-between items-end border-b pb-2">
+                        <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Éléments de Données</h2>
+                        <input type="text" hx-post="/search-dataelement/" hx-target="#de-available" hx-trigger="keyup changed delay:500ms" placeholder="Filtrer..." class="border border-gray-300 px-3 py-1 text-xs w-64 outline-none focus:border-[#2c6693] italic">
+                    </div>
+
+                    <div id="de-dual-box" class="flex gap-4 h-[450px]">
+                        <!-- Disponibles -->
+                        <div class="flex-1 border border-gray-300 flex flex-col bg-white">
+                            <div class="bg-gray-100 p-2 text-[10px] font-black uppercase text-gray-500 border-b">Éléments Disponibles</div>
+                            <div id="de-available" class="available-list flex-1 overflow-y-auto p-1 text-sm">
+                                {% for d in dataelts %}
+                                    <div class="dual-list-item p-2 cursor-pointer flex items-center justify-between group rounded" data-id="{{d.id}}">
+                                        <span class="text-gray-700">{{ d }}</span>
+                                        <input type="checkbox" name="element" value="{{d.id}}" class="hidden">
+                                        <span class="text-blue-500 font-bold opacity-0 group-hover:opacity-100 text-lg">+</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Sélectionnés -->
+                        <div class="flex-1 border border-[#2c6693] flex flex-col bg-white">
+                            <div class="bg-[#2c6693] p-2 text-[10px] font-black uppercase text-white border-b">Éléments Sélectionnés</div>
+                            <div class="selected-list flex-1 overflow-y-auto p-1 text-sm bg-blue-50/20">
+                                <!-- Les items basculent ici -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ÉTAPE 2 : INDICATEURS (DUAL LIST) -->
+                <section id="step-2-content" class="step-section hidden space-y-4">
+                    <div class="flex justify-between items-end border-b pb-2">
+                        <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Indicateurs de Performance</h2>
+                    </div>
+                    <div id="indic-dual-box" class="flex gap-4 h-[450px]">
+                        <div class="flex-1 border border-gray-300 flex flex-col bg-white">
+                            <div class="bg-gray-100 p-2 text-[10px] font-black uppercase text-gray-500 border-b">Indicateurs Disponibles</div>
+                            <div id="indic-available" class="available-list flex-1 overflow-y-auto p-1 text-sm">
+                                {% for ind in indicateurs %}
+                                    <div class="dual-list-item p-2 cursor-pointer flex items-center justify-between group rounded" data-id="{{ind.id}}">
+                                        <span class="text-gray-700">{{ ind.m_name }}</span>
+                                        <input type="checkbox" name="indicateur" value="{{ind.id}}" class="hidden">
+                                        <span class="text-blue-500 font-bold opacity-0 group-hover:opacity-100 text-lg">+</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="flex-1 border border-[#2c6693] flex flex-col bg-white">
+                            <div class="bg-[#2c6693] p-2 text-[10px] font-black uppercase text-white border-b">Sélectionnés pour le Dataset</div>
+                            <div class="selected-list flex-1 overflow-y-auto p-1 text-sm bg-blue-50/20"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ÉTAPE 3 : UNITÉS D'ORGANISATION (TREEVIEW) -->
+                <section id="step-3-content" class="step-section hidden space-y-6">
+                    <h2 class="text-sm font-black uppercase tracking-widest text-gray-400 border-b pb-2">Access</h2>
+                    <div class="border border-gray-300 bg-[#f8fafc] p-8 min-h-[400px] overflow-y-auto rounded shadow-inner">
+                        <div class="space-y-4">
+                            <!-- Racine -->
+                           
+                            
+                            <!-- Branches Dynamiques -->
+                            <div class="ml-10 space-y-4 tree-branch">
+                                {% for role in actual_institution.roles %}
+                                <div class="flex items-center gap-3 group">
+                                   
+                                    <input type="checkbox" name="role" value="{{role.id}}" class="w-4 h-4 accent-[#2c6693]">
+                                    <img src="https://img.icons8.com/color/16/000000/hospital.png" class="w-4 h-4 grayscale group-hover:grayscale-0">
+                                    <span class="text-sm text-gray-700 group-hover:text-black transition-colors">{{ role }}</span>
+                                </div>
+                                {% endfor %}
+                                
+                                
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section id="step-1-content" class="step-section hidden space-y-4">
+    <div class="flex justify-between items-end border-b border-slate-700/50 pb-2">
+        <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Unit&eacute; D'organisation</h2>
+        <!-- Ton champ de recherche HTMX existant -->
+        <input type="text" 
+               hx-post="/search-dataelement/" 
+               hx-target="#structure-list" 
+               hx-trigger="keyup changed delay:500ms" 
+               placeholder="Filtrer les structures..." 
+               class="bg-transparent border-b border-gray-600 px-3 py-1 text-xs w-64 outline-none focus:border-blue-500 text-slate-200 italic transition-all">
+    </div>
+
+    <!-- Conteneur des structures -->
+    <div id="structure-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+        {% for structure in structures %}
+        <label class="relative group cursor-pointer">
+            <!-- Radio invisible pour stocker la sélection -->
+            <input type="checkbox" name="structure" value="{{ structure.id }}" class="peer hidden">
+            
+            <!-- Card Style Glassmorphism -->
+            <div class="flex items-center p-4 bg-white/5 border border-white/10 rounded-xl transition-all duration-300
+                        peer-checked:bg-blue-600/20 peer-checked:border-blue-500 peer-checked:shadow-[0_0_15px_rgba(59,130,246,0.3)]
+                        hover:bg-white/10 hover:border-white/20">
+                
+                <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-7h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                </div>
+
+                <div class="ml-4">
+                    <p class="text-sm font-bold text-slate-200">{{ structure.nom }}</p>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-tight">{{ structure.code|default:"Aucun code" }}</p>
+                </div>
+
+                <!-- Indicateur de sélection -->
+                <div class="ml-auto opacity-0 peer-checked:opacity-100 transition-opacity">
+                    <div class="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </label>
+        {% empty %}
+        <div class="col-span-full py-10 text-center text-gray-500 italic">
+            Aucune unité d'organisation trouvée.
+        </div>
+        {% endfor %}
+    </div>
+</section>
+            </div>
+
+            <!-- FOOTER NAVIGATION -->
+            <footer class="bg-[#f4f6f8] p-5 border-t border-gray-200 flex justify-between items-center shrink-0">
+                <button type="button" id="btn-prev" class="px-6 py-2 border border-gray-400 text-gray-600 bg-white uppercase text-[11px] font-black hover:bg-gray-100 transition shadow-sm disabled:opacity-30">
+                    Précédent
+                </button>
+                <div class="flex gap-3">
+                    <button type="button" id="btn-next" class="px-8 py-2 bg-[#2c6693] text-white uppercase text-[11px] font-black hover:bg-[#235277] transition shadow-md">
+                        Suivant
+                    </button>
+                    <button type="submit" id="btn-submit" class="hidden px-8 py-2 bg-green-600 text-white uppercase text-[11px] font-black hover:bg-green-700 transition shadow-md">
+                        Enregistrer le Dataset
+                    </button>
+                </div>
+            </footer>
+        </main>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let step = 0;
+        const total = 5;
+        
+        const next = document.getElementById('btn-next');
+        const prev = document.getElementById('btn-prev');
+        const submit = document.getElementById('btn-submit');
+        const btns = document.querySelectorAll('.step-btn');
+        const contents = document.querySelectorAll('.step-section');
+
+        // Gestion Navigation
+        function update() {
+            contents.forEach((c, i) => c.classList.toggle('hidden', i !== step));
+            btns.forEach((b, i) => {
+                const active = i === step;
+                b.classList.toggle('border-[#2c6693]', active);
+                b.classList.toggle('bg-white', active);
+                b.classList.toggle('text-[#2c6693]', active);
+                b.classList.toggle('font-semibold', active);
+                b.classList.toggle('text-gray-500', !active);
+                b.classList.toggle('border-transparent', !active);
+            });
+            
+            prev.disabled = (step === 0);
+            if (step === total - 1) {
+                next.classList.add('hidden');
+                submit.classList.remove('hidden');
+            } else {
+                next.classList.remove('hidden');
+                submit.classList.add('hidden');
+            }
+        }
+
+        next.addEventListener('click', () => { if(step < total-1) { step++; update(); } });
+        prev.addEventListener('click', () => { if(step > 0) { step--; update(); } });
+        btns.forEach((b, i) => b.addEventListener('click', () => { step = i; update(); }));
+
+        // Logique Dual List (Basculement au clic)
+        function initDualList(boxId) {
+            const box = document.getElementById(boxId);
+            if (!box) return;
+
+            const avail = box.querySelector('.available-list');
+            const select = box.querySelector('.selected-list');
+
+            box.addEventListener('click', (e) => {
+                const item = e.target.closest('.dual-list-item');
+                if (!item) return;
+
+                const input = item.querySelector('input[type="checkbox"]');
+                const badge = item.querySelector('span:last-child');
+
+                if (item.parentElement === avail) {
+                    // Vers Sélectionnés
+                    select.appendChild(item);
+                    input.checked = true; // IMPORTANT : coche pour Django
+                    badge.textContent = '−';
+                    badge.classList.replace('text-blue-500', 'text-red-500');
+                } else {
+                    // Vers Disponibles
+                    avail.appendChild(item);
+                    input.checked = false; // IMPORTANT : décoche pour Django
+                    badge.textContent = '+';
+                    badge.classList.replace('text-red-500', 'text-blue-500');
+                }
+            });
+        }
+
+        initDualList('de-dual-box');
+        initDualList('indic-dual-box');
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,348 @@
+{%extends './details-periode.html'%}
+{%block design%}
+
+<div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
+                <div class="text-white">
+                    <h2 class="text-3xl font-extrabold tracking-tight">Inidcateurs {{actual_institution.nom}}</h2>
+                    <p class="text-blue-100/70 text-sm font-medium mt-1">Gérez les Indicateurs</p>
+                </div>
+               
+            </div>
+
+            <div class="search-container bg-white rounded-2xl p-2 shadow-xl mb-12 transition-all duration-300">
+                <form method="GET" action="" class="flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" name="q" id="searchInput" value="{{ search_query }}"
+                               placeholder="Rechercher par libellé, code technique ou année..." 
+                               class="w-full pl-12 pr-4 py-3 bg-transparent outline-none text-sm font-medium text-slate-700">
+                    </div>
+                    <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-xs transition-all">
+                        FILTRER
+                    </button>
+                </form>
+            </div>
+{%endblock%}
+{%block content%}
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dhis2-blue': '#1d5288',
+                        'dhis2-blue-dark': '#184370',
+                        'dhis2-bg': '#f3f6f8',
+                        'dhis2-border': '#d5dde5',
+                        'dhis2-text': '#212934',
+                        'dhis2-gray-light': '#fbfcfd'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f3f6f8;
+            color: #212934;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* Barre de défilement discrète */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #bccad5; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #1d5288; }
+
+        /* Style DHIS2 pour les détails */
+        details summary::-webkit-details-marker { display: none; }
+        
+        .dhis2-card {
+            background: white;
+            border: 1px solid #d5dde5;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .dhis2-button-primary {
+            background-color: #1d5288;
+            color: white;
+            transition: background 0.2s;
+        }
+        .dhis2-button-primary:hover { background-color: #184370; }
+
+        .dhis2-nav-item {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            color: white;
+            opacity: 0.85;
+            transition: all 0.2s;
+        }
+        .dhis2-nav-item:hover, .dhis2-nav-item.active {
+            opacity: 1;
+            background-color: rgba(255,255,255,0.1);
+            border-bottom: 3px solid #ffffff;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+
+<style>
+    :root {
+        /* Palette ERP Professionnelle */
+        --erp-header-bg: #1a1f2e; /* Bleu nuit profond */
+        --erp-sidebar-bg: #ffffff;
+        --erp-accent: #2563eb;
+        --erp-border: #e2e8f0;
+        --erp-text-main: #1e293b;
+        --erp-text-muted: #64748b;
+    }
+
+    /* Header Compact Style ERP */
+    .erp-header {
+        height: 48px; /* Plus fin pour maximiser l'espace de travail */
+        background: var(--erp-header-bg);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    /* Navigation par onglets ERP */
+    .erp-nav {
+        display: flex;
+        height: 100%;
+        margin-left: 2rem;
+    }
+
+    .erp-nav-item {
+        display: flex;
+        align-items: center;
+        padding: 0 1.25rem;
+        color: #cbd5e1;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s;
+        border-bottom: 3px solid transparent;
+    }
+
+    .erp-nav-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+    }
+
+    .erp-nav-item.active {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+        border-bottom-color: var(--erp-accent);
+    }
+
+    /* Barre de titre / Fil d'Ariane */
+    .erp-breadcrumb-bar {
+        background: #fff;
+        border-bottom: 1px solid var(--erp-border);
+        padding: 0.75rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .erp-search-input {
+        background: #f1f5f9;
+        border: 1px solid var(--erp-border);
+        border-radius: 4px;
+        padding: 0.4rem 0.75rem;
+        font-size: 13px;
+        width: 300px;
+        transition: all 0.2s;
+    }
+
+    .erp-search-input:focus {
+        outline: none;
+        background: #fff;
+        border-color: var(--erp-accent);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn-erp-primary {
+        background: var(--erp-accent);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+</style>
+
+
+
+<!-- Barre de contexte (Breadcrumb & Search) -->
+<main class="p-8 bg-slate-50 min-h-screen">
+    <div class="mb-10 flex justify-between items-end">
+        <div>
+            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">Tableau de Bord : Indicateurs</h1>
+            <p class="text-slate-500 text-sm mt-1">Gouvernance et suivi des objectifs stratégiques.</p>
+        </div>
+        <div class="px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+            {{ pages_o|length }} Objectifs actifs
+        </div>
+    </div>
+
+    <div class="space-y-8">
+        {% for element in pages_o %}
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            
+            <div class="px-6 py-5 bg-slate-50/50 border-b border-slate-200 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center">
+                        <i class="bx bx-collection text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-800">
+                            <a href="/evaluer/{{ gest_val_1 }}/{{ element.id }}/" class="hover:text-indigo-600 transition-colors">
+                                {{ element.m_nom|default:element }}
+                            </a>
+                        </h2>
+                        {% if element.objectif %}
+                        <p class="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                            <i class="bx bx-target-lock"></i> Objectif : {{ element.objectif }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <a href="/elementEntity/{{ element.id }}/" 
+                   class="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-4 py-2 rounded-lg shadow-md shadow-indigo-200 transition-all flex items-center gap-2">
+                    <i class="bx bx-plus text-sm"></i> AJOUTER
+                </a>
+            </div>
+
+            <div class="divide-y divide-slate-100">
+                {% for ind in element.get_indicateurs %}
+                <details class="group bg-white">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-all list-none">
+                        <div class="flex items-center gap-3">
+                            <i class="bx bx-chevron-right text-slate-400 transition-transform group-open:rotate-90"></i>
+                            <span class="text-sm font-bold text-slate-700 group-open:text-indigo-600">{{ ind.m_name }}</span>
+                            <span class="text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-mono">ID: {{ ind.id }}</span>
+                        </div>
+                    </summary>
+
+                    <div class="px-6 pb-6 pt-2 bg-slate-50/30">
+                        <div class="grid grid-cols-4 gap-4 mb-6">
+                            <div class="col-span-2">
+                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Nicename</label>
+                                <div class="text-sm text-slate-700 font-medium">{{ ind.nicename|default:"-" }}</div>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Formule</label>
+                                <div class="text-xs font-mono text-indigo-600 bg-white px-2 py-1 rounded border border-slate-200">{{ ind.get_formule_affichee|default:"Saisie manuelle" }}</div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-4 bg-white p-4 rounded-xl border border-slate-200 mb-6">
+                          <div>
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Pyramide</label>
+        <div class="text-xs font-bold text-slate-700">{{ ind.niveau_pyramide|default:"-" }}</div>
+    </div>
+    <div>
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fréquence</label>
+        <div class="text-xs font-bold text-slate-700">{{ ind.frequence_collecte|default:"-" }}</div>
+    </div>
+    <div>
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cible</label>
+        <div class="text-xs font-bold text-slate-700">{{ ind.cible_contractuelle|default:"0" }}</div>
+    </div>
+    <div>
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Source</label>
+        <div class="text-xs font-bold text-slate-700 truncate">{{ ind.source_donnees|default:"-" }}</div>
+    </div>
+    
+    <div class="col-span-2 md:col-span-4 pt-4 border-t border-slate-100">
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Mécanisme de vérification</label>
+        <div class="text-xs text-slate-600 italic bg-slate-50 p-2 rounded">
+            {{ ind.mecanisme_verification|default:"Aucun mécanisme précisé." }}
+        </div>
+    </div>
+</div>
+
+                        <div class="flex items-center gap-2">
+                              <a href="/dynamic-cible/{{ ind.id }}/" class="px-3 py-1.5 bg-white border border-dhis2-border text-slate-600 text-[11px] font-bold rounded hover:bg-slate-50 flex items-center gap-1">
+
+                                    <i class="bx bx-bullseye text-red-500"></i> CIBLES
+
+                                </a> 
+                            <a href="/analyse_data_indicateur/{{ ind.id }}/" class="px-4 py-2 bg-slate-800 text-white text-[10px] font-black rounded-lg hover:bg-slate-900 uppercase tracking-wider">Analyse</a>
+                            <a href="/edit_indicator/{{ ind.id }}/" class="px-4 py-2 border border-slate-200 text-slate-600 text-[10px] font-black rounded-lg hover:bg-white uppercase tracking-wider">Modifier</a>
+                            <div class="flex-grow"></div>
+                            <a href="/delete_indicateur/{{ ind.id }}/" class="text-slate-300 hover:text-red-500 transition-colors">
+                                <i class="bx bx-trash text-lg"></i>
+                            </a>
+                             <a href="/delete_indicateur/{{ ind.id }}/" class="p-1.5 text-slate-400 hover:text-red-500 transition-colors ">
+
+                                    <i class="bx bx-trash text-lg"></i> Supprimer
+
+                                </a> 
+                        </div>
+                    </div>
+                </details>
+                {% empty %}
+                <div class="p-6 text-center text-slate-400 text-xs italic">Aucun indicateur défini.</div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </div>
+</main>
+    <!-- Bottom Nav (Mobile Only) - Style DHIS2 Mobile -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-dhis2-border flex justify-around py-2 z-50">
+        <a href="/" class="flex flex-col items-center text-dhis2-blue">
+            <i class="bx bxs-dashboard text-xl"></i>
+            <span class="text-[10px] font-bold">Dash</span>
+        </a>
+        <a href="/forms/" class="flex flex-col items-center text-slate-400">
+            <i class="bx bx-spreadsheet text-xl"></i>
+            <span class="text-[10px] font-bold">Formulaires</span>
+        </a>
+        <a href="/dataelts/" class="flex flex-col items-center text-slate-400">
+            <i class="bx bx-database text-xl"></i>
+            <span class="text-[10px] font-bold">Data</span>
+        </a>
+        <a href="/configurations_admin/" class="flex flex-col items-center text-slate-400">
+            <i class="bx bx-cog text-xl"></i>
+            <span class="text-[10px] font-bold">Config</span>
+        </a>
+    </nav>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+  {% for message in messages %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        Swal.fire({
+            toast: true,
+            position: "top-end",
+            // Mapping automatique des types
+            icon: "{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %}",
+            title: "{{ message|escapejs }}",
+            showConfirmButton: false,
+            timer: 4000, // Augmenté légèrement pour une meilleure lisibilité
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.onmouseenter = Swal.stopTimer;
+                toast.onmouseleave = Swal.resumeTimer;
+            }
+        });
+    });
+</script>
+{% endfor %}
+{%endblock%}

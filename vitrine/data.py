@@ -1,0 +1,88 @@
+"""Contenu des pages « fonctionnalité ». Modifiez les textes ici : titres, descriptions
+et listes alimentent à la fois la page, le menu et le référencement."""
+
+FONCTIONNALITES = [
+    {
+        "slug": "collecte-terrain", "icone": "fa-mobile-screen", "court": "Collecte terrain",
+        "titre_seo": "Collecte de données terrain hors-ligne pour ONG · OperaPlus",
+        "description": "Formulaires sur téléphone, saisie sans réseau et synchronisation automatique : collectez vos données terrain en toute fiabilité avec OperaPlus.",
+        "h1": "Collectez vos données terrain, même sans réseau.",
+        "intro": "Les agents saisissent sur téléphone ou tablette. Les fiches restent sur l'appareil tant que le réseau manque, puis partent seules dès qu'il revient.",
+        "points": ["Formulaires simples, adaptés au téléphone", "Saisie hors-ligne et envoi automatique", "Validation par le superviseur avant intégration", "Import de fichiers Excel ou CSV existants"],
+        "etapes": ["Concevez le formulaire", "Affectez-le aux équipes", "Collectez et validez"],
+    },
+    {
+        "slug": "indicateurs", "icone": "fa-bullseye", "court": "Indicateurs & cibles",
+        "titre_seo": "Suivi des indicateurs et des cibles de projet · OperaPlus",
+        "description": "Reliez vos indicateurs au cadre logique, fixez les cibles et suivez la réalisation par période et par zone, sans recopier les chiffres.",
+        "h1": "Des indicateurs reliés à vos données, pas recopiés.",
+        "intro": "Chaque indicateur est rattaché au cadre logique et alimenté par les formulaires : la réalisation se compare automatiquement à la cible.",
+        "points": ["Cadre logique : impact, résultats, produits", "Cibles par période et par unité", "Réalisé contre cible en un coup d'œil", "Historique complet et traçable"],
+        "etapes": ["Définissez le cadre logique", "Fixez les cibles", "Suivez la réalisation"],
+    },
+    {
+        "slug": "planification-raci", "icone": "fa-list-check", "court": "Planification & RACI",
+        "titre_seo": "Planification des activités et matrice RACI · OperaPlus",
+        "description": "Planifiez activités et échéances, attribuez les rôles RACI et recevez une alerte dès qu'une tâche prend du retard.",
+        "h1": "Chacun sait ce qu'il doit faire, et pour quand.",
+        "intro": "Activités, échéances et rôles Responsable, Approbateur, Consulté, Informé réunis au même endroit, avec des alertes automatiques.",
+        "points": ["Rôles RACI par activité", "Échéances et pondérations", "Alertes de retard", "Vue Gantt de la planification"],
+        "etapes": ["Listez les activités", "Attribuez les rôles", "Suivez l'avancement"],
+    },
+    {
+        "slug": "tableaux-de-bord", "icone": "fa-chart-pie", "court": "Tableaux de bord",
+        "titre_seo": "Tableaux de bord MEAL physique et financier · OperaPlus",
+        "description": "Des tableaux de bord physique, technique et financier toujours à jour pour piloter vos projets et décider plus vite.",
+        "h1": "Pilotez avec des tableaux de bord toujours à jour.",
+        "intro": "Trois vues complémentaires, physique, technique et financière, alimentées en continu par les données validées.",
+        "points": ["Vue physique, technique et financière", "Baromètres déclaré / validé", "Filtres par période et par zone", "Exports PDF et Excel"],
+        "etapes": ["Choisissez la vue", "Filtrez", "Partagez"],
+    },
+    {
+        "slug": "calcul-indicateurs", "icone": "fa-calculator", "court": "Calcul des indicateurs",
+        "titre_seo": "Calcul automatique des indicateurs par période · OperaPlus",
+        "description": "Sélectionnez la période, l'unité organisationnelle et les indicateurs : OperaPlus calcule les valeurs en un clic.",
+        "h1": "Calculez vos indicateurs en un clic.",
+        "intro": "Choisissez la période, l'unité organisationnelle et les indicateurs à calculer : le résultat est prêt immédiatement.",
+        "points": ["Sélection par période et par unité", "Calcul de plusieurs indicateurs à la fois", "Résultats réutilisés dans les tableaux de bord", "Historique des calculs"],
+        "etapes": ["Période et unité", "Indicateurs", "Lancer le calcul"],
+    },
+    {
+        "slug": "import-intelligent", "icone": "fa-file-import", "court": "Import intelligent",
+        "titre_seo": "Import Excel et CSV avec contrôle des anomalies · OperaPlus",
+        "description": "Importez vos fichiers Excel ou CSV : périodes, indicateurs et structures sont contrôlés et les anomalies signalées avant l'import.",
+        "h1": "Importez vos fichiers sans craindre les erreurs.",
+        "intro": "Chaque fichier passe trois contrôles : périodes, indicateurs et structures. Les anomalies bloquantes sont signalées avant toute écriture.",
+        "points": ["Excel (.xlsx) et CSV", "Contrôle des périodes et des doublons", "Rapport d'anomalies clair", "Import uniquement des données valides"],
+        "etapes": ["Déposez le fichier", "Lisez le rapport", "Importez"],
+    },
+    {
+        "slug": "redevabilite", "icone": "fa-scale-balanced", "court": "Redevabilité",
+        "titre_seo": "Plaintes et redevabilité des bénéficiaires · OperaPlus",
+        "description": "Enregistrez les plaintes et retours des bénéficiaires, suivez leur traitement jusqu'à la clôture et rendez compte aux bailleurs.",
+        "h1": "Rendez compte aux bénéficiaires comme aux bailleurs.",
+        "intro": "Plaintes et retours sont enregistrés, attribués, suivis jusqu'à leur clôture, puis restitués dans des rapports prêts à partager.",
+        "points": ["Registre des plaintes et retours", "Délais de traitement suivis", "Rapports pour les parties prenantes", "Historique complet"],
+        "etapes": ["Enregistrez", "Traitez", "Rendez compte"],
+    },
+    {
+        "slug": "multi-projets", "icone": "fa-layer-group", "court": "Multi-projets",
+        "titre_seo": "Gestion multi-projets et multi-institutions · OperaPlus",
+        "description": "Gérez plusieurs projets et institutions rattachées dans un même espace, chacun avec ses équipes, ses couleurs et ses données.",
+        "h1": "Tous vos projets, un seul espace de travail.",
+        "intro": "Chaque projet garde ses équipes, ses couleurs et ses données ; la direction garde la vue d'ensemble.",
+        "points": ["Projets et institutions rattachées", "Équipes et droits par projet", "Thème de couleurs par institution", "Vue portefeuille pour la direction"],
+        "etapes": ["Créez le projet", "Invitez l'équipe", "Pilotez le portefeuille"],
+    },
+    {
+        "slug": "archives-apprentissage", "icone": "fa-box-archive", "court": "Archives & apprentissage",
+        "titre_seo": "Archives documentaires et leçons apprises · OperaPlus",
+        "description": "Classez documents, rapports et leçons apprises et retrouvez-les en quelques secondes pour capitaliser sur chaque projet.",
+        "h1": "Capitalisez sur chaque projet.",
+        "intro": "Rapports, pièces justificatives et leçons apprises sont classés par projet et retrouvables en quelques secondes.",
+        "points": ["Archives par projet et par période", "Leçons apprises consultables", "Recherche rapide", "Accès selon les droits"],
+        "etapes": ["Déposez", "Classez", "Retrouvez"],
+    },
+]
+
+PAR_SLUG = {f["slug"]: f for f in FONCTIONNALITES}

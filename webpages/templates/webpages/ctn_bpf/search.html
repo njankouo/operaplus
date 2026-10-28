@@ -1,0 +1,902 @@
+<div class="row">
+  <div class="col-12">
+    <style>
+      /* Style global de l'accordéon */ .custom-accordion { border: none; background:
+      transparent; } .custom-accordion .accordion-item { border: none; margin-bottom:
+      15px; border-radius: 15px !important; overflow: hidden; box-shadow: 0 4px
+      12px rgba(0, 0, 0, 0.05); transition: all 0.3s ease; background: #fff;
+      } .custom-accordion .accordion-item:hover { transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); } /* En-tête du bouton */ .custom-accordion
+      .accordion-button { padding: 1.2rem; font-weight: 700; font-size: 0.95rem;
+      text-transform: uppercase; letter-spacing: 0.5px; border: none; outline:
+      none; display: flex; align-items: center; } /* Style spécifique pour l'alerte
+      de licence (Rouge) */ .btn-licence-alert { background: linear-gradient(135deg,
+      #ff4d4d, #d90429) !important; color: white !important; } .btn-licence-alert:not(.collapsed)
+      { box-shadow: 0 4px 15px rgba(217, 4, 41, 0.3); } /* Style pour la gestion
+      des utilisateurs (Bleu/Sombre) */ .btn-management { background: #ffffff
+      !important; color: #2b2d42 !important; } .btn-management:not(.collapsed)
+      { color: #4361ee !important; background: #f8faff !important; } /* Personnalisation
+      de l'icône de flèche */ .custom-accordion .accordion-button::after { background-size:
+      1rem; transition: transform 0.3s ease; } /* Corps de l'accordéon */ .custom-accordion
+      .accordion-body { padding: 1.5rem; background-color: #ffffff; border-top:
+      1px solid #f1f1f1; } /* Boutons d'action à l'intérieur */ .action-group
+      { display: flex; gap: 10px; flex-wrap: wrap; } .btn-action { border-radius:
+      10px; padding: 10px 20px; font-weight: 600; font-size: 0.85rem; display:
+      inline-flex; align-items: center; gap: 8px; transition: all 0.3s; border:
+      none; } .btn-action:hover { transform: scale(1.05); } /* Badge d'info pour
+      la licence */ .licence-warning { background: #fff5f5; border-left: 4px
+      solid #ff4d4d; padding: 15px; border-radius: 8px; color: #852d2d; font-weight:
+      500; }
+    </style>
+<div class="accordion custom-accordion" id="accordionExample">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingTwo">
+      <!-- État ouvert : PAS de classe 'collapsed' et aria-expanded="true" -->
+      <button class="accordion-button btn-management" type="button" 
+              data-bs-toggle="collapse" 
+              data-bs-target="#accordionTwo" 
+              aria-expanded="true" 
+              aria-controls="accordionTwo">
+        <i class="bi bi-people-fill me-3"></i>
+        Gestion Des Utilisateurs Et Rôles
+      </button>
+    </h2>
+
+    <!-- État ouvert : présence de la classe 'show' -->
+    <div id="accordionTwo" class="accordion-collapse collapse show" 
+         aria-labelledby="headingTwo" 
+         data-bs-parent="#accordionExample">
+      <div class="accordion-body">
+        <div class="action-group">
+          <button data-bs-target="#exampleModalpersonnel" data-bs-toggle="modal" class="btn btn-action btn-dark">
+            <i class="bi bi-person-plus-fill"></i> Ajouter Personnel
+          </button>
+          
+          <button type="button" class="btn btn-action btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModalRole">
+            <i class="bi bi-ui-checks"></i> Ajouter Des Rôles
+          </button>
+          
+          <a href="/roles_personnels/" class="btn btn-action btn-success">
+            <i class="bi bi-list-stars"></i> Liste Des Rôles
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+    <div class="search-container mb-4">
+      <div class="search-wrapper">
+        <div class="search-icon">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z">
+            </path>
+          </svg>
+        </div>
+    
+        <input type="text" name="q" class="search-input" placeholder="Rechercher une institution par nom ou sigle..."
+        aria-label="Rechercher" id="search-input">
+        <button id="search-btn" class="search-button" type="button">
+          <span>
+            Lancer la Recherche
+          </span>
+        </button>
+     
+      </div>
+    </div>
+    <style>
+      #personnel-filter { transition: opacity 0.2s ease-in-out; } /* Optionnel
+      : un petit spinner si la recherche est longue */ .loading-spinner { display:
+      inline-block; width: 20px; height: 20px; border: 3px solid rgba(59, 130,
+      246, .3); border-radius: 50%; border-top-color: #3b82f6; animation: spin
+      1s ease-in-out infinite; } @keyframes spin { to { transform: rotate(360deg);
+      } }
+    </style>
+    <script>
+      document.addEventListener('DOMContentLoaded',
+      function() {
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
+        const resultsDiv = document.getElementById('personnel-filter');
+        let timeout = null;
+
+        const performSearch = async() = >{
+          const query = searchInput.value;
+          resultsDiv.style.opacity = '0.5';
+
+          try {
+            const response = await fetch(`/search-personnel/?q=${
+              encodeURIComponent(query)
+            }`, {
+              method: 'GET',
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+              }
+            });
+            if (!response.ok) throw new Error('Erreur réseau');
+            const html = await response.text();
+            resultsDiv.innerHTML = html;
+          } catch(error) {
+            resultsDiv.innerHTML = ` < div class = "p-3 text-danger" > Erreur de connexion. < /div>`;
+        } finally {
+            resultsDiv.style.opacity = '1';
+        }
+    };
+
+    / / Recherche automatique pendant la saisie(Debounce) searchInput.addEventListener('input', () = >{
+              clearTimeout(timeout);
+              timeout = setTimeout(performSearch, 300); // Attend 300ms après la fin de la saisie
+            });
+
+            // Garde le bouton fonctionnel au clic
+            searchBtn.addEventListener('click', performSearch);
+
+            // Empêche la touche Entrée de recharger la page par habitude
+            searchInput.addEventListener('keypress', (e) = >{
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                performSearch();
+              }
+            });
+          });
+    </script>
+    <style>
+      :root { --se-navy: #1a233a; --se-accent: #3b82f6; --se-border: #e2e8f0;
+      } .search-container { max-width: 900px; margin: 0 auto; } .search-wrapper
+      { display: flex; align-items: center; background: #fff; border: 1px solid
+      var(--se-border); border-radius: 12px; padding: 6px; box-shadow: 0 4px
+      12px rgba(0, 0, 0, 0.03); transition: all 0.3s ease; } /* Effet au focus
+      sur toute la barre */ .search-wrapper:focus-within { border-color: var(--se-accent);
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.12); transform: translateY(-1px);
+      } .search-icon { padding: 0 15px; color: #94a3b8; } .search-input { flex:
+      1; border: none; outline: none; font-size: 15px; color: var(--se-navy);
+      padding: 10px 5px; background: transparent; } .search-input::placeholder
+      { color: #94a3b8; font-weight: 400; } .search-button { background-color:
+      var(--se-navy); color: white; border: none; padding: 10px 24px; border-radius:
+      8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all
+      0.2s ease; margin-left: 10px; } .search-button:hover { background-color:
+      var(--se-accent); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); } /*
+      Responsive */ @media (max-width: 600px) { .search-button span { display:
+      none; /* Cache le texte sur mobile */ } .search-button::after { content:
+      'OK'; /* Affiche un texte court */ } }
+    </style>
+   
+
+    <script>
+      
+    </script>
+    <div class="table-wrapper">
+      <div class="modal fade" id="exampleModalRole" tabindex="-1" aria-labelledby="exampleModalLabel"
+      aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">
+                Ajouter R&ocirc;les
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+              </button>
+            </div>
+            {%include "./partials/roles-personnel.html"%}
+          </div>
+        </div>
+        {% if g_vs == 'p2' %}
+        <div class="row g-4" id="personnel-filter">
+          {%include './filter-personnel.html'%} {%endif%} 
+          {% for message in messages%}
+          <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11">
+          </script>
+          {% if message.tags == 'success' %}
+          <script type="text/javascript">
+            Swal.fire({
+              position: "top-end",
+              icon: "success",
+              title: "{{message}}",
+              showConfirmButton: false,
+              timer: 2000
+            });
+          </script>
+          {%endif%} {%endfor%}
+          </script>
+          {% for message in messages %}
+          <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11">
+          </script>
+          {% if message.tags == 'error' %}
+          <script type="text/javascript">
+            Swal.fire({
+              position: "top-end",
+              icon: "error",
+              title: "{{message}}",
+              showConfirmButton: false,
+              timer: 5000
+            });
+          </script>
+          {%endif%} {%endfor%}
+          <style>
+            /* Conteneur principal de la carte */ .user-card-modern { background:
+            #ffffff; border-radius: 16px; overflow: hidden; transition: all 0.3s ease;
+            border: 1px solid #f0f0f0; height: 100%; display: flex; flex-direction:
+            column; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px
+            rgba(0, 0, 0, 0.03); } .user-card-modern:hover { transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); border-color: #e0e0e0; } /*
+            Header & Image */ .card-header-custom { padding-top: 2rem; display: flex;
+            justify-content: center; background: linear-gradient(to bottom, #f8f9fa
+            50%, transparent 50%); } .user-img-wrapper { width: 100px; height: 100px;
+            border-radius: 50%; padding: 5px; background: white; box-shadow: 0 4px
+            10px rgba(0,0,0,0.1); } .user-img { width: 100%; height: 100%; object-fit:
+            cover; border-radius: 50%; } /* Typographie */ .card-body-custom { padding:
+            1.5rem; text-align: center; } .user-name { font-size: 1.1rem; color: #1a1d23;
+            margin-bottom: 0.25rem; } .user-role-text { font-size: 0.75rem; color:
+            #6c757d; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 1rem; } /* Badge */ .custom-badge { display: inline-flex;
+            align-items: center; gap: 6px; background: #f1f5f9; color: #475569; padding:
+            6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; } .custom-badge
+            i { color: #3b82f6; } /* Boutons d'action */ .user-actions { margin-top:
+            1.5rem; display: flex; gap: 8px; justify-content: center; } .btn-action
+            { padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight:
+            600; text-decoration: none; transition: all 0.2s; display: flex; align-items:
+            center; gap: 8px; } .btn-edit { background-color: #3b82f6; color: white;
+            flex-grow: 1; } .btn-edit:hover { background-color: #2563eb; color: white;
+            } .btn-collab { background-color: #f8f9fa; color: #64748b; border: 1px
+            solid #e2e8f0; } .btn-collab:hover { background-color: #e2e8f0; color:
+            #1e293b; }
+          </style>
+        
+          <div class="modal fade" id="addSimpUser" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <form class="form-horizontal bordered-row" action="/save_gestion/" id="tooMUCHFormAction"
+                method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="generator" value="p2">
+                  <input type="hidden" name="edit_or_create" value="c">
+                  <div class="modal-body">
+                    <div class="mb-4 text-center">
+                      Ajouter un Nouvel Utilisateur Simple
+                    </div>
+                    {% if lines.count > 0 %}
+                    <div>
+                      <div>
+                        <label>
+                          Compte
+                        </label>
+                        <select name="Fonction" id="account_roles_lines" class="form-control">
+                          {% for r in lines %}
+                          <option value="{{r.id}}">
+                            {{r}}
+                          </option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="my-2">
+                        <label>
+                          Entit&eacute; :
+                        </label>
+                        <div class="d-flex flex-wrap" id="entities_roles_desc">
+                        </div>
+                      </div>
+                      <div class="d-flex">
+                        <div class="px-1">
+                          <label>
+                            Pr&eacute;nom
+                          </label>
+                          <input type="text" class="form-control" name="prenom">
+                        </div>
+                        <div class="px-1">
+                          <label>
+                            Nom
+                          </label>
+                          <input type="text" class="form-control" name="nom">
+                        </div>
+                      </div>
+                      <div class="py-2">
+                        <label>
+                          Adresse Mail
+                        </label>
+                        <input type="text" class="form-control" name="mail">
+                      </div>
+                      <div class="py-2">
+                        <label>
+                          Telephone
+                        </label>
+                        <input type="text" class="form-control" name="tel">
+                      </div>
+                      <input type="hidden" name="simple_user" id="simple_user" value="1">
+                      <div>
+                        <input type="submit" class="btn btn-success" value="Enregistrer l'Utilisateur"
+                        name="">
+                      </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center">
+                      Aucun Role defini, veuillez au prealable en creer
+                      <a href="/roles/">
+                        ici
+                      </a>
+                    </div>
+                    {% endif %}
+                  </div>
+                  <div class="modal-footer">
+                    <div class="px-2">
+                      <span style="font-family:quartz">
+                        2026,Solution BeinInfo.
+                      </span>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+       
+       {% if messages %}
+  {% for message in messages %}
+    <div class="modal fade" id="statusModal-{{ forloop.counter }}" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content custom-modal">
+          
+          <div class="modal-body text-center p-4">
+            <div class="glow"></div>
+
+            {% if message.tags == 'info' and message.message == 'EXISTANT' %}
+              <div class="avatar-wrapper mb-3">
+                {% if request.session.temp_photo_url %}
+                  <img src="{{ request.session.temp_photo_url }}" class="avatar-img pulse-border">
+                {% else %}
+                  <div class="avatar-icon">
+                    <img src="{{ actual_institution.img.url }}" class="avatar-img">
+                  </div>
+                {% endif %}
+              </div>
+              <h3 class="modal-title">Utilisateur reconnu</h3>
+              <p class="modal-text">
+                Cet utilisateur existe déjà. Ses informations ont été 
+                <span class="highlight">intelligemment Conservées</span>.
+              </p>
+            {% else %}
+                      <!--   <div class="icon-wrapper mb-4 {{ message.tags }}">
+            <svg class="main-icon" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+              <circle class="icon-bg" cx="26" cy="26" r="25" fill="currentColor" opacity="0.1" />
+              
+              {% if message.tags == 'success' %}
+                <path class="icon-path" d="M14 27l7 7 16-16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+              {% elif message.tags == 'error' %}
+                <path class="icon-path" d="M16 16l20 20M36 16L16 36" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+              {% else %}
+                <path class="icon-path" d="M26 16v14" stroke="currentColor" stroke-linecap="round" />
+                <circle cx="26" cy="38" r="1" fill="currentColor" />
+              {% endif %}
+            </svg>
+          </div> -->
+              <h3 class="modal-title">
+                {% if message.tags == 'success' %}Succès !{% elif message.tags == 'error' %}Oups...{% else %}Information{% endif %}
+              </h3>
+              <p class="modal-text">{{ message }}</p>
+            {% endif %}
+
+            <div class="progress-container mb-3">
+              <div class="progress-bar-fill"></div>
+            </div>
+
+            <button class="btn btn-gradient w-100" data-bs-dismiss="modal">
+              Continuer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+
+  <style>
+    :root {
+      --primary: #4facfe;
+      --secondary: #00f2fe;
+      --success: #00ca95;
+      --error: #ff5f6d;
+      --bg-glass: rgba(255, 255, 255, 0.85);
+    }
+
+    body.dark-mode .custom-modal {
+      background: rgba(30, 30, 30, 0.9);
+      color: #fff;
+    }
+
+    .custom-modal {
+      border: none;
+      border-radius: 24px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      animation: modalShow 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes modalShow {
+      from { opacity: 0; transform: scale(0.9) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .glow {
+      position: absolute;
+      width: 150px; height: 150px;
+      background: radial-gradient(circle, var(--secondary), transparent 70%);
+      top: -60px; left: 50%;
+      transform: translateX(-50%);
+      filter: blur(30px);
+      opacity: 0.4;
+      z-index: -1;
+    }
+
+    /* Avatar & Icons */
+    .avatar-img {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    .pulse-border {
+      box-shadow: 0 0 0 0 rgba(79, 172, 254, 0.7);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      70% { box-shadow: 0 0 0 15px rgba(79, 172, 254, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(79, 172, 254, 0); }
+    }
+
+    .icon-wrapper { width: 70px; height: 70px; margin: 0 auto; }
+    .icon-wrapper.success { color: var(--success); }
+    .icon-wrapper.error { color: var(--error); }
+    .icon-wrapper.info { color: var(--primary); }
+
+    .modal-title { font-weight: 800; letter-spacing: -0.5px; }
+    .highlight { color: var(--primary); font-weight: 600; }
+
+    /* Progress Bar */
+    .progress-container {
+      height: 4px; background: rgba(0,0,0,0.05);
+      border-radius: 10px; overflow: hidden;
+    }
+    .progress-bar-fill {
+      width: 0%; height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      animation: loadBar 1.5s ease-out forwards;
+    }
+    @keyframes loadBar { to { width: 100%; } }
+
+    .btn-gradient {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white; border: none; padding: 12px;
+      border-radius: 15px; font-weight: 600; transition: 0.3s;
+    }
+    .btn-gradient:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(79, 172, 254, 0.4); color: white; }
+  </style>
+<div class="modal fade" id="exampleModalpersonnel" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      
+      <div class="modal-header bg-light border-bottom-0 p-4">
+        <h5 class="modal-title d-flex align-items-center fw-bold text-dark" id="exampleModalLabel">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user-plus me-2 text-primary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+            <path d="M16 19h6"></path>
+            <path d="M19 16v6"></path>
+            <path d="M6 21v-2a4 4 0 0 1 4 -4h4c.27 0 .533 .026 .788 .076"></path>
+          </svg>
+          Ajouter un nouveau membre du personnel
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4 pt-2">
+        <p class="text-muted small mb-4">Les champs marqués d'un <span class="text-danger">*</span> sont obligatoires.</p>
+
+        <form action="/save_personnel_institution/" enctype="multipart/form-data" data-toggle="validator" role="form" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="edit_or_create" id="edit_or_create">
+          <input type='hidden' name='generator' value='p2'>
+          <input type="hidden" name="edit_id" id="edit_id">
+
+          <div class="row g-3">
+            
+            <div class="col-12 mb-2">
+              <label class="form-label fw-semibold text-secondary d-flex align-items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-1" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a3 3 0 0 1 3 3v9a3 3 0 0 1 -3 3h-14a3 3 0 0 1 -3 -3v-9a3 3 0 0 1 3 -3" /><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
+                Photo de profil
+              </label>
+              
+              <div class="p-3 border border-2 border-dashed rounded-3 bg-light text-center cursor-pointer" onclick="document.getElementById('photoInput').click();">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-muted mb-2" width="32" height="32" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 18a4.6 4.6 0 0 1 -1.8 -3a4.6 4.6 0 0 1 2.5 -6a4.5 4.5 0 0 1 9 -5h1a4.5 4.5 0 0 1 1 9h-1" /><path d="M9 15l3 -3l3 3" /><path d="M12 12v9" /></svg>
+                <p class="small text-muted mb-1">Cliquer pour choisir un fichier</p>
+                <p class="text-xs text-muted mb-0">PNG, JPG (Max. 2Mo)</p>
+              </div>
+              <input type="file" name="photo" id="photoInput" class="form-control d-none">
+            </div>
+            <div class="mt-3">
+            <img id="photoPreview" 
+                 src="" 
+                 alt="Aperçu" 
+                 class="img-fluid rounded shadow-sm d-none" 
+                 style="max-height: 150px; object-fit: cover;">
+          </div>
+
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Nom <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="nom" required id="codeAct" placeholder="ex: DOE">
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Prénom <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="prenom" required id="nomAct" placeholder="ex: John">
+              </div>
+            </div>
+
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Email <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon text-muted" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" /><path d="M3 7l9 6l9 -6" /></svg>
+                  </span>
+                  <input type="email" name="mail" class="form-control border-start-0 ps-0" id="mail" required placeholder="john.doe@entreprise.com">
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Numéro Téléphone <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon text-muted" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" /></svg>
+                  </span>
+                  <input type="text" name="tel" class="form-control telephone border-start-0 ps-0" required id='tel' placeholder="+225 01020304">
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-8">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Fonction / Responsabilité</label>
+                <input type="text" name="poste" class="form-control" id="poste" placeholder="ex: Développeur Senior">
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">Genre <span class="text-danger">*</span></label>
+                <select class="form-select" name="sexe" required>
+                  <option value="" selected disabled>Choisir...</option>
+                  <option value="H">Masculin</option>
+                  <option value="F">Féminin</option>
+                </select>
+              </div>
+            </div>
+
+            {% if searches %}
+            <div class="col-12"><hr class="text-muted opacity-25 my-3"></div>
+            {% endif %}
+
+            <input type='hidden' name='matrice' />
+            {% for search in searches %}
+            <div class="col-sm-12">
+              <div class="form-group">
+                <label class="form-label fw-semibold text-dark">{{search.label}} <span class="text-danger">*</span></label>
+                {% if search.values != None %}
+                <select class="form-select" name="{{search.label}}" required>
+                  <option value="" selected disabled>Sélectionner {{search.label}}...</option>
+                  {% for v in search.values %}
+                  <option value="{{v.id}}">{{v.nom}}</option>
+                  {% endfor %}
+                </select>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+
+          </div>
+
+          <div class="modal-footer px-0 pb-0 pt-4 mt-2 border-top-0">
+            <button type="button" class="btn btn-label-secondary fw-semibold px-4" data-bs-dismiss="modal">
+              Annuler
+            </button>
+            <button type="submit" class="btn btn-primary fw-semibold px-5 shadow-sm d-flex align-items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>
+              Enregistrer le profil
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Icônes SVG : taille standardisée */
+  .icon {
+    width: 1rem;
+    height: 1rem;
+    vertical-align: middle;
+  }
+  .modal-header .icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .btn .icon {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  /* Style zone de drop photo */
+  .border-dashed {
+    border-style: dashed !important;
+  }
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  .bg-light:hover {
+    background-color: #f1f3f5 !important; /* Léger survol */
+  }
+  
+  /* Taille de texte extra petite */
+  .text-xs {
+    font-size: 0.75rem;
+  }
+
+  /* Bouton secondaire stylisé (optionnel, sinon utilisez btn-secondary standard) */
+  .btn-label-secondary {
+    color: #6c757d;
+    background-color: #f1f3f5;
+    border-color: transparent;
+  }
+  .btn-label-secondary:hover {
+    background-color: #e2e6ea;
+  }
+</style>
+<script>
+  document.getElementById('photoInput').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('photoPreview');
+
+    if (file) {
+      // Vérification type (optionnel mais recommandé)
+      if (!file.type.startsWith('image/')) {
+        alert("Veuillez choisir une image valide.");
+        return;
+      }
+
+      // Vérification taille (2Mo max)
+      if (file.size > 2 * 1024 * 1024) {
+        alert("L'image ne doit pas dépasser 2Mo.");
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+        preview.classList.remove('d-none');
+      };
+
+      reader.readAsDataURL(file);
+    }
+  });
+</script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<script>
+  $(document).ready(function() {
+    {% for message in messages %}
+      let modalId = '#statusModal-{{ forloop.counter }}';
+      
+      // Ouvrir le modal
+      $(modalId).modal('show');
+
+      // Fermer automatiquement après 10 secondes
+      setTimeout(() => {
+        $(modalId).modal('hide');
+      }, 10000);
+
+      // Confetti si succès
+      {% if message.tags == 'success' or message.message == 'EXISTANT' %}
+      setTimeout(() => {
+        confetti({ particleCount: 100, spread: 60, origin: { y: 0.7 }, zIndex: 9999 });
+      }, 300);
+      {% endif %}
+    {% endfor %}
+
+    // Dark mode detection
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.classList.add('dark-mode');
+    }
+  });
+</script>
+{% endif %}
+
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+          integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+          crossorigin="anonymous" referrerpolicy="no-referrer">
+          </script>
+          <script type="text/javascript">
+            ros_btn = document.getElementsByClassName("ros_btn");
+            ros_click = 0
+            for (var i = 0; i < ros_btn.length; i++) {
+              ros_btn[i].onclick = function() {
+                $(".ros_btn").removeClass("btn-success");
+                $(".ros_btn").addClass("btn-light");
+                this.className = "ros_btn btn btn-success";
+
+                id_div = parseInt(this.getAttribute('data-elt'));
+                ros_div = document.getElementsByClassName("ros_div");
+                ros_click = id_div;
+                $(ros_div).slideUp(function() {
+
+});
+                $(ros_div[id_div]).slideDown('slow');
+
+              }
+            }
+
+            $(".renseigner").click(function() {
+              $("#add_nom").text($(this).attr('data-nom'));
+              $("#add_val").val($(this).attr('data-id'));
+            });
+            line_func = document.getElementsByClassName('line_func');
+            line_struc = document.getElementsByClassName('line_struc');
+            //alert(line_struc.length)
+            i = 0; { %
+              for f in actual_institution.functions %
+            }
+            //line_func[i].textContent = "{{f}}";
+            line_func[i].setAttribute('data-id', {
+              {
+                f.id
+              }
+            });
+            i++; { % endfor %
+            }
+
+            i = 0; { %
+              if g_vs == 'p2' %
+            } { %
+              for f in actual_institution.structures %
+            }
+            //line_struc[i].textContent = "{{f}}";
+            //line_struc[i].setAttribute('data-id',{{f.id}});
+            i++; { % endfor %
+            } { % elif g_vs == 'u2' %
+            }
+            function type_users(role) {
+              $.ajax({
+                url: '/get_elements_hierachy/',
+                data: {
+                  'institution': {
+                    {
+                      actual_institution.id
+                    }
+                  },
+                  'nature': -100,
+                  'type_entity': role
+                },
+                dataType: 'json',
+                success: function(data) {
+                  entities_roles_desc = document.getElementById("entities_roles_desc");
+                  entities_roles_desc.innerHTML = ""
+                  for (var i = 0; i < data.lines.length; i++) {
+                    entities_roles_desc.innerHTML += "<div class='p-2'> <span data-value='" + data.ids[i] + "' class='border-success entity_rolD btn'>" + data.lines[i] + "</span></div>";
+                  }
+                  $(".entity_rolD").click(function() {
+                    $(".entity_rolD").removeClass("btn-success");
+                    $(this).addClass("btn-success") simple_user = document.getElementById("simple_user");
+                    simple_user.value = $(this).attr('data-value')
+                  })
+                },
+                error: function(data) {}
+              });
+            }
+            account_roles_lines = document.getElementById("account_roles_lines");
+            account_roles_lines.onchange = function() {
+              type_users(this.value);
+            }
+            type_users(account_roles_lines.value); //.getElementsByTagName("option")[0]
+            { % endif %
+            }
+            function list_elts(hierachie) {
+            
+            }
+
+            list_elts( - 1); { %
+              if g_v != 'p2' %
+            }
+            entiRole_select = document.getElementById("entiRole_select") entiRole_select.onchange = function() {
+              list_elts(this.value)
+            } { % endif %
+            }
+
+            function saveRoles() {
+              ros_click_input = document.getElementById("ros_click");
+              ros_click_input.value = ros_click;
+              if (ros_click == 1) {
+                entity_administr = document.getElementById("entity_administr");
+                list_value = document.getElementsByClassName("list_value");
+                tmp = "";
+                for (var i = 0; i < list_value.length; i++) {
+                  if (list_value[i].checked == true) {
+                    tmp += list_value[i].value + "#";
+                  }
+                }
+                entity_administr.value = tmp;
+              }
+            }
+          </script>
+          <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js">
+          </script>
+     
+          <script>
+            $(document).ready(function() {
+              // Lorsqu'un utilisateur est sÃ©lectionnÃ© dans la liste dÃ©roulante
+              $('.mail').on('change',
+              function() {
+                var mail = $(this).val();
+
+                // RÃ©cupÃ¨re le jeton CSRF
+                var csrf_token = $('input[name="csrfmiddlewaretoken"]').val();
+
+                // RequÃªte AJAX
+                $.ajax({
+                  url: "/recuperer_personnel/",
+                  type: 'POST',
+                  data: {
+                    csrfmiddlewaretoken: csrf_token,
+                    mail: mail
+                  },
+                  dataType: 'json',
+                  success: function(data) {
+                    // Met Ã  jour les champs du formulaire avec les informations rÃ©cupÃ©rÃ©es
+                    console.log(data);
+                    $('.nom').val(data.nom);
+                    $('.prenom').val(data.prenom);
+                    $('.telephone').val(data.tel);
+                    console.log(data.telephone)
+                  },
+                  error: function(jqXHR, textStatus, errorThrown) {
+                    console.log('error');
+                  }
+                });
+              });
+            });
+          </script>
+          
+          <script>
+            (function() {
+
+              'use strict';
+
+              $('.input-file').each(function() {
+                var $input = $(this),
+                $label = $input.next('.js-labelFile'),
+                labelVal = $label.html();
+
+                $input.on('change',
+                function(element) {
+                  var fileName = '';
+                  if (element.target.value) fileName = element.target.value.split('\\').pop();
+                  fileName ? $label.addClass('has-file').find('.js-fileName').html(fileName) : $label.removeClass('has-file').html(labelVal);
+                });
+              });
+
+            })();
+          </script>
+          <script src="https://cdn.datatables.net/2.1.8/js/dataTables.js">
+          </script>
+          <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap4.js">
+          </script>
+          <script>
+            new DataTable('#example');
+          </script>

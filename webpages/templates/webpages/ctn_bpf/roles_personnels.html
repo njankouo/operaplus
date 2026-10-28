@@ -1,0 +1,332 @@
+{% extends './index.html' %}
+{% block main %}
+
+<div class="w-full px-4 py-6">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200/80 dark:border-gray-700">
+        <div class="p-6">
+            
+            <!-- En-tête de la carte -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h5 class="text-xl font-bold text-gray-900 dark:text-white">Liste des Rôles</h5>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Gérez les privilèges et les autorisations d'accès.</p>
+                </div>
+                
+                <!-- Bouton Nouveau Rôle -->
+                <button type="button" 
+                        onclick="openModal('exampleModalRole')"
+                        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-xl shadow-md shadow-blue-600/20 transition-all cursor-pointer self-start sm:self-auto">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Nouveau rôle
+                </button>
+            </div>
+
+            <!-- Tableau des rôles -->
+            <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                            <th scope="col" class="px-6 py-3.5 font-semibold">Nom</th>
+                            <th scope="col" class="px-6 py-3.5 font-semibold">Désignation</th>
+                            <th scope="col" class="px-6 py-3.5 font-semibold text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for role in roles %}
+                        <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50/80 dark:hover:bg-gray-700/40 transition-colors">
+                            <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">
+                                {{ role.nom }}
+                            </td>
+                            <td class="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                {{ role.description }}
+                            </td>
+                            <td class="px-6 py-4 text-right relative">
+                                
+                                <!-- Menu Actions Dropdown -->
+                                <div class="inline-block text-left relative">
+                                    <button type="button" 
+                                            onclick="toggleDropdown(event, 'dropdown-{{role.id}}')"
+                                            class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                        <i class="bx bx-dots-vertical-rounded text-xl"></i>
+                                    </button>
+                                    
+                                    <!-- Options Dropdown -->
+                                    <div id="dropdown-{{role.id}}" class="dropdown-menu-custom hidden absolute right-0 z-20 w-36 mt-1 py-1 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 text-xs text-left">
+                                        <button type="button" 
+                                                onclick="openModal('exampleModal{{role.id}}')" 
+                                                class="w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors">
+                                            Édition
+                                        </button>
+                                        <a href="/delete_role/{{role.id}}/" class="block px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                                            Supprimer
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- Modale d'Édition Tailwind -->
+                                <div id="exampleModal{{role.id}}" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+                                    <div class="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 text-left transform transition-all">
+                                        
+                                        <!-- En-tête -->
+                                        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                            <h5 class="text-base font-bold text-gray-900 dark:text-white">Édition des rôles</h5>
+                                            <button type="button" onclick="closeModal('exampleModal{{role.id}}')" class="text-gray-400 hover:text-gray-600 dark:hover:text-white p-1 rounded-lg transition-colors">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
+                                        </div>
+
+                                        <!-- Formulaire d'édition -->
+                                        <form action="/edit_role/{{role.id}}/" method="post">
+                                            {% csrf_token %}
+                                            <div class="p-6 space-y-4">
+                                                <div>
+                                                    <label for="nom_{{role.id}}" class="block mb-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">Nom</label>
+                                                    <input type="text" id="nom_{{role.id}}" name="nom" value="{{role.nom}}" required 
+                                                           class="w-full px-3.5 py-2.5 text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-700 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+                                                </div>
+                                                <div>
+                                                    <label for="desc_{{role.id}}" class="block mb-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300">Description</label>
+                                                    <input type="text" id="desc_{{role.id}}" name="description" value="{{role.description}}" required 
+                                                           class="w-full px-3.5 py-2.5 text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-700 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+                                                </div>
+                                            </div>
+
+                                            <!-- Pied de page -->
+                                            <div class="flex items-center justify-end px-6 py-4 border-t border-gray-200 dark:border-gray-700 gap-3">
+                                                <button type="button" onclick="closeModal('exampleModal{{role.id}}')" class="px-4 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">Fermer</button>
+                                                <button type="submit" class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-blue-600 rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-md shadow-blue-600/20">Enregistrer</button>
+                                            </div>
+                                        </form>
+
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modale d'Ajout (Nouveau Rôle) -->
+<div id="exampleModalRole" class="modal-backdrop fixed inset-0 z-50 hidden flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden my-8 transform transition-all text-left">
+        
+        <!-- En-tête -->
+        <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 dark:from-gray-800 via-white dark:via-gray-800 to-gray-50 dark:to-gray-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </span>
+                <div>
+                    <h5 class="text-base font-bold text-gray-900 dark:text-white">Ajouter des Rôles</h5>
+                    <p class="text-xs text-gray-400">Définissez les autorisations et la portée de l'utilisateur.</p>
+                </div>
+            </div>
+            
+            <button type="button" onclick="closeModal('exampleModalRole')" class="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Formulaire -->
+        <form action="/save_gestion/" onsubmit="return saveRoles()" id="addFormAction" method="post">
+            {% csrf_token %}
+            <input type="hidden" id="edit_or_create" value="c" name="edit_or_create">
+            <input type="hidden" id="edit_id" name="edit_id" value="">
+            <input type="hidden" name="generator" value="r">
+            <input type="hidden" value="{{actual_institution.id}}" name="institution">
+
+            <!-- Corps de la Modale -->
+            <div class="p-6 space-y-5">
+                
+                <!-- Champ : Nom -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Nom du rôle <span class="text-red-500">*</span></label>
+                    <input type="text" name="nom" id="nomAct" required placeholder="Ex: Chef de projet, Superviseur..." 
+                           class="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 px-3.5 py-2.5 text-sm text-gray-800 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-700 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+                </div>
+
+                <!-- Champ : Description -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+                    <textarea name="description" placeholder="Aperçu des responsabilités attribuées..." 
+                              class="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 px-3.5 py-2.5 text-sm text-gray-800 dark:text-white placeholder-gray-400 focus:bg-white dark:focus:bg-gray-700 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-y min-h-[80px]"></textarea>
+                </div>
+
+                <!-- Section Permissions -->
+                <div class="pt-3 border-t border-gray-100 dark:border-gray-700">
+                    <span class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-3">Permissions & Types de rôle</span>
+                    
+                    <!-- Boutons Sélecteurs (ros_btn) -->
+                    <div class="grid grid-cols-3 gap-2 mb-4 p-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl">
+                        <span data-elt="0" class="ros_btn text-center py-2 text-xs font-semibold rounded-lg cursor-pointer transition-all bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-200/60 dark:border-gray-600">Générique</span>
+                        <span data-elt="1" class="ros_btn text-center py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 rounded-lg cursor-pointer hover:text-gray-900 dark:hover:text-white transition-all">Spécifique</span>
+                        <span data-elt="2" class="ros_btn text-center py-2 text-xs font-semibold text-gray-600 dark:text-gray-400 rounded-lg cursor-pointer hover:text-gray-900 dark:hover:text-white transition-all">Utilisateur Simple</span>
+                        <input type="hidden" name="ros_click" id="ros_click" value="0">
+                    </div>
+
+                    <!-- Div 1 : Permission Générique -->
+                    <div class="ros_div">
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Niveau de Permission</label>
+                        <select name="permission" class="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 px-3.5 py-2.5 text-sm text-gray-800 dark:text-white focus:bg-white dark:focus:bg-gray-700 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+                            <option value="-1">Opérant : Chargé d'Exécuter les Tâches</option>
+                            {% for role in actual_institution.get_entities.reverse %}
+                            <option value="{{role.m_hierachie}}">Chargé {{role}} : Supervise L'Évolution {{role}}</option>
+                            {% endfor %}
+                            <option value="99">Administrateur : Aide à l'Administration de l'Institution</option>
+                        </select>
+                    </div>
+
+                    <input type="hidden" name="entity_administr" id="entity_administr">
+
+                    <!-- Div 2 : Permission Spécifique (Masquée par défaut) -->
+                    <div class="ros_div space-y-3 mt-3 hidden">
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Superviser l'Entité</label>
+                        <select id="entiRole_select" name="permission_entity" class="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/50 px-3.5 py-2.5 text-sm text-gray-800 dark:text-white focus:bg-white dark:focus:bg-gray-700 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all">
+                            {% for role in actual_institution.get_entities.reverse %}
+                            <option value="{{role.id}}">{{role}}</option>
+                            {% endfor %}
+                        </select>
+
+                        <div class="p-3 bg-gray-50/80 dark:bg-gray-700/30 border border-gray-200/80 dark:border-gray-700 rounded-2xl">
+                            <ul style="max-height:120px; overflow-y:auto;" class="divide-y divide-gray-100 dark:divide-gray-700 text-xs text-gray-700 dark:text-gray-300" id="rol_list">
+                                <!-- Éléments injectés dynamiquement via JS -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Div 3 : Utilisateur Simple (Masquée par défaut) -->
+                    <div class="ros_div hidden">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 italic">Ce rôle disposera des accès de base sans privilèges d'administration.</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Pied de la Modale -->
+            <div class="px-6 py-4 bg-gray-50/80 dark:bg-gray-700/40 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeModal('exampleModalRole')" class="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
+                    Fermer
+                </button>
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold tracking-wider uppercase text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-md shadow-blue-600/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<!-- SweetAlert Notifications -->
+{% if messages %}
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script>
+        {% for message in messages %}
+            swal({
+                title: "{{ message.tags|capfirst }}!",
+                text: "{{ message }}",
+                icon: "{{ message.tags }}"
+            });
+        {% endfor %}
+    </script>
+{% endif %}
+
+<!-- JavaScript Tailwind Pur (Pas de dépendance Bootstrap) -->
+<script>
+    // 1. Gestion de l'ouverture / fermeture des modales Tailwind
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    // Fermer la modale si clic sur l'arrière-plan (backdrop)
+    window.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal-backdrop')) {
+            event.target.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+    });
+
+    // 2. Gestion des menus déroulants (Dropdowns) dans le tableau
+    function toggleDropdown(event, dropdownId) {
+        event.stopPropagation();
+        
+        // Fermer tous les autres dropdowns ouverts
+        document.querySelectorAll('.dropdown-menu-custom').forEach(el => {
+            if (el.id !== dropdownId) el.classList.add('hidden');
+        });
+
+        const dropdown = document.getElementById(dropdownId);
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+        }
+    }
+
+    // Fermer les dropdowns quand on clique n'importe où ailleurs
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.dropdown-menu-custom').forEach(el => el.classList.add('hidden'));
+    });
+
+    // 3. Onglets de sélection des types de permissions (ros_btn)
+    document.addEventListener('DOMContentLoaded', function () {
+        const rosBtns = document.querySelectorAll('.ros_btn');
+        const rosDivs = document.querySelectorAll('.ros_div');
+        const rosClickInput = document.getElementById('ros_click');
+
+        rosBtns.forEach((btn) => {
+            btn.addEventListener('click', function () {
+                const selectedIndex = parseInt(this.getAttribute('data-elt'));
+
+                if (rosClickInput) {
+                    rosClickInput.value = selectedIndex;
+                }
+
+                // Réinitialiser les styles des onglets
+                rosBtns.forEach((b) => {
+                    b.classList.remove('bg-white', 'dark:bg-gray-700', 'text-blue-600', 'dark:text-blue-400', 'shadow-sm', 'border', 'border-gray-200/60', 'dark:border-gray-600');
+                    b.classList.add('text-gray-600', 'dark:text-gray-400');
+                });
+
+                // Appliquer le style actif
+                this.classList.add('bg-white', 'dark:bg-gray-700', 'text-blue-600', 'dark:text-blue-400', 'shadow-sm', 'border', 'border-gray-200/60', 'dark:border-gray-600');
+                this.classList.remove('text-gray-600', 'dark:text-gray-400');
+
+                // Afficher le bon bloc
+                rosDivs.forEach((div, index) => {
+                    if (index === selectedIndex) {
+                        div.classList.remove('hidden');
+                    } else {
+                        div.classList.add('hidden');
+                    }
+                });
+            });
+        });
+    });
+
+    // 4. Fonction de soumission du formulaire
+    function saveRoles() {
+        return true;
+    }
+</script>
+
+{% endblock %}

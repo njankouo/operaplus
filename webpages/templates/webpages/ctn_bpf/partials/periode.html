@@ -1,0 +1,214 @@
+<div class="table-wrapper">
+
+    <!-- SEARCH -->
+    <div class="table-toolbar">
+        <input type="text" id="searchInput" placeholder="🔍 Rechercher une période...">
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-container">
+        <table class="table modern-table" id="periodes">
+            <thead>
+                <tr>
+                    <th data-sort="nom">Période</th>
+                    <th data-sort="details">Détails</th>
+                    <th data-sort="periodicite">Périodicité</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody id="tableBody">
+                {% for periode_oks in periode_ok %}
+                <tr>
+                    <td data-label="Période">
+                        <strong>{{ periode_oks.nom }}</strong><br>
+                        <small>{{ periode_oks.annee }}</small>
+                    </td>
+
+                   <td data-label="Détails">
+    <div class="d-flex flex-column gap-1">
+
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge-soft">numero ordre: {{ periode_oks.numero_ordre }}</span>
+            <span class="fw-medium text-light">nicename: {{ periode_oks.nicename }}</span>
+        </div>
+
+        <small class="text-muted">
+            Début : {{ periode_oks.date_debut }}
+        </small>
+
+        <small class="text-muted">
+            Fin : {{ periode_oks.date_fin }}
+        </small>
+
+    </div>
+</td>
+
+                    <td data-label="Périodicité">
+                        <span class="badge-outline">
+                            {{ periode_oks.periodicite.m_value }}
+                        </span>
+                    </td>
+<td class="text-center relative" data-label="Actions">
+     <a href="/editer-periode/{{periode_oks.id}}/" class="text-blue-400">
+            <i class="fas fa-edit mr-2"></i> 
+        </a>
+
+        <div class="w-6 h-px bg-slate-200"></div>
+
+        <a href="/delete_periodes/{{periode_oks.id}}/" class="text-red-400">
+            <i class="fas fa-trash-alt mr-2"></i> 
+        </a>
+ 
+</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+<style>
+
+
+/* TOOLBAR */
+.table-toolbar {
+    margin-bottom: 12px;
+}
+
+#searchInput {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #e2e8f0;
+    width: 260px;
+}
+
+/* TABLE CONTAINER */
+.table-container {
+    background: #1e293b;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #334155;
+        background: #0f172a;
+}
+
+/* TABLE */
+.modern-table {
+    width: 100%;
+}
+
+/* HEADER */
+.modern-table thead {
+    background: #020617;
+}
+
+.modern-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #94a3b8;
+    padding: 14px;
+    cursor: pointer;
+}
+
+/* ROW */
+.modern-table tbody tr {
+    border-bottom: 1px solid #334155;
+    transition: all 0.2s ease;
+}
+
+.modern-table tbody tr:hover {
+    background: #334155;
+}
+
+/* CELLS */
+.modern-table td {
+    padding: 14px;
+}
+
+/* BADGES */
+.badge-soft {
+    background: #1d4ed8;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+}
+
+.badge-outline {
+    border: 1px solid #475569;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+}
+
+/* ACTION */
+.action-btn {
+    border: none;
+    background: transparent;
+    color: #cbd5f5;
+    font-size: 18px;
+}
+
+.action-btn:hover {
+    color: white;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+
+    .modern-table thead {
+        display: none;
+    }
+
+    .modern-table tr {
+        display: block;
+        margin-bottom: 10px;
+        padding: 10px;
+        background: #1e293b;
+        border-radius: 10px;
+    }
+
+    .modern-table td {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .modern-table td::before {
+        content: attr(data-label);
+        color: #94a3b8;
+        font-weight: bold;
+    }
+}
+</style>
+<script>
+    const searchInput = document.getElementById("searchInput");
+const rows = Array.from(document.querySelectorAll("#tableBody tr"));
+
+/* 🔍 SEARCH */
+searchInput.addEventListener("input", () => {
+    const value = searchInput.value.toLowerCase();
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(value)
+            ? ""
+            : "none";
+    });
+});
+
+/* 📊 SORT */
+document.querySelectorAll("th[data-sort]").forEach((header, index) => {
+    header.addEventListener("click", () => {
+
+        const sorted = [...rows].sort((a, b) => {
+            return a.children[index].innerText
+                .localeCompare(b.children[index].innerText);
+        });
+
+        const tbody = document.getElementById("tableBody");
+        tbody.innerHTML = "";
+        sorted.forEach(row => tbody.appendChild(row));
+    });
+});
+</script>

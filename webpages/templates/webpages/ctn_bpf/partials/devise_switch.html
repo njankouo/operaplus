@@ -1,0 +1,23 @@
+<div class="d-flex align-items-center gap-2"
+     hx-post="{% url 'toggle_devise' devises.id %}"
+     hx-trigger="change"
+     hx-target="this"
+     hx-swap="outerHTML">
+
+  <input type="checkbox"
+         name="is_active"
+         class="form-check-input"
+         {% if devises.id == actual_institution.devise_id %}checked{% endif %}>
+
+  <span>
+    {% if devises.id == actual_institution.devise_id %}
+      ✔ Devise activée
+    {% else %}
+      ☐ Devise désactivée
+    {% endif %}
+  </span>
+
+  {% if message %}
+    <span class="text-info small">{{ message }}</span>
+  {% endif %}
+</div>

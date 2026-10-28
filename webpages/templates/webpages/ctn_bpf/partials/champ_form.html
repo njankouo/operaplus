@@ -1,0 +1,107 @@
+<div class="form-group mb-4 p-4 border border-2 rounded-3 bg-light hover-border-primary transition-all">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div class="flex-grow-1">
+            <label class="fw-bold h6 mb-2 d-block" :for="'champ_' + champ.id">
+                {{ champ.name }}
+                {% if champ.obligatoire %}<span class="text-danger">*</span>{% endif %}
+            </label>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-secondary me-2">{{ champ.type|title }}</span>
+            {% if champ.obligatoire %}
+                <span class="badge bg-danger">Obligatoire</span>
+            {% endif %}
+            {% if champ.indicateur %}
+                <span class="badge bg-success">
+                    <i class="fas fa-chart-line me-1"></i>Indicateur
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="position-relative">
+        {% if champ.type == 'text' %}
+            <textarea class="form-control" 
+                      rows="2"
+                      placeholder="Texte libre..."
+                      data-champ-id="{{ champ.id }}"
+                      data-champ="{{ champ.name }}"
+                      data-type="{{ champ.type }}"
+                      {% if champ.obligatoire %}required{% endif %}></textarea>
+                      
+        {% elif champ.type == 'textarea' %}
+            <textarea class="form-control" 
+                      rows="4"
+                      placeholder="Texte multiligne détaillé..."
+                      data-champ-id="{{ champ.id }}"
+                      data-champ="{{ champ.name }}"
+                      data-type="{{ champ.type }}"
+                      {% if champ.obligatoire %}required{% endif %}></textarea>
+                      
+        {% elif champ.type == 'number' %}
+            <input type="number" 
+                   class="form-control" 
+                   placeholder="0"
+                   step="any" min="0"
+                   data-champ-id="{{ champ.id }}"
+                   data-champ="{{ champ.name }}"
+                   data-type="{{ champ.type }}"
+                   {% if champ.obligatoire %}required{% endif %}>
+                   
+        {% elif champ.type == 'date' %}
+            <input type="date" 
+                   class="form-control" 
+                   data-champ-id="{{ champ.id }}"
+                   data-champ="{{ champ.name }}"
+                   data-type="{{ champ.type }}"
+                   {% if champ.obligatoire %}required{% endif %}>
+                   
+        {% elif champ.type == 'boolean' %}
+            <div class="form-check form-switch">
+                <input type="checkbox" 
+                       class="form-check-input" 
+                       id="champ_{{ champ.id }}"
+                       data-champ-id="{{ champ.id }}"
+                       data-champ="{{ champ.name }}"
+                       data-type="{{ champ.type }}">
+                <label class="form-check-label fw-semibold" for="champ_{{ champ.id }}">
+                    {{ champ.name }}
+                </label>
+            </div>
+            
+        {% elif champ.type == 'choice' %}
+            <select class="form-select" 
+                    data-champ-id="{{ champ.id }}"
+                    data-champ="{{ champ.name }}" 
+                    data-type="{{ champ.type }}"
+                    {% if champ.obligatoire %}required{% endif %}>
+                <option value="">Sélectionner une option...</option>
+                <option value="option1">Option 1</option>
+                <option value="option2">Option 2</option>
+                <option value="option3">Option 3</option>
+            </select>
+            
+        {% elif champ.type == 'email' %}
+            <input type="email" 
+                   class="form-control" 
+                   placeholder="nom@exemple.com"
+                   data-champ-id="{{ champ.id }}"
+                   data-champ="{{ champ.name }}"
+                   data-type="{{ champ.type }}"
+                   {% if champ.obligatoire %}required{% endif %}>
+                   
+        {% else %}
+            <input type="text" 
+                   class="form-control" 
+                   placeholder="Type: {{ champ.type }}"
+                   data-champ-id="{{ champ.id }}"
+                   data-champ="{{ champ.name }}"
+                   data-type="{{ champ.type }}"
+                   {% if champ.obligatoire %}required{% endif %}>
+        {% endif %}
+    </div>
+    
+    {% if champ.help_text %}
+    <div class="form-text mt-2">{{ champ.help_text }}</div>
+    {% endif %}
+</div>
