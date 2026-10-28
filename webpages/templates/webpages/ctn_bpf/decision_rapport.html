@@ -2,16 +2,213 @@
 {% load static %}
 {% load humanize %}
 {% block main %}
+<!-- ===================== VALIDATION D'OPÉRATION : design (ajout) ===================== -->
+<style>
+    .vl, #monModalPonderation, #annulerOperModal { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: var(--sbx-ok, #2A8A7D); --warn: var(--sbx-warn, #E48B0C); --danger: var(--sbx-danger, #E35A33);
+          --ink: #0b1220; --muted: #667085; --line: #e4e8ee; --bg: #f5f7fa; }
+    .vl-in { animation: vlIn .5s cubic-bezier(.2,.8,.2,1) both; } @keyframes vlIn { from { opacity: 0; transform: translateY(12px); } }
 
+    /* ---------- En-tête ---------- */
+    .vl-hero { position: relative; overflow: hidden; margin: 22px 0 18px; border-radius: 24px; background: var(--dom); color: #fff; padding: 26px 28px; box-shadow: 0 30px 60px -40px color-mix(in srgb, var(--dom) 80%, #000); }
+    .vl-hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--acc); }
+    .vl-hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; }
+    .vl-kicker { display: inline-flex; gap: 8px; align-items: center; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: color-mix(in srgb, var(--acc) 70%, #fff); }
+    .vl-kicker::before { content: ""; width: 18px; height: 2px; border-radius: 2px; background: var(--acc); }
+    .vl-hero h1 { margin: 10px 0 0; font-size: clamp(22px, 2.5vw, 30px); line-height: 1.15; letter-spacing: -.025em; font-weight: 800; }
+    .vl-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .vl-chip { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 4px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); }
+    .vl-chip.plain { padding-left: 12px; }
+    .vl-chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+    .vl-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .vl-btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 13px; border: 0; font-size: 14px; font-weight: 800; cursor: pointer; transition: transform .2s, filter .2s, background .2s; }
+    .vl-btn:hover { transform: translateY(-1px); }
+    .vl-btn.ok { background: var(--acc); color: #fff; box-shadow: 0 14px 26px -14px var(--acc); }
+    .vl-btn.no { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.22); }
+    .vl-btn.no:hover { background: color-mix(in srgb, var(--danger) 35%, transparent); border-color: transparent; }
+    /* jauge d'exécution validée */
+    .vl-ring { position: relative; width: 132px; height: 132px; }
+    .vl-ring svg { width: 132px; height: 132px; transform: rotate(-90deg); }
+    .vl-ring circle.v { transition: stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1); }
+    .vl-ring div { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .vl-ring b { font-size: 28px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+    .vl-ring span { font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.7); margin-top: 4px; }
+    .vl-pond { margin-top: 8px; text-align: center; font-size: 12px; color: rgba(255,255,255,.75); font-weight: 600; }
+
+    /* ---------- Courbe ---------- */
+    .vl-chart { background: #fff !important; border: 1px solid var(--line) !important; border-radius: 20px !important; box-shadow: 0 1px 2px rgba(16,24,40,.05) !important; }
+    .vl-chart > div:first-child { background: transparent !important; border-color: #eef1f4 !important; padding: 16px 20px !important; }
+    .vl-chart > div:last-child { padding: 8px 12px 4px !important; }
+    .vl-chart h5 { color: var(--ink) !important; text-transform: none !important; letter-spacing: -.01em !important; font-size: 15px !important; font-weight: 800 !important; }
+    .vl-chart .animate-pulse { animation: none !important; background: var(--acc) !important; }
+    .vl-legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); font-weight: 600; flex-wrap: wrap; }
+    .vl-legend span:first-child::before { height: 3px; border-radius: 2px; width: 16px; }
+    .vl-legend span { display: inline-flex; gap: 6px; align-items: center; } .vl-legend span::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
+
+    /* ---------- Formulaires (onglets) ---------- */
+    .vl-ds-title { margin: 4px 0 10px; font-size: 15px; font-weight: 800; color: var(--ink); display: flex; gap: 10px; align-items: baseline; } .vl-ds-title span { font-size: 12px; color: var(--muted); }
+    .vl-ds { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px !important; }
+    .vl-ds a { border-radius: 14px !important; padding: 12px 14px !important; gap: 10px; border-color: var(--line) !important; color: var(--ink) !important; transition: transform .2s, border-color .2s, box-shadow .2s !important; }
+    .vl-ds a svg { width: 34px !important; height: 34px !important; padding: 7px; margin: 0 !important; border-radius: 10px; background: color-mix(in srgb, var(--dom) 10%, #fff); color: var(--dom); flex-shrink: 0; }
+    .vl-ds a:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--dom) 35%, var(--line)) !important; box-shadow: 0 14px 26px -20px var(--dom) !important; }
+    .vl-ds li:first-child a { border-color: var(--dom) !important; box-shadow: inset 0 0 0 1px var(--dom) !important; }
+
+    /* ---------- Fiche (RACI + fichiers) ---------- */
+    .vl-sheet { border-radius: 22px !important; border: 1px solid var(--line) !important; box-shadow: 0 1px 2px rgba(16,24,40,.05) !important; }
+    .vl-sheet .md\:w-5\/12 { background: #fbfcfd !important; border-color: #eef1f4 !important; }
+    .vl-sheet .md\:w-7\/12 { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+    .vl-sheet h5 { color: var(--ink) !important; }
+    .vl-sheet .text-blue-600 { color: var(--dom) !important; }
+    .vl-sheet .bg-green-500 { background: var(--ok) !important; } .vl-sheet .text-green-600 { color: var(--ok) !important; }
+    .vl-sheet .group:hover { border-color: color-mix(in srgb, var(--dom) 35%, var(--line)) !important; }
+    .vl-sheet .bg-blue-50 { background: color-mix(in srgb, var(--dom) 10%, #fff) !important; color: var(--dom) !important; }
+
+    /* ---------- Historique : frise ---------- */
+    .vl-hist-wrap { background: transparent !important; padding-left: 0 !important; padding-right: 0 !important; min-height: 0 !important; }
+    .vl-hist-wrap h2 { font-size: 18px !important; font-weight: 800 !important; }
+    .vl-hist-wrap > div:first-child button:not([onclick]) { border-radius: 12px !important; }
+    .vl-hist-wrap > div:first-child button[onclick] { display: none !important; }           /* les actions sont dans l'en-tête */
+    .vl-filter { display: none; margin: -8px 0 14px; } .vl-filter.on { display: flex; gap: 8px; flex-wrap: wrap; }
+    .vl-filter input { flex: 1; min-width: 220px; height: 42px; border: 1px solid #D0D5DD; border-radius: 12px; padding: 0 14px; font-size: 14px; outline: none; }
+    .vl-filter input:focus { border-color: var(--dom); box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 12%, transparent); }
+    .vl-filter button { height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: #fff; font-size: 13px; font-weight: 700; color: #344054; cursor: pointer; }
+    .vl-filter button.on { background: var(--dom); color: #fff; border-color: var(--dom); }
+    .vl-hist { border-radius: 20px !important; border-color: var(--line) !important; }
+    .vl-hist thead tr { background: #fbfcfd !important; }
+    .vl-hist tbody tr { transition: background .2s; } .vl-hist tbody tr:hover { background: color-mix(in srgb, var(--dom) 3%, #fff) !important; }
+    .vl-hist td:first-child { position: relative; padding-left: 44px !important; }
+    .vl-hist td:first-child::before { content: ""; position: absolute; left: 22px; top: 0; bottom: 0; width: 2px; background: #eef1f4; }
+    .vl-hist td:first-child::after { content: ""; position: absolute; left: 17px; top: 22px; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid var(--tone, var(--dom)); }
+    .vl-role { display: inline-flex !important; width: fit-content; max-width: 100%; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; background: color-mix(in srgb, var(--tone, var(--dom)) 10%, #fff); color: color-mix(in srgb, var(--tone, var(--dom)) 85%, #000) !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; }
+    .vl-role i { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 11px; font-weight: 800; color: #fff; background: var(--tone, var(--dom)); }
+    .vl-hist td p { font-size: 13px !important; color: #344054 !important; }
+    .vl-hist .bg-blue-50 { background: color-mix(in srgb, var(--dom) 8%, #fff) !important; color: var(--dom) !important; }
+
+    /* ---------- Fenêtre de validation ---------- */
+    #monModalPonderation:not([open]) { display: none !important; }        /* fermée = vraiment absente (elle bloquait les clics) */
+    #monModalPonderation { border-radius: 24px !important; }
+    #monModalPonderation::backdrop { background: rgba(15,27,45,.55); backdrop-filter: blur(3px); }
+    #monModalPonderation form > div:first-of-type { background: var(--dom) !important; position: relative; }
+    #monModalPonderation form > div:first-of-type::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--acc); }
+    #opera_valider_title { color: #fff !important; }
+    .vl-x { position: absolute; right: 18px; top: 18px; width: 38px; height: 38px; border-radius: 12px; border: 0; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; z-index: 2; transition: background .2s, transform .2s; }
+    .vl-x:hover { background: rgba(255,255,255,.22); transform: rotate(90deg); }
+    #monModalPonderation form > div:first-of-type > i { margin-right: 46px; }
+    #financement-container .space-y-4 > div { border-radius: 16px !important; background: #fff !important; transition: border-color .2s, box-shadow .2s, background .2s !important; }
+    #financement-container .space-y-4 > div:has(input[type=checkbox]:checked) { border-color: var(--dom) !important; background: color-mix(in srgb, var(--dom) 4%, #fff) !important; box-shadow: 0 10px 20px -16px var(--dom) !important; }
+    #financement-container input[type=checkbox] { accent-color: var(--dom); width: 18px; height: 18px; }
+    #financement-container .text-emerald-600 { color: var(--ok) !important; }
+    #financement-container .bg-slate-900 { background: var(--dom) !important; border-radius: 16px !important; }
+    #montant-total.bump { animation: vlBump .4s ease; } @keyframes vlBump { 40% { transform: scale(1.06); } }
+    .vl-gap { display: none; margin-top: 8px; font-size: 12px; font-weight: 700; } .vl-gap.on { display: flex; gap: 6px; align-items: center; }
+    .vl-gap.over { color: var(--danger); } .vl-gap.under { color: var(--muted); }
+    #monModalPonderation input, #monModalPonderation select, #monModalPonderation textarea { border-radius: 12px !important; }
+    #monModalPonderation input:focus, #monModalPonderation select:focus, #monModalPonderation textarea:focus { border-color: var(--dom) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 12%, transparent) !important; --tw-ring-shadow: 0 0 #0000 !important; }
+    #monModalPonderation select[name=niveau] { position: absolute; opacity: 0; pointer-events: none; height: 0; padding: 0 !important; }
+    #monModalPonderation select[name=niveau] + div { display: none; }
+    .vl-seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; border-radius: 12px; background: #f2f4f7; }
+    .vl-seg button { border: 0; background: transparent; border-radius: 9px; padding: 9px 0; font-size: 12px; font-weight: 800; color: var(--muted); cursor: pointer; transition: background .2s, color .2s; }
+    .vl-seg button.on { background: #fff; color: var(--dom); box-shadow: 0 4px 10px -6px rgba(16,24,40,.4); }
+    .vl-seg-l { margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--muted); }
+    #monModalPonderation button[type=submit] { background: var(--acc) !important; border-radius: 13px !important; box-shadow: 0 14px 26px -14px var(--acc) !important; }
+    #monModalPonderation button[type=submit]:disabled { opacity: .7; cursor: wait; }
+
+    /* ---------- Fenêtre de rejet ---------- */
+    #annulerOperModal:not(.hidden) > div { animation: vlPop .28s cubic-bezier(.2,.9,.3,1.2) both; transform: none !important; }
+    @keyframes vlPop { from { opacity: 0; transform: scale(.94); } }
+    #annulerOperModal > div { border-radius: 22px !important; }
+    #annulerOperModal .bg-red-100 { background: color-mix(in srgb, var(--danger) 12%, #fff) !important; color: var(--danger) !important; }
+    #annulerOperModal button[type=submit] { background: var(--danger) !important; box-shadow: none !important; }
+    #annulerOperModal button[type=submit]:disabled { opacity: .5; cursor: not-allowed; }
+    .vl-count { text-align: right; font-size: 11px; color: #98a2b3; font-weight: 600; margin-top: 6px; }
+
+    /* ---------- Disposition : contenu + panneau latéral ---------- */
+    .vl-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto auto 1fr; grid-template-areas: "chart side" "ds side" "hist side"; gap: 0 22px; align-items: start; }
+    .vl-dc { display: contents !important; }
+    .vl-a-chart { grid-area: chart; margin: 0 0 18px !important; }
+    .vl-a-ds { grid-area: ds; margin: 0 0 18px !important; }
+    .vl-a-hist { grid-area: hist; }
+    .vl-a-side { grid-area: side; position: sticky; top: 16px; align-self: start; }
+    .vl-hist-wrap { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+    .vl-ds { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    /* fiche empilée dans le panneau */
+    .vl-sheet > .flex { flex-direction: column; }
+    .vl-sheet .md\:w-5\/12, .vl-sheet .md\:w-7\/12 { width: 100% !important; border-right: 0 !important; }
+    .vl-sheet .md\:w-5\/12 { border-top: 1px solid #eef1f4 !important; }
+    .vl-sheet .md\:w-5\/12 > div:first-child { padding: 16px 20px 10px !important; }
+    .vl-sheet .md\:w-5\/12 > div:first-child p { display: none; }                       /* nom déjà dans l'en-tête */
+    .vl-sheet .md\:w-5\/12 > div:last-child { padding: 0 20px 18px !important; }
+    .vl-sheet .md\:w-5\/12 > div:last-child > div:first-child { margin-bottom: 0 !important; box-shadow: none !important; }
+    .vl-sheet .md\:w-5\/12 > div:last-child > div:last-child { display: none; }          /* pondération / exécution : déjà dans l'en-tête */
+    .vl-sheet .md\:w-7\/12 > div:first-child { padding: 16px 20px 6px !important; border: 0 !important; }
+    .vl-sheet .md\:w-7\/12 > div:first-child h5 { font-size: 15px !important; }
+    .vl-sheet .md\:w-7\/12 > div:first-child p { font-size: 12px !important; }
+    .vl-sheet .md\:w-7\/12 > div:last-child { padding: 8px 20px 18px !important; background: transparent !important; }
+    .vl-sheet .md\:w-7\/12 .group { padding: 10px !important; }
+    .vl-sheet .md\:w-7\/12 .text-center.py-8 { padding: 14px !important; border: 1px dashed #d0d5dd; border-radius: 12px; }
+
+    /* panneau de décision */
+    .vl-decide { padding: 20px; border-bottom: 1px solid #eef1f4; }
+    .vl-decide h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--ink); }
+    .vl-decide p { margin: 4px 0 14px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+    .vl-decide .vl-btn { width: 100%; justify-content: center; }
+    .vl-decide .vl-btn + .vl-btn { margin-top: 8px; }
+    .vl-decide .vl-btn.no { background: #fff; color: color-mix(in srgb, var(--danger) 85%, #000); border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--line)); }
+    .vl-decide .vl-btn.no:hover { background: color-mix(in srgb, var(--danger) 7%, #fff); }
+    .vl-steps { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+    .vl-steps li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #344054; font-weight: 600; }
+    .vl-steps li::before { content: attr(data-n); width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 800; background: color-mix(in srgb, var(--dom) 10%, #fff); color: var(--dom); }
+
+    /* indicateurs de l'en-tête */
+    .vl-kpis { display: flex; flex-wrap: wrap; gap: 0; margin-top: 18px; border-top: 1px solid rgba(255,255,255,.12); padding-top: 14px; }
+    .vl-kpis div { padding: 0 22px; border-left: 1px solid rgba(255,255,255,.12); } .vl-kpis div:first-child { padding-left: 0; border-left: 0; }
+    .vl-kpis b { display: block; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .vl-kpis span { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.62); text-transform: uppercase; letter-spacing: .08em; }
+
+    @media (max-width: 1100px) {
+        .vl-layout { grid-template-columns: 1fr; grid-template-rows: auto; grid-template-areas: "side" "chart" "ds" "hist"; }
+        .vl-a-side { position: static; margin-bottom: 18px; }
+    }
+    @media (max-width: 800px) { .vl-hero-grid { grid-template-columns: 1fr; } .vl-ring { margin: 0 auto; } }
+    @media (prefers-reduced-motion: reduce) { .vl-in, #annulerOperModal > div { animation: none !important; } }
+</style>
+<div class="vl">
+<!-- ===== En-tête de validation (ajout) ===== -->
+<section class="vl-hero vl-in" aria-labelledby="vlTitre">
+    <div class="vl-hero-grid">
+        <div>
+            <span class="vl-kicker">Validation du rapport</span>
+            <h1 id="vlTitre">{{ operation.nom }}</h1>
+            <div class="vl-chips">
+                <span class="vl-chip"><img src="{% if operation.personnel.photo %}{{ operation.personnel.photo.url }}{% else %}{% static 'version/images.jpeg' %}{% endif %}" alt="">{{ operation.personnel }}</span>
+                <span class="vl-chip plain"><i class="fa-solid fa-scale-balanced"></i>Pondération {{ operation.ponderation }} %</span>
+                {% if operation.code %}<span class="vl-chip plain" style="font-family:ui-monospace,monospace"><i class="fa-solid fa-hashtag"></i>{{ operation.code }}</span>{% endif %}
+            </div>
+            <div class="vl-kpis">
+                <div><b>{{ data_operations|length }}</b><span>Formulaire{{ data_operations|length|pluralize }}</span></div>
+                <div><b>{{ rapport_fichier|length }}</b><span>Pièce{{ rapport_fichier|length|pluralize }} jointe{{ rapport_fichier|length|pluralize }}</span></div>
+                <div><b>{{ operation_historic|length }}</b><span>Échange{{ operation_historic|length|pluralize }} RACI</span></div>
+            </div>
+        </div>
+        <div>
+            <div class="vl-ring" aria-label="Exécution validée : {{ operation.niveau_execution_valide }} %">
+                <svg viewBox="0 0 132 132"><circle cx="66" cy="66" r="56" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="12"/><circle class="v" id="vlRing" cx="66" cy="66" r="56" fill="none" stroke="var(--acc)" stroke-width="12" stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="351.86" data-v="{{ operation.niveau_execution_valide|default:0 }}"/></svg>
+                <div><b>{{ operation.niveau_execution_valide|default:0 }}%</b><span>validé</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="vl-layout">
 {% if request.user.personnel.is_process %}
-<div class="w-full my-6">
-    <div class="bg-slate-800 border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+<div class="w-full my-6 vl-a-chart">
+    <div class="bg-slate-800 border border-gray-200 rounded-2xl shadow-sm overflow-hidden vl-chart vl-in">
         
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
             <div class="flex items-center gap-3">
                 <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
                 <h5 class="text-base font-bold text-gray-800 uppercase tracking-wide">Suivi des Transactions</h5>
             </div>
+            <div class="vl-legend"><span style="--c:var(--dom)">Prévisionnel</span><span style="--c:var(--acc)">Déclarées</span><span style="--c:var(--ok)">Validées</span></div>
            
         </div>
 
@@ -26,10 +223,11 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<div class="flex flex-wrap">
-    <div class="w-full">
-        <div class="my-3">
-            <ul class="flex flex-col md:flex-row mb-3 gap-2 list-none">
+<div class="flex flex-wrap vl-dc">
+    <div class="w-full vl-dc">
+        <div class="my-3 vl-a-ds">
+            {% if data_operations %}<h2 class="vl-ds-title">Données soumises <span>{{ data_operations|length }} formulaire{{ data_operations|length|pluralize }}</span></h2>{% endif %}
+            <ul class="flex flex-col md:flex-row mb-3 gap-2 list-none vl-ds">
                 {% for data_operation in data_operations %}
                 <li class="nav-item">
                     <a class="flex items-center px-4 py-2 bg-white border shadow-sm rounded-xl transition-all duration-300 ease-in-out {% if forloop.first %}border-blue-600 text-blue-600{% else %}border-gray-200 text-gray-700{% endif %}" 
@@ -42,7 +240,18 @@
             </ul>
         </div>
 
-        <div class="shadow-lg rounded-[20px] overflow-hidden bg-white border-0">
+        <div class="shadow-lg rounded-[20px] overflow-hidden bg-white border-0 vl-sheet vl-in vl-a-side">
+            <div class="vl-decide">
+                <h3>Votre décision</h3>
+                <p>Examinez les données soumises et les pièces, puis statuez. La personne informée recevra votre retour.</p>
+                <button type="button" class="vl-btn ok" onclick="openModal()"><i class="fa-solid fa-circle-check"></i>Valider la tâche</button>
+                <button type="button" class="vl-btn no" onclick="openModalInvalid()"><i class="fa-solid fa-xmark"></i>Rejeter avec motif</button>
+                <ol class="vl-steps" aria-label="Étapes de vérification">
+                    <li data-n="1">Ouvrir les formulaires soumis</li>
+                    <li data-n="2">Contrôler les pièces jointes</li>
+                    <li data-n="3">Confirmer les montants par source</li>
+                </ol>
+            </div>
             <div class="flex flex-wrap">
                 <div class="w-full md:w-5/12 border-r bg-gray-50/50">
     <div class="pt-4 px-6 pb-4">
@@ -133,7 +342,7 @@
     </div>
 </div>
  
-        <div class="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+        <div class="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen vl-hist-wrap vl-a-hist">
   <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
       <h2 class="text-xl font-bold text-gray-900 tracking-tight">Historique RACI & Transactions</h2>
@@ -158,7 +367,11 @@
     </div>
   </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+<div class="vl-filter" id="vlFilter">
+    <input type="search" id="vlFilterQ" placeholder="Rechercher dans l'historique (commentaire, rôle, date)…" autocomplete="off" aria-label="Rechercher dans l'historique">
+    <button type="button" data-r="">Tous</button><button type="button" data-r="R">R</button><button type="button" data-r="A">A</button><button type="button" data-r="C">C</button><button type="button" data-r="I">I</button>
+</div>
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden vl-hist">
   <div class="overflow-x-auto">
     <table class="w-full text-left border-collapse">
       <thead>
@@ -187,7 +400,7 @@
           <td class="px-6 py-4">
             <div class="flex flex-col">
               
-              <span class="text-[11px] text-indigo-600 font-semibold uppercase tracking-wide mt-0.5">Auteur : {{ historic.m_role }}</span>
+              <span class="text-[11px] text-indigo-600 font-semibold uppercase tracking-wide mt-0.5 vl-role" data-role="{{ historic.m_role }}">Auteur : {{ historic.m_role }}</span>
             </div>
           </td>
           
@@ -201,7 +414,7 @@
               {% endif %}
             </p>
             {% if historic.file %}
-            <a href="#" class="inline-flex items-center gap-1.5 px-2.5 py-1 mt-2 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
+            <a href="{% if historic.file.url %}{{ historic.file.url }}{% else %}#{% endif %}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-2.5 py-1 mt-2 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
               {{ historic.file }}
             </a>
@@ -222,7 +435,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="px-6 py-12 text-center text-gray-400 text-sm">
+          <td colspan="4" class="px-6 py-12 text-center text-gray-400 text-sm">
             Aucun historique d'opération disponible pour le moment.
           </td>
         </tr>
@@ -232,6 +445,8 @@
   </div>
 </div>
 </div>
+</div>{# fin .vl-layout #}
+</div>{# fin .vl #}
 
 
 <style>
@@ -265,6 +480,7 @@
                 <h3 id="opera_valider_title" class="text-xl font-bold text-amber-400 mt-1"></h3>
             </div>
             <i class="fas fa-check-double text-4xl opacity-20"></i>
+            <button type="button" class="vl-x" onclick="closeModalPonderation()" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
         </div>
         
         <input type="hidden" id="opera_valider_id" name="opera_valider_id" value="{{operation.id}}">
@@ -409,7 +625,8 @@
                 <textarea name="opera_invalider_comment" 
                           class="w-full h-32 p-4 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all" 
                           placeholder="Motif du rejet..." 
-                          required></textarea>
+                          required minlength="10" maxlength="2000"></textarea>
+                <p class="vl-count" id="vlRejCount">0 / 10 caractères minimum</p>
             </div>
             <input type="hidden" name="opera_invalider_id" value="{{operation.id}}"/>
             <div class="p-6 pt-0 flex gap-3">
@@ -668,5 +885,115 @@ document.addEventListener('DOMContentLoaded', function() {
     // Calcul initial au chargement de la page
     calculateTotal();
 });
+</script>
+<!-- ===================== VALIDATION D'OPÉRATION : interactions (ajout) ===================== -->
+<script>
+(function () {
+    function $(id) { return document.getElementById(id); }
+    var fmt = function (n) { return (isNaN(n) ? 0 : n).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+
+    /* jauge d'exécution validée */
+    var ring = $('vlRing'); if (ring) setTimeout(function () { var v = Math.max(0, Math.min(100, parseFloat(ring.dataset.v) || 0)); ring.style.strokeDashoffset = 351.86 * (1 - v / 100); ring.style.stroke = v >= 100 ? 'var(--ok)' : 'var(--acc)'; }, 250);
+
+    /* titre de la fenêtre de validation (il était vide) */
+    var t = $('opera_valider_title'), h = $('vlTitre'); if (t && h && !t.textContent.trim()) t.textContent = h.textContent.trim();
+
+    /* historique : couleur et initiale du rôle RACI */
+    var TONES = { R: 'var(--dom)', A: 'var(--acc)', C: 'var(--ok)', I: '#64748b' };
+    document.querySelectorAll('.vl-role').forEach(function (el) {
+        var r = (el.dataset.role || '').trim(), k = r.charAt(0).toUpperCase(); if (!TONES[k]) k = 'R';
+        var row = el.closest('tr'); row.style.setProperty('--tone', TONES[k]); row.dataset.r = k;
+        el.innerHTML = '<i aria-hidden="true">' + k + '</i>'; el.appendChild(document.createTextNode(r || 'Acteur'));
+    });
+
+    /* bouton « Filtrer » : recherche + filtre par rôle */
+    var fbtn = document.querySelector('.vl-hist-wrap > div:first-child button:not([onclick])'), fz = $('vlFilter'), q = $('vlFilterQ'), role = '';
+    function norm(x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+    function applyF() {
+        var s = norm(q.value.trim());
+        document.querySelectorAll('.vl-hist tbody tr').forEach(function (tr) { if (!tr.dataset.r) return;
+            tr.style.display = (!s || norm(tr.textContent).indexOf(s) > -1) && (!role || tr.dataset.r === role) ? '' : 'none'; });
+        fz.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.r === role); });
+    }
+    if (fbtn && fz) {
+        fbtn.addEventListener('click', function () { fz.classList.toggle('on'); if (fz.classList.contains('on')) q.focus(); });
+        q.addEventListener('input', applyF); fz.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { role = b.dataset.r; applyF(); }); });
+        applyF();
+    }
+
+    /* fenêtre de validation : niveau en boutons, écart déclaré / validé, total animé, envoi unique */
+    var dlg = $('monModalPonderation');
+    if (dlg) {
+        var sel = dlg.querySelector('select[name=niveau]');
+        if (sel) {
+            var seg = document.createElement('div'); seg.className = 'vl-seg'; seg.setAttribute('role', 'radiogroup'); seg.setAttribute('aria-label', "Niveau d'exécution");
+            var lab = document.createElement('p'); lab.className = 'vl-seg-l';
+            [].slice.call(sel.options).reverse().forEach(function (o) {
+                var b = document.createElement('button'); b.type = 'button'; b.textContent = o.value + '%'; b.dataset.v = o.value; b.setAttribute('role', 'radio');
+                b.addEventListener('click', function () { sel.value = o.value; sel.dispatchEvent(new Event('change', { bubbles: true })); }); seg.appendChild(b);
+            });
+            sel.parentNode.parentNode.appendChild(seg); sel.parentNode.parentNode.appendChild(lab);
+            var paint = function () { seg.querySelectorAll('button').forEach(function (b) { var on = b.dataset.v === sel.value; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+                lab.textContent = sel.options[sel.selectedIndex].text; };
+            sel.addEventListener('change', paint); paint();
+        }
+        /* écart avec le montant déclaré par le responsable */
+        dlg.querySelectorAll('#financement-container .space-y-4 > div').forEach(function (card) {
+            var inp = card.querySelector('.montant-input'); if (!inp) return;
+            var decl = card.querySelector('.text-emerald-600'), dv = decl ? parseFloat(decl.textContent.replace(/[^\d,.-]/g, '').replace(/\s/g, '').replace(',', '.')) : NaN;
+            var gap = document.createElement('p'); gap.className = 'vl-gap'; inp.parentNode.parentNode.appendChild(gap);
+            inp.addEventListener('input', function () {
+                var v = parseFloat(inp.value); if (isNaN(v) || isNaN(dv) || v === dv) { gap.className = 'vl-gap'; return; }
+                gap.className = 'vl-gap on ' + (v > dv ? 'over' : 'under');
+                gap.innerHTML = '<i class="fa-solid ' + (v > dv ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down') + '"></i>' + (v > dv ? 'Supérieur' : 'Inférieur') + ' de ' + fmt(Math.abs(v - dv)) + ' au montant déclaré';
+            });
+        });
+        var tot = $('montant-total'), last = '';
+        dlg.addEventListener('input', function () { setTimeout(function () { if (tot && tot.value !== last) { last = tot.value; tot.classList.remove('bump'); void tot.offsetWidth; tot.classList.add('bump'); } }, 0); });
+        var f = dlg.querySelector('form');
+        f.addEventListener('submit', function (e) {
+            var manque = [].filter.call(dlg.querySelectorAll('input[name=source_financement]:checked'), function (c) { var i = $('montant-' + c.dataset.id); return i && i.value === ''; });
+            if (manque.length) { e.preventDefault(); $('montant-' + manque[0].dataset.id).focus(); return; }
+            var b = f.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Validation en cours…';
+        });
+        dlg.addEventListener('cancel', function (e) { e.preventDefault(); if (typeof closeModalPonderation === 'function') closeModalPonderation(); });   // Échap avec l'animation
+    }
+
+    /* fenêtre de rejet : motif obligatoire (10 caractères), Échap et clic à côté pour fermer */
+    var rej = $('annulerOperModal');
+    if (rej) {
+        var ta = rej.querySelector('textarea'), cnt = $('vlRejCount'), sb = rej.querySelector('button[type=submit]');
+        var upd = function () { var n = ta.value.trim().length; cnt.textContent = n + (n < 10 ? ' / 10 caractères minimum' : ' caractères'); sb.disabled = n < 10; };
+        ta.addEventListener('input', upd); upd();
+        rej.addEventListener('click', function (e) { if (e.target === rej && typeof closemodalInvalide === 'function') closemodalInvalide(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !rej.classList.contains('hidden') && typeof closemodalInvalide === 'function') closemodalInvalide(); });
+        rej.querySelector('form').addEventListener('submit', function () { sb.disabled = true; sb.textContent = 'Envoi…'; });
+        new MutationObserver(function () { if (!rej.classList.contains('hidden')) setTimeout(function () { ta.focus(); }, 50); }).observe(rej, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    /* points sans donnée (mois à venir) : laissés vides au lieu d'afficher un faux 0 % */
+    if (typeof cleanSeries === 'function') cleanSeries = function (arr) { return (arr || []).map(function (v) { return v === null || v === '' ? null : Number(v); }); };
+
+    /* courbe : version claire aux couleurs du thème, hauteur raisonnable */
+    try {
+        if (typeof chart !== 'undefined' && chart && chart.updateOptions) {
+            var root = document.querySelector('.vl'), cv = document.createElement('canvas').getContext('2d');
+            var col = function (v, d) { var c = getComputedStyle(root).getPropertyValue(v).trim(); if (!c) return d; cv.fillStyle = d; cv.fillStyle = c; return cv.fillStyle; };
+            var C = [col('--dom', '#123A37'), col('--acc', '#E48B0C'), col('--ok', '#2A8A7D')];
+            chart.updateOptions({
+                chart: { height: 340, foreColor: '#667085', fontFamily: 'inherit' },
+                colors: C, legend: { show: false },
+                stroke: { width: [3, 0, 0], curve: 'smooth', dashArray: [6, 0, 0] },
+                markers: { size: [0, 7, 7], strokeWidth: 2, strokeColors: '#fff', hover: { sizeOffset: 2 } },
+                grid: { borderColor: '#eef1f4', strokeDashArray: 4, padding: { left: 8, right: 8 } },
+                yaxis: { min: 0, max: 100, tickAmount: 4, labels: { formatter: function (v) { return Math.round(v) + ' %'; } } },
+                tooltip: { theme: 'light', y: { formatter: function (v) { return v == null ? '—' : v + ' %'; } } },
+                noData: { text: 'Chargement des transactions…', style: { color: '#98a2b3' } }
+            }, false, false);
+        }
+    } catch (e) { /* graphique absent (accès non process) : rien à faire */ }
+
+    document.querySelectorAll('.vl-in').forEach(function (el, i) { el.style.animationDelay = Math.min(i * 80, 400) + 'ms'; });
+})();
 </script>
 {% endblock %}

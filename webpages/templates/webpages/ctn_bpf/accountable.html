@@ -1,10 +1,83 @@
 {% extends './index.html' %}
 {% block main %}
+<!-- ===================== FILE DE VALIDATION : design (ajout) ===================== -->
+<style>
+    .vq { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: var(--sbx-ok, #2A8A7D); --warn: var(--sbx-warn, #E48B0C); --danger: var(--sbx-danger, #E35A33);
+          --ink: #0b1220; --muted: #667085; --line: #e4e8ee; padding-top: 22px !important; }
+    .vq .animate-ping, .vq .animate-pulse { animation: none !important; }
+    .vq .animate-ping { display: none; }
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    /* en-tête */
+    .vq-head { border: 0 !important; padding: 24px 26px !important; border-radius: 22px; background: var(--dom); color: #fff; position: relative; overflow: hidden; align-items: flex-start !important; }
+    .vq-head::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--acc); }
+    .vq-head .text-indigo-600 { color: color-mix(in srgb, var(--acc) 70%, #fff) !important; font-family: inherit !important; letter-spacing: .14em !important; }
+    .vq-head .bg-indigo-600 { background: var(--acc) !important; }
+    .vq-head h1 { color: #fff !important; font-size: clamp(22px, 2.4vw, 28px) !important; font-weight: 800 !important; letter-spacing: -.025em !important; margin-top: 6px; }
+    .vq-head h1 + p { color: rgba(255,255,255,.7) !important; font-size: 13px !important; }
+    .vq-head > div:last-child { display: none; }                  /* remplacé par les indicateurs */
+    .vq-stats { display: flex; gap: 0; margin-top: 16px; }
+    .vq-stats div { padding: 0 20px; border-left: 1px solid rgba(255,255,255,.14); } .vq-stats div:first-child { padding-left: 0; border-left: 0; }
+    .vq-stats b { display: block; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+    .vq-stats span { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.62); }
+    .vq-stats .late.on b { color: color-mix(in srgb, var(--danger) 55%, #fff); }
+
+    /* barre d'outils */
+    .vq-tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 18px !important; }
+    .vq-search { position: relative; flex: 1; min-width: 240px; }
+    .vq-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: #98a2b3; }
+    .vq-search input { width: 100%; height: 44px; border: 1px solid #D0D5DD; border-radius: 13px; padding: 0 14px 0 40px; font-size: 14px; background: #fff; outline: none; transition: border-color .2s, box-shadow .2s; }
+    .vq-search input:focus { border-color: var(--dom); box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 12%, transparent); }
+    .vq-tabs { display: inline-flex; padding: 4px; gap: 2px; border-radius: 13px; background: #fff; border: 1px solid var(--line); }
+    .vq-tabs button { border: 0; background: transparent; height: 34px; padding: 0 12px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; transition: background .2s, color .2s; }
+    .vq-tabs button em { font-style: normal; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: #f2f4f7; color: #475467; }
+    .vq-tabs button.on { background: var(--dom); color: #fff; } .vq-tabs button.on em { background: rgba(255,255,255,.18); color: #fff; }
+    .vq-sort { height: 44px; border: 1px solid var(--line); border-radius: 13px; padding: 0 12px; font-size: 13px; font-weight: 700; color: #344054; background: #fff; cursor: pointer; }
+
+    /* cartes */
+    .vq-grid { margin-top: 18px !important; gap: 16px !important; }
+    .vq-card { border-color: var(--line) !important; border-radius: 18px !important; box-shadow: 0 1px 2px rgba(16,24,40,.05) !important; cursor: pointer; --tone: var(--dom); animation: vqIn .45s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes vqIn { from { opacity: 0; transform: translateY(10px); } }
+    .vq-card:hover { transform: translateY(-3px) !important; border-color: color-mix(in srgb, var(--tone) 35%, var(--line)) !important; box-shadow: 0 22px 40px -28px color-mix(in srgb, var(--tone) 70%, #000) !important; }
+    .vq-card[data-u=late] { --tone: var(--danger); } .vq-card[data-u=soon] { --tone: var(--warn); }
+    .vq-card > div:first-child { background: var(--tone) !important; opacity: 1 !important; height: 3px !important; }
+    .vq-card > div:nth-child(2) { background: #fff !important; border-color: #f0f2f5 !important; padding: 14px 18px 12px !important; }
+    .vq-card > div:nth-child(2) { flex-wrap: wrap; gap: 6px; }
+    .vq-card > div:nth-child(2) span { white-space: nowrap; }
+    .vq-card > div:nth-child(2) > span { font-family: inherit !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 12px !important; font-weight: 700 !important; color: #344054 !important; border-radius: 999px !important; padding: 4px 10px !important; box-shadow: none !important; }
+    .vq-card > div:nth-child(2) > span i { color: var(--tone) !important; }
+    .vq-due { margin-left: 6px; padding-left: 8px; border-left: 1px solid var(--line); color: var(--muted); font-weight: 700; }
+    .vq-card[data-u=late] .vq-due { color: var(--danger); } .vq-card[data-u=soon] .vq-due { color: color-mix(in srgb, var(--warn) 85%, #000); }
+    .vq-card .text-amber-700 { color: color-mix(in srgb, var(--acc) 80%, #000) !important; background: color-mix(in srgb, var(--acc) 10%, #fff) !important; border-color: color-mix(in srgb, var(--acc) 25%, #fff) !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 11.5px !important; }
+    .vq-card .bg-amber-500 { background: var(--acc) !important; }
+    .vq-card .font-mono { font-family: inherit !important; }
+    .vq-card > div:nth-child(3) { padding: 16px 18px !important; }
+    .vq-card h6 { font-size: 15px !important; color: var(--ink) !important; font-weight: 800 !important; letter-spacing: -.01em; }
+    .vq-card:hover h6 { color: var(--dom) !important; }
+    .vq-card .w-12.h-12 { border-radius: 13px !important; background: color-mix(in srgb, var(--dom) 8%, #fff) !important; border-color: color-mix(in srgb, var(--dom) 15%, #fff) !important; }
+    .vq-card .w-12.h-12 i { color: var(--dom) !important; }
+    .vq-card .w-12.h-12 img { object-fit: contain !important; padding: 5px; background: #fff; }
+    .vq-card h6 + p { color: var(--muted) !important; }
+    .vq-prog-l { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--muted); }
+    .vq-prog-l b { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .vq-card .h-2 { height: 8px !important; padding: 0 !important; border: 0 !important; background: #f0f2f5 !important; }
+    .vq-card .h-2 > div { background: var(--ok) !important; box-shadow: none !important; transition: width 1s cubic-bezier(.2,.8,.2,1) !important; }
+    .vq-card > div:last-child { background: #fbfcfd !important; padding: 12px 18px !important; justify-content: space-between !important; }
+    .vq-card > div:last-child a { background: var(--dom) !important; box-shadow: none !important; border-radius: 11px !important; font-size: 12.5px !important; padding: 9px 14px !important; transition: background .2s, gap .2s !important; }
+    .vq-card:hover > div:last-child a { background: var(--acc) !important; gap: 10px !important; }
+    .vq-hint { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .vq-none { display: none; grid-column: 1 / -1; padding: 40px 16px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed #d0d5dd; border-radius: 18px; background: #fff; }
+    .vq-none.on { display: block; } .vq-none b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+    .vq-grid > .col-span-full { border-radius: 20px !important; }
+    .vq-grid > .col-span-full > div:first-child { background: color-mix(in srgb, var(--ok) 10%, #fff) !important; color: var(--ok) !important; border-color: transparent !important; }
+
+    @media (max-width: 700px) { .vq-stats div { padding: 0 12px; } .vq-tabs { width: 100%; overflow-x: auto; } }
+    @media (prefers-reduced-motion: reduce) { .vq-card { animation: none !important; } }
+</style>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 vq">
     
     <!-- En-tête de page ERP -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-200/80 gap-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-200/80 gap-4 vq-head">
         <div>
             <div class="flex items-center space-x-2 text-xs font-mono font-bold text-indigo-600 uppercase tracking-wider mb-1">
                 <span class="relative flex h-2 w-2">
@@ -15,6 +88,12 @@
             </div>
             <h1 class="text-3xl font-black text-slate-900 tracking-tight">Tâches en attente de validation</h1>
             <p class="text-xs text-slate-500 mt-1">Gérez et validez les opérations assignées à votre entité.</p>
+            <div class="vq-stats" aria-live="polite">
+                <div><b id="vqTotal">{{ operation_accountable|length }}</b><span>En attente</span></div>
+                <div class="late"><b id="vqLate">0</b><span>En retard</span></div>
+                <div><b id="vqWeek">0</b><span>Échéance ≤ 7 j</span></div>
+                <div><b id="vqAct">0</b><span>Action requise</span></div>
+            </div>
         </div>
         
         <div class="bg-white px-4 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs text-right">
@@ -23,10 +102,28 @@
         </div>
     </div>
 
+    {% if operation_accountable %}
+    <div class="vq-tools">
+        <label class="vq-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" id="vqQ" placeholder="Rechercher une opération ou une institution…" autocomplete="off" aria-label="Rechercher une tâche"></label>
+        <div class="vq-tabs" role="tablist" aria-label="Filtrer les tâches">
+            <button type="button" data-f="" class="on">Toutes <em id="vqCAll">0</em></button>
+            <button type="button" data-f="late">En retard <em id="vqCLate">0</em></button>
+            <button type="button" data-f="act">Action requise <em id="vqCAct">0</em></button>
+        </div>
+        <select class="vq-sort" id="vqSort" aria-label="Trier">
+            <option value="due">Échéance la plus proche</option>
+            <option value="name">Nom (A → Z)</option>
+            <option value="prog">Avancement</option>
+        </select>
+    </div>
+    {% endif %}
     <!-- Grille des cartes -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 vq-grid" id="vqGrid">
         {% for line in operation_accountable %}
-            <div class="relative bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group overflow-hidden">
+            <div class="relative bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group overflow-hidden vq-card"
+                 data-due="{{ line.date_echeance|date:'Y-m-d' }}" data-name="{{ line.nom }} {{ line.m_institution.sigle }}" data-act="{% if line.has_dataset %}1{% endif %}"
+                 data-prog="{% if line.nb_total > 0 %}{% widthratio line.nb_completed line.nb_total 100 %}{% else %}0{% endif %}">
                 
                 <!-- Liseré supérieur lumineux -->
                 <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity"></div>
@@ -35,7 +132,7 @@
                 <div class="px-5 pt-4 pb-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                     <!-- Date d'échéance -->
                     <span class="text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-wider flex items-center bg-white px-2.5 py-1 rounded-md border border-slate-200/60 shadow-2xs">
-                        <i class="far fa-calendar-alt mr-1.5 text-indigo-500"></i> {{ line.date_echeance|date:"d M Y" }}
+                        <i class="far fa-calendar-alt mr-1.5 text-indigo-500"></i> {{ line.date_echeance|date:"d M Y" }}<em class="vq-due" style="font-style:normal" hidden></em>
                     </span>
                     
                     <!-- Badge du nombre d'étapes / transactions -->
@@ -74,6 +171,7 @@
 
                     <!-- Barre de progression -->
                     <div class="space-y-1.5 pt-2 border-t border-slate-100">
+                        <div class="vq-prog-l"><span>Avancement{% if line.nb_total %} · {{ line.nb_completed|default:0 }}/{{ line.nb_total }} étapes{% endif %}</span><b>{% if line.nb_total > 0 %}{% widthratio line.nb_completed line.nb_total 100 %}{% else %}0{% endif %} %</b></div>
                         <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden p-0.5 border border-slate-200/50">
                             <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 h-full rounded-full transition-all duration-500 shadow-2xs" 
                                  style="width: {% if line.nb_total > 0 %}{% widthratio line.nb_completed line.nb_total 100 %}{% else %}0{% endif %}%">
@@ -84,6 +182,7 @@
 
                 <!-- Pied de carte (Actions) -->
                 <div class="px-5 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end">
+                    <span class="vq-hint">{% if line.has_dataset %}Données à examiner{% endif %}</span>
                     <a href="/decision/o/{{line.id}}/" 
                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-200 hover:shadow-indigo-300">
                         <span>Valider / Rejeter</span>
@@ -98,9 +197,70 @@
                 </div>
                 <h5 class="text-sm font-bold text-slate-700">Aucune tâche en attente</h5>
                 <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Il n'y a pas d'opérations assignées à afficher pour le moment.</p>
+                <p class="text-xs mt-3" style="color:var(--ok);font-weight:700">Tout est à jour.</p>
             </div>
         {% endfor %}
+        <div class="vq-none" id="vqNone"><b>Aucune tâche ne correspond</b>Modifiez la recherche ou le filtre.</div>
     </div>
 </div>
+
+<!-- ===================== FILE DE VALIDATION : interactions (ajout) ===================== -->
+<script>
+(function () {
+    var grid = document.getElementById('vqGrid'); if (!grid) return;
+    var cards = [].slice.call(grid.querySelectorAll('.vq-card'));
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var DAY = 864e5, late = 0, week = 0, act = 0;
+
+    cards.forEach(function (c, i) {
+        c.style.animationDelay = Math.min(i * 40, 400) + 'ms';
+        var d = c.dataset.due ? new Date(c.dataset.due + 'T00:00:00') : null, em = c.querySelector('.vq-due');
+        if (d && !isNaN(d)) {
+            var n = Math.round((d - today) / DAY); c.dataset.days = n;
+            c.dataset.u = n < 0 ? 'late' : (n <= 3 ? 'soon' : '');
+            em.textContent = n < 0 ? (-n) + ' j de retard' : n === 0 ? "aujourd'hui" : n === 1 ? 'demain' : 'dans ' + n + ' j';
+            em.hidden = false;
+            if (n < 0) late++; else if (n <= 7) week++;
+        } else c.dataset.days = 1e6;
+        if (c.dataset.act) act++;
+        /* toute la carte ouvre la décision (le bouton reste un vrai lien) */
+        var a = c.querySelector('a[href^="/decision/"]');
+        if (a) {
+            c.addEventListener('click', function (e) { if (e.target.closest('a')) return; if (e.ctrlKey || e.metaKey) window.open(a.href); else location.href = a.href; });
+            c.setAttribute('aria-label', (c.querySelector('h6') || {}).textContent || 'Tâche');
+        }
+    });
+    var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+    var lb = document.getElementById('vqLate'); if (lb && late) lb.parentNode.classList.add('on');
+    set('vqLate', late); set('vqWeek', week); set('vqAct', act);
+    set('vqCAll', cards.length); set('vqCLate', late); set('vqCAct', act);
+
+    var q = document.getElementById('vqQ'), sort = document.getElementById('vqSort'), none = document.getElementById('vqNone'), f = '';
+    var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+    function apply() {
+        var s = q ? norm(q.value.trim()) : '', shown = 0;
+        cards.forEach(function (c) {
+            var ok = (!s || norm(c.dataset.name).indexOf(s) > -1) && (!f || (f === 'late' ? c.dataset.u === 'late' : !!c.dataset.act));
+            c.style.display = ok ? '' : 'none'; if (ok) shown++;
+        });
+        if (none) none.classList.toggle('on', cards.length > 0 && shown === 0);
+        set('vqTotal', shown);
+    }
+    function order() {
+        var k = sort ? sort.value : 'due';
+        cards.slice().sort(function (a, b) {
+            if (k === 'name') return a.dataset.name.localeCompare(b.dataset.name, 'fr');
+            if (k === 'prog') return (+b.dataset.prog) - (+a.dataset.prog);
+            return (+a.dataset.days) - (+b.dataset.days);
+        }).forEach(function (c) { grid.insertBefore(c, none); });
+    }
+    if (q) q.addEventListener('input', apply);
+    if (sort) sort.addEventListener('change', order);
+    document.querySelectorAll('.vq-tabs button').forEach(function (b) {
+        b.addEventListener('click', function () { f = b.dataset.f; document.querySelectorAll('.vq-tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); apply(); });
+    });
+    order(); apply();
+})();
+</script>
 
 {% endblock %}

@@ -2,10 +2,79 @@
 {% load static humanize %}
 
 {% block main %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<!-- ===================== TÂCHES « INFORMÉ » : design (ajout) ===================== -->
+<style>
+    .vi { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: var(--sbx-ok, #2A8A7D); --warn: var(--sbx-warn, #E48B0C); --danger: var(--sbx-danger, #E35A33);
+          --ink: #0b1220; --muted: #667085; --line: #e4e8ee; padding-top: 22px !important; }
+    /* en-tête */
+    .vi-head { background: var(--dom) !important; border: 0 !important; border-radius: 22px !important; color: #fff; position: relative; overflow: hidden; padding: 24px 26px !important; margin-bottom: 18px !important; box-shadow: none !important; }
+    .vi-head::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--acc); }
+    .vi-head > div { align-items: flex-start !important; }
+    .vi-head .bg-sky-50 { background: rgba(255,255,255,.1) !important; color: #fff !important; border-radius: 14px !important; }
+    .vi-head h1 { color: #fff !important; font-size: clamp(21px, 2.3vw, 27px) !important; font-weight: 800 !important; letter-spacing: -.025em !important; }
+    .vi-head h1 + p { color: rgba(255,255,255,.7) !important; font-size: 13px !important; }
+    .vi-kick { display: inline-flex; gap: 8px; align-items: center; font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: color-mix(in srgb, var(--acc) 70%, #fff); margin-bottom: 6px; }
+    .vi-kick::before { content: ""; width: 18px; height: 2px; border-radius: 2px; background: var(--acc); }
+    .vi-stats { display: flex; margin-top: 16px; flex-wrap: wrap; row-gap: 10px; }
+    .vi-stats div { padding: 0 20px; border-left: 1px solid rgba(255,255,255,.14); } .vi-stats div:first-child { padding-left: 0; border-left: 0; }
+    .vi-stats b { display: block; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+    .vi-stats span { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.62); }
+    .vi-stats .late.on b { color: color-mix(in srgb, var(--danger) 55%, #fff); }
+    .vi-note { margin-top: 14px; font-size: 12.5px; color: rgba(255,255,255,.72); display: flex; gap: 8px; align-items: center; }
+    .vi-note::before { content: "i"; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; font-style: italic; background: rgba(255,255,255,.14); color: #fff; flex-shrink: 0; }
+
+    /* outils */
+    .vi-tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+    .vi-search { position: relative; flex: 1; min-width: 240px; }
+    .vi-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: #98a2b3; }
+    .vi-search input { width: 100%; height: 44px; border: 1px solid #D0D5DD; border-radius: 13px; padding: 0 14px 0 40px; font-size: 14px; background: #fff; outline: none; transition: border-color .2s, box-shadow .2s; }
+    .vi-search input:focus { border-color: var(--dom); box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 12%, transparent); }
+    .vi-tabs { display: inline-flex; padding: 4px; gap: 2px; border-radius: 13px; background: #fff; border: 1px solid var(--line); }
+    .vi-tabs button { border: 0; background: transparent; height: 34px; padding: 0 12px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; transition: background .2s, color .2s; }
+    .vi-tabs button em { font-style: normal; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: #f2f4f7; color: #475467; }
+    .vi-tabs button.on { background: var(--dom); color: #fff; } .vi-tabs button.on em { background: rgba(255,255,255,.18); color: #fff; }
+    .vi-sort { height: 44px; border: 1px solid var(--line); border-radius: 13px; padding: 0 12px; font-size: 13px; font-weight: 700; color: #344054; background: #fff; cursor: pointer; }
+
+    /* cartes */
+    .vi-grid { gap: 16px !important; }
+    .vi-card { --tone: var(--dom); position: relative; overflow: hidden; padding: 0 !important; border-color: var(--line) !important; border-radius: 18px !important; box-shadow: 0 1px 2px rgba(16,24,40,.05) !important; cursor: pointer; animation: viIn .45s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes viIn { from { opacity: 0; transform: translateY(10px); } }
+    .vi-card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--tone); }
+    .vi-card[data-u=late] { --tone: var(--danger); } .vi-card[data-u=soon] { --tone: var(--warn); }
+    .vi-card:hover { transform: translateY(-3px) !important; border-color: color-mix(in srgb, var(--tone) 35%, var(--line)) !important; box-shadow: 0 22px 40px -28px color-mix(in srgb, var(--tone) 70%, #000) !important; }
+    .vi-card > div:first-child { padding: 18px 18px 0; }
+    .vi-card > div:first-child > div:first-child { margin-bottom: 12px !important; }
+    .vi-card .bg-sky-50.rounded-full { background: color-mix(in srgb, var(--dom) 8%, #fff) !important; color: var(--dom) !important; border-color: color-mix(in srgb, var(--dom) 15%, #fff) !important; font-weight: 700 !important; }
+    .vi-card .bg-sky-500 { background: var(--dom) !important; }
+    .vi-card h3 { font-size: 15.5px !important; font-weight: 800 !important; color: var(--ink) !important; line-height: 1.35 !important; margin-bottom: 14px !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 42px; }
+    .vi-card:hover h3 { color: var(--dom) !important; }
+    .vi-due { margin-left: 8px; font-size: 11.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #f2f4f7; color: var(--muted); white-space: nowrap; }
+    .vi-card[data-u=late] .vi-due { background: color-mix(in srgb, var(--danger) 10%, #fff); color: var(--danger); }
+    .vi-card[data-u=soon] .vi-due { background: color-mix(in srgb, var(--warn) 12%, #fff); color: color-mix(in srgb, var(--warn) 80%, #000); }
+    .vi-card .space-y-2\.5 { background: transparent !important; border: 0 !important; padding: 0 !important; margin-bottom: 16px !important; }
+    .vi-card .space-y-2\.5 > div { padding: 9px 0; border-top: 1px solid #f0f2f5; margin: 0 !important; }
+    .vi-card .space-y-2\.5 > div > span:first-child { font-size: 12.5px; color: var(--muted) !important; }
+    .vi-card .space-y-2\.5 svg { color: #98a2b3 !important; }
+    .vi-card .space-y-2\.5 > div > span:last-child { font-size: 13px; font-weight: 700 !important; color: var(--ink) !important; max-width: 160px !important; display: inline-flex; align-items: center; gap: 8px; }
+    .vi-av { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #fff; background: var(--c, var(--dom)); }
+    .vi-av { font-style: normal; }
+    .vi-card > div:first-child > div:first-child > span.text-slate-400 { display: none; }   /* n° d'ordre : sans sens une fois la liste triée */
+    .vi-av + span { overflow: hidden; text-overflow: ellipsis; }
+    .vi-card > div:last-child { margin: 0 !important; padding: 12px 18px !important; background: #fbfcfd; border-color: #f0f2f5 !important; justify-content: space-between !important; align-items: center; }
+    .vi-card > div:last-child a { color: #fff !important; background: var(--dom); padding: 8px 14px; border-radius: 11px; font-size: 12.5px !important; font-weight: 800 !important; transition: background .2s, gap .2s; }
+    .vi-card:hover > div:last-child a { background: var(--acc); }
+    .vi-ro { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .vi-none { display: none; grid-column: 1 / -1; padding: 40px 16px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed #d0d5dd; border-radius: 18px; background: #fff; }
+    .vi-none.on { display: block; } .vi-none b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+    .vi-grid > .col-span-full > div { border: 1px dashed #d0d5dd !important; box-shadow: none !important; border-radius: 20px !important; }
+    .vi-grid > .col-span-full .bg-sky-50 { background: color-mix(in srgb, var(--dom) 8%, #fff) !important; color: var(--dom) !important; border-radius: 16px !important; }
+    @media (max-width: 700px) { .vi-tabs { width: 100%; overflow-x: auto; } .vi-stats div { padding: 0 12px; } }
+    @media (prefers-reduced-motion: reduce) { .vi-card { animation: none !important; } }
+</style>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 vi">
     
     <!-- En-tête de la page -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8 mb-8 border-l-4 border-l-sky-500">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8 mb-8 border-l-4 border-l-sky-500 vi-head">
         <div class="flex items-center space-x-3">
             <div class="p-3 bg-sky-50 text-sky-600 rounded-xl">
                 <!-- Icône SVG : Information / Bell -->
@@ -14,16 +83,39 @@
                 </svg>
             </div>
             <div>
+                <span class="vi-kick">Rôle RACI · Informé</span>
                 <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Tâches pour lesquelles vous êtes informé</h1>
                 <p class="text-sm text-slate-500 mt-1">Consultez ci-dessous la liste des opérations suivies à titre informatif.</p>
+                <div class="vi-stats" aria-live="polite">
+                    <div><b id="viTotal">{{ operation_informed|length }}</b><span>Suivie{{ operation_informed|length|pluralize }}</span></div>
+                    <div class="late"><b id="viLate">0</b><span>En retard</span></div>
+                    <div><b id="viWeek">0</b><span>Échéance ≤ 7 j</span></div>
+                </div>
+                <p class="vi-note">Vous êtes tenu au courant de l'avancement : aucune action n'est attendue de votre part.</p>
             </div>
         </div>
     </div>
 
+    {% if operation_informed %}
+    <div class="vi-tools">
+        <label class="vi-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" id="viQ" placeholder="Rechercher une opération ou une personne…" autocomplete="off" aria-label="Rechercher une tâche"></label>
+        <div class="vi-tabs" aria-label="Filtrer les tâches">
+            <button type="button" data-f="" class="on">Toutes <em id="viCAll">0</em></button>
+            <button type="button" data-f="late">En retard <em id="viCLate">0</em></button>
+            <button type="button" data-f="week">Cette semaine <em id="viCWeek">0</em></button>
+        </div>
+        <select class="vi-sort" id="viSort" aria-label="Trier">
+            <option value="due">Échéance la plus proche</option>
+            <option value="name">Nom (A → Z)</option>
+        </select>
+    </div>
+    {% endif %}
     <!-- Grille des tâches -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 vi-grid" id="viGrid">
         {% for operation_inform in operation_informed %}
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-md vi-card"
+                 data-due="{{ operation_inform.operation.date_echeance|date:'Y-m-d' }}" data-name="{{ operation_inform.operation.nom }} {{ operation_inform.operation.personnel|default:'' }} {{ operation_inform.operation.accountable|default:'' }}">
                 <div>
                     <!-- Badge d'état & Index -->
                     <div class="flex justify-between items-center mb-4">
@@ -31,6 +123,7 @@
                             <span class="w-1.5 h-1.5 mr-1.5 bg-sky-500 rounded-full"></span>
                             Information
                         </span>
+                        <em class="vi-due" style="font-style:normal;margin-right:auto" hidden></em>
                         <span class="text-xs font-semibold text-slate-400">#{{ forloop.counter }}</span>
                     </div>
 
@@ -86,6 +179,7 @@
 
                 <!-- Bouton d'action -->
                 <div class="pt-4 border-t border-slate-100 flex justify-end">
+                    <span class="vi-ro">Lecture seule</span>
                     <a href="{%url 'historique-tache-informed'  operation_inform.operation.id%}" class="inline-flex items-center text-sm font-medium text-sky-600 hover:text-sky-800 transition-colors">
                         Consulter
                         <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -109,7 +203,65 @@
                 </div>
             </div>
         {% endfor %}
+        <div class="vi-none" id="viNone"><b>Aucune tâche ne correspond</b>Modifiez la recherche ou le filtre.</div>
     </div>
 
 </div>
+<!-- ===================== TÂCHES « INFORMÉ » : interactions (ajout) ===================== -->
+<script>
+(function () {
+    var grid = document.getElementById('viGrid'); if (!grid) return;
+    var cards = [].slice.call(grid.querySelectorAll('.vi-card')), none = document.getElementById('viNone');
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var late = 0, week = 0, TONES = ['var(--dom)', 'var(--ok)', 'var(--acc)', '#64748b'];
+    var initials = function (t) { return t.split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join(''); };
+
+    cards.forEach(function (c, i) {
+        c.style.animationDelay = Math.min(i * 40, 400) + 'ms';
+        var d = c.dataset.due ? new Date(c.dataset.due + 'T00:00:00') : null, em = c.querySelector('.vi-due');
+        if (d && !isNaN(d)) {
+            var n = Math.round((d - today) / 864e5); c.dataset.days = n;
+            c.dataset.u = n < 0 ? 'late' : (n <= 3 ? 'soon' : '');
+            c.dataset.w = n >= 0 && n <= 7 ? '1' : '';
+            em.textContent = n < 0 ? (-n) + ' j de retard' : n === 0 ? "aujourd'hui" : n === 1 ? 'demain' : 'dans ' + n + ' j';
+            em.hidden = false;
+            if (n < 0) late++; else if (n <= 7) week++;
+        } else c.dataset.days = 1e6;
+        /* pastille d'initiales devant Responsable / Accountable */
+        c.querySelectorAll('.space-y-2\\.5 > div:not(:first-child) > span:last-child').forEach(function (v, k) {
+            var t = v.textContent.trim(); if (!t || t === 'N/A') return;
+            v.textContent = ''; var av = document.createElement('i'); av.className = 'vi-av'; av.style.setProperty('--c', TONES[k % TONES.length]); av.textContent = initials(t); av.setAttribute('aria-hidden', 'true');
+            var sp = document.createElement('span'); sp.textContent = t; v.appendChild(av); v.appendChild(sp);
+        });
+        var a = c.querySelector('a[href]');
+        if (a) c.addEventListener('click', function (e) { if (e.target.closest('a')) return; if (e.ctrlKey || e.metaKey) window.open(a.href); else location.href = a.href; });
+    });
+    var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };
+    var lb = document.getElementById('viLate'); if (lb && late) lb.parentNode.classList.add('on');
+    set('viLate', late); set('viWeek', week); set('viCAll', cards.length); set('viCLate', late); set('viCWeek', week);
+
+    var q = document.getElementById('viQ'), sort = document.getElementById('viSort'), f = '';
+    var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+    function apply() {
+        var s = q ? norm(q.value.trim()) : '', shown = 0;
+        cards.forEach(function (c) {
+            var ok = (!s || norm(c.dataset.name).indexOf(s) > -1) && (!f || (f === 'late' ? c.dataset.u === 'late' : !!c.dataset.w));
+            c.style.display = ok ? '' : 'none'; if (ok) shown++;
+        });
+        if (none) none.classList.toggle('on', cards.length > 0 && shown === 0);
+        set('viTotal', shown);
+    }
+    function order() {
+        var k = sort ? sort.value : 'due';
+        cards.slice().sort(function (a, b) { return k === 'name' ? a.dataset.name.localeCompare(b.dataset.name, 'fr') : (+a.dataset.days) - (+b.dataset.days); })
+             .forEach(function (c) { grid.insertBefore(c, none); });
+    }
+    if (q) q.addEventListener('input', apply);
+    if (sort) sort.addEventListener('change', order);
+    document.querySelectorAll('.vi-tabs button').forEach(function (b) {
+        b.addEventListener('click', function () { f = b.dataset.f; document.querySelectorAll('.vi-tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); apply(); });
+    });
+    order(); apply();
+})();
+</script>
 {% endblock %}

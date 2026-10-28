@@ -563,6 +563,40 @@
     }
     @media (max-width: 600px) { .op-fgrid { grid-template-columns: 1fr; } .op-sim, .op-form, .op-vs > div { padding: 28px; } .op-cookie { left: 12px; right: 12px; max-width: none; } }
 
+    /* ================= ESPACEMENTS RESSERRÉS ================= */
+    .op-sec { padding: 64px 0 !important; }
+    .op-sec-head { margin-bottom: 26px !important; }
+    .op-hero { padding-top: 118px !important; }
+    .op-hero::after { height: 80px !important; }
+    .op-hero-grid > div:first-child { padding-bottom: 96px !important; }
+    .op-hero .op-app { margin-bottom: 20px !important; }
+    .op-trust { margin-top: 22px !important; } .op-cta { margin-top: 24px; } .op-for { margin-top: 18px !important; }
+    .op-stat { padding: 22px 24px !important; } .op-stats .op-stats-note { padding-bottom: 12px !important; }
+    .op-roles-tabs { margin-bottom: 26px !important; }
+    .op-story-step { min-height: 0 !important; padding: 34px 0 34px 28px !important; }
+    .op-story-view { top: 110px !important; }
+    #showcase-operaplus { padding: 64px 0 !important; } #showcase-operaplus .mb-16 { margin-bottom: 32px !important; } #showcase-operaplus h2 { margin-bottom: 20px !important; } #video-desc { margin-top: 18px !important; }
+    .op-mod { padding: 26px 26px !important; }
+    .op-comm { padding: 72px 0 !important; }
+    .op-final { padding-bottom: 64px !important; }
+    .op-final-l, .op-final-r { padding: 40px !important; }
+    .op-foot { padding-top: 54px !important; } .op-foot-bottom { margin-top: 34px !important; }
+    .op-faq summary { padding: 18px 0 !important; }
+    @media (max-width: 980px) { .op-hero-grid > div:first-child { padding-bottom: 30px !important; } .op-story-step { padding: 22px 0 22px 20px !important; } }
+    @media (max-width: 600px) { .op-sec { padding: 46px 0 !important; } .op-comm { padding: 52px 0 !important; } .op-hero { padding-top: 100px !important; } }
+
+    /* ================= BADGE MEAL AFRIQUE (chiffres réels) ================= */
+    .op-meal-pill { display: inline-flex; align-items: center; gap: 10px; margin-top: 16px; padding: 6px 14px 6px 6px; border-radius: 999px; text-decoration: none;
+                    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color: #fff; font-size: 13px; font-weight: 600; transition: background .2s; }
+    .op-meal-pill:hover { background: rgba(255,255,255,.14); }
+    .op-meal-pill .ma { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #F4B860; color: #0E3B35; font-size: 10px; font-weight: 900; letter-spacing: -.02em; }
+    .op-meal-pill b { color: #F4B860; font-variant-numeric: tabular-nums; }
+    .op-card-m-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin: 16px 0 4px; }
+    .op-card-m-stats div { text-align: center; padding: 12px 6px; border-radius: 14px; background: #F4FAF8; border: 1px solid #DCEFE9; }
+    .op-card-m-stats b { display: block; font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: #0E3B35; font-variant-numeric: tabular-nums; }
+    .op-card-m-stats span { display: block; margin-top: 2px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .op-card-m-src { font-size: 11px; color: #98A2B3; font-weight: 600; text-align: right; margin: 2px 0 0; }
+
     /* ================= COMMUNAUTÉ MEAL AFRIQUE (ajout) ================= */
     .op-comm { position: relative; padding: 110px 0; background: #0E3B35; color: #fff; overflow: hidden; }
     .op-comm .op-wrap { position: relative; display: grid; grid-template-columns: 1.05fr 1fr; gap: 64px; align-items: center; }
@@ -773,6 +807,10 @@
                 <span><i class="fa-solid fa-shield-halved"></i>Données sécurisées</span>
             </div>
             <div class="op-for"><span>ONG</span><span>Projets de développement</span><span>Ministères</span><span>Bailleurs</span></div>
+            {% meal_afrique_stats as meal_st %}
+            {% if meal_st %}
+            <a href="#communaute-meal-afrique" class="op-meal-pill"><span class="ma" aria-hidden="true">MA</span>Communauté MEAL Afrique · <b>{{ meal_st.0.display }}</b> {{ meal_st.0.libelle }}</a>
+            {% endif %}
         </div>
 
         <!-- Aperçu de l'application -->
@@ -1223,7 +1261,7 @@
                 <a href="{{ MEAL_AFRIQUE }}" class="op-btn ghost" rel="noopener">Découvrir le journal</a>
             </div>
         </div>
-        <div class="op-in" aria-hidden="true">
+        <div class="op-in">
             <div class="op-card-m">
                 <span class="op-stamp">Membre<br>MEAL<br>Afrique</span>
                 <div class="op-card-m-h">
@@ -1231,6 +1269,12 @@
                     <span><b>MEAL Afrique</b><small>Journal &amp; communauté</small></span>
                     <span class="op-pill">Ouvert à tous</span>
                 </div>
+                {% if meal_st %}
+                <div class="op-card-m-stats">
+                    {% for c in meal_st|slice:":4" %}<div><b data-count="{{ c.valeur }}"{% if "+" in c.display %} data-suffix="+"{% endif %}>{{ c.display }}</b><span>{{ c.libelle }}</span></div>{% endfor %}
+                </div>
+                <p class="op-card-m-src">Chiffres réels, mis à jour automatiquement</p>
+                {% endif %}
                 <ul>
                     <li><i class="fa-solid fa-comments" style="background:#0E3B35"></i><span>Débats<small>Échangez avec vos pairs</small></span><i class="fa-solid fa-arrow-right ar"></i></li>
                     <li><i class="fa-solid fa-newspaper" style="background:var(--acc)"></i><span>Dépêches<small>L'essentiel du secteur</small></span><i class="fa-solid fa-arrow-right ar"></i></li>

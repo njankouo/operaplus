@@ -15,6 +15,9 @@ Votre views.py principal n'est PAS modifié : tout est dans cette application.
                              "conservation": "Les messages sont supprimés après 24 mois."}
        VITRINE_SECURITE = {"hebergement": "…", "sauvegardes": "…", "chiffrement": "…"}   # n'affichez que ce qui est vrai
        VITRINE_DERRIERE_PROXY = True   # seulement si le site est derrière Nginx/Cloudflare
+       # Badge MEAL Afrique (chiffres réels) — une des deux options :
+       MEAL_AFRIQUE_STATS_MODELS = {"membres": "journal.Expert", "debats": "journal.Debat"}   # même base de données
+       MEAL_AFRIQUE_STATS_URL = "https://…/api/stats-publiques/"   # autre serveur : voir meal_afrique_endpoint.py
 3. urls.py (après vos routes) :
        path("", include("vitrine.urls")),
    et SUPPRIMEZ vos anciennes routes robots.txt / sitemap.xml si vous les aviez ajoutées.

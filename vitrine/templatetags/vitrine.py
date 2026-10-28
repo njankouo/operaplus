@@ -1,5 +1,6 @@
 """Balises du site vitrine : partenaires, témoignages, actualités MEAL Afrique,
 jeton du formulaire, badge membre. Lecture seule, mises en cache, sans risque de plantage."""
+import json
 import logging
 import urllib.request
 from xml.etree import ElementTree
@@ -7,10 +8,11 @@ from xml.etree import ElementTree
 from django import template
 from django.conf import settings
 from django.core.cache import cache
+from django.apps import apps
 from django.utils.html import strip_tags
 
-from ..forms import jeton_formulaire
-from ..data import FONCTIONNALITES
+from vitrine.forms import jeton_formulaire
+from vitrine.data import FONCTIONNALITES
 
 register = template.Library()
 log = logging.getLogger(__name__)
@@ -18,7 +20,7 @@ log = logging.getLogger(__name__)
 
 @register.simple_tag
 def vitrine_partenaires():
-    from ..models import Partenaire
+    from vitrine.models import Partenaire
     try:
         return list(Partenaire.objects.filter(accord_affichage=True)[:12])
     except Exception:
@@ -28,7 +30,7 @@ def vitrine_partenaires():
 
 @register.simple_tag
 def vitrine_temoignages():
-    from ..models import Temoignage
+    from vitrine.models import Temoignage
     try:
         return list(Temoignage.objects.filter(publie=True, accord_publication=True)[:3])
     except Exception:
@@ -87,3 +89,60 @@ def est_membre_meal(user):
         return bool(user and user.is_authenticated and hasattr(user, "membre_meal_afrique"))
     except Exception:
         return False
+
+
+def _arrondi(n):
+    if n >= 1000:
+        return f"{(n // 100) * 100:,}".replace(",", "\u202f") + "+"
+    if n >= 100:
+        return f"{(n // 10) * 10}+"
+    if n >= 20:
+        return f"{(n // 5) * 5}+"
+    return str(n)
+
+
+@register.simple_tag
+def meal_afrique_stats():
+    """Chiffres RÉELS de la communauté MEAL Afrique, pour le badge.
+    Sources (la première disponible est utilisée), tout est mis en cache 30 min :
+      1. settings.MEAL_AFRIQUE_STATS_MODELS : comptage direct si MEAL Afrique partage la même base
+         ex. {"membres": "journal.Expert", "debats": "journal.Debat", "articles": "journal.Actualite"}
+      2. settings.MEAL_AFRIQUE_STATS_URL : adresse HTTPS qui renvoie {"membres": 1234, "debats": 56, ...}
+         (voir vitrine/meal_afrique_endpoint.py à installer côté MEAL Afrique)
+    En plus, toujours : le nombre de comptes OperaPlus membres de la communauté (modèle MembreMealAfrique).
+    Un chiffre absent ou inférieur à 5 n'est pas affiché."""
+    cle = "vitrine_meal_stats_v1"
+    data = cache.get(cle)
+    if data is None:
+        brut = {}
+        modeles = getattr(settings, "MEAL_AFRIQUE_STATS_MODELS", {})
+        for k, chemin in modeles.items():
+            try:
+                brut[k] = apps.get_model(chemin)._default_manager.count()
+            except Exception:
+                log.warning("vitrine : comptage MEAL Afrique impossible pour %s", chemin, exc_info=True)
+        url = getattr(settings, "MEAL_AFRIQUE_STATS_URL", "")
+        if not brut and url.startswith("https://"):
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "OperaPlus-vitrine/1.0", "Accept": "application/json"})
+                with urllib.request.urlopen(req, timeout=3) as r:
+                    j = json.loads(r.read(64 * 1024).decode("utf-8"))
+                for k in ("membres", "experts", "debats", "articles", "pays", "evenements"):
+                    if isinstance(j.get(k), int) and j[k] >= 0:
+                        brut[k] = j[k]
+            except Exception:
+                log.warning("vitrine : statistiques MEAL Afrique indisponibles", exc_info=True)
+        try:
+            from vitrine.models import MembreMealAfrique
+            brut["operaplus"] = MembreMealAfrique.objects.count()
+        except Exception:
+            pass
+        libelles = {"membres": "membres", "experts": "experts", "debats": "débats", "articles": "articles",
+                    "pays": "pays", "evenements": "événements", "operaplus": "membres OperaPlus"}
+        seuil = getattr(settings, "OPERA_STATS_SEUIL", 5)
+        def plancher(n):   # valeur animée = valeur arrondie affichée (jamais le chiffre exact)
+            return (n // 100) * 100 if n >= 1000 else (n // 10) * 10 if n >= 100 else (n // 5) * 5 if n >= 20 else n
+        data = [{"cle": k, "display": _arrondi(v), "valeur": plancher(v), "libelle": libelles[k]}
+                for k, v in brut.items() if k in libelles and v >= seuil]
+        cache.set(cle, data, 60 * 30)
+    return data

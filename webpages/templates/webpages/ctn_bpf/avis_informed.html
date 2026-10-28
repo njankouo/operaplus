@@ -3,10 +3,105 @@
 {% load humanize %}
 
 {% block main %}
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+<!-- ===================== AVIS NOTÉ : design (ajout) ===================== -->
+<style>
+    .va { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: var(--sbx-ok, #2A8A7D); --danger: var(--sbx-danger, #E35A33); --star: #F2A422;
+          --ink: #0b1220; --muted: #667085; --line: #e4e8ee; max-width: 1200px !important; padding-top: 22px !important; }
+    .va > * + * { margin-top: 18px !important; }
+    /* en-tête */
+    .va-head { background: var(--dom); color: #fff; border: 0 !important; border-radius: 22px; padding: 24px 26px !important; position: relative; overflow: hidden; align-items: flex-start !important; }
+    .va-head::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--acc); }
+    .va-head .text-slate-400 { color: rgba(255,255,255,.55) !important; }
+    .va-head .text-indigo-600 { color: color-mix(in srgb, var(--acc) 70%, #fff) !important; }
+    .va-head h1 { color: #fff !important; font-size: clamp(21px, 2.3vw, 27px) !important; font-weight: 800 !important; letter-spacing: -.025em !important; margin-top: 4px; }
+    .va-op { margin: 6px 0 0; font-size: 14px; color: rgba(255,255,255,.78); font-weight: 600; }
+    .va-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .va-chip { display: inline-flex; gap: 6px; align-items: center; height: 28px; padding: 0 11px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14); }
+    .va-chip b { color: rgba(255,255,255,.6); font-weight: 700; }
+    .va-head > div:last-child { display: flex; flex-direction: column; align-items: flex-end; gap: 14px; }
+    .va-head > div:last-child > a { background: rgba(255,255,255,.1) !important; color: #fff !important; border-color: rgba(255,255,255,.2) !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 13px !important; box-shadow: none !important; }
+    .va-head > div:last-child > a svg { color: #fff !important; }
+    .va-head > div:last-child > a:hover { background: rgba(255,255,255,.18) !important; }
+    .va-avg { text-align: right; }
+    .va-avg b { font-size: 30px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+    .va-avg b small { font-size: 14px; color: rgba(255,255,255,.6); font-weight: 700; }
+    .va-avg .st { display: flex; gap: 2px; justify-content: flex-end; margin-top: 6px; }
+    .va-avg span { display: block; margin-top: 4px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.6); }
+    .va-s { width: 15px; height: 15px; fill: rgba(255,255,255,.2); } .va-s.on { fill: var(--star); }
+
+    /* colonnes */
+    .va-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+    .va-cols > div { margin: 0 !important; border-color: var(--line) !important; border-radius: 20px !important; box-shadow: 0 1px 2px rgba(16,24,40,.05) !important; }
+    .va-form { position: sticky; top: 16px; }
+    .va-form > div:first-child { background: #fff !important; padding: 20px 24px 14px !important; }
+    .va-cols h2 { text-transform: none !important; letter-spacing: -.01em !important; font-size: 15.5px !important; font-weight: 800 !important; color: var(--ink) !important; }
+    .va-form h2 > span { background: var(--acc) !important; }
+    .va-form form { padding: 20px 24px 22px !important; }
+    .va-form label { text-transform: none !important; letter-spacing: 0 !important; font-size: 13px !important; color: #344054 !important; }
+    .va-form label .text-indigo-600 { color: var(--muted) !important; font-weight: 600; }
+    .va-form label .text-rose-500 { color: var(--danger) !important; }
+
+    /* étoiles */
+    .va-form .starDiv + #note, .va-form #note { font-family: inherit; text-transform: none !important; letter-spacing: 0 !important; font-size: 12.5px !important; box-shadow: none !important; }
+    .va-rate { background: #fbfcfd !important; border-color: var(--line) !important; border-radius: 16px !important; transition: border-color .2s, box-shadow .2s; }
+    .va-rate.err { border-color: var(--danger) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 12%, transparent); animation: vaShake .35s; }
+    @keyframes vaShake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+    .va .starDiv { gap: 4px; } .va .starDiv > * + * { margin-left: 0 !important; }
+    .va .starDiv i { font-size: 30px; color: #d0d5dd; padding: 2px; border-radius: 8px; outline: none; transition: transform .15s, color .15s !important; }
+    .va .starDiv i.text-amber-300 { color: color-mix(in srgb, var(--star) 65%, #fff) !important; }
+    .va .starDiv i.text-amber-400 { color: var(--star) !important; }
+    .va .starDiv i:hover { transform: scale(1.12); }
+    .va .starDiv i:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--dom) 30%, transparent); }
+    .va .starDiv i.pop { animation: vaPop .3s ease; } @keyframes vaPop { 50% { transform: scale(1.25); } }
+    .va-err { display: none; margin-top: 8px; font-size: 12.5px; font-weight: 700; color: var(--danger); } .va-err.on { display: block; }
+
+    /* observations */
+    .va-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+    .va-tags button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 700; color: #475467; cursor: pointer; transition: border-color .2s, color .2s, background .2s; }
+    .va-tags button:hover { border-color: var(--dom); color: var(--dom); }
+    .va-tags button.on { background: color-mix(in srgb, var(--dom) 8%, #fff); border-color: var(--dom); color: var(--dom); }
+    .va-form textarea { border-color: #D0D5DD !important; border-radius: 14px !important; box-shadow: none !important; }
+    .va-form textarea:focus { border-color: var(--dom) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 12%, transparent) !important; --tw-ring-shadow: 0 0 #0000 !important; }
+    .va-count { text-align: right; font-size: 11.5px; color: #98a2b3; font-weight: 600; margin-top: 4px; }
+    .va-to { padding: 12px 14px; border-radius: 14px; background: #fbfcfd; border: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+    .va-to b { color: #344054; } .va-to div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .va-to span { padding: 3px 9px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-weight: 700; color: #344054; }
+    .va-form form > div:last-child { padding-top: 16px !important; }
+    .va-form button[type=submit] { background: var(--acc) !important; box-shadow: 0 14px 26px -14px var(--acc) !important; border-radius: 13px !important; }
+    .va-form button[type=submit]:disabled { opacity: .7; cursor: wait; }
+    .va-form form > div:last-child > a { border-radius: 13px !important; border-color: var(--line) !important; }
+
+    /* historique */
+    .va-hist { padding: 20px 22px !important; }
+    .va-hist > div:first-child { padding-bottom: 14px !important; }
+    .va-hist > div:first-child svg { color: var(--dom) !important; }
+    .va-hist > div:first-child > span { background: color-mix(in srgb, var(--dom) 8%, #fff) !important; color: var(--dom) !important; border-color: transparent !important; }
+    .va-dist { display: grid; gap: 5px; padding: 14px; border-radius: 14px; background: #fbfcfd; border: 1px solid var(--line); margin-top: 14px !important; }
+    .va-dist div { display: grid; grid-template-columns: 26px 1fr 24px; gap: 8px; align-items: center; font-size: 12px; font-weight: 700; color: var(--muted); }
+    .va-dist i { height: 7px; border-radius: 4px; background: #eef1f4; overflow: hidden; display: block; }
+    .va-dist i::after { content: ""; display: block; height: 100%; width: var(--w, 0%); background: var(--star); border-radius: 4px; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+    .va-dist em { font-style: normal; text-align: right; color: #344054; }
+    .va-hist .space-y-4 { position: relative; margin-top: 14px !important; }
+    .va-hist .space-y-4 > * + * { margin-top: 12px !important; }
+    .va-item { position: relative; background: #fff !important; border-color: var(--line) !important; border-radius: 16px !important; box-shadow: none !important; padding: 14px 16px !important; --tone: var(--dom); }
+    .va-item:hover { border-color: color-mix(in srgb, var(--tone) 30%, var(--line)) !important; }
+    .va-item .w-8.h-8 { background: var(--tone) !important; color: #fff !important; }
+    .va-item .bg-amber-50 { background: color-mix(in srgb, var(--star) 10%, #fff) !important; border-color: transparent !important; color: color-mix(in srgb, var(--star) 70%, #000) !important; }
+    .va-item .text-amber-400 { color: var(--star) !important; } .va-item .text-slate-200 { color: #e4e7ec !important; }
+    .va-item .whitespace-pre-line { background: #fbfcfd !important; border: 0 !important; border-left: 3px solid color-mix(in srgb, var(--tone) 35%, #fff) !important; border-radius: 4px 10px 10px 4px !important; color: #344054 !important; }
+    .va-item a { color: var(--dom) !important; background: color-mix(in srgb, var(--dom) 7%, #fff) !important; border-color: transparent !important; }
+    .va-item .text-\[11px\]:empty { display: none; }
+    .va-item .text-\[11px\]:not(:empty) + .va-date { display: none; }
+    .va-date { display: block; font-size: 11.5px; color: #98a2b3; font-weight: 600; }
+    .va-hist > .text-center { border: 1px dashed #d0d5dd !important; margin-top: 14px; }
+
+    @media (max-width: 900px) { .va-cols { grid-template-columns: 1fr; } .va-form { position: static; } .va-head > div:last-child { align-items: flex-start; } .va-avg { text-align: left; } .va-avg .st { justify-content: flex-start; } }
+    @media (prefers-reduced-motion: reduce) { .va .starDiv i, .va-rate { animation: none !important; } }
+</style>
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 va">
 
     <!-- En-tête de page ERP -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between pb-6 border-b border-slate-200/80 gap-4">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between pb-6 border-b border-slate-200/80 gap-4 va-head">
         <div>
             <div class="flex items-center space-x-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
                 <span>Gestion des Opérations</span>
@@ -14,8 +109,19 @@
                 <span class="text-indigo-600 font-bold">Évaluation & Avis</span>
             </div>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Soumettre un Avis Noté</h1>
+            {% if operation.nom %}<p class="va-op">{{ operation.nom }}</p>{% endif %}
+            <div class="va-chips">
+                {% if operation.personnel %}<span class="va-chip"><b>R</b>{{ operation.personnel }}</span>{% endif %}
+                {% if operation.accountable %}<span class="va-chip"><b>A</b>{{ operation.accountable }}</span>{% endif %}
+                {% if operation.date_echeance %}<span class="va-chip"><b>Échéance</b>{{ operation.date_echeance|date:"d M Y" }}</span>{% endif %}
+            </div>
         </div>
         <div>
+            <div class="va-avg" id="vaAvg" hidden>
+                <b id="vaAvgV">0</b><b><small> / 5</small></b>
+                <div class="st" id="vaAvgS" aria-hidden="true"></div>
+                <span>Note moyenne · <span id="vaAvgN" style="display:inline;margin:0">0</span> avis</span>
+            </div>
             <a href="javascript:history.back()" class="inline-flex items-center px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-all shadow-xs hover:shadow">
                 <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -25,8 +131,9 @@
         </div>
     </div>
 
+    <div class="va-cols">
     <!-- Formulaire principal (Design Enterprise SaaS) -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden va-form">
         <div class="p-6 md:p-8 border-b border-slate-100 bg-gradient-to-r from-slate-50/50 to-transparent">
             <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800 flex items-center">
                 <span class="w-2 h-2 rounded-full bg-indigo-600 mr-2.5"></span>
@@ -52,7 +159,7 @@
                     Votre Note <span class="text-indigo-600">(Sur 5 Étoiles)</span> <span class="text-rose-500">*</span>
                 </label>
                 
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50/80 rounded-xl border border-slate-200/60 gap-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50/80 rounded-xl border border-slate-200/60 gap-4 va-rate" id="vaRate">
                     <div class="starDiv flex items-center space-x-3 text-3xl text-slate-300 cursor-pointer">
                         <i data-id="1" class="fas fa-star transition-all duration-150 hover:scale-110"></i>
                         <i data-id="2" class="fas fa-star transition-all duration-150 hover:scale-110"></i>
@@ -64,6 +171,7 @@
                         Aucune sélection
                     </div>
                 </div>
+                <p class="va-err" id="vaErr" role="alert">Choisissez une note de 1 à 5 étoiles avant d'envoyer.</p>
             </div>
 
             <!-- Observations / Commentaire -->
@@ -71,7 +179,20 @@
                 <label for="observations" class="block text-xs font-bold uppercase tracking-wider text-slate-600">
                     Observations détaillées <span class="text-slate-400 font-normal">(Optionnel)</span>
                 </label>
-                <textarea id="observations" name="observations" rows="5" class="w-full rounded-xl border border-slate-300 p-4 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 placeholder-slate-400 font-sans transition-all shadow-2xs resize-y" placeholder="Rédigez vos observations ou votre argumentaire technique ici..."></textarea>
+                <textarea id="observations" name="observations" rows="5" class="w-full rounded-xl border border-slate-300 p-4 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 placeholder-slate-400 font-sans transition-all shadow-2xs resize-y" placeholder="Rédigez vos observations ou votre argumentaire technique ici..." maxlength="3000"></textarea>
+                <div class="va-tags" aria-label="Ajouter un point à vos observations">
+                    <button type="button">Délais respectés</button><button type="button">Livrables de qualité</button><button type="button">Pièces justificatives complètes</button><button type="button">Bonne communication</button><button type="button">À améliorer : délais</button><button type="button">À améliorer : documentation</button>
+                </div>
+                <p class="va-count" id="vaCount">0 / 3000</p>
+            </div>
+            <div class="va-to">
+                <b>Votre avis sera transmis à :</b>
+                <div>
+                    {% if operation.personnel.mail %}<span>Responsable</span>{% endif %}
+                    {% if operation.accountable.mail %}<span>Accountable</span>{% endif %}
+                    {% if operation.consulted.mail %}<span>Consulté</span>{% endif %}
+                    {% if operation.informed.mail %}<span>Informé</span>{% endif %}
+                </div>
             </div>
 
             <!-- Actions du formulaire -->
@@ -90,7 +211,7 @@
     </div>
 
     <!-- Section Historique des Avis (Design Timeline / Cartes Premium) -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 md:p-8 space-y-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 md:p-8 space-y-6 va-hist">
         <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
                 <h2 class="text-base font-bold text-slate-900 flex items-center">
@@ -107,9 +228,10 @@
         </div>
 
         {% if historique_list %}
+            <div class="va-dist" id="vaDist" hidden></div>
             <div class="space-y-4">
                 {% for item in historique_list %}
-                    <div class="p-5 rounded-xl border border-slate-200/80 bg-slate-50/40 hover:bg-slate-50/80 transition-all space-y-3 shadow-2xs">
+                    <div class="p-5 rounded-xl border border-slate-200/80 bg-slate-50/40 hover:bg-slate-50/80 transition-all space-y-3 shadow-2xs va-item" data-stars="{{ item.m_nb_stars|default:'' }}" data-role="{{ item.m_role }}">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div class="flex items-center space-x-2.5">
                                 <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs uppercase">
@@ -117,7 +239,7 @@
                                 </div>
                                 <div>
                                     <span class="font-bold text-sm text-slate-900 block">{{ item.m_role }}</span>
-                                    <span class="text-[11px] text-slate-400">{{ item.m_date_realisation|date:"d/m/Y à H:i"|default:item.m_date_realisation|date:"d/m/Y" }}</span>
+                                    <span class="text-[11px] text-slate-400">{{ item.m_date_realisation|date:"d/m/Y à H:i"|default:item.m_date_realisation|date:"d/m/Y" }}</span><span class="va-date">{{ item.m_date_realisation|date:"d M Y · H:i" }}</span>
                                 </div>
                             </div>
                             
@@ -161,6 +283,7 @@
             </div>
         {% endif %}
     </div>
+    </div>{# fin .va-cols #}
 
 </div>
 
@@ -223,5 +346,72 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+</script>
+<!-- ===================== AVIS NOTÉ : interactions (ajout) ===================== -->
+<script>
+(function () {
+    var $ = function (id) { return document.getElementById(id); };
+    var SVG = function (on) { return '<svg class="va-s' + (on ? ' on' : '') + '" viewBox="0 0 24 24"><path d="M12 2.8l2.8 5.7 6.3.9-4.6 4.4 1.1 6.2L12 17l-5.6 3 1.1-6.2L2.9 9.4l6.3-.9z"/></svg>'; };
+
+    /* historique : note moyenne, répartition, couleur par rôle */
+    var items = [].slice.call(document.querySelectorAll('.va-item')), notes = [], dist = [0, 0, 0, 0, 0, 0];
+    var TONES = { r: 'var(--dom)', a: 'var(--acc)', c: 'var(--ok)', i: '#64748b' };
+    items.forEach(function (it) {
+        var c = it.querySelector('.whitespace-pre-line'); if (c) c.textContent = c.textContent.trim();
+        var n = parseInt(it.dataset.stars, 10); if (n >= 1 && n <= 5) { notes.push(n); dist[n]++; }
+        var k = (it.dataset.role || '').trim().charAt(0).toLowerCase(); if (TONES[k]) it.style.setProperty('--tone', TONES[k]);
+    });
+    if (notes.length) {
+        var avg = notes.reduce(function (a, b) { return a + b; }, 0) / notes.length;
+        $('vaAvgV').textContent = avg.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+        $('vaAvgN').textContent = notes.length;
+        var h = ''; for (var i = 1; i <= 5; i++) h += SVG(i <= Math.round(avg)); $('vaAvgS').innerHTML = h;
+        $('vaAvg').hidden = false;
+        var d = $('vaDist');
+        if (d) { var x = ''; for (var s = 5; s >= 1; s--) x += '<div><span>' + s + '★</span><i style="--w:0%" data-w="' + Math.round(dist[s] / notes.length * 100) + '%"></i><em>' + dist[s] + '</em></div>';
+            d.innerHTML = x; d.hidden = false; setTimeout(function () { d.querySelectorAll('i').forEach(function (b) { b.style.setProperty('--w', b.dataset.w); }); }, 150); }
+    }
+
+    /* étoiles : clavier (flèches, Entrée) et petit effet au choix */
+    var stars = [].slice.call(document.querySelectorAll('.starDiv i')), inp = $('nb_stars'), rate = $('vaRate'), err = $('vaErr');
+    var box = document.querySelector('.starDiv');
+    if (box) { box.setAttribute('role', 'radiogroup'); box.setAttribute('aria-label', 'Note sur 5'); }
+    stars.forEach(function (st, k) {
+        st.setAttribute('role', 'radio'); st.setAttribute('tabindex', k === 0 ? '0' : '-1'); st.setAttribute('aria-label', (k + 1) + ' étoile' + (k ? 's' : ''));
+        st.addEventListener('click', function () {
+            stars.forEach(function (o, j) { o.setAttribute('aria-checked', j <= k); o.setAttribute('tabindex', j === k ? '0' : '-1'); if (j <= k) { o.classList.remove('pop'); void o.offsetWidth; o.classList.add('pop'); } });
+            rate.classList.remove('err'); err.classList.remove('on');
+        });
+        st.addEventListener('keydown', function (e) {
+            var t = null;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowUp') t = stars[Math.min(k + 1, 4)];
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') t = stars[Math.max(k - 1, 0)];
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); st.click(); return; }
+            if (t) { e.preventDefault(); t.focus(); t.click(); }
+        });
+    });
+
+    /* observations : points rapides + compteur */
+    var ta = $('observations'), cnt = $('vaCount');
+    var upd = function () { cnt.textContent = ta.value.length + ' / 3000'; };
+    if (ta) {
+        ta.addEventListener('input', upd); upd();
+        document.querySelectorAll('.va-tags button').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var t = b.textContent.trim();
+                if (ta.value.indexOf(t) > -1) { ta.value = ta.value.replace(new RegExp('(^|\n)• ' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.?', 'g'), '').replace(/^\n+/, ''); b.classList.remove('on'); }
+                else { ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' : '') + '• ' + t + '.'; b.classList.add('on'); }
+                ta.dispatchEvent(new Event('input')); ta.focus();
+            });
+        });
+    }
+
+    /* envoi : note obligatoire, envoi unique */
+    var f = inp ? inp.form : null;
+    if (f) f.addEventListener('submit', function (e) {
+        if (!inp.value) { e.preventDefault(); rate.classList.remove('err'); void rate.offsetWidth; rate.classList.add('err'); err.classList.add('on'); (stars[0] || rate).focus(); return; }
+        var b = f.querySelector('button[type=submit]'); b.disabled = true; var sp = b.querySelector('span'); if (sp) sp.textContent = 'Envoi en cours…';
+    });
+})();
 </script>
 {% endblock %}
