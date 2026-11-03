@@ -18,6 +18,6 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput
 
-EXPOSE 8003
+EXPOSE 8004
 
-CMD ["gunicorn", "Opera_CTN.wsgi:application", "--bind", "0.0.0.0:8003", "--workers", "9", "--timeout", "120"]
+CMD ["gunicorn", "Opera_CTN.wsgi:application", "--bind", "0.0.0.0:8004", "--workers", "9", "--timeout", "120"]

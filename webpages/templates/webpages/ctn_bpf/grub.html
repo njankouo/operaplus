@@ -6,7 +6,120 @@
     <title>Saisie de données - OPERAPLUS</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- AJOUT : mode sombre piloté par classe + police -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } }
+        };
+        (function () {
+            try {
+                const t = localStorage.getItem('op-theme');
+                if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <!-- AJOUT : notifications à la charte (remplacent alert) + console silencieuse en production -->
+    <script>
+        (function () {
+            // Les console.log / warn de débogage ne s'affichent plus pour les utilisateurs.
+            // Pour les revoir : ajouter ?debug=1 à l'adresse (console.error reste toujours actif).
+            let debug = false;
+            try { debug = /[?&]debug=1\b/.test(location.search) || localStorage.getItem('op-debug') === '1'; } catch (e) {}
+            if (!debug) ['log', 'info', 'debug', 'warn'].forEach(k => { console[k] = function () {}; });
+        })();
+
+        window.opNotify = function (o) {
+            o = o || {};
+            const type = ['success', 'error', 'warning', 'info'].includes(o.type) ? o.type : 'info';
+            const icones = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+            const titres = { success: 'Terminé', error: 'Une erreur est survenue', warning: 'À vérifier', info: 'Information' };
+            const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+            let boite = document.getElementById('op-toasts');
+            if (!boite) {
+                boite = document.createElement('div');
+                boite.id = 'op-toasts';
+                boite.setAttribute('aria-live', 'polite');
+                document.body.appendChild(boite);
+            }
+            const el = document.createElement('div');
+            el.className = 'op-toast op-toast-' + type;
+            el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+            el.innerHTML = '<span class="op-toast-ico"><i class="fa-solid ' + icones[type] + '"></i></span>'
+                + '<div class="op-toast-body"><p class="op-toast-title">' + esc(o.title || titres[type]) + '</p>'
+                + (o.message ? '<p class="op-toast-msg">' + esc(o.message) + '</p>' : '')
+                + '<div class="op-toast-actions"></div></div>'
+                + '<button type="button" class="op-toast-close" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>'
+                + '<span class="op-toast-timer"></span>';
+            const zone = el.querySelector('.op-toast-actions');
+            (o.actions || []).forEach(a => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'op-toast-btn' + (a.primary ? ' op-primary' : '');
+                b.textContent = a.label;
+                b.addEventListener('click', () => { fermer(); if (a.onClick) a.onClick(); });
+                zone.appendChild(b);
+            });
+            if (!zone.children.length) zone.remove();
+
+            const duree = o.duration !== undefined ? o.duration : (type === 'error' || (o.actions && o.actions.length) ? 9000 : 4500);
+            const barre = el.querySelector('.op-toast-timer');
+            let reste = duree, debut = 0, minuteur = null;
+            if (!duree) barre.remove();
+            function fermer() { clearTimeout(minuteur); el.classList.add('op-out'); setTimeout(() => el.remove(), 230); }
+            function lancer() {
+                if (!duree) return;
+                debut = Date.now();
+                barre.style.transition = 'transform ' + reste + 'ms linear';
+                barre.style.transform = 'scaleX(0)';
+                minuteur = setTimeout(fermer, reste);
+            }
+            function pause() {
+                if (!duree) return;
+                clearTimeout(minuteur);
+                reste = Math.max(400, reste - (Date.now() - debut));
+                const actuel = getComputedStyle(barre).transform;
+                barre.style.transition = 'none';
+                barre.style.transform = actuel;
+            }
+            el.addEventListener('mouseenter', pause);
+            el.addEventListener('mouseleave', lancer);
+            el.querySelector('.op-toast-close').addEventListener('click', fermer);
+            boite.appendChild(el);
+            while (boite.children.length > 4) boite.firstElementChild.remove();
+            requestAnimationFrame(() => { el.classList.add('op-in'); requestAnimationFrame(lancer); });
+            return { fermer };
+        };
+
+        // Raccourci utilisé par les ajouts de la page (même signature que Toast.fire)
+        window.opToast = o => window.opNotify({ type: o.icon, message: o.title });
+
+        // Les alert() existants deviennent des notifications, avec un texte plus clair
+        window.alert = function (msg) {
+            const t = String(msg == null ? '' : msg);
+            if (/^Aucune valeur trouv/i.test(t)) {
+                return window.opNotify({ type: 'info', title: 'Formulaire vierge',
+                    message: "Aucune valeur n'est encore enregistrée pour cette unité et cette période. Vous pouvez commencer la saisie." });
+            }
+            if (/récupération des éléments/i.test(t)) {
+                return window.opNotify({ type: 'error', title: 'Calcul des indicateurs indisponible',
+                    message: "Les formules n'ont pas pu être chargées. La saisie reste possible ; rechargez la page pour réessayer." });
+            }
+            const m = /^Erreur lors du chargement des données\s*:\s*(.*)$/i.exec(t);
+            if (m) return window.opNotify({ type: 'error', title: 'Chargement impossible', message: m[1] });
+            window.opNotify({ type: /erreur|échec|impossible/i.test(t) ? 'error' : 'info', message: t });
+        };
+    </script>
+    <style>
+        /* AJOUT : couleur par défaut si color_fond est vide */
+        header { background-color: #276696; }
+    </style>
     <style>
         /* Style spécifique pour simuler le comportement DHIS2 */
         .dhis2-input:focus {
@@ -18,6 +131,802 @@
             background-color: {{request.user.personnel.color_fond}};
         }
     </style>
+    <style>
+        /* =====================================================================
+           OPERAPLUS : SYSTÈME DE DESIGN « REGISTRE DE TERRAIN »
+           Mêmes polices que MEAL Afrique (Fraunces + Plus Jakarta Sans) pour
+           que les deux plateformes forment une même famille visuelle.
+           ===================================================================== */
+        :root {
+            --op-ink: #13293D;      --op-ink-2: #3E5468;    --op-muted: #6B7C8C;
+            --op-brand: #276696;    --op-brand-2: #1D4D71;  --op-brand-soft: #E8F0F7;
+            --op-brand-fill: #276696; --op-brand-fill-2: #1D4D71; /* fonds pleins avec texte blanc */
+            --op-paper: #F3F6F8;    --op-surface: #FFFFFF;  --op-surface-2: #F8FAFC;
+            --op-line: #E3E9EE;     --op-line-2: #CFD9E2;
+            --op-ochre: #C8902E;    --op-ochre-ink: #8A5F14; --op-ochre-soft: #FBF3E2;
+            --op-ok: #2F8F6B;       --op-ok-soft: #E6F4EE;
+            --op-err: #C53030;      --op-err-soft: #FDECEC;
+            --op-primary: #276696;
+            --op-font-ui: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+            --op-font-display: 'Fraunces', Georgia, serif;
+            --op-shadow: 0 1px 0 rgba(19,41,61,.04), 0 22px 44px -32px rgba(19,41,61,.45);
+            --op-gauge-c: 326.73; /* circonférence du cercle r = 52 */
+        }
+        html.dark {
+            --op-ink: #E6EEF5;      --op-ink-2: #B7C6D4;    --op-muted: #8FA3B6;
+            --op-brand: #5B9BD0;    --op-brand-2: #3F7FB3;  --op-brand-soft: #16283A;
+            --op-brand-fill: #2D6C9E; --op-brand-fill-2: #245A85;
+            --op-paper: #0D1520;    --op-surface: #131E2B;  --op-surface-2: #172433;
+            --op-line: #22324A;     --op-line-2: #2C3F57;
+            --op-ochre: #E0AE4F;    --op-ochre-ink: #E0AE4F; --op-ochre-soft: #2B2213;
+            --op-ok: #4CB58C;       --op-ok-soft: #10291F;
+            --op-err: #F07070;      --op-err-soft: #2E1717;
+            --op-shadow: 0 1px 0 rgba(0,0,0,.25), 0 22px 44px -26px rgba(0,0,0,.7);
+        }
+        body {
+            font-family: var(--op-font-ui) !important;
+            background: var(--op-paper) !important;
+            color: var(--op-ink) !important;
+            -webkit-font-smoothing: antialiased;
+        }
+        :focus-visible { outline: 2px solid var(--op-ochre); outline-offset: 2px; }
+
+        /* ---------- En-tête ---------- */
+        header.glass-nav {
+            position: sticky; top: 0;
+            background-image:
+                radial-gradient(900px 140px at 12% -60%, rgba(255,255,255,.22), transparent 60%),
+                linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.22) 100%);
+            border-bottom: 1px solid rgba(255,255,255,.10);
+            box-shadow: 0 10px 30px -18px rgba(19,41,61,.7) !important;
+        }
+        header.glass-nav nav a { position: relative; }
+        .op-nav-active { background: rgba(255,255,255,.12); }
+        .op-nav-active::after {
+            content: ""; position: absolute; left: 12px; right: 12px; bottom: -14px; height: 3px;
+            border-radius: 3px 3px 0 0; background: var(--op-ochre);
+        }
+
+        /* ---------- Arborescence (sidebar) ---------- */
+        @media (min-width: 1024px) {
+            aside.op-aside { top: 4rem !important; height: calc(100vh - 4rem) !important; }
+        }
+        @media (max-width: 1023px) {
+            aside.op-aside.op-open {
+                display: flex !important; position: fixed !important; top: 4rem; left: 0;
+                height: calc(100vh - 4rem) !important; z-index: 60; max-width: 88vw;
+                animation: op-slide .22s cubic-bezier(.2,.8,.2,1);
+            }
+        }
+        @keyframes op-slide { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        #op-overlay { position: fixed; inset: 4rem 0 0 0; background: rgba(13,21,32,.5); z-index: 55; }
+        form.op-form-wrap { display: contents !important; }
+
+        aside.op-aside { background: var(--op-surface) !important; border-color: var(--op-line) !important; box-shadow: none !important; }
+        aside.op-aside > div:first-child { border-color: var(--op-line) !important; padding: 1.1rem 1rem !important; }
+        aside.op-aside h3 {
+            text-transform: none !important; letter-spacing: 0 !important; font-size: 14px !important;
+            font-weight: 700 !important; color: var(--op-ink) !important;
+        }
+        #searchOrgUnit {
+            background: var(--op-paper) !important; border-color: var(--op-line) !important;
+            border-radius: 12px !important; color: var(--op-ink) !important; font-size: 13.5px !important;
+        }
+        #searchOrgUnit:focus {
+            background: var(--op-surface) !important; border-color: var(--op-ochre) !important;
+            box-shadow: 0 0 0 4px rgba(200,144,46,.16) !important;
+        }
+        aside.op-aside .custom-scrollbar { background: var(--op-surface) !important; }
+        #orgUnitTree .tree-node > div, #orgUnitTree li.tree-node.flex { border-radius: 10px !important; transition: background .15s; }
+        #orgUnitTree .tree-node > div:hover, #orgUnitTree li.tree-node.flex:hover { background: var(--op-surface-2) !important; }
+        #orgUnitTree .tree-node > div:has(input:checked),
+        #orgUnitTree li.tree-node.flex:has(> input:checked) {
+            background: var(--op-brand-soft) !important; box-shadow: inset 3px 0 0 var(--op-brand);
+        }
+        #orgUnitTree ul { border-color: var(--op-line) !important; }
+        #orgUnitTree label { color: var(--op-ink-2) !important; }
+        .custom-checkbox:checked + label { color: var(--op-brand) !important; font-weight: 700 !important; }
+        aside.op-aside > div:last-child { background: var(--op-surface) !important; border-color: var(--op-line) !important; }
+        aside.op-aside > div:last-child a,
+        aside.op-aside > div:last-child button {
+            text-transform: none !important; letter-spacing: 0 !important; font-size: 13px !important;
+            border-radius: 11px !important; box-shadow: none !important;
+        }
+        aside.op-aside > div:last-child a { background: var(--op-brand-fill) !important; }
+        aside.op-aside > div:last-child a:hover { background: var(--op-brand-fill-2) !important; }
+        aside.op-aside > div:last-child button {
+            background: transparent !important; border-color: var(--op-line-2) !important; color: var(--op-ink-2) !important;
+        }
+        #op-unit-count { background: var(--op-brand-fill) !important; }
+        #op-legend { font-size: 11.5px !important; color: var(--op-muted) !important; }
+
+        /* ---------- Zone principale ---------- */
+        .op-main { padding-bottom: 8rem !important; }
+        @media (min-width: 768px) { .op-main { padding: 2rem 2.5rem 8rem !important; } }
+        .op-main > :not(.op-actionbar) { max-width: 1180px; margin-left: auto; margin-right: auto; }
+
+        /* ---------- Fiche de saisie : l'élément signature ---------- */
+        .op-fiche {
+            position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2rem; align-items: center;
+            padding: 1.9rem 2.2rem 1.9rem 2.6rem; margin-bottom: 1.25rem; border-radius: 22px;
+            background: var(--op-surface); border: 1px solid var(--op-line); box-shadow: var(--op-shadow); overflow: hidden;
+        }
+        /* Réglure de registre : lignes fines qui s'effacent vers la droite */
+        .op-fiche::before {
+            content: ""; position: absolute; inset: 0; pointer-events: none;
+            background-image: repeating-linear-gradient(180deg, transparent 0 27px, color-mix(in srgb, var(--op-brand) 5.5%, transparent) 27px 28px);
+            -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 55%);
+                    mask-image: linear-gradient(90deg, #000 0%, transparent 55%);
+        }
+        /* Marge ocre du registre */
+        .op-fiche::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--op-ochre); }
+        .op-fiche > * { position: relative; }
+        .op-crumb { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; font-size: 13px; color: var(--op-muted); }
+        .op-crumb a { color: var(--op-muted); transition: color .15s; }
+        .op-crumb a:hover { color: var(--op-brand); }
+        .op-crumb strong { color: var(--op-ink-2); font-weight: 600; }
+        .op-fiche-title {
+            font-family: var(--op-font-display); font-optical-sizing: auto; font-weight: 560;
+            font-size: clamp(1.8rem, 1.15rem + 2.1vw, 2.85rem); line-height: 1.06; letter-spacing: -.018em;
+            color: var(--op-ink); margin: .45rem 0 .4rem; max-width: 24ch;
+        }
+        .op-fiche-title.op-placeholder { color: var(--op-muted); font-style: italic; font-weight: 400; }
+        .op-fiche-title.op-swap { animation: op-ink-in .5s cubic-bezier(.2,.8,.2,1); }
+        @keyframes op-ink-in { from { opacity: 0; transform: translateY(8px); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+        .op-fiche-period { font-size: 15.5px; font-weight: 600; color: var(--op-ink-2); }
+        .op-fiche-state { font-size: 14px; line-height: 1.55; color: var(--op-muted); margin-top: .3rem; max-width: 62ch; }
+
+        .op-steps { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.15rem; padding: 0; list-style: none; }
+        .op-step {
+            display: inline-flex; align-items: center; gap: .5rem; padding: .32rem .8rem .32rem .35rem; border-radius: 999px;
+            font-size: 12.5px; font-weight: 600; color: var(--op-muted); background: var(--op-surface-2);
+            border: 1px solid var(--op-line); transition: background .25s, color .25s, border-color .25s;
+        }
+        .op-step .op-num {
+            width: 22px; height: 22px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700; background: var(--op-surface); border: 1px solid var(--op-line-2);
+            font-variant-numeric: tabular-nums; transition: inherit;
+        }
+        .op-step.op-current { color: var(--op-ochre-ink); background: var(--op-ochre-soft); border-color: color-mix(in srgb, var(--op-ochre) 45%, transparent); }
+        .op-step.op-current .op-num { background: var(--op-ochre); border-color: var(--op-ochre); color: #fff; }
+        .op-step.op-done { color: var(--op-ok); background: var(--op-ok-soft); border-color: transparent; }
+        .op-step.op-done .op-num { background: var(--op-ok); border-color: var(--op-ok); color: transparent; position: relative; }
+        .op-step.op-done .op-num::after { content: "✓"; position: absolute; color: #fff; font-size: 12px; }
+        .op-units-btn {
+            display: inline-flex; align-items: center; gap: .5rem; margin-top: 1rem; padding: .6rem 1rem; border-radius: 11px;
+            background: var(--op-brand-soft); color: var(--op-brand); font-weight: 700; font-size: 13px;
+        }
+        @media (min-width: 1024px) { .op-units-btn { display: none !important; } }
+
+        /* Jauge de complétude, dessinée comme un tampon */
+        .op-gauge { position: relative; width: 156px; height: 156px; flex-shrink: 0; }
+        .op-gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .op-gauge-stamp { fill: none; stroke: var(--op-line-2); stroke-width: 1.5; stroke-dasharray: 2 5; }
+        .op-gauge-track { fill: none; stroke: var(--op-line); stroke-width: 10; }
+        .op-gauge-arc {
+            fill: none; stroke: var(--op-ok); stroke-width: 10; stroke-linecap: round;
+            stroke-dasharray: var(--op-gauge-c); stroke-dashoffset: var(--op-gauge-c);
+            transition: stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1), stroke .3s;
+        }
+        .op-gauge.op-partial .op-gauge-arc { stroke: var(--op-ochre); }
+        .op-gauge.op-empty .op-gauge-arc { stroke: transparent; }
+        .op-gauge-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .op-gauge-label strong {
+            font-family: var(--op-font-display); font-size: 42px; font-weight: 600; line-height: 1;
+            color: var(--op-ink); font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+        }
+        .op-gauge-label strong small { font-size: 18px; font-weight: 500; margin-left: 2px; color: var(--op-muted); }
+        .op-gauge-label > span { font-size: 11.5px; color: var(--op-muted); margin-top: 6px; max-width: 96px; line-height: 1.3; }
+
+        @media (max-width: 640px) {
+            .op-fiche { grid-template-columns: minmax(0,1fr) auto; gap: 1rem; padding: 1.3rem 1.2rem 1.3rem 1.6rem; align-items: start; }
+            .op-gauge { width: 92px; height: 92px; }
+            .op-gauge-label strong { font-size: 24px; }
+            .op-gauge-label strong small { font-size: 12px; }
+            .op-gauge-label > span { display: none; }
+            .op-steps { gap: .35rem; }
+            .op-step { font-size: 11.5px; }
+        }
+
+        /* ---------- Barre de commande : année, période, unité, chargement ---------- */
+        .op-command {
+            background: var(--op-surface) !important; border: 1px solid var(--op-line) !important; border-radius: 18px !important;
+            box-shadow: var(--op-shadow) !important; padding: 1.1rem 1.2rem !important; gap: 1rem !important; margin-bottom: 1.25rem !important;
+        }
+        @media (min-width: 768px) {
+            .op-command { grid-template-columns: minmax(180px,.9fr) minmax(0,1.1fr) minmax(0,1.5fr) auto !important; align-items: end; }
+        }
+        .op-command label {
+            text-transform: none !important; letter-spacing: 0 !important; font-size: 13px !important;
+            font-weight: 600 !important; color: var(--op-ink-2) !important; margin-bottom: .45rem !important;
+        }
+        .op-command label i { color: var(--op-muted) !important; }
+        .op-command select {
+            -webkit-appearance: none; appearance: none; height: 44px; padding: 0 2.3rem 0 .9rem !important;
+            border-radius: 11px !important; border: 1px solid var(--op-line-2) !important;
+            background-color: var(--op-surface) !important; color: var(--op-ink) !important;
+            font-size: 14px !important; font-weight: 600 !important; cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%236B7C8C' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right .9rem center; background-size: 12px;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .op-command select:hover { border-color: var(--op-muted) !important; }
+        .op-command select:focus { border-color: var(--op-ochre) !important; box-shadow: 0 0 0 4px rgba(200,144,46,.16) !important; outline: none; }
+        .op-command .flex.shadow-sm { border: 1px solid var(--op-line-2); border-radius: 11px !important; box-shadow: none !important; }
+        .op-command .op-nav-btn {
+            height: 42px; width: 40px; background: var(--op-surface-2) !important; color: var(--op-ink-2) !important;
+            border: 0 !important; font-size: 17px; transition: background .15s, color .15s;
+        }
+        .op-command .op-nav-btn + .op-nav-btn { border-left: 1px solid var(--op-line-2) !important; }
+        .op-command .op-nav-btn:hover { background: var(--op-brand-soft) !important; color: var(--op-brand) !important; }
+        .op-command > div:has(#op-unit-chips) { grid-column: 1 / -1; border-color: var(--op-line) !important; }
+
+        /* Bouton « Charger les données » intégré à la barre de commande */
+        .op-fab { position: static !important; inset: auto !important; z-index: auto !important; }
+        .op-fab #loadDataButton {
+            height: 44px !important; width: 100% !important; padding: 0 1.2rem !important; border-radius: 11px !important;
+            background: var(--op-brand-fill) !important; color: #fff !important; transform: none !important;
+            box-shadow: 0 10px 22px -14px rgba(39,102,150,.9) !important; transition: background .2s, color .2s, box-shadow .2s !important;
+        }
+        .op-fab #loadDataButton:hover { background: var(--op-brand-fill-2) !important; }
+        .op-fab #loadDataButton svg { width: 18px !important; height: 18px !important; }
+        .op-fab #loadDataButton > span.font-bold { display: inline !important; letter-spacing: 0 !important; font-size: 14px !important; white-space: nowrap; }
+        .op-fab #loadDataButton > span.absolute { display: none !important; }
+        /* Prêt à charger : le bouton devient l'action à faire maintenant */
+        .op-fab.op-ready #loadDataButton { background: var(--op-ochre) !important; color: #1B1406 !important; box-shadow: 0 12px 26px -14px rgba(200,144,46,1) !important; }
+
+        /* Puces des unités sélectionnées */
+        .op-chip {
+            display: inline-flex; align-items: center; gap: .45rem; padding: .35rem .5rem .35rem .75rem; border-radius: 999px;
+            font-size: 12.5px; font-weight: 600; background: var(--op-surface-2); color: var(--op-ink-2);
+            border: 1px solid var(--op-line-2); transition: background .15s, border-color .15s, color .15s;
+        }
+        .op-chip:hover { border-color: var(--op-brand); color: var(--op-brand); }
+        .op-chip.op-chip-active { background: var(--op-brand-fill); color: #fff; border-color: var(--op-brand-fill); }
+        .op-chip .op-x { width: 18px; height: 18px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
+        .op-chip .op-x:hover { background: rgba(0,0,0,.14); }
+        #op-unit-chips > span.italic { font-style: normal !important; color: var(--op-muted) !important; font-size: 13px !important; }
+
+        /* ---------- Registre (tableau de saisie) ---------- */
+        .op-ledger {
+            background: var(--op-surface) !important; border: 1px solid var(--op-line) !important; border-radius: 18px !important;
+            box-shadow: var(--op-shadow) !important; min-width: 0 !important; overflow: hidden;
+        }
+        .op-ledger .contenu { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: var(--op-surface) !important; }
+        #op-table-toolbar { background: var(--op-surface-2) !important; border-color: var(--op-line) !important; padding: .85rem 1.2rem !important; }
+        #op-table-toolbar span { color: var(--op-ink-2) !important; font-size: 12.5px !important; }
+        #op-row-filter {
+            height: 38px; border-radius: 10px !important; border-color: var(--op-line-2) !important;
+            background: var(--op-surface) !important; color: var(--op-ink) !important; font-size: 13px !important;
+        }
+        #op-row-filter:focus { border-color: var(--op-ochre) !important; box-shadow: 0 0 0 4px rgba(200,144,46,.15) !important; }
+        #op-progress-bar { background: var(--op-ok) !important; }
+
+        .op-ledger .contenu.dhis2-table-container table th {
+            position: sticky; top: 0; z-index: 2; background: var(--op-surface-2) !important; color: var(--op-ink-2) !important;
+            font-size: 12.5px; font-weight: 700; text-transform: none; letter-spacing: 0; padding: 12px 14px; text-align: left;
+            border-bottom: 1px solid var(--op-line-2);
+        }
+        .op-ledger .contenu.dhis2-table-container table td {
+            padding: 9px 14px !important; border-bottom: 1px solid var(--op-line) !important;
+            background: var(--op-surface) !important; transition: background .12s;
+        }
+        .op-ledger .contenu.dhis2-table-container table td:first-child {
+            background: var(--op-surface) !important; color: var(--op-ink) !important; font-weight: 600 !important;
+            font-size: 14px !important; line-height: 1.4; padding-left: 22px !important;
+            border-right: 1px solid var(--op-line) !important; box-shadow: none !important;
+        }
+        .op-ledger .contenu.dhis2-table-container table tr:hover td { background: var(--op-surface-2) !important; }
+        /* La ligne en cours de saisie reçoit la marge ocre du registre */
+        .op-ledger .contenu.dhis2-table-container table tr:focus-within td { background: var(--op-ochre-soft) !important; }
+        .op-ledger .contenu.dhis2-table-container table tr:focus-within td:first-child { box-shadow: inset 4px 0 0 var(--op-ochre) !important; }
+
+        .op-ledger .contenu.dhis2-table-container table input[type="number"],
+        .op-ledger .contenu.dhis2-table-container table input[type="text"],
+        .op-ledger .contenu.dhis2-table-container table input[type="date"] {
+            height: 40px !important; padding: 0 12px !important; border-radius: 9px !important;
+            border: 1px solid var(--op-line-2) !important; background: var(--op-surface) !important; color: var(--op-ink) !important;
+            font-family: var(--op-font-ui) !important; font-size: 15px !important; font-weight: 600 !important;
+            font-variant-numeric: tabular-nums;
+        }
+        .op-ledger .contenu.dhis2-table-container table input[type="number"]:focus,
+        .op-ledger .contenu.dhis2-table-container table input[type="text"]:focus,
+        .op-ledger .contenu.dhis2-table-container table input[type="date"]:focus {
+            border-color: var(--op-ochre) !important; background: var(--op-surface) !important;
+            box-shadow: 0 0 0 4px rgba(200,144,46,.18) !important;
+        }
+        .op-ledger .contenu.dhis2-table-container table input.op-filled { border-left: 3px solid var(--op-ok) !important; }
+        .op-ledger .contenu.dhis2-table-container table input:invalid,
+        .op-ledger .contenu.dhis2-table-container table input.op-err {
+            border-color: var(--op-err) !important; background: var(--op-err-soft) !important;
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--op-err) 18%, transparent) !important;
+        }
+        .op-ledger .contenu.dhis2-table-container table input.op-warnf { border-color: var(--op-ochre) !important; background: var(--op-ochre-soft) !important; }
+        .op-ledger .contenu.dhis2-table-container textarea {
+            width: 100%; min-height: 40px; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--op-line-2);
+            background: var(--op-surface); color: var(--op-ink); font-size: 14px; outline: none;
+        }
+        .op-ledger .contenu.dhis2-table-container textarea:focus { border-color: var(--op-ochre); box-shadow: 0 0 0 4px rgba(200,144,46,.18); }
+
+        /* État vide : une invitation à agir */
+        .op-ledger [id^="no-data-"] { padding: 3.5rem 1.5rem 4rem !important; background: var(--op-surface) !important; }
+        .op-ledger [id^="no-data-"] .animate-ping,
+        .op-ledger [id^="no-data-"] span.absolute,
+        .op-ledger [id^="no-data-"] div:has(> .animate-progress-flow) { display: none !important; }
+        .op-ledger [id^="no-data-"] > div:first-child { margin-bottom: 1rem !important; }
+        .op-ledger [id^="no-data-"] svg { width: 52px !important; height: 52px !important; color: var(--op-brand) !important; }
+        .op-ledger [id^="no-data-"] h3 {
+            font-family: var(--op-font-display) !important; text-transform: none !important; font-style: normal !important;
+            font-weight: 560 !important; letter-spacing: -.012em !important; font-size: 27px !important; color: var(--op-ink) !important;
+        }
+        .op-ledger [id^="no-data-"] p { color: var(--op-muted) !important; font-size: 14.5px !important; font-weight: 500 !important; }
+        .op-guide {
+            display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: .75rem; width: 100%; max-width: 660px;
+            margin-top: 1.6rem; padding: 0; list-style: none; text-align: left;
+        }
+        .op-guide li {
+            border: 1px solid var(--op-line); border-radius: 14px; padding: 1rem 1.05rem; background: var(--op-surface-2);
+            font-size: 13.5px; line-height: 1.5; color: var(--op-ink-2);
+        }
+        .op-guide b { display: block; font-family: var(--op-font-display); font-size: 24px; line-height: 1; font-weight: 600; color: var(--op-ochre-ink); margin-bottom: .45rem; }
+        @media (max-width: 640px) { .op-guide { grid-template-columns: 1fr; } }
+
+        /* ---------- Dock d'enregistrement ---------- */
+        .op-actionbar {
+            position: fixed; z-index: 100; bottom: 16px; left: 16px; right: 16px;
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+            padding: .65rem .65rem .65rem 1.15rem; border-radius: 18px;
+            background: #13293D; color: #E6EEF5;
+            box-shadow: 0 24px 50px -22px rgba(19,41,61,.8), inset 0 0 0 1px rgba(255,255,255,.06);
+        }
+        html.dark .op-actionbar { background: #1B2A3B; }
+        @media (min-width: 1024px) { .op-actionbar { left: calc(20rem + 2.5rem); right: 2.5rem; } }
+        @media (min-width: 1600px) { .op-actionbar { left: calc(20rem + (100vw - 20rem - 1180px) / 2); right: calc((100vw - 20rem - 1180px) / 2); } }
+        #op-save-status { color: #FFFFFF !important; font-size: 13.5px !important; }
+        .op-actionbar .text-slate-400, .op-actionbar .text-slate-500 { color: #9FB2C4 !important; }
+        .op-actionbar #op-bar-pct { color: #FFFFFF; font-variant-numeric: tabular-nums; }
+        .op-actionbar button[id^="myButton"] {
+            background: var(--op-ochre) !important; color: #1B1406 !important; border-radius: 12px !important;
+            text-transform: none !important; letter-spacing: 0 !important; font-size: 14.5px !important; font-weight: 700 !important;
+            padding: .8rem 1.5rem !important; box-shadow: none !important; transition: filter .15s, transform .1s !important;
+        }
+        .op-actionbar button[id^="myButton"]:hover { filter: brightness(1.07); }
+        .op-actionbar.op-idle button[id^="myButton"] { background: rgba(255,255,255,.10) !important; color: #C9D6E2 !important; }
+        @media (max-width: 640px) {
+            .op-actionbar { left: 10px; right: 10px; bottom: 10px; padding: .5rem .5rem .5rem .9rem; gap: .6rem; }
+            .op-actionbar button[id^="myButton"] { padding: .7rem 1rem !important; font-size: 13.5px !important; white-space: nowrap; flex: 0 0 auto !important; }
+            .op-actionbar button[id^="myButton"] i { display: none; }
+            #op-save-status { font-size: 12.5px !important; }
+        }
+        #op-err-pill { background: rgba(240,112,112,.14) !important; color: #FFC2C2 !important; border-color: rgba(240,112,112,.35) !important; }
+        .op-dot { width: 10px; height: 10px; border-radius: 999px; background: #5E7388; flex-shrink: 0; }
+        .op-dot.op-dirty { background: var(--op-ochre); box-shadow: 0 0 0 4px rgba(200,144,46,.22); }
+        .op-dot.op-clean { background: #4CB58C; box-shadow: 0 0 0 4px rgba(76,181,140,.2); }
+        kbd { font-family: inherit; font-size: 10.5px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--op-line-2); background: var(--op-surface-2); color: var(--op-ink-2); }
+        .op-actionbar kbd { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); color: #D5E1EC; }
+
+        /* ---------- Pastilles de complétude ---------- */
+        .op-badge { display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-left: 7px; vertical-align: middle; }
+        .op-badge-complet { background: var(--op-ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--op-ok) 18%, transparent); }
+        .op-badge-partiel { background: var(--op-ochre); box-shadow: 0 0 0 3px color-mix(in srgb, var(--op-ochre) 20%, transparent); }
+        .op-badge-vide    { background: var(--op-line-2); }
+
+        /* ---------- Fenêtres SweetAlert accordées à la charte ---------- */
+        .swal2-popup { font-family: var(--op-font-ui) !important; border-radius: 20px !important; }
+        .swal2-title { font-family: var(--op-font-display) !important; font-weight: 600 !important; }
+        .swal2-toast .swal2-title { font-family: var(--op-font-ui) !important; font-size: 14px !important; font-weight: 600 !important; }
+        html:not(.dark) .swal2-popup { background: #FFFFFF !important; color: var(--op-ink) !important; box-shadow: var(--op-shadow) !important; }
+        html:not(.dark) .swal2-title, html:not(.dark) .swal2-html-container { color: var(--op-ink) !important; }
+        html:not(.dark) .swal2-close { color: var(--op-muted) !important; }
+        .swal2-styled.swal2-confirm { background: var(--op-brand-fill) !important; border-radius: 11px !important; }
+        .swal2-styled.swal2-cancel {
+            background: var(--op-surface-2) !important; color: var(--op-ink) !important;
+            border: 1px solid var(--op-line-2) !important; border-radius: 11px !important;
+        }
+
+        /* ---------- Listes de validation ---------- */
+        .op-list { text-align: left; max-height: 240px; overflow: auto; font-size: 13.5px; margin: 0; padding-left: 1.1rem; list-style: disc; }
+        .op-list li { margin: .3rem 0; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .op-gauge-arc, .op-step, .op-fab #loadDataButton { transition: none !important; }
+            .op-fiche-title.op-swap, aside.op-aside.op-open { animation: none !important; }
+        }
+
+        /* =====================================================================
+           NAVIGATION : BARRE VERTICALE (ordinateur) À LA PLACE DU BANDEAU
+           ===================================================================== */
+        :root { --op-rail: 88px; }
+        @media (min-width: 1024px) {
+            body { padding-left: var(--op-rail); }
+            header.glass-nav {
+                position: fixed !important; top: 0; left: 0; bottom: 0; width: var(--op-rail); height: 100vh !important;
+                flex-direction: column !important; justify-content: space-between !important; align-items: center !important;
+                padding: 16px 0 !important; z-index: 70 !important; border-bottom: 0 !important;
+                border-right: 1px solid rgba(255,255,255,.08);
+                background-image:
+                    radial-gradient(160px 420px at 50% -10%, rgba(255,255,255,.18), transparent 70%),
+                    linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,.28) 100%);
+                box-shadow: 12px 0 32px -26px rgba(19,41,61,.9) !important;
+            }
+            header.glass-nav > div:first-child { flex-direction: column !important; align-items: center !important; gap: 22px !important; width: 100%; }
+            header.glass-nav > div:first-child > a h1 { display: none !important; }
+            header.glass-nav > div:first-child > a > div { height: 44px !important; width: 44px !important; border-radius: 13px !important; }
+            header.glass-nav nav { flex-direction: column !important; align-items: stretch !important; gap: 4px !important; width: 100%; padding: 0 10px; }
+            header.glass-nav nav a {
+                display: flex !important; flex-direction: column; align-items: center; gap: 6px; padding: 11px 4px 10px !important;
+                border-radius: 14px !important; font-size: 10.5px !important; font-weight: 600 !important; line-height: 1.15;
+                text-align: center; color: rgba(255,255,255,.70); transition: background .15s, color .15s;
+            }
+            header.glass-nav nav a i { font-size: 17px; }
+            header.glass-nav nav a:hover { background: rgba(255,255,255,.08) !important; color: #fff; }
+            header.glass-nav .op-nav-active { background: rgba(255,255,255,.13) !important; color: #fff !important; }
+            header.glass-nav .op-nav-active::after { left: -10px; right: auto; top: 14px; bottom: 14px; width: 3px; height: auto; border-radius: 0 3px 3px 0; }
+            header.glass-nav > div:last-child { flex-direction: column !important; gap: 8px !important; }
+            header.glass-nav > div:last-child > button { width: 44px !important; height: 44px !important; border-radius: 13px !important; color: rgba(255,255,255,.78); }
+            #userMenuBtn > div:first-child { display: none !important; }
+            #userMenuBtn > div:last-child { width: 44px !important; height: 44px !important; border-radius: 13px !important; }
+            #userDropdown { left: calc(100% + 14px) !important; right: auto !important; bottom: 0; top: auto; margin-top: 0 !important; }
+            aside.op-aside { top: 0 !important; height: 100vh !important; }
+            /* Le dock suit exactement la largeur du contenu */
+            .op-actionbar {
+                left: calc(var(--op-rail) + 20rem + max(2.5rem, (100vw - var(--op-rail) - 20rem - 1180px) / 2));
+                right: max(2.5rem, (100vw - var(--op-rail) - 20rem - 1180px) / 2);
+            }
+        }
+        /* Info-bulles de la barre verticale */
+        @media (min-width: 1024px) {
+            [data-op-tip] { position: relative; }
+            [data-op-tip]:hover::before {
+                content: attr(data-op-tip); position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%);
+                background: var(--op-ink); color: var(--op-surface); font-size: 12px; font-weight: 600; white-space: nowrap;
+                padding: 6px 10px; border-radius: 8px; pointer-events: none; z-index: 90; box-shadow: var(--op-shadow);
+            }
+            html.dark [data-op-tip]:hover::before { background: #E6EEF5; color: #13293D; }
+        }
+
+        /* =====================================================================
+           NOTIFICATIONS (remplacent alert() et les messages restés en console)
+           ===================================================================== */
+        #op-toasts {
+            position: fixed; top: 18px; right: 18px; z-index: 300; display: flex; flex-direction: column; gap: 10px;
+            width: min(380px, calc(100vw - 36px)); pointer-events: none;
+        }
+        .op-toast {
+            --c: var(--op-brand);
+            position: relative; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start;
+            padding: 14px 14px 16px 18px; border-radius: 16px; overflow: hidden; pointer-events: auto;
+            background: var(--op-surface); color: var(--op-ink); border: 1px solid var(--op-line); box-shadow: var(--op-shadow), 0 8px 24px -16px rgba(19,41,61,.5);
+            opacity: 0; transform: translateX(16px); transition: opacity .22s ease, transform .22s cubic-bezier(.2,.8,.2,1);
+        }
+        .op-toast::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); }
+        .op-toast.op-in { opacity: 1; transform: none; }
+        .op-toast.op-out { opacity: 0; transform: translateX(16px); }
+        .op-toast-success { --c: var(--op-ok); }
+        .op-toast-error   { --c: var(--op-err); }
+        .op-toast-warning { --c: var(--op-ochre); }
+        .op-toast-ico {
+            width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); font-size: 15px;
+        }
+        .op-toast-title { font-weight: 700; font-size: 14px; line-height: 1.3; margin-top: 1px; }
+        .op-toast-msg { font-size: 13px; line-height: 1.5; color: var(--op-ink-2); margin-top: 2px; }
+        .op-toast-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .op-toast-btn {
+            padding: 6px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 700;
+            border: 1px solid var(--op-line-2); background: var(--op-surface-2); color: var(--op-ink);
+        }
+        .op-toast-btn.op-primary { background: var(--op-ochre); border-color: var(--op-ochre); color: #1B1406; }
+        .op-toast-close { width: 26px; height: 26px; border-radius: 8px; color: var(--op-muted); }
+        .op-toast-close:hover { background: var(--op-surface-2); color: var(--op-ink); }
+        .op-toast-timer {
+            position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--c) 55%, transparent);
+            transform-origin: left; transform: scaleX(1);
+        }
+        /* Les toasts SweetAlert (messages Django) prennent la même allure */
+        .swal2-toast { border-radius: 16px !important; border: 1px solid var(--op-line) !important; border-left: 4px solid var(--op-brand) !important; }
+        .swal2-toast.swal2-icon-success { border-left-color: var(--op-ok) !important; }
+        .swal2-toast.swal2-icon-error   { border-left-color: var(--op-err) !important; }
+        .swal2-toast.swal2-icon-warning { border-left-color: var(--op-ochre) !important; }
+
+        /* =====================================================================
+           PALETTE DE COMMANDES (Ctrl + K)
+           ===================================================================== */
+        #op-cmd { position: fixed; inset: 0; z-index: 250; display: none; }
+        #op-cmd.op-open { display: block; }
+        .op-cmd-backdrop { position: absolute; inset: 0; background: rgba(13,21,32,.45); backdrop-filter: blur(3px); animation: op-fade .15s ease; }
+        .op-cmd-panel {
+            position: relative; margin: 12vh auto 0; width: min(640px, calc(100vw - 32px)); max-height: 70vh;
+            display: flex; flex-direction: column; overflow: hidden; border-radius: 20px;
+            background: var(--op-surface); color: var(--op-ink); border: 1px solid var(--op-line);
+            box-shadow: 0 40px 80px -30px rgba(13,21,32,.6); animation: op-pop .18s cubic-bezier(.2,.8,.2,1);
+        }
+        .op-cmd-panel::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--op-ochre); }
+        @keyframes op-fade { from { opacity: 0; } }
+        @keyframes op-pop { from { opacity: 0; transform: translateY(-8px) scale(.98); } }
+        .op-cmd-search { display: flex; align-items: center; gap: 12px; padding: 16px 18px 16px 24px; border-bottom: 1px solid var(--op-line); }
+        .op-cmd-search i { color: var(--op-muted); font-size: 15px; }
+        .op-cmd-search input { flex: 1; border: 0; outline: none; background: transparent; font-size: 16px; font-weight: 500; color: var(--op-ink); }
+        .op-cmd-search input::placeholder { color: var(--op-muted); }
+        .op-cmd-list { overflow-y: auto; padding: 8px 10px 10px 14px; }
+        .op-cmd-group { font-size: 12px; font-weight: 700; color: var(--op-muted); padding: 12px 10px 6px; }
+        .op-cmd-item {
+            display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 10px; width: 100%; text-align: left;
+            padding: 9px 10px; border-radius: 11px; font-size: 14px; color: var(--op-ink); cursor: pointer;
+        }
+        .op-cmd-item i { color: var(--op-muted); text-align: center; }
+        .op-cmd-item small { font-size: 12px; color: var(--op-muted); }
+        .op-cmd-item.op-active { background: var(--op-ochre-soft); }
+        .op-cmd-item.op-active i { color: var(--op-ochre-ink); }
+        .op-cmd-empty { padding: 28px 12px; text-align: center; color: var(--op-muted); font-size: 14px; }
+        .op-cmd-foot { display: flex; gap: 16px; padding: 10px 18px 10px 24px; border-top: 1px solid var(--op-line); font-size: 12px; color: var(--op-muted); background: var(--op-surface-2); }
+
+        /* =====================================================================
+           MODE FOCUS ET DENSITÉ
+           ===================================================================== */
+        .op-tool-btn {
+            height: 38px; padding: 0 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px;
+            border: 1px solid var(--op-line-2); background: var(--op-surface); color: var(--op-ink-2); font-size: 12.5px; font-weight: 600;
+            transition: background .15s, color .15s, border-color .15s;
+        }
+        .op-tool-btn:hover { border-color: var(--op-brand); color: var(--op-brand); }
+        .op-tool-btn[aria-pressed="true"] { background: var(--op-brand-soft); border-color: var(--op-brand); color: var(--op-brand); }
+        @media (min-width: 1024px) {
+            body.op-focus aside.op-aside { display: none !important; }
+            body.op-focus .op-actionbar {
+                left: calc(var(--op-rail) + max(2.5rem, (100vw - var(--op-rail) - 1180px) / 2));
+                right: max(2.5rem, (100vw - var(--op-rail) - 1180px) / 2);
+            }
+        }
+        body.op-focus .op-fiche .op-steps, body.op-focus .op-fiche-state, body.op-focus .op-crumb { display: none; }
+        body.op-focus .op-fiche { padding-top: 1.1rem; padding-bottom: 1.1rem; }
+        body.op-focus .op-fiche-title { font-size: clamp(1.4rem, 1rem + 1.2vw, 1.9rem); }
+        body.op-focus .op-gauge { width: 92px; height: 92px; }
+        body.op-focus .op-gauge-label strong { font-size: 24px; }
+        body.op-focus .op-gauge-label > span { display: none; }
+        body.op-compact .op-ledger .contenu.dhis2-table-container table td { padding-top: 4px !important; padding-bottom: 4px !important; }
+        body.op-compact .op-ledger .contenu.dhis2-table-container table td:first-child { font-size: 13px !important; }
+        body.op-compact .op-ledger .contenu.dhis2-table-container table input[type="number"],
+        body.op-compact .op-ledger .contenu.dhis2-table-container table input[type="text"],
+        body.op-compact .op-ledger .contenu.dhis2-table-container table input[type="date"] { height: 32px !important; font-size: 14px !important; }
+
+        /* Repère d'état au début de chaque ligne : rempli, à vérifier, en erreur */
+        .op-ledger .contenu.dhis2-table-container table td:first-child { position: relative; }
+        .op-ledger .contenu.dhis2-table-container table tr:has(input.op-filled) td:first-child::before,
+        .op-ledger .contenu.dhis2-table-container table tr:has(input.op-warnf) td:first-child::before,
+        .op-ledger .contenu.dhis2-table-container table tr:has(input.op-err) td:first-child::before {
+            content: ""; position: absolute; left: 9px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%;
+            background: var(--op-ok);
+        }
+        .op-ledger .contenu.dhis2-table-container table tr:has(input.op-warnf) td:first-child::before { background: var(--op-ochre); }
+        .op-ledger .contenu.dhis2-table-container table tr:has(input.op-err) td:first-child::before { background: var(--op-err); }
+
+        @media (prefers-reduced-motion: reduce) {
+            .op-toast, .op-cmd-panel, .op-cmd-backdrop { transition: none !important; animation: none !important; }
+        }
+
+        /* =====================================================================
+           COUCHE DE FINESSE : typographie plus légère, contrôles plus fins,
+           ombres et liserés discrets. Elle s'applique par-dessus tout le reste.
+           ===================================================================== */
+        :root {
+            --op-shadow: 0 1px 2px rgba(19,41,61,.04), 0 14px 34px -26px rgba(19,41,61,.28);
+        }
+        html.dark { --op-shadow: 0 1px 2px rgba(0,0,0,.25), 0 14px 34px -24px rgba(0,0,0,.55); }
+        body { font-size: 13.5px !important; letter-spacing: -.003em; }
+
+        /* Barre verticale */
+        @media (min-width: 1024px) {
+            :root { --op-rail: 80px; }
+            header.glass-nav nav a { font-size: 10px !important; font-weight: 500 !important; gap: 5px; padding: 10px 3px 9px !important; color: rgba(255,255,255,.66); }
+            header.glass-nav nav a i { font-size: 15px; }
+            header.glass-nav > div:first-child > a > div,
+            header.glass-nav > div:last-child > button,
+            #userMenuBtn > div:last-child { width: 40px !important; height: 40px !important; border-radius: 12px !important; }
+            header.glass-nav .op-nav-active::after { width: 2px; }
+        }
+
+        /* Arborescence */
+        aside.op-aside h3 { font-size: 13px !important; font-weight: 600 !important; }
+        #searchOrgUnit { font-size: 13px !important; padding-top: .55rem !important; padding-bottom: .55rem !important; border-radius: 10px !important; }
+        #orgUnitTree label { font-weight: 400 !important; }
+        #orgUnitTree > li > div label { font-size: 13px !important; font-weight: 500 !important; }
+        #orgUnitTree > li > ul > li > div label { font-size: 12.5px !important; }
+        #orgUnitTree li.tree-node.flex label { font-size: 12px !important; }
+        .custom-checkbox:checked + label { font-weight: 600 !important; }
+        #orgUnitTree .tree-node > div:has(input:checked),
+        #orgUnitTree li.tree-node.flex:has(> input:checked) { box-shadow: inset 2px 0 0 var(--op-brand); }
+        aside.op-aside > div:last-child a, aside.op-aside > div:last-child button { font-size: 12.5px !important; font-weight: 500 !important; padding-top: .55rem !important; padding-bottom: .55rem !important; }
+
+        /* Fiche de saisie */
+        .op-fiche { padding: 1.35rem 1.75rem 1.35rem 2.1rem; gap: 1.5rem; border-radius: 18px; }
+        .op-fiche::after { width: 3px; }
+        .op-crumb { font-size: 12px; }
+        .op-crumb strong { font-weight: 500; }
+        .op-fiche-title { font-size: clamp(1.45rem, 1.05rem + 1.15vw, 2.05rem); font-weight: 460; letter-spacing: -.012em; margin: .3rem 0 .25rem; }
+        .op-fiche-title.op-placeholder { font-weight: 360; }
+        .op-fiche-period { font-size: 13.5px; font-weight: 500; }
+        .op-fiche-state { font-size: 12.5px; margin-top: .2rem; }
+        .op-steps { gap: .4rem; margin-top: .9rem; }
+        .op-step { font-size: 11.5px; font-weight: 500; padding: .22rem .65rem .22rem .25rem; gap: .4rem; }
+        .op-step .op-num { width: 18px; height: 18px; font-size: 10px; font-weight: 600; }
+        .op-step.op-done .op-num::after { font-size: 10px; }
+        .op-gauge { width: 118px; height: 118px; }
+        .op-gauge-track, .op-gauge-arc { stroke-width: 7; }
+        .op-gauge-stamp { stroke-width: 1; }
+        .op-gauge-label strong { font-size: 30px; font-weight: 460; }
+        .op-gauge-label strong small { font-size: 14px; }
+        .op-gauge-label > span { font-size: 10.5px; margin-top: 4px; }
+
+        /* Barre de commande */
+        .op-command { padding: .9rem 1rem !important; gap: .8rem !important; border-radius: 16px !important; }
+        .op-command label { font-size: 12px !important; font-weight: 500 !important; color: var(--op-muted) !important; margin-bottom: .35rem !important; }
+        .op-command select { height: 38px; font-size: 13.5px !important; font-weight: 500 !important; border-radius: 10px !important; border-color: var(--op-line-2) !important; }
+        .op-command .op-nav-btn { height: 36px; width: 36px; font-size: 15px; }
+        .op-command .flex.shadow-sm { border-radius: 10px !important; }
+        .op-fab #loadDataButton { height: 38px !important; border-radius: 10px !important; padding: 0 1rem !important; box-shadow: none !important; }
+        .op-fab.op-ready #loadDataButton { box-shadow: 0 6px 16px -10px rgba(200,144,46,.9) !important; }
+        .op-fab #loadDataButton > span.font-bold { font-size: 13px !important; font-weight: 600 !important; }
+        .op-fab #loadDataButton svg { width: 16px !important; height: 16px !important; }
+        .op-chip { font-size: 12px; font-weight: 500; padding: .25rem .45rem .25rem .65rem; }
+        #op-unit-chips > span.italic { font-size: 12.5px !important; }
+
+        /* Registre */
+        .op-ledger { border-radius: 16px !important; }
+        #op-table-toolbar { padding: .65rem 1rem !important; }
+        #op-table-toolbar span { font-size: 12px !important; font-weight: 500 !important; }
+        #op-row-filter { height: 34px; font-size: 12.5px !important; border-radius: 9px !important; }
+        .op-tool-btn { height: 34px; padding: 0 10px; font-size: 12px; font-weight: 500; border-radius: 9px; }
+        .op-ledger .contenu.dhis2-table-container table th { font-size: 11.5px; font-weight: 600; color: var(--op-muted) !important; padding: 10px 14px; }
+        .op-ledger .contenu.dhis2-table-container table td { padding: 7px 14px !important; }
+        .op-ledger .contenu.dhis2-table-container table td:first-child { font-size: 13px !important; font-weight: 400 !important; color: var(--op-ink-2) !important; padding-left: 22px !important; }
+        .op-ledger .contenu.dhis2-table-container table tr:focus-within td:first-child { color: var(--op-ink) !important; box-shadow: inset 3px 0 0 var(--op-ochre) !important; }
+        .op-ledger .contenu.dhis2-table-container table input[type="number"],
+        .op-ledger .contenu.dhis2-table-container table input[type="text"],
+        .op-ledger .contenu.dhis2-table-container table input[type="date"] {
+            height: 34px !important; border-radius: 8px !important; font-size: 13.5px !important; font-weight: 500 !important;
+            border-color: var(--op-line) !important;
+        }
+        .op-ledger .contenu.dhis2-table-container table input[type="number"]:focus,
+        .op-ledger .contenu.dhis2-table-container table input[type="text"]:focus,
+        .op-ledger .contenu.dhis2-table-container table input[type="date"]:focus { box-shadow: 0 0 0 3px rgba(200,144,46,.16) !important; }
+        .op-ledger .contenu.dhis2-table-container table input.op-filled { border-left: 2px solid var(--op-ok) !important; }
+        .op-ledger .contenu.dhis2-table-container table tr:has(input.op-filled) td:first-child::before,
+        .op-ledger .contenu.dhis2-table-container table tr:has(input.op-warnf) td:first-child::before,
+        .op-ledger .contenu.dhis2-table-container table tr:has(input.op-err) td:first-child::before { width: 5px; height: 5px; margin-top: -2.5px; }
+        body.op-compact .op-ledger .contenu.dhis2-table-container table td { padding-top: 3px !important; padding-bottom: 3px !important; }
+        body.op-compact .op-ledger .contenu.dhis2-table-container table input[type="number"],
+        body.op-compact .op-ledger .contenu.dhis2-table-container table input[type="text"],
+        body.op-compact .op-ledger .contenu.dhis2-table-container table input[type="date"] { height: 28px !important; font-size: 13px !important; }
+
+        /* État vide */
+        .op-ledger [id^="no-data-"] { padding: 2.75rem 1.5rem 3rem !important; }
+        .op-ledger [id^="no-data-"] svg { width: 40px !important; height: 40px !important; }
+        .op-ledger [id^="no-data-"] h3 { font-size: 21px !important; font-weight: 460 !important; }
+        .op-ledger [id^="no-data-"] p { font-size: 13px !important; font-weight: 400 !important; }
+        .op-guide { gap: .6rem; margin-top: 1.25rem; max-width: 600px; }
+        .op-guide li { font-size: 12.5px; padding: .8rem .9rem; border-radius: 12px; }
+        .op-guide b { font-size: 18px; font-weight: 460; margin-bottom: .3rem; }
+
+        /* Dock */
+        .op-actionbar { padding: .5rem .5rem .5rem 1rem; border-radius: 15px; gap: .8rem; }
+        #op-save-status { font-size: 12.5px !important; font-weight: 600 !important; }
+        .op-actionbar p.text-\[10px\] { font-size: 10.5px !important; }
+        .op-actionbar button[id^="myButton"] { font-size: 13px !important; font-weight: 600 !important; padding: .6rem 1.15rem !important; border-radius: 11px !important; }
+        .op-actionbar span.text-\[11px\] { font-weight: 500 !important; }
+        .op-dot { width: 8px; height: 8px; }
+        kbd { font-size: 10px; padding: 0 5px; }
+
+        /* Notifications et palette */
+        .op-toast { padding: 12px 12px 14px 16px; border-radius: 14px; gap: 10px; }
+        .op-toast::before { width: 3px; }
+        .op-toast-ico { width: 28px; height: 28px; border-radius: 9px; font-size: 13px; }
+        .op-toast-title { font-size: 13px; font-weight: 600; }
+        .op-toast-msg { font-size: 12.5px; }
+        .op-toast-btn { font-size: 12px; font-weight: 600; padding: 5px 10px; }
+        .op-toast-timer { height: 2px; }
+        .op-cmd-panel::before { width: 3px; }
+        .op-cmd-search input { font-size: 15px; font-weight: 400; }
+        .op-cmd-item { font-size: 13.5px; padding: 8px 10px; }
+        .op-cmd-group { font-size: 11.5px; font-weight: 600; }
+        .swal2-title { font-weight: 500 !important; font-size: 1.45em !important; }
+        .swal2-html-container { font-size: .95em !important; }
+
+        /* =====================================================================
+           BARRE DES MODULES : ICÔNES SEULES + INFOBULLES
+           ===================================================================== */
+        @media (min-width: 1024px) {
+            :root { --op-rail: 72px; }
+            header.glass-nav { padding: 14px 0 !important; }
+            header.glass-nav > div:first-child { gap: 14px !important; min-height: 0; flex: 1 1 auto; }
+            header.glass-nav nav {
+                flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none;
+                padding: 4px 0 !important; gap: 3px !important; align-items: center !important;
+            }
+            header.glass-nav nav::-webkit-scrollbar { display: none; }
+            header.glass-nav nav a {
+                position: relative; width: 44px; height: 44px; flex: 0 0 44px; padding: 0 !important; margin: 0 auto;
+                justify-content: center; border-radius: 12px !important; color: rgba(255,255,255,.62);
+                transition: background .15s, color .15s, transform .15s;
+            }
+            header.glass-nav nav a i { font-size: 16.5px; transition: transform .2s cubic-bezier(.2,.8,.2,1); }
+            header.glass-nav nav a:hover { background: rgba(255,255,255,.09) !important; color: #fff; }
+            header.glass-nav nav a:hover i { transform: scale(1.08); }
+            header.glass-nav nav a:focus-visible { outline: 2px solid var(--op-ochre); outline-offset: 2px; }
+            /* Libellé conservé pour les lecteurs d'écran, masqué à l'œil */
+            header.glass-nav nav a > span {
+                position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+            }
+            header.glass-nav .op-nav-active { background: rgba(255,255,255,.15) !important; color: #fff !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.10); }
+            header.glass-nav .op-nav-active::after { left: -14px; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; }
+            header.glass-nav .op-rail-meal i { color: #E0AE4F; }
+            .op-rail-sep { display: block; flex: 0 0 auto; width: 20px; height: 1px; margin: 7px auto; background: rgba(255,255,255,.16); }
+            header.glass-nav > div:last-child { gap: 4px !important; }
+            header.glass-nav > div:last-child > a,
+            header.glass-nav > div:last-child > button { width: 44px !important; height: 44px !important; border-radius: 12px !important; color: rgba(255,255,255,.66); }
+            header.glass-nav > div:last-child > a:hover,
+            header.glass-nav > div:last-child > button:hover { color: #fff; }
+            #userMenuBtn > div:last-child { width: 38px !important; height: 38px !important; margin-top: 6px; border-radius: 11px !important; }
+            [data-op-tip]:hover::before { display: none !important; }   /* remplacé par l'infobulle ci-dessous */
+        }
+        @media (max-width: 1023px) {
+            #op-settings-link { display: none !important; }
+            #mobileMenu:not(.hidden) { display: grid !important; grid-template-columns: 1fr 1fr; column-gap: 1.25rem; max-height: calc(100vh - 4rem); overflow-y: auto; }
+        }
+
+        /* Infobulle : nom du module + à quoi il sert */
+        #op-tip {
+            position: fixed; z-index: 400; pointer-events: none; max-width: 250px;
+            padding: 9px 12px 10px; border-radius: 11px; background: #13293D; color: #fff;
+            box-shadow: 0 14px 30px -14px rgba(13,21,32,.6), inset 0 0 0 1px rgba(255,255,255,.06);
+            opacity: 0; transform: translateX(-4px); transition: opacity .12s ease, transform .12s ease;
+        }
+        #op-tip.op-show { opacity: 1; transform: none; }
+        #op-tip::before {
+            content: ""; position: absolute; left: -4px; top: calc(50% - 4px); width: 8px; height: 8px;
+            background: inherit; transform: rotate(45deg); border-radius: 2px;
+        }
+        #op-tip strong { display: block; font-size: 12.5px; font-weight: 600; letter-spacing: 0; }
+        #op-tip span { display: block; font-size: 11.5px; line-height: 1.45; color: rgba(255,255,255,.72); margin-top: 2px; }
+        #op-tip span:empty { display: none; }
+        html.dark #op-tip { background: #E6EEF5; color: #13293D; }
+        html.dark #op-tip span { color: #3E5468; }
+        @media (prefers-reduced-motion: reduce) { #op-tip { transition: none; } }
+
+        /* Ajustement : tous les modules tiennent dans la hauteur d'un écran portable */
+        @media (min-width: 1024px) {
+            header.glass-nav nav a { width: 40px; height: 40px; flex-basis: 40px; border-radius: 11px !important; }
+            header.glass-nav nav a i { font-size: 15.5px; }
+            header.glass-nav .op-nav-active::after { left: -16px; top: 11px; bottom: 11px; }
+            .op-rail-sep { margin: 5px auto; }
+            header.glass-nav > div:first-child > a > div { width: 38px !important; height: 38px !important; border-radius: 11px !important; }
+            header.glass-nav > div:last-child > a,
+            header.glass-nav > div:last-child > button { width: 40px !important; height: 40px !important; border-radius: 11px !important; }
+            #userMenuBtn > div:last-child { width: 34px !important; height: 34px !important; margin-top: 4px; }
+            header.glass-nav nav.op-scroll { -webkit-mask-image: linear-gradient(#000 calc(100% - 28px), transparent); mask-image: linear-gradient(#000 calc(100% - 28px), transparent); }
+        }
+
+        /* Collage depuis Excel : les champs remplis s'éclairent brièvement */
+        .op-ledger .contenu.dhis2-table-container table input.op-pasted,
+        .op-ledger .contenu.dhis2-table-container table textarea.op-pasted { animation: op-paste 1.4s ease; }
+        @keyframes op-paste { 0%, 40% { background-color: var(--op-ochre-soft); border-color: var(--op-ochre); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .op-ledger .contenu.dhis2-table-container table input.op-pasted { animation: none !important; }
+        }
+
+        /* =====================================================================
+           PLEINE LARGEUR : le contenu occupe tout l'espace disponible
+           ===================================================================== */
+        .op-main > :not(.op-actionbar) { max-width: none !important; }
+        @media (min-width: 768px) { .op-main { padding: 1.5rem 1.75rem 8rem !important; } }
+        @media (min-width: 1024px) {
+            aside.op-aside { width: 18rem !important; }
+            .op-actionbar { left: calc(var(--op-rail) + 18rem + 1.75rem) !important; right: 1.75rem !important; }
+            body.op-focus .op-actionbar { left: calc(var(--op-rail) + 1.75rem) !important; right: 1.75rem !important; }
+        }
+        .op-fiche-title { max-width: none; }
+    </style>
 </head>
 <body class="bg-[#f4f7f9] font-sans text-sm text-gray-800">
 
@@ -27,7 +936,7 @@
             <i class="fa-solid fa-bars text-xl"></i>
         </button>
 
-        <a href="/" class="flex items-center gap-3 group transition-all">
+        <a href="/" class="flex items-center gap-3 group transition-all" data-op-tip="{{ actual_institution.nom|default:'Opera+' }}">
             <div class="bg-white/90 p-1 rounded-lg h-9 w-9 flex items-center justify-center shadow-md">
                 {% if actual_institution.logo %}
                     <img src="{{ actual_institution.img.url }}" alt="Logo" class="h-full w-full object-contain">
@@ -40,17 +949,50 @@
             </h1>
         </a>
 
-        <nav class="hidden lg:flex items-center gap-1 text-[13px] font-semibold">
-            <a href="/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all">Dashboard</a>
-            <a href="/structures/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all">Unités d'Org</a>
-            <a href="/evaluer/0/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all">Indicateurs</a>
-            <a href="/forms/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all">Collecte De Donnees</a>
-            <a href="/dataelts/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all">DataElements</a>
+        <!-- Modules OperaPlus, rangés selon le cycle MEAL. Liens « # » : remplacer par vos vraies adresses (voir data-op-module). -->
+        <nav class="hidden lg:flex items-center gap-1 text-[13px] font-semibold" aria-label="Modules OperaPlus">
+            <a href="/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all" data-op-tip="Tableau de bord" data-op-desc="Vue d'ensemble des projets, des indicateurs et des échéances."><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
+            <a href="#" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all op-rail-todo" data-op-module="projets" data-op-tip="Mes projets" data-op-desc="Les projets suivis, leur avancement et leurs équipes."><i class="fa-solid fa-folder-open"></i><span>Mes projets</span></a>
+            <span class="op-rail-sep" aria-hidden="true"></span>
+            <a href="#" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all op-rail-todo" data-op-module="cadre-logique" data-op-tip="Cadre logique" data-op-desc="Objectifs, résultats attendus, activités et hypothèses."><i class="fa-solid fa-diagram-project"></i><span>Cadre logique</span></a>
+            <a href="#" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all op-rail-todo" data-op-module="planification" data-op-tip="Planification et RACI" data-op-desc="Activités, échéances et responsabilités de chacun."><i class="fa-solid fa-calendar-check"></i><span>Planification</span></a>
+            <a href="#" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all op-rail-todo" data-op-module="operations" data-op-tip="Opérations" data-op-desc="Exécution des activités, rapports et validations."><i class="fa-solid fa-list-check"></i><span>Opérations</span></a>
+            <span class="op-rail-sep" aria-hidden="true"></span>
+            <a href="/forms/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all op-nav-active" data-op-tip="Collecte de données" data-op-desc="Formulaires de saisie par unité et par période."><i class="fa-solid fa-clipboard-list"></i><span>Collecte De Donnees</span></a>
+            <a href="/dataelts/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all" data-op-tip="Éléments de données" data-op-desc="Les variables collectées et leur type de valeur."><i class="fa-solid fa-database"></i><span>DataElements</span></a>
+            <a href="/structures/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all" data-op-tip="Unités d'organisation" data-op-desc="Régions, districts et formations sanitaires."><i class="fa-solid fa-sitemap"></i><span>Unités d'Org</span></a>
+            <span class="op-rail-sep" aria-hidden="true"></span>
+            <a href="/evaluer/0/" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all" data-op-tip="Indicateurs" data-op-desc="Formules, cibles et valeurs calculées."><i class="fa-solid fa-bullseye"></i><span>Indicateurs</span></a>
+            <a href="#" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all op-rail-todo" data-op-module="analyses" data-op-tip="Analyses et rapports" data-op-desc="Tableaux de bord analytiques et exports."><i class="fa-solid fa-chart-column"></i><span>Analyses</span></a>
+            <span class="op-rail-sep" aria-hidden="true"></span>
+            <a href="#" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all op-rail-todo" data-op-module="redevabilite" data-op-tip="Redevabilité" data-op-desc="Plaintes, retours des bénéficiaires et réponses apportées."><i class="fa-solid fa-scale-balanced"></i><span>Redevabilité</span></a>
+            <a href="#" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all op-rail-todo" data-op-module="taches" data-op-tip="Tâches à valider" data-op-desc="Rapports et livrables en attente de votre décision."><i class="fa-solid fa-clipboard-check"></i><span>Tâches à valider</span></a>
+            <a href="#" class="hover:bg-white/10 px-3 py-2 rounded-lg transition-all op-rail-todo" data-op-module="archives" data-op-tip="Archives" data-op-desc="Documents, rapports et données des périodes clôturées."><i class="fa-solid fa-box-archive"></i><span>Archives</span></a>
         </nav>
     </div>
 
+    <div class="flex items-center gap-2 sm:gap-3">
+    <!-- AJOUT : lien permanent vers la communauté MEAL Afrique (toujours visible) -->
+<a href="#" class="hidden lg:flex items-center justify-center rounded-lg hover:bg-white/10 transition-all op-rail-meal op-rail-todo" data-op-module="meal-afrique" data-op-tip="Communauté MEAL Afrique" data-op-desc="Débats, articles et experts du suivi-évaluation en Afrique."><i class="fa-solid fa-earth-africa"></i><span class="sr-only">MEAL Afrique</span></a>
+    <!-- AJOUT : palette de commandes -->
+    <button type="button" id="op-cmd-btn" data-op-tip="Rechercher" data-op-desc="Unités, éléments de données et actions. Raccourci : Ctrl + K." aria-label="Rechercher"
+            class="h-9 w-9 rounded-lg hover:bg-white/10 flex items-center justify-center transition-all">
+        <i class="fa-solid fa-magnifying-glass"></i>
+    </button>
+    <!-- AJOUT : bascule clair / sombre -->
+    <button type="button" id="op-theme-btn" data-op-tip="Thème clair ou sombre" data-op-desc="Le choix est mémorisé sur cet appareil." aria-label="Basculer le thème clair / sombre"
+            class="h-9 w-9 rounded-lg hover:bg-white/10 flex items-center justify-center transition-all">
+        <i class="fa-solid fa-moon dark:hidden"></i>
+        <i class="fa-solid fa-sun hidden dark:inline"></i>
+    </button>
+
+    <!-- AJOUT : accès direct aux paramètres -->
+    <a href="/configurations_admin/" id="op-settings-link" class="h-9 w-9 rounded-lg hover:bg-white/10 flex items-center justify-center transition-all"
+       data-op-tip="Paramètres" data-op-desc="Configuration de l'institution et des utilisateurs." aria-label="Paramètres">
+        <i class="fa-solid fa-gear"></i>
+    </a>
     <div class="relative">
-    <button id="userMenuBtn" class="flex items-center gap-2 sm:gap-4 outline-none">
+    <button id="userMenuBtn" class="flex items-center gap-2 sm:gap-4 outline-none" aria-label="Mon compte" data-op-tip="{{ request.user.get_full_name|default:request.user.username }}" data-op-desc="Profil, paramètres et déconnexion.">
         <div class="text-right hidden sm:block">
             <p class="text-[9px] uppercase opacity-60 font-bold">Session active</p>
             <p class="text-[11px] font-bold">{{ request.user.username }}</p>
@@ -70,14 +1012,27 @@
         <div class="my-1 border-t border-slate-100 dark:border-slate-700"></div>
         <a href="/log/1/" class="block px-4 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">Déconnexion</a>
     </div>
-</div>
+    </div>
+    </div>
 </header>
 
 <div id="mobileMenu" class="hidden lg:hidden fixed top-16 left-0 w-full bg-slate-900/95 backdrop-blur-md p-6 flex flex-col gap-4 text-white z-40 border-b border-white/10">
+    <a href="/" class="block py-2 border-b border-white/10">Dashboard</a>
     <a href="/structures/" class="block py-2 border-b border-white/10">Unités d'Org</a>
     <a href="/evaluer/0/" class="block py-2 border-b border-white/10">Indicateurs</a>
-    <a href="/forms/" class="block py-2 border-b border-white/10">Collecte</a>
+    <a href="/forms/" class="block py-2 border-b border-white/10 font-bold">Collecte</a>
     <a href="/dataelts/" class="block py-2 border-b border-white/10">Données</a>
+    <!-- AJOUT : autres modules (liens « # » à remplacer) -->
+    <a href="#" class="block py-2 border-b border-white/10" data-op-module="projets">Mes projets</a>
+    <a href="#" class="block py-2 border-b border-white/10" data-op-module="cadre-logique">Cadre logique</a>
+    <a href="#" class="block py-2 border-b border-white/10" data-op-module="planification">Planification et RACI</a>
+    <a href="#" class="block py-2 border-b border-white/10" data-op-module="operations">Opérations</a>
+    <a href="#" class="block py-2 border-b border-white/10" data-op-module="analyses">Analyses et rapports</a>
+    <a href="#" class="block py-2 border-b border-white/10" data-op-module="redevabilite">Redevabilité</a>
+    <a href="#" class="block py-2 border-b border-white/10" data-op-module="taches">Tâches à valider</a>
+    <a href="#" class="block py-2 border-b border-white/10" data-op-module="archives">Archives</a>
+    <a href="#" class="block py-2 border-b border-white/10" data-op-module="meal-afrique">Communauté MEAL Afrique</a>
+    <a href="/configurations_admin/" class="block py-2">Paramètres</a>
 </div>
 <script>
     const userBtn = document.getElementById('userMenuBtn');
@@ -111,13 +1066,27 @@
         }
     });
 </script>
+
+<!-- AJOUT : voile derrière le tiroir mobile -->
+<div id="op-overlay" class="hidden lg:hidden"></div>
+
     <div class="flex min-h-[calc(100vh-48px)]">
-      
- <aside class="w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-[calc(100vh-48px)] sticky top-12 hidden lg:flex flex-col shadow-[1px_0_10px_rgba(0,0,0,0.02)] z-40">
-    
+
+    <!-- CORRECTION : le formulaire englobe maintenant sidebar ET zone de saisie (avant, il s'ouvrait dans <aside> et se fermait après <main>) -->
+    <form method="POST" action="/save_value/" onsubmit="return submitForm('{{ dataset.id }}')" id="myForm{{ dataset.id }}" class="flex flex-col flex-1 overflow-hidden op-form-wrap">
+        {% csrf_token %}
+
+ <aside class="w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-[calc(100vh-48px)] sticky top-12 hidden lg:flex flex-col shadow-[1px_0_10px_rgba(0,0,0,0.02)] z-40 op-aside">
+
     <div class="p-4 space-y-3 border-b border-slate-100 dark:border-slate-800">
         <div class="flex items-center justify-between">
             <h3 class="font-bold text-slate-400 text-[10px] uppercase tracking-widest">Unité d'organisation</h3>
+            <!-- AJOUT : compteur + tout déplier / replier -->
+            <div class="flex items-center gap-1">
+                <span id="op-unit-count" class="min-w-[20px] h-5 px-1.5 rounded-full bg-[#276696] text-white text-[10px] font-bold flex items-center justify-center" title="Unités sélectionnées">0</span>
+                <button type="button" id="op-expand-all" title="Tout déplier" class="h-6 w-6 rounded-md text-slate-400 hover:text-[#276696] hover:bg-slate-100 dark:hover:bg-slate-800"><i class="fa-solid fa-angles-down text-[11px]"></i></button>
+                <button type="button" id="op-collapse-all" title="Tout replier" class="h-6 w-6 rounded-md text-slate-400 hover:text-[#276696] hover:bg-slate-100 dark:hover:bg-slate-800"><i class="fa-solid fa-angles-up text-[11px]"></i></button>
+            </div>
         </div>
         <div class="relative group">
             <span class="absolute inset-y-0 left-3 flex items-center text-slate-400 group-focus-within:text-blue-500 transition-colors">
@@ -125,17 +1094,20 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
             </span>
-            <input type="text" 
+            <input type="text"
                    id="searchOrgUnit"
                    onkeyup="filterTree()"
-                   placeholder="Rechercher une unité..." 
+                   placeholder="Rechercher une unité..."
                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none dark:text-slate-200">
+        </div>
+        <!-- AJOUT : légende des pastilles de complétude (visible dès qu'une période est choisie) -->
+        <div id="op-legend" class="hidden items-center justify-between gap-2 text-[10px] font-semibold text-slate-400 pt-1">
+            <span title="Tous les éléments saisis"><span class="op-badge op-badge-complet" style="margin:0 4px 0 0"></span>Complet <b id="op-n-complet" class="text-slate-600 dark:text-slate-300">0</b></span>
+            <span title="Saisie commencée"><span class="op-badge op-badge-partiel" style="margin:0 4px 0 0"></span>Partiel <b id="op-n-partiel" class="text-slate-600 dark:text-slate-300">0</b></span>
+            <span title="Aucune donnée"><span class="op-badge op-badge-vide" style="margin:0 4px 0 0"></span>Vide <b id="op-n-vide" class="text-slate-600 dark:text-slate-300">0</b></span>
         </div>
     </div>
 
-    <form method="POST" action="/save_value/" onsubmit="return submitForm('{{ dataset.id }}')" id="myForm{{ dataset.id }}" class="flex flex-col flex-1 overflow-hidden">
-        {% csrf_token %}
-        
         <div class="flex-1 overflow-y-auto py-4 select-none custom-scrollbar bg-[#fcfdfe] dark:bg-slate-900/50">
             <ul id="orgUnitTree" class="space-y-0.5 px-3">
                 {% for structures in dataset.m_structures.all %}
@@ -146,9 +1118,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
                         </button>
-                        
+
                         <div class="flex items-center flex-1">
-                            <input type="checkbox" name="org_units" value="{{ structures.id }}" id="check-{{ structures.id }}" 
+                            <input type="checkbox" name="org_units" value="{{ structures.id }}" id="check-{{ structures.id }}"
                                    class="custom-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 dark:bg-slate-800 dark:border-slate-600" onchange="updateSelect(this, '{{ structures.nom }}', '{{ structures.id }}')">
                             <label for="check-{{ structures.id }}" class="ml-2.5 text-[13px] font-semibold text-slate-700 dark:text-slate-300 cursor-pointer group-hover:text-blue-600 transition-colors">
                                 {{ structures.nom }}
@@ -165,7 +1137,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                                     </svg>
                                 </button>
-                                <input type="checkbox" name="org_units" value="{{ sub_line.id }}" id="check-{{ sub_line.id }}" 
+                                <input type="checkbox" name="org_units" value="{{ sub_line.id }}" id="check-{{ sub_line.id }}"
                                        class="custom-checkbox w-3.5 h-3.5 rounded border-slate-300 text-blue-600 dark:bg-slate-800 dark:border-slate-600" onchange="updateSelect(this, '{{ sub_line.nom }}', '{{ sub_line.id }}')">
                                 <label for="check-{{ sub_line.id }}" class="ml-2.5 text-[12px] font-medium text-slate-600 dark:text-slate-400 cursor-pointer group-hover:text-blue-600">{{ sub_line.nom }}</label>
                             </div>
@@ -174,8 +1146,8 @@
     {% for last_child in sub_line.children.all %}
     <li class="tree-node flex items-center py-1.5 px-2 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg group transition-all" data-name="{{ last_child.nom|lower }}">
         <!-- CORRECTION ICI : utilisation de last_child.nom et last_child.id -->
-        <input type="checkbox" name="org_units" value="{{ last_child.id }}" id="check-{{ last_child.id }}" 
-               class="custom-checkbox w-3 h-3 rounded border-slate-300 text-blue-600 ml-4 dark:bg-slate-800 dark:border-slate-600" 
+        <input type="checkbox" name="org_units" value="{{ last_child.id }}" id="check-{{ last_child.id }}"
+               class="custom-checkbox w-3 h-3 rounded border-slate-300 text-blue-600 ml-4 dark:bg-slate-800 dark:border-slate-600"
                onchange="updateSelect(this, '{{ last_child.nom|escapejs }}', '{{ last_child.id }}')">
         <label for="check-{{ last_child.id }}" class="ml-2.5 text-[11.5px] text-slate-500 dark:text-slate-500 group-hover:text-slate-800 dark:group-hover:text-slate-200 cursor-pointer">
             {{ last_child.nom }}
@@ -192,8 +1164,8 @@
         </div>
 
       <div class="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5">
-    
-    <a href="/structures/" 
+
+    <a href="/structures/"
        class="w-full flex items-center justify-center gap-2 py-2.5 bg-[#276696] hover:bg-[#1d4d71] text-white text-[11px] font-bold rounded-lg transition-all uppercase tracking-widest shadow-md active:scale-95">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
@@ -201,8 +1173,8 @@
         Ajouter unité d'organisation
     </a>
 
-    <button type="button" 
-            onclick="window.location.reload()" 
+    <button type="button"
+            onclick="window.location.reload()"
             class="w-full py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-all uppercase tracking-widest shadow-sm">
         Réinitialiser la vue
     </button>
@@ -218,7 +1190,7 @@ function toggleNode(btn) {
 
     if (subList && subList.tagName === 'UL') {
         const isHidden = subList.classList.contains('hidden');
-        
+
         if (isHidden) {
             // OUVRIR
             subList.classList.remove('hidden');
@@ -252,7 +1224,7 @@ function filterTree() {
 
         if (name.includes(filter)) {
             node.classList.remove('hidden');
-            
+
             // Ouvrir les parents pour montrer le résultat
             let parent = node.parentElement.closest('.tree-node');
             while (parent) {
@@ -275,29 +1247,65 @@ function filterTree() {
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
-    
-    /* Style Checkbox DHIS2 */
+
+    /* Style Checkbox DHIS2 (CORRECTION : @apply ne fonctionne pas avec le CDN Tailwind, remplacé par du CSS natif) */
     .custom-checkbox {
-        @apply cursor-pointer transition-all border-slate-300;
+        cursor: pointer;
+        transition: all .15s ease;
+        border-color: #cbd5e1;
     }
     .custom-checkbox:checked {
         background-color: #276696 !important;
         border-color: #276696 !important;
     }
 </style>
-  
+
     <input type="hidden" name="generator" value="dSv">
     <input type="hidden" name="dSv_id" value="{{dataset.id}}">
     <input type="hidden" name="edit_or_create" value="c">
     <input type="hidden" name="variables_value" id="variables_value_{{ dataset.id }}">
     <input type="hidden" name="variables_names" id="variables_names_{{ dataset.id }}">
     <input type="hidden" name="structures_value" id="structures_value_{{ dataset.id }}">
-    
-    <main class="flex-1 p-4 md:p-8 overflow-x-auto">
-        
-        <div class="bg-white border border-gray-300 rounded-sm shadow-sm p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    <main class="flex-1 p-4 md:p-8 overflow-x-auto op-main">
+
+        <!-- AJOUT : fiche de saisie (unité et période en cours + jauge de complétude) -->
+        <section class="op-fiche" aria-live="polite">
+            <div class="min-w-0">
+                <nav class="op-crumb" aria-label="Fil d'Ariane">
+                    <a href="/forms/">Collecte de données</a>
+                    <i class="fa-solid fa-chevron-right text-[9px] opacity-60"></i>
+                    <strong>{{ dataset.nom|default:dataset }}</strong>
+                </nav>
+                <h2 id="op-ctx-unit" class="op-fiche-title op-placeholder">Aucune unité choisie</h2>
+                <p id="op-ctx-period" class="op-fiche-period">Période à choisir</p>
+                <p id="op-ctx-state" class="op-fiche-state">Cochez une unité dans l'arborescence pour commencer.</p>
+                <ol class="op-steps">
+                    <li class="op-step" data-step="1"><span class="op-num">1</span>Unité</li>
+                    <li class="op-step" data-step="2"><span class="op-num">2</span>Année</li>
+                    <li class="op-step" data-step="3"><span class="op-num">3</span>Période</li>
+                    <li class="op-step" data-step="4"><span class="op-num">4</span>Formulaire chargé</li>
+                </ol>
+                <button type="button" id="op-units-btn" class="lg:hidden op-units-btn">
+                    <i class="fa-solid fa-sitemap"></i> Choisir les unités
+                </button>
+            </div>
+            <div id="op-gauge" class="op-gauge op-empty" role="img" aria-label="Formulaire rempli à 0 %">
+                <svg viewBox="0 0 140 140" aria-hidden="true">
+                    <circle class="op-gauge-stamp" cx="70" cy="70" r="64"></circle>
+                    <circle class="op-gauge-track" cx="70" cy="70" r="52"></circle>
+                    <circle id="op-gauge-arc" class="op-gauge-arc" cx="70" cy="70" r="52"></circle>
+                </svg>
+                <div class="op-gauge-label">
+                    <strong><span id="op-gauge-pct">0</span><small>%</small></strong>
+                    <span id="op-gauge-sub">du formulaire rempli</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="bg-white border border-gray-300 rounded-sm shadow-sm p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 op-card rounded-xl border-slate-200 op-command">
             <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Année</label>
+                <label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider"><i class="fa-regular fa-calendar mr-1 text-[#276696]"></i> Année</label>
                 <select class="w-full border border-gray-300 bg-gray-50 p-1.5 rounded focus:ring-1 focus:ring-blue-400 outline-none text-sm" name="period1_saisie" id="annee">
                     <option value="">Sélectionner l'année</option>
                     {% for periode_oks in periode_ok %}
@@ -306,24 +1314,73 @@ function filterTree() {
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Période (Mois/Trimestre)</label>
+                <label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider"><i class="fa-regular fa-clock mr-1 text-[#276696]"></i> Période (Mois/Trimestre)</label>
                 <select class="w-full border border-gray-300 bg-gray-50 p-1.5 rounded focus:ring-1 focus:ring-blue-400 outline-none font-medium text-sm" name="period2_saisie" id="period">
                     </select>
             </div>
             <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider">Unité d'organisation</label>
+                <label class="block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wider"><i class="fa-solid fa-sitemap mr-1 text-[#276696]"></i> Unité d'organisation</label>
                 <div class="flex space-x-2">
                     <select class="flex-1 border border-gray-300 bg-gray-50 p-1.5 rounded focus:ring-1 focus:ring-blue-400 outline-none text-sm" name="struc_selec" id="structureSelect">
                         </select>
                     <div class="flex shadow-sm rounded overflow-hidden">
-                        <button type="button" class="bg-gray-200 px-3 hover:bg-gray-300 text-gray-700 border-r border-gray-300 transition">«</button>
-                        <button type="button" class="bg-gray-200 px-3 hover:bg-gray-300 text-gray-700 transition">»</button>
+                        <button type="button" id="op-prev-unit" title="Unité précédente" class="bg-gray-200 px-3 hover:bg-gray-300 text-gray-700 border-r border-gray-300 transition op-nav-btn">«</button>
+                        <button type="button" id="op-next-unit" title="Unité suivante" class="bg-gray-200 px-3 hover:bg-gray-300 text-gray-700 transition op-nav-btn">»</button>
                     </div>
                 </div>
             </div>
+
+            <!-- Bouton « Charger les données » (déplacé ici, attributs inchangés) -->
+       <div class="fixed bottom-8 right-8 z-[120] op-fab">
+    <button type="button"
+        id="loadDataButton"
+        data-id="{{dataset.id}}"
+        onclick="loadDataset(this)"
+        class="group relative flex items-center justify-center w-14 h-14 md:w-auto md:h-14 bg-blue-600 hover:bg-blue-700 text-white md:px-6 rounded-full shadow-2xl shadow-blue-600/40 transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none">
+
+        <span class="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-20"></span>
+
+        <svg class="w-6 h-6 z-10 transition-transform group-hover:translate-y-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V3.75m0 12.75l-3.75-3.75m3.75 3.75l3.75-3.75M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9" />
+        </svg>
+
+        <span class="font-bold text-sm tracking-wide ml-2 hidden md:block">Charger les données</span>
+
+        <span class="absolute -top-1 -right-1 flex h-4 w-4">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
+        </span>
+    </button>
+</div>
+
+            <!-- AJOUT : unités sélectionnées sous forme de puces -->
+            <div class="md:col-span-3 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div id="op-unit-chips" class="flex flex-wrap gap-2"></div>
+            </div>
         </div>
 
-        <div class="bg-white border border-gray-300 rounded shadow-sm overflow-hidden min-w-[700px]">
+        <div class="bg-white border border-gray-300 rounded shadow-sm overflow-hidden min-w-[700px] op-card rounded-xl border-slate-200 op-ledger">
+
+            <!-- AJOUT : barre d'outils du formulaire (masquée tant que le formulaire n'est pas chargé) -->
+            <div id="op-table-toolbar" class="hidden flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900">
+                <div class="relative">
+                    <i class="fa-solid fa-filter absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[11px]"></i>
+                    <input type="text" id="op-row-filter" placeholder="Filtrer les éléments de données..."
+                           class="pl-8 pr-3 py-2 w-64 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10">
+                </div>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <button type="button" id="op-density-btn" class="op-tool-btn" aria-pressed="false" title="Lignes compactes">
+                        <i class="fa-solid fa-grip-lines"></i><span class="hidden sm:inline">Compact</span>
+                    </button>
+                    <button type="button" id="op-focus-btn" class="op-tool-btn" aria-pressed="false" title="Masquer l'arborescence">
+                        <i class="fa-solid fa-expand"></i><span class="hidden sm:inline">Focus</span>
+                    </button>
+                    <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400"><span id="op-progress-text">0 / 0</span> champs remplis</span>
+                    <div class="w-40 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                        <div id="op-progress-bar" class="h-full bg-gradient-to-r from-[#276696] to-emerald-500 transition-all duration-300" style="width:0%"></div>
+                    </div>
+                </div>
+            </div>
 
                     <style>
 /* --- Style global de la table --- */
@@ -340,7 +1397,7 @@ function filterTree() {
     color: #334155 !important;
     font-size: 13.5px !important;
     padding-left: 20px !important;
-    border-right: 3px double #cbd5e1 !important; 
+    border-right: 3px double #cbd5e1 !important;
     border-bottom: 1px solid #e2e8f0 !important;
     box-shadow: 2px 0 4px rgba(0,0,0,0.02);
 }
@@ -393,7 +1450,7 @@ function filterTree() {
 /* Focus : Le jaune DHIS2 (Adapté pour les deux modes) */
 .dhis2-table-container table input:focus {
     border-color: #2563eb !important;
-    background-color: #fffde7 !important; 
+    background-color: #fffde7 !important;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
 }
 
@@ -423,34 +1480,38 @@ function filterTree() {
 <div class="card-body{{ dataset.id }} w-full min-h-[300px] flex flex-col transition-colors duration-300">
     <div class="contenu dhis2-table-container w-full overflow-x-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-sm">
     <div id="no-data-{{ dataset.id }}" class="flex flex-col items-center justify-center py-20 px-4 text-center dark:bg-slate-900 transition-all duration-500">
-    
+
     <div class="relative mb-6">
         <div class="absolute inset-0 rounded-full bg-blue-400 dark:bg-blue-500/20 animate-ping opacity-20"></div>
-        
-     
-            
-            <svg class="w-20 h-20 text-blue-500 dark:text-blue-400 group-hover:text-blue-600 transition-colors" 
+
+            <svg class="w-20 h-20 text-blue-500 dark:text-blue-400 group-hover:text-blue-600 transition-colors"
                  fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v4m-6 8h12M6 16v2a2 2 0 002 2h8a2 2 0 002-2v-2M6 16a2 2 0 01-2-2v-2a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2"></path>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8l-4 4m4-4l4 4"></path>
                 <circle cx="12" cy="4" r="1" fill="currentColor" class="animate-pulse"></circle>
             </svg>
-            
+
             <span class="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all transform group-hover:-translate-y-2 whitespace-nowrap shadow-xl">
                 CHARGER LE FORMULAIRE
             </span>
-      
+
     </div>
 
     <h3 class="text-slate-800 dark:text-slate-100 font-black text-2xl tracking-tighter uppercase italic">
-        Saisie non initialisée
+        Le formulaire s'affichera ici
     </h3>
-    
+
     <div class="mt-4 flex flex-col items-center">
-        <p class="text-slate-500 dark:text-slate-400 text-sm max-w-xs leading-relaxed font-medium">
-            Sélectionnez une <span class="text-blue-500 font-bold">Unité d'Organisation</span> pour générer les éléments de données.
+        <p class="text-slate-500 dark:text-slate-400 text-sm max-w-sm leading-relaxed font-medium">
+            Trois étapes pour ouvrir la saisie.
         </p>
-        
+        <!-- AJOUT : guide en trois étapes -->
+        <ol class="op-guide">
+            <li><b>1</b>Cochez une ou plusieurs unités dans l'arborescence.</li>
+            <li><b>2</b>Choisissez l'année, puis le mois ou le trimestre.</li>
+            <li><b>3</b>Cliquez sur « Charger les données ».</li>
+        </ol>
+
         <div class="w-64 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-8 overflow-hidden relative border border-slate-200/50 dark:border-slate-700">
             <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-400 animate-progress-flow"></div>
         </div>
@@ -509,102 +1570,96 @@ function filterTree() {
                      <div class="col-md-6">
                                                         <label for="" class="text-danger" style="font-weight:bold;display:none">Resultat CalCul *</label>
                                                            <input type="text" id="indicator-values" name="indicator-values" class="form-control" readonly style="display:none">
-                                        
+
                                                       </div>
                                                                            <div class="col-md-6">
-                                                        
+
                                                         <label for="" class="text-danger" style="font-weight:bold;display:none">Code Indicateur *</label>
                                                             <input type="text" id="indicator-ids" name="indicator-ids" class="form-control" readonly style="display:none">
                                                       </div>
                                                       <input type="text" name="elementsArea" id="elementsArea" class="form-control" style="display: none;">
                                                       <input type="text" name="elements" id="displayArea" class="form-control" style="display: none;">
-                                                       <div id="loadingIndicator" role="alert" aria-live="assertive" aria-hidden="true" style="display: none;">  
-                                    <span>Chargement en cours, veuillez patienter...</span>  
-                                </div> 
+                                                       <div id="loadingIndicator" role="alert" aria-live="assertive" aria-hidden="true" style="display: none;">
+                                    <span>Chargement en cours, veuillez patienter...</span>
+                                </div>
         </div>
 
-       <div class="fixed bottom-8 right-8 z-[120]">
-    <button type="button"
-        id="loadDataButton"
-        data-id="{{dataset.id}}"
-        onclick="loadDataset(this)"
-        class="group relative flex items-center justify-center w-14 h-14 md:w-auto md:h-14 bg-blue-600 hover:bg-blue-700 text-white md:px-6 rounded-full shadow-2xl shadow-blue-600/40 transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none">
-        
-        <span class="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-20"></span>
-        
-        <svg class="w-6 h-6 z-10 transition-transform group-hover:translate-y-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V3.75m0 12.75l-3.75-3.75m3.75 3.75l3.75-3.75M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9" />
-        </svg>
 
-        <span class="font-bold text-sm tracking-wide ml-2 hidden md:block">Charger les données</span>
-
-        <span class="absolute -top-1 -right-1 flex h-4 w-4">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
-        </span>
-    </button>
-</div>
-                <button type="button" 
-                        class="flex-1 md:flex-none px-10 py-2.5 bg-[#276696] text-white rounded hover:bg-[#1d4d71] font-bold shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wide" 
+        <!-- AJOUT : barre d'action fixe (état, progression, raccourcis) contenant le bouton d'enregistrement d'origine -->
+        <div class="op-actionbar">
+            <div class="flex items-center gap-3 min-w-0">
+                <span id="op-status-dot" class="op-dot"></span>
+                <div class="min-w-0">
+                    <p id="op-save-status" class="text-[12px] font-bold text-slate-700 dark:text-slate-200 truncate">Aucune donnée chargée</p>
+                    <p class="text-[10px] text-slate-400 hidden sm:block mt-0.5">
+                        <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> se déplacer, <kbd>Ctrl</kbd>+<kbd>V</kbd> coller depuis Excel, <kbd>Ctrl</kbd>+<kbd>S</kbd> enregistrer
+                    </p>
+                    <p id="op-draft-info" class="text-[10px] text-slate-400 mt-0.5 truncate"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button type="button" id="op-err-pill" title="Aller au premier champ à corriger"
+                        class="hidden items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 text-[11px] font-bold border border-red-200 dark:border-red-800">
+                    <i class="fa-solid fa-triangle-exclamation"></i><span id="op-err-text"></span>
+                </button>
+                <span class="hidden md:inline text-[11px] font-bold text-slate-500 dark:text-slate-400"><span id="op-bar-pct">0</span>% complété</span>
+                <button type="button"
+                        class="flex-1 md:flex-none px-10 py-2.5 bg-[#276696] text-white rounded hover:bg-[#1d4d71] font-bold shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wide"
                         id="myButton{{ dataset.id }}" data-form-id="{{ dataset.id }}">
-                    Enregistrer les données
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> Enregistrer les données
                 </button>
             </div>
         </div>
     </main>
 </form>
 
-
     </div>
  <script>
-            
-                        function submitForm(formId) {  
-                            // Récupérez le formulaire via son ID dynamique  
-                            const myForm = document.getElementById(`myForm${formId}`);  
-                           
-                    
-                            // Vérifiez si le formulaire est valide  
-                            if (myForm.checkValidity()) {  
-                                myForm.submit(); // Soumettez le formulaire  
-                                return true; // Laissez la soumission se produire  
-                            }  
-                            return false; // Empêche la soumission par défaut si le formulaire n'est pas valide  
-                        }  
-                    
-                        // Ajoutez un écouteur d'événements pour le bouton de sauvegarde  
-                        document.querySelectorAll('button[id^="myButton"]').forEach(button => {  
-                       
-                            button.addEventListener('click', function() {  
-                                const formId = this.dataset.formId; // obtenir l'ID du formulaire dynamique   
-                                Swal.fire({  
-                                    title: "<strong>Information</strong>",  
-                                    icon: "info",  
-                                    html: `  
-                                        Les données saisies seront remplacées dans la base de données en cas de doublon. <b>Souhaitez-vous tout de même les enregistrer ?</b>  
-                                    `,  
-                                    showCloseButton: true,  
-                                    showCancelButton: true,  
-                                    focusConfirm: false,  
-                                    confirmButtonText: `  
-                                        <i class="fa fa-thumbs-up"></i> Oui / Yes!  
-                                    `,  
-                                    confirmButtonAriaLabel: "Thumbs up, great!",  
-                                    cancelButtonText: `  
-                                        <i class="fa fa-thumbs-down"></i> Non / No  
-                                    `,  
-                                    cancelButtonAriaLabel: "Thumbs down"  
-                                }).then((result) => {  
-                                    if (result.isConfirmed) {  
-                                        submitForm(formId); // Appelle la fonction de soumission avec l'ID du formulaire  
-                                    }  
-                                });  
-                            });  
-                        });  
-                    
-                            </script> 
 
-                    
-                        
+                        function submitForm(formId) {
+                            // Récupérez le formulaire via son ID dynamique
+                            const myForm = document.getElementById(`myForm${formId}`);
+
+
+                            // Vérifiez si le formulaire est valide
+                            if (myForm.checkValidity()) {
+                                myForm.submit(); // Soumettez le formulaire
+                                return true; // Laissez la soumission se produire
+                            }
+                            return false; // Empêche la soumission par défaut si le formulaire n'est pas valide
+                        }
+
+                        // Ajoutez un écouteur d'événements pour le bouton de sauvegarde
+                        document.querySelectorAll('button[id^="myButton"]').forEach(button => {
+
+                            button.addEventListener('click', function() {
+                                const formId = this.dataset.formId; // obtenir l'ID du formulaire dynamique
+                                Swal.fire({
+                                    title: "<strong>Information</strong>",
+                                    icon: "info",
+                                    html: `
+                                        Les données saisies seront remplacées dans la base de données en cas de doublon. <b>Souhaitez-vous tout de même les enregistrer ?</b>
+                                    `,
+                                    showCloseButton: true,
+                                    showCancelButton: true,
+                                    focusConfirm: false,
+                                    confirmButtonText: `
+                                        <i class="fa fa-thumbs-up"></i> Oui / Yes!
+                                    `,
+                                    confirmButtonAriaLabel: "Thumbs up, great!",
+                                    cancelButtonText: `
+                                        <i class="fa fa-thumbs-down"></i> Non / No
+                                    `,
+                                    cancelButtonAriaLabel: "Thumbs down"
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        submitForm(formId); // Appelle la fonction de soumission avec l'ID du formulaire
+                                    }
+                                });
+                            });
+                        });
+
+                            </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -612,33 +1667,32 @@ function filterTree() {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.min.js" integrity="sha512-ykZ1QQr0Jy/4ZkvKuqWn4iF3lqPZyij9iRv6sGqLRdTPkY69YX6+7wvVGmsdBbiIfN/8OdsI7HABjvEok6ZopQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-<script>  
-    $(document).ready(function () {  
-        $(".toggle-btn").click(function () {  
-            const id = $(this).data("id");  
-            const subList = $(`#sub-structures-${id}`);  
-            const isVisible = subList.is(":visible");  
+<script>
+    $(document).ready(function () {
+        $(".toggle-btn").click(function () {
+            const id = $(this).data("id");
+            const subList = $(`#sub-structures-${id}`);
+            const isVisible = subList.is(":visible");
 
-            // Animation d'affichage ou de masquage  
-            subList.slideToggle(300, function () {  
-                // Change l'icône du bouton après l'animation  
-                if (isVisible) {  
-                    $(this).siblings(".toggle-btn").removeClass("fa-caret-down").addClass("fa-caret-right");  
-                } else {  
-                    $(this).siblings(".toggle-btn").removeClass("fa-caret-right").addClass("fa-caret-down");  
-                }  
-            });  
-        });  
-    });  
+            // Animation d'affichage ou de masquage
+            subList.slideToggle(300, function () {
+                // Change l'icône du bouton après l'animation
+                if (isVisible) {
+                    $(this).siblings(".toggle-btn").removeClass("fa-caret-down").addClass("fa-caret-right");
+                } else {
+                    $(this).siblings(".toggle-btn").removeClass("fa-caret-right").addClass("fa-caret-down");
+                }
+            });
+        });
+    });
 </script>
 
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- CORRECTION : 2e chargement de jQuery supprimé (doublon) -->
 <script>
     $(document).ready(function() {
         $('#annee').on('change', function() {
             var selectedId = $(this).val();
-            
+
             $.ajax({
                 url: '/search_period_id/{{dataset.id}}/',  // L'URL correspondant à la vue Django
                 method: 'GET',
@@ -646,7 +1700,7 @@ function filterTree() {
                 success: function(data) {
                     var selectInformations = $('#period');
                     selectInformations.empty(); // Effacer les anciennes options
-                    
+
                     // Ajouter les nouvelles options basées sur les données récupérées via AJAX
                     data.forEach(function(period_id) {
                         selectInformations.append($('<option>', {
@@ -657,14 +1711,15 @@ function filterTree() {
                 },
                 error: function(xhr, status, error) {
                     console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
+                    // AJOUT : l'agent est prévenu (avant, l'erreur restait invisible en console)
+                    if (window.opNotify) opNotify({ type: 'error', title: 'Périodes indisponibles',
+                        message: "La liste des périodes n'a pas pu être chargée. Vérifiez la connexion puis choisissez à nouveau l'année." });
                 }
             });
         });
     });
     </script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-
+<!-- CORRECTION : 2e chargement de SweetAlert2 supprimé (doublon) -->
 
 <script type="text/javascript">
     // Configuration commune des Toasts
@@ -688,7 +1743,7 @@ function filterTree() {
 
         // Logique de sélection d'icône et de couleur
         let iconType = 'info'; // Par défaut
-        
+
         // Django utilise souvent 'debug', 'info', 'success', 'warning', 'error'
         if (tag.includes('success')) {
             iconType = 'success';
@@ -710,7 +1765,7 @@ function filterTree() {
     function toggleSubStructures(id) {
         const subList = document.getElementById(`sub-structures-${id}`);
         const toggleBtn = document.querySelector(`.toggle-btn[data-id="${id}"]`);
-    
+
         if (subList) {
             if (subList.style.display === "none" || subList.style.display === "") {
                 subList.style.display = "block"; // Affiche les sous-structures
@@ -725,25 +1780,16 @@ function filterTree() {
     }
     </script>
 
-
-
-
-
-
-
-
-
-
 <script>
     function updateSelect(checkbox, name, id) {
         const select = document.getElementById("structureSelect");
-        
+
         if (checkbox.checked) {
             // Créer une nouvelle option
             const newOption = document.createElement("option");
             newOption.value = id; // ID de la structure
             newOption.textContent = name; // Nom de la structure
-            
+
             // Ajouter l'option au select
             select.appendChild(newOption);
         } else {
@@ -756,234 +1802,236 @@ function filterTree() {
     }
     </script>
 <script>
-function loadDataset(button) {  
-    const datasetId = button.getAttribute('data-id');  
-    const url = `/get_dataset/${datasetId}/`;  
+function loadDataset(button) {
+    const datasetId = button.getAttribute('data-id');
+    const url = `/get_dataset/${datasetId}/`;
 
-    Swal.fire({  
-        title: 'Chargement...',  
-        text: 'Veuillez patienter pendant le chargement des données.',  
-        allowOutsideClick: false,  
-        showConfirmButton: false,  
-        onBeforeOpen: () => {  
-            Swal.showLoading();  
-        }  
-    });  
+    Swal.fire({
+        title: 'Chargement...',
+        text: 'Veuillez patienter pendant le chargement des données.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {   // CORRECTION : onBeforeOpen n'existe plus dans SweetAlert2 v11
+            Swal.showLoading();
+        }
+    });
 
-    return fetch(url)  // Retourner la promesse de fetch pour permettre le chaînage  
-        .then(response => {  
-            if (!response.ok) {  
-                throw new Error('Erreur lors de la récupération du dataset');  
-            }  
-            return response.json();  
-        })  
-        .then(data => {  
-            const contenu_view = document.querySelector(`.card-body${datasetId} .contenu`);  
-            if (contenu_view) {  
-                contenu_view.innerHTML = data.content ? `<p>${data.content}</p>` : "<p>Aucun contenu disponible.</p>";  
-                initIndic(datasetId);  
-            } else {  
-                console.error('contenu_view est null');  
-            }  
-        })  
-        .catch(error => {  
-            console.error('Erreur:', error);  
-            Swal.fire({  
-                icon: 'error',  
-                title: 'Une erreur est survenue',  
-                text: `Veuillez réessayer. Détails: ${error.message}`,  
-            });  
-        })  
-        .finally(() => {  
-            Swal.close(); // Assurez-vous de fermer l'application Swal après la fin  
-        });  
-}  
+    return fetch(url)  // Retourner la promesse de fetch pour permettre le chaînage
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur lors de la récupération du dataset');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const contenu_view = document.querySelector(`.card-body${datasetId} .contenu`);
+            if (contenu_view) {
+                contenu_view.innerHTML = data.content ? `<p>${data.content}</p>` : "<p>Aucun contenu disponible.</p>";
+                initIndic(datasetId);
+            } else {
+                console.error('contenu_view est null');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Une erreur est survenue',
+                text: `Veuillez réessayer. Détails: ${error.message}`,
+            });
+        })
+        .finally(() => {
+            Swal.close(); // Assurez-vous de fermer l'application Swal après la fin
+        });
+}
 
-document.getElementById('loadDataButton').addEventListener("click", function() {  
-    const datasetId = this.getAttribute('data-id');  
-    loadDataset(this).then(() => {  
-        const selectedYear = document.getElementById('annee').value;   
-        const selectedPeriod = document.getElementById('period').value;  
-        const selectedStructure = document.getElementById('structureSelect').value;  
+document.getElementById('loadDataButton').addEventListener("click", function() {
+    const datasetId = this.getAttribute('data-id');
+    loadDataset(this).then(() => {
+        const selectedYear = document.getElementById('annee').value;
+        const selectedPeriod = document.getElementById('period').value;
+        const selectedStructure = document.getElementById('structureSelect').value;
 
-        // Vérifier si toutes les sélections sont faites  
-        if (!selectedYear || !selectedPeriod || !selectedStructure) {  
-            Swal.fire({  
-                icon: 'warning',  
-                title: 'Attention!',  
-                text: "Veuillez sélectionner l'année, la période et la structure.",  
-                confirmButtonText: 'OK'  
-            });  
-            return;  
-        }  
+        // Vérifier si toutes les sélections sont faites
+        if (!selectedYear || !selectedPeriod || !selectedStructure) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Attention!',
+                text: "Veuillez sélectionner l'année, la période et la structure.",
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
 
-        const url = `/load_data/${selectedStructure}/${selectedPeriod}/`; // URL pour récupérer les données  
-        
-        // Afficher un indicateur de chargement (optionnel)  
-        Swal.showLoading(); // Utiliser SweetAlert pour afficher l'indicateur de chargement  
+        const url = `/load_data/${selectedStructure}/${selectedPeriod}/`; // URL pour récupérer les données
 
-        fetch(url)  
-        .then(response => {  
-            if (!response.ok) {  
-                throw new Error('Erreur lors de la récupération des données');  
-            }  
-            return response.json();  
-        })  
-        .then(data => handleData(data))  
-        .catch(error => {  
-            console.error('Erreur lors du chargement des données:', error);  
-            Swal.fire({  
-                icon: 'error',  
-                title: 'Erreur',  
-                text: "Une erreur est survenue. Veuillez réessayer.",  
-            });  
-        })  
-        .finally(() => {  
-            Swal.close(); // Masquer l'indicateur de chargement  
-        });  
-    });  
-});  
+        // Afficher un indicateur de chargement (optionnel)
+        Swal.showLoading(); // Utiliser SweetAlert pour afficher l'indicateur de chargement
 
-function handleData(data) {  
-    if (data.error) {  
-        alert("Erreur lors du chargement des données: " + data.error);  
-        return [];  
-    }  
+        fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur lors de la récupération des données');
+            }
+            return response.json();
+        })
+        .then(data => handleData(data))
+        .catch(error => {
+            console.error('Erreur lors du chargement des données:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Erreur',
+                text: "Une erreur est survenue. Veuillez réessayer.",
+            });
+        })
+        .finally(() => {
+            Swal.close(); // Masquer l'indicateur de chargement
+        });
+    });
+});
 
-    const dataArray = data.data || [];  
-    const inputData = dataArray.map(item => ({  
-        name: `D0elt${item.id}`,  
-        date: item.date,  
-        texte: item.texte,  
-        value: item.content,  
-    }));  
+function handleData(data) {
+    if (data.error) {
+        alert("Erreur lors du chargement des données: " + data.error);
+        return [];
+    }
 
-    // Vérifier s'il n'y a pas de valeurs  
-    if (inputData.length === 0) {  
-        alert('Aucune valeur trouvée.');  
+    const dataArray = data.data || [];
+    const inputData = dataArray.map(item => ({
+        name: `D0elt${item.id}`,
+        date: item.date,
+        texte: item.texte,
+        value: item.content,
+    }));
 
-        const allInputs = document.querySelectorAll('input[type="date"], textarea, input[type="number"]');  
-        allInputs.forEach(input => input.value = '');  // Vider tous les champs  
+    // Vérifier s'il n'y a pas de valeurs
+    if (inputData.length === 0) {
+        alert('Aucune valeur trouvée.');
 
-        return [];  
-    }  
+        const allInputs = document.querySelectorAll('input[type="date"], textarea, input[type="number"]');
+        allInputs.forEach(input => input.value = '');  // Vider tous les champs
 
-    inputData.forEach(input => {  
-        // Mettre à jour le champ de texte (textarea)  
-        const textAreaElement = document.querySelector(`textarea[name="${input.name}"]`);  
-        if (textAreaElement) {  
-            textAreaElement.value = input.texte || '';  // Ajuste le texte ou le vide si null  
-        } else {  
-            console.warn(`Textarea "${input.name}" introuvable.`);  
-        }  
+        return [];
+    }
 
-        // Mettre à jour le champ de nombre  
-        const numberInputElement = document.querySelector(`input[type="number"][name="${input.name}"]`);  
-        if (numberInputElement) {  
-            numberInputElement.value = input.value;  // Ajuster la valeur  
-        } else {  
-            console.warn(`Champ de number "${input.name}" introuvable.`);  
-        }  
+    inputData.forEach(input => {
+        // Mettre à jour le champ de texte (textarea)
+        const textAreaElement = document.querySelector(`textarea[name="${input.name}"]`);
+        if (textAreaElement) {
+            textAreaElement.value = input.texte || '';  // Ajuste le texte ou le vide si null
+        } else {
+            console.warn(`Textarea "${input.name}" introuvable.`);
+        }
 
-        // Mettre à jour le champ de date  
-        const dateInputElement = document.querySelector(`input[type="date"][name="${input.name}"]`);  
-        if (dateInputElement) {  
-            dateInputElement.value = input.date || '';  // Ajuster la date ou la vider si null  
-        } else {  
-            console.warn(`Champ de date "${input.name}" introuvable.`);  
-        }  
-    });  
+        // Mettre à jour le champ de nombre
+        const numberInputElement = document.querySelector(`input[type="number"][name="${input.name}"]`);
+        if (numberInputElement) {
+            numberInputElement.value = input.value;  // Ajuster la valeur
+        } else {
+            console.warn(`Champ de number "${input.name}" introuvable.`);
+        }
 
-    console.log('Données traitées:', dataArray);  
-    return dataArray;  
+        // Mettre à jour le champ de date
+        const dateInputElement = document.querySelector(`input[type="date"][name="${input.name}"]`);
+        if (dateInputElement) {
+            dateInputElement.value = input.date || '';  // Ajuster la date ou la vider si null
+        } else {
+            console.warn(`Champ de date "${input.name}" introuvable.`);
+        }
+    });
+
+    console.log('Données traitées:', dataArray);
+    return dataArray;
 }
 
 
-// Fonction pour initialiser les indicateurs  
-function initIndic(datasetId) {  
-  
+// Fonction pour initialiser les indicateurs
+function initIndic(datasetId) {
 
-console.log("Fonction initIndic() appelée avec datasetId:", datasetId);  
 
-const indicSelector = document.getElementsByClassName("indicSelector");  
-let indic_value = "";  
-for (let i = 0; i < indicSelector.length; i++) {  
-indic_value += indicSelector[i].getAttribute("data-id") + "#";  
-}  
+console.log("Fonction initIndic() appelée avec datasetId:", datasetId);
 
-const institutionId = {{ actual_institution.id }}; // Assurez-vous que `actual_institution` est défini  
+const indicSelector = document.getElementsByClassName("indicSelector");
+let indic_value = "";
+for (let i = 0; i < indicSelector.length; i++) {
+indic_value += indicSelector[i].getAttribute("data-id") + "#";
+}
 
-$.ajax({  
-url: '/get_elements/',  
-data: {  
-'dataset': datasetId,  
-'type_dataset': '0',  
-'other': 'dI_formula',  
-'institution': institutionId,  
-'value': indic_value  
-},  
-success: function(data) {  
+const institutionId = {{ actual_institution.id }}; // Assurez-vous que `actual_institution` est défini
 
-function check_selector(evalu = false) {  
-const indicatorValues = {};  
+$.ajax({
+url: '/get_elements/',
+data: {
+'dataset': datasetId,
+'type_dataset': '0',
+'other': 'dI_formula',
+'institution': institutionId,
+'value': indic_value
+},
+success: function(data) {
 
-for (let i = 0; i < indicSelector.length; i++) {  
-indicSelector[i].textContent = data.formulas[i];  
-const indicatorId = indicSelector[i].getAttribute("data-id");  
+function check_selector(evalu = false) {
+const indicatorValues = {};
 
-const tmp_elts = data.data_elts.split("#");  
+for (let i = 0; i < indicSelector.length; i++) {
+indicSelector[i].textContent = data.formulas[i];
+const indicatorId = indicSelector[i].getAttribute("data-id");
+
+const tmp_elts = data.data_elts.split("#");
 // console.log('Les IDs sont :', tmp_elts);
-let elts = [];  
+let elts = [];
 
-for (let j = 0; j < tmp_elts.length; j++) {  
-    const tp = document.getElementsByName("D0elt" + tmp_elts[j]);  
-    if (tp.length > 0 && tp[0].value) {  
-        // Vérifie si l'élément existe et que sa valeur n'est pas une chaîne vide.  
-        elts.push({ id: tmp_elts[j], value: tp[0].value }); // Récupération des valeurs avec l'ID  
-        // console.log("Valeur de D0elt" + tmp_elts[j] + " :", tp[0].value); // Affichage de la valeur récupérée  
-    } else {  
-        // Attribuer une valeur par défaut de 0 si l'élément est manquant ou si aucune valeur n'est définie.  
-        elts.push({ id: tmp_elts[j], value: 0 });  
-        // console.warn("Élément manquant ou valeur nulle pour D0elt" + tmp_elts[j] + ". Valeur par défaut attribuée : 0");  
-    }  
+for (let j = 0; j < tmp_elts.length; j++) {
+    const tp = document.getElementsByName("D0elt" + tmp_elts[j]);
+    if (tp.length > 0 && tp[0].value) {
+        // Vérifie si l'élément existe et que sa valeur n'est pas une chaîne vide.
+        elts.push({ id: tmp_elts[j], value: tp[0].value }); // Récupération des valeurs avec l'ID
+        // console.log("Valeur de D0elt" + tmp_elts[j] + " :", tp[0].value); // Affichage de la valeur récupérée
+    } else {
+        // Attribuer une valeur par défaut de 0 si l'élément est manquant ou si aucune valeur n'est définie.
+        elts.push({ id: tmp_elts[j], value: 0 });
+        // console.warn("Élément manquant ou valeur nulle pour D0elt" + tmp_elts[j] + ". Valeur par défaut attribuée : 0");
+    }
 }
 
-console.log("Éléments récupérés :", elts);   
+console.log("Éléments récupérés :", elts);
 
-// Mettre à jour le displayArea  
-const displayArea = document.getElementById("displayArea");  
-const valuesString = elts.map(item => `"D0elt${item.id}": ${item.value}`).join(', '); // Formater les valeurs  
-displayArea.value = valuesString; // Mettre à jour l'input avec les valeurs formatées  
+// Mettre à jour le displayArea
+const displayArea = document.getElementById("displayArea");
+const valuesString = elts.map(item => `"D0elt${item.id}": ${item.value}`).join(', '); // Formater les valeurs
+displayArea.value = valuesString; // Mettre à jour l'input avec les valeurs formatées
 
-// Définir la valeur à soumettre dans un champ caché  
-document.getElementById("elementsArea").value = JSON.stringify(elts); // Soumission en format JSON  
+// Définir la valeur à soumettre dans un champ caché
+document.getElementById("elementsArea").value = JSON.stringify(elts); // Soumission en format JSON
 
-// Remplacer les placeholders dans indicSelector avec les valeurs récupérées  
-for (let j = 0; j < elts.length; j++) {  
-indicSelector[i].textContent = indicSelector[i].textContent.replace("$" + elts[j].id + "$", elts[j].value);  
-}  
+// Remplacer les placeholders dans indicSelector avec les valeurs récupérées
+for (let j = 0; j < elts.length; j++) {
+// CORRECTION : remplace TOUTES les occurrences (replace() ne remplaçait que la première : une formule utilisant
+// deux fois le même élément, ex. (($502$-$503$)/$502$)*100, échouait en silence et l'indicateur n'était pas enregistré)
+indicSelector[i].textContent = indicSelector[i].textContent.split("$" + elts[j].id + "$").join(elts[j].value);
+}
 
-if (evalu) {  
-try {  
-indicSelector[i].textContent = eval(indicSelector[i].textContent); // Évaluation des calculs  
-const indicatorValue = indicSelector[i].textContent;  
-indicatorValues[indicatorId] = indicatorValue;  
-} catch (error) {  
-console.error("Erreur lors du calcul de l'indicateur :", error);  
-}  
-}  
-}  
+if (evalu) {
+try {
+indicSelector[i].textContent = eval(indicSelector[i].textContent); // Évaluation des calculs
+const indicatorValue = indicSelector[i].textContent;
+indicatorValues[indicatorId] = indicatorValue;
+} catch (error) {
+console.error("Erreur lors du calcul de l'indicateur :", error);
+}
+}
+}
 
-// Stocker les valeurs et les identifiants dans les champs cachés du formulaire  
-document.getElementById("indicator-values").value = JSON.stringify(indicatorValues);  
-const indicatorIds = Object.keys(indicatorValues);  
-document.getElementById("indicator-ids").value = JSON.stringify(indicatorIds);  
+// Stocker les valeurs et les identifiants dans les champs cachés du formulaire
+document.getElementById("indicator-values").value = JSON.stringify(indicatorValues);
+const indicatorIds = Object.keys(indicatorValues);
+document.getElementById("indicator-ids").value = JSON.stringify(indicatorIds);
 
-return indicatorValues;  
+return indicatorValues;
 }
 
 
-// Évaluer les sélecteurs d'indicateurs  
+// Évaluer les sélecteurs d'indicateurs
 // Attendre que le document soit prêt
 $(document).ready(function() {
     // Écouter chaque saisie dans les champs de données
@@ -997,33 +2045,28 @@ $(document).ready(function() {
         check_selector(true);
     }, 1000);
 });
-const variables_selector = document.getElementsByClassName("variableSelector");  
-for (let i = 0; i < variables_selector.length; i++) {  
-const inputs = variables_selector[i].getElementsByTagName("input")[0];  
-if (inputs) {  
-inputs.onchange = function() {  
-try {  
-check_selector(true);  
-} catch (error) {  
-// console.error("Erreur lors de l'évaluation des sélecteurs :", error);  
-check_selector(); // Évaluer sans option  
-}  
-};  
-}  
-}  
-},  
-error: function(xhr, status, error) {  
-// console.error("Erreur AJAX:", status, error);  
-alert("Une erreur est survenue lors de la récupération des éléments. Veuillez réessayer.");  
-}  
-});  
+const variables_selector = document.getElementsByClassName("variableSelector");
+for (let i = 0; i < variables_selector.length; i++) {
+const inputs = variables_selector[i].getElementsByTagName("input")[0];
+if (inputs) {
+inputs.onchange = function() {
+try {
+check_selector(true);
+} catch (error) {
+// console.error("Erreur lors de l'évaluation des sélecteurs :", error);
+check_selector(); // Évaluer sans option
+}
+};
+}
+}
+},
+error: function(xhr, status, error) {
+// console.error("Erreur AJAX:", status, error);
+alert("Une erreur est survenue lors de la récupération des éléments. Veuillez réessayer.");
+}
+});
 
-}  
-
-
-
-
-
+}
 
 
 // Fonction pour échapper les caractères HTML (protection XSS)
@@ -1037,26 +2080,21 @@ return unsafe
 }
 
 
+function showLoading() {
+Swal.fire({
+title: 'Chargement...',
+text: 'Veuillez patienter pendant le chargement des données.',
+allowOutsideClick: false,
+showConfirmButton: false,
+didOpen: () => {
+Swal.showLoading(); // Afficher l'indicateur de chargement
+}
+});
+}
 
-
-
-
-
-function showLoading() {  
-Swal.fire({  
-title: 'Chargement...',  
-text: 'Veuillez patienter pendant le chargement des données.',  
-allowOutsideClick: false,  
-showConfirmButton: false,  
-didOpen: () => {  
-Swal.showLoading(); // Afficher l'indicateur de chargement  
-}  
-});  
-}  
-
-function hideLoading() {  
-Swal.close(); // Fermer l'alerte de chargement  
-}  
+function hideLoading() {
+Swal.close(); // Fermer l'alerte de chargement
+}
 $(".sidebar-dropdown > a").click(function() {
   $(".sidebar-submenu").slideUp(200);
   if (
@@ -1081,20 +2119,911 @@ $(".sidebar-dropdown > a").click(function() {
 
 $("#close-sidebar").click(function() {
     // 1. Ferme la sidebar en retirant la classe 'toggled' du wrapper.
-    $(".page-wrapper").removeClass("toggled"); 
-    
+    $(".page-wrapper").removeClass("toggled");
+
     // 2. FAIT RÉAPPARAÎTRE la nav en retirant la classe 'toggled'.
     // Cela annule l'effet "transform: translateY(100%)" défini en CSS.
-    $('.navs').removeClass("toggled"); 
+    $('.navs').removeClass("toggled");
 });
 
 $("#show-sidebar").click(function() {
     // 1. Ouvre la sidebar en ajoutant la classe 'toggled' au wrapper.
     $(".page-wrapper").addClass("toggled");
-    
+
     // 2. MASQUE la nav en ajoutant la classe 'toggled'.
     $('.navs').addClass("toggled");
 });
+</script>
+
+<!-- ======================= RÈGLES DE COHÉRENCE (à compléter) =======================
+     Chaque règle compare deux éléments de données par leur name (D0elt + id).
+     op : '<=', '<', '>=', '>', '=='     niveau : 'erreur' (bloque l'enregistrement) ou 'alerte' (demande confirmation)
+     Contrôles automatiques en plus : valeurs négatives interdites, et attributs min / max (ou data-min / data-max)
+     respectés s'ils sont présents sur les champs générés par /get_dataset/. data-negatif="1" autorise le négatif.
+-->
+<script>
+    window.OP_RULES = [
+        // { a: 'D0elt12', op: '<=', b: 'D0elt10', niveau: 'erreur', msg: 'Les cas confirmés ne peuvent pas dépasser les cas suspects' },
+        // { a: 'D0elt15', op: '<=', b: 'D0elt14', niveau: 'alerte', msg: 'Plus de femmes formées que de personnes formées : à vérifier' },
+    ];
+</script>
+
+<!-- ======================= AJOUTS UX OPERAPLUS ======================= -->
+<script>
+(function () {
+    const DATASET_ID = '{{ dataset.id }}';
+    const form      = document.getElementById('myForm' + DATASET_ID);
+    const contenu   = document.querySelector('.card-body' + DATASET_ID + ' .contenu');
+    const selUnit   = document.getElementById('structureSelect');
+    const selYear   = document.getElementById('annee');
+    const selPeriod = document.getElementById('period');
+    const saveBtn   = document.getElementById('myButton' + DATASET_ID);
+    const aside     = document.querySelector('aside.op-aside');
+    const overlay   = document.getElementById('op-overlay');
+    let opDirty = false, opSilent = false, opDerniereTable = null;
+
+    /* ---------- Thème clair / sombre ---------- */
+    document.getElementById('op-theme-btn').addEventListener('click', () => {
+        const dark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('op-theme', dark ? 'dark' : 'light'); } catch (e) {}
+    });
+
+    /* ---------- Tiroir des unités sur mobile ---------- */
+    function opDrawer(open) {
+        aside.classList.toggle('op-open', open);
+        overlay.classList.toggle('hidden', !open);
+    }
+    document.getElementById('op-units-btn').addEventListener('click', () => opDrawer(!aside.classList.contains('op-open')));
+    overlay.addEventListener('click', () => opDrawer(false));
+    window.addEventListener('resize', () => { if (window.innerWidth >= 1024) opDrawer(false); });
+
+    /* ---------- Tout déplier / replier ---------- */
+    function opTreeAll(open) {
+        document.querySelectorAll('#orgUnitTree li.tree-node > ul').forEach(ul => ul.classList.toggle('hidden', !open));
+        document.querySelectorAll('#orgUnitTree li.tree-node > div > button svg').forEach(svg => svg.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)');
+    }
+    document.getElementById('op-expand-all').addEventListener('click', () => opTreeAll(true));
+    document.getElementById('op-collapse-all').addEventListener('click', () => opTreeAll(false));
+
+    /* ---------- Étapes ---------- */
+    function opUpdateSteps() {
+        const done = {
+            1: selUnit.options.length > 0 && !!selUnit.value,
+            2: !!selYear.value,
+            3: !!selPeriod.value,
+            4: !!(contenu && contenu.querySelector('table'))
+        };
+        let currentSet = false;
+        document.querySelectorAll('.op-step').forEach(el => {
+            const n = el.dataset.step;
+            el.classList.remove('op-done', 'op-current');
+            if (done[n]) el.classList.add('op-done');
+            else if (!currentSet) { el.classList.add('op-current'); currentSet = true; }
+        });
+        opUpdateContext();
+    }
+
+    /* ---------- Fiche de saisie : unité, période, consigne, bouton prêt ---------- */
+    function opUpdateContext() {
+        const titre = document.getElementById('op-ctx-unit');
+        const per = document.getElementById('op-ctx-period');
+        const etat = document.getElementById('op-ctx-state');
+        const u = selUnit.options[selUnit.selectedIndex];
+        const nom = u ? u.textContent.trim() : '';
+        const avant = titre.textContent;
+        titre.textContent = nom || 'Aucune unité choisie';
+        titre.classList.toggle('op-placeholder', !nom);
+        if (avant !== titre.textContent) { titre.classList.remove('op-swap'); void titre.offsetWidth; titre.classList.add('op-swap'); }
+
+        const p = selPeriod.options[selPeriod.selectedIndex];
+        const pTxt = p && selPeriod.value ? p.textContent.trim() : '';
+        if (pTxt) per.textContent = 'Période : ' + pTxt + (selYear.value && !pTxt.includes(selYear.value) ? ' ' + selYear.value : '');
+        else per.textContent = selYear.value ? 'Année ' + selYear.value + ', période à choisir' : 'Période à choisir';
+
+        const charge = !!(contenu && contenu.querySelector('table'));
+        const aJour = charge && typeof opCtx !== 'undefined' && opCtx && opCtx.unit === selUnit.value && opCtx.period === selPeriod.value;
+        let msg;
+        if (!nom) msg = "Cochez une unité dans l'arborescence pour commencer.";
+        else if (!selYear.value) msg = "Choisissez l'année à saisir.";
+        else if (!selPeriod.value) msg = 'Choisissez le mois ou le trimestre.';
+        else if (!aJour) msg = 'Tout est prêt : chargez le formulaire pour afficher les éléments de données.';
+        else msg = 'Saisissez les valeurs puis enregistrez. Entrée passe au champ suivant.';
+        etat.textContent = msg;
+
+        const fab = document.querySelector('.op-fab');
+        if (fab) fab.classList.toggle('op-ready', !!(nom && selYear.value && selPeriod.value && !aJour));
+        const dock = document.querySelector('.op-actionbar');
+        if (dock) dock.classList.toggle('op-idle', !aJour); // une seule action ocre à la fois
+    }
+
+    function opUpdateGauge(pct, remplis, total) {
+        const g = document.getElementById('op-gauge');
+        document.getElementById('op-gauge-arc').style.strokeDashoffset = (326.73 * (1 - pct / 100)).toFixed(2);
+        document.getElementById('op-gauge-pct').textContent = pct;
+        document.getElementById('op-gauge-sub').textContent = total ? (remplis + ' champs sur ' + total) : 'du formulaire rempli';
+        g.classList.toggle('op-empty', pct === 0);
+        g.classList.toggle('op-partial', pct > 0 && pct < 100);
+        g.setAttribute('aria-label', 'Formulaire rempli à ' + pct + ' %');
+    }
+
+    /* ---------- Puces des unités sélectionnées ---------- */
+    function opRenderChips() {
+        const box = document.getElementById('op-unit-chips');
+        const opts = Array.from(selUnit.options);
+        document.getElementById('op-unit-count').textContent = opts.length;
+        box.innerHTML = '';
+        if (!opts.length) {
+            box.innerHTML = '<span class="text-xs text-slate-400 italic"><i class="fa-regular fa-hand-pointer mr-1"></i>Aucune unité sélectionnée : cochez-en dans l\'arborescence.</span>';
+            return;
+        }
+        opts.forEach(o => {
+            const chip = document.createElement('span');
+            chip.className = 'op-chip cursor-pointer' + (o.selected ? ' op-chip-active' : '');
+            chip.title = 'Rendre active pour la saisie';
+            chip.innerHTML = '<i class="fa-solid fa-location-dot text-[10px]"></i><span>' + escapeHtml(o.textContent) + '</span>'
+                           + '<span class="op-x" title="Retirer"><i class="fa-solid fa-xmark"></i></span>';
+            chip.addEventListener('click', e => {
+                if (e.target.closest('.op-x')) {
+                    const cb = document.getElementById('check-' + o.value);
+                    if (cb) { cb.checked = false; cb.dispatchEvent(new Event('change')); }
+                    else { o.remove(); }
+                    return;
+                }
+                selUnit.value = o.value;
+                selUnit.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            box.appendChild(chip);
+        });
+    }
+
+    /* ---------- « » : unité précédente / suivante ---------- */
+    function opShiftUnit(delta) {
+        const n = selUnit.options.length;
+        if (!n) { opToast({ icon: 'info', title: "Cochez d'abord une unité d'organisation" }); return; }
+        selUnit.selectedIndex = ((selUnit.selectedIndex + delta) % n + n) % n;
+        selUnit.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    document.getElementById('op-prev-unit').addEventListener('click', () => opShiftUnit(-1));
+    document.getElementById('op-next-unit').addEventListener('click', () => opShiftUnit(1));
+
+    selUnit.addEventListener('change', () => {
+        opRenderChips(); opUpdateSteps();
+        if (!opSilent && contenu && contenu.querySelector('table')) {
+            opToast({
+                icon: opDirty ? 'warning' : 'info',
+                title: opDirty ? 'Unité changée : vos saisies non enregistrées restent en brouillon'
+                               : 'Unité changée : cliquez sur « Charger les données »'
+            });
+        }
+    });
+    [selYear, selPeriod].forEach(s => s.addEventListener('change', opUpdateSteps));
+    selPeriod.addEventListener('change', opScheduleCompletude);
+    new MutationObserver(() => { opRenderChips(); opUpdateSteps(); }).observe(selUnit, { childList: true });
+    new MutationObserver(() => { opUpdateSteps(); opScheduleCompletude(); }).observe(selPeriod, { childList: true });
+
+    /* ---------- Progression & état ---------- */
+    function opFields() {
+        return contenu ? Array.from(contenu.querySelectorAll('input[name^="D0elt"], textarea[name^="D0elt"]'))
+                                .filter(f => f.type !== 'hidden') : [];
+    }
+    function opUpdateProgress() {
+        const fields = opFields();
+        const filled = fields.filter(f => f.value !== '');
+        fields.forEach(f => f.classList.toggle('op-filled', f.value !== ''));
+        const pct = fields.length ? Math.round(filled.length * 100 / fields.length) : 0;
+        document.getElementById('op-progress-text').textContent = filled.length + ' / ' + fields.length;
+        document.getElementById('op-progress-bar').style.width = pct + '%';
+        document.getElementById('op-bar-pct').textContent = pct;
+        opUpdateGauge(pct, filled.length, fields.length);
+    }
+    function opSetStatus(text, state) {
+        document.getElementById('op-save-status').textContent = text;
+        const dot = document.getElementById('op-status-dot');
+        dot.classList.remove('op-dirty', 'op-clean');
+        if (state) dot.classList.add(state);
+    }
+
+    if (contenu) {
+        new MutationObserver(() => {
+            const hasTable = !!contenu.querySelector('table');
+            // Le statut « chargé » ne s'applique qu'à l'arrivée d'un nouveau formulaire,
+            // pas aux recalculs d'indicateurs qui modifient aussi le contenu
+            const nouveau = hasTable && contenu.querySelector('table') !== opDerniereTable;
+            opDerniereTable = hasTable ? contenu.querySelector('table') : null;
+            const tb = document.getElementById('op-table-toolbar');
+            tb.classList.toggle('hidden', !hasTable);
+            tb.classList.toggle('flex', hasTable);
+            if (nouveau) opSetStatus('Formulaire chargé', 'op-clean');
+            opUpdateProgress(); opUpdateSteps();
+        }).observe(contenu, { childList: true, subtree: true });
+
+        contenu.addEventListener('input', e => {
+            if (e.target.matches('[name^="D0elt"]')) {
+                opDirty = true;
+                opSetStatus('Modifications non enregistrées', 'op-dirty');
+                opUpdateProgress();
+            }
+        });
+    }
+
+    /* ---------- Filtre des lignes du formulaire ---------- */
+    document.getElementById('op-row-filter').addEventListener('input', e => {
+        const q = e.target.value.trim().toLowerCase();
+        if (!contenu) return;
+        contenu.querySelectorAll('table tr').forEach(tr => {
+            if (tr.querySelector('th')) return;
+            tr.style.display = (!q || tr.textContent.toLowerCase().includes(q)) ? '' : 'none';
+        });
+    });
+
+    /* ---------- Clavier : Entrée = champ suivant (et plus de soumission accidentelle), Ctrl+S = enregistrer ---------- */
+    document.addEventListener('keydown', e => {
+        const t = e.target;
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+            e.preventDefault(); saveBtn.click(); return;
+        }
+        if (e.key === 'Enter' && t.tagName === 'INPUT' && form && form.contains(t)) {
+            e.preventDefault(); // évite l'envoi du formulaire sans confirmation
+            if (contenu && contenu.contains(t)) {
+                const list = Array.from(contenu.querySelectorAll('input:not([type=hidden]):not([readonly]):not([disabled]), textarea, select'))
+                                  .filter(el => el.offsetParent !== null);
+                const i = list.indexOf(t);
+                const next = list[i + (e.shiftKey ? -1 : 1)];
+                if (next) { next.focus(); if (next.select) next.select(); }
+            }
+        }
+    });
+
+    /* ---------- Alerte si on quitte avec des données non enregistrées ---------- */
+    window.addEventListener('beforeunload', e => {
+        if (opDirty) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    /* ---------- Enrichissement des fonctions existantes (mêmes noms) ---------- */
+    // submitForm : appelé après la confirmation SweetAlert d'origine → enregistrement en AJAX, sans rechargement
+    submitForm = function (formId) {
+        if (!form.checkValidity()) { form.reportValidity(); return false; }
+        opSaveAjax();
+        return false;
+    };
+
+    // Le bouton déclenchait loadDataset deux fois (onclick + addEventListener) : on partage la même requête
+    const _opLoadDataset = loadDataset;
+    let opLoadPromise = null;
+    loadDataset = function (button) {
+        if (opLoadPromise) return opLoadPromise;
+        opLoadPromise = _opLoadDataset(button).finally(() => { opLoadPromise = null; });
+        return opLoadPromise;
+    };
+
+    let opCtx = null; // unité + période réellement chargées dans le formulaire
+    const _opHandleData = handleData;
+    handleData = function (data) {
+        const r = _opHandleData(data);
+        opCtx = { unit: selUnit.value, period: selPeriod.value };
+        opUpdateSteps();
+        opDirty = false;
+        opUpdateProgress();
+        opValidate();
+        opSetStatus('Données chargées, prêtes à la saisie', 'op-clean');
+        setTimeout(opOfferDraft, 500); // après la fermeture du chargement SweetAlert
+        return r;
+    };
+
+    function opHeure(d) { return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
+    function opListe(items) {
+        return '<ul class="op-list">' + items.map(x => '<li>' + escapeHtml(String(x.msg)) + '</li>').join('') + '</ul>';
+    }
+
+    /* =================== 1. BROUILLON AUTOMATIQUE =================== */
+    let opDraftTimer = null;
+    function opDraftKey() {
+        return opCtx ? 'op-draft-' + DATASET_ID + '-' + opCtx.unit + '-' + opCtx.period : null;
+    }
+    function opCollect() {
+        const o = {};
+        opFields().forEach(f => { if (f.value !== '') o[f.name] = f.value; });
+        return o;
+    }
+    function opSaveDraft() {
+        const k = opDraftKey();
+        if (!k || !opDirty) return;
+        try {
+            localStorage.setItem(k, JSON.stringify({ t: Date.now(), v: opCollect() }));
+            document.getElementById('op-draft-info').innerHTML =
+                '<i class="fa-solid fa-cloud-arrow-down mr-1"></i>Brouillon sauvegardé sur cet appareil à ' + opHeure(new Date());
+        } catch (e) {}
+    }
+    function opClearDraft() {
+        const k = opDraftKey();
+        if (k) { try { localStorage.removeItem(k); } catch (e) {} }
+        document.getElementById('op-draft-info').textContent = '';
+    }
+    function opApply(values) {
+        Object.entries(values).forEach(([name, val]) => {
+            const f = contenu.querySelector('[name="' + CSS.escape(name) + '"]');
+            if (f) { f.value = val; f.dispatchEvent(new Event('input', { bubbles: true })); }
+        });
+    }
+    async function opOfferDraft() {
+        const k = opDraftKey();
+        if (!k) return;
+        let d = null;
+        try { d = JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) {}
+        if (!d || !d.v || !Object.keys(d.v).length) return;
+        const cur = opCollect();
+        const diff = Object.keys(d.v).some(n => String(cur[n] ?? '') !== String(d.v[n]));
+        if (!diff) { opClearDraft(); return; }
+        const r = await Swal.fire({
+            icon: 'question',
+            title: 'Brouillon non enregistré',
+            html: 'Un brouillon du <b>' + new Date(d.t).toLocaleString('fr-FR') + '</b> existe pour cette unité et cette période ('
+                + Object.keys(d.v).length + ' valeur(s)).<br>Voulez-vous le restaurer ?',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa-solid fa-rotate-left"></i> Restaurer',
+            cancelButtonText: 'Ignorer et supprimer'
+        });
+        if (r.isConfirmed) {
+            opApply(d.v);
+            opToast({ icon: 'success', title: 'Brouillon restauré : pensez à enregistrer' });
+        } else if (r.dismiss === Swal.DismissReason.cancel) {
+            opClearDraft();
+        }
+    }
+    if (contenu) {
+        contenu.addEventListener('input', e => {
+            if (!e.target.matches('[name^="D0elt"]')) return;
+            clearTimeout(opDraftTimer);
+            opDraftTimer = setTimeout(() => { opSaveDraft(); opValidate(); }, 700);
+        });
+    }
+    document.addEventListener('visibilitychange', () => { if (document.hidden) opSaveDraft(); });
+
+    /* =================== 2. VALIDATION DES VALEURS =================== */
+    function opLabelOf(f) {
+        const tr = f && f.closest('tr');
+        const td = tr && tr.querySelector('td');
+        return ((td ? td.textContent : (f ? f.name : '')) || '').replace(/\s+/g, ' ').trim().slice(0, 90);
+    }
+    function opNum(name) {
+        const f = contenu.querySelector('[name="' + CSS.escape(name) + '"]');
+        if (!f || f.value === '') return null;
+        const n = parseFloat(f.value);
+        return isNaN(n) ? null : n;
+    }
+    function opAttr(f, key) {
+        const v = f.dataset[key] !== undefined ? f.dataset[key] : f.getAttribute(key);
+        return (v === null || v === '') ? null : parseFloat(v);
+    }
+    function opValidate() {
+        const errors = [], warnings = [];
+        if (!contenu) return { errors, warnings };
+        const fields = opFields();
+        fields.forEach(f => { f.classList.remove('op-err', 'op-warnf'); if (f.dataset.opTitle) { f.removeAttribute('title'); delete f.dataset.opTitle; } });
+
+        fields.forEach(f => {
+            if (f.value === '' || f.type !== 'number') return;
+            const v = parseFloat(f.value), min = opAttr(f, 'min'), max = opAttr(f, 'max');
+            let msg = null;
+            if (isNaN(v)) msg = 'valeur non numérique';
+            else if (min !== null && v < min) msg = 'inférieure au minimum (' + min + ')';
+            else if (min === null && v < 0 && f.dataset.negatif !== '1') msg = 'valeur négative';
+            else if (max !== null && v > max) msg = 'supérieure au maximum (' + max + ')';
+            if (msg) {
+                errors.push({ f, msg: opLabelOf(f) + ' : ' + msg });
+                f.classList.add('op-err'); f.title = msg; f.dataset.opTitle = '1';
+            }
+        });
+
+        (window.OP_RULES || []).forEach(r => {
+            const a = opNum(r.a), b = opNum(r.b);
+            if (a === null || b === null) return;
+            const ok = { '<=': a <= b, '<': a < b, '>=': a >= b, '>': a > b, '==': a === b }[r.op];
+            if (ok !== false) return;
+            const isErr = r.niveau === 'erreur';
+            const fa = contenu.querySelector('[name="' + CSS.escape(r.a) + '"]');
+            if (fa) { fa.classList.add(isErr ? 'op-err' : 'op-warnf'); fa.title = r.msg || ''; fa.dataset.opTitle = '1'; }
+            (isErr ? errors : warnings).push({ f: fa, msg: r.msg || (opLabelOf(fa) + ' ' + r.op + ' ' + opLabelOf(contenu.querySelector('[name="' + CSS.escape(r.b) + '"]'))) });
+        });
+
+        const pill = document.getElementById('op-err-pill');
+        const parts = [];
+        if (errors.length) parts.push(errors.length + ' erreur' + (errors.length > 1 ? 's' : ''));
+        if (warnings.length) parts.push(warnings.length + ' alerte' + (warnings.length > 1 ? 's' : ''));
+        document.getElementById('op-err-text').textContent = parts.join(' · ');
+        pill.classList.toggle('hidden', !parts.length);
+        pill.classList.toggle('inline-flex', !!parts.length);
+        return { errors, warnings };
+    }
+    document.getElementById('op-err-pill').addEventListener('click', () => {
+        const f = contenu && contenu.querySelector('input.op-err, input.op-warnf');
+        if (f) { f.scrollIntoView({ behavior: 'smooth', block: 'center' }); f.focus(); }
+    });
+
+    // Contrôles avant la confirmation d'origine (écoute en phase de capture : passe avant le listener du bouton)
+    document.addEventListener('click', async e => {
+        const b = e.target.closest('#myButton' + DATASET_ID);
+        if (!b) return;
+        if (b.dataset.opBypass === '1') { delete b.dataset.opBypass; return; }
+
+        const bloquer = (icon, title, html) => { e.stopPropagation(); e.preventDefault(); Swal.fire({ icon, title, html }); };
+        if (!contenu || !contenu.querySelector('table') || !opCtx) {
+            return bloquer('info', 'Rien à enregistrer', "Choisissez l'unité, l'année et la période, puis cliquez sur <b>Charger les données</b>.");
+        }
+        if (opCtx.unit !== selUnit.value || opCtx.period !== selPeriod.value) {
+            return bloquer('warning', 'Sélection modifiée',
+                "L'unité ou la période a changé depuis le chargement du formulaire.<br>Cliquez sur <b>Charger les données</b> pour ne pas enregistrer au mauvais endroit.");
+        }
+        const { errors, warnings } = opValidate();
+        if (!errors.length && !warnings.length) return; // tout est bon : confirmation d'origine
+
+        e.stopPropagation(); e.preventDefault();
+        if (errors.length) {
+            await Swal.fire({ icon: 'error', title: errors.length + ' erreur(s) à corriger', html: opListe(errors), confirmButtonText: 'Corriger' });
+            const f = errors[0].f; if (f) { f.scrollIntoView({ behavior: 'smooth', block: 'center' }); f.focus(); }
+            return;
+        }
+        const r = await Swal.fire({
+            icon: 'warning', title: 'Points à vérifier', html: opListe(warnings),
+            showCancelButton: true, confirmButtonText: 'Enregistrer quand même', cancelButtonText: 'Vérifier'
+        });
+        if (r.isConfirmed) { b.dataset.opBypass = '1'; b.click(); }
+    }, true);
+
+    /* =================== 3. ENREGISTREMENT SANS RECHARGEMENT =================== */
+    // elementsArea est reconstruit depuis les champs réellement remplis du formulaire :
+    // - une case vide n'est plus envoyée comme 0 (check_selector mettait 0 partout) ;
+    // - les valeurs partent même si le formulaire n'a aucun indicateur calculé
+    //   (check_selector ne remplit elementsArea que dans la boucle des indicateurs).
+    function opBuildElements() {
+        const out = [];
+        opFields().forEach(f => {
+            const m = /^D0elt(\d+)$/.exec(f.name);
+            if (m && f.value !== '') out.push({ id: m[1], value: f.value });
+        });
+        document.getElementById('elementsArea').value = JSON.stringify(out);
+        return out;
+    }
+
+    async function opSaveAjax() {
+        if (!opBuildElements().length) {
+            Swal.fire({ icon: 'info', title: 'Rien à enregistrer', text: 'Saisissez au moins une valeur avant d\'enregistrer.' });
+            return;
+        }
+        Swal.fire({ title: 'Enregistrement...', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+        try {
+            let resp;
+            try {
+                resp = await fetch(form.action, {
+                    method: 'POST', body: new FormData(form), credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                });
+            } catch (netErr) {
+                throw new Error(navigator.onLine ? 'Le serveur ne répond pas.' : 'Pas de connexion internet.');
+            }
+            let payload = null;
+            if ((resp.headers.get('content-type') || '').includes('application/json')) payload = await resp.json();
+            if (!resp.ok || (payload && payload.ok === false)) {
+                throw new Error((payload && payload.error) || ('Erreur du serveur (' + resp.status + ').'));
+            }
+            if (resp.redirected && /login|\/log\//i.test(resp.url)) {
+                throw new Error('Votre session a expiré : reconnectez-vous dans un autre onglet puis réessayez.');
+            }
+
+            opDirty = false;
+            opClearDraft();
+            opSetStatus('Enregistré à ' + opHeure(new Date()), 'op-clean');
+            opScheduleCompletude();
+
+            Swal.close();
+            const n = selUnit.options.length;
+            opNotify({
+                type: 'success',
+                title: 'Données enregistrées',
+                message: (payload && payload.message) || 'Les valeurs ont bien été enregistrées.',
+                actions: n > 1 ? [{ label: 'Passer à l\'unité suivante', primary: true, onClick: () => {
+                    opSilent = true; opShiftUnit(1); opSilent = false;
+                    document.getElementById('loadDataButton').click();
+                } }] : []
+            });
+        } catch (err) {
+            opSaveDraft();
+            Swal.fire({
+                icon: 'error',
+                title: "Échec de l'enregistrement",
+                html: escapeHtml(err.message) + '<br><small class="opacity-70">Vos saisies sont conservées en brouillon sur cet appareil.</small>'
+            });
+        }
+    }
+
+    /* =================== 4. PASTILLES DE COMPLÉTUDE =================== */
+    let opCompTimer = null;
+    function opScheduleCompletude() { clearTimeout(opCompTimer); opCompTimer = setTimeout(opLoadCompletude, 300); }
+    async function opLoadCompletude() {
+        document.querySelectorAll('#orgUnitTree .op-badge').forEach(b => b.remove());
+        const legend = document.getElementById('op-legend');
+        const p = selPeriod.value;
+        legend.classList.add('hidden'); legend.classList.remove('flex');
+        if (!p) return;
+        let d = null;
+        try {
+            const r = await fetch('/completude/' + DATASET_ID + '/' + encodeURIComponent(p) + '/', {
+                credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!r.ok) return;
+            d = await r.json();
+        } catch (e) { return; }
+        if (!d || d.ok === false || selPeriod.value !== p) return;
+
+        const res = d.resultats || {}, n = { complet: 0, partiel: 0, vide: 0 };
+        document.querySelectorAll('#orgUnitTree input[name="org_units"]').forEach(cb => {
+            const lbl = document.querySelector('label[for="check-' + CSS.escape(cb.value) + '"]');
+            if (!lbl) return;
+            const info = res[cb.value], total = (info && info.total) || d.total || null, remplis = info ? info.remplis : 0;
+            let etat = 'vide', titre = 'Aucune donnée saisie pour cette période';
+            if (remplis > 0) {
+                etat = (total && remplis >= total) ? 'complet' : 'partiel';
+                titre = total ? (remplis + ' / ' + total + ' éléments saisis') : (remplis + ' élément(s) saisi(s)');
+            }
+            n[etat]++;
+            const b = document.createElement('span');
+            b.className = 'op-badge op-badge-' + etat;
+            b.title = titre;
+            lbl.appendChild(b);
+        });
+        ['complet', 'partiel', 'vide'].forEach(k => { document.getElementById('op-n-' + k).textContent = n[k]; });
+        legend.classList.remove('hidden'); legend.classList.add('flex');
+    }
+
+    /* ---------- Initialisation ---------- */
+    opRenderChips();
+    opUpdateSteps();
+    opScheduleCompletude();
+})();
+</script>
+
+<!-- ======================= PALETTE DE COMMANDES, MODE FOCUS, DENSITÉ ======================= -->
+<script>
+(function () {
+    const DATASET_ID = '{{ dataset.id }}';
+    const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+    const contenu = document.querySelector('.card-body' + DATASET_ID + ' .contenu');
+    const $ = id => document.getElementById(id);
+
+    /* ---------- Mode focus et densité (mémorisés sur l'appareil) ---------- */
+    function lire(k) { try { return localStorage.getItem(k) === '1'; } catch (e) { return false; } }
+    function ecrire(k, v) { try { localStorage.setItem(k, v ? '1' : '0'); } catch (e) {} }
+    function appliquer(cls, cle, bouton, actif) {
+        document.body.classList.toggle(cls, actif);
+        ecrire(cle, actif);
+        const b = $(bouton);
+        if (b) b.setAttribute('aria-pressed', actif ? 'true' : 'false');
+    }
+    function basculerFocus() {
+        const actif = !document.body.classList.contains('op-focus');
+        appliquer('op-focus', 'op-focus', 'op-focus-btn', actif);
+        opNotify({ type: 'info', message: actif ? "Mode focus activé : l'arborescence est masquée." : 'Mode focus désactivé.', duration: 2500 });
+    }
+    function basculerDensite() {
+        appliquer('op-compact', 'op-compact', 'op-density-btn', !document.body.classList.contains('op-compact'));
+    }
+    appliquer('op-focus', 'op-focus', 'op-focus-btn', lire('op-focus'));
+    appliquer('op-compact', 'op-compact', 'op-density-btn', lire('op-compact'));
+    $('op-focus-btn').addEventListener('click', basculerFocus);
+    $('op-density-btn').addEventListener('click', basculerDensite);
+
+    /* ---------- Palette de commandes ---------- */
+    const racine = document.createElement('div');
+    racine.id = 'op-cmd';
+    racine.innerHTML =
+        '<div class="op-cmd-backdrop"></div>' +
+        '<div class="op-cmd-panel" role="dialog" aria-modal="true" aria-label="Palette de commandes">' +
+        '  <div class="op-cmd-search"><i class="fa-solid fa-magnifying-glass"></i>' +
+        '    <input type="text" id="op-cmd-input" autocomplete="off" placeholder="Rechercher une unité, un élément de données ou une action">' +
+        '    <kbd>Échap</kbd></div>' +
+        '  <div class="op-cmd-list" id="op-cmd-list" role="listbox"></div>' +
+        '  <div class="op-cmd-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> naviguer</span><span><kbd>Entrée</kbd> ouvrir</span><span><kbd>Ctrl</kbd> <kbd>K</kbd> ouvrir la palette</span></div>' +
+        '</div>';
+    document.body.appendChild(racine);
+    const champ = $('op-cmd-input'), liste = $('op-cmd-list');
+    let resultats = [], actif = 0, retourFocus = null;
+
+    function clic(id) { const b = $(id); if (b) b.click(); }
+    function allerA(f) {
+        if (!f) return false;
+        f.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => { f.focus(); if (f.select) f.select(); }, 250);
+        return true;
+    }
+    function champsSaisie() {
+        return contenu ? Array.from(contenu.querySelectorAll('input[name^="D0elt"], textarea[name^="D0elt"]')).filter(f => f.type !== 'hidden') : [];
+    }
+
+    function commandes() {
+        const charge = !!(contenu && contenu.querySelector('table'));
+        const cmds = [
+            { g: 'Actions', ic: 'fa-download', l: 'Charger les données', h: '', run: () => clic('loadDataButton') },
+            { g: 'Actions', ic: 'fa-floppy-disk', l: 'Enregistrer les données', h: 'Ctrl S', run: () => clic('myButton' + DATASET_ID), off: !charge },
+            { g: 'Actions', ic: 'fa-pen', l: 'Aller au premier champ vide', h: '', off: !charge,
+              run: () => allerA(champsSaisie().find(f => f.value === '')) || opNotify({ type: 'success', message: 'Tous les champs sont remplis.' }) },
+            { g: 'Actions', ic: 'fa-triangle-exclamation', l: 'Aller au premier point à corriger', h: '', off: !charge,
+              run: () => allerA(contenu.querySelector('input.op-err, input.op-warnf')) || opNotify({ type: 'success', message: 'Aucun point à corriger.' }) },
+            { g: 'Actions', ic: 'fa-forward', l: 'Unité suivante', h: '', run: () => clic('op-next-unit') },
+            { g: 'Actions', ic: 'fa-backward', l: 'Unité précédente', h: '', run: () => clic('op-prev-unit') },
+            { g: 'Affichage', ic: 'fa-expand', l: document.body.classList.contains('op-focus') ? 'Quitter le mode focus' : 'Activer le mode focus', h: '', run: basculerFocus },
+            { g: 'Affichage', ic: 'fa-grip-lines', l: document.body.classList.contains('op-compact') ? 'Lignes confortables' : 'Lignes compactes', h: '', run: basculerDensite },
+            { g: 'Affichage', ic: 'fa-circle-half-stroke', l: 'Basculer le thème clair / sombre', h: '', run: () => clic('op-theme-btn') },
+        ].filter(c => !c.off);
+
+        champsSaisie().forEach(f => {
+            const tr = f.closest('tr'), td = tr && tr.querySelector('td');
+            const nom = td ? td.textContent.replace(/\s+/g, ' ').trim() : f.name;
+            cmds.push({ g: 'Éléments de données', ic: f.value === '' ? 'fa-circle' : 'fa-circle-check', l: nom,
+                        h: f.value === '' ? 'vide' : f.value, run: () => allerA(f) });
+        });
+
+        document.querySelectorAll('#orgUnitTree input[name="org_units"]').forEach(cb => {
+            const lbl = document.querySelector('label[for="check-' + CSS.escape(cb.value) + '"]');
+            const nom = lbl ? lbl.textContent.replace(/\s+/g, ' ').trim() : cb.value;
+            cmds.push({ g: "Unités d'organisation", ic: 'fa-location-dot', l: nom, h: cb.checked ? 'sélectionnée' : '',
+                run: () => {
+                    if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+                    const sel = $('structureSelect');
+                    sel.value = cb.value;
+                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                    opNotify({ type: 'success', message: nom + ' est maintenant l\'unité active.', duration: 2500 });
+                } });
+        });
+        return cmds;
+    }
+
+    function afficher() {
+        const q = norm(champ.value).split(/\s+/).filter(Boolean);
+        resultats = commandes().filter(c => q.every(t => norm(c.l + ' ' + c.g).includes(t))).slice(0, 60);
+        if (actif >= resultats.length) actif = 0;
+        if (!resultats.length) {
+            liste.innerHTML = '<p class="op-cmd-empty">Aucun résultat pour cette recherche.</p>';
+            return;
+        }
+        let html = '', groupe = '';
+        resultats.forEach((c, i) => {
+            if (c.g !== groupe) { groupe = c.g; html += '<p class="op-cmd-group">' + esc(groupe) + '</p>'; }
+            html += '<button type="button" role="option" class="op-cmd-item' + (i === actif ? ' op-active' : '') + '" data-i="' + i + '">'
+                 + '<i class="fa-solid ' + c.ic + '"></i><span>' + esc(c.l) + '</span><small>' + esc(c.h || '') + '</small></button>';
+        });
+        liste.innerHTML = html;
+        const a = liste.querySelector('.op-active');
+        if (a) a.scrollIntoView({ block: 'nearest' });
+    }
+    function executer(i) {
+        const c = resultats[i];
+        if (!c) return;
+        fermer(false);
+        setTimeout(c.run, 30);
+    }
+    function ouvrir() {
+        retourFocus = document.activeElement;
+        racine.classList.add('op-open');
+        champ.value = ''; actif = 0;
+        afficher();
+        setTimeout(() => champ.focus(), 10);
+    }
+    function fermer(rendreFocus = true) {
+        racine.classList.remove('op-open');
+        if (rendreFocus && retourFocus && retourFocus.focus) retourFocus.focus();
+    }
+
+    champ.addEventListener('input', () => { actif = 0; afficher(); });
+    champ.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); actif = Math.min(actif + 1, resultats.length - 1); afficher(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); actif = Math.max(actif - 1, 0); afficher(); }
+        else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); executer(actif); }
+        else if (e.key === 'Escape') { e.preventDefault(); fermer(); }
+    });
+    liste.addEventListener('click', e => { const b = e.target.closest('.op-cmd-item'); if (b) executer(+b.dataset.i); });
+    liste.addEventListener('mousemove', e => {
+        const b = e.target.closest('.op-cmd-item');
+        if (b && +b.dataset.i !== actif) { actif = +b.dataset.i; liste.querySelectorAll('.op-cmd-item').forEach(x => x.classList.toggle('op-active', +x.dataset.i === actif)); }
+    });
+    racine.querySelector('.op-cmd-backdrop').addEventListener('click', () => fermer());
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            racine.classList.contains('op-open') ? fermer() : ouvrir();
+        }
+    });
+    $('op-cmd-btn').addEventListener('click', ouvrir);
+})();
+</script>
+
+<!-- ======================= INFOBULLES DE LA BARRE DES MODULES ======================= -->
+<script>
+(function () {
+    const tip = document.createElement('div');
+    tip.id = 'op-tip';
+    tip.setAttribute('role', 'tooltip');
+    tip.innerHTML = '<strong></strong><span></span>';
+    document.body.appendChild(tip);
+    let cible = null, minuteur = null;
+
+    function montrer(el) {
+        if (window.innerWidth < 1024) return;
+        cible = el;
+        tip.querySelector('strong').textContent = el.getAttribute('data-op-tip') || '';
+        tip.querySelector('span').textContent = el.getAttribute('data-op-desc') || '';
+        const r = el.getBoundingClientRect();
+        tip.style.left = (r.right + 14) + 'px';
+        tip.style.top = '0px';
+        const h = tip.offsetHeight;
+        const top = Math.min(Math.max(8, r.top + r.height / 2 - h / 2), window.innerHeight - h - 8);
+        tip.style.top = top + 'px';
+        tip.classList.add('op-show');
+    }
+    function cacher() { clearTimeout(minuteur); cible = null; tip.classList.remove('op-show'); }
+
+    const zone = document.querySelector('header.glass-nav');
+    zone.addEventListener('mouseover', e => {
+        const el = e.target.closest('[data-op-tip]');
+        if (!el || el === cible) return;
+        clearTimeout(minuteur);
+        minuteur = setTimeout(() => montrer(el), tip.classList.contains('op-show') ? 0 : 90);
+    });
+    zone.addEventListener('mouseleave', cacher);
+    zone.addEventListener('focusin', e => { const el = e.target.closest('[data-op-tip]'); if (el) montrer(el); });
+    zone.addEventListener('focusout', cacher);
+    zone.addEventListener('scroll', cacher, true);
+    document.getElementById('userMenuBtn').addEventListener('click', cacher);
+
+    // Fondu en bas de la barre quand tous les modules ne tiennent pas à l'écran
+    const navRail = zone.querySelector('nav');
+    function fondu() { navRail.classList.toggle('op-scroll', navRail.scrollHeight - navRail.scrollTop - navRail.clientHeight > 4); }
+    navRail.addEventListener('scroll', fondu); window.addEventListener('resize', fondu); fondu();
+
+    // Modules dont l'adresse n'est pas encore renseignée : message au lieu d'un lien mort
+    document.querySelectorAll('a[data-op-module][href="#"]').forEach(a => a.addEventListener('click', e => {
+        e.preventDefault();
+        if (window.opNotify) opNotify({ type: 'info', title: a.getAttribute('data-op-tip') || a.textContent.trim(),
+            message: "L'adresse de ce module reste à renseigner dans le gabarit." });
+    }));
+})();
+</script>
+
+<!-- ======================= NAVIGATION FAÇON EXCEL ======================= -->
+<script>
+(function () {
+    const DATASET_ID = '{{ dataset.id }}';
+    const contenu = document.querySelector('.card-body' + DATASET_ID + ' .contenu');
+    const $ = id => document.getElementById(id);
+    if (!contenu) return;
+    const CHAMP = 'input[name^="D0elt"], textarea[name^="D0elt"]';
+
+    /* ============ 1. NAVIGATION AU CLAVIER ============ */
+    // Grille des champs visibles : une ligne du tableau = une ligne de la grille
+    function grille() {
+        const lignes = [];
+        contenu.querySelectorAll('table tr').forEach(tr => {
+            if (tr.offsetParent === null) return; // ligne masquée par le filtre
+            const champs = Array.from(tr.querySelectorAll(CHAMP)).filter(f => f.type !== 'hidden' && !f.readOnly && !f.disabled);
+            if (champs.length) lignes.push(champs);
+        });
+        return lignes;
+    }
+    function position(g, el) {
+        for (let r = 0; r < g.length; r++) { const c = g[r].indexOf(el); if (c >= 0) return [r, c]; }
+        return null;
+    }
+    function aller(el) {
+        if (!el) return;
+        el.focus();
+        try { if (el.select) el.select(); } catch (e) {}
+        el.scrollIntoView({ block: 'nearest' });
+    }
+
+    contenu.addEventListener('keydown', e => {
+        const el = e.target;
+        if (!el.matches || !el.matches(CHAMP) || e.altKey || e.ctrlKey || e.metaKey) return;
+        const k = e.key;
+        if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(k)) return;
+        const zoneTexte = el.tagName === 'TEXTAREA';
+        if (zoneTexte && (k === 'ArrowUp' || k === 'ArrowDown')) return; // texte sur plusieurs lignes
+        if (k === 'ArrowLeft' || k === 'ArrowRight') {
+            // Dans un champ texte, on ne sort que si le curseur est au bord
+            let bord = true;
+            try {
+                if (el.selectionStart !== null && el.selectionStart !== undefined) {
+                    const n = el.value.length;
+                    bord = k === 'ArrowLeft' ? (el.selectionStart === 0 && el.selectionEnd === 0) : (el.selectionEnd === n);
+                }
+            } catch (err) {}
+            if (!bord) return;
+        }
+        const g = grille(), p = position(g, el);
+        if (!p) return;
+        let [r, c] = p;
+        if (k === 'ArrowUp') r--; else if (k === 'ArrowDown') r++; else if (k === 'ArrowLeft') c--; else c++;
+        if (c < 0) { r--; if (r >= 0) c = g[r].length - 1; }
+        else if (r >= 0 && r < g.length && c >= g[r].length) { r++; c = 0; }
+        e.preventDefault(); // évite aussi que ↑ ↓ modifient la valeur d'un champ numérique
+        if (r < 0 || r >= g.length) return;
+        aller(g[r][Math.min(c, g[r].length - 1)]);
+    });
+
+    // La molette ne modifie plus un nombre par accident : elle fait défiler la page
+    contenu.addEventListener('wheel', e => {
+        const el = e.target;
+        if (el.matches && el.matches('input[type="number"]') && document.activeElement === el) el.blur();
+    }, { passive: true });
+
+    /* ============ 2. COLLAGE DEPUIS EXCEL ============ */
+    // « 1 250 », « 1.250,5 », « 12,5 » deviennent des nombres valides
+    function nettoyer(t) {
+        let s = String(t).replace(/[\s  ]/g, '');
+        if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, '');
+        s = s.replace(',', '.');
+        return /^-?\d+(\.\d+)?$/.test(s) ? s : null;
+    }
+    function poser(f, v) { f.value = v; f.dispatchEvent(new Event('input', { bubbles: true })); }
+
+    contenu.addEventListener('paste', e => {
+        const el = e.target;
+        if (!el.matches || !el.matches(CHAMP)) return;
+        const texte = (e.clipboardData || window.clipboardData).getData('text');
+        if (texte == null) return;
+        const lignes = texte.replace(/\r/g, '').split('\n');
+        while (lignes.length && lignes[lignes.length - 1] === '') lignes.pop();
+        const cellules = lignes.map(l => l.split('\t'));
+        const bloc = cellules.length > 1 || (cellules[0] && cellules[0].length > 1);
+
+        if (!bloc) {
+            // Une seule valeur : on la nettoie pour qu'un nombre formaté passe dans un champ numérique
+            if (el.type === 'number') {
+                const v = nettoyer(texte);
+                if (v !== null) { e.preventDefault(); poser(el, v); }
+            }
+            return;
+        }
+
+        e.preventDefault();
+        const g = grille(), p = position(g, el);
+        if (!p) return;
+        const [r0, c0] = p, modifs = [];
+        let ignorees = 0;
+        cellules.forEach((ligne, i) => {
+            const rang = g[r0 + i];
+            ligne.forEach((brut, j) => {
+                const t = brut.trim();
+                if (t === '') return;
+                const f = rang && rang[c0 + j];
+                if (!f) { ignorees++; return; }
+                let v = t;
+                if (f.type === 'number') { v = nettoyer(t); if (v === null) { ignorees++; return; } }
+                modifs.push({ f, avant: f.value });
+                poser(f, v);
+                f.classList.remove('op-pasted'); void f.offsetWidth; f.classList.add('op-pasted');
+            });
+        });
+
+        if (!modifs.length) {
+            opNotify({ type: 'warning', title: "Rien n'a été collé",
+                message: 'Les cellules copiées ne contiennent pas de valeurs utilisables pour ces champs.' });
+            return;
+        }
+        const n = modifs.length;
+        opNotify({
+            type: 'success',
+            title: n + ' valeur' + (n > 1 ? 's collées' : ' collée'),
+            message: ignorees
+                ? ignorees + ' cellule' + (ignorees > 1 ? 's ignorées' : ' ignorée') + ' : texte non numérique ou hors du formulaire.'
+                : 'Vérifiez-les, puis enregistrez.',
+            actions: [{ label: 'Annuler le collage', onClick: () => {
+                modifs.forEach(m => poser(m.f, m.avant));
+                opNotify({ type: 'info', message: 'Collage annulé.', duration: 2500 });
+            } }]
+        });
+    });
+
+})();
 </script>
 </body>
 </html>

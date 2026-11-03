@@ -12,46 +12,27 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 #import pymemcache
 import os
 from pathlib import Path
-
+from datetime import timedelta
+from celery.schedules import crontab
+from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+dotenv_path = os.path.join(BASE_DIR, '.env')
+load_dotenv(dotenv_path)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'iaz5-j8_=har((66_8!0x&(jz#u(z_pv&1t85p1$na^r!kg9xn'
+SECRET_KEY = os.getenv('SECRET_KEY')
+
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 from datetime import timedelta
-from celery.schedules import crontab
-
-CELERY_BEAT_SCHEDULE = {
-    # 'verification-retards-chaque-matin': {
-    #     'task': 'ctn_bpf.task.check_overdue_tasks',
-    #     'schedule': 3600.0,  # 10 secondes c'est très court ! Pour 1h mettez 3600
-    # },
-    'backup-quotidien-db-models': {
-        # Remplacez 'ctn_bpf' par le nom de l'app où se trouve la tâche de backup
-        'task': 'ctn_bpf.task.backup_models_and_data', 
-        'schedule': crontab(hour=3, minute=0), # S'exécute à 3h00 du matin
-    },
-}
-CELERY_BEAT_SCHEDULE = {
-    # 'verification-retards-chaque-matin': {
-    #     'task': 'ctn_bpf.task.check_overdue_tasks',
-    #     'schedule': 3600.0,  
-    # },
-    'backup-quotidien-db-models': {
-        # Remplacez 'ctn_bpf' par le nom de l'app où se trouve la tâche de backup
-        'task': 'ctn_bpf.tasks.backup_models_and_data', 
-        'schedule': crontab(hour=3, minute=0), # S'exécute à 3h00 du matin
-    },
-}
-
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -75,7 +56,7 @@ REST_FRAMEWORK = {
 
 # Domaine public et localhost
 ALLOWED_HOSTS = [
-    'iacs.operaplus.org',  # ton domaine
+    'operaplus.org',  # ton domaine
     'localhost',
     '127.0.0.1',
     '[::1]'
@@ -83,8 +64,8 @@ ALLOWED_HOSTS = [
 
 # Pour éviter les erreurs CSRF lors des formulaires depuis ton domaine
 CSRF_TRUSTED_ORIGINS = [
-    'http://iacs.operaplus.org',
-    'https://iacs.operaplus.org',  # si tu actives HTTPS
+    'http://operaplus.org',
+    'https://operaplus.org',  # si tu actives HTTPS
     'http://localhost:8000'
 ]
 
@@ -102,7 +83,7 @@ INSTALLED_APPS = [
 	'debug_toolbar',
     'ctn_bpf.apps.CtnBpfConfig',
 
-	
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -117,24 +98,18 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_crontab',
     'django_celery_beat',
-    'django_extensions',
-    'django_countries',
-
-    'django_recaptcha',
-    "vitrine",
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.microsoft',
-
-    'pwa'
-
-
+    'pwa',
+    "vitrine",
 ]
+VITRINE_BASE_TEMPLATE = "presentation.html"
 # PWA Configurations
-PWA_APP_NAME = 'My Django App'
-PWA_APP_DESCRIPTION = "My awesome progressive web app"
+PWA_APP_NAME = 'OPERAPLUS'
+PWA_APP_DESCRIPTION = "PLATEFORME DE PLANIFICATION ET DE SUIVI-EVALUATION"
 PWA_APP_THEME_COLOR = '#0A0A0A'
 PWA_APP_BACKGROUND_COLOR = '#FFFFFF'
 PWA_APP_DISPLAY = 'standalone'
@@ -149,10 +124,20 @@ PWA_APP_ICONS = [
         'sizes': '512x512'
     }
 ]
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+# settings.py additionnel
+SOCIALACCOUNT_LOGIN_ON_GET = True # Permet de cliquer sur le lien sans passer par une page intermédiaire
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+SITE_ID = 1
 CRONJOBS = [
     ('0 8 * * *', 'ctn_bpf.management.commands.automatisation.Command.handle'),
 ]
-SITE_ID = 1
+
 """
     'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -162,28 +147,20 @@ SITE_ID = 1
 # Dans ton fichier .env
 GROQ_API_KEY= os.getenv('GROQ_API_KEY')
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
-]
-
 MIDDLEWARE = [
+
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware', # <- Le middleware de session
-    'allauth.account.middleware.AccountMiddleware',         # <- AJOUTEZ CETTE LIGNE ICI
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  
+    'allauth.account.middleware.AccountMiddleware',
 ]
-# settings.py additionnel
-SOCIALACCOUNT_LOGIN_ON_GET = True # Permet de cliquer sur le lien sans passer par une page intermédiaire
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 
 #SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -192,9 +169,6 @@ EMAIL_USE_SSL = True
 EMAIL_PORT = 465
 EMAIL_HOST_USER = 'operaplusbeinfos@gmail.com'
 EMAIL_HOST_PASSWORD = 'Oxlidmktqqigyrkj'
-EMAIL_TIMEOUT = 10
-EMAIL_USE_TLS = False  # <-- OBLIGATOIRE
-
 
 
 WSGI_APPLICATION = 'Opera_CTN.wsgi.application'
@@ -236,25 +210,19 @@ django.db.backends.postgresql
 'PORT': '5432',
 """
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USER'),
         'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-        'DISABLE_SERVER_SIDE_CURSORS': True,
+        'HOST': os.getenv('DB_HOST'), 
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 
-VITRINE_BASE_TEMPLATE = "presentation.html"
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -293,10 +261,6 @@ CACHES = {
     }
 }
 """
-
-# Internationalization
-# https://docs.djangoproject.com/en/3.1/topics/i18n/
-
 from django.utils.translation import gettext_lazy as _
 
 # 1. Activez le système de traduction
@@ -317,38 +281,41 @@ LOCALE_PATHS = [
     os.path.join(BASE_DIR, 'locale'),
 ]
 LANGUAGE_CODE = 'fr-fr'
+# Internationalization
+# https://docs.djangoproject.com/en/3.1/topics/i18n/
 
-TIME_ZONE = 'Africa/Douala'  # Fuseau horaire du Cameroun
-USE_TZ = True
-CELERY_TIMEZONE = 'Africa/Douala'
+LANGUAGE_CODE = 'fr-fr'
+
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
 USE_L10N = True
-# Redirection après une connexion standard
-LOGIN_REDIRECT_URL = '/no_institution/'
 
-# Redirection après la première inscription (via Google)
-ACCOUNT_SIGNUP_REDIRECT_URL = '/no_institution/'
+USE_TZ = True
 
-# settings.py
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_BEAT_SCHEDULE = {
+    # 'verification-retards-chaque-matin': {
+    #     'task': 'ctn_bpf.task.check_overdue_tasks',
+    #     'schedule': 3600.0,  
+    # },
+    'backup-quotidien-db-models': {
+        # Remplacez 'ctn_bpf' par le nom de l'app où se trouve la tâche de backup
+        'task': 'ctn_bpf.tasks.backup_models_and_data', 
+        'schedule': crontab(hour=3, minute=0), # S'exécute à 3h00 du matin
+    },
+}
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/3.1/howto/static-files/
+STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+
+STATIC_ROOT = '/app/static'
+MEDIA_ROOT = '/app/media'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+#Pour Docker
+#Pour Docker
+CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-#Pour Docker
-# CELERY_BROKER_URL = "redis://redis:6379/0"
-# CELERY_ACCEPT_CONTENT = ['json']
-# CELERY_TASK_SERIALIZER = 'json'
 
-
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR,'media')
-RECAPTCHA_PUBLIC_KEY = os.getenv('RECAPTCHA_PUBLIC_KEY')
-RECAPTCHA_PRIVATE_KEY = os.getenv('RECAPTCHA_PRIVATE_KEY')
-FILE_CHARSET = 'utf-8'
-
-
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
