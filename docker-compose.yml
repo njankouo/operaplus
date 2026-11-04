@@ -29,6 +29,7 @@ services:
   # --- CELERY WORKER (Exécution des tâches) ---
   celery_worker:
     build: .
+    image: ghcr.io/njankouo/operaplus:${IMAGE_TAG:-latest}
     container_name: meal-app-worker
     command: celery -A Opera_CTN worker --loglevel=info
     env_file: .env
@@ -45,6 +46,7 @@ services:
   # --- CELERY BEAT (Tâches planifiées) ---
   celery_beat:
     build: .
+    image: ghcr.io/njankouo/operaplus:${IMAGE_TAG:-latest}
     container_name: meal-app-beat
     command: celery -A Opera_CTN beat --loglevel=info
     env_file: .env
