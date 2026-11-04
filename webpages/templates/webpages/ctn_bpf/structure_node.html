@@ -1,10 +1,10 @@
 <!-- structure_node.html -->
 
-<tr class="transition border-b border-gray-100 group
+<tr class="transition border-b border-gray-100 group so-node {% if node.hierachy.rang <= 5 %}r{{ node.hierachy.rang }}{% else %}rx{% endif %}
     {% if node.hierachy.rang == 1 %} bg-white 
     {% elif node.hierachy.rang == 2 %} bg-slate-50/80 
     {% elif node.hierachy.rang == 3 %} bg-gray-50/40 
-    {% else %} bg-transparent {% endif %}">
+    {% else %} bg-transparent {% endif %}" data-so-depth="{{ padding }}" data-so-id="{{ node.id }}">
     
     <td class="px-6 py-3 
         {% if node.hierachy.rang == 1 %} border-l-4 border-blue-600 
@@ -14,6 +14,8 @@
         style="padding-left: {{ padding }}px;">
         
         <div class="flex items-center gap-3">
+            {% with nb=node.children.count %}
+            {% if nb %}<button type="button" class="so-tg" aria-expanded="true" aria-label="Replier ou déplier {{ node.nom }}"></button>{% else %}<span class="so-tg-x" aria-hidden="true"></span>{% endif %}
             {% if padding > 24 %}
                 <i class="fa fa-level-up-alt rotate-90 text-gray-300 group-hover:text-blue-400 transition-colors"></i>
             {% endif %}
@@ -32,11 +34,13 @@
                 {{ node.nom }}
 
             </a>
+            {% if nb %}<span class="so-cnt" title="{{ nb }} sous-unité{{ nb|pluralize }} directe{{ nb|pluralize }}">{{ nb }}</span>{% endif %}
+            {% endwith %}
         </div>
     </td>
 
     <td class="px-6 py-4">
-        <span class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter
+        <span class="text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter so-pill
             {% if node.hierachy.rang == 1 %} bg-blue-600 text-white
             {% elif node.hierachy.rang == 2 %} bg-emerald-100 text-emerald-700
             {% else %} bg-gray-100 text-gray-500 {% endif %}">
@@ -49,15 +53,15 @@
     </td>
 
     <td class="px-6 py-4 text-right">
-        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-             <button onclick="openAddModal('{{ node.id }}', '{{ node.nom }}', {{ node.hierachy.rang|add:1 }})" 
+        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity so-act">
+             <button onclick="openAddModal('{{ node.id }}', '{{ node.nom }}', {{ node.hierachy.rang|add:1 }})" title="Ajouter une sous-unité à {{ node.nom }}" aria-label="Ajouter une sous-unité"
                 class="bg-white text-[10px] font-bold text-emerald-600 border border-emerald-200 px-2 py-1 rounded shadow-sm hover:bg-emerald-600 hover:text-white transition">
                 <i class="fa fa-plus"></i>
             </button>
-            <a href="/modifier-structure/{{node.id}}/" class="bg-white text-[10px] font-bold text-blue-600 border border-blue-200 px-2 py-1 rounded shadow-sm hover:bg-blue-600 hover:text-white transition">
+            <a href="/modifier-structure/{{node.id}}/" title="Modifier" aria-label="Modifier {{ node.nom }}" class="bg-white text-[10px] font-bold text-blue-600 border border-blue-200 px-2 py-1 rounded shadow-sm hover:bg-blue-600 hover:text-white transition">
                 <i class="fa fa-edit"></i>
             </a>
-          <button type="button" 
+          <button type="button" title="Supprimer" aria-label="Supprimer {{ node.nom }}"
         onclick="openDeleteModal('/line_delete_structure/{{node.id}}/')"  
         class="bg-white text-[10px] font-bold text-red-600 border border-red-200 px-2 py-1 rounded shadow-sm hover:bg-red-600 hover:text-white transition">            
     <i class="fa fa-trash"></i>            

@@ -28,15 +28,112 @@
 {% endblock %}
 
 {% block content %}
+<!-- ===================== STRUCTURE ORGANISATIONNELLE : design (ajout) ===================== -->
+<style>
+    .so { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: var(--sbx-ok, #2A8A7D); --danger: var(--sbx-danger, #E35A33);
+          --ink: #0b1220; --muted: #667085; --line: #e4e8ee; gap: 18px; padding: 4px 0 24px; overflow: visible !important; }
+    .so .r1 { --c: #2B3A67; } .so .r2 { --c: #2A8A7D; } .so .r3 { --c: #C98A1B; } .so .r4 { --c: #EA580C; } .so .r5 { --c: #7A4E9E; } .so .rx { --c: #64748B; }
+    /* panneau des niveaux */
+    .so > aside { width: 330px !important; background: #fff; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; align-self: flex-start; position: sticky; top: 16px; max-height: calc(100vh - 32px); }
+    .so > aside > div:first-child { padding: 18px !important; border-color: #eef1f4 !important; }
+    .so > aside h3 { text-transform: none !important; font-size: 15px !important; font-weight: 800 !important; color: var(--ink) !important; margin-bottom: 4px !important; }
+    .so-sub { margin: 0 0 12px; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+    .so > aside form input { border: 1px solid #d0d5dd !important; border-radius: 10px !important; padding: 10px 12px !important; font-size: 13.5px !important; }
+    .so > aside form input:focus { border-color: var(--dom) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--dom) 10%, transparent); }
+    .so > aside form button { background: var(--dom) !important; border-radius: 10px !important; font-size: 12.5px !important; text-transform: none; letter-spacing: 0; box-shadow: none !important; }
+    .so > aside > div:last-child { padding: 14px 18px 18px !important; position: relative; }
+    .so > aside > div:last-child > * + * { margin-top: 10px !important; }
+    .so-lv { position: relative; display: flex !important; align-items: center; gap: 12px; padding: 12px 12px 12px 14px !important; border: 1px solid var(--line) !important; border-left-width: 1px !important; border-radius: 14px !important; box-shadow: none !important; background: #fff !important; cursor: default; }
+    .so-lv:hover { border-color: color-mix(in srgb, var(--c) 40%, var(--line)) !important; }
+    .so-lv::before { content: ""; position: absolute; left: 31px; top: 100%; height: 10px; width: 2px; background: #e4e8ee; }
+    .so-lv:last-of-type::before { display: none; }
+    .so-rk { width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; background: var(--c); }
+    .so-lv > div:first-of-type { flex: 1; min-width: 0; }
+    .so-lv > div:first-of-type > div:first-child { display: none !important; }      /* « Rang N » : remplacé par la pastille */
+    .so-lv > div:first-of-type > div:last-child { margin-top: 0 !important; font-size: 14px !important; font-weight: 800 !important; color: var(--ink) !important; }
+    .so-lv small { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); margin-top: 1px; }
+    .so-lv > div:last-child { opacity: 1 !important; gap: 4px !important; }
+    .so-lv > div:last-child > * { width: 30px; height: 30px; padding: 0 !important; display: inline-flex !important; align-items: center; justify-content: center; border-radius: 9px !important; border-color: var(--line) !important; box-shadow: none !important; color: #667085 !important; background: #fff !important; }
+    .so-lv > div:last-child > button:first-child:hover { background: var(--ok) !important; border-color: var(--ok) !important; color: #fff !important; }
+    .so-lv > div:last-child > a:hover { background: var(--dom) !important; border-color: var(--dom) !important; color: #fff !important; }
+    .so-lv > div:last-child > button:last-child:hover { background: var(--danger) !important; border-color: var(--danger) !important; color: #fff !important; }
+    /* panneau principal */
+    .so > main { background: #fff !important; border: 1px solid var(--line); border-radius: 20px; overflow: hidden; min-width: 0; }
+    .so > main > div:first-child { height: auto !important; padding: 16px 20px !important; background: #fff !important; border-color: #eef1f4 !important; gap: 12px; flex-wrap: wrap; }
+    .so-h b { display: block; font-size: 17px; font-weight: 800; color: var(--ink); } .so-h span { font-size: 12.5px; color: var(--muted); }
+    .so-kpis { display: flex; gap: 6px; flex-wrap: wrap; }
+    .so-kpis span { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); color: #475467; }
+    .so-h .so-kpis { margin-top: 6px; } .so-kpis b, .so-h .so-kpis b { display: inline; font-size: 12px; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .so-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .so-q { height: 40px; width: 240px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px 0 36px; font-size: 13.5px; outline: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2398a2b3' stroke-width='2' stroke-linecap='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 12px center; }
+    .so-q:focus { border-color: var(--dom); }
+    .so-tools > button:not(.so-tree-b) { background: var(--dom) !important; border-radius: 10px !important; font-size: 13px !important; padding: 10px 14px !important; text-transform: none; box-shadow: none !important; }
+    .so-tools > button:not(.so-tree-b):hover { background: color-mix(in srgb, var(--dom) 85%, #000) !important; }
+    .so > main > div:last-child { padding: 0 !important; }
+    .so table { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+    .so thead { background: #fbfcfd !important; }
+    .so thead th { font-size: 11px !important; letter-spacing: .08em; color: #98a2b3 !important; padding: 12px 20px !important; }
+    .so tbody tr { transition: background .15s; } .so tbody tr:hover { background: color-mix(in srgb, var(--dom) 3%, #fff) !important; }
+    .so tbody td { padding-top: 12px !important; padding-bottom: 12px !important; font-size: 13.5px; }
+    .so tbody tr[hidden] { display: none !important; }
+    mark.so-hl { background: color-mix(in srgb, var(--acc) 28%, #fff); color: inherit; border-radius: 3px; padding: 0 1px; }
+    .so-none { display: none; padding: 30px 16px; text-align: center; color: var(--muted); font-size: 13.5px; } .so-none.on { display: block; }
+    /* fenêtre d'ajout / modification */
+    #modalAdd > div { border-radius: 20px !important; animation: soPop .25s cubic-bezier(.2,.9,.3,1.2) both; }
+    @keyframes soPop { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+    #modalAdd > div > div:first-child { background: var(--dom, #123A37) !important; padding: 16px 20px !important; position: relative; }
+    #modalAdd > div > div:first-child::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--acc, #E48B0C); }
+    #modalAdd h3 { text-transform: none !important; letter-spacing: 0 !important; font-size: 16px !important; font-weight: 800 !important; }
+    #modalAdd form { padding: 20px !important; }
+    #modalAdd label { text-transform: none !important; font-size: 13px !important; font-weight: 700 !important; color: #344054 !important; }
+    #modalAdd select, #modalAdd input { border: 1px solid #d0d5dd !important; border-radius: 10px !important; padding: 10px 12px !important; font-size: 14px !important; }
+    #modalAdd select:focus, #modalAdd input:focus { border-color: var(--dom, #123A37) !important; box-shadow: 0 0 0 3px rgba(18,58,55,.1) !important; --tw-ring-shadow: 0 0 #0000 !important; }
+    #modalAdd form > div:last-child button { border-radius: 10px !important; text-transform: none; font-size: 13.5px !important; }
+    #modalAdd form > div:last-child button[type=submit] { background: var(--acc, #E48B0C) !important; box-shadow: none !important; padding: 10px 18px !important; }
+    .so-path { margin: 0; padding: 10px 12px; border-radius: 10px; background: #f5f7fa; font-size: 12.5px; color: #475467; font-weight: 600; }
+    .so-path b { color: var(--ink, #0b1220); }
+    .so-warn { display: none; margin: 6px 0 0; font-size: 12px; font-weight: 700; color: #B45309; } .so-warn.on { display: block; }
+    #modaldelete > div { border-radius: 18px !important; }
+    #modaldelete > div > div:first-child { background: var(--danger, #E35A33) !important; }
+    /* arbre des unités */
+    .so tr.so-node { background: #fff !important; }
+    .so tr.so-node > td:first-child { position: relative; border-left: 0 !important; }
+    .so tr.so-node > td:first-child::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--c); opacity: .9; }
+    .so tr.so-node:not([data-so-depth="24"]) > td:first-child::after { content: ""; position: absolute; top: 0; bottom: 0; left: calc(var(--d, 24px) - 13px); width: 0; border-left: 1px dashed #d0d5dd; }
+    .so tr.so-node > td:first-child .fa-level-up-alt, .so tr.so-node > td:first-child .fa-stop-circle { display: none; }
+    .so tr.so-node > td:first-child a { color: var(--ink) !important; }
+    .so tr.so-node.r1 > td:first-child a { font-size: 14.5px !important; font-weight: 800 !important; }
+    .so tr.so-node > td:first-child a:hover { color: var(--c) !important; text-decoration: underline; text-underline-offset: 3px; }
+    .so-tg, .so-tg-x { width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; }
+    .so-tg { border: 1px solid var(--line); background: #fff; cursor: pointer; position: relative; transition: background .15s, border-color .15s; }
+    .so-tg::before { content: ""; position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; border-right: 2px solid #667085; border-bottom: 2px solid #667085; transform: translate(-50%, -70%) rotate(45deg); transition: transform .2s; }
+    .so-tg[aria-expanded="false"]::before { transform: translate(-70%, -50%) rotate(-45deg); }
+    .so-tg:hover { border-color: var(--c); background: color-mix(in srgb, var(--c) 8%, #fff); }
+    .so-cnt { font-size: 11px; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--c) 10%, #fff); color: var(--c); }
+    .so tr.so-node > td:first-child .fa-folder-open { color: var(--c) !important; opacity: .8; }
+    .so-pill { background: color-mix(in srgb, var(--c) 12%, #fff) !important; color: color-mix(in srgb, var(--c) 85%, #000) !important; font-size: 11px !important; letter-spacing: 0 !important; text-transform: none !important; font-weight: 700 !important; padding: 3px 10px !important; }
+    .so tr.so-node td:nth-child(3) { font-size: 12px !important; color: #667085 !important; }
+    .so-act { opacity: .35 !important; } .so tr.so-node:hover .so-act, .so-act:focus-within { opacity: 1 !important; }
+    .so-act > * { width: 30px; height: 30px; padding: 0 !important; display: inline-flex !important; align-items: center; justify-content: center; border-radius: 9px !important; border-color: var(--line) !important; color: #667085 !important; box-shadow: none !important; }
+    .so-act > button:first-child:hover { background: var(--ok) !important; border-color: var(--ok) !important; color: #fff !important; }
+    .so-act > a:hover { background: var(--dom) !important; border-color: var(--dom) !important; color: #fff !important; }
+    .so-act > button:last-child:hover { background: var(--danger) !important; border-color: var(--danger) !important; color: #fff !important; }
+    .so tr.so-node.so-fold { display: none; }
+    .so tr.so-node.so-hit > td:first-child a { background: color-mix(in srgb, var(--acc) 22%, #fff); border-radius: 4px; padding: 0 3px; }
+    .so-tree-b { height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 12.5px; font-weight: 700; color: #344054; cursor: pointer; }
+    .so-tree-b:hover { border-color: var(--dom); color: var(--dom); }
+    @media (max-width: 1000px) { .so { flex-direction: column; } .so > aside { width: 100% !important; position: static; max-height: none; } .so-q { width: 100%; } .so-tools { width: 100%; } }
+</style>
 <!-- Inclusion de SweetAlert2 au debut du bloc de contenu -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<div class="flex flex-1 overflow-hidden max-w-full">
+<div class="flex flex-1 overflow-hidden max-w-full so">
     
     <!-- PANNEAU GAUCHE : CONFIGURATION DES NIVEAUX (HIERARCHIE) -->
     <aside class="dhis2-sidebar w-80 flex flex-col shrink-0">
         <div class="p-4 border-b bg-white">
-            <h3 class="text-xs font-bold text-gray-600 uppercase mb-4">Niveaux de hierarchie</h3>
+            <h3 class="text-xs font-bold text-gray-600 uppercase mb-4">Niveaux de hiérarchie</h3>
+            <p class="so-sub">Du plus haut (rang 1) au plus fin. Ex. : Région → Département → Commune → École.</p>
             <form action="/add_level/" method="POST" class="space-y-3">
                 {% csrf_token %}
                 <input type="text" name="nom" placeholder="Ex: Region, District..." required
@@ -45,7 +142,7 @@
                     <input type="number" name="rang" placeholder="Rang" required
                            class="w-20 text-sm border border-gray-300 p-2 outline-none rounded">
                     <button type="submit" class="flex-1 dhis2-blue text-white text-[11px] font-bold py-2 rounded shadow-sm">
-                        AJOUTER NIVEAU
+                        Ajouter le niveau
                     </button>
                 </div>
             </form>
@@ -54,12 +151,13 @@
         <!-- LISTE DES NIVEAUX DEFINIS -->
         <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
             {% for h in hierachie %}
-            <div class="bg-white p-3 border-l-4 rounded shadow-sm flex justify-between items-center group transition-all hover:shadow-md
+            <div data-so-id="{{ h.id }}" data-so-rang="{{ h.rang }}" data-so-nom="{{ h.nom }}" class="so-lv r{% if h.rang <= 5 %}{{ h.rang }}{% else %}x{% endif %} bg-white p-3 border-l-4 rounded shadow-sm flex justify-between items-center group transition-all hover:shadow-md
                 {% if h.rang == 1 %} border-blue-600 
                 {% elif h.rang == 2 %} border-emerald-500 
                 {% elif h.rang == 3 %} border-amber-400 
                 {% else %} border-gray-300 {% endif %}">
                 
+                <span class="so-rk" aria-hidden="true">{{ h.rang }}</span>
                 <div>
                     <div class="flex items-center gap-2">
                         <span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase
@@ -71,6 +169,7 @@
                         </span>
                     </div>
                     <div class="text-sm font-bold text-gray-700 mt-1">{{ h.nom }}</div>
+                    <small class="so-n">Rang {{ h.rang }}</small>
                 </div>
 
                 <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -96,7 +195,7 @@
             {% empty %}
             <div class="text-center py-10">
                 <i class="fa fa-layer-group text-gray-300 text-3xl mb-2"></i>
-                <p class="text-[11px] text-gray-400 italic">Aucun niveau configure</p>
+                <p class="text-[11px] text-gray-400 italic">Aucun niveau configuré : commencez par le rang 1 (ex. Région).</p>
             </div>
             {% endfor %}
         </div>
@@ -106,10 +205,15 @@
     <main class="flex-1 bg-white flex flex-col overflow-hidden">
         <!-- BARRE D'ACTIONS -->
         <div class="h-14 border-b border-gray-200 flex items-center justify-between px-6 bg-gray-50">
+            <div class="so-h"><b>Unités d'organisation</b><span class="so-kpis"><span><b id="soNL">{{ hierachie|length }}</b> niveau{{ hierachie|length|pluralize:"x" }}</span><span><b>{{ all_structures|length }}</b> unité{{ all_structures|length|pluralize }}</span></span></div>
+            <div class="so-tools">
+            <input type="search" class="so-q" id="soQ" placeholder="Rechercher une unité, un code…" aria-label="Rechercher une unité">
+            <button type="button" class="so-tree-b" id="soAll" data-open="1">Tout replier</button>
             <button onclick="openAddModal(null, 'Racine', 1)" 
                     class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 text-xs font-bold rounded flex items-center gap-2 transition shadow-sm">
-                <i class="fa fa-plus-circle"></i> AJOUTER UNE UNITE RACINE
+                <i class="fa fa-plus-circle"></i> Ajouter une unité racine
             </button>
+            </div>
         </div>
 
         <!-- TABLEAU DES STRUCTURES -->
@@ -131,6 +235,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            <p class="so-none" id="soNone">Aucune unité ne correspond à la recherche.</p>
         </div>
     </main>
 </div>
@@ -162,7 +267,8 @@
                             </optgroup>
                         {% endfor %}
                     </select>
-                    <p class="text-[10px] text-gray-400 mt-1">Laissez vide pour creer une unite au sommet de la hierarchie.</p>
+                    <p class="text-[10px] text-gray-400 mt-1">Laissez vide pour créer une unité au sommet de la hiérarchie.</p>
+                    <p class="so-path" id="soPath" hidden></p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -172,9 +278,10 @@
                                 class="w-full border border-gray-300 p-2.5 text-sm outline-none focus:ring-1 ring-blue-500 rounded bg-white">
                             <option value="" disabled selected>Choisir le niveau...</option>
                             {% for h in hierachie %}
-                                <option value="{{ h.id }}">Niveau {{ h.rang }} : {{ h.nom }}</option>
+                                <option value="{{ h.id }}" data-rang="{{ h.rang }}">Niveau {{ h.rang }} : {{ h.nom }}</option>
                             {% endfor %}
                         </select>
+                        <p class="so-warn" id="soWarn" role="status"></p>
                     </div>
 
                     <div class="col-span-2">
@@ -195,7 +302,7 @@
             <div class="flex justify-end gap-3 pt-6 border-t mt-4">
                 <button type="button" onclick="closeModals()" class="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded">ANNULER</button>
                 <button type="submit" class="dhis2-blue text-white px-6 py-2 text-xs font-bold rounded shadow-lg flex items-center gap-2">
-                    <i class="fa fa-save"></i> ENREGISTRER L'UNITE
+                    <i class="fa fa-save"></i> Enregistrer l'unité
                 </button>
             </div>
         </form>
@@ -353,5 +460,92 @@
     }
 
     
+</script>
+<!-- ===== Structure : corrections et confort (ajout) ===== -->
+<script>
+(function () {
+    var $id = function (i) { return document.getElementById(i); }, modal = $id('modalAdd'), form = modal && modal.querySelector('form');
+    if (!form) return;
+    var ACTION = form.getAttribute('action'), TITLE = modal.querySelector('h3').textContent, lvl = $id('levelSelect'), par = $id('parentIdField');
+    /* niveau par rang, en comparaison exacte (« Niveau 1 » ne choisit plus « Niveau 10 ») */
+    function selectRank(r) { var ok = false; [].forEach.call(lvl.options, function (o) { var m = o.dataset.rang === String(r); o.selected = m; if (m) ok = true; }); if (!ok) lvl.selectedIndex = 0; hint(); }
+    function rankOf(id) { var o = [].filter.call(lvl.options, function (x) { return x.value === String(id); })[0]; return o ? +o.dataset.rang : null; }
+    function parentRank() { var o = par.options[par.selectedIndex]; if (!o || !o.value || !o.parentNode.label) return 0; var m = o.parentNode.label.match(/Niveau\s+(\d+)/); return m ? +m[1] : 0; }
+    function hint() {
+        var pr = parentRank(), lr = rankOf(lvl.value), w = $id('soWarn'), p = $id('soPath'), po = par.options[par.selectedIndex];
+        w.classList.remove('on');
+        if (lr && pr && lr <= pr) { w.textContent = 'Attention : le niveau choisi (rang ' + lr + ') n\u2019est pas sous celui du parent (rang ' + pr + ').'; w.classList.add('on'); }
+        else if (lr && !pr && lr !== 1 && par.value === '') { w.textContent = 'Une unité racine est en général de rang 1.'; w.classList.add('on'); }
+        if (po && po.value) { p.hidden = false; p.innerHTML = 'Sera rattachée à <b>' + po.textContent.trim().replace(/[<>]/g, '') + '</b>'; } else p.hidden = true;
+    }
+    /* ouvrir « Ajouter » repart d'une fiche vierge (l'action « modifier » restait sinon en place) */
+    var _open = window.openAddModal;
+    window.openAddModal = function (parentId, parentName, nextRank) {
+        form.setAttribute('action', ACTION); modal.querySelector('h3').textContent = TITLE;
+        form.querySelector('input[name="nom"]').value = ''; form.querySelector('input[name="designation"]').value = '';
+        _open(parentId, parentName, null);
+        if (nextRank) selectRank(nextRank); else lvl.selectedIndex = 0;
+        hint(); setTimeout(function () { form.querySelector('input[name="nom"]').focus(); }, 60);
+    };
+    var _edit = window.openEditModal;
+    /* openEditModal remplit tous les champs « nom » de la page, y compris celui d'ajout de niveau : on le protège */
+    var lvlNom = document.querySelector('form[action="/add_level/"] input[name="nom"]');
+    if (_edit) window.openEditModal = function () { var keep = lvlNom ? lvlNom.value : ''; _edit.apply(this, arguments); if (lvlNom) lvlNom.value = keep; hint(); };
+    /* parent choisi → niveau suivant proposé */
+    par.addEventListener('change', function () { var pr = parentRank(); if (pr) selectRank(pr + 1); else hint(); });
+    lvl.addEventListener('change', hint);
+    /* bouton « + » d'un niveau : ajoute une unité de ce niveau (la variable node n'existait pas ici) */
+    document.querySelectorAll('.so-lv').forEach(function (c) {
+        var b = c.querySelector('div:last-child > button:first-child'); if (!b) return;
+        b.removeAttribute('onclick'); b.title = 'Ajouter une unité de ce niveau'; b.setAttribute('aria-label', b.title);
+        b.addEventListener('click', function () { window.openAddModal(null, '', +c.dataset.soRang); });
+        var a = c.querySelector('a'); if (a) { a.title = 'Modifier le niveau'; a.setAttribute('aria-label', a.title); }
+        var d = c.querySelector('div:last-child > button:last-child'); if (d) { d.title = 'Supprimer le niveau'; d.setAttribute('aria-label', d.title); }
+    });
+    /* nombre d'unités par niveau (lu dans la liste des parents) */
+    var per = {}; par.querySelectorAll('optgroup').forEach(function (g) { var m = (g.label || '').match(/Niveau\s+(\d+)/); if (m) per[m[1]] = g.querySelectorAll('option').length; });
+    document.querySelectorAll('.so-lv').forEach(function (c) { var n = per[c.dataset.soRang] || 0, s = c.querySelector('.so-n'); if (s) s.textContent = 'Rang ' + c.dataset.soRang + ' · ' + n + ' unité' + (n > 1 ? 's' : ''); });
+    /* rang suivant proposé dans le formulaire d'ajout de niveau */
+    var rg = document.querySelector('form[action="/add_level/"] input[name="rang"]');
+    if (rg && !rg.value) { var mx = 0; document.querySelectorAll('.so-lv').forEach(function (c) { mx = Math.max(mx, +c.dataset.soRang || 0); }); rg.value = mx + 1; }
+    /* fermeture : Échap et clic à côté */
+    document.addEventListener('keydown', function (e) { if (e.key !== 'Escape') return; if (!modal.classList.contains('hidden')) closeModals(); var d = $id('modaldelete'); if (d && !d.classList.contains('hidden') && window.closeDeleteModal) closeDeleteModal(); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModals(); });
+    var dm = $id('modaldelete'); if (dm) dm.addEventListener('click', function (e) { if (e.target === dm && window.closeDeleteModal) closeDeleteModal(); });
+    form.addEventListener('submit', function () { var b = form.querySelector('button[type=submit]'); b.disabled = true; b.lastChild.textContent = ' Enregistrement…'; });
+    /* arbre : replier / déplier (les lignes sont dans l'ordre parent → enfants, la profondeur vient du retrait) */
+    var rows = [].slice.call(document.querySelectorAll('.so table tbody tr.so-node')), $ = function (i) { return document.getElementById(i); };
+    rows.forEach(function (r) { r._d = parseInt(r.dataset.soDepth, 10) || 24; r.querySelector('td').style.setProperty('--d', r._d + 'px'); });
+    function kids(i) { var out = [], d = rows[i]._d; for (var j = i + 1; j < rows.length && rows[j]._d > d; j++) out.push(rows[j]); return out; }
+    function apply() {
+        /* une ligne est masquée si l'un de ses ancêtres est replié */
+        var stack = [];
+        rows.forEach(function (r) {
+            while (stack.length && stack[stack.length - 1]._d >= r._d) stack.pop();
+            var hidden = stack.some(function (a) { var t = a.querySelector('.so-tg'); return t && t.getAttribute('aria-expanded') === 'false'; });
+            r.classList.toggle('so-fold', hidden && !r._force); stack.push(r);
+        });
+    }
+    rows.forEach(function (r, i) { var t = r.querySelector('.so-tg'); if (t) t.addEventListener('click', function () { t.setAttribute('aria-expanded', t.getAttribute('aria-expanded') === 'false' ? 'true' : 'false'); apply(); }); });
+    var all = $('soAll'); if (all) {
+        if (!rows.some(function (r) { return r.querySelector('.so-tg'); })) all.style.display = 'none';
+        all.addEventListener('click', function () { var open = all.dataset.open !== '1'; all.dataset.open = open ? '1' : ''; all.textContent = open ? 'Tout replier' : 'Tout déplier';
+            rows.forEach(function (r) { var t = r.querySelector('.so-tg'); if (t) t.setAttribute('aria-expanded', open ? 'true' : 'false'); }); apply(); });
+    }
+    /* recherche : on montre les unités trouvées ET leurs parents */
+    var q = $('soQ'), norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+    if (q) q.addEventListener('input', function () {
+        var s = norm(q.value.trim()), keep = new Set(), n = 0, stack = [];
+        rows.forEach(function (r) {
+            while (stack.length && stack[stack.length - 1]._d >= r._d) stack.pop();
+            var txt = norm(r.cells[0].textContent + ' ' + (r.cells[2] ? r.cells[2].textContent : '')), hit = !!s && txt.indexOf(s) > -1;
+            r.classList.toggle('so-hit', hit);
+            if (!s || hit) { keep.add(r); stack.forEach(function (a) { keep.add(a); }); if (hit) n++; }
+            stack.push(r);
+        });
+        rows.forEach(function (r) { r.hidden = !!s && !keep.has(r); r._force = !!s; });
+        apply(); $('soNone').classList.toggle('on', !!s && n === 0);
+    });
+})();
 </script>
 {% endblock %}
