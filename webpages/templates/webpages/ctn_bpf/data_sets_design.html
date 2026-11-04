@@ -60,6 +60,72 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
+    <!-- ===================== DESIGNER DE FORMULAIRE : design (ajout) ===================== -->
+    <style>
+        :root { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: #2A8A7D; --danger: #E35A33; --ink: #0b1220; --muted: #667085; --line: #e4e8ee;
+                --de: #2B3A67; --ind: #C98A1B; }
+        body { background: #eef1f4 !important; color: var(--ink); -webkit-font-smoothing: antialiased; }
+        :where(a, button, input):focus-visible { outline: 2px solid var(--dom); outline-offset: 2px; }
+        /* en-tête */
+        .header-dhis2 { background: var(--dom) !important; box-shadow: none !important; height: 56px !important; position: relative; }
+        .header-dhis2::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--acc); }
+        .header-dhis2 > div:first-child > span { letter-spacing: .02em !important; font-size: 14px !important; font-weight: 800 !important; }
+        .header-dhis2 > div:first-child > span > span:last-child { color: rgba(255,255,255,.7) !important; font-weight: 600 !important; }
+        .header-dhis2 > div:last-child { font-style: normal !important; opacity: 1 !important; display: flex; align-items: center; gap: 14px; }
+        .fd-save { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,.12); }
+        .fd-save::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #8FD4C8; }
+        .fd-save.dirty::before { background: var(--acc); }
+        .main-container { height: calc(100vh - 56px) !important; }
+        /* panneau latéral */
+        .left-bar { width: 340px !important; border-color: var(--line) !important; box-shadow: none !important; }
+        .search-container { padding: 14px !important; }
+        .search-container i { left: 26px !important; top: 50% !important; transform: translateY(-50%); }
+        .search-input { border-color: var(--line) !important; border-radius: 11px !important; font-size: 13.5px !important; }
+        .search-input:focus { border-color: var(--dom) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 10%, transparent); }
+        .left-bar > div.flex.border-b { margin: 0 14px; padding: 3px; border: 0 !important; border-radius: 12px; background: #f2f4f7; gap: 3px; }
+        .tab-btn { border: 0 !important; border-radius: 9px; text-transform: none !important; font-size: 13px !important; font-weight: 700 !important; padding: 8px !important; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .tab-btn.active { background: #fff !important; color: var(--ink) !important; box-shadow: 0 1px 3px rgba(16,24,40,.12); }
+        .tab-btn em { font-style: normal; font-size: 11px; padding: 0 7px; border-radius: 999px; background: #e4e7ec; color: #475467; }
+        .fd-prog { margin: 12px 14px 6px; }
+        .fd-prog p { display: flex; justify-content: space-between; margin: 0 0 6px; font-size: 12px; font-weight: 700; color: var(--muted); } .fd-prog p b { color: var(--ink); font-variant-numeric: tabular-nums; }
+        .fd-prog i { display: block; height: 6px; border-radius: 6px; background: #eef1f4; overflow: hidden; } .fd-prog i::after { content: ""; display: block; height: 100%; width: var(--w, 0%); background: var(--ok); border-radius: 6px; transition: width .4s ease; }
+        #elementsList { padding: 6px 10px 10px; }
+        .element-item { border: 1px solid #eef1f4 !important; border-radius: 12px !important; margin-bottom: 6px; padding: 10px 12px !important; transition: border-color .15s, background .15s !important; }
+        .element-item:hover { transform: none !important; border-color: color-mix(in srgb, var(--c, var(--de)) 35%, var(--line)) !important; background: color-mix(in srgb, var(--c, var(--de)) 4%, #fff) !important; }
+        #section-ind .element-item { --c: var(--ind); }
+        .variable-tag { text-transform: none !important; font-size: 10.5px !important; letter-spacing: 0; }
+        .tag-de { background: color-mix(in srgb, var(--de) 10%, #fff) !important; color: var(--de) !important; }
+        .tag-ind { background: color-mix(in srgb, var(--ind) 14%, #fff) !important; color: color-mix(in srgb, var(--ind) 75%, #000) !important; }
+        .element-item > span { font-size: 13.5px !important; font-weight: 600 !important; color: #1d2939 !important; }
+        .element-item .fd-placed { display: none; margin-left: 6px; font-size: 10.5px; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--ok) 12%, #fff); color: var(--ok); }
+        .element-item.placed { background: color-mix(in srgb, var(--ok) 4%, #fff); border-color: color-mix(in srgb, var(--ok) 30%, #fff) !important; }
+        .element-item.placed .fd-placed { display: inline-block; }
+        .element-item.flash { animation: fdFlash .5s ease; } @keyframes fdFlash { 40% { background: color-mix(in srgb, var(--c, var(--de)) 12%, #fff); } }
+        .fd-empty { padding: 26px 12px; text-align: center; color: #98a2b3; font-size: 13px; font-weight: 600; }
+        .fd-grid { margin: 0 14px 14px; padding: 12px; border-radius: 14px; border: 1px dashed color-mix(in srgb, var(--dom) 40%, var(--line)); background: color-mix(in srgb, var(--dom) 3%, #fff); }
+        .fd-grid button { width: 100%; height: 40px; border-radius: 10px; border: 0; background: var(--dom); color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .fd-grid button:disabled { opacity: .45; cursor: not-allowed; }
+        .fd-grid p { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); text-align: center; line-height: 1.45; }
+        /* zone principale */
+        .flex-grow.p-6 { padding: 22px 26px !important; }
+        #datasetForm > div:first-of-type h1 { font-size: 24px !important; font-weight: 800 !important; letter-spacing: -.02em; }
+        #datasetForm > div:first-of-type button { border-radius: 12px !important; font-size: 13.5px !important; padding: 10px 16px !important; }
+        #datasetForm > div:first-of-type button[type=submit] { background: var(--acc) !important; box-shadow: none !important; }
+        #datasetForm > div:first-of-type button[type=submit]:hover { background: color-mix(in srgb, var(--acc) 85%, #000) !important; }
+        #datasetForm > div:first-of-type button[type=button] { border-color: var(--line) !important; color: #344054 !important; }
+        #datasetForm > div:first-of-type button[type=button]:hover { border-color: var(--dom) !important; color: var(--dom) !important; }
+        .fd-stats { display: flex; gap: 8px; flex-wrap: wrap; margin: -10px 0 14px; }
+        .fd-stats span { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: #475467; }
+        .fd-stats b { color: var(--ink); font-variant-numeric: tabular-nums; }
+        .editor-container { border-radius: 16px !important; border-color: var(--line) !important; box-shadow: none !important; }
+        .editor-container .tox-tinymce { border: 0 !important; border-radius: 16px !important; }
+        #datasetForm > div.mt-4 { background: #fff !important; border-color: var(--line) !important; border-radius: 14px !important; }
+        #datasetForm > div.mt-4 i { color: var(--dom) !important; } #datasetForm > div.mt-4 p { color: #475467 !important; }
+        #datasetForm > div.mt-4 code { background: color-mix(in srgb, var(--dom) 8%, #fff) !important; color: var(--dom); }
+        .fd-toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 12px); z-index: 2000; padding: 10px 16px; border-radius: 12px; background: var(--ink); color: #fff; font-size: 13px; font-weight: 700; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; }
+        .fd-toast.on { opacity: 1; transform: translate(-50%, 0); }
+        @media (max-width: 900px) { .main-container { flex-direction: column; height: auto !important; } .left-bar { width: 100% !important; max-height: 360px; border-right: 0 !important; border-bottom: 1px solid var(--line); } .header-dhis2 > div:last-child > span:not(.fd-save) { display: none; } #datasetForm > div:first-of-type { flex-wrap: wrap; gap: 12px; } }
+    </style>
 </head>
 <body>
 
@@ -69,7 +135,8 @@
         <span class="font-semibold text-sm tracking-wide">DESIGNER DE FORMULAIRE <span class="opacity-50 mx-2">|</span> <span class="font-normal text-blue-100">Maintenance</span></span>
     </div>
     <div class="text-xs opacity-80 italic">
-        <i class="fas fa-info-circle mr-1"></i> Cliquez sur un élément pour l'insérer
+        <span><i class="fas fa-info-circle mr-1"></i> Cliquez sur un élément pour l'insérer</span>
+        <span class="fd-save" id="fdSave">Enregistré</span>
     </div>
 </div>
 
@@ -82,10 +149,11 @@
         </div>
 
         <div class="flex border-b">
-            <button class="tab-btn active" onclick="switchTab('de')">Data Elements</button>
-            <button class="tab-btn" onclick="switchTab('ind')">Indicateurs</button>
+            <button class="tab-btn active" onclick="switchTab('de')">Data Elements <em id="fdNDe">0</em></button>
+            <button class="tab-btn" onclick="switchTab('ind')">Indicateurs <em id="fdNInd">0</em></button>
         </div>
 
+        <div class="fd-prog" aria-live="polite"><p><span>Éléments placés dans le formulaire</span><b id="fdProg">0 / 0</b></p><i id="fdBar"></i></div>
         <div id="elementsList" class="flex-grow overflow-y-auto bg-white">
             <!-- Section Data Elements -->
             <div id="section-de">
@@ -97,6 +165,7 @@
                     </div>
                     <span class="text-sm font-medium text-gray-700 leading-tight block">{{s}}</span>
                 </div>
+                {% empty %}<p class="fd-empty">Aucun élément de données dans ce jeu de données.</p>
                 {% endfor %}
             </div>
 
@@ -110,9 +179,11 @@
                     </div>
                     <span class="text-sm font-medium text-gray-700 leading-tight block">{{i}}</span>
                 </div>
+                {% empty %}<p class="fd-empty">Aucun indicateur dans ce jeu de données.</p>
                 {% endfor %}
             </div>
         </div>
+        <div class="fd-grid"><button type="button" id="fdGridBtn"><i class="fas fa-table-cells"></i>Insérer les éléments non placés</button><p>Crée un tableau « Élément / Valeur » avec tous les éléments pas encore dans le formulaire.</p></div>
     </div>
 
     <!-- MAIN EDITOR -->
@@ -141,6 +212,7 @@
                 </div>
             </div>
 
+            <div class="fd-stats" aria-live="polite"><span><b id="fdSDe">0</b> champ(s) de saisie</span><span><b id="fdSInd">0</b> indicateur(s) affiché(s)</span><span>Raccourci : <b>Ctrl + S</b> pour enregistrer</span></div>
             <div class="editor-container">
                 <textarea id="mainEditor">{{ dataset.m_formulaire|safe }}</textarea>
             </div>
@@ -219,5 +291,66 @@
     }
 </script>
 
+<!-- ===== Designer : éléments placés, grille automatique, enregistrement sûr (ajout) ===== -->
+<script>
+(function () {
+    var $ = function (id) { return document.getElementById(id); }, form = $('datasetForm'), dirty = false, saving = false;
+    var de = [].slice.call(document.querySelectorAll('#section-de .element-item')), ind = [].slice.call(document.querySelectorAll('#section-ind .element-item'));
+    function meta(it) { return { id: (it.querySelector('.font-mono') || {}).textContent.replace('#', '').trim(), name: it.querySelector(':scope > span').textContent.trim() }; }
+    de.concat(ind).forEach(function (it) { var m = meta(it); it.dataset.id = m.id; it._name = m.name; var b = document.createElement('span'); b.className = 'fd-placed'; b.textContent = 'Placé'; it.querySelector('.variable-tag').after(b); });
+    $('fdNDe').textContent = de.length; $('fdNInd').textContent = ind.length;
+    var toastEl = document.createElement('div'); toastEl.className = 'fd-toast'; toastEl.setAttribute('role', 'status'); document.body.appendChild(toastEl);
+    function toast(t) { toastEl.textContent = t; toastEl.classList.add('on'); clearTimeout(toastEl._t); toastEl._t = setTimeout(function () { toastEl.classList.remove('on'); }, 2200); }
+    function ed() { return window.tinymce && tinymce.activeEditor; }
+    function scan() {
+        var e = ed(); if (!e) return; var body = e.getBody(); if (!body) return;
+        var used = {}, usedI = {}, nI = 0, nD = 0;
+        body.querySelectorAll('input[name^="D0elt"]').forEach(function (i) { used[i.name.slice(5)] = 1; nD++; });
+        body.querySelectorAll('.indicSelector[data-id]').forEach(function (d) { usedI[d.getAttribute('data-id')] = 1; nI++; });
+        var placed = 0;
+        de.forEach(function (it) { var on = !!used[it.dataset.id]; it.classList.toggle('placed', on); if (on) placed++; });
+        ind.forEach(function (it) { it.classList.toggle('placed', !!usedI[it.dataset.id]); });
+        $('fdProg').textContent = placed + ' / ' + de.length; $('fdBar').style.setProperty('--w', (de.length ? placed / de.length * 100 : 0) + '%');
+        $('fdSDe').textContent = nD; $('fdSInd').textContent = nI;
+        $('fdGridBtn').disabled = placed >= de.length;
+        return { placed: placed };
+    }
+    function setDirty(v) { dirty = v; var s = $('fdSave'); s.classList.toggle('dirty', v); s.textContent = v ? 'Modifications non enregistrées' : 'Enregistré'; }
+    function hook(e) {
+        e.on('init', function () { scan(); });
+        e.on('input change keyup SetContent Undo Redo ExecCommand', function (ev) { scan(); if (ev.type !== 'init' && e.initialized && !(ev.type === 'setcontent' && ev.initial)) setDirty(e.isDirty()); });
+    }
+    if (window.tinymce) { tinymce.on('AddEditor', function (ev) { hook(ev.editor); }); if (tinymce.activeEditor) { hook(tinymce.activeEditor); scan(); } }
+    /* insertion : on garde vos fonctions, on signale un doublon et on met à jour */
+    var _de = window.insertDE, _ind = window.insertIND;
+    window.insertDE = function (id, name) {
+        var it = de.filter(function (x) { return x.dataset.id === String(id); })[0];
+        if (it && it.classList.contains('placed')) toast('« ' + name + ' » est déjà dans le formulaire : ajouté une seconde fois.');
+        _de(id, name); if (it) { it.classList.remove('flash'); void it.offsetWidth; it.classList.add('flash'); } scan(); setDirty(true);
+    };
+    window.insertIND = function (id, name) { _ind(id, name); var it = ind.filter(function (x) { return x.dataset.id === String(id); })[0]; if (it) { it.classList.remove('flash'); void it.offsetWidth; it.classList.add('flash'); } scan(); setDirty(true); };
+    /* grille automatique des éléments non placés (même balisage que insertDE) */
+    var esc = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+    $('fdGridBtn').addEventListener('click', function () {
+        var e = ed(); if (!e) return; var todo = de.filter(function (it) { return !it.classList.contains('placed'); }); if (!todo.length) return;
+        var h = '<table><thead><tr><th>Élément de donnée</th><th>Valeur</th></tr></thead><tbody>';
+        todo.forEach(function (it) { h += '<tr><td>' + esc(it._name) + '</td><td><input class="form-control" name="D0elt' + esc(it.dataset.id) + '" type="number" title="' + esc(it._name) + '" value="0" /></td></tr>'; });
+        e.insertContent(h + '</tbody></table><p>&nbsp;</p>'); scan(); setDirty(true); toast(todo.length + ' élément(s) ajouté(s) au formulaire.');
+    });
+    /* enregistrement : le contenu de l'éditeur part toujours, même avec Entrée ou Ctrl+S */
+    form.addEventListener('submit', function (ev) {
+        if (typeof prepareSubmit === 'function') prepareSubmit();
+        var r = scan() || { placed: de.length };
+        if (r.placed < de.length && !form._ok) { if (!confirm((de.length - r.placed) + ' élément(s) de données ne sont pas encore dans le formulaire. Enregistrer quand même ?')) { ev.preventDefault(); return; } form._ok = true; }
+        saving = true; var b = form.querySelector('button[type=submit]'); if (b) { b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enregistrement…'; }
+    });
+    function save() { if (form.requestSubmit) form.requestSubmit(); else { prepareSubmit(); form.submit(); } }
+    document.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); } });
+    if (window.tinymce) tinymce.on('AddEditor', function (ev) { ev.editor.on('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); } }); });
+    window.addEventListener('beforeunload', function (e) { if (dirty && !saving) { e.preventDefault(); e.returnValue = ''; } });
+    /* recherche : message si rien ne correspond */
+    var fi = $('filterInput'); if (fi) fi.addEventListener('input', function () { if (typeof filterElements === 'function') filterElements(); });
+})();
+</script>
 </body>
 </html>
