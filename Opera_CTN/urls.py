@@ -12,10 +12,12 @@ urlpatterns = [
    
     path('admin/', admin.site.urls),
     path('__debug__/', include(debug_toolbar.urls)),
+    path('saisie-plus/', include('saisie_plus.urls')),
 ]
 handler404 = 'ctn_bpf.views.custom_page_not_found_view'
 handler500 = 'ctn_bpf.views.custom_error_view'
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 urlpatterns += [re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT,}),]
 urlpatterns += [re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT,}),]
 

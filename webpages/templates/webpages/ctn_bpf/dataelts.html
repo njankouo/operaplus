@@ -117,6 +117,7 @@
     #periode_cummul h3 { color: var(--ink) !important; }
     .dx-sum { margin: 0; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--dom) 6%, #fff); color: var(--dom); font-size: 13px; font-weight: 700; line-height: 1.5; }
     .dx-sum b { color: var(--ink); }
+    .dx-nat-help { margin: 6px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted, #667085); }
     .dx-err { display: none; color: var(--danger); font-size: 12.5px; font-weight: 700; } .dx-err.on { display: block; }
     #modalToggle2 form > div:last-child { padding: 14px 22px !important; background: #fbfcfd; border-color: var(--line) !important; gap: 8px; }
     #modalToggle2 form > div:last-child button[type=submit] { background: var(--acc) !important; box-shadow: none !important; border-radius: 12px !important; padding: 11px 20px !important; }
@@ -338,6 +339,7 @@
                             <option value="Text">Texte</option>
                             <option value="Date">Date</option>
                         </select>
+                        <p class="dx-nat-help" id="dxNatHelp" aria-live="polite"></p>
                     </div>
                     <input type='hidden' name='matrice' />
                     <div class="space-y-1">
@@ -633,6 +635,18 @@ Swal.fire({
         if (err) { e.preventDefault(); return; }
         var b = form.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Enregistrement…';
     });
+})();
+
+/* aide « Nature des données » : quels types de champ le designer proposera (ajout) */
+(function () {
+    var sel = document.getElementById('value_type'), help = document.getElementById('dxNatHelp');
+    if (!sel || !help) return;
+    var T = { Number: 'Dans le designer : nombre, nombre entier, âge, pourcentage, montant, oui / non, liste de choix, échelle 1 à 5.',
+              Text: 'Dans le designer : texte court ou long, téléphone, e-mail, coordonnées GPS, heure, choix multiples.',
+              Date: 'Dans le designer : champ date (calendrier).' };
+    var up = function () { help.textContent = T[sel.value] || ''; };
+    sel.addEventListener('change', up); up();
+    var _o = window.openModal; if (typeof _o === 'function') window.openModal = function () { var r = _o.apply(this, arguments); setTimeout(up, 0); return r; };
 })();
 </script>
 {%endblock%}

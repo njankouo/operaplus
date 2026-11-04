@@ -1973,15 +1973,20 @@ class DataSetValue(models.Model):
 
 
 class DSet_DElt(models.Model):
-    m_dataset_value = models.ForeignKey(DataSetValue,blank=True,null=True,on_delete = models.SET_NULL)
-    m_dataelement = models.ForeignKey(DataElement,blank=True,null=True,on_delete = models.SET_NULL)
-    m_structure = models.ForeignKey(Structure,blank=True,null=True,on_delete = models.SET_NULL)
-    periode=models.ForeignKey(PeriodeOk,null=True,blank=True,on_delete = models.SET_NULL)
-    m_value= models.IntegerField(blank=True,null=True)
+    m_dataset_value = models.ForeignKey(DataSetValue, blank=True, null=True, on_delete=models.SET_NULL)
+    m_dataelement = models.ForeignKey(DataElement, blank=True, null=True, on_delete=models.SET_NULL)
+    m_structure = models.ForeignKey(Structure, blank=True, null=True, on_delete=models.SET_NULL)
+    periode = models.ForeignKey(PeriodeOk, null=True, blank=True, on_delete=models.SET_NULL)
+
+    # Valeur selon la nature de l'élément (DataElement.m_value_type)
+    m_value = models.FloatField(blank=True, null=True)              # Number : 12, 12.5, 45.5 % (était IntegerField)
+    texte_element = models.TextField(blank=True, null=True)         # Text : texte, téléphone, e-mail, GPS, heure, choix multiples
+    date_element = models.DateField(blank=True, null=True)          # Date
+    est_na = models.BooleanField(default=False)                     # « Non applicable » (≠ 0)
+    valeur_json = models.JSONField(blank=True, null=True)           # facultatif : {"lat": 4.05, "lng": 9.76} ou [1, 3]
+
     date_saisie = models.DateField(null=True)
-    comment = models.TextField()
-
-
+    comment = models.TextField(blank=True, null=True)               # NULL = saisie manuelle, texte = cumul automatique
 
 
 

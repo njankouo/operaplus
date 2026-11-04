@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>En-tête des formulaires · OperaPlus</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    :root { --dom: #123A37; --acc: #E48B0C; --ok: #2A8A7D; --danger: #E35A33; --ink: #0b1220; --ink2: #344054; --muted: #667085; --line: #e4e8ee; --paper: #f5f3ee; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: Inter, "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; }
+    [hidden] { display: none !important; }
+    header { position: sticky; top: 0; z-index: 10; height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 20px; background: var(--dom); color: #fff; font-weight: 800; }
+    header::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--acc); }
+    header a { margin-left: auto; color: rgba(255,255,255,.85); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 10px; }
+    header a:hover { background: rgba(255,255,255,.1); color: #fff; }
+    main { max-width: 1080px; margin: 24px auto 40px; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+    h1 { grid-column: 1 / -1; margin: 0; font-size: 26px; letter-spacing: -.02em; }
+    .sub { grid-column: 1 / -1; margin: -10px 0 0; color: var(--muted); }
+    .card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; }
+    .card h2 { margin: 0 0 4px; font-size: 16px; }
+    .card > p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+    .msg { grid-column: 1 / -1; padding: 11px 14px; border-radius: 12px; font-size: 13.5px; font-weight: 600; }
+    .msg.ok { background: #E8F4F1; color: #1F6F65; border: 1px solid #BFE3DA; }
+    .msg.ko { background: #FFF3EF; color: #9E351C; border: 1px solid #FFC4B2; }
+    .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: #f2f4f7; margin-bottom: 16px; }
+    .seg label { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; border-radius: 9px; font-weight: 700; font-size: 13px; color: var(--muted); cursor: pointer; text-align: center; }
+    .seg input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg label:has(input:checked) { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(16,24,40,.14); }
+    .seg label:has(input:disabled) { opacity: .45; cursor: not-allowed; }
+    .drop { position: relative; display: grid; grid-template-columns: 84px 1fr; gap: 14px; align-items: center; padding: 12px; border: 1.5px dashed #d0d5dd; border-radius: 14px; margin-bottom: 12px; transition: border-color .15s, background .15s; cursor: pointer; }
+    .drop:hover, .drop.over { border-color: var(--dom); background: color-mix(in srgb, var(--dom) 4%, #fff); }
+    .drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .thumb { width: 84px; height: 64px; border-radius: 10px; background: #f8fafc; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; overflow: hidden; color: #98a2b3; font-size: 20px; }
+    .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .drop b { display: block; font-size: 13.5px; } .drop small { color: var(--muted); font-size: 12px; }
+    .rm { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--danger); }
+    .f { margin-bottom: 12px; }
+    .f label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink2); margin-bottom: 5px; }
+    .f input { width: 100%; height: 42px; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 11px; font: inherit; font-size: 14px; color: var(--ink); }
+    .f input:focus { outline: none; border-color: var(--dom); box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 12%, transparent); }
+    .acts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .btn { height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid var(--line); background: #fff; font: inherit; font-weight: 700; color: var(--ink2); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+    .btn.pri { background: var(--acc); border-color: var(--acc); color: #1B1406; }
+    .btn.del { color: var(--danger); margin-left: auto; }
+    /* aperçu = même rendu que sur la page de saisie */
+    .prev-wrap { position: sticky; top: 76px; }
+    .op-entete { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 14px 18px; border-radius: 16px; background: #fff; border: 1px solid var(--line); }
+    .op-entete img { height: 56px; max-width: 140px; object-fit: contain; }
+    .op-entete .l1 { font-weight: 800; font-size: 15px; color: var(--ink); }
+    .op-entete .l2 { font-size: 13px; color: var(--ink2); margin-top: 2px; }
+    .op-entete .l3 { font-size: 11.5px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+    .op-entete .ph { width: 56px; height: 56px; border-radius: 12px; background: #f2f4f7; display: flex; align-items: center; justify-content: center; color: #98a2b3; }
+    .paper { margin-top: 14px; padding: 16px; border-radius: 14px; background: #fff; border: 1px solid var(--line); }
+    .paper .op-entete { border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; padding: 0 0 10px; }
+    .paper p { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+    .src { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+    @media (max-width: 860px) { main { grid-template-columns: 1fr; } .prev-wrap { position: static; } .op-entete img { height: 44px; } }
+</style>
+</head>
+<body>
+<header><i class="fas fa-image"></i> En-tête des formulaires
+    {% if retour %}<a href="{{ retour }}"><i class="fas fa-arrow-left"></i> Retour à la saisie</a>{% endif %}
+</header>
+<main>
+    <h1>En-tête des formulaires</h1>
+    <p class="sub">Le logo et les lignes apparaissent en haut du formulaire pendant la saisie et sur la fiche imprimée.</p>
+    {% if ok %}<p class="msg ok" role="status"><i class="fas fa-circle-check"></i> En-tête enregistré. Rechargez la page de saisie pour le voir.</p>{% endif %}
+    {% for m in erreurs %}<p class="msg ko" role="alert"><i class="fas fa-triangle-exclamation"></i> {{ m }}</p>{% endfor %}
+
+    <form class="card" method="post" enctype="multipart/form-data" id="etForm">
+        {% csrf_token %}
+        <input type="hidden" name="institution" value="{{ institution }}">
+        <input type="hidden" name="dataset" value="{{ dataset|default_if_none:'' }}">
+        <input type="hidden" name="retour" value="{{ retour }}">
+        <h2>Appliquer à</h2>
+        <p>Un en-tête propre à un formulaire remplace celui de l’organisation pour ce formulaire uniquement.</p>
+        <div class="seg" role="radiogroup">
+            <label><input type="radio" name="portee" value="organisation" {% if portee != 'formulaire' %}checked{% endif %}><i class="fas fa-building"></i> Tous les formulaires</label>
+            <label><input type="radio" name="portee" value="formulaire" {% if portee == 'formulaire' %}checked{% endif %} {% if not dataset %}disabled{% endif %}><i class="fas fa-file-lines"></i> Ce formulaire seulement</label>
+        </div>
+
+        <h2>Logos</h2>
+        <p>PNG, JPG ou WebP, 2 Mo au maximum. Un fond transparent (PNG) rend mieux.</p>
+        <label class="drop" data-for="logo">
+            <span class="thumb">{% if logo_url %}<img src="{{ logo_url }}" alt="">{% else %}<i class="fas fa-building"></i>{% endif %}</span>
+            <span><b>Logo de l’organisation</b><small>{% if logo_herite %}Repris de l’en-tête de l’organisation · déposez une image pour le remplacer ici{% else %}Affiché à gauche · cliquez ou déposez une image{% endif %}</small>
+                {% if e.logo %}<br><span class="rm"><input type="checkbox" name="logo_retirer" value="1"> Retirer ce logo</span>{% endif %}</span>
+            <input type="file" name="logo" accept="image/png,image/jpeg,image/webp" aria-label="Logo de l’organisation">
+        </label>
+        <label class="drop" data-for="logo_partenaire">
+            <span class="thumb">{% if logo2_url %}<img src="{{ logo2_url }}" alt="">{% else %}<i class="fas fa-handshake"></i>{% endif %}</span>
+            <span><b>Logo du partenaire ou du bailleur</b><small>{% if logo2_herite %}Repris de l’en-tête de l’organisation{% else %}Facultatif · affiché à droite{% endif %}</small>
+                {% if e.logo_partenaire %}<br><span class="rm"><input type="checkbox" name="logo_partenaire_retirer" value="1"> Retirer ce logo</span>{% endif %}</span>
+            <input type="file" name="logo_partenaire" accept="image/png,image/jpeg,image/webp" aria-label="Logo du partenaire">
+        </label>
+
+        <h2 style="margin-top:6px">Texte de l’en-tête</h2>
+        <p>Trois lignes au plus, toutes facultatives.</p>
+        <div class="f"><label for="l1">Ligne 1 · organisation</label><input id="l1" name="ligne1" maxlength="160" value="{{ e.ligne1|default:'' }}" placeholder="Ex. Association Eau pour Tous"></div>
+        <div class="f"><label for="l2">Ligne 2 · projet ou programme</label><input id="l2" name="ligne2" maxlength="160" value="{{ e.ligne2|default:'' }}" placeholder="Ex. Projet WASH Littoral 2026-2028"></div>
+        <div class="f"><label for="l3">Ligne 3 · mention</label><input id="l3" name="ligne3" maxlength="160" value="{{ e.ligne3|default:'' }}" placeholder="Ex. Fiche mensuelle de suivi · confidentiel"></div>
+
+        <div class="acts">
+            <button class="btn pri" type="submit"><i class="fas fa-floppy-disk"></i> Enregistrer l’en-tête</button>
+            {% if retour %}<a class="btn" href="{{ retour }}">Annuler</a>{% endif %}
+            {% if e %}<button class="btn del" type="submit" name="supprimer" value="1" onclick="return confirm('Supprimer cet en-tête et ses logos ?')"><i class="fas fa-trash"></i> Supprimer</button>{% endif %}
+        </div>
+    </form>
+
+    <div class="prev-wrap">
+        <div class="card">
+            <h2>Aperçu</h2>
+            <p>À la saisie, en haut du formulaire :</p>
+            <div class="op-entete" id="pv">
+                <span id="pvL">{% if logo_url %}<img src="{{ logo_url }}" alt="">{% else %}<span class="ph"><i class="fas fa-building"></i></span>{% endif %}</span>
+                <div><div class="l1" id="pv1">{{ e.ligne1|default:'' }}</div><div class="l2" id="pv2">{{ e.ligne2|default:'' }}</div><div class="l3" id="pv3">{{ e.ligne3|default:'' }}</div></div>
+                <span id="pvR">{% if logo2_url %}<img src="{{ logo2_url }}" alt="">{% endif %}</span>
+            </div>
+            <div class="paper"><div class="op-entete" id="pvP"></div><p>Sur la fiche papier (A4), au-dessus du titre du formulaire.</p></div>
+            <p class="src">{% if e_form %}Ce formulaire a son propre en-tête.{% elif e_org %}En-tête de l’organisation, utilisé par tous les formulaires.{% else %}Aucun en-tête pour l’instant.{% endif %}</p>
+        </div>
+    </div>
+</main>
+<script>
+(function () {
+    var $ = function (id) { return document.getElementById(id); };
+    function sync() {
+        ['1', '2', '3'].forEach(function (k) { $('pv' + k).textContent = $('l' + k).value; });
+        $('pvP').innerHTML = $('pv').innerHTML;
+    }
+    ['l1', 'l2', 'l3'].forEach(function (id) { $(id).addEventListener('input', sync); });
+    document.querySelectorAll('.drop').forEach(function (d) {
+        var inp = d.querySelector('input[type=file]'), th = d.querySelector('.thumb'), side = d.dataset.for === 'logo' ? 'pvL' : 'pvR';
+        inp.addEventListener('change', function () {
+            var f = inp.files[0]; if (!f) return;
+            if (f.size > 2 * 1024 * 1024) { alert('Image trop lourde : 2 Mo au maximum.'); inp.value = ''; return; }
+            var url = URL.createObjectURL(f);
+            th.innerHTML = '<img src="' + url + '" alt="">'; $(side).innerHTML = '<img src="' + url + '" alt="">'; sync();
+        });
+        ['dragenter', 'dragover'].forEach(function (t) { d.addEventListener(t, function () { d.classList.add('over'); }); });
+        ['dragleave', 'drop'].forEach(function (t) { d.addEventListener(t, function () { d.classList.remove('over'); }); });
+    });
+    sync();
+})();
+</script>
+</body>
+</html>

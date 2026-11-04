@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saisie de données - OPERAPLUS</title>
+    {%load static%}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1181,7 +1182,7 @@
 </div>
 
 </aside>
-
+<script src="{% static 'op-form-runtime.js' %}"></script>
 <script>
 function toggleNode(btn) {
     const parentDiv = btn.parentElement;
@@ -1802,6 +1803,15 @@ function filterTree() {
     }
     </script>
 <script>
+// AJOUT : valeurs de tous les types (nombre, texte, date, N/A) via l'application saisie_plus ;
+// si elle n'est pas installée, on garde l'adresse d'origine /load_data/ (nombres seulement).
+function opFetchValeurs(structure, periode, urlOrigine) {
+    const u = '/saisie-plus/api/valeurs/' + encodeURIComponent(structure) + '/' + encodeURIComponent(periode) + '/?dataset={{ dataset.id }}';
+    return fetch(u, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        .then(r => (r.ok && (r.headers.get('content-type') || '').includes('application/json')) ? r
+                   : fetch(urlOrigine || ('/load_data/' + structure + '/' + periode + '/'), { credentials: 'same-origin' }))
+        .catch(() => fetch(urlOrigine || ('/load_data/' + structure + '/' + periode + '/'), { credentials: 'same-origin' }));
+}
 function loadDataset(button) {
     const datasetId = button.getAttribute('data-id');
     const url = `/get_dataset/${datasetId}/`;
@@ -1863,12 +1873,12 @@ document.getElementById('loadDataButton').addEventListener("click", function() {
             return;
         }
 
-        const url = `/load_data/${selectedStructure}/${selectedPeriod}/`; // URL pour récupérer les données
+        const url = `/load_data/${selectedStructure}/${selectedPeriod}/`; // URL pour récupérer les données (repli)
 
         // Afficher un indicateur de chargement (optionnel)
         Swal.showLoading(); // Utiliser SweetAlert pour afficher l'indicateur de chargement
 
-        fetch(url)
+        opFetchValeurs(selectedStructure, selectedPeriod, url)
         .then(response => {
             if (!response.ok) {
                 throw new Error('Erreur lors de la récupération des données');
@@ -2303,7 +2313,7 @@ $("#show-sidebar").click(function() {
 
     /* ---------- Progression & état ---------- */
     function opFields() {
-        return contenu ? Array.from(contenu.querySelectorAll('input[name^="D0elt"], textarea[name^="D0elt"]'))
+        return contenu ? Array.from(contenu.querySelectorAll('input[name^="D0elt"], textarea[name^="D0elt"], select[name^="D0elt"]'))
                                 .filter(f => f.type !== 'hidden') : [];
     }
     function opUpdateProgress() {
@@ -2575,11 +2585,18 @@ $("#show-sidebar").click(function() {
     // - une case vide n'est plus envoyée comme 0 (check_selector mettait 0 partout) ;
     // - les valeurs partent même si le formulaire n'a aucun indicateur calculé
     //   (check_selector ne remplit elementsArea que dans la boucle des indicateurs).
+    // Type précis du champ (designer) envoyé au serveur pour la normalisation : ex. « tel », « choice:1=Femme;2=Homme »
+    function opTypeSpec(f) {
+        let t = f.getAttribute('data-op-type') || (f.tagName === 'SELECT' ? 'choice' : f.tagName === 'TEXTAREA' ? 'long' : (f.type === 'number' ? 'num' : f.type));
+        if (f.tagName === 'SELECT') t += ':' + Array.from(f.options).filter(o => o.value !== '').map(o => o.value + '=' + o.text.replace(/[;=]/g, ' ')).join(';');
+        else if (t === 'multi' && f.getAttribute('data-op-choices')) t += ':' + f.getAttribute('data-op-choices');
+        return t;
+    }
     function opBuildElements() {
         const out = [];
         opFields().forEach(f => {
             const m = /^D0elt(\d+)$/.exec(f.name);
-            if (m && f.value !== '') out.push({ id: m[1], value: f.value });
+            if (m && f.value !== '') out.push({ id: m[1], value: f.value, type: opTypeSpec(f) });
         });
         document.getElementById('elementsArea').value = JSON.stringify(out);
         return out;
@@ -2647,7 +2664,7 @@ $("#show-sidebar").click(function() {
         if (!p) return;
         let d = null;
         try {
-            const r = await fetch('/completude/' + DATASET_ID + '/' + encodeURIComponent(p) + '/', {
+            const r = await fetch('/saisie-plus/api/completude/' + DATASET_ID + '/' + encodeURIComponent(p) + '/', {   // application saisie_plus
                 credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' }
             });
             if (!r.ok) return;
@@ -3023,6 +3040,596 @@ $("#show-sidebar").click(function() {
         });
     });
 
+})();
+</script>
+
+<!-- ======================= FORMULAIRES AVANCÉS + SAISIE PLUS (ajout) =======================
+     1. Comparaison avec la période précédente et alerte de forte variation
+     2. Récapitulatif des changements avant l'enregistrement
+     4. Indicateurs calculés en direct
+     5. Fiche papier à imprimer et signer (bouton ou Ctrl + P)
+     6. Justification des valeurs inhabituelles      ┐ enregistrées par l'application saisie_plus
+     7. Traçabilité : dernière saisie, par qui, quand ┘ (si elle n'est pas installée, la page fonctionne sans)
+     + règles du designer (op-form-runtime.js). Brouillon et enregistrement AJAX : ceux de la page. -->
+<style>
+    .op-ledger .opf-err { color: var(--op-err) !important; font-weight: 600 !important; }
+    .op-ledger .opf-warn { color: var(--op-ochre-ink) !important; font-weight: 600 !important; }
+    .op-ledger .contenu.dhis2-table-container table input.opf-bad { border-color: var(--op-err) !important; background: var(--op-err-soft) !important; }
+    .op-ledger .contenu.dhis2-table-container table input.opf-soft, .op-ledger .contenu.dhis2-table-container table input.op-varf { border-color: var(--op-ochre) !important; background: var(--op-ochre-soft) !important; }
+    .op-ledger .contenu.dhis2-table-container table input.opf-calc { background: var(--op-surface-2) !important; color: var(--op-ink) !important; border-style: dashed !important; }
+    .op-ledger .opf-req::after { color: var(--op-err) !important; }
+    .op-ledger .opf-na { color: var(--op-muted) !important; font-weight: 600 !important; }
+    .op-ledger .opf-sum { margin: 14px 16px !important; border-radius: 12px !important; }
+    .op-ledger .opf-sum.bad { background: var(--op-err-soft) !important; border-color: color-mix(in srgb, var(--op-err) 30%, transparent) !important; color: var(--op-err) !important; }
+    .op-ledger .opf-sum.warn { background: var(--op-ochre-soft) !important; border-color: color-mix(in srgb, var(--op-ochre) 35%, transparent) !important; color: var(--op-ochre-ink) !important; }
+    .op-ledger .opf-steps { margin: 14px 16px !important; }
+    .op-ledger .opf-steps button { background: var(--op-surface) !important; border-color: var(--op-line-2) !important; color: var(--op-ink-2) !important; }
+    .op-ledger .opf-steps button.on { background: var(--op-brand-fill) !important; border-color: var(--op-brand-fill) !important; color: #fff !important; }
+    .op-ledger .opf-nav button { border-radius: 10px !important; }
+    .op-ledger .opf-gps button { border-color: var(--op-brand) !important; color: var(--op-brand) !important; background: var(--op-surface) !important; }
+    .op-ledger .opf-gps span { color: var(--op-ok) !important; }
+
+    /* types de champ du designer (texte, téléphone, e-mail, heure, listes…) */
+    .op-ledger .contenu.dhis2-table-container table input[type="tel"], .op-ledger .contenu.dhis2-table-container table input[type="email"], .op-ledger .contenu.dhis2-table-container table input[type="time"], .op-ledger .contenu.dhis2-table-container table select[name^="D0elt"] {
+        height: 40px !important; padding: 0 12px !important; border-radius: 9px !important; width: 100%; max-width: 100%;
+        border: 1px solid var(--op-line-2) !important; background-color: var(--op-surface) !important; color: var(--op-ink) !important;
+        font-family: var(--op-font-ui) !important; font-size: 15px !important; font-weight: 600 !important; outline: none;
+    }
+    .op-ledger .contenu.dhis2-table-container table select[name^="D0elt"] { cursor: pointer; }
+    .op-ledger .contenu.dhis2-table-container table input[type="text"], .op-ledger .contenu.dhis2-table-container table input[type="tel"], .op-ledger .contenu.dhis2-table-container table input[type="email"] { text-align: left !important; }
+    .op-ledger .contenu.dhis2-table-container table input[type="tel"]:focus, .op-ledger .contenu.dhis2-table-container table input[type="email"]:focus, .op-ledger .contenu.dhis2-table-container table input[type="time"]:focus, .op-ledger .contenu.dhis2-table-container table select[name^="D0elt"]:focus {
+        border-color: var(--op-ochre) !important; box-shadow: 0 0 0 4px rgba(200,144,46,.18) !important;
+    }
+    .op-ledger .contenu.dhis2-table-container table input[data-op-unit] { display: inline-block !important; width: calc(100% - 64px) !important; }
+    .op-ledger .opf-unit { margin-left: 8px !important; font-size: 13px !important; color: var(--op-muted) !important; }
+    .op-ledger .contenu.dhis2-table-container table input[data-op-type="gps"] { font-variant-numeric: tabular-nums; }
+    .op-ledger .opf-geo { margin-top: 6px; }
+    .op-ledger .opf-geo button { border-color: var(--op-ok) !important; color: var(--op-ok) !important; background: var(--op-surface) !important; }
+    .op-ledger .opf-multi label { background: var(--op-surface) !important; border-color: var(--op-line-2) !important; color: var(--op-ink-2) !important; }
+    .op-ledger .opf-multi label:has(input:checked) { background: var(--op-brand-soft) !important; border-color: var(--op-brand) !important; color: var(--op-brand) !important; }
+
+    /* 1. période précédente */
+    .op-prev { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; font-size: 11.5px; font-weight: 600; color: var(--op-muted); font-variant-numeric: tabular-nums; }
+    .op-prev b { font-weight: 700; color: var(--op-ink-2); }
+    .op-prev .op-delta { padding: 0 6px; border-radius: 999px; background: var(--op-surface-2); }
+    .op-prev.op-var { color: var(--op-ochre-ink); }
+    .op-prev.op-var .op-delta { background: var(--op-ochre-soft); color: var(--op-ochre-ink); }
+    /* 6. justification */
+    .op-just { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 999px; border: 1px dashed var(--op-line-2); background: transparent; color: var(--op-muted); font: inherit; font-size: 11px; cursor: pointer; }
+    .op-just:hover { border-color: var(--op-brand); color: var(--op-brand); }
+    .op-just.on { border-style: solid; border-color: color-mix(in srgb, var(--op-brand) 35%, transparent); background: var(--op-brand-soft); color: var(--op-brand); max-width: 260px; }
+    .op-just.on span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* 7. traçabilité */
+    .op-trace { display: inline-flex; align-items: center; gap: 8px; margin-top: .55rem; font-size: 12.5px; color: var(--op-muted); }
+    .op-trace i { color: var(--op-ok); }
+    .op-trace b { color: var(--op-ink-2); font-weight: 600; }
+    /* 4. indicateurs en direct */
+    .op-results { margin-bottom: 1.25rem; padding: 1rem 1.2rem 1.1rem; border-radius: 18px; background: var(--op-surface); border: 1px solid var(--op-line); box-shadow: var(--op-shadow); }
+    .op-results-h { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: .8rem; }
+    .op-results-h b { font-size: 14px; color: var(--op-ink); }
+    .op-results-h span { font-size: 12px; color: var(--op-muted); }
+    .op-results-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .65rem; }
+    .op-res { position: relative; padding: .75rem .9rem .8rem 1.05rem; border-radius: 13px; background: var(--op-surface-2); border: 1px solid var(--op-line); overflow: hidden; }
+    .op-res::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--op-brand); }
+    .op-res.op-na-res::before { background: var(--op-line-2); }
+    .op-res p { font-size: 12px; line-height: 1.35; color: var(--op-ink-2); margin: 0 0 .35rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .op-res strong { font-family: var(--op-font-display); font-size: 26px; font-weight: 600; line-height: 1; color: var(--op-ink); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+    .op-res small { display: block; margin-top: .3rem; font-size: 11px; color: var(--op-muted); }
+    .op-res.op-bump strong { animation: op-bump .5s ease; }
+    @keyframes op-bump { 0% { color: var(--op-ochre-ink); } 100% { color: var(--op-ink); } }
+    @media (prefers-reduced-motion: reduce) { .op-res.op-bump strong { animation: none; } }
+    /* 2. récapitulatif (fenêtre) */
+    .op-recap { text-align: left; font-size: 13.5px; }
+    .op-recap-k { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .9rem; }
+    .op-recap-k span { padding: .3rem .7rem; border-radius: 999px; background: var(--op-surface-2); border: 1px solid var(--op-line); font-weight: 600; font-size: 12.5px; color: var(--op-ink-2); }
+    .op-recap-k span b { color: var(--op-ink); }
+    .op-recap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .op-recap th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--op-muted); padding: 6px 8px; border-bottom: 1px solid var(--op-line-2); }
+    .op-recap td { padding: 7px 8px; border-bottom: 1px solid var(--op-line); vertical-align: top; font-variant-numeric: tabular-nums; }
+    .op-recap td.o { color: var(--op-muted); text-decoration: line-through; white-space: nowrap; }
+    .op-recap td.n { font-weight: 700; color: var(--op-ink); white-space: nowrap; }
+    .op-recap td.n.new { color: var(--op-ok); }
+    .op-recap-box { max-height: 300px; overflow: auto; border: 1px solid var(--op-line); border-radius: 12px; }
+    .op-recap-note { margin-top: .75rem; font-size: 12.5px; color: var(--op-muted); }
+    .op-jlist { list-style: none; padding: 0; margin: 0; text-align: left; max-height: 340px; overflow: auto; }
+    .op-jlist li { padding: .7rem 0; border-bottom: 1px solid var(--op-line); font-size: 13.5px; }
+    .op-jlist li:last-child { border-bottom: 0; }
+    .op-jlist input { width: 100%; margin-top: .45rem; height: 38px; padding: 0 .75rem; border-radius: 10px; border: 1px solid var(--op-line-2); background: var(--op-surface); color: var(--op-ink); font: inherit; font-size: 13px; }
+    .op-jlist input:focus { outline: none; border-color: var(--op-ochre); box-shadow: 0 0 0 3px rgba(200,144,46,.16); }
+    /* en-tête de l'organisation (logo, partenaire, lignes) */
+    .op-entete { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 16px; align-items: center; margin-bottom: 1rem; padding: 12px 18px; border-radius: 16px; background: var(--op-surface); border: 1px solid var(--op-line); }
+    .op-entete img { height: 52px; max-width: 150px; object-fit: contain; display: block; }
+    html.dark .op-entete img { background: #fff; border-radius: 8px; padding: 3px; }
+    .op-entete .l1 { font-weight: 800; font-size: 15px; color: var(--op-ink); line-height: 1.3; }
+    .op-entete .l2 { font-size: 13px; color: var(--op-ink-2); margin-top: 2px; }
+    .op-entete .l3 { font-size: 11px; color: var(--op-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+    .op-entete-edit { justify-self: end; font-size: 12px; font-weight: 700; color: var(--op-muted); text-decoration: none; padding: 4px 10px; border: 1px solid var(--op-line); border-radius: 999px; white-space: nowrap; }
+    .op-entete-edit:hover { color: var(--op-brand); border-color: var(--op-brand); }
+    .op-entete.op-vide { grid-template-columns: 1fr auto; padding: 8px 14px; border-style: dashed; background: transparent; }
+    .op-entete.op-vide span { font-size: 12.5px; color: var(--op-muted); }
+    @media (max-width: 640px) { .op-entete { gap: 10px; padding: 10px 12px; } .op-entete img { height: 38px; max-width: 96px; } .op-entete .l1 { font-size: 13.5px; } .op-entete-edit { display: none; } }
+    @media print { #op-print .pp-logo { height: 16mm; max-width: 40mm; object-fit: contain; } #op-print .pp-h { align-items: center; } #op-print .pp-id { display: flex; gap: 5mm; align-items: center; } }
+
+    /* 5. fiche papier */
+    #op-print { display: none; }
+    @media print {
+        @page { size: A4; margin: 14mm 12mm; }
+        html, body { background: #fff !important; padding: 0 !important; }
+        body > *:not(#op-print) { display: none !important; }
+        #op-print { display: block !important; color: #111; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 10.5pt; }
+        #op-print .pp-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12mm; border-bottom: 2px solid #13293D; padding-bottom: 4mm; margin-bottom: 5mm; }
+        #op-print .pp-h h1 { font-family: 'Fraunces', Georgia, serif; font-size: 17pt; font-weight: 600; margin: 1mm 0 0; }
+        #op-print .pp-h p { margin: 0; color: #555; font-size: 9pt; }
+        #op-print .pp-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin-bottom: 5mm; }
+        #op-print .pp-meta div { border: 1px solid #bbb; border-radius: 2mm; padding: 2mm 3mm; }
+        #op-print .pp-meta small { display: block; font-size: 7.5pt; color: #666; text-transform: uppercase; letter-spacing: .04em; }
+        #op-print .pp-meta b { font-size: 10.5pt; }
+        #op-print table { width: 100%; border-collapse: collapse; margin-bottom: 5mm; }
+        #op-print th { text-align: left; font-size: 8.5pt; color: #444; border-bottom: 1.5px solid #13293D; padding: 1.6mm 2mm; }
+        #op-print td { border-bottom: 1px solid #ccc; padding: 1.6mm 2mm; vertical-align: top; }
+        #op-print td.v { font-weight: 700; text-align: right; white-space: nowrap; width: 22mm; }
+        #op-print td.p { text-align: right; color: #666; white-space: nowrap; width: 22mm; }
+        #op-print td.j { font-size: 8.5pt; color: #444; }
+        #op-print tr { page-break-inside: avoid; }
+        #op-print h2 { font-size: 11pt; margin: 2mm 0 2mm; }
+        #op-print .pp-sign { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; margin-top: 6mm; page-break-inside: avoid; }
+        #op-print .pp-sign div { border: 1px solid #999; border-radius: 2mm; height: 30mm; padding: 2mm 3mm; font-size: 8.5pt; color: #444; }
+        #op-print .pp-f { margin-top: 5mm; font-size: 7.5pt; color: #777; display: flex; justify-content: space-between; }
+    }
+</style>
+<script>
+(function () {
+    const DATASET_ID = '{{ dataset.id }}';
+    const DATASET_NOM = '{{ dataset.nom|escapejs }}';
+    const INSTITUTION = '{{ actual_institution.nom|escapejs }}';
+    const AGENT = '{{ request.user.get_full_name|default:request.user.username|escapejs }}';
+    const API = '/saisie-plus/api/';
+    const INSTITUTION_ID = '{{ actual_institution.id }}';
+    const PEUT_REGLER = {% if request.user.is_staff or request.user.is_superuser %}true{% else %}false{% endif %};
+    // Seuil d'alerte de variation par rapport à la période précédente (0.6 = ± 60 %).
+    // Pour le changer : définir window.OP_SEUIL_VARIATION = 0.5 dans un script placé avant celui-ci.
+    const SEUIL = typeof window.OP_SEUIL_VARIATION === 'number' ? window.OP_SEUIL_VARIATION : 0.6;
+    const ECART_MIN = 5;        // en dessous de 5 unités d'écart, pas d'alerte (petits effectifs)
+
+    const form = document.getElementById('myForm' + DATASET_ID);
+    const contenu = document.querySelector('.card-body' + DATASET_ID + ' .contenu');
+    const selUnit = document.getElementById('structureSelect');
+    const selPeriod = document.getElementById('period');
+    if (!contenu || !form) return;
+
+    const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+    const num = v => { if (v === '' || v == null) return NaN; return parseFloat(String(v).replace(',', '.')); };
+    const fr = (n, d) => Number(n).toLocaleString('fr-FR', { maximumFractionDigits: d == null ? 2 : d });
+    const elId = name => { const m = /^D0elt(\d+)$/.exec(name || ''); return m ? m[1] : null; };
+    const csrf = () => (form.querySelector('[name=csrfmiddlewaretoken]') || {}).value
+        || (document.cookie.match(/(?:^|; )csrftoken=([^;]+)/) || [])[1] || '';
+
+    let inst = null;          // moteur des règles du designer
+    let ctx = null;           // unité + période réellement chargées
+    let base = new Map();     // valeurs au chargement (pour le récapitulatif)
+    let prev = null;          // { nom, valeurs: Map(id → valeur) } de la période précédente
+    let justifs = new Map();  // id élément → { texte, valeur, motif, user, date }
+    let apiOk = true;         // passe à false si l'application saisie_plus n'est pas installée
+    let indics = [];          // [{ id, nom }]
+
+    function champs() {
+        return Array.from(contenu.querySelectorAll('input[name^="D0elt"], textarea[name^="D0elt"], select[name^="D0elt"]'))
+            .filter(f => f.type !== 'hidden');
+    }
+    function libelle(f) {
+        if (!f) return '';
+        const l = f.getAttribute('data-op-label');
+        if (l) return l;
+        const tr = f.closest('tr'), td = tr && tr.cells[0];
+        let t = td && !td.contains(f) ? td.textContent.replace(/\s+/g, ' ').trim() : '';
+        if (!t) t = f.getAttribute('title') || f.name;
+        if (f.tagName === 'TEXTAREA') t += ' (commentaire)';
+        else if (f.type === 'date') t += ' (date)';
+        return t.length > 90 ? t.slice(0, 88) + '…' : t;
+    }
+    const cle = f => f.name + '|' + (f.tagName === 'TEXTAREA' ? 't' : f.type === 'date' ? 'd' : 'v');
+    const numerique = f => f.tagName === 'INPUT' && f.type === 'number' && !f.classList.contains('opf-calc');
+    function instantane() { const m = new Map(); champs().forEach(f => m.set(cle(f), f.value)); return m; }
+
+    async function api(chemin, opts) {
+        if (!apiOk) return null;
+        try {
+            const r = await fetch(API + chemin, Object.assign({ credentials: 'same-origin', headers: { 'Accept': 'application/json' } }, opts || {}));
+            if (r.status === 404) { apiOk = false; return null; }
+            if (!r.ok || !(r.headers.get('content-type') || '').includes('application/json')) return null;
+            return await r.json();
+        } catch (e) { return null; }
+    }
+    const qs = () => 'dataset=' + encodeURIComponent(DATASET_ID) + '&structure=' + encodeURIComponent(ctx.unit) + '&periode=' + encodeURIComponent(ctx.period);
+    const post = (chemin, corps) => api(chemin, { method: 'POST', body: JSON.stringify(corps),
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRFToken': csrf() } });
+
+    /* ---------- démarrage du moteur sur le formulaire injecté ---------- */
+    function demarrer() {
+        if (!window.OperaForm) { inst = null; return; }
+        inst = OperaForm.init(contenu, { fresh: true, draft: false, submit: false });
+        if (!inst || !inst.fields || !inst.fields.length) inst = null;
+    }
+    function lireIndicateurs() {
+        indics = Array.from(contenu.querySelectorAll('.indicSelector')).map(el => {
+            const id = el.getAttribute('data-id');
+            let nom = el.getAttribute('data-nom') || el.getAttribute('title') || '';
+            if (!nom) { const tr = el.closest('tr'), td = tr && tr.cells[0]; if (td && !td.contains(el)) nom = td.textContent.replace(/\s+/g, ' ').trim(); }
+            if (!nom) { const t = el.textContent.replace(/\s+/g, ' ').trim(); if (t && !/\$\d+\$/.test(t)) nom = t; }
+            return { id, el, nom: nom || 'Indicateur ' + id };
+        }).filter(x => x.id);
+    }
+    const _opfInitIndic = window.initIndic;
+    if (typeof _opfInitIndic === 'function') {
+        window.initIndic = function () {
+            try { lireIndicateurs(); } catch (e) {}   // avant que la page remplace le texte par la formule
+            const r = _opfInitIndic.apply(this, arguments);
+            try { demarrer(); } catch (e) { console.error('op-form-runtime', e); }
+            return r;
+        };
+    }
+
+    // handleData d'origine ne remplit que les champs nombre, date et zone de texte :
+    // on complète les autres types (texte court, téléphone, e-mail, heure, GPS, choix multiples, listes)
+    function remplirAutresTypes(data) {
+        const items = data && Array.isArray(data.data) ? data.data : null;
+        if (!items) return;
+        const deja = f => f.tagName === 'TEXTAREA' || (f.tagName === 'INPUT' && (f.type === 'number' || f.type === 'date'));
+        const autres = champs().filter(f => !deja(f));
+        if (!items.length) { autres.forEach(f => { f.value = ''; }); return; }
+        const parNom = new Map(); items.forEach(it => parNom.set('D0elt' + it.id, it));
+        // N/A enregistré : on recoche la case (le champ affiche alors « non applicable », pas 0)
+        champs().forEach(f => {
+            const it = parNom.get(f.name);
+            if (it && it.na && f._na && !f._na.checked) { f._na.checked = true; f._na.dispatchEvent(new Event('change')); }
+        });
+        autres.forEach(f => {
+            const it = parNom.get(f.name); if (!it) return;
+            const brut = f.tagName === 'SELECT' ? it.content : (it.texte != null && it.texte !== '' ? it.texte : it.content);
+            const v = brut == null ? '' : String(brut);
+            if (f.tagName === 'SELECT') {
+                const o = Array.from(f.options).find(x => x.value === v || (v !== '' && num(x.value) === num(v)));
+                f.value = o ? o.value : '';
+            } else f.value = v;
+        });
+    }
+    const _opfHandleData = window.handleData;
+    if (typeof _opfHandleData === 'function') {
+        window.handleData = function () {
+            const r = _opfHandleData.apply(this, arguments);
+            try { remplirAutresTypes(arguments[0]); } catch (e) { console.error('saisie types', e); }
+            try {
+                if (!inst || !contenu.contains(inst.fields[0])) demarrer();
+                if (inst) inst.refresh ? inst.refresh() : (inst.recalc(), inst.conditions());
+                const opt = selPeriod.options[selPeriod.selectedIndex], uopt = selUnit.options[selUnit.selectedIndex];
+                ctx = { unit: selUnit.value, period: selPeriod.value,
+                        periodNom: opt ? opt.text.trim() : '', unitNom: uopt ? uopt.text.trim() : '' };
+                base = instantane();
+                prev = null; justifs = new Map();
+                document.querySelectorAll('.op-prev, .op-just').forEach(x => x.remove());
+                chargerPrecedente(); chargerJustifs(); chargerTrace(); ajouterOutils();
+                setTimeout(rendreResultats, 50); setTimeout(rendreResultats, 1300);
+            } catch (e) { console.error('saisie plus', e); }
+            return r;
+        };
+    }
+
+    /* =================== 1. PÉRIODE PRÉCÉDENTE =================== */
+    async function chargerPrecedente() {
+        const i = selPeriod.selectedIndex, o = i > 0 ? selPeriod.options[i - 1] : null;
+        if (!o || !o.value || !ctx) return;
+        const c = ctx;
+        let d = null;
+        try { const r = await opFetchValeurs(c.unit, o.value); if (r.ok) d = await r.json(); } catch (e) {}
+        if (c !== ctx || !d || !Array.isArray(d.data)) return;
+        const m = new Map(); d.data.forEach(x => { if (x && x.id != null && x.content !== null && x.content !== '') m.set(String(x.id), x.content); });
+        if (!m.size) return;
+        prev = { nom: o.text.trim(), valeurs: m };
+        champs().filter(numerique).forEach(majPrecedente);
+    }
+    function variation(f) {
+        if (!prev || !numerique(f) || f.closest('.opf-hidden')) return null;
+        const p = num(prev.valeurs.get(elId(f.name))), v = num(f.value);
+        if (isNaN(p) || isNaN(v)) return null;
+        const ecart = v - p, rel = p ? ecart / Math.abs(p) : null;
+        const forte = (p !== 0 && Math.abs(rel) >= SEUIL && Math.abs(ecart) >= ECART_MIN) || (p === 0 && v >= 20);
+        return { p, v, ecart, rel, forte };
+    }
+    function majPrecedente(f) {
+        if (!prev || !numerique(f)) return;
+        const id = elId(f.name), pv = prev.valeurs.get(id);
+        if (pv === undefined) return;
+        const td = f.closest('td') || f.parentElement;
+        let el = td.querySelector('.op-prev[data-for="' + f.name + '"]');
+        if (!el) { el = document.createElement('div'); el.className = 'op-prev'; el.dataset.for = f.name; td.appendChild(el); }
+        const r = variation(f);
+        let delta = '';
+        if (r && r.ecart !== 0) delta = r.rel === null ? 'nouveau' : (r.rel > 0 ? '+' : '') + fr(r.rel * 100, 0) + ' %';
+        el.classList.toggle('op-var', !!(r && r.forte));
+        f.classList.toggle('op-varf', !!(r && r.forte));
+        el.innerHTML = '<span>' + esc(prev.nom) + ' : <b>' + esc(fr(num(pv))) + '</b></span>' + (delta ? '<span class="op-delta">' + esc(delta) + '</span>' : '');
+        majJustif(f);
+    }
+
+    /* =================== 6. JUSTIFICATIONS =================== */
+    async function chargerJustifs() {
+        const c = ctx, d = await api('justifications/?' + qs());
+        if (c !== ctx || !d || !d.items) return;
+        d.items.forEach(j => justifs.set(String(j.element_id), j));
+        champs().forEach(majJustif);
+    }
+    function majJustif(f) {
+        const id = elId(f.name);
+        if (!id || f.tagName === 'TEXTAREA' || f.type === 'date') return;
+        const td = f.closest('td') || f.parentElement, jj = justifs.get(id), j = jj && !jj._del ? jj : null;
+        let b = td.querySelector('.op-just[data-for="' + f.name + '"]');
+        const utile = j || f.classList.contains('op-varf') || f.classList.contains('opf-soft');
+        if (!utile) { if (b) b.remove(); return; }
+        if (!b) {
+            b = document.createElement('button'); b.type = 'button'; b.className = 'op-just'; b.dataset.for = f.name;
+            b.addEventListener('click', () => editerJustif(f));
+            const hint = td.querySelector('.op-prev[data-for="' + f.name + '"]');
+            (hint || td).appendChild(b);
+        }
+        b.classList.toggle('on', !!j);
+        b.title = j ? 'Justification' + (j.user ? ' de ' + j.user : '') + ' : ' + j.texte : 'Expliquer cette valeur';
+        b.innerHTML = '<i class="fa-regular fa-comment"></i><span>' + (j ? esc(j.texte) : 'Justifier') + '</span>';
+    }
+    async function editerJustif(f) {
+        const id = elId(f.name), j = justifs.get(id);
+        const r = await Swal.fire({
+            title: 'Justifier la valeur', input: 'text', inputValue: j ? j.texte : '',
+            html: '<p style="margin:0;font-size:13.5px">' + esc(libelle(f)) + ' : <b>' + esc(f.value || 'vide') + '</b></p>',
+            inputPlaceholder: 'Ex. : campagne de dépistage ce mois-ci', showCancelButton: true,
+            confirmButtonText: 'Valider', cancelButtonText: 'Annuler'
+        });
+        if (!r.isConfirmed) return;
+        const t = String(r.value || '').trim();
+        if (t) justifs.set(id, Object.assign({}, j, { texte: t, valeur: f.value, motif: motif(f), _dirty: true, _del: false, user: AGENT }));
+        else if (j) justifs.set(id, { texte: '', _dirty: true, _del: true });   // suppression envoyée au prochain enregistrement
+        majJustif(f);
+    }
+    function motif(f) {
+        const v = variation(f);
+        if (v && v.forte) return 'Forte variation par rapport à ' + prev.nom + ' (' + fr(v.p) + ' → ' + fr(v.v) + ')';
+        return f.classList.contains('opf-soft') ? 'Valeur inhabituelle' : '';
+    }
+    async function envoyerJustifs() {
+        if (!ctx) return;
+        const items = [];
+        justifs.forEach((j, id) => { if (j._dirty) items.push({ element_id: id, texte: j._del ? '' : j.texte, valeur: j.valeur || '', motif: j.motif || '' }); });
+        if (!items.length) return;
+        const d = await post('justifications/', { dataset: DATASET_ID, structure: ctx.unit, periode: ctx.period, items });
+        if (d && d.ok) { justifs.forEach((j, id) => { if (j._del) justifs.delete(id); else delete j._dirty; }); }
+        else if (!apiOk) opNotify({ type: 'info', title: 'Justifications non conservées sur le serveur',
+            message: "Le module « saisie_plus » n'est pas installé : les justifications figurent seulement sur la fiche imprimée." });
+    }
+
+    /* =================== 7. TRAÇABILITÉ =================== */
+    function ligneTrace() {
+        let el = document.getElementById('op-trace');
+        if (!el) {
+            el = document.createElement('p'); el.id = 'op-trace'; el.className = 'op-trace'; el.hidden = true;
+            const etat = document.getElementById('op-ctx-state'); if (etat) etat.insertAdjacentElement('afterend', el);
+        }
+        return el;
+    }
+    async function chargerTrace() {
+        const el = ligneTrace(), c = ctx, d = await api('journal/?' + qs());
+        if (c !== ctx) return;
+        if (!d || !d.ok) { el.hidden = true; return; }
+        if (!d.last) { el.hidden = false; el.innerHTML = '<i class="fa-regular fa-clock"></i><span>Aucune saisie enregistrée pour cette unité et cette période.</span>'; return; }
+        const dt = new Date(d.last.date);
+        el.hidden = false;
+        el.innerHTML = '<i class="fa-solid fa-user-check"></i><span>Dernière saisie : <b>' + esc(d.last.user || 'utilisateur inconnu') + '</b>, le '
+            + esc(dt.toLocaleDateString('fr-FR')) + ' à ' + esc(dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }))
+            + (d.total > 1 ? ' · ' + d.total + ' enregistrements au total' : '') + '</span>';
+    }
+    // L'enregistrement AJAX de la page affiche « Enregistré à … » : c'est le signal de réussite
+    let enAttente = null;
+    const statut = document.getElementById('op-save-status');
+    if (statut) new MutationObserver(() => {
+        if (!/^Enregistré à/.test(statut.textContent.trim()) || !ctx || !enAttente) return;
+        const e = enAttente; enAttente = null;
+        post('journal/', { dataset: DATASET_ID, structure: ctx.unit, periode: ctx.period, nb_valeurs: e.n, nb_modifiees: e.mod })
+            .then(() => chargerTrace());
+        envoyerJustifs();
+        base = instantane();
+    }).observe(statut, { childList: true, characterData: true, subtree: true });
+
+    /* =================== 4. INDICATEURS EN DIRECT =================== */
+    function valeursIndic() {
+        let o = {};
+        try { o = JSON.parse((document.getElementById('indicator-values') || {}).value || '{}') || {}; } catch (e) {}
+        return o;
+    }
+    function rendreResultats() {
+        let box = document.getElementById('op-results');
+        if (!indics.length || !ctx) { if (box) box.hidden = true; return; }
+        if (!box) {
+            box = document.createElement('section'); box.id = 'op-results'; box.className = 'op-results'; box.setAttribute('aria-live', 'polite');
+            box.innerHTML = '<div class="op-results-h"><b>Résultats calculés en direct</b><span>Indicateurs recalculés à chaque saisie, à partir des formules du formulaire</span></div><div class="op-results-g"></div>';
+            const ledger = document.querySelector('.op-ledger'); if (ledger) ledger.insertAdjacentElement('beforebegin', box); else return;
+        }
+        box.hidden = false;
+        const vals = valeursIndic(), g = box.querySelector('.op-results-g');
+        indics.forEach(x => {
+            let card = g.querySelector('[data-indic="' + x.id + '"]');
+            if (!card) { card = document.createElement('div'); card.className = 'op-res'; card.dataset.indic = x.id; card.innerHTML = '<p></p><strong></strong><small></small>'; g.appendChild(card); card.querySelector('p').textContent = x.nom; card.title = x.nom; }
+            let v = vals[x.id]; if (v === undefined) v = x.el && x.el.isConnected ? x.el.textContent : '';
+            const n = num(v), ok = isFinite(n);
+            const txt = ok ? fr(n, Math.abs(n) >= 100 ? 0 : 2) : '—';
+            const s = card.querySelector('strong');
+            if (s.textContent !== txt) { s.textContent = txt; card.classList.remove('op-bump'); void card.offsetWidth; card.classList.add('op-bump'); }
+            card.classList.toggle('op-na-res', !ok);
+            card.querySelector('small').textContent = ok ? '' : 'Pas encore calculable (valeur manquante ou division par zéro)';
+        });
+    }
+
+    /* ---------- écoute de la saisie ---------- */
+    contenu.addEventListener('input', e => {
+        const f = e.target;
+        if (f.name && f.name.indexOf('D0elt') === 0) { majPrecedente(f); majJustif(f); }
+        setTimeout(rendreResultats, 0);   // après le recalcul des formules par la page
+    });
+    contenu.addEventListener('change', () => setTimeout(rendreResultats, 0));
+
+    /* =================== 2. CONTRÔLES + RÉCAPITULATIF AVANT L'ENREGISTREMENT =================== */
+    function changements() {
+        const out = [];
+        champs().forEach(f => {
+            const k = cle(f), a = base.has(k) ? base.get(k) : '', n = f.value;
+            if (String(a) !== String(n) && !(a === '' && n === '')) out.push({ f, a, n });
+        });
+        return out;
+    }
+    function aller(f) {
+        if (!f) return;
+        if (inst) inst.gotoField(f);
+        setTimeout(() => { f.scrollIntoView({ behavior: 'smooth', block: 'center' }); f.focus(); }, 60);
+    }
+    const listeTxt = items => '<ul class="op-list">' + items.map(x => '<li>' + esc(x.text) + '</li>').join('') + '</ul>';
+
+    async function controler(b) {
+        // a) erreurs du designer : bloquantes
+        const c = inst ? inst.collect() : { errs: [], warns: [], first: null };
+        if (!c.errs.length) { const sb = contenu.querySelector('.opf-sum'); if (sb) { sb.style.display = 'none'; sb.innerHTML = ''; } }
+        if (c.errs.length) {
+            inst.validateAll(false);
+            await Swal.fire({ icon: 'error', title: c.errs.length + ' point' + (c.errs.length > 1 ? 's' : '') + ' à corriger',
+                              html: listeTxt(c.errs), confirmButtonText: 'Corriger' });
+            aller(c.first); return;
+        }
+        // b) valeurs inhabituelles + fortes variations : à confirmer, avec justification
+        const warns = c.warns.slice(), vus = new Set(c.warns.map(w => w.f && w.f.name));
+        champs().filter(numerique).forEach(f => {
+            const v = variation(f);
+            if (v && v.forte) {
+                const t = libelle(f) + ' : ' + fr(v.v) + ' contre ' + fr(v.p) + ' en ' + prev.nom + (v.rel === null ? '' : ' (' + (v.rel > 0 ? '+' : '') + fr(v.rel * 100, 0) + ' %)');
+                if (vus.has(f.name)) { const w = warns.find(x => x.f && x.f.name === f.name); if (w) w.text += ' · ' + t.split(' : ').slice(1).join(' : '); }
+                else { warns.push({ f, text: t }); vus.add(f.name); }
+            }
+        });
+        if (warns.length) {
+            const html = '<p style="margin:0 0 .6rem;font-size:13.5px;text-align:left">Vérifiez ces valeurs. Une courte justification aide la personne qui valide.</p><ul class="op-jlist">'
+                + warns.map((w, i) => { const id = w.f && elId(w.f.name), j = id && justifs.get(id);
+                    return '<li>' + esc(w.text) + (id ? '<input type="text" data-i="' + i + '" maxlength="300" placeholder="Justification (recommandée)" value="' + esc(j && !j._del ? j.texte : '') + '">' : '') + '</li>'; }).join('') + '</ul>';
+            const r = await Swal.fire({ icon: 'warning', title: warns.length + ' valeur' + (warns.length > 1 ? 's' : '') + ' à vérifier', html, width: 620,
+                showCancelButton: true, confirmButtonText: 'Continuer', cancelButtonText: 'Corriger',
+                preConfirm: () => Array.from(Swal.getHtmlContainer().querySelectorAll('input[data-i]')).map(x => ({ i: +x.dataset.i, t: x.value.trim() })) });
+            if (!r.isConfirmed) { aller(warns[0].f); return; }
+            r.value.forEach(({ i, t }) => {
+                const f = warns[i].f, id = f && elId(f.name); if (!id) return;
+                const old = justifs.get(id);
+                if (t && (!old || old.texte !== t)) justifs.set(id, { texte: t, valeur: f.value, motif: motif(f) || warns[i].text, _dirty: true, user: AGENT });
+                majJustif(f);
+            });
+        }
+        // c) récapitulatif
+        const ch = changements(), envoyees = champs().filter(f => /^D0elt\d+$/.test(f.name) && f.value !== '' && f.tagName !== 'TEXTAREA' && f.type !== 'date').length;
+        const nouv = ch.filter(x => x.a === '' && x.n !== '').length, modif = ch.filter(x => x.a !== '' && x.n !== '').length, vid = ch.filter(x => x.a !== '' && x.n === '').length;
+        const lignes = ch.slice(0, 40).map(x => '<tr><td>' + esc(libelle(x.f)) + '</td><td class="o">' + esc(x.a === '' ? '' : x.a) + '</td><td class="n' + (x.a === '' ? ' new' : '') + '">' + esc(x.n === '' ? 'vide' : x.n) + '</td></tr>').join('');
+        const vals = valeursIndic(), ind = indics.map(x => { const n = num(vals[x.id]); return isFinite(n) ? esc(x.nom) + ' : <b>' + esc(fr(n)) + '</b>' : null; }).filter(Boolean);
+        const nj = Array.from(justifs.values()).filter(j => j._dirty && !j._del).length;
+        const html = '<div class="op-recap"><div class="op-recap-k">'
+            + '<span><b>' + envoyees + '</b> valeur' + (envoyees > 1 ? 's' : '') + ' envoyée' + (envoyees > 1 ? 's' : '') + '</span>'
+            + (nouv ? '<span><b>' + nouv + '</b> nouvelle' + (nouv > 1 ? 's' : '') + '</span>' : '')
+            + (modif ? '<span><b>' + modif + '</b> modifiée' + (modif > 1 ? 's' : '') + '</span>' : '')
+            + (nj ? '<span><b>' + nj + '</b> justification' + (nj > 1 ? 's' : '') + '</span>' : '') + '</div>'
+            + (ch.length ? '<div class="op-recap-box"><table><thead><tr><th>Élément</th><th>Avant</th><th>Après</th></tr></thead><tbody>' + lignes + '</tbody></table></div>'
+                + (ch.length > 40 ? '<p class="op-recap-note">… et ' + (ch.length - 40) + ' autre(s) changement(s).</p>' : '')
+              : '<p class="op-recap-note" style="margin-top:0">Aucune valeur n\'a changé depuis le chargement : les valeurs actuelles seront enregistrées à nouveau.</p>')
+            + (vid ? '<p class="op-recap-note"><i class="fa-solid fa-circle-info"></i> ' + vid + ' case(s) vidée(s) : une case vide n\'est pas envoyée, l\'ancienne valeur reste en base.</p>' : '')
+            + (ind.length ? '<p class="op-recap-note">Indicateurs : ' + ind.join(' · ') + '</p>' : '')
+            + '<p class="op-recap-note">' + esc(ctx ? ctx.unitNom + ' · ' + ctx.periodNom : '') + '. En cas de doublon, ces valeurs remplacent celles déjà enregistrées.</p></div>';
+        const r = await Swal.fire({ icon: 'question', title: 'Vérifier avant d\'enregistrer', html, width: 680,
+            showCancelButton: true, confirmButtonText: '<i class="fa-solid fa-floppy-disk"></i> Enregistrer', cancelButtonText: 'Revenir à la saisie', focusConfirm: true });
+        if (!r.isConfirmed) return;
+        enAttente = { n: envoyees, mod: modif + nouv };
+        window.submitForm(DATASET_ID);   // enregistrement AJAX de la page (mêmes contrôles navigateur)
+    }
+
+    // Passe après les contrôles existants de la page (unité modifiée, bornes, OP_RULES), qui gardent la priorité
+    document.addEventListener('click', e => {
+        const b = e.target.closest('#myButton' + DATASET_ID);
+        if (!b) return;
+        if (e.defaultPrevented || !ctx || !contenu.querySelector('[name^="D0elt"]')) return; // la page s'en occupe
+        e.preventDefault(); e.stopPropagation();   // remplace la confirmation d'origine par le récapitulatif
+        controler(b);
+    }, true);
+
+    /* =================== EN-TÊTE DE L'ORGANISATION =================== */
+    let entete = null;
+    async function chargerEntete() {
+        const d = await api('en-tete/?institution=' + encodeURIComponent(INSTITUTION_ID) + '&dataset=' + encodeURIComponent(DATASET_ID));
+        const fiche = document.querySelector('.op-fiche'); if (!fiche) return;
+        let box = document.getElementById('op-entete');
+        if (!box) { box = document.createElement('div'); box.id = 'op-entete'; box.className = 'op-entete'; fiche.insertAdjacentElement('beforebegin', box); }
+        const regler = '/saisie-plus/en-tete/?institution=' + encodeURIComponent(INSTITUTION_ID) + '&dataset=' + encodeURIComponent(DATASET_ID) + '&retour=' + encodeURIComponent(location.pathname + location.search);
+        if (!d || !d.ok) { box.remove(); return; }                                   /* module absent : rien n'est affiché */
+        entete = (d.logo || d.logo_partenaire || (d.lignes || []).length) ? d : null;
+        if (!entete) {
+            if (!PEUT_REGLER) { box.remove(); return; }
+            box.className = 'op-entete op-vide';
+            box.innerHTML = '<span><i class="fa-regular fa-image mr-1"></i>Aucun en-tête : ajoutez le logo de votre organisation pour qu’il apparaisse sur les formulaires et les fiches imprimées.</span><a class="op-entete-edit" href="' + regler + '">Ajouter l’en-tête</a>';
+            return;
+        }
+        box.className = 'op-entete';
+        box.innerHTML = (entete.logo ? '<img src="' + esc(entete.logo) + '" alt="Logo de l’organisation">' : '<span></span>')
+            + '<div>' + (entete.lignes || []).map((t, i) => '<div class="l' + (i + 1) + '">' + esc(t) + '</div>').join('') + '</div>'
+            + (entete.logo_partenaire ? '<img src="' + esc(entete.logo_partenaire) + '" alt="Logo du partenaire">' : (PEUT_REGLER ? '<a class="op-entete-edit" href="' + regler + '">Modifier l’en-tête</a>' : '<span></span>'));
+        if (entete.logo_partenaire && PEUT_REGLER) box.title = 'Modifier : ' + regler;
+    }
+    chargerEntete();
+
+    /* =================== 5. FICHE PAPIER =================== */
+    function ajouterOutils() {
+        const bar = document.getElementById('op-table-toolbar');
+        if (!bar || document.getElementById('op-print-btn')) return;
+        const grp = bar.querySelector('#op-focus-btn') ? bar.querySelector('#op-focus-btn').parentElement : bar;
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.id = 'op-print-btn'; btn.className = 'op-tool-btn'; btn.title = 'Imprimer la fiche (Ctrl + P)';
+        btn.innerHTML = '<i class="fa-solid fa-print"></i><span class="hidden sm:inline">Fiche</span>';
+        btn.addEventListener('click', () => window.print());
+        const ref = grp.querySelector('#op-focus-btn'); if (ref) ref.insertAdjacentElement('afterend', btn); else grp.appendChild(btn);
+    }
+    function construireFiche() {
+        let el = document.getElementById('op-print');
+        if (!el) { el = document.createElement('div'); el.id = 'op-print'; document.body.appendChild(el); }
+        if (!ctx || !contenu.querySelector('[name^="D0elt"]')) { el.innerHTML = ''; return; }
+        const noms = [], parNom = new Map();
+        champs().forEach(f => { if (!/^D0elt\d+$/.test(f.name)) return; if (!parNom.has(f.name)) { parNom.set(f.name, []); noms.push(f.name); } parNom.get(f.name).push(f); });
+        const lignes = noms.map(n => {
+            const fs = parNom.get(n), v = fs.find(f => f.tagName !== 'TEXTAREA' && f.type !== 'date'), t = fs.find(f => f.tagName === 'TEXTAREA'), d = fs.find(f => f.type === 'date');
+            const ref = v || fs[0]; if (ref.closest('.opf-hidden')) return '';
+            const id = elId(n), j = justifs.get(id), pv = prev && prev.valeurs.get(id);
+            let val = v ? (v.tagName === 'SELECT' ? (v.options[v.selectedIndex] || {}).text || '' : v.value) : '';
+            if (v && v.hasAttribute('data-op-isna')) val = 'N/A';
+            else if (v && v.getAttribute('data-op-type') === 'multi' && val) {
+                const lib = new Map(String(v.getAttribute('data-op-choices') || '').split(';').map(x => x.split('=')).filter(x => x.length > 1).map(x => [x[0].trim(), x.slice(1).join('=').trim()]));
+                val = val.split(';').map(c => lib.get(c) || c).join(', ');
+            }
+            else if (v && v.getAttribute('data-op-unit') && val) val += ' ' + v.getAttribute('data-op-unit');
+            const notes = [t && t.value, d && d.value && 'Date : ' + d.value, j && !j._del && j.texte && 'Justification : ' + j.texte].filter(Boolean).join(' · ');
+            return '<tr><td>' + esc(libelle(ref).replace(/ \((commentaire|date)\)$/, '')) + '</td><td class="v">' + esc(val || '—') + '</td>'
+                + (prev ? '<td class="p">' + esc(pv === undefined ? '—' : fr(num(pv))) + '</td>' : '') + '<td class="j">' + esc(notes) + '</td></tr>';
+        }).join('');
+        const vals = valeursIndic();
+        const ind = indics.map(x => { const n = num(vals[x.id]); return '<tr><td>' + esc(x.nom) + '</td><td class="v">' + esc(isFinite(n) ? fr(n) : '—') + '</td><td class="j"></td></tr>'; }).join('');
+        const tr = document.getElementById('op-trace'), now = new Date();
+        const L = entete && entete.lignes && entete.lignes.length ? entete.lignes : [INSTITUTION];
+        el.innerHTML = '<div class="pp-h"><div class="pp-id">' + (entete && entete.logo ? '<img class="pp-logo" src="' + esc(entete.logo) + '" alt="">' : '')
+            + '<div><p>' + L.map(esc).join(' · ') + ' · Fiche de collecte</p><h1>' + esc(DATASET_NOM) + '</h1></div></div>'
+            + '<div style="text-align:right">' + (entete && entete.logo_partenaire ? '<img class="pp-logo" src="' + esc(entete.logo_partenaire) + '" alt=""><br>' : '') + '<p>OperaPlus</p><p>Imprimée le ' + esc(now.toLocaleDateString('fr-FR')) + ' à ' + esc(now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })) + '</p></div></div>'
+            + '<div class="pp-meta"><div><small>Unité</small><b>' + esc(ctx.unitNom) + '</b></div><div><small>Période</small><b>' + esc(ctx.periodNom) + '</b></div>'
+            + '<div><small>Imprimée par</small><b>' + esc(AGENT) + '</b></div><div><small>Statut</small><b>' + (changements().length ? 'Non enregistrée' : 'Conforme à la base') + '</b></div></div>'
+            + (tr && !tr.hidden ? '<p style="font-size:9pt;color:#555;margin:0 0 4mm">' + esc(tr.textContent) + '</p>' : '')
+            + '<table><thead><tr><th>Élément de données</th><th style="text-align:right">Valeur</th>' + (prev ? '<th style="text-align:right">' + esc(prev.nom) + '</th>' : '') + '<th>Observations</th></tr></thead><tbody>' + lignes + '</tbody></table>'
+            + (ind ? '<h2>Indicateurs calculés</h2><table><tbody>' + ind + '</tbody></table>' : '')
+            + '<div class="pp-sign"><div>Saisi par (nom, date, signature)</div><div>Vérifié par (nom, date, signature)</div><div>Visa du responsable</div></div>'
+            + '<div class="pp-f"><span>' + esc(DATASET_NOM) + ' · ' + esc(ctx.unitNom) + ' · ' + esc(ctx.periodNom) + '</span><span>Document généré par OperaPlus</span></div>';
+    }
+    window.addEventListener('beforeprint', construireFiche);
 })();
 </script>
 </body>

@@ -157,7 +157,7 @@
             <!-- Section Data Elements -->
             <div id="section-de">
                 {% for s in dataset.m_dataelements.all %}
-                <div class="element-item" onclick="insertDE('{{s.id}}', '{{s|escapejs}}')">
+                <div class="element-item" onclick="insertDE('{{s.id}}', '{{s|escapejs}}')" data-nature="{{ s.m_value_type|default:'Number' }}">
                     <div class="flex justify-between items-start mb-1">
                         <span class="variable-tag tag-de">Input</span>
                         <span class="text-[9px] font-mono text-gray-400">#{{s.id}}</span>
@@ -213,7 +213,7 @@
 
             <div class="fd-stats" aria-live="polite"><span><b id="fdSDe">0</b> champ(s) de saisie</span><span><b id="fdSInd">0</b> indicateur(s) affiché(s)</span><span>Raccourci : <b>Ctrl + S</b> pour enregistrer</span></div>
             <div class="editor-container">
-                <textarea id="mainEditor">{{ dataset.m_formulaire|safe }}</textarea>
+                <textarea id="mainEditor">{{ dataset.m_formulaire|default_if_none:'' }}</textarea>{# échappé exprès : un champ « texte long » (<textarea>) du formulaire ne doit pas fermer celui de l'éditeur #}
             </div>
             
             <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-3">
@@ -247,7 +247,7 @@
         plugins: 'table advlist autolink lists link charmap preview code visualblocks wordcount paste fullpage',
         toolbar: 'undo redo | formatselect | bold italic forecolor | alignleft aligncenter alignright | table bullist numlist | code preview',
         menubar: false,
-        extended_valid_elements: 'input[class|name|type|title|value|readonly|min|max|step|data-op-required|data-op-min|data-op-max|data-op-int|data-op-soft-min|data-op-soft-max|data-op-na|data-op-sum|data-op-label|data-op-hidden-value],select[class|name|title|data-op-required|data-op-na|data-op-label],option[value|selected],div[class|data-id|data-rules|title|contenteditable|style],hr[class],h3[class|data-op-show-if],p[class|data-op-show-if|data-q],tr[data-op-show-if]',
+        extended_valid_elements: 'input[class|style|name|type|title|value|readonly|min|max|step|placeholder|maxlength|pattern|data-op-required|data-op-min|data-op-max|data-op-int|data-op-soft-min|data-op-soft-max|data-op-na|data-op-sum|data-op-label|data-op-hidden-value|data-op-type|data-op-choices|data-op-unit],select[class|style|name|title|data-op-required|data-op-na|data-op-label|data-op-type],option[value|selected],textarea[class|style|name|title|rows|placeholder|maxlength|data-op-required|data-op-na|data-op-label|data-op-type],div[class|data-id|data-rules|title|contenteditable|style],hr[class],h3[class|data-op-show-if],p[class|data-op-show-if|data-q],tr[class|style|data-op-show-if]',
         branding: false,
         content_style: `
             body { font-family: 'Inter', Arial, sans-serif; font-size: 14px; padding: 20px; color: #334155; }
@@ -307,7 +307,7 @@
     function scan() {
         var e = ed(); if (!e) return; var body = e.getBody(); if (!body) return;
         var used = {}, usedI = {}, nI = 0, nD = 0;
-        body.querySelectorAll('input[name^="D0elt"]').forEach(function (i) { used[i.name.slice(5)] = 1; nD++; });
+        body.querySelectorAll('[name^="D0elt"]').forEach(function (i) { used[i.getAttribute('name').slice(5)] = 1; nD++; });   /* input, select (listes, oui/non) et textarea (texte long) */
         body.querySelectorAll('.indicSelector[data-id]').forEach(function (d) { usedI[d.getAttribute('data-id')] = 1; nI++; });
         var placed = 0;
         de.forEach(function (it) { var on = !!used[it.dataset.id]; it.classList.toggle('placed', on); if (on) placed++; });

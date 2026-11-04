@@ -30,7 +30,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 from datetime import timedelta
 SIMPLE_JWT = {
@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.microsoft',
     'pwa',
     "vitrine",
+    "saisie_plus"
 ]
 VITRINE_BASE_TEMPLATE = "presentation.html"
 # PWA Configurations
@@ -310,8 +311,8 @@ CELERY_BEAT_SCHEDULE = {
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 
-STATIC_ROOT = '/app/static'
-MEDIA_ROOT = '/app/media'
+STATIC_ROOT = os.getenv('STATIC_ROOT', str(BASE_DIR / 'staticfiles'))
+MEDIA_ROOT = os.getenv('MEDIA_ROOT', str(BASE_DIR / 'media'))
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 #Pour Docker
 #Pour Docker

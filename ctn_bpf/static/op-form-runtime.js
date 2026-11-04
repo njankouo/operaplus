@@ -41,16 +41,29 @@
     '.opf-gps{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}',
     '.opf-gps button{border:1px solid #123A37;background:#fff;color:#123A37;border-radius:10px;padding:8px 12px;font-weight:800;font-size:13px;cursor:pointer}',
     '.opf-gps span{font-size:12.5px;font-weight:700;color:#2A8A7D}',
+    '.opf-unit{display:inline-block;margin-left:6px;font-size:12px;font-weight:700;color:#667085;vertical-align:middle}',
+    '.opf-multi{display:flex;flex-wrap:wrap;gap:6px}',
+    '.opf-multi label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #E4E8EE;border-radius:999px;background:#fff;font-size:13px;font-weight:600;color:#344054;cursor:pointer;user-select:none}',
+    '.opf-multi label:has(input:checked){border-color:#2B3A67;background:#EEF1F8;color:#2B3A67}',
+    '.opf-multi input{width:15px;height:15px;margin:0}',
+    '.opf-xhide{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}',
+    '.opf-geo{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}',
+    '.opf-geo button{border:1px solid #2A8A7D;background:#fff;color:#1F6F65;border-radius:10px;padding:8px 12px;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap}',
+    '.opf-geo small{font-size:12px;font-weight:600;color:#667085}',
     '@media (max-width:760px){.op-page-wrap>*{max-width:100%}}'
   ].join('\n');
 
   function onReady(f) { if (document.readyState !== 'loading') f(); else document.addEventListener('DOMContentLoaded', f); }
   function num(v) { if (v === '' || v == null) return NaN; return parseFloat(String(v).replace(',', '.')); }
   function fmt(n) { return (Math.round(n * 100) / 100).toLocaleString('fr-FR'); }
-  function labelOf(el) { return el.getAttribute('data-op-label') || el.getAttribute('title') || el.name; }
+  function labelOf(el) {
+    var l = el.getAttribute('data-op-label') || el.getAttribute('title'); if (l) return l;
+    var tr = el.closest && el.closest('tr'), td = tr && tr.cells[0]; if (td && !td.contains(el)) { var t = td.textContent.replace(/\s+/g, ' ').trim(); if (t) return t; }
+    return el.name;
+  }
 
-  function OperaForm(root) {
-    this.root = root;
+  function OperaForm(root, opts) {
+    this.root = root; this.opts = opts || {}; this._h = [];
     this.form = root.tagName === 'FORM' ? root : root.closest('form') || root;
     this.fields = [].slice.call(root.querySelectorAll('input[name^="D0elt"], select[name^="D0elt"], textarea[name^="D0elt"]'));
     if (!this.fields.length) return;
@@ -58,13 +71,27 @@
     this.fields.forEach(function (f) { self.byName[f.name] = f; });
     this.rules = [];
     root.querySelectorAll('.op-rules[data-rules]').forEach(function (d) { try { self.rules = self.rules.concat(JSON.parse(d.getAttribute('data-rules')) || []); } catch (e) {} d.style.display = 'none'; });
-    this.setupFields(); this.setupNA(); this.setupCalc(); this.setupConditions(); this.setupPages(); this.setupGPS(); this.setupDraft();
-    root.addEventListener('input', function (e) { if (e.target.name && e.target.name.indexOf('D0elt') === 0) { self.recalc(); self.conditions(); self.check(e.target); self.saveDraftSoon(); } });
-    root.addEventListener('change', function (e) { if (e.target.name && e.target.name.indexOf('D0elt') === 0) { self.recalc(); self.conditions(); self.check(e.target); self.saveDraftSoon(); } });
-    this.form.addEventListener('submit', function (e) { if (!self.validateAll(true)) { e.preventDefault(); e.stopImmediatePropagation(); } else self.clearDraft(); }, true);
+    this.setupFields(); this.setupTypes(); this.setupNA(); this.setupCalc(); this.setupConditions(); this.setupPages(); this.setupGPS();
+    if (this.opts.draft !== false) this.setupDraft();
+    var onEdit = function (e) { if (e.target.name && e.target.name.indexOf('D0elt') === 0) { self.recalc(); self.conditions(); self.check(e.target); self.saveDraftSoon(); } };
+    this.on(root, 'input', onEdit); this.on(root, 'change', onEdit);
+    if (this.opts.submit !== false) this.on(this.form, 'submit', function (e) { if (!self.validateAll(true)) { e.preventDefault(); e.stopImmediatePropagation(); } else self.clearDraft(); }, true);
     this.recalc(); this.conditions();
   }
   var P = OperaForm.prototype;
+  /* écouteurs mémorisés : permet de réinitialiser le moteur quand le formulaire est rechargé dans le même conteneur */
+  P.on = function (t, type, fn, cap) { t.addEventListener(type, fn, !!cap); this._h.push([t, type, fn, !!cap]); };
+  P.destroy = function () { (this._h || []).forEach(function (h) { h[0].removeEventListener(h[1], h[2], h[3]); }); this._h = []; if (this.savedEl) this.savedEl.remove(); };
+  /* liste des points à corriger / à vérifier, sans rien afficher */
+  P.collect = function () {
+    var self = this, errs = [], warns = [], first = null;
+    this.fields.forEach(function (f) {
+      var r = self.fieldIssues(f);
+      if (r.err) { errs.push({ f: f, text: labelOf(f) + ' : ' + r.err }); first = first || f; } else if (r.warn) warns.push({ f: f, text: labelOf(f) + ' : ' + r.warn });
+    });
+    this.ruleIssues().forEach(function (i) { var f = self.byName[i.fields[0]] || null; (i.level === 'warn' ? warns : errs).push({ f: f, text: i.text }); if (i.level !== 'warn') first = first || f; });
+    return { errs: errs, warns: warns, first: first };
+  };
 
   /* ---------- 1. validation par champ ---------- */
   P.setupFields = function () {
@@ -76,6 +103,49 @@
       if (f.value === '0' && f.hasAttribute('data-op-required') && f.hasAttribute('data-op-empty')) f.value = '';
     });
   };
+  /* ---------- 1 bis. types de champ (designer : data-op-type) ---------- */
+  function typ(f) { return f.getAttribute('data-op-type') || ''; }
+  function choices(f) { return String(f.getAttribute('data-op-choices') || '').split(';').map(function (x) { var m = x.split('='); return m.length > 1 ? [m[0].trim(), m.slice(1).join('=').trim()] : null; }).filter(Boolean); }
+  P.setupTypes = function () {
+    var self = this;
+    this.fields.forEach(function (f) {
+      var t = typ(f), u = f.getAttribute('data-op-unit');
+      if (u && !(f.nextElementSibling && f.nextElementSibling.classList.contains('opf-unit'))) { var s = document.createElement('span'); s.className = 'opf-unit'; s.textContent = u; f.insertAdjacentElement('afterend', s); }
+      if (t === 'tel') { f.setAttribute('inputmode', 'tel'); f.setAttribute('autocomplete', 'tel'); }
+      if (t === 'email') { f.setAttribute('inputmode', 'email'); f.setAttribute('autocomplete', 'email'); }
+      if (t === 'multi' && !f._multi) {
+        var box = document.createElement('div'); box.className = 'opf-multi'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', labelOf(f));
+        choices(f).forEach(function (c) { var l = document.createElement('label'), cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = c[0]; l.appendChild(cb); l.appendChild(document.createTextNode(c[1])); box.appendChild(l); });
+        f.classList.add('opf-xhide'); f.tabIndex = -1; f.insertAdjacentElement('afterend', box); f._multi = box;
+        box.addEventListener('change', function () {
+          f.value = [].slice.call(box.querySelectorAll('input:checked')).map(function (x) { return x.value; }).join(';');
+          f.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+      }
+      if (t === 'gps' && !f._geo) {
+        var w = document.createElement('span'); w.className = 'opf-geo';
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Capturer la position';
+        var info = document.createElement('small'); w.appendChild(b); w.appendChild(info);
+        f.insertAdjacentElement('afterend', w); f._geo = w;
+        b.addEventListener('click', function () {
+          if (!navigator.geolocation) { info.textContent = 'GPS indisponible : saisissez « latitude, longitude ».'; return; }
+          info.textContent = 'Recherche de la position…'; b.disabled = true;
+          navigator.geolocation.getCurrentPosition(function (pos) {
+            b.disabled = false; f.value = pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6);
+            info.textContent = 'Précision ± ' + Math.round(pos.coords.accuracy) + ' m'; f.dispatchEvent(new Event('input', { bubbles: true }));
+          }, function () { b.disabled = false; info.textContent = 'Position refusée ou introuvable : saisissez-la à la main.'; }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+        });
+      }
+    });
+    this.syncTypes();
+  };
+  /* après un remplissage par le code (chargement des valeurs, brouillon) */
+  P.syncTypes = function () {
+    this.fields.forEach(function (f) {
+      if (f._multi) { var v = ';' + String(f.value || '') + ';'; [].forEach.call(f._multi.querySelectorAll('input'), function (cb) { cb.checked = v.indexOf(';' + cb.value + ';') > -1; }); }
+    });
+  };
+  P.refresh = function () { this.syncTypes(); this.recalc(); this.conditions(); };
   P.msg = function (f, cls, text) {
     var id = 'opf-m-' + f.name, m = document.getElementById(id) || (function () { var s = document.createElement('small'); s.id = id; f.insertAdjacentElement('afterend', s); return s; })();
     if (!text) { m.className = ''; m.textContent = ''; return; }
@@ -87,6 +157,12 @@
     var v = f.value, n = num(v), name = labelOf(f);
     if (f.hasAttribute('data-op-required') && (v === '' || v == null)) { out.err = 'Champ obligatoire.'; return out; }
     if (v === '' || f.tagName === 'SELECT') return out;
+    var t = typ(f);
+    if (t === 'tel') { var dg = v.replace(/\D/g, ''); if (!/^\+?[\d\s.\-()]+$/.test(v) || dg.length < 8 || dg.length > 15) out.err = 'Numéro de téléphone invalide (ex. 6XX XX XX XX ou +237 6XX XX XX XX).'; return out; }
+    if (t === 'email') { if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) out.err = 'Adresse e-mail invalide.'; return out; }
+    if (t === 'gps') { var g = v.match(/^\s*(-?\d{1,2}(?:\.\d+)?)\s*[,;]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/); if (!g || Math.abs(+g[1]) > 90 || Math.abs(+g[2]) > 180) out.err = 'Coordonnées invalides : « latitude, longitude » (ex. 4.0511, 9.7679).'; return out; }
+    if (t === 'date') { var d = new Date(v + 'T00:00:00'); if (!isNaN(d) && d.getTime() > Date.now() + 864e5) out.warn = 'Date dans le futur : vérifiez-la.'; return out; }
+    if (t === 'multi' || t === 'text' || t === 'long' || t === 'time') return out;
     if (f.type === 'number' || f.hasAttribute('data-op-min') || f.hasAttribute('data-op-max')) {
       if (isNaN(n)) { out.err = 'Saisissez un nombre.'; return out; }
       if (f.hasAttribute('data-op-int') && Math.round(n) !== n) out.err = 'Saisissez un nombre entier.';
@@ -145,6 +221,7 @@
   };
   P.evalCond = function (c) {
     var f = this.byName[c.name]; if (!f) return true;
+    if (typ(f) === 'multi' && (c.op === '==' || c.op === '!=')) { var has = (';' + f.value + ';').indexOf(';' + c.val + ';') > -1; return c.op === '==' ? has : !has; }
     var a = f.value, b = c.val, na = num(a), nb = num(b), useNum = !isNaN(na) && !isNaN(nb);
     switch (c.op) {
       case '==': return useNum ? na === nb : a === b; case '!=': return useNum ? na !== nb : a !== b;
@@ -171,8 +248,8 @@
       var show = k.c.every(function (c) { return self.evalCond(c); });
       k.group.forEach(function (g) {
         var was = g.classList.contains('opf-hidden'); g.classList.toggle('opf-hidden', !show);
-        if (!show && !was) { changed = true; g.querySelectorAll('input[name^="D0elt"],select[name^="D0elt"]').forEach(function (f) { f._hidVal = f.value; f.value = f.getAttribute('data-op-hidden-value') || (f.tagName === 'SELECT' ? f.value : '0'); self.msg(f, '', ''); f.classList.remove('opf-bad', 'opf-soft'); }); }
-        if (show && was) { changed = true; g.querySelectorAll('input[name^="D0elt"],select[name^="D0elt"]').forEach(function (f) { if (f._hidVal != null) f.value = f._hidVal; }); }
+        if (!show && !was) { changed = true; g.querySelectorAll('input[name^="D0elt"],select[name^="D0elt"]').forEach(function (f) { f._hidVal = f.value; f.value = f.getAttribute('data-op-hidden-value') || (f.tagName === 'SELECT' ? f.value : '0'); f._hidSet = f.value; self.msg(f, '', ''); f.classList.remove('opf-bad', 'opf-soft'); }); }
+        if (show && was) { changed = true; g.querySelectorAll('input[name^="D0elt"],select[name^="D0elt"]').forEach(function (f) { if (f._hidVal != null && f.value === f._hidSet) f.value = f._hidVal; f._hidVal = f._hidSet = null; });   /* une valeur posée entre-temps (chargement) est gardée */ }
       });
     });
     if (changed) this.recalc();
@@ -283,12 +360,12 @@
     bar.querySelector('.y').addEventListener('click', function () {
       Object.keys(d.v).forEach(function (n) { var f = self.form.querySelector('[name="' + n + '"]'); if (f && f.type !== 'hidden') f.value = d.v[n]; else if (f) f.value = d.v[n]; });
       self.fields.forEach(function (f) { if (f._na && d.v['op_na_' + f.name] === '1') { f._na.checked = true; f._na.dispatchEvent(new Event('change')); } });
-      self.recalc(); self.conditions(); bar.remove();
+      self.refresh(); bar.remove();
     });
     bar.querySelector('.n').addEventListener('click', function () { self.clearDraft(); bar.remove(); });
   };
   P.saveDraftSoon = function () {
-    var self = this; clearTimeout(this._dt);
+    var self = this; if (!this.savedEl) return; clearTimeout(this._dt);
     this._dt = setTimeout(function () {
       var v = {}; self.form.querySelectorAll('[name^="D0elt"], [name^="op_"]').forEach(function (f) { v[f.name] = f.value; });
       try { localStorage.setItem(self.key(), JSON.stringify({ t: Date.now(), v: v })); self.savedEl.classList.add('on'); setTimeout(function () { self.savedEl.classList.remove('on'); }, 1200); } catch (e) {}
@@ -302,6 +379,11 @@
     if (!roots.length) roots = [].slice.call(document.querySelectorAll('form')).filter(function (f) { return f.querySelector('[name^="D0elt"]'); });
     [].forEach.call(roots, function (r) { if (!r._opf) r._opf = new OperaForm(r); });
   }
-  window.OperaForm = { init: function (el) { return el._opf || (el._opf = new OperaForm(el)); }, boot: boot };
+  window.OperaForm = {
+    /* opts : { fresh: true } réinitialise après un rechargement du contenu ; { draft: false } laisse la page gérer le brouillon ;
+       { submit: false } laisse la page gérer l'envoi (enregistrement AJAX) */
+    init: function (el, opts) { if (opts && opts.fresh && el._opf) { el._opf.destroy(); el._opf = null; } return el._opf || (el._opf = new OperaForm(el, opts)); },
+    boot: boot
+  };
   onReady(boot);
 })();

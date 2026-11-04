@@ -137,12 +137,110 @@
         }
         .btn-dhis2-primary:hover { background-color: #1d4e74; }
     </style>
+    <!-- ===================== CONFIGURATION DU JEU DE DONNÉES : design (ajout) ===================== -->
+    <style>
+        :root { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: #2A8A7D; --danger: #E35A33;
+                --ink: #0b1220; --ink2: #344054; --muted: #667085; --line: #e4e8ee; --paper: #f5f3ee;
+                --c-st: #2B3A67; --c-de: #2A8A7D; --c-in: #C98A1B; }
+        body { background: var(--paper) !important; color: var(--ink) !important; font-family: Inter, "Segoe UI", system-ui, sans-serif !important; -webkit-font-smoothing: antialiased; padding-bottom: 96px; }
+        :where(a, button, input, .transfer-item):focus-visible { outline: 2px solid var(--dom); outline-offset: 2px; }
+        [hidden] { display: none !important; }
+
+        /* en-tête */
+        .dhis2-app-header { background: var(--dom) !important; height: 56px !important; box-shadow: none !important; text-transform: none !important; font-size: 14px; font-weight: 800 !important; letter-spacing: .01em; position: sticky; top: 0; z-index: 40; }
+        .dhis2-app-header::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--acc); }
+        .dhis2-app-header i { opacity: .8; }
+        .dsm-crumb { margin-left: auto; display: flex; gap: 8px; align-items: center; font-size: 12.5px; font-weight: 600; }
+        .dsm-crumb a { color: rgba(255,255,255,.85); text-decoration: none; padding: 6px 10px; border-radius: 9px; border: 1px solid rgba(255,255,255,.18); }
+        .dsm-crumb a:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+        /* page */
+        .maintenance-container { max-width: 1180px !important; margin: 24px auto !important; padding: 0 20px !important; background: transparent !important; border: 0 !important; }
+        .maintenance-container h1 { font-size: 26px !important; font-weight: 800 !important; letter-spacing: -.02em; color: var(--ink) !important; margin-bottom: 4px !important; }
+        .dsm-sub { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+        .dsm-kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin: 0 0 18px; }
+        .dsm-kpi { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; position: relative; overflow: hidden; }
+        .dsm-kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--c, var(--dom)); }
+        .dsm-kpi small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
+        .dsm-kpi b { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink); }
+        .dsm-kpi span { font-size: 12px; color: var(--muted); margin-left: 4px; }
+
+        /* cartes de section */
+        .dsm-card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px 20px; margin-bottom: 16px; }
+        .dsm-name { display: grid; gap: 6px; }
+        .transfer-label { text-transform: none !important; font-size: 13px !important; font-weight: 700 !important; color: var(--ink2) !important; letter-spacing: 0; }
+        .dhis2-input-full { height: 46px; border: 1px solid #d0d5dd !important; border-radius: 12px !important; font-size: 16px !important; font-weight: 700; margin: 0 !important; padding: 0 14px !important; color: var(--ink); }
+        .dhis2-input-full:focus { outline: none; border-color: var(--dom) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 12%, transparent); }
+        .section-title { display: flex !important; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 4px !important; padding: 0 !important; border: 0 !important; color: var(--ink) !important; font-size: 17px !important; font-weight: 800 !important; }
+        .section-title > i { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); margin: 0 !important; font-size: 14px; }
+        .dsm-n { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--c); background: color-mix(in srgb, var(--c) 10%, #fff); padding: 4px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+        .dsm-help { margin: 0 0 14px 44px; font-size: 13px; color: var(--muted); }
+        .dsm-card.st { --c: var(--c-st); } .dsm-card.de { --c: var(--c-de); } .dsm-card.in { --c: var(--c-in); }
+
+        /* listes de transfert */
+        .transfer-container { gap: 14px !important; align-items: stretch !important; margin: 0 !important; }
+        .transfer-column { min-width: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #fcfcfd; }
+        .transfer-column > .transfer-label { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin: 0 !important; background: #fff; border-bottom: 1px solid var(--line); }
+        .transfer-column > .transfer-label em { font-style: normal; font-size: 11.5px; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: #f2f4f7; color: var(--ink2); }
+        .transfer-column:last-child > .transfer-label { background: color-mix(in srgb, var(--c) 6%, #fff); }
+        .transfer-column:last-child > .transfer-label em { background: var(--c); color: #fff; }
+        .filter-input { height: 38px; border: 0 !important; border-bottom: 1px solid var(--line) !important; background: #fff !important; padding: 0 12px 0 34px !important; font-size: 13px !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2398a2b3' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important; background-position: 11px center !important; background-size: 15px !important; }
+        .filter-input:focus { box-shadow: inset 0 -2px 0 var(--c); }
+        .transfer-list { height: 300px !important; border: 0 !important; background: transparent !important; padding: 6px; }
+        .transfer-item { gap: 8px; margin-bottom: 4px; padding: 9px 10px !important; border: 1px solid transparent !important; border-radius: 10px; background: #fff; font-size: 13.5px !important; color: var(--ink2); box-shadow: 0 0 0 1px #eef1f4; }
+        .transfer-item > span:first-child { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+        .transfer-item:hover { background: color-mix(in srgb, var(--c) 5%, #fff) !important; box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 35%, #fff); }
+        .transfer-item::after { content: "→"; font-weight: 800; color: #c0c6d0; flex-shrink: 0; transition: color .15s, transform .15s; }
+        .transfer-item:hover::after { color: var(--c); transform: translateX(2px); }
+        .transfer-column:last-child .transfer-item::after { content: "×"; font-size: 16px; }
+        .transfer-column:last-child .transfer-item { box-shadow: inset 3px 0 0 var(--c), 0 0 0 1px #eef1f4; }
+        .transfer-item.dsm-in { animation: dsmIn .35s ease; } @keyframes dsmIn { from { background: color-mix(in srgb, var(--c) 14%, #fff); } }
+        .dsm-pill { flex-shrink: 0; font-size: 10.5px; font-weight: 800; padding: 1px 7px; border-radius: 999px; }
+        .dsm-pill.n-number { background: #EEF1F8; color: #2B3A67; } .dsm-pill.n-text { background: #F3ECF8; color: #7A4E9E; } .dsm-pill.n-date { background: #E8F4F1; color: #1F6F65; }
+        .dsm-pill.used { background: #FFF3EF; color: #C2410C; }
+        .dsm-empty { padding: 26px 10px; text-align: center; font-size: 13px; font-weight: 600; color: #98a2b3; }
+        .transfer-container > .text-gray-400 { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+        .transfer-container > .text-gray-400 > i { display: none; }
+        .dsm-mv { width: 44px; height: 40px; border-radius: 11px; border: 1px solid var(--line); background: #fff; color: var(--ink2); font-size: 15px; font-weight: 800; cursor: pointer; }
+        .dsm-mv:hover:not(:disabled) { border-color: var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 6%, #fff); }
+        .dsm-mv:disabled { opacity: .35; cursor: not-allowed; }
+
+        /* barre d'actions fixe */
+        .maintenance-container form > .mt-10 { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; margin: 0 !important; padding: 12px max(20px, calc((100vw - 1180px) / 2 + 20px)) !important;
+            background: rgba(255,255,255,.96); border-top: 1px solid var(--line) !important; box-shadow: 0 -12px 30px -24px rgba(15,27,45,.5); align-items: center; }
+        .dsm-state { margin-right: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); min-width: 0; }
+        .dsm-state b { color: var(--ink); }
+        .dsm-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+        .dsm-state.dirty .dsm-dot { background: var(--acc); box-shadow: 0 0 0 4px color-mix(in srgb, var(--acc) 22%, transparent); }
+        .maintenance-container form > .mt-10 button { border-radius: 12px !important; padding: 11px 20px !important; font-size: 14px !important; }
+        .btn-dhis2-primary { background: var(--acc) !important; color: #1B1406 !important; box-shadow: none !important; }
+        .btn-dhis2-primary:hover { filter: brightness(1.05); }
+        .btn-dhis2-primary:disabled { opacity: .6; }
+        .dsm-warn { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: #FFF3EF; border: 1px solid #FFC4B2; color: #9E351C; font-size: 13px; }
+
+        @media (max-width: 900px) {
+            .dsm-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+            .transfer-container { flex-direction: column; }
+            .transfer-container > .text-gray-400 { flex-direction: row; justify-content: center; }
+            .dsm-mv { transform: rotate(90deg); }
+            .transfer-list { height: auto !important; min-height: 96px; max-height: 240px; }
+            .dhis2-app-header { font-size: 12.5px; line-height: 1.25; }
+            .dsm-help { margin-left: 0; }
+            .dsm-crumb a span { display: none; }
+            .maintenance-container form > .mt-10 { flex-wrap: wrap; }
+            .dsm-state { width: 100%; }
+        }
+        @media (prefers-reduced-motion: reduce) { .transfer-item.dsm-in { animation: none; } }
+    </style>
 </head>
 <body>
 
 <div class="dhis2-app-header">
     <i class="fas fa-cog mr-3"></i>
     Maintenance OPERAPLUS - Configuration de l'ensemble de données
+    <nav class="dsm-crumb" aria-label="Raccourcis"><a href="/data_sets/design/{{ data_set.id }}/"><i class="fas fa-pen-ruler"></i> <span>Ouvrir le designer</span></a><a href="/dataelts/"><i class="fas fa-database"></i> <span>Data elements</span></a></nav>
 </div>
 
 <div class="maintenance-container">
@@ -151,6 +249,13 @@
         <input type='hidden' name='matrice' />
 
         <h1 class="text-2xl font-bold mb-6 text-gray-800">Mise à jour : {{ data_set.m_name }}</h1>
+        <p class="dsm-sub">Choisissez où le formulaire est saisi, ce qu’on y collecte et ce qu’on y calcule. Cliquez sur un élément pour le faire passer d’une colonne à l’autre.</p>
+        <div class="dsm-kpis" aria-live="polite">
+            <div class="dsm-kpi" style="--c:var(--c-st)"><small>Structures</small><b id="dsmKSt">0</b><span>unités de saisie</span></div>
+            <div class="dsm-kpi" style="--c:var(--c-de)"><small>Éléments de données</small><b id="dsmKDe">0</b><span>à collecter</span></div>
+            <div class="dsm-kpi" style="--c:var(--c-in)"><small>Indicateurs</small><b id="dsmKIn">0</b><span>calculés</span></div>
+            <div class="dsm-kpi" style="--c:var(--danger)"><small>Dans le formulaire</small><b id="dsmKFo">0</b><span id="dsmKFoS">éléments placés</span></div>
+        </div>
 
         <!-- NOM DU FORMULAIRE -->
         <label class="transfer-label">Nom de l'ensemble de données</label>
@@ -196,7 +301,7 @@
                 <input type="text" placeholder="Filtrer..." class="filter-input" onkeyup="filterList(this, 'avail-de')">
                 <div class="transfer-list" id="avail-de">
                     {% for de in unlinked_element %}
-                    <div class="transfer-item" onclick="migrate(this, 'sel-de')">
+                    <div class="transfer-item" onclick="migrate(this, 'sel-de')" data-nature="{{ de.m_value_type|default:'Number' }}">
                         <span>{{ de.m_name }}</span>
                         <input type="checkbox" name="element" value="{{ de.id }}">
                     </div>
@@ -211,7 +316,7 @@
                 <input type="text" placeholder="Filtrer..." class="filter-input" onkeyup="filterList(this, 'sel-de')">
                 <div class="transfer-list" id="sel-de">
                     {% for v in data_set.m_dataelements.all %}
-                    <div class="transfer-item" onclick="migrate(this, 'avail-de')">
+                    <div class="transfer-item" onclick="migrate(this, 'avail-de')" data-nature="{{ v.m_value_type|default:'Number' }}">
                         <span>{{ v }}</span>
                         <input type="checkbox" name="element" value="{{ v.id }}" checked>
                     </div>
@@ -311,6 +416,126 @@
             }
         });
     }
+</script>
+
+<!-- ===================== Configuration : cartes, compteurs, transferts en masse, garde-fous (ajout) ===================== -->
+<script>
+(function () {
+    var $ = function (id) { return document.getElementById(id); };
+    var form = document.querySelector('.maintenance-container form'); if (!form) return;
+    /* éléments déjà placés dans le formulaire conçu (designer) */
+    var DESIGN = '{{ data_set.m_formulaire|default_if_none:""|escapejs }}', placed = {};
+    (DESIGN.match(/D0elt(\d+)/g) || []).forEach(function (m) { placed[m.slice(5)] = 1; });
+    var NAT = { number: 'Nombre', text: 'Texte', date: 'Date' };
+    var LISTS = [['st', 'avail-struct', 'sel-struct', 'dsmKSt', 'Unités d’organisation où le formulaire sera saisi. Les agents ne voient que leurs unités.'],
+                 ['de', 'avail-de', 'sel-de', 'dsmKDe', 'Ce que les agents saisissent. La nature (Nombre, Texte, Date) décide du champ dans le designer.'],
+                 ['in', 'avail-ind', 'sel-ind', 'dsmKIn', 'Indicateurs calculés automatiquement à partir des éléments saisis.']];
+
+    /* 1. cartes : nom, puis une carte par section (titre + listes) */
+    var nameLbl = form.querySelector(':scope > .transfer-label'), nameIn = form.querySelector('input[name="form_name"]');
+    if (nameLbl && nameIn) { var c0 = document.createElement('div'); c0.className = 'dsm-card dsm-name'; nameLbl.before(c0); c0.appendChild(nameLbl); c0.appendChild(nameIn); }
+    var titles = [].slice.call(form.querySelectorAll(':scope > .section-title'));
+    titles.forEach(function (t, i) {
+        var box = t.nextElementSibling, L = LISTS[i]; if (!box || !L) return;
+        var card = document.createElement('section'); card.className = 'dsm-card ' + L[0]; t.before(card); card.appendChild(t);
+        var n = document.createElement('span'); n.className = 'dsm-n'; n.id = 'dsmN' + L[0]; t.appendChild(n);
+        var h = document.createElement('p'); h.className = 'dsm-help'; h.textContent = L[4]; card.appendChild(h); card.appendChild(box);
+        /* compteurs dans les en-têtes de colonne */
+        box.querySelectorAll('.transfer-column > .transfer-label').forEach(function (lb) { var e = document.createElement('em'); lb.appendChild(e); });
+        /* boutons « tout ajouter / tout retirer » à la place de l'icône */
+        var mid = box.querySelector(':scope > .text-gray-400');
+        if (mid) {
+            var add = document.createElement('button'), rem = document.createElement('button');
+            add.type = rem.type = 'button'; add.className = rem.className = 'dsm-mv';
+            add.innerHTML = '»'; add.title = 'Ajouter tous les éléments affichés'; add.setAttribute('aria-label', add.title);
+            rem.innerHTML = '«'; rem.title = 'Retirer tous les éléments affichés'; rem.setAttribute('aria-label', rem.title);
+            add.addEventListener('click', function () { moveAll(L[1], L[2]); }); rem.addEventListener('click', function () { moveAll(L[2], L[1]); });
+            mid.appendChild(add); mid.appendChild(rem); L.btns = [add, rem];
+        }
+        L.card = card;
+    });
+
+    /* 2. pastilles : nature des éléments et « dans le formulaire » */
+    function decorate(it) {
+        if (it._dsm) return; it._dsm = 1;
+        it.tabIndex = 0; it.setAttribute('role', 'button');
+        it.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); it.click(); } });
+        var nat = (it.getAttribute('data-nature') || '').toLowerCase();
+        if (NAT[nat]) { var p = document.createElement('span'); p.className = 'dsm-pill n-' + nat; p.textContent = NAT[nat]; it.querySelector('input').before(p); }
+        var cb = it.querySelector('input[name="element"]');
+        if (cb && placed[cb.value]) { var u = document.createElement('span'); u.className = 'dsm-pill used'; u.textContent = 'Dans le formulaire'; u.title = 'Ce champ est placé dans le formulaire conçu'; it.querySelector('input').before(u); }
+    }
+    document.querySelectorAll('.transfer-item').forEach(decorate);
+
+    /* 3. compteurs, états vides */
+    var initial = snapshot(), dirty = false;
+    function visible(list) { return [].slice.call($(list).querySelectorAll('.transfer-item')).filter(function (x) { return x.style.display !== 'none'; }); }
+    function empty(list, txt) {
+        var l = $(list), e = l.querySelector('.dsm-empty'), n = l.querySelectorAll('.transfer-item').length, v = visible(list).length;
+        if (!e) { e = document.createElement('p'); e.className = 'dsm-empty'; l.appendChild(e); }
+        e.hidden = v > 0; e.textContent = n ? 'Aucun résultat pour ce filtre.' : txt;
+        l.appendChild(e);
+    }
+    function refresh() {
+        LISTS.forEach(function (L) {
+            if (!$(L[1])) return;
+            var a = $(L[1]).querySelectorAll('.transfer-item').length, s = $(L[2]).querySelectorAll('.transfer-item').length;
+            var ems = L.card ? L.card.querySelectorAll('.transfer-label em') : [];
+            if (ems[0]) ems[0].textContent = a; if (ems[1]) ems[1].textContent = s;
+            if ($('dsmN' + L[0])) $('dsmN' + L[0]).textContent = s + ' sélectionné' + (s > 1 ? 's' : '') + ' sur ' + (a + s);
+            if ($(L[3])) $(L[3]).textContent = s;
+            empty(L[1], 'Tout est déjà sélectionné.'); empty(L[2], 'Rien de sélectionné : cliquez sur un élément à gauche.');
+            if (L.btns) { L.btns[0].disabled = !visible(L[1]).length; L.btns[1].disabled = !visible(L[2]).length; }
+        });
+        var sel = [].slice.call(document.querySelectorAll('#sel-de input[name="element"]')).map(function (x) { return x.value; });
+        var inForm = sel.filter(function (id) { return placed[id]; }).length;
+        $('dsmKFo').textContent = inForm; $('dsmKFoS').textContent = 'placé' + (inForm > 1 ? 's' : '') + ' sur ' + sel.length + ' sélectionné' + (sel.length > 1 ? 's' : '');
+        var now = snapshot(); dirty = now !== initial; state();
+    }
+    function snapshot() { return [].slice.call(form.querySelectorAll('input[type=checkbox]:checked')).map(function (x) { return x.name + x.value; }).sort().join(',') + '|' + ((form.querySelector('input[name="form_name"]') || {}).value || ''); }
+
+    /* 4. vos fonctions migrate / filterList sont conservées et complétées */
+    var _migrate = window.migrate;
+    window.migrate = function (el, target) {
+        _migrate.apply(this, arguments);
+        el.classList.remove('dsm-in'); void el.offsetWidth; el.classList.add('dsm-in');
+        var cb = el.querySelector('input[name="element"]');
+        if (cb && !cb.checked && placed[cb.value]) toastWarn('« ' + el.querySelector('span').textContent.trim() + ' » est placé dans le formulaire : retiré, il ne sera plus enregistré à la saisie.');
+        if (!window._dsmBulk) refresh();
+    };
+    var _filter = window.filterList;
+    window.filterList = function (input, id) { _filter.apply(this, arguments); refresh(); };
+    function moveAll(from, to) {
+        window._dsmBulk = true; visible(from).forEach(function (it) { window.migrate(it, to); }); window._dsmBulk = false; refresh();
+    }
+    document.querySelectorAll('.filter-input').forEach(function (f) { f.addEventListener('input', function () { f.dispatchEvent(new KeyboardEvent('keyup')); }); f.setAttribute('aria-label', f.placeholder); });
+
+    /* 5. barre d'actions : état et garde-fous */
+    var bar = form.querySelector(':scope > .mt-10'), st = document.createElement('div'); st.className = 'dsm-state'; st.setAttribute('aria-live', 'polite');
+    if (bar) bar.prepend(st);
+    function state() {
+        var k = function (id) { return $(id) ? $(id).textContent : '0'; };
+        st.classList.toggle('dirty', dirty);
+        st.innerHTML = '<span class="dsm-dot"></span><span>' + (dirty ? '<b>Modifications non enregistrées</b> · ' : 'À jour · ') + k('dsmKSt') + ' structure(s), ' + k('dsmKDe') + ' élément(s), ' + k('dsmKIn') + ' indicateur(s)</span>';
+    }
+    var tw; function toastWarn(t) {
+        if (!tw) { tw = document.createElement('p'); tw.className = 'dsm-warn'; tw.setAttribute('role', 'status'); }
+        var host = document.querySelector('.dsm-card.de'); if (host) host.insertBefore(tw, host.querySelector('.transfer-container'));
+        tw.textContent = t; tw.hidden = false; clearTimeout(tw._t); tw._t = setTimeout(function () { tw.hidden = true; }, 6000);
+    }
+    if (nameIn) nameIn.addEventListener('input', refresh);
+    form.addEventListener('submit', function (e) {
+        var removed = [].slice.call(document.querySelectorAll('#avail-de input[name="element"]')).filter(function (x) { return placed[x.value]; });
+        if (removed.length && !form._ok) {
+            var noms = removed.slice(0, 4).map(function (x) { return '« ' + x.closest('.transfer-item').querySelector('span').textContent.trim() + ' »'; }).join(', ');
+            if (!confirm(removed.length + ' élément(s) retiré(s) sont encore placés dans le formulaire : ' + noms + (removed.length > 4 ? '…' : '') + '.\nLeurs champs ne seront plus enregistrés. Enregistrer quand même ?')) { e.preventDefault(); return; }
+        }
+        if (!document.querySelectorAll('#sel-struct input:checked').length && !confirm('Aucune structure sélectionnée : personne ne pourra saisir ce formulaire. Enregistrer quand même ?')) { e.preventDefault(); return; }
+        dirty = false; var b = form.querySelector('button[type=submit]'); if (b) { b.disabled = true; b.textContent = 'Enregistrement…'; }
+    });
+    window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+    refresh();
+})();
 </script>
 
 </body>

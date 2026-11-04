@@ -27451,21 +27451,37 @@ def get_dataset_accountable(request, id):
 from django.http import JsonResponse
 def load_data(request, structure_id, periode_id):
     try:
-        dataset_delt = DSet_DElt.objects.filter(periode_id=periode_id, m_structure_id=structure_id)
+        lignes = (DSet_DElt.objects
+                  .filter(periode_id=periode_id, m_structure_id=structure_id, m_dataelement__isnull=False)
+                  .order_by('m_dataelement_id', '-id'))
 
-        # Préparer les données à retourner, incluant plusieurs valeurs pour chaque élément de données
-        data_elements = [{
-            'id': dataset.m_dataelement_id,
-            'content': dataset.m_value,
-            # 'date': dataset.date_element,        # Ajouter le champ date_element
-            # 'texte': dataset.texte_element,      # Ajouter le champ texte_element
-        } for dataset in dataset_delt]
+        # Une seule valeur par élément : la saisie manuelle (comment vide) passe avant le cumul automatique,
+        # puis la ligne la plus récente.
+        retenues = {}
+        for x in lignes:
+            manuelle = not (x.comment or '').strip()
+            deja = retenues.get(x.m_dataelement_id)
+            if deja is None or (manuelle and not deja[1]):
+                retenues[x.m_dataelement_id] = (x, manuelle)
+
+        data_elements = []
+        for x, _ in retenues.values():
+            v = x.m_value
+            if isinstance(v, float) and v.is_integer():
+                v = int(v)                                   # 12.0 -> 12
+            d = getattr(x, 'date_element', None)
+            data_elements.append({
+                'id': x.m_dataelement_id,
+                'content': v,                                # Number
+                'texte': getattr(x, 'texte_element', None),  # Text : texte, téléphone, GPS, choix multiples…
+                'date': d.isoformat() if d else None,        # Date : AAAA-MM-JJ
+                'na': bool(getattr(x, 'est_na', False)),     # case « N/A » recochée au chargement
+            })
 
         return JsonResponse({'data': data_elements, 'message': 'Data loaded successfully'}, status=200)
 
-    except DSet_DElt.DoesNotExist:
-        return JsonResponse({'error': 'Data not found for the given parameters'}, status=404)
     except Exception as e:
+        logger.exception("Erreur load_data")
         return JsonResponse({'error': str(e)}, status=500)
 from django.core.exceptions import ObjectDoesNotExist
 import json
@@ -27478,7 +27494,7 @@ from django.db import transaction, models
 from django.db.models import Sum
 from django.utils import timezone
 from .models import DSet_DElt, DataElement, PeriodeOk
-
+from .valeurs import normaliser, ValeurInvalide
 def run_aggregation_engine(data_element_id, structure_id, periode_id):
     """
     Moteur d'agrégation OPERA+ (Logique DHIS2).
@@ -27522,22 +27538,45 @@ def run_aggregation_engine(data_element_id, structure_id, periode_id):
 
     except Exception as e:
         return False, str(e)
+# ======================================================================
+#  save_value : à coller dans ctn_bpf/views.py à la place de l'actuelle
+#  Imports à ajouter en haut de views.py (s'ils n'y sont pas déjà) :
+#
+#     import json
+#     from django.http import JsonResponse
+#     from django.db import transaction as db_transaction
+#     from .valeurs import normaliser, ValeurInvalide
+# ======================================================================
+
+# Colonnes réellement présentes dans DSet_DElt (valeur_json est facultative)
+_CHAMPS_DSET = None
+
+
+def _champs_dset():
+    global _CHAMPS_DSET
+    if _CHAMPS_DSET is None:
+        _CHAMPS_DSET = {f.name for f in DSet_DElt._meta.get_fields()}
+    return _CHAMPS_DSET
+
+
 def save_value(request):
     if request.method != "POST":
         return redirect(request.META.get('HTTP_REFERER', '/'))
 
+    ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'   # page de saisie (enregistrement sans rechargement)
     context = basis(request)
-    
+
     try:
-        # Récupération sécurisée
         dataset_id = int(request.POST.get("dSv_id", 0))
         r_dataset = get_object_or_404(DataSet, id=dataset_id)
         r_period1 = request.POST.get("period1_saisie")
         r_period2 = request.POST.get("period2_saisie")
         structure_id = int(request.POST.get('struc_selec', 0))
+        if not r_period2 or not structure_id:
+            raise ValeurInvalide("Choisissez l'unité et la période avant d'enregistrer.")
 
         with db_transaction.atomic():
-            # 1. Création de l'entité parente
+            # 1. Entité parente (une par enregistrement : sert d'historique)
             entity = DataSetValue.objects.create(
                 m_dataset=r_dataset,
                 m_user=request.user.personnel,
@@ -27545,9 +27584,9 @@ def save_value(request):
                 m_sub_period_value=r_period2,
             )
 
-            # 2. Traitement des Indicateurs
-            indicator_values = json.loads(request.POST.get('indicator-values', '{}'))
-            for i_id in json.loads(request.POST.get('indicator-ids', '[]')):
+            # 2. Indicateurs (inchangé)
+            indicator_values = json.loads(request.POST.get('indicator-values', '{}') or '{}')
+            for i_id in json.loads(request.POST.get('indicator-ids', '[]') or '[]'):
                 val = indicator_values.get(str(i_id))
                 if val is not None:
                     IndicateurValeur.objects.update_or_create(
@@ -27558,46 +27597,57 @@ def save_value(request):
                         defaults={'valeur': val, 'type_donnee': "valeur_form", 'date_saisie': timezone.now()}
                     )
 
-            # 3. Traitement des DataElements (Sécurisé contre les doublons)
-            element_values = json.loads(request.POST.get('elementsArea', '[]'))
+            # 3. Data elements : rangés selon leur nature, normalisés, contrôlés
+            element_values = json.loads(request.POST.get('elementsArea', '[]') or '[]')
+            ids = [e.get('id') for e in element_values if e.get('id')]
+            elements = {str(d.id): d for d in DataElement.objects.filter(id__in=ids)}   # 1 requête au lieu d'une par élément
+            erreurs, a_calculer = [], []
+
             for element in element_values:
-                e_id = element.get('id')
-                e_val = element.get('value')
-                
-                if e_id and e_val is not None:
-                    data_element = DataElement.objects.filter(id=e_id).first()
-                    if not data_element: continue
+                e_id, e_val = str(element.get('id') or ''), element.get('value')
+                data_element = elements.get(e_id)
+                if not data_element or e_val is None:
+                    continue
+                na = request.POST.get(f'op_na_D0elt{e_id}') == '1'      # case « N/A » cochée à la saisie
+                try:
+                    champs = normaliser(data_element.m_value_type, element.get('type', ''), e_val, na)
+                except ValeurInvalide as err:
+                    erreurs.append(f"{data_element.m_name} : {err}")
+                    continue
 
-                    mapping = {'Date': 'date_element', 'Text': 'texte_element'}
-                    target_field = mapping.get(data_element.m_value_type, 'm_value')
-                    
-                    defaults_data = {
-                        target_field: e_val,
-                        'm_dataset_value': entity,
-                        'date_saisie': timezone.now()
-                    }
+                champs = {k: v for k, v in champs.items() if k in _champs_dset()}
+                DSet_DElt.objects.update_or_create(
+                    periode_id=r_period2,
+                    m_structure_id=structure_id,
+                    m_dataelement=data_element,
+                    comment__isnull=True,                 # saisie manuelle (les cumuls automatiques ont un commentaire)
+                    defaults={**champs, 'm_dataset_value': entity, 'date_saisie': timezone.now()},
+                )
+                if (data_element.m_value_type or 'Number') == 'Number':
+                    a_calculer.append(data_element.id)
 
-                    # SOLUTION : On filtre explicitement sur les entrées manuelles (comment=None)
-                    # Cela évite de toucher aux lignes de "Cumul Mensuelle auto"
-                    DSet_DElt.objects.update_or_create(
-                        periode_id=r_period2,
-                        m_structure_id=structure_id,
-                        m_dataelement=data_element,
-                        comment__isnull=True, 
-                        defaults=defaults_data
-                    )
-                    trigger_analytics_calculation.delay(
-                        data_element.id,   # ID du DataElement
-                        structure_id,      # ID de la Structure (déjà un entier dans ton code)
-                        r_period2          # ID ou code de la Période
-                    )
+            if erreurs:                                   # tout ou rien : l'agent corrige puis renvoie
+                raise ValeurInvalide(' ; '.join(erreurs))
 
-                    
-        messages.success(request, 'Informations enregistrées avec succès !')
+            # 4. Calculs analytiques APRÈS l'écriture en base, seulement pour les nombres
+            db_transaction.on_commit(lambda ids=tuple(a_calculer): [
+                trigger_analytics_calculation.delay(i, structure_id, r_period2) for i in ids
+            ])
 
-    except Exception as e:
-        logger.error(f"Erreur lors de la sauvegarde : {str(e)}")
-        messages.error(request, f"Une erreur est survenue : {str(e)}")
+        msg = 'Informations enregistrées avec succès !'
+        if ajax:
+            return JsonResponse({'ok': True, 'message': msg})
+        messages.success(request, msg)
+
+    except ValeurInvalide as e:                           # erreur de saisie : message clair pour l'agent
+        if ajax:
+            return JsonResponse({'ok': False, 'error': str(e)}, status=400)
+        messages.error(request, str(e))
+    except Exception as e:                                # erreur technique : détail dans les logs
+        logger.exception("Erreur lors de la sauvegarde")
+        if ajax:
+            return JsonResponse({'ok': False, 'error': "Erreur du serveur pendant l'enregistrement. Réessayez ; si cela persiste, prévenez l'administrateur."}, status=500)
+        messages.error(request, f"Une erreur est survenue : {e}")
 
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
