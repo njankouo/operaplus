@@ -1,8 +1,12 @@
-import unittest
+"""Tests de ctn_bpf/valeurs.py — lancés par « python manage.py test ctn_bpf » (et par la CI)."""
 from datetime import date
-from valeurs import normaliser as N, ValeurInvalide as E
 
-class T(unittest.TestCase):
+from django.test import SimpleTestCase
+
+from ctn_bpf.valeurs import ValeurInvalide as E, normaliser as N
+
+
+class NormalisationValeursTests(SimpleTestCase):
     def test_nombres(self):
         self.assertEqual(N('Number', 'num', '12,5')['m_value'], 12.5)
         self.assertEqual(N('Number', '', '12 500')['m_value'], 12500)
@@ -35,4 +39,3 @@ class T(unittest.TestCase):
         for v in ['15/01/2026', '1800-01-01', '2999-01-01']:
             with self.assertRaises(E): N('Date', 'date', v)
 
-unittest.main(verbosity=1)
