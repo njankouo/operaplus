@@ -1,7 +1,85 @@
 {% extends './presentation.html' %}
 {% block content %}
+<!-- ===================== DEMANDE DE DÉMO : design (ajout) ===================== -->
+<style>
+    .dm { --m-plan: #2B3A67; --m-suivi: #C98A1B; --m-eval: #EA580C; --m-app: #2A8A7D; --line: #E7E3DA; --paper: #F5F3EE;
+          background: var(--paper) !important; padding: calc(var(--nav-h, 68px) + var(--ann-h, 0px) + 44px) 20px 64px !important; min-height: 0 !important; display: block !important; border-bottom: 1px solid var(--line); }
+    .dm > div { max-width: 1160px !important; margin: 0 auto; display: grid; grid-template-columns: 1fr 520px; gap: 48px; align-items: start; }
+    .dm > div > div:first-child { display: none; }                         /* en-tête d'origine : remplacé par la colonne de gauche */
+    /* colonne gauche */
+    .dm-l { grid-column: 1; grid-row: 1; padding-top: 8px; }
+    .dm-k { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--acc, #EA580C); }
+    .dm-k i { font-style: normal; width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 11.5px; letter-spacing: 0; }
+    .dm-k i:nth-child(4) { margin-right: 8px; }
+    .dm-l h1 { margin: 16px 0 0; font-size: clamp(32px, 3.6vw, 48px); line-height: 1.05; letter-spacing: -.036em; font-weight: 800; color: var(--ink, #0F1B2D); text-wrap: balance; }
+    .dm-l h1 em { font-style: normal; color: var(--acc, #EA580C); }
+    .dm-l > p { margin: 16px 0 0; font-size: 16.5px; line-height: 1.6; color: var(--muted, #5B6472); max-width: 520px; }
+    .dm-agenda { margin-top: 28px; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 6px 18px; }
+    .dm-agenda h2 { margin: 12px 0 4px; display: flex; justify-content: space-between; font-size: 13.5px; font-weight: 800; color: var(--ink, #0F1B2D); }
+    .dm-agenda h2 span { font-weight: 700; color: var(--muted, #5B6472); }
+    .dm-agenda ol { list-style: none; margin: 0; padding: 0; }
+    .dm-agenda li { display: grid; grid-template-columns: 30px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid #F0EDE6; }
+    .dm-agenda li:first-child { border-top: 0; }
+    .dm-agenda li em { width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 13px; font-weight: 800; color: #fff; background: var(--c); }
+    .dm-agenda li b { display: block; font-size: 14px; font-weight: 700; color: #344054; } .dm-agenda li small { display: block; font-size: 12.5px; color: #98A2B3; font-weight: 600; margin-top: 1px; }
+    .dm-agenda li > span:last-child { font-size: 12px; font-weight: 800; color: var(--muted, #5B6472); font-variant-numeric: tabular-nums; }
+    .dm-trust { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+    .dm-trust div { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: #FBFAF7; }
+    .dm-trust b { display: block; font-size: 15px; font-weight: 800; color: var(--ink, #0F1B2D); } .dm-trust span { font-size: 12px; font-weight: 600; color: var(--muted, #5B6472); }
+    .dm-ma { display: flex; gap: 12px; align-items: center; margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: #0E3B35; color: #fff; text-decoration: none; transition: background .2s; }
+    .dm-ma:hover { background: #0B302B; }
+    .dm-ma > i { width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 10.5px; font-weight: 900; background: #F4B860; color: #0E3B35; }
+    .dm-ma small { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #8FD4C8; } .dm-ma b { display: block; font-size: 13px; font-weight: 700; margin-top: 1px; }
+    .dm-ma > span:last-child { margin-left: auto; font-size: 12px; font-weight: 800; color: #F4B860; white-space: nowrap; }
 
-<section class="min-h-screen py-24 px-6 bg-slate-50 flex items-center justify-center">
+    /* carte formulaire */
+    .dm > div > div:nth-child(3) { grid-column: 2; grid-row: 1; padding: 28px !important; border-radius: 20px !important; border: 1px solid var(--line) !important; box-shadow: none !important; position: relative; }
+    .dm-fh { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+    .dm-fh b { font-size: 18px; font-weight: 800; color: var(--ink, #0F1B2D); letter-spacing: -.01em; } .dm-fh span { font-size: 12px; font-weight: 700; color: #98A2B3; }
+    .dm form { gap: 0; } .dm form > * + * { margin-top: 18px !important; }
+    .dm-step { display: flex; align-items: center; gap: 10px; padding-top: 4px; font-size: 11.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #667085; }
+    .dm-step i { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 11px; color: #fff; background: var(--ink, #0F1B2D); letter-spacing: 0; transition: background .25s; }
+    .dm-step.ok i { background: var(--m-app); }
+    .dm-step::after { content: ""; flex: 1; height: 1px; background: #F0EDE6; }
+    .dm form label { text-transform: none !important; letter-spacing: 0 !important; font-size: 13px !important; font-weight: 700 !important; color: #344054 !important; display: block; margin-bottom: 6px; }
+    .dm form .grid { gap: 14px !important; }
+    .dm form .space-y-1 > * + * { margin-top: 0 !important; }
+    .dm form input[type=text], .dm form input[type=email], .dm form select, .dm form textarea { border: 1px solid #D9D4C8 !important; border-radius: 12px !important; padding: 13px 14px !important; font-size: 14.5px !important; color: var(--ink, #0F1B2D); background: #fff; transition: border-color .2s, box-shadow .2s; }
+    .dm form input:hover, .dm form select:hover, .dm form textarea:hover { border-color: #C8C1B2 !important; }
+    .dm form input:focus, .dm form select:focus, .dm form textarea:focus { border-color: var(--ink, #0F1B2D) !important; box-shadow: 0 0 0 4px rgba(15,27,45,.07); }
+    .dm form input.dm-bad { border-color: var(--m-eval) !important; }
+    .dm form textarea { resize: vertical; min-height: 96px; }
+    .dm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .dm-chips button { height: 36px; padding: 0 13px; border-radius: 999px; border: 1px solid #D9D4C8; background: #fff; font: inherit; font-size: 13px; font-weight: 700; color: #344054; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+    .dm-chips button:hover { border-color: var(--ink, #0F1B2D); }
+    .dm-chips button.on { background: var(--ink, #0F1B2D); border-color: var(--ink, #0F1B2D); color: #fff; }
+    .dm-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .dm form .flex.items-start { align-items: flex-start; gap: 10px; } .dm form .flex.items-start > * + * { margin-left: 0 !important; }
+    .dm form input[type=checkbox] { accent-color: var(--ink, #0F1B2D); width: 18px; height: 18px; margin-top: 1px !important; }
+    .dm form .flex.items-start label { font-size: 12.5px !important; font-weight: 500 !important; color: var(--muted, #5B6472) !important; line-height: 1.5 !important; margin: 0; }
+    .dm form .flex.items-start label a { color: var(--ink, #0F1B2D); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+    .dm form button[type=submit] { background: var(--acc, #EA580C) !important; box-shadow: none !important; border-radius: 12px !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 15px !important; font-weight: 800 !important; padding: 15px !important; transition: background .2s, transform .2s !important; }
+    .dm form button[type=submit]:hover { background: var(--acc-2, #C2410C) !important; transform: translateY(-1px); }
+    .dm form button[type=submit]:disabled { opacity: .75; cursor: wait; transform: none; }
+    .dm-note { margin: 12px 0 0; text-align: center; font-size: 12px; font-weight: 600; color: #98A2B3; }
+    /* messages */
+    .dm > div > div:nth-child(3) > div.mb-6 { border-radius: 12px !important; font-size: 13.5px !important; font-weight: 700 !important; padding: 14px 16px !important; display: flex; gap: 10px; align-items: center; }
+    .dm > div > div:nth-child(3) > div.bg-emerald-50 { background: color-mix(in srgb, var(--m-app) 10%, #fff) !important; color: var(--m-app) !important; border: 1px solid color-mix(in srgb, var(--m-app) 30%, #fff); }
+    .dm > div > div:nth-child(3) > div.bg-red-50 { background: color-mix(in srgb, var(--m-eval) 8%, #fff) !important; color: #B4400A !important; border: 1px solid color-mix(in srgb, var(--m-eval) 28%, #fff); }
+
+    @media (max-width: 1060px) { .dm > div { grid-template-columns: 1fr; gap: 28px; } .dm > div > div:nth-child(3) { grid-column: 1; grid-row: 2; } .dm-l { grid-row: 1; } }
+    @media (max-width: 1060px) {
+        .dm > div { display: flex !important; flex-direction: column; }
+        .dm-l { display: contents; }
+        .dm-k, .dm-l h1, .dm-l > p { order: 1; } .dm-l h1 { margin-top: 0; } .dm-l > p { margin-top: -14px; }
+        .dm > div > div:nth-child(3) { order: 2; width: 100%; }
+        .dm-agenda, .dm-trust, .dm-ma { order: 3; margin-top: 0 !important; }
+    }
+    @media (max-width: 600px) { .dm { padding-left: 16px !important; padding-right: 16px !important; } .dm > div > div:nth-child(3) { padding: 20px !important; } .dm-trust div { padding: 10px; } .dm-trust b { font-size: 14px; } .dm-trust span { font-size: 11px; } .dm-row2 { grid-template-columns: 1fr; } .dm-agenda li { grid-template-columns: 30px 1fr; } .dm-agenda li > span:last-child { display: none; } }
+</style>
+
+{% firstof meal_afrique_url "#" as MEAL_AFRIQUE %}
+<section class="min-h-screen py-24 px-6 bg-slate-50 flex items-center justify-center dm">
     <div class="max-w-2xl w-full">
         
         <div class="mb-10 text-center">
@@ -10,7 +88,30 @@
             <p class="text-slate-500 text-sm">Prêt à transformer votre S&E ? Remplissez ce formulaire pour planifier une session avec nos experts.</p>
         </div>
 
+        <!-- ===== colonne de gauche (ajout) : ce qui se passe pendant la démo ===== -->
+        <div class="dm-l">
+            <span class="dm-k" aria-hidden="true"><i style="background:var(--m-plan)">M</i><i style="background:var(--m-suivi)">E</i><i style="background:var(--m-eval)">A</i><i style="background:var(--m-app)">L</i>Expérience OperaPlus</span>
+            <h1>Voyez <em>votre</em> projet piloté dans OperaPlus.</h1>
+            <p>Une démonstration de 30 minutes avec un spécialiste du suivi-évaluation, construite à partir de votre contexte : vos activités, vos indicateurs, votre terrain.</p>
+            <div class="dm-agenda">
+                <h2>Déroulé de la session <span>30 min</span></h2>
+                <ol>
+                    <li style="--c:var(--m-plan)"><em>1</em><span><b>Votre contexte</b><small>Projet, bailleurs, contraintes du terrain</small></span><span>5 min</span></li>
+                    <li style="--c:var(--m-suivi)"><em>2</em><span><b>Planification &amp; rôles RACI</b><small>Activités, échéances, alertes de retard</small></span><span>10 min</span></li>
+                    <li style="--c:var(--m-eval)"><em>3</em><span><b>Collecte et analyse</b><small>Saisie hors-ligne, indicateurs, tableaux de bord</small></span><span>10 min</span></li>
+                    <li style="--c:var(--m-app)"><em>4</em><span><b>Vos questions et la suite</b><small>Configuration proposée, démarrage</small></span><span>5 min</span></li>
+                </ol>
+            </div>
+            <div class="dm-trust">
+                <div><b>48 h</b><span>pour vous recontacter</span></div>
+                <div><b>Gratuit</b><span>et sans engagement</span></div>
+                <div><b>Visio</b><span>ou sur place</span></div>
+            </div>
+            <a class="dm-ma" href="{{ MEAL_AFRIQUE }}" rel="noopener"><i aria-hidden="true">MA</i><span><small>Communauté MEAL Afrique</small><b>Échangez avec des praticiens qui utilisent déjà OperaPlus</b></span><span>Rejoindre</span></a>
+        </div>
+
         <div class="p-8 md:p-10 rounded-3xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50">
+            <div class="dm-fh"><b>Planifier ma démo</b><span>2 minutes</span></div>
             {% if messages %}
                 {% for message in messages %}
                 <div class="mb-6 p-4 rounded-xl text-xs font-bold {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700{% else %}bg-red-50 text-red-700{% endif %}">
@@ -21,26 +122,26 @@
 
             <form action="{% url 'demander_demo' %}" method="POST" class="space-y-6">
                 {% csrf_token %}
-                
+                <p class="dm-step" id="dmS1"><i>1</i>Vous</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-1">
-                        <label class="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Nom complet</label>
-                        <input type="text" name="nom" required class="w-full p-4 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 outline-none transition-all">
+                        <label for="dm_nom" class="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Nom complet</label>
+                        <input type="text" name="nom" id="dm_nom" autocomplete="name" maxlength="120" required class="w-full p-4 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 outline-none transition-all">
                     </div>
                     <div class="space-y-1">
-                        <label class="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Email professionnel</label>
-                        <input type="email" name="email" required class="w-full p-4 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 outline-none transition-all">
+                        <label for="dm_email" class="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Email professionnel</label>
+                        <input type="email" name="email" id="dm_email" autocomplete="email" maxlength="254" placeholder="nom@organisation.org" required class="w-full p-4 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 outline-none transition-all">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-1">
-                        <label class="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Nom de l'organisation</label>
-                        <input type="text" name="organisation" class="w-full p-4 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 outline-none transition-all">
+                        <label for="dm_org" class="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Nom de l'organisation</label>
+                        <input type="text" name="organisation" id="dm_org" autocomplete="organization" maxlength="160" class="w-full p-4 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 outline-none transition-all">
                     </div>
                     <div class="space-y-1">
-                        <label class="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Secteur d'activité</label>
-                        <select name="secteur" class="w-full p-4 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 outline-none transition-all bg-white text-slate-900">
+                        <label for="dm_secteur" class="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Type de structure</label>
+                        <select name="secteur" id="dm_secteur" class="w-full p-4 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 outline-none transition-all bg-white text-slate-900">
                             <option value="">Sélectionnez un secteur</option>
                             <option value="ong">ONG / Association</option>
                             <option value="gouvernement">Institution publique</option>
@@ -50,24 +151,68 @@
                     </div>
                 </div>
 
+                <p class="dm-step" id="dmS2"><i>2</i>Votre projet</p>
+                <div>
+                    <label>Domaine d'intervention</label>
+                    <div class="dm-chips" id="dmDom" role="group" aria-label="Domaine d'intervention"><button type="button">Éducation</button><button type="button">Santé</button><button type="button">Eau &amp; assainissement</button><button type="button">Agriculture</button><button type="button">Protection</button><button type="button">Autre</button></div>
+                </div>
                 <div class="space-y-1">
-                    <label class="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Quels sont vos objectifs S&E ?</label>
-                    <textarea name="message" rows="4" placeholder="Parlez-nous de vos défis actuels..." class="w-full p-4 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 outline-none transition-all"></textarea>
+                    <label for="dm_msg" class="text-[9px] font-bold uppercase text-slate-400 tracking-widest">Quels sont vos objectifs S&E ?</label>
+                    <textarea name="message" id="dm_msg" maxlength="2000" rows="4" placeholder="Parlez-nous de vos défis actuels..." class="w-full p-4 rounded-xl border border-slate-200 text-sm focus:border-emerald-500 outline-none transition-all"></textarea>
                 </div>
 
+                <p class="dm-step" id="dmS3"><i>3</i>La session</p>
+                <div class="dm-row2">
+                    <div><label>Format</label><div class="dm-chips" id="dmFmt" role="group" aria-label="Format"><button type="button" class="on">Visio</button><button type="button">Sur place</button></div></div>
+                    <div><label>Créneau préféré</label><div class="dm-chips" id="dmSlot" role="group" aria-label="Créneau préféré"><button type="button">Matin</button><button type="button" class="on">Après-midi</button></div></div>
+                </div>
                 <div class="flex items-start space-x-3">
-                    <input type="checkbox" name="consentement" required class="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-                    <label class="text-[10px] text-slate-500 leading-tight">
-                        J'accepte que mes données soient utilisées pour traiter ma demande de démo conformément à la politique de confidentialité.
+                    <input type="checkbox" name="consentement" id="dm_ok" required class="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    <label for="dm_ok" class="text-[10px] text-slate-500 leading-tight">
+                        J'accepte que mes données soient utilisées pour traiter ma demande de démo conformément à la <a href="/confidentialite/">politique de confidentialité</a>.
                     </label>
                 </div>
 
                 <button type="submit" class="w-full py-4 bg-slate-900 text-white font-black text-[11px] uppercase tracking-[0.2em] rounded-xl hover:bg-emerald-600 transition-all shadow-lg">
                     Envoyer la demande
                 </button>
+                <p class="dm-note">Réponse sous 48 h ouvrées · aucune donnée partagée avec des tiers</p>
             </form>
         </div>
     </div>
 </section>
 
+<!-- ===== Demande de démo : interactions (ajout) ===== -->
+<script>
+(function () {
+    var f = document.querySelector('.dm form'); if (!f) return;
+    var msg = document.getElementById('dm_msg');
+    /* choix uniques par groupe */
+    function group(id) { var g = document.getElementById(id); if (!g) return; g.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; g.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); steps(); }); }
+    ['dmDom', 'dmFmt', 'dmSlot'].forEach(group);
+    var on = function (id) { var b = document.querySelector('#' + id + ' button.on'); return b ? b.textContent.trim() : ''; };
+    /* domaine pré-choisi si le visiteur a regardé un exemple sur l'accueil */
+    try { var MAP = { edu: 'Éducation', sante: 'Santé', eau: 'Eau & assainissement', agri: 'Agriculture' }, k = sessionStorage.getItem('op-sector');
+          if (k && MAP[k]) document.querySelectorAll('#dmDom button').forEach(function (b) { if (b.textContent.trim() === MAP[k]) b.classList.add('on'); }); } catch (e) {}
+    /* étapes cochées au fil de la saisie */
+    function steps() {
+        var e1 = document.getElementById('dm_nom').value.trim() && document.getElementById('dm_email').validity.valid && document.getElementById('dm_email').value;
+        document.getElementById('dmS1').classList.toggle('ok', !!e1);
+        document.getElementById('dmS2').classList.toggle('ok', !!(on('dmDom') || msg.value.trim()));
+        document.getElementById('dmS3').classList.toggle('ok', !!document.getElementById('dm_ok').checked);
+    }
+    f.addEventListener('input', steps); f.addEventListener('change', steps); steps();
+    var em = document.getElementById('dm_email');
+    em.addEventListener('blur', function () { em.value = em.value.trim().toLowerCase(); em.classList.toggle('dm-bad', !!em.value && !em.validity.valid); });
+    /* à l'envoi : les choix rapides sont ajoutés au message (aucun champ nouveau côté serveur) */
+    f.addEventListener('submit', function () {
+        var add = [], d = on('dmDom');
+        if (d) add.push('Domaine : ' + d);
+        add.push('Format souhaité : ' + on('dmFmt'), 'Créneau préféré : ' + on('dmSlot'));
+        var mark = '\n\n— Préférences —\n';
+        if (msg.value.indexOf('— Préférences —') < 0) msg.value = (msg.value.trim() + mark + add.join('\n')).trim();
+        var b = f.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Envoi en cours…';
+    });
+})();
+</script>
 {% endblock %}
