@@ -311,8 +311,9 @@ CELERY_BEAT_SCHEDULE = {
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 
-STATIC_ROOT = os.getenv('STATIC_ROOT', str(BASE_DIR / 'staticfiles'))
-MEDIA_ROOT = os.getenv('MEDIA_ROOT', str(BASE_DIR / 'media'))
+# Production (Docker) par défaut ; en local, le .env du Fedora remplace ces chemins
+STATIC_ROOT = os.getenv('STATIC_ROOT', '/app/static/')
+MEDIA_ROOT = os.getenv('MEDIA_ROOT', '/app/media/')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 #Pour Docker
 #Pour Docker
