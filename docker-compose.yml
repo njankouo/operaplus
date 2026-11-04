@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   web:
-    image: ghcr.io/njankouo/operaplus:${IMAGE_TAG:-latest} 
+    image: ghcr.io/njankouo/operaplus:${IMAGE_TAG:-latest}
     build: .
     container_name: meal-app-web
     env_file: .env
@@ -68,7 +68,7 @@ services:
       POSTGRES_DB: puruk
     volumes:
       - db_data:/var/lib/postgresql/data
-    restart: unless-stopped 
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -82,6 +82,13 @@ networks:
     external: true
 
 volumes:
-  static_volume: {}
-  media_volume: {}
-  db_data: {}
+  # Les mêmes volumes que nginx (/home/infrastructure/proxy) : ce qu'écrit OperaPlus est ce que sert nginx
+  static_volume:
+    external: true
+    name: opera_static_volume
+  media_volume:
+    external: true
+    name: opera_media_volume
+  # Nom fixé : la base reste la même quel que soit le dossier d'où l'on lance docker compose
+  db_data:
+    name: plateformeoperaplus_db_data
