@@ -29,4 +29,4 @@ RUN SECRET_KEY=cle-factice-build-uniquement \
 
 EXPOSE 8004
 
-CMD ["gunicorn", "Opera_CTN.wsgi:application", "--bind", "0.0.0.0:8004", "--workers", "9", "--timeout", "120"]
+CMD ["gunicorn", "Opera_CTN.wsgi:application", "--bind", "0.0.0.0:8004", "--workers", "3", "--timeout", "120"]
