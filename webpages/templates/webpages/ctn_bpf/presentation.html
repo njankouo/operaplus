@@ -649,6 +649,476 @@
         .op-final-l, .op-final-r { padding: 30px; } .op-sec { padding: 70px 0; }
         .op-app-body { grid-template-columns: 1fr; } .op-app-side { display: none; }
     }
+
+    /* ================= HÉROS CLAIR, ÉDITORIAL (ajout — remplace le bloc sombre) =================
+       Fond papier uni, aucune bande coupée, aucune ombre « flottante » : l'aperçu repose sur un aplat décalé. */
+    .op-hero { background: #F5F3EE !important; padding: 150px 0 84px !important; border-bottom: 1px solid #E7E3DA !important; }
+    .op-hero::after { display: none !important; }
+    .op-hero-grid { align-items: center !important; gap: 64px !important; }
+    .op-hero-grid > div:first-child { padding-bottom: 0 !important; }
+    .op-hero h1 { color: var(--ink) !important; }
+    .op-hero h1 .hl { color: var(--ink) !important; text-decoration: none !important; box-shadow: inset 0 -.16em 0 color-mix(in srgb, var(--acc) 38%, transparent); }
+    .op-hero .op-rotate { background: none !important; color: var(--acc) !important; padding: 0 !important; margin: 0 !important; border-radius: 0 !important; transition: opacity .25s, transform .25s !important; }
+    .op-hero .op-rotate.out { color: var(--acc) !important; opacity: 0 !important; transform: translateY(.12em) !important; }
+    .op-hero .op-lead { color: #4A5565 !important; }
+    .op-hero .op-kicker { color: var(--acc); }
+    .op-hero .op-btn.primary { box-shadow: none !important; }
+    .op-hero .op-btn.ghost { background: #fff !important; color: var(--ink) !important; border-color: #D9D4C8 !important; }
+    .op-hero .op-btn.ghost:hover { border-color: var(--ink) !important; }
+    .op-hero .op-trust { color: #4A5565 !important; } .op-hero .op-trust i { color: var(--ok) !important; }
+    .op-hero .op-for span { color: #344054 !important; border-color: #D9D4C8 !important; background: #fff; }
+    .op-hero .op-meal-pill { background: #fff !important; border-color: #D9E7E2 !important; color: #0E3B35 !important; }
+    .op-hero .op-meal-pill:hover { border-color: #0E3B35 !important; }
+    .op-hero .op-meal-pill b { color: #0E3B35 !important; }
+    .op-hero .op-app { margin: 0 18px 18px 0 !important; border-color: var(--ink) !important; border-radius: 16px !important;
+                       box-shadow: 18px 18px 0 0 var(--ink) !important; }        /* aplat décalé, net */
+    .op-hero .op-app-bar { background: #fff; }
+    .op-stats { border-top: 0 !important; }
+    @media (max-width: 980px) { .op-hero { padding: 120px 0 56px !important; } .op-hero .op-app { box-shadow: 10px 10px 0 0 var(--ink) !important; margin: 0 10px 10px 0 !important; } }
+    @media (max-width: 600px) { .op-hero { padding: 104px 0 44px !important; } }
+
+    /* ================= HÉROS « CHAÎNE DE RÉSULTATS » (ajout) =================
+       Palette terre : indigo, ocre, orange OperaPlus, vert, vert MEAL Afrique — sur fond papier. */
+    .op-hero { --c-in: #2B3A67; --c-ac: #C98A1B; --c-ex: #EA580C; --c-ef: #2A8A7D; --c-im: #0E3B35; padding-bottom: 0 !important; border-bottom: 0 !important; }
+    .op-hero .op-app { display: none !important; }
+    .op-hero-grid { padding-bottom: 72px; }
+    .op-hero .op-rotate { transition: color .3s, opacity .25s, transform .25s !important; }
+    .op-hero .op-rotate.out { color: inherit !important; }
+
+    .op-meal-letters { display: inline-flex; gap: 4px; margin-right: 10px; vertical-align: middle; }
+    .op-meal-letters i { font-style: normal; width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 800; letter-spacing: 0; }
+
+    .op-toc { position: relative; background: #fff; border: 1px solid #E2DDD2; border-radius: 20px; padding: 20px 20px 16px; }
+    .op-toc-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid #EEEAE2; }
+    .op-toc-h small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #98A2B3; }
+    .op-toc-h b { display: block; margin-top: 3px; font-size: 15px; font-weight: 800; color: var(--ink); letter-spacing: -.01em; }
+    .op-toc-h span { font-size: 11.5px; font-weight: 700; color: var(--c-ef); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+    .op-toc-h span::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c-ef); animation: opBlink 1.6s ease-in-out infinite; }
+    .op-toc ol { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 0; }
+    .op-toc li { --c: var(--c-in); position: relative; display: grid; grid-template-columns: 92px 1fr auto; gap: 14px; align-items: center; padding: 11px 12px 11px 14px; border-radius: 14px; transition: background .35s; }
+    .op-toc li + li::before { content: ""; position: absolute; left: 21px; top: -6px; height: 12px; width: 2px; background: #E2DDD2; }
+    .op-toc li.on { background: color-mix(in srgb, var(--c) 7%, #fff); }
+    .op-toc .lv { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--c); }
+    .op-toc .lv::before { content: ""; width: 16px; height: 16px; border-radius: 5px; background: var(--c); flex-shrink: 0; }
+    .op-toc .ind { min-width: 0; }
+    .op-toc .ind em { display: block; font-style: normal; font-size: 13px; font-weight: 600; color: #344054; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .op-toc .bar { display: block; height: 6px; margin-top: 6px; border-radius: 6px; background: #F0EDE6; overflow: hidden; }
+    .op-toc .bar i { display: block; height: 100%; width: 0; border-radius: 6px; background: var(--c); transition: width 1.4s cubic-bezier(.2,.8,.2,1); }
+    .op-toc .val { font-size: 15px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; min-width: 64px; }
+    .op-toc .val small { display: block; font-size: 10.5px; font-weight: 700; color: var(--c); margin-top: 1px; }
+    .op-toc-f { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; padding-top: 14px; border-top: 1px solid #EEEAE2; }
+    .op-toc-f div { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; color: #475467; }
+    .op-toc-f b { width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 800; }
+    .op-toc-tag { display: none !important; position: absolute; right: 22px; bottom: -30px; display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: #fff; border: 1px solid #E2DDD2; font-size: 12px; font-weight: 700; color: var(--ink); box-shadow: 0 12px 24px -18px rgba(15,27,45,.5); animation: opToastIn .5s .9s cubic-bezier(.2,.9,.3,1.2) both; }
+    .op-toc-tag i { width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: var(--c-ac); color: #fff; font-size: 13px; }
+    .op-toc-tag small { display: block; font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    /* frise inspirée du bogolan : motifs géométriques dans les couleurs de la chaîne */
+    .op-frise { height: 26px; background-color: var(--ink); background-repeat: repeat-x; background-size: 104px 26px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='104' height='26' viewBox='0 0 104 26'%3E%3Cpath d='M0 13 L8 5 L16 13 L8 21Z' fill='%23C98A1B'/%3E%3Cg fill='%23F5F3EE'%3E%3Ccircle cx='24' cy='13' r='2'/%3E%3Ccircle cx='31' cy='13' r='2'/%3E%3C/g%3E%3Cpath d='M38 21 L46 5 L54 21' fill='none' stroke='%23EA580C' stroke-width='3'/%3E%3Crect x='60' y='9' width='8' height='8' fill='%232A8A7D'/%3E%3Cpath d='M74 5 V21 M80 5 V21' stroke='%23F5F3EE' stroke-width='2'/%3E%3Cpath d='M86 13 L94 5 L102 13 L94 21Z' fill='none' stroke='%235B6CA8' stroke-width='2.5'/%3E%3C/svg%3E"); }
+
+    @media (max-width: 980px) { .op-toc-tag { display: none; } .op-hero-grid { padding-bottom: 48px; } }
+
+    /* ================= NAVIGATION « PURE » (ajout) =================
+       Barre pleine largeur, posée, sans flou ni ombre portée ; menu rangé par phase du cycle MEAL. */
+    :root { --nav-h: 68px; --m-plan: #2B3A67; --m-suivi: #C98A1B; --m-eval: #EA580C; --m-app: #2A8A7D; }
+    #main-header { top: 0 !important; padding: 0 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; transition: none !important; }
+    #nav-wrapper { max-width: none !important; height: var(--nav-h); padding: 0 max(20px, calc((100vw - 1200px) / 2)) !important; border-radius: 0 !important;
+                   border: 0 !important; border-bottom: 1px solid #E7E3DA !important; box-shadow: none !important; background: #FBFAF7 !important; transition: height .25s ease, background .25s !important; }
+    #main-header.is-scrolled #nav-wrapper { --nav-h: 60px; background: #fff !important; }
+    /* logo */
+    #nav-wrapper > div:first-child > div:first-child { box-shadow: none !important; border-radius: 10px !important; width: 34px !important; height: 34px !important; }
+    #nav-wrapper > div:first-child > a { font-size: 19px !important; letter-spacing: -.02em !important; }
+    /* liens */
+    #nav-wrapper nav { gap: 4px !important; height: 100%; }
+    #nav-wrapper nav > a, #nav-wrapper nav > .group > button { position: relative; height: var(--nav-h); display: inline-flex !important; align-items: center; padding: 0 14px !important; border-radius: 0 !important;
+        text-transform: none !important; letter-spacing: 0 !important; font-size: 14.5px !important; font-weight: 600 !important; color: #3B4453 !important; background: none !important; transition: color .2s !important; }
+    #nav-wrapper nav > a::after, #nav-wrapper nav > .group > button::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -1px; height: 2px; background: var(--ink); transform: scaleX(0); transform-origin: left; transition: transform .25s ease; }
+    #nav-wrapper nav > a:hover, #nav-wrapper nav > .group:hover > button, #nav-wrapper nav > a[aria-current] { color: var(--ink) !important; }
+    #nav-wrapper nav > a:hover::after, #nav-wrapper nav > .group:hover > button::after, #nav-wrapper nav > .group:focus-within > button::after, #nav-wrapper nav > a[aria-current]::after { transform: scaleX(1); }
+    #nav-wrapper nav > .group > button svg { color: #98A2B3 !important; }
+    #nav-wrapper nav > .group > div.absolute { margin-top: 0 !important; top: 100% !important; }
+    /* actions */
+    #nav-wrapper > div.sm\:flex { gap: 8px !important; }
+    #nav-wrapper > div.sm\:flex > a:first-child { font-size: 14px !important; font-weight: 600 !important; color: #3B4453 !important; padding: 0 14px !important; height: 40px; display: inline-flex; align-items: center; border: 1px solid #DAD5CA; border-radius: 10px; background: #fff; transition: border-color .2s, color .2s; }
+    #nav-wrapper > div.sm\:flex > a:first-child:hover { border-color: var(--ink); color: var(--ink) !important; }
+    #nav-wrapper > div.sm\:flex > a:last-child { box-shadow: none !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 14px !important; height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px !important; border-radius: 10px !important; background: var(--ink) !important; transition: background .2s; }
+    #nav-wrapper > div.sm\:flex > a:last-child:hover { background: var(--acc) !important; }
+    /* barre de progression : avancement de la lecture, découpé comme un plan de travail */
+    .op-progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; pointer-events: none; }
+    .op-progress i { position: relative; background: #ECE8DF; overflow: hidden; }
+    .op-progress i::after { content: ""; position: absolute; inset: 0; background: var(--c); transform: scaleX(var(--p, 0)); transform-origin: left; }
+    .op-progress-l { position: absolute; right: max(20px, calc((100vw - 1200px) / 2)); top: calc(100% + 8px); font-size: 11px; font-weight: 700; color: #667085; background: #fff; border: 1px solid #E7E3DA; border-radius: 999px; padding: 3px 10px; opacity: 0; transform: translateY(-4px); transition: opacity .25s, transform .25s; pointer-events: none; }
+    .op-progress-l b { color: var(--c, var(--ink)); }
+    #main-header.is-scrolled .op-progress-l { opacity: 1; transform: none; }
+
+    /* menu Fonctionnalités rangé par phase */
+    #nav-wrapper nav .group > div.absolute > .grid { grid-template-columns: repeat(4, 1fr) !important; grid-auto-flow: dense; column-gap: 14px !important; row-gap: 4px !important; }
+    .op-mm-h { grid-row: 1; display: flex; align-items: center; gap: 8px; padding: 4px 10px 10px; margin-bottom: 2px; border-bottom: 2px solid var(--c); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--c); }
+    .op-mm-h b { width: 20px; height: 20px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: var(--c); color: #fff; font-size: 11px; letter-spacing: 0; }
+    .op-mm-h:nth-of-type(1) { grid-column: 1; } .op-mm-h:nth-of-type(2) { grid-column: 2; } .op-mm-h:nth-of-type(3) { grid-column: 3; } .op-mm-h:nth-of-type(4) { grid-column: 4; }
+    .op-feat[data-feat=planification], .op-feat[data-feat=projets] { grid-column: 1; }
+    .op-feat[data-feat=collecte], .op-feat[data-feat=indicateurs], .op-feat[data-feat=tableaux] { grid-column: 2; }
+    .op-feat[data-feat=calcul], .op-feat[data-feat=import], .op-feat[data-feat=redevabilite] { grid-column: 3; }
+    .op-feat[data-feat=archives] { grid-column: 4; }
+
+    /* menu mobile : clair, posé, rangé */
+    #mobile-fullscreen-menu { background: #FBFAF7 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; justify-content: flex-start !important; padding-top: calc(var(--nav-h) + 24px) !important; overflow-y: auto; }
+    #mobile-fullscreen-menu > div > span:first-child { color: var(--ink) !important; border-color: #E7E3DA !important; letter-spacing: .12em !important; }
+    #mobile-fullscreen-menu .mobile-link { color: var(--ink) !important; font-size: 17px !important; padding: 10px 0 !important; border-bottom: 1px solid #EEEAE2; }
+    #mobile-fullscreen-menu .mobile-link > div { background: color-mix(in srgb, var(--c, var(--m-plan)) 12%, #fff) !important; color: var(--c, var(--m-plan)) !important; border-radius: 10px !important; }
+    #mobile-fullscreen-menu .mobile-link:nth-of-type(1) { --c: var(--m-suivi); } #mobile-fullscreen-menu .mobile-link:nth-of-type(2) { --c: var(--m-plan); }
+    #mobile-fullscreen-menu .mobile-link:nth-of-type(3) { --c: var(--m-app); } #mobile-fullscreen-menu .mobile-link:nth-of-type(4) { --c: var(--m-eval); }
+    #mobile-fullscreen-menu .mobile-link small { color: #667085 !important; }
+    #mobile-fullscreen-menu .border-t { border-color: #E7E3DA !important; }
+    #mobile-fullscreen-menu .text-slate-300 { color: #3B4453 !important; }
+    #mobile-fullscreen-menu div.mobile-link { border-bottom: 0; }
+    #mobile-fullscreen-menu div.mobile-link a:first-child { box-shadow: none !important; background: var(--ink) !important; border-radius: 12px !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 15px !important; }
+    #mobile-fullscreen-menu div.mobile-link a:last-child { background: #fff !important; color: var(--ink) !important; border-color: #DAD5CA !important; }
+    #mobile-menu-btn { width: 42px; height: 42px; border: 1px solid #DAD5CA !important; border-radius: 10px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 !important; background: #fff; }
+
+
+    /* ================= MOBILE + ORDINATEUR : collecte → analyse (ajout) ================= */
+    .op-dev { padding: 56px 0 60px; background: #fff; border-bottom: 1px solid #EEEAE2; }
+    .op-dev-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 28px; }
+    .op-dev-head h2 { margin: 10px 0 0; font-size: clamp(24px, 2.8vw, 36px); line-height: 1.12; letter-spacing: -.03em; font-weight: 800; color: var(--ink); }
+    .op-dev-head h2 span { color: var(--m-suivi); } .op-dev-head h2 em { font-style: normal; color: var(--m-app); }
+    .op-dev-head p { margin: 10px 0 0; color: var(--muted); font-size: 15px; max-width: 560px; }
+    .op-dev-steps { display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; }
+    .op-dev-steps li { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px 0 6px; border-radius: 999px; border: 1px solid #E7E3DA; font-size: 13px; font-weight: 700; color: #667085; transition: background .3s, color .3s, border-color .3s; }
+    .op-dev-steps li b { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; background: #F2EFE8; color: #667085; transition: background .3s, color .3s; }
+    .op-dev-steps li.on { border-color: var(--c); color: var(--ink); background: color-mix(in srgb, var(--c) 7%, #fff); } .op-dev-steps li.on b { background: var(--c); color: #fff; }
+
+    .op-stage { display: grid; grid-template-columns: 286px 92px minmax(0, 1fr); align-items: center; }
+    /* téléphone */
+    .op-phone { width: 286px; height: 580px; border-radius: 42px; background: var(--ink); padding: 11px; position: relative; }
+    .op-phone::before { content: ""; position: absolute; top: 24px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--ink); z-index: 2; }
+    .op-ph { height: 100%; border-radius: 32px; background: #FBFAF7; overflow: hidden; display: flex; flex-direction: column; font-size: 12.5px; color: var(--ink); }
+    .op-ph-st { display: flex; justify-content: space-between; align-items: center; padding: 16px 22px 8px; font-size: 11.5px; font-weight: 800; }
+    .op-net { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 800; background: color-mix(in srgb, var(--m-suivi) 15%, #fff); color: color-mix(in srgb, var(--m-suivi) 75%, #000); transition: background .3s, color .3s; }
+    .op-net::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .op-net.on { background: color-mix(in srgb, var(--m-app) 14%, #fff); color: var(--m-app); }
+    .op-ph-h { padding: 18px 18px 12px; border-bottom: 1px solid #EEEAE2; background: #fff; }
+    .op-ph-h small { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #98A2B3; }
+    .op-ph-h b { display: block; margin-top: 2px; font-size: 15px; font-weight: 800; }
+    .op-ph-pg { height: 4px; margin-top: 10px; border-radius: 4px; background: #EEEAE2; overflow: hidden; } .op-ph-pg i { display: block; height: 100%; width: 0; background: var(--m-suivi); transition: width .4s ease; }
+    .op-ph-f { flex: 1; padding: 12px 16px; display: grid; gap: 10px; align-content: start; }
+    .op-fld label { display: block; font-size: 10.5px; font-weight: 800; color: #667085; margin-bottom: 4px; letter-spacing: .02em; }
+    .op-inp { height: 36px; border: 1px solid #DAD5CA; border-radius: 10px; background: #fff; padding: 0 10px; display: flex; align-items: center; justify-content: space-between; font-weight: 600; transition: border-color .2s, box-shadow .2s; }
+    .op-inp.f { border-color: var(--m-suivi); box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-suivi) 18%, transparent); }
+    .op-inp .cur { display: inline-block; width: 1.5px; height: 14px; background: var(--ink); margin-left: 1px; vertical-align: -2px; animation: opBlink 1s steps(1) infinite; }
+    .op-inp .stp { display: inline-flex; gap: 4px; } .op-inp .stp i { width: 22px; height: 22px; border-radius: 6px; background: #F2EFE8; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-weight: 800; }
+    .op-seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border-radius: 10px; background: #F2EFE8; }
+    .op-seg2 span { text-align: center; padding: 7px 0; border-radius: 8px; font-weight: 700; color: #667085; transition: background .2s, color .2s; }
+    .op-seg2 span.on { background: #fff; color: var(--ink); box-shadow: 0 2px 6px -3px rgba(15,27,45,.4); }
+    .op-gps { display: flex; align-items: center; gap: 6px; font-weight: 700; color: #98A2B3; transition: color .3s; } .op-gps.on { color: var(--m-app); }
+    .op-gps svg { width: 14px; height: 14px; }
+    .op-ph-b { padding: 12px 16px 18px; border-top: 1px solid #EEEAE2; background: #fff; }
+    .op-ph-btn { height: 42px; border-radius: 12px; background: var(--ink); color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform .15s, background .3s; }
+    .op-ph-btn.press { transform: scale(.97); } .op-ph-btn.ok { background: var(--m-app); }
+    .op-ph-q { margin-top: 8px; text-align: center; font-size: 11px; font-weight: 700; color: #667085; }
+
+    /* liaison : la fiche voyage du terrain vers le bureau */
+    .op-link { position: relative; height: 2px; margin: 0 6px; background: repeating-linear-gradient(90deg, #DAD5CA 0 6px, transparent 6px 11px); }
+    .op-link i { position: absolute; top: 50%; left: 0; width: 26px; height: 18px; margin-top: -9px; border-radius: 5px; background: var(--m-suivi); opacity: 0; }
+    .op-link i::after { content: ""; position: absolute; left: 6px; right: 6px; top: 6px; height: 2px; border-radius: 2px; background: #fff; box-shadow: 0 4px 0 #fff; }
+    .op-link i.go { animation: opPacket 1s cubic-bezier(.5,0,.3,1) forwards; }
+    @keyframes opPacket { 0% { left: 0; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { left: calc(100% - 26px); opacity: 0; } }
+    .op-link span { position: absolute; left: 50%; top: -26px; transform: translateX(-50%); white-space: nowrap; font-size: 10.5px; font-weight: 800; color: #98A2B3; letter-spacing: .06em; text-transform: uppercase; }
+
+    /* ordinateur */
+    .op-desk { border: 1px solid var(--ink); border-radius: 16px; background: #fff; overflow: hidden; }
+    .op-desk-bar { display: flex; align-items: center; gap: 7px; padding: 10px 14px; border-bottom: 1px solid #EEEAE2; background: #FBFAF7; font-size: 12px; font-weight: 700; color: #475467; }
+    .op-desk-bar i { width: 9px; height: 9px; border-radius: 50%; background: #DAD5CA; } .op-desk-bar b { margin-left: 8px; font-weight: 700; }
+    .op-desk-bar .op-net { margin-left: auto; }
+    .op-desk-in { padding: 16px; display: grid; gap: 12px; }
+    .op-flt { display: flex; gap: 6px; flex-wrap: wrap; }
+    .op-flt span { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid #E7E3DA; color: #475467; }
+    .op-dk { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .op-dk div { border: 1px solid #EEEAE2; border-radius: 12px; padding: 10px 12px; position: relative; overflow: hidden; }
+    .op-dk div::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--c); }
+    .op-dk small { display: block; font-size: 11px; font-weight: 700; color: #667085; }
+    .op-dk b { display: block; margin-top: 3px; font-size: 20px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .op-dk b.bump { animation: opBump .5s ease; }
+    .op-dk em { font-style: normal; font-size: 11px; font-weight: 700; color: var(--m-app); }
+    .op-dg { display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; }
+    .op-card { border: 1px solid #EEEAE2; border-radius: 12px; padding: 12px; }
+    .op-card h4 { margin: 0 0 10px; font-size: 12px; font-weight: 800; color: var(--ink); display: flex; justify-content: space-between; }
+    .op-card h4 span { font-weight: 700; color: #98A2B3; }
+    .op-hb { display: grid; gap: 7px; }
+    .op-hb div { display: grid; grid-template-columns: 70px 1fr 28px; gap: 8px; align-items: center; font-size: 11.5px; font-weight: 600; color: #475467; }
+    .op-hb i { height: 8px; border-radius: 4px; background: #F2EFE8; overflow: hidden; display: block; }
+    .op-hb i::after { content: ""; display: block; height: 100%; width: var(--w, 0%); border-radius: 4px; background: var(--m-plan); transition: width .6s cubic-bezier(.2,.8,.2,1), background .3s; }
+    .op-hb div.hit i::after { background: var(--m-suivi); }
+    .op-hb b { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
+    .op-line svg { width: 100%; height: 96px; display: block; }
+    .op-line .ln { fill: none; stroke: var(--m-app); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; transition: d .6s; }
+    .op-line .ar { fill: color-mix(in srgb, var(--m-app) 12%, transparent); }
+    .op-line .gd { stroke: #F2EFE8; stroke-width: 1; }
+    .op-line .pt { fill: var(--m-app); }
+    .op-tb { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    .op-tb th { text-align: left; font-size: 10.5px; font-weight: 800; color: #98A2B3; text-transform: uppercase; letter-spacing: .06em; padding: 0 0 6px; }
+    .op-tb td { padding: 6px 0; border-top: 1px solid #F2EFE8; font-weight: 600; color: #344054; }
+    .op-tb tr.new td { animation: opRowIn 1.6s ease; }
+    @keyframes opRowIn { 0% { background: color-mix(in srgb, var(--m-suivi) 22%, #fff); } 100% { background: transparent; } }
+    .op-tb .y { color: var(--m-app); font-weight: 800; } .op-tb .n { color: var(--m-eval); font-weight: 800; }
+
+    .op-band { display: none !important; }                       /* bandeau défilant retiré : redondant avec la frise */
+    .op-hero-grid { padding-bottom: 44px !important; }
+    .op-hero { padding-top: calc(var(--nav-h) + 52px) !important; }
+    .op-sec { padding: 56px 0 !important; }
+
+    @media (max-width: 1100px) { .op-stage { grid-template-columns: 250px 56px minmax(0, 1fr); } .op-phone { width: 250px; height: 540px; } .op-dg { grid-template-columns: 1fr; } }
+    @media (max-width: 860px) {
+        .op-dev-head { grid-template-columns: 1fr; }
+        .op-stage { grid-template-columns: 1fr; justify-items: center; }
+        .op-link { width: 2px; height: 56px; margin: 6px 0; background: repeating-linear-gradient(180deg, #DAD5CA 0 6px, transparent 6px 11px); }
+        .op-link i { left: 50% !important; margin: 0 0 0 -9px; width: 18px; height: 24px; top: 0; }
+        .op-link i.go { animation-name: opPacketV; } @keyframes opPacketV { 0% { top: 0; opacity: 0; } 20% { opacity: 1; } 100% { top: calc(100% - 24px); opacity: 0; } }
+        .op-link span { top: 50%; left: 16px; transform: translateY(-50%); }
+        .op-desk { width: 100%; }
+    }
+    @media (max-width: 600px) { .op-dev { padding: 40px 0 44px; } .op-dev-steps { flex-wrap: wrap; } .op-dk b { font-size: 17px; } .op-dk { gap: 6px; } .op-dk div { padding: 8px; } .op-sec { padding: 42px 0 !important; } }
+    @media (prefers-reduced-motion: reduce) { .op-link i, .op-tb tr.new td { animation: none !important; } }
+
+    /* ================= PLANIFICATION EN TEMPS RÉEL (ajout) ================= */
+    .op-plan { position: relative; background: #fff; border: 1px solid #E2DDD2; border-radius: 20px; padding: 18px 18px 16px; overflow: hidden; user-select: none; }
+    .op-plan-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid #EEEAE2; }
+    .op-plan-h small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #98A2B3; }
+    .op-plan-h b { display: block; margin-top: 3px; font-size: 15px; font-weight: 800; color: var(--ink); }
+    .op-plan-k { text-align: right; } .op-plan-k span { display: block; font-size: 11px; font-weight: 700; color: #667085; }
+    .op-plan-k b { font-size: 20px; font-variant-numeric: tabular-nums; } .op-plan-k b.bump { animation: opBump .5s ease; }
+    .op-gantt { --lab: 168px; margin-top: 10px; }
+    .op-g-weeks { display: grid; grid-template-columns: var(--lab) 1fr; font-size: 10.5px; font-weight: 800; color: #98A2B3; letter-spacing: .04em; }
+    .op-g-weeks div { display: grid; grid-template-columns: repeat(6, 1fr); } .op-g-weeks i { font-style: normal; padding: 0 0 6px 4px; border-left: 1px solid #F0EDE6; }
+    .op-g-body { position: relative; }
+    .op-g-today { position: absolute; top: 0; bottom: 0; left: calc(var(--lab) + (100% - var(--lab)) * var(--x) / 6); width: 0; border-left: 1.5px dashed var(--m-eval); z-index: 1; pointer-events: none; }
+    .op-g-today em { position: absolute; bottom: -18px; left: -30px; font-style: normal; font-size: 10px; font-weight: 800; color: var(--m-eval); white-space: nowrap; }
+    .op-g-row { display: grid; grid-template-columns: var(--lab) 1fr; align-items: center; height: 38px; border-top: 1px solid #F4F1EA; border-radius: 8px; transition: background .3s; }
+    .op-g-row.sel { background: color-mix(in srgb, var(--m-suivi) 9%, #fff); }
+    .op-g-row .nm { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: #344054; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 4px; }
+    .av { width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 9.5px; font-weight: 800; color: #fff; background: var(--c); }
+    .op-g-row .tl { position: relative; height: 100%; background-image: linear-gradient(90deg, #F0EDE6 1px, transparent 1px); background-size: calc(100% / 6) 100%; }
+    .op-g-row .bar { position: absolute; top: 9px; height: 20px; left: calc(var(--s) * 100% / 6 + 3px); width: calc(var(--d) * 100% / 6 - 6px); border-radius: 6px; background: color-mix(in srgb, var(--m-plan) 14%, #fff); overflow: hidden; transition: left .7s cubic-bezier(.2,.8,.2,1), box-shadow .3s; }
+    .op-g-row .bar i { position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 1%); background: var(--m-plan); border-radius: 6px; transition: width .9s cubic-bezier(.2,.8,.2,1); }
+    .op-g-row .bar b { position: relative; z-index: 1; display: block; padding: 0 8px; line-height: 20px; font-size: 10.5px; font-weight: 800; color: #fff; mix-blend-mode: normal; text-shadow: 0 0 2px rgba(15,27,45,.35); white-space: nowrap; }
+    .op-g-row .bar.zero b { color: var(--m-plan); text-shadow: none; }
+    .op-g-row .bar.done i { background: var(--m-app); } .op-g-row .bar.done { background: color-mix(in srgb, var(--m-app) 14%, #fff); }
+    .op-g-row .bar.drag { box-shadow: 0 0 0 2px var(--m-suivi); }
+    .op-g-row .ms { position: absolute; top: 12px; right: 8px; display: flex; flex-direction: row-reverse; align-items: center; gap: 6px; white-space: nowrap; }
+    .op-g-row .ms i { width: 14px; height: 14px; transform: rotate(45deg); background: var(--m-eval); border-radius: 3px; }
+    .op-g-row .ms b { font-size: 10.5px; font-weight: 800; color: var(--m-eval); }
+    .op-g-tag { position: absolute; top: 50%; left: calc(4.4 * 100% / 6 - 6px); transform: translate(-100%, -50%); font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--m-suivi); color: #fff; animation: opTagIn .4s both; white-space: nowrap; }
+    @keyframes opTagIn { from { opacity: 0; } }
+
+    .op-raci { margin-top: 26px; padding-top: 12px; border-top: 1px solid #EEEAE2; }
+    .op-raci-h { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; } .op-raci-h b { font-weight: 800; color: var(--ink); }
+    .op-raci-h span { font-size: 12px; font-weight: 700; color: var(--m-suivi); }
+    .op-raci-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+    .op-raci-slots .sl { display: flex; gap: 8px; align-items: center; padding: 8px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--c) 30%, #fff); background: color-mix(in srgb, var(--c) 6%, #fff); min-width: 0; transition: border-color .25s, background .25s, transform .25s; }
+    .op-raci-slots .sl em { width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-weight: 800; font-size: 13px; color: #fff; background: var(--c); }
+    .op-raci-slots .sl span { min-width: 0; } .op-raci-slots small { display: block; font-size: 10px; font-weight: 700; color: #667085; }
+    .op-raci-slots .sl b { display: block; font-size: 12px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .op-raci-slots .sl.empty { border-style: dashed; background: #fff; } .op-raci-slots .sl.empty b { color: #98A2B3; font-weight: 600; font-size: 11px; }
+    .op-raci-slots .sl.hover { transform: scale(1.04); border-color: var(--c); border-style: solid; }
+    .op-raci-slots .sl.fill { animation: opSlot .5s ease; } @keyframes opSlot { 40% { transform: scale(1.06); } }
+    .op-team { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .op-team small { font-size: 11px; font-weight: 700; color: #98A2B3; margin-right: 2px; }
+    .op-team span { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; border: 1px solid #E7E3DA; background: #fff; font-size: 12px; font-weight: 700; color: #344054; transition: opacity .2s; }
+    .op-team span i { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 9.5px; font-weight: 800; color: #fff; background: var(--c); }
+    .op-team span.lift { opacity: .35; }
+    .op-ghost { position: absolute; z-index: 5; pointer-events: none; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border-radius: 999px; background: #fff; border: 1px solid var(--ink); font-size: 12px; font-weight: 700; color: var(--ink); box-shadow: 0 10px 18px -10px rgba(15,27,45,.5); transition: transform .65s cubic-bezier(.45,0,.2,1); }
+    .op-ghost i { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 9.5px; font-weight: 800; color: #fff; background: var(--c); }
+    .op-cursor { position: absolute; left: 0; top: 0; width: 20px; height: 20px; z-index: 6; pointer-events: none; transform: translate(420px, 40px); transition: transform .65s cubic-bezier(.45,0,.2,1); }
+    .op-cursor.down path { fill: var(--m-eval); }
+    .op-plan-toast { position: absolute; left: 14px; right: 14px; top: 12px; z-index: 4; display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; background: var(--ink); color: #fff; font-size: 12px; font-weight: 700; opacity: 0; transform: translateY(-10px); transition: opacity .3s, transform .3s; pointer-events: none; }
+    .op-plan-toast.on { opacity: 1; transform: none; } .op-plan-toast small { display: block; font-weight: 600; color: rgba(255,255,255,.65); font-size: 11px; }
+    .op-plan-toast i { width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: var(--m-app); font-style: normal; }
+
+    .op-progress, .op-progress-l { display: none !important; }       /* barre multicolore sous la navigation : retirée */
+    @media (max-width: 600px) { .op-gantt { --lab: 118px; } .op-g-row .nm { font-size: 11.5px; } .op-g-row .nm .av { display: none; } .op-raci-slots { grid-template-columns: 1fr 1fr; } .op-cursor { display: none; } }
+
+
+    /* ================= BANDEAU D'ANNONCES MEAL AFRIQUE (ajout) ================= */
+    :root { --ann-h: 40px; }
+    html.op-ann-off { --ann-h: 0px; }
+    .op-ann { position: fixed; top: 0; left: 0; right: 0; z-index: 101; height: var(--ann-h); display: flex; align-items: stretch; background: #0E3B35; color: #fff;
+              font-size: 13px; transition: transform .3s ease; }
+    .op-ann.away { transform: translateY(-100%); }
+    html.op-ann-off .op-ann { display: none; }
+    #main-header { top: var(--ann-h) !important; transition: top .3s ease !important; }
+    html.op-ann-up #main-header { top: 0 !important; }
+    .op-hero { padding-top: calc(var(--nav-h) + var(--ann-h) + 52px) !important; }
+    #mobile-fullscreen-menu { padding-top: calc(var(--nav-h) + var(--ann-h) + 24px) !important; }
+    .op-ann-l { flex-shrink: 0; display: flex; align-items: center; gap: 9px; padding: 0 16px 0 max(16px, calc((100vw - 1200px) / 2)); background: #0B302B; color: #fff; font-weight: 800; letter-spacing: -.01em; text-decoration: none; position: relative; }
+    .op-ann-l::after { content: ""; position: absolute; right: -10px; top: 0; bottom: 0; width: 10px; background: linear-gradient(90deg, #0B302B, transparent); z-index: 1; }
+    .op-ann-l i { width: 24px; height: 24px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 10px; font-weight: 900; background: #F4B860; color: #0E3B35; letter-spacing: -.02em; }
+    .op-ann-v { position: relative; flex: 1; overflow: hidden; display: flex; align-items: center;
+                -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28px, #000 calc(100% - 40px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 28px, #000 calc(100% - 40px), transparent 100%); }
+    .op-ann-t { display: flex; align-items: center; white-space: nowrap; will-change: transform; animation: opAnnRun var(--dur, 40s) linear infinite; }
+    .op-ann:hover .op-ann-t, .op-ann:focus-within .op-ann-t { animation-play-state: paused; }
+    @keyframes opAnnRun { from { transform: translateX(0); } to { transform: translateX(var(--shift, -50%)); } }
+    .op-ann-i { display: inline-flex; align-items: center; gap: 10px; padding: 0 22px; color: rgba(255,255,255,.88); font-weight: 600; text-decoration: none; transition: color .2s; }
+    .op-ann-i::after { content: ""; width: 5px; height: 5px; margin-left: 22px; margin-right: -22px; transform: rotate(45deg); background: #F4B860; opacity: .7; flex-shrink: 0; }
+    .op-ann-i:hover { color: #fff; } .op-ann-i:hover em { border-color: currentColor; }
+    .op-ann-i em { font-style: normal; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(244,184,96,.45); color: #F4B860; transition: border-color .2s; }
+    .op-ann-i em[data-k*="debat"], .op-ann-i em[data-k*="débat"] { color: #8FD4C8; border-color: rgba(143,212,200,.45); }
+    .op-ann-i em[data-k*="formation"], .op-ann-i em[data-k*="webinaire"] { color: #B9C4F0; border-color: rgba(185,196,240,.45); }
+    .op-ann-i em[data-k*="emploi"], .op-ann-i em[data-k*="opportun"], .op-ann-i em[data-k*="offre"] { color: #F4B860; }
+    .op-ann-go { font-size: 11.5px; font-weight: 800; color: #F4B860; opacity: .85; }
+    .op-ann-i:hover .op-ann-go { opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
+    .op-ann-i em { color: #8FD4C8 !important; border-color: rgba(143,212,200,.45) !important; }
+    .op-ann-i time { font-size: 11.5px; font-weight: 700; color: rgba(255,255,255,.5); }
+    .op-ann-all { flex-shrink: 0; display: flex; align-items: center; padding: 0 14px; font-weight: 800; color: #F4B860; text-decoration: none; }
+    .op-ann-all:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .op-ann-x { flex-shrink: 0; width: 40px; margin-right: max(8px, calc((100vw - 1200px) / 2 - 12px)); border: 0; background: transparent; color: rgba(255,255,255,.6); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color .2s; }
+    .op-ann-x:hover, .op-ann-x:focus-visible { color: #fff; }
+    .op-ann a:focus-visible, .op-ann button:focus-visible { outline: 2px solid #F4B860; outline-offset: -2px; }
+    @media (max-width: 767px) { :root { --ann-h: 36px; } .op-ann { font-size: 12.5px; } .op-ann-l span, .op-ann-all { display: none; } .op-ann-l { padding: 0 10px 0 12px; } .op-ann-x { margin-right: 2px; width: 36px; } .op-ann-i { padding: 0 16px; } }
+    @media (prefers-reduced-motion: reduce) { .op-ann-t { animation: none; } .op-ann-v { overflow-x: auto; scrollbar-width: none; } }
+    /* ================= POINTS 2 & 3 (ajout) ================= */
+    .op-frise { display: none !important; }                       /* bande sous la première section : retirée */
+    .op-hero { border-bottom: 1px solid #E7E3DA !important; }
+    .op-hero .op-for { display: none !important; }                /* remplacé par le choix du secteur */
+    .op-sector { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 22px; }
+    .op-sector span { font-size: 13px; font-weight: 700; color: #667085; margin-right: 4px; }
+    .op-sector button { height: 34px; padding: 0 13px; border-radius: 999px; border: 1px solid #DAD5CA; background: #fff; font: inherit; font-size: 13px; font-weight: 700; color: #344054; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+    .op-sector button:hover { border-color: var(--ink); }
+    .op-sector button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .op-sector.small { margin-top: 0; }
+    .op-swap { animation: opSwap .45s ease; } @keyframes opSwap { 0% { opacity: .2; } 100% { opacity: 1; } }
+    /* retard dans la planification */
+    .op-g-row .bar.late { box-shadow: 0 0 0 2px var(--m-eval); } .op-g-row .bar.late i { background: var(--m-eval); }
+    .op-g-row .bar.late { animation: opLate 1s ease 2; } @keyframes opLate { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--m-eval) 25%, transparent); } }
+    .op-g-tag.red { background: var(--m-eval); left: auto; right: 6px; transform: translateY(-50%); }
+    .op-g-tag.green { background: var(--m-app); left: auto; right: 6px; transform: translateY(-50%); }
+    .op-plan-toast.warn i { background: var(--m-eval); }
+    /* lien MEAL Afrique dans la navigation */
+    #nav-wrapper nav > a.op-nav-meal { gap: 8px; color: #0E3B35 !important; }
+    #nav-wrapper nav > a.op-nav-meal::after { background: #0E3B35; }
+    .op-nav-meal i { width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 9.5px; font-weight: 900; background: #0E3B35; color: #F4B860; letter-spacing: -.02em; }
+    .op-nav-meal.m { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; color: #0E3B35 !important; padding: 8px 0; }
+    /* publications MEAL Afrique */
+    .op-news-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 28px 0 10px; color: #fff; }
+    .op-news-h b { font-size: 15px; font-weight: 800; } .op-news-h a { font-size: 13px; font-weight: 700; color: #F4B860; }
+
+    /* section cadre logique + redevabilité */
+    .op-mealx { padding: 56px 0; background: #FBFAF7; border-bottom: 1px solid #EEEAE2; }
+    .op-mx { display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; align-items: stretch; }
+    .op-lf, .op-rv { background: #fff; border: 1px solid #E2DDD2; border-radius: 20px; padding: 18px; min-width: 0; }
+    .op-lf { display: grid; grid-template-columns: 220px 1fr; gap: 16px; }
+    .op-lf-tree { display: grid; gap: 6px; align-content: start; position: relative; }
+    .op-lf-tree button { position: relative; text-align: left; border: 1px solid #EEEAE2; background: #fff; border-radius: 12px; padding: 9px 10px 9px 12px; font: inherit; cursor: pointer; transition: border-color .2s, background .2s; }
+    .op-lf-tree button small { display: block; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--c); }
+    .op-lf-tree button b { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 700; color: #344054; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .op-lf-tree button::before { content: ""; position: absolute; left: -1px; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--c); opacity: 0; transition: opacity .2s; }
+    .op-lf-tree button.on { border-color: color-mix(in srgb, var(--c) 45%, #fff); background: color-mix(in srgb, var(--c) 6%, #fff); } .op-lf-tree button.on::before { opacity: 1; }
+    .op-lf-tree button.r { margin-left: 14px; } .op-lf-tree button.os { margin-left: 7px; }
+    .op-lf-d h3 { margin: 0; font-size: 16px; font-weight: 800; color: var(--ink); line-height: 1.35; letter-spacing: -.01em; }
+    .op-lf-d .lv { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--c); }
+    .op-lf-ind { margin-top: 14px; display: grid; gap: 10px; }
+    .op-lf-ind div { border: 1px solid #EEEAE2; border-radius: 12px; padding: 10px 12px; }
+    .op-lf-ind p { margin: 0; display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; font-weight: 700; color: #344054; }
+    .op-lf-ind p b { color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .op-lf-ind .bar { position: relative; height: 8px; margin: 8px 0 6px; border-radius: 4px; background: #F2EFE8; }
+    .op-lf-ind .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--c); width: 0; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+    .op-lf-ind small { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: #98A2B3; }
+    .op-lf-meta { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .op-lf-meta div { font-size: 12px; color: #475467; line-height: 1.5; } .op-lf-meta b { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #98A2B3; margin-bottom: 2px; }
+    .op-rv { display: flex; flex-direction: column; }
+    .op-rv-h { display: flex; justify-content: space-between; align-items: center; } .op-rv-h b { font-size: 14px; font-weight: 800; color: var(--ink); }
+    .op-rv-k { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+    .op-rv-k div { border: 1px solid #EEEAE2; border-radius: 12px; padding: 8px 10px; } .op-rv-k small { display: block; font-size: 10.5px; font-weight: 700; color: #667085; }
+    .op-rv-k b { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; } .op-rv-k b.bump { animation: opBump .5s ease; }
+    .op-rv-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; flex: 1; }
+    .op-rv-cols > div { background: #FBFAF7; border-radius: 12px; padding: 8px 6px; display: flex; flex-direction: column; gap: 6px; min-height: 170px; min-width: 0; }
+    .op-rv-cols h5 { margin: 0 2px 2px; font-size: 10.5px; font-weight: 800; color: #475467; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .op-rv-cols h5 i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); flex-shrink: 0; }
+    .tk { background: #fff; border: 1px solid #EEEAE2; border-radius: 9px; padding: 7px 8px; font-size: 11px; font-weight: 600; color: #475467; line-height: 1.35; }
+    .tk.old { opacity: .55; }
+    .tk.live { border-color: var(--c, var(--m-eval)); box-shadow: 0 8px 16px -12px rgba(15,27,45,.5); color: var(--ink); animation: opTkIn .45s cubic-bezier(.2,.9,.3,1.2) both; }
+    .tk.live b { display: block; font-size: 10.5px; font-weight: 800; color: var(--c, var(--m-eval)); margin-bottom: 2px; }
+    .tk.live em { display: block; font-style: normal; margin-top: 4px; font-size: 10.5px; color: #667085; font-weight: 700; }
+    @keyframes opTkIn { from { opacity: 0; transform: translateY(-8px) scale(.96); } }
+    .op-rv-log { margin: 10px 0 0; font-size: 12px; font-weight: 700; color: #667085; min-height: 18px; }
+    @media (max-width: 1100px) { .op-mx { grid-template-columns: 1fr; } }
+    @media (max-width: 700px) { .op-lf { grid-template-columns: 1fr; } .op-lf-tree { grid-template-columns: 1fr 1fr; } .op-lf-tree button.r, .op-lf-tree button.os { margin-left: 0; } .op-lf-meta { grid-template-columns: 1fr; } .op-rv-cols { grid-template-columns: 1fr 1fr; } .op-rv-cols > div { min-height: 110px; } .op-mealx { padding: 42px 0; } }
+    @media (min-width: 768px) { #mobile-menu-btn { display: none !important; } }
+    #main-header { z-index: 100 !important; }                       /* le bouton de fermeture reste au-dessus du menu mobile */
+    #assistance-fab { background: var(--ink) !important; background-image: none !important; box-shadow: 0 10px 20px -12px rgba(15,27,45,.6) !important; width: 52px !important; height: 52px !important; }
+    #assistance-fab:hover { background: var(--acc) !important; transform: none !important; }
+    #assistance-menu { background: #fff !important; border-color: #E7E3DA !important; backdrop-filter: none !important; }
+    #assistance-menu h4 { color: var(--ink) !important; border-color: #EEEAE2 !important; letter-spacing: .1em !important; }
+    #assistance-menu h4 span { animation: none !important; background: var(--m-app) !important; }
+    #assistance-menu a { color: #3B4453 !important; font-size: 13px !important; } #assistance-menu a:hover { color: var(--ink) !important; background: #F5F3EE !important; }
+    #assistance-menu a i { color: var(--m-app) !important; }
+    #nav-wrapper nav .group > div.absolute .op-feat small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    #nav-wrapper nav .group > div.absolute .op-feat { padding: 10px !important; }
+    #nav-wrapper nav .group > div.absolute .op-feat:hover { background: color-mix(in srgb, var(--ink) 4%, #fff) !important; }
+    #nav-wrapper nav .group > div.absolute { border-color: #E7E3DA !important; box-shadow: 0 24px 48px -28px rgba(15,27,45,.35) !important; border-radius: 0 0 18px 18px !important; }
+    /* le héros se cale sous la barre posée */
+    .op-hero { padding-top: calc(var(--nav-h) + 70px) !important; }
+    @media (max-width: 1100px) { #nav-wrapper nav .group > div.absolute > .grid { grid-template-columns: repeat(2, 1fr) !important; } .op-mm-h { display: none; } .op-feat { grid-column: auto !important; } }
+    @media (max-width: 980px) { .op-hero { padding-top: calc(var(--nav-h) + 44px) !important; } }
+    @media (max-width: 767px) { :root { --nav-h: 62px; } .op-progress-l { display: none; } }
+    @media (max-width: 600px) { .op-toc li { grid-template-columns: 1fr auto; } .op-toc .lv { grid-column: 1 / -1; } .op-toc-f { grid-template-columns: 1fr 1fr; } }
+
+    /* =====================================================================
+       FINITION « NIVEAU EXPERT » (ajout) — un seul système pour toute la page
+       · une seule famille de neutres (chauds) · une échelle typographique
+       · un rythme vertical · des cartes, boutons et focus cohérents
+       ===================================================================== */
+    :root { --line: #E7E3DA; --bg: #F7F5F0; --muted: #5B6472; --paper: #FBFAF7; }
+    body#body-root { background: #fff !important; color: var(--ink); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    ::selection { background: color-mix(in srgb, var(--acc) 22%, transparent); color: var(--ink); }
+    :where(a, button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 8px; }
+    h1, h2, h3, .op-h2 { text-wrap: balance; } p, li { text-wrap: pretty; }
+
+    /* typographie */
+    .op-h2, .op-dev-head h2, #showcase-operaplus h2 { font-size: clamp(28px, 3.1vw, 40px) !important; line-height: 1.1 !important; letter-spacing: -.032em !important; font-weight: 800 !important; color: var(--ink) !important; }
+    .op-kicker { font-size: 11.5px !important; letter-spacing: .16em !important; }
+    .op-sec-head p, .op-dev-head p, .op-lead-s { font-size: 16px; line-height: 1.6; color: var(--muted); }
+
+    /* fonds : blanc / papier, jamais de gris bleuté */
+    .op-sec.alt, .op-mealx { background: var(--bg) !important; }
+    .op-sec, .op-dev, .op-mealx { border-color: var(--line) !important; }
+    .op-sec.alt + .op-sec.alt { border-top: 1px solid var(--line); }
+
+    /* boutons : nets, sans reflet ni halo */
+    .op-btn { border-radius: 12px !important; box-shadow: none !important; transition: background .2s, color .2s, border-color .2s, transform .2s !important; }
+    .op-btn.primary::after { display: none !important; }
+    .op-btn.primary:hover { background: var(--acc-2) !important; transform: translateY(-1px); }
+    .op-btn.ghost { border-color: #D9D4C8 !important; }
+
+    /* cartes : même rayon, même filet, même survol */
+    .op-res a, .op-quote, .op-mods, .op-vs > *, .op-final-box, .op-faq details, .op-role-ui, .op-help { border-color: var(--line) !important; }
+    .op-res a, .op-quote { border-radius: 18px !important; box-shadow: none !important; }
+    .op-res a:hover, .op-quote:hover { border-color: #D2CCBF !important; box-shadow: 0 18px 36px -30px rgba(15,27,45,.45) !important; }
+    .op-role-ui { background: var(--bg) !important; }
+    .op-row { border-color: var(--line) !important; }
+    .op-final-r { background: var(--bg) !important; }
+
+    /* « En action » (vidéo) aligné sur le reste */
+    #showcase-operaplus > div > div:first-child { margin-bottom: 26px !important; }
+    #showcase-operaplus h2 { margin: 10px 0 18px !important; } #showcase-operaplus h2 span { font-weight: 800 !important; }
+    #nav-steps { gap: 6px !important; }
+    #nav-steps .step-btn { height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: #475467 !important; text-transform: none !important; letter-spacing: 0 !important; font-size: 13px !important; font-weight: 700 !important; }
+    #nav-steps .step-btn.active { background: var(--ink); border-color: var(--ink); color: #fff !important; }
+    #nav-steps .step-btn span.bg-blue-600 { background: var(--m-plan) !important; } #nav-steps .step-btn span.bg-orange-500 { background: var(--m-suivi) !important; } #nav-steps .step-btn span.bg-emerald-600 { background: var(--m-app) !important; }
+    #nav-steps .step-btn.active span { box-shadow: 0 0 0 2px #fff; }
+    #video-desc { font-style: normal !important; margin-top: 14px !important; font-size: 14.5px !important; color: var(--muted) !important; }
+    #showcase-operaplus .rounded-2xl.bg-slate-900 { border: 1px solid var(--ink) !important; border-radius: 16px !important; box-shadow: none !important; }
+
+    /* curation : sections redondantes avec les nouvelles démonstrations (planification, mobile/ordinateur, cadre logique) */
+    .op-sec:has(#opStory) { display: none !important; }
+    .op-sec:has(.op-res) { display: none !important; }
+
+    /* carte communauté : droite et posée (plus de carte penchée ni de tampon qui tourne) */
+    .op-card-m { transform: none !important; box-shadow: 0 30px 60px -40px rgba(0,0,0,.55) !important; border-radius: 20px !important; }
+    .op-card-m:hover { transform: translateY(-3px) !important; }
+    .op-stamp { display: none !important; }
+    /* statistiques : chiffres plus fins, alignés */
+    .op-stat strong, .op-stat b { font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
 </style>
 </head>
 <body class="font-sans antialiased text-gray-200 bg-slate-100 overflow-x-hidden" id="body-root">
@@ -661,6 +1131,25 @@
 
   
 
+<!-- ================= ANNONCES MEAL AFRIQUE (ajout) : bandeau défilant au-dessus de la navigation ================= -->
+{% meal_afrique_actus 6 as ann_actus %}
+<div class="op-ann" id="opAnn" role="region" aria-label="Débats de la communauté MEAL Afrique">
+    <a class="op-ann-l" href="{{ MEAL_AFRIQUE }}" rel="noopener"><i aria-hidden="true">MA</i><span>Débats MEAL Afrique</span></a>
+    <div class="op-ann-v" id="opAnnV">
+        <div class="op-ann-t" id="opAnnT">
+            {# débats publiés sur MEAL Afrique (flux) : seuls ceux de la rubrique « Débats » sont gardés, voir le script #}
+            {% for a in ann_actus %}<a class="op-ann-i op-ann-rss" href="{{ a.lien }}" rel="noopener" target="_blank"><em data-k="{{ a.categorie|lower }}">Débat</em>{{ a.titre }}{% if a.date %}<time>{{ a.date }}</time>{% endif %}<span class="op-ann-go">Participer</span></a>{% endfor %}
+            {# sujets de débat proposés tant qu'aucun débat n'arrive par le flux #}
+            <a class="op-ann-i op-ann-fb" href="{{ MEAL_AFRIQUE }}" rel="noopener"><em data-k="debat">Débat</em>Faut-il des indicateurs communs à tous les projets d'une même zone ?<span class="op-ann-go">Donner mon avis</span></a>
+            <a class="op-ann-i op-ann-fb" href="{{ MEAL_AFRIQUE }}" rel="noopener"><em data-k="debat">Débat</em>Comment rendre la redevabilité vraiment utile aux bénéficiaires ?<span class="op-ann-go">Donner mon avis</span></a>
+            <a class="op-ann-i op-ann-fb" href="{{ MEAL_AFRIQUE }}" rel="noopener"><em data-k="debat">Débat</em>Collecte mobile hors-ligne : quelles leçons du terrain ?<span class="op-ann-go">Donner mon avis</span></a>
+            <a class="op-ann-i op-ann-fb" href="{{ MEAL_AFRIQUE }}" rel="noopener"><em data-k="debat">Débat</em>Cible non atteinte : comment en rendre compte au bailleur ?<span class="op-ann-go">Donner mon avis</span></a>
+            <a class="op-ann-i op-ann-fb" href="{{ MEAL_AFRIQUE }}" rel="noopener"><em data-k="debat">Débat</em>Partager ses échecs : la vraie clé de l'apprentissage ?<span class="op-ann-go">Donner mon avis</span></a>
+        </div>
+    </div>
+    <a class="op-ann-all" href="{{ MEAL_AFRIQUE }}" rel="noopener">Tous les débats</a>
+    <button type="button" class="op-ann-x" id="opAnnX" aria-label="Masquer les annonces"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+</div>
 <header id="main-header" class=" backdrop-blur-md fixed top-4 left-0 right-0 z-50 transition-all duration-700 px-4 flex flex-col items-center">
     <div id="nav-wrapper" class="w-full max-w-6xl flex items-center justify-between transition-all duration-500 ease-out px-4 sm:px-6 py-3 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/50 relative">
         
@@ -682,6 +1171,10 @@
 
                 <div class="absolute top-full left-1/2 -translate-x-1/4 mt-2 w-[540px] invisible opacity-0 scale-95 group-hover:visible group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 bg-white border border-slate-100 rounded-2xl p-4 shadow-2xl z-[100]">
                     <div class="grid grid-cols-2 gap-3">
+                        <span class="op-mm-h" style="--c:var(--m-plan)"><b>P</b>Planifier</span>
+                        <span class="op-mm-h" style="--c:var(--m-suivi)"><b>S</b>Suivre</span>
+                        <span class="op-mm-h" style="--c:var(--m-eval)"><b>É</b>Évaluer · rendre compte</span>
+                        <span class="op-mm-h" style="--c:var(--m-app)"><b>A</b>Apprendre</span>
                         <a href="#" class="flex gap-x-3 p-3 rounded-xl hover:bg-orange-50 transition-all group/item op-feat op-feat-orig" data-feat="collecte">
                             <span class="op-feat-ill" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="14" y="6" width="20" height="36" rx="4" class="s"/><rect x="18" y="13" width="12" height="3" rx="1.5" class="f a1"/><rect x="18" y="19" width="9" height="3" rx="1.5" class="f a2"/><rect x="18" y="25" width="12" height="3" rx="1.5" class="f a3"/><path d="M38 14v8m-3-3 3 3 3-3" class="s up"/></svg></span>
                             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
@@ -735,10 +1228,11 @@
             <a href="/a-propos/" class="text-xs uppercase font-bold tracking-wider text-slate-600 hover:text-orange-600 px-3 py-2 rounded-lg hover:bg-orange-50">À Propos</a>
              <a href="/annonces/" class="text-xs uppercase font-bold tracking-wider text-slate-600 hover:text-orange-600 px-3 py-2 rounded-lg hover:bg-orange-50">Annonces</a>
             <a href="/packages/" class="text-xs uppercase font-bold tracking-wider text-slate-600 hover:text-orange-600 px-3 py-2 rounded-lg hover:bg-orange-50">Tarifs</a>
+            <a href="{{ MEAL_AFRIQUE }}" class="op-nav-meal" rel="noopener"><i aria-hidden="true">MA</i>MEAL Afrique</a>
         </nav>
         
         <div class="hidden sm:flex items-center gap-x-4">
-            <a href="/demos/" class="text-xs font-semibold text-slate-600 hover:text-slate-900 px-3 py-2">Demande DEMO</a>
+            <a href="/demos/" class="text-xs font-semibold text-slate-600 hover:text-slate-900 px-3 py-2">Demander une démo</a>
             <a href="/log_account/" class="rounded-xl bg-orange-600 hover:bg-orange-700 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-orange-600/20">Démarrer</a>
         </div>
         
@@ -747,6 +1241,8 @@
             <span id="line-2" class="block w-5 h-[2px] bg-slate-900 transition-transform"></span>
         </button>
     </div>
+    <div class="op-progress" id="opProgress" aria-hidden="true"><i style="--c:var(--m-plan)"></i><i style="--c:var(--m-suivi)"></i><i style="--c:var(--m-eval)"></i><i style="--c:var(--m-app)"></i></div>
+    <span class="op-progress-l" id="opProgressL" aria-hidden="true">Avancement · <b>0 %</b></span>
 </header>
 <div id="mobile-fullscreen-menu" class="fixed inset-0 bg-zinc-950/98 backdrop-blur-3xl z-[90] flex flex-col justify-center px-6 pointer-events-none opacity-0 invisible transition-all duration-500">
     <div class="flex flex-col gap-y-4 text-left max-w-md mx-auto w-full">
@@ -772,6 +1268,7 @@
         <div class="flex flex-col gap-y-1 mt-2 pt-4 border-t border-zinc-800">
             <a href="#" class="text-sm font-semibold text-slate-300 hover:text-white py-2">À Propos</a>
             <a href="#" class="text-sm font-semibold text-slate-300 hover:text-white py-2">Tarifs</a>
+            <a href="{{ MEAL_AFRIQUE }}" class="op-nav-meal m" rel="noopener"><i aria-hidden="true">MA</i>Communauté MEAL Afrique</a>
         </div>
 
         <div class="mobile-link flex flex-col gap-y-3 mt-4 pt-4 border-t border-orange-900/40">
@@ -794,7 +1291,7 @@
 <section class="op-hero" id="globe-3d-container">
     <div class="op-wrap op-hero-grid">
         <div>
-            <span class="op-kicker">Plateforme MEAL intégrée</span>
+            <span class="op-kicker"><span class="op-meal-letters" aria-hidden="true"><i style="background:#2B3A67">M</i><i style="background:#C98A1B">E</i><i style="background:#EA580C">A</i><i style="background:#2A8A7D">L</i></span>Plateforme MEAL intégrée</span>
             <h1>Pilotez la <span class="hl">performance</span> de vos projets, de la <span class="op-rotate" id="opRotate">collecte</span> à la décision.</h1>
             <p class="op-lead">Planification, suivi, évaluation et redevabilité dans un seul outil. Vos équipes collectent sur le terrain, vos tableaux de bord se mettent à jour.</p>
             <div class="op-cta">
@@ -805,6 +1302,9 @@
                 <span><i class="fa-solid fa-wifi"></i>Collecte hors-ligne</span>
                 <span><i class="fa-solid fa-file-export"></i>Exports PDF · Excel</span>
                 <span><i class="fa-solid fa-shield-halved"></i>Données sécurisées</span>
+            </div>
+            <div class="op-sector" role="group" aria-label="Voir l'exemple pour votre secteur"><span>Voir l'exemple pour</span>
+                <button type="button" data-s="edu" class="on">Éducation</button><button type="button" data-s="sante">Santé</button><button type="button" data-s="eau">Eau</button><button type="button" data-s="agri">Agriculture</button>
             </div>
             <div class="op-for"><span>ONG</span><span>Projets de développement</span><span>Ministères</span><span>Bailleurs</span></div>
             {% meal_afrique_stats as meal_st %}
@@ -840,7 +1340,40 @@
                 </div>
             </div>
         </div>
+        <!-- ===== Planification en temps réel (ajout) : Gantt + matrice RACI manipulée ===== -->
+        <div class="op-plan op-in" id="opPlan" aria-label="Aperçu de la planification dans OperaPlus">
+            <div class="op-plan-h">
+                <div><small>Planification · semaine 47</small><b id="opPlProj">Projet Éducation · Extrême-Nord</b></div>
+                <div class="op-plan-k"><span>Avancement</span><b id="opPlAv">58 %</b></div>
+            </div>
+            <div class="op-gantt" id="opGantt">
+                <div class="op-g-weeks"><span></span><div><i>S44</i><i>S45</i><i>S46</i><i>S47</i><i>S48</i><i>S49</i></div></div>
+                <div class="op-g-body">
+                    <div class="op-g-today" style="--x:3.2"><em>Aujourd'hui</em></div>
+                    <div class="op-g-row" data-i="0"><span class="nm"><i class="av" style="--c:#2B3A67">AN</i>Recrutement relais</span><div class="tl"><div class="bar done" style="--s:0;--d:2;--p:100"><i></i><b>100 %</b></div></div></div>
+                    <div class="op-g-row" data-i="1"><span class="nm"><i class="av" style="--c:#2A8A7D">JF</i>Achat des kits</span><div class="tl"><div class="bar" id="opBarAchat" style="--s:1;--d:2;--p:80"><i></i><b>80 %</b></div></div></div>
+                    <div class="op-g-row" data-i="2"><span class="nm"><i class="av" style="--c:#C98A1B">ME</i>Distribution des kits</span><div class="tl"><div class="bar" id="opBarDist" style="--s:2;--d:3;--p:30"><i></i><b>30 %</b></div></div></div>
+                    <div class="op-g-row" data-i="3"><span class="nm"><i class="av" style="--c:#2B3A67">AN</i>Suivi terrain</span><div class="tl"><div class="bar zero" id="opBarSuivi" style="--s:3.6;--d:1.6;--p:0"><i></i><b>À venir</b></div></div></div>
+                    <div class="op-g-row" data-i="4"><span class="nm"><i class="av" style="--c:#EA580C">PM</i>Rapport bailleur</span><div class="tl"><div class="ms" style="--s:5.4"><i></i><b id="opMs">J-12</b></div></div></div>
+                </div>
+            </div>
+            <div class="op-raci">
+                <div class="op-raci-h"><b>Matrice RACI</b><span id="opRaciAct">Distribution des kits</span></div>
+                <div class="op-raci-slots" id="opSlots">
+                    <div class="sl" data-r="R" style="--c:#2B3A67"><em>R</em><span><small>Responsable</small><b>Marie E.</b></span></div>
+                    <div class="sl empty" data-r="A" style="--c:#EA580C"><em>A</em><span><small>Approbateur</small><b>Glisser un membre</b></span></div>
+                    <div class="sl" data-r="C" style="--c:#2A8A7D"><em>C</em><span><small>Consulté</small><b>Jean F.</b></span></div>
+                    <div class="sl empty" data-r="I" style="--c:#64748B"><em>I</em><span><small>Informé</small><b>Glisser un membre</b></span></div>
+                </div>
+                <div class="op-team" id="opTeam"><small>Équipe</small>
+                    <span data-n="Paul M." style="--c:#EA580C"><i>PM</i>Paul M.</span><span data-n="Aïcha N." style="--c:#2B3A67"><i>AN</i>Aïcha N.</span><span data-n="Bailleur" style="--c:#64748B"><i>BL</i>Bailleur</span>
+                </div>
+            </div>
+            <div class="op-plan-toast" id="opPlToast" role="status"></div>
+            <svg class="op-cursor" id="opCursor" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 2l13 7-6 1.6L7.4 17z" fill="#0F1B2D" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        </div>
     </div>
+    <div class="op-frise" role="presentation"></div>
 </section>
 
 <!-- ================= PARTENAIRES (uniquement ceux qui ont donné leur accord, voir l'admin) ================= -->
@@ -874,10 +1407,109 @@
     {% endif %}
 </section>
 
+
+<!-- ================= MOBILE + ORDINATEUR (ajout) : la fiche saisie sur le terrain arrive dans l'analyse ================= -->
+<section class="op-dev" id="acces" aria-labelledby="titreAcces">
+    <div class="op-wrap">
+        <div class="op-dev-head">
+            <div>
+                <span class="op-kicker">Sur le terrain et au bureau</span>
+                <h2 id="titreAcces">Collectez sur <span>mobile</span>. Analysez sur <em>ordinateur</em>.</h2>
+                <p>Les agents saisissent même sans réseau ; chaque fiche synchronisée met à jour l'analyse, sans ressaisie.</p>
+            </div>
+            <ol class="op-dev-steps" id="opDevSteps" aria-label="Étapes">
+                <li style="--c:var(--m-suivi)"><b>1</b>Saisie hors-ligne</li>
+                <li style="--c:var(--m-plan)"><b>2</b>Synchronisation</li>
+                <li style="--c:var(--m-app)"><b>3</b>Analyse</li>
+            </ol>
+        </div>
+
+        <div class="op-stage" aria-hidden="true">
+            <!-- téléphone : collecte -->
+            <div class="op-phone"><div class="op-ph">
+                <div class="op-ph-st"><span>09:41</span><span class="op-net" id="opNetP">Hors-ligne</span></div>
+                <div class="op-ph-h"><small>Enquête ménages · fiche <span id="opFicheN">175</span></small><b id="opSurveyT">Accès à l'eau potable</b><div class="op-ph-pg"><i id="opPhPg"></i></div></div>
+                <div class="op-ph-f">
+                    <div class="op-fld"><label>Chef de ménage</label><div class="op-inp" id="opInName"><span><span id="opName"></span><span class="cur"></span></span></div></div>
+                    <div class="op-fld"><label>Commune</label><div class="op-inp" id="opInCom"><span id="opCom">—</span><span style="color:#98A2B3">▾</span></div></div>
+                    <div class="op-fld"><label>Taille du ménage</label><div class="op-inp" id="opInSize"><span id="opSize">0</span><span class="stp"><i>−</i><i>+</i></span></div></div>
+                    <div class="op-fld"><label id="opQ">Accès à l'eau potable</label><div class="op-seg2" id="opWater"><span>Oui</span><span>Non</span></div></div>
+                    <div class="op-gps" id="opGps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span id="opGpsT">Position GPS en attente</span></div>
+                </div>
+                <div class="op-ph-b"><div class="op-ph-btn" id="opSave">Enregistrer la fiche</div><p class="op-ph-q" id="opQueue">2 fiches en attente d'envoi</p></div>
+            </div></div>
+
+            <div class="op-link"><span id="opLinkT">Sans réseau</span><i id="opPacket"></i></div>
+
+            <!-- ordinateur : analyse -->
+            <div class="op-desk">
+                <div class="op-desk-bar"><i></i><i></i><i></i><b>OperaPlus · Analyse — Enquête ménages</b><span class="op-net on">En ligne</span></div>
+                <div class="op-desk-in">
+                    <div class="op-flt"><span>Novembre 2026</span><span>Toutes communes</span><span id="opFltI">Indicateur : accès à l'eau</span></div>
+                    <div class="op-dk">
+                        <div style="--c:var(--m-plan)"><small>Fiches reçues</small><b id="opKTot">174</b><em id="opKTotD">+0 aujourd'hui</em></div>
+                        <div style="--c:var(--m-app)"><small id="opKWatL">Accès à l'eau</small><b id="opKWat">69,5 %</b><em id="opKWatC">cible 75 %</em></div>
+                        <div style="--c:var(--m-suivi)"><small>Taille moyenne</small><b id="opKSize">5,8</b><em>personnes</em></div>
+                    </div>
+                    <div class="op-dg">
+                        <div class="op-card"><h4>Fiches par commune <span>cumul</span></h4><div class="op-hb" id="opHb"></div></div>
+                        <div class="op-card op-line"><h4><b id="opLineT" style="font-weight:800">Accès à l'eau</b> <span>8 derniers jours</span></h4>
+                            <svg viewBox="0 0 300 96" preserveAspectRatio="none"><line class="gd" x1="0" y1="24" x2="300" y2="24"/><line class="gd" x1="0" y1="48" x2="300" y2="48"/><line class="gd" x1="0" y1="72" x2="300" y2="72"/><path class="ar" id="opArea"/><path class="ln" id="opLine"/><circle class="pt" id="opPt" r="4"/></svg>
+                        </div>
+                    </div>
+                    <div class="op-card"><h4>Dernières fiches <span id="opLast">synchronisées</span></h4>
+                        <table class="op-tb"><thead><tr><th>Chef de ménage</th><th>Commune</th><th>Taille</th><th id="opThQ">Eau</th></tr></thead><tbody id="opRows">
+                            <tr><td>Ngo Bassa Marie</td><td>Kribi</td><td>6</td><td class="y">Oui</td></tr>
+                            <tr><td>Abdou Moussa</td><td>Maroua</td><td>8</td><td class="n">Non</td></tr>
+                            <tr><td>Ekane Paul</td><td>Douala</td><td>4</td><td class="y">Oui</td></tr>
+                        </tbody></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 <div class="op-band" aria-hidden="true"><div class="op-band-track">
     <span>Collecte hors-ligne</span><span>Cadre logique</span><span>Rôles RACI</span><span>Calcul des indicateurs</span><span>Import Excel &amp; CSV</span><span>Tableaux de bord</span><span>Plaintes &amp; retours</span><span>Exports PDF</span>
     <span>Collecte hors-ligne</span><span>Cadre logique</span><span>Rôles RACI</span><span>Calcul des indicateurs</span><span>Import Excel &amp; CSV</span><span>Tableaux de bord</span><span>Plaintes &amp; retours</span><span>Exports PDF</span>
 </div></div>
+
+<!-- ================= LE MEAL, CONCRÈTEMENT (ajout) : cadre logique interactif + redevabilité en direct ================= -->
+<section class="op-mealx" id="cadre-logique" aria-labelledby="titreMealx">
+    <div class="op-wrap">
+        <div class="op-dev-head">
+            <div>
+                <span class="op-kicker">Cadre logique &amp; redevabilité</span>
+                <h2 id="titreMealx">Du cadre logique à la <span style="color:var(--m-eval)">plainte clôturée</span>.</h2>
+                <p>Cliquez sur un niveau pour voir ses indicateurs, ses sources de vérification et ses hypothèses.</p>
+            </div>
+            <div class="op-sector small" role="group" aria-label="Secteur de l'exemple"><button type="button" data-s="edu" class="on">Éducation</button><button type="button" data-s="sante">Santé</button><button type="button" data-s="eau">Eau</button><button type="button" data-s="agri">Agriculture</button></div>
+        </div>
+        <div class="op-mx">
+            <!-- cadre logique -->
+            <div class="op-lf">
+                <div class="op-lf-tree" id="opLfTree" role="tablist" aria-label="Niveaux du cadre logique"></div>
+                <div class="op-lf-d" id="opLfD" role="tabpanel" aria-live="polite"></div>
+            </div>
+            <!-- redevabilité -->
+            <div class="op-rv" aria-label="Exemple de traitement d'une plainte">
+                <div class="op-rv-h"><b>Redevabilité · plaintes et retours</b><span class="op-net on">En direct</span></div>
+                <div class="op-rv-k">
+                    <div><small>Reçues ce mois</small><b id="opRvN">47</b></div>
+                    <div><small>Taux de clôture</small><b id="opRvT">89 %</b></div>
+                    <div><small>Délai moyen</small><b id="opRvD">3,4 j</b></div>
+                </div>
+                <div class="op-rv-cols" id="opRvCols">
+                    <div data-c="0"><h5><i style="--c:var(--m-eval)"></i>Reçue</h5></div>
+                    <div data-c="1"><h5><i style="--c:var(--m-suivi)"></i>Assignée</h5><div class="tk old">#R-208 · Retard de paiement des relais</div></div>
+                    <div data-c="2"><h5><i style="--c:var(--m-plan)"></i>En traitement</h5><div class="tk old">#R-205 · Demande d'information</div></div>
+                    <div data-c="3"><h5><i style="--c:var(--m-app)"></i>Clôturée</h5><div class="tk old">#R-201 · Erreur sur la liste</div><div class="tk old">#R-199 · Suggestion</div></div>
+                </div>
+                <p class="op-rv-log" id="opRvLog">En attente d'un nouveau retour…</p>
+            </div>
+        </div>
+    </div>
+</section>
 
 <!-- ================= UNE SOLUTION PAR PROFIL ================= -->
 <section class="op-sec">
@@ -1285,13 +1917,18 @@
         </div>
     </div>
     {% meal_afrique_actus 3 as actus %}
-    {% if actus %}
     <div class="op-wrap" style="display:block">
+        <div class="op-news-h"><b>Dernières publications du journal MEAL Afrique</b><a href="{{ MEAL_AFRIQUE }}" rel="noopener">Tout lire <i class="fa-solid fa-arrow-right"></i></a></div>
         <div class="op-news">
-            {% for a in actus %}<a href="{{ a.lien }}" rel="noopener" target="_blank"><small>{{ a.categorie }}</small><b>{{ a.titre }}</b></a>{% endfor %}
+            {% if actus %}
+                {% for a in actus %}<a href="{{ a.lien }}" rel="noopener" target="_blank"><small>{{ a.categorie }}</small><b>{{ a.titre }}</b></a>{% endfor %}
+            {% else %}
+                <a href="{{ MEAL_AFRIQUE }}" rel="noopener"><small>Actualités</small><b>L'actualité du suivi-évaluation en Afrique</b></a>
+                <a href="{{ MEAL_AFRIQUE }}" rel="noopener"><small>Débats</small><b>Les questions qui animent la communauté MEAL</b></a>
+                <a href="{{ MEAL_AFRIQUE }}" rel="noopener"><small>Apprentissage</small><b>Leçons apprises et retours d'expérience des membres</b></a>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
 </section>
 
 <!-- ================= FAQ ================= -->
@@ -1751,6 +2388,320 @@
         });
         sync();
     })();
+</script>
+<!-- ===== Héros « chaîne de résultats » : animation (ajout) ===== -->
+<script>
+(function () {
+    var toc = document.getElementById('opToc'), reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (toc) {
+        var rows = [].slice.call(toc.children), k = 0;
+        setTimeout(function () { toc.querySelectorAll('.bar i').forEach(function (b, i) { setTimeout(function () { b.style.width = b.dataset.w + '%'; }, reduce ? 0 : i * 160); }); }, 300);
+        var step = function () { rows.forEach(function (r, i) { r.classList.toggle('on', i === k); }); k = (k + 1) % rows.length; };
+        step(); if (!reduce) setInterval(step, 2200);
+    }
+    /* fiches qui arrivent du terrain */
+    var live = document.getElementById('opTocLive'), n = 12, LIEUX = ['Mokolo', 'Maroua', 'Kousseri', 'Mora'];
+    if (live && !reduce) setInterval(function () { n += 1 + Math.floor(Math.random() * 3); live.textContent = n + ' fiches reçues · ' + LIEUX[n % LIEUX.length]; }, 4200);
+    /* le mot qui change prend la couleur de son volet */
+    var rot = document.getElementById('opRotate'), COL = { 'collecte': '#C98A1B', 'planification': '#2B3A67', 'évaluation': '#2A8A7D', 'redevabilité': '#EA580C' };
+    if (rot) { var paint = function () { var c = COL[rot.textContent.trim().toLowerCase()]; if (c) rot.style.setProperty('color', c, 'important'); }; paint();
+        new MutationObserver(paint).observe(rot, { childList: true, characterData: true, subtree: true }); }
+})();
+</script>
+<!-- ===== Navigation « pure » : état au défilement + avancement (ajout) ===== -->
+<script>
+(function () {
+    var h = document.getElementById('main-header'), bar = document.getElementById('opProgress'), lab = document.getElementById('opProgressL');
+    if (!h || !bar) return;
+    var seg = bar.children, COL = ['var(--m-plan)', 'var(--m-suivi)', 'var(--m-eval)', 'var(--m-app)'], PH = ['Planifier', 'Suivre', 'Évaluer', 'Apprendre'], tick = false;
+    function upd() {
+        tick = false;
+        var max = document.documentElement.scrollHeight - innerHeight, r = max > 0 ? Math.min(1, scrollY / max) : 0;
+        h.classList.toggle('is-scrolled', scrollY > 8);
+        for (var i = 0; i < 4; i++) seg[i].style.setProperty('--p', Math.max(0, Math.min(1, r * 4 - i)).toFixed(3));
+        if (lab) { var k = Math.min(3, Math.floor(r * 4)); lab.style.setProperty('--c', COL[k]); lab.innerHTML = PH[k] + ' · <b>' + Math.round(r * 100) + ' %</b>'; }
+    }
+    addEventListener('scroll', function () { if (!tick) { tick = true; requestAnimationFrame(upd); } }, { passive: true });
+    addEventListener('resize', upd); upd();
+    /* page courante soulignée */
+    document.querySelectorAll('#nav-wrapper nav > a').forEach(function (a) { if (a.getAttribute('href') && location.pathname.indexOf(a.getAttribute('href')) === 0 && a.getAttribute('href') !== '/') a.setAttribute('aria-current', 'page'); });
+})();
+</script>
+<!-- ===== Simulation collecte mobile → analyse ordinateur (ajout) ===== -->
+<script>
+(function () {
+    var sec = document.getElementById('acces'); if (!sec) return;
+    var $ = function (id) { return document.getElementById(id); }, fr = function (n, d) { return n.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }); };
+    var COM = ['Kribi', 'Edéa', 'Douala', 'Maroua', 'Bafoussam'], cnt = { Kribi: 42, 'Edéa': 31, Douala: 58, Maroua: 24, Bafoussam: 19 };
+    var tot = 174, wat = 121, sizes = 1009, today = 0, queue = 2, fiche = 175, week = [61, 63, 62, 65, 66, 67, 69, 69.5];
+    var PEOPLE = [['Fotso Jeanne', 'Bafoussam', 5, 1], ['Mballa Eric', 'Edéa', 7, 0], ['Hamadou Aïssatou', 'Maroua', 9, 0], ['Essomba Claire', 'Kribi', 4, 1], ['Njoya Ibrahim', 'Douala', 6, 1], ['Biloa Rose', 'Edéa', 3, 1]];
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, steps = $('opDevSteps').children, k = 0, run = false, timer = [];
+    var wait = function (ms) { return new Promise(function (r) { timer.push(setTimeout(r, reduce ? 0 : ms)); }); };
+    function step(i) { [].forEach.call(steps, function (li, j) { li.classList.toggle('on', j === i); }); }
+    function bars(hit) {
+        var max = Math.max.apply(null, COM.map(function (c) { return cnt[c]; })), h = '';
+        COM.forEach(function (c) { h += '<div' + (c === hit ? ' class="hit"' : '') + '><span>' + c + '</span><i style="--w:' + Math.round(cnt[c] / max * 100) + '%"></i><b>' + cnt[c] + '</b></div>'; });
+        $('opHb').innerHTML = h;
+    }
+    function line() {
+        var mn = 55, mx = 80, pts = week.map(function (v, i) { return [i * (300 / 7), 96 - (v - mn) / (mx - mn) * 88 - 4]; });
+        var d = 'M' + pts.map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' L');
+        $('opLine').setAttribute('d', d); $('opArea').setAttribute('d', d + ' L300 96 L0 96 Z');
+        var l = pts[pts.length - 1]; $('opPt').setAttribute('cx', l[0] - 2); $('opPt').setAttribute('cy', l[1]);
+    }
+    function kpis(bump) {
+        $('opKTot').textContent = fr(tot, 0); $('opKWat').textContent = fr(wat / tot * 100, 1) + ' %'; $('opKSize').textContent = fr(sizes / tot, 1);
+        $('opKTotD').textContent = '+' + today + " aujourd'hui";
+        if (bump) ['opKTot', 'opKWat', 'opKSize'].forEach(function (id) { var e = $(id); e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); });
+    }
+    bars(); line(); kpis();
+    function labels() {
+        var c = window.OP_SECTORS && window.OP_SECTORS[window.opSector]; if (!c) return;
+        $('opSurveyT').textContent = c.survey; $('opQ').textContent = c.q; $('opKWatL').textContent = c.ind; $('opKWatC').textContent = c.cible;
+        $('opLineT').textContent = c.ind; $('opFltI').textContent = 'Indicateur : ' + c.ind.toLowerCase(); $('opThQ').textContent = c.th;
+    }
+    setTimeout(labels, 0); document.addEventListener('opsector', labels);
+
+    async function cycle() {
+        var p = PEOPLE[k++ % PEOPLE.length], name = $('opName'), pg = $('opPhPg');
+        /* 1. saisie hors-ligne */
+        step(0); $('opNetP').className = 'op-net'; $('opNetP').textContent = 'Hors-ligne'; $('opLinkT').textContent = 'Sans réseau';
+        name.textContent = ''; $('opCom').textContent = '—'; $('opSize').textContent = '0'; $('opGps').className = 'op-gps'; $('opGpsT').textContent = 'Position GPS en attente';
+        [].forEach.call($('opWater').children, function (s) { s.classList.remove('on'); }); $('opSave').className = 'op-ph-btn'; $('opSave').textContent = 'Enregistrer la fiche';
+        $('opFicheN').textContent = fiche; pg.style.width = '8%';
+        $('opInName').classList.add('f');
+        for (var i = 0; i < p[0].length; i++) { name.textContent += p[0][i]; await wait(55); }
+        $('opInName').classList.remove('f'); pg.style.width = '30%'; await wait(250);
+        $('opInCom').classList.add('f'); await wait(350); $('opCom').textContent = p[1]; $('opInCom').classList.remove('f'); pg.style.width = '52%'; await wait(250);
+        $('opInSize').classList.add('f'); for (var n = 1; n <= p[2]; n++) { $('opSize').textContent = n; await wait(90); } $('opInSize').classList.remove('f'); pg.style.width = '74%'; await wait(250);
+        $('opWater').children[p[3] ? 0 : 1].classList.add('on'); pg.style.width = '88%'; await wait(400);
+        $('opGps').className = 'op-gps on'; $('opGpsT').textContent = (2.9 + Math.random() * 7).toFixed(2) + '° N · ' + (9.4 + Math.random() * 5).toFixed(2) + '° E'; pg.style.width = '100%'; await wait(450);
+        $('opSave').classList.add('press'); await wait(150); $('opSave').classList.remove('press');
+        queue++; $('opSave').classList.add('ok'); $('opSave').textContent = '✓ Enregistrée hors-ligne'; $('opQueue').textContent = queue + " fiches en attente d'envoi"; await wait(1100);
+        /* 2. synchronisation */
+        step(1); $('opNetP').className = 'op-net on'; $('opNetP').textContent = 'En ligne'; $('opLinkT').textContent = 'Envoi…';
+        var pk = $('opPacket'); pk.classList.remove('go'); void pk.offsetWidth; pk.classList.add('go'); await wait(1000);
+        $('opQueue').textContent = queue + ' fiches envoyées · 0 en attente'; queue = 0;
+        /* 3. analyse */
+        step(2); $('opLinkT').textContent = 'Reçue';
+        tot++; today++; cnt[p[1]]++; sizes += p[2]; if (p[3]) wat++; week[7] = Math.round(wat / tot * 1000) / 10;
+        kpis(true); bars(p[1]); line();
+        var tr = document.createElement('tr'); tr.className = 'new'; tr.innerHTML = '<td>' + p[0] + '</td><td>' + p[1] + '</td><td>' + p[2] + '</td><td class="' + (p[3] ? 'y">Oui' : 'n">Non') + '</td>';
+        var rows = $('opRows'); rows.insertBefore(tr, rows.firstChild); while (rows.children.length > 3) rows.removeChild(rows.lastChild);
+        $('opLast').textContent = 'il y a quelques secondes'; fiche++;
+        await wait(2600);
+    }
+    var busy = false;
+    async function loop() { run = true; if (busy) return; busy = true; while (run) { await cycle(); if (document.hidden) run = false; } busy = false; }
+    if (reduce) { step(2); return; }
+    new IntersectionObserver(function (e) { if (e[0].isIntersecting) loop(); else run = false; }, { threshold: .25 }).observe(sec);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && sec.getBoundingClientRect().top < innerHeight) loop(); });
+})();
+</script>
+<!-- ===== Exemples par secteur : données partagées par les simulations (ajout) ===== -->
+<script>
+window.OP_SECTORS = {
+  edu: { projet: 'Projet Éducation · Extrême-Nord', acts: ['Recrutement relais', 'Achat des kits', 'Distribution des kits', 'Suivi terrain', 'Rapport bailleur'],
+         saisie: 'fiches validées sur le terrain', survey: 'Scolarisation des enfants', q: 'Enfants scolarisés ?', ind: 'Taux de scolarisation', cible: 'cible 75 %', th: 'Scol.',
+         plainte: 'Kits non reçus par 3 élèves à Mada', canal: 'SMS', lieu: 'Kousseri',
+         lf: { og: ["Améliorer l'accès à une éducation de base de qualité dans l'Extrême-Nord", [['Taux net de scolarisation primaire', 58, 75, 66, '%']], 'Enquêtes de référence et finale', 'Stabilité sécuritaire de la zone'],
+               os: ['Maintenir à l’école les enfants des ménages vulnérables', [["Taux d'abandon scolaire", 18, 8, 11, '%', 1]], 'Registres scolaires, enquête annuelle', 'Les familles adhèrent au programme'],
+               r: [['Les élèves reçoivent des kits scolaires', [['Kits distribués', 0, 1680, 1240, '']], 'Fiches de distribution, PV de réception', 'Livraisons dans les délais'],
+                   ['Les enseignants relais sont formés', [['Enseignants formés', 0, 60, 52, '']], 'Listes de présence, rapports de formation', 'Les relais restent en poste'],
+                   ['Les parents sont sensibilisés', [['Ménages sensibilisés', 0, 2400, 1530, '']], 'Fiches de visite à domicile', 'Accès aux villages garanti']] } },
+  sante: { projet: 'Projet Santé maternelle · Adamaoua', acts: ['Formation', 'Achat des intrants', 'Vaccination', 'Supervision', 'Rapport bailleur'],
+         saisie: 'enfants vaccinés enregistrés', survey: 'Suivi de la vaccination', q: 'Enfant vacciné (Penta 3) ?', ind: 'Couverture vaccinale', cible: 'cible 90 %', th: 'Vacc.',
+         plainte: 'Rupture de vaccins au CSI de Ngaoundal', canal: 'Ligne verte', lieu: 'Ngaoundéré',
+         lf: { og: ['Réduire la mortalité maternelle et infantile dans l’Adamaoua', [['Femmes ayant 4 CPN', 42, 70, 57, '%']], 'EDS, enquête finale', 'Financement public maintenu'],
+               os: ['Améliorer la couverture vaccinale des enfants de 0 à 11 mois', [['Couverture Penta 3', 68, 90, 81, '%']], 'DHIS2, registres de vaccination', 'Chaîne de froid fonctionnelle'],
+               r: [['Les sages-femmes sont formées', [['Sages-femmes formées', 0, 45, 38, '']], 'Rapports de formation, pré/post-tests', 'Personnel affecté durablement'],
+                   ['Les centres de santé sont approvisionnés', [['Jours de rupture par mois', 9, 2, 4, ' j', 1]], 'Fiches de stock, bons de livraison', 'Routes praticables en saison des pluies'],
+                   ['Les campagnes de vaccination sont réalisées', [['Campagnes réalisées', 0, 12, 8, '']], 'Rapports de campagne, pointage', 'Adhésion des leaders communautaires']] } },
+  eau: { projet: 'Projet Eau & assainissement · Littoral', acts: ['Études de terrain', 'Achat des pompes', 'Forages', 'Comités de gestion', 'Rapport bailleur'],
+         saisie: 'points d’eau contrôlés', survey: 'Accès à l’eau potable', q: 'Accès à l’eau potable ?', ind: 'Accès à l’eau', cible: 'cible 75 %', th: 'Eau',
+         plainte: 'Forage en panne depuis 4 jours à Yabassi', canal: 'Boîte à suggestions', lieu: 'Yabassi',
+         lf: { og: ['Améliorer les conditions de vie des ménages ruraux du Littoral', [['Diarrhées chez les moins de 5 ans', 24, 12, 17, '%', 1]], 'Enquêtes de référence et finale', 'Pas de crise sanitaire majeure'],
+               os: ['Accroître l’accès durable à l’eau potable', [['Ménages ayant accès à l’eau potable', 41, 75, 69, '%']], 'Enquête ménages annuelle', 'Les comités assurent l’entretien'],
+               r: [['Des points d’eau sont construits', [['Forages fonctionnels', 0, 40, 31, '']], 'PV de réception, fiches de contrôle', 'Nappes accessibles aux sites retenus'],
+                   ['Les comités de gestion sont formés', [['Comités formés', 0, 40, 26, '']], 'Rapports de formation', 'Les communautés désignent les membres'],
+                   ['Les ménages adoptent les bonnes pratiques d’hygiène', [['Ménages pratiquant le lavage des mains', 22, 60, 44, '%']], 'Observations à domicile', 'Savon disponible localement']] } },
+  agri: { projet: 'Projet Résilience agricole · Ouest', acts: ['Identification', 'Achat des semences', 'Distribution', 'Suivi des parcelles', 'Rapport bailleur'],
+         saisie: 'parcelles géolocalisées', survey: 'Suivi des producteurs', q: 'Semences améliorées utilisées ?', ind: 'Adoption des semences', cible: 'cible 70 %', th: 'Sem.',
+         plainte: 'Semences livrées en retard à Dschang', canal: 'SMS', lieu: 'Dschang',
+         lf: { og: ['Renforcer la sécurité alimentaire des ménages de l’Ouest', [['Ménages en insécurité alimentaire', 38, 20, 27, '%', 1]], 'Enquêtes de référence et finale', 'Pluviométrie normale'],
+               os: ['Augmenter les rendements des petits producteurs', [['Rendement du maïs', 1.4, 2.5, 2.1, ' t/ha']], 'Mesures de rendement, carrés de rendement', 'Prix des intrants stables'],
+               r: [['Les producteurs reçoivent des semences améliorées', [['Producteurs servis', 0, 3000, 2350, '']], 'Fiches de distribution signées', 'Fournisseurs livrent à temps'],
+                   ['Les producteurs sont formés aux bonnes pratiques', [['Producteurs formés', 0, 3000, 1980, '']], 'Listes de présence, champs-écoles', 'Disponibilité des producteurs'],
+                   ['Les parcelles sont suivies', [['Parcelles géolocalisées', 0, 1500, 1120, '']], 'Fiches de suivi géolocalisées', 'Accès aux parcelles en saison']] } }
+};
+window.opSector = 'edu';
+window.opSetSector = function (k) {
+    if (!window.OP_SECTORS[k]) return; window.opSector = k;
+    document.querySelectorAll('.op-sector button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === k); b.setAttribute('aria-pressed', b.dataset.s === k); });
+    document.dispatchEvent(new CustomEvent('opsector', { detail: k }));
+};
+document.addEventListener('click', function (e) { var b = e.target.closest('.op-sector button'); if (b) window.opSetSector(b.dataset.s); });
+</script>
+<!-- ===== Planification en temps réel : simulation (ajout) ===== -->
+<script>
+(function () {
+    var plan = document.getElementById('opPlan'); if (!plan) return;
+    var $ = function (id) { return document.getElementById(id); }, Q = function (sel) { return plan.querySelector(sel); };
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, cur = $('opCursor'), toast = $('opPlToast'), timers = [];
+    var wait = function (ms) { return new Promise(function (r) { timers.push(setTimeout(r, ms)); }); };
+    var pos = function (el, dx, dy) { var a = plan.getBoundingClientRect(), b = el.getBoundingClientRect(); return [b.left - a.left + (dx == null ? b.width / 2 : dx), b.top - a.top + (dy == null ? b.height / 2 : dy)]; };
+    var move = function (xy) { cur.style.transform = 'translate(' + xy[0] + 'px,' + xy[1] + 'px)'; };
+    function say(html, ms) { toast.innerHTML = html; toast.classList.add('on'); return wait(ms || 1800).then(function () { toast.classList.remove('on'); }); }
+    function setP(bar, p, label) { bar.style.setProperty('--p', p); bar.classList.toggle('zero', !p); bar.querySelector('b').textContent = label || (p + ' %'); }
+    function avg() { var bars = plan.querySelectorAll('.op-g-row .bar'), t = 0; bars.forEach(function (b) { t += +b.style.getPropertyValue('--p'); }); var e = $('opPlAv'); e.textContent = Math.round(t / bars.length) + ' %'; e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); }
+    var ROLES = [['A', 'Paul M.', 'Approbateur'], ['I', 'Bailleur', 'Informé']], round = 0;
+
+    function names() {
+        var c = window.OP_SECTORS[window.opSector]; $('opPlProj').textContent = c.projet; $('opRaciAct').textContent = c.acts[2];
+        plan.querySelectorAll('.op-g-row .nm').forEach(function (n, i) { n.lastChild.textContent = c.acts[i]; });
+        return c;
+    }
+    document.addEventListener('opsector', function () { names(); plan.classList.remove('op-swap'); void plan.offsetWidth; plan.classList.add('op-swap'); });
+    function reset() {
+        names(); var ac = $('opBarAchat'); ac.classList.remove('late', 'done'); setP(ac, 80); toast.classList.remove('warn');
+        setP($('opBarDist'), 30); setP($('opBarSuivi'), 0, 'À venir'); $('opBarSuivi').style.setProperty('--s', 3.6);
+        $('opMs').textContent = 'J-12'; plan.querySelectorAll('.op-g-tag').forEach(function (t) { t.remove(); });
+        plan.querySelectorAll('.sl[data-r=A], .sl[data-r=I]').forEach(function (sl) { sl.classList.add('empty'); sl.querySelector('b').textContent = 'Glisser un membre'; });
+        plan.querySelectorAll('.op-team span').forEach(function (t) { t.classList.remove('lift'); });
+        plan.querySelectorAll('.op-g-row').forEach(function (r) { r.classList.remove('sel'); }); avg();
+    }
+    async function drag(name, role) {
+        var chip = Q('.op-team span[data-n="' + name + '"]'), slot = Q('.sl[data-r="' + role[0] + '"]'); if (!chip || !slot) return;
+        move(pos(chip, 14, 14)); await wait(750);
+        cur.classList.add('down'); chip.classList.add('lift');
+        var g = chip.cloneNode(true); g.className = 'op-ghost'; var c = pos(chip, 0, 0); g.style.left = c[0] + 'px'; g.style.top = c[1] + 'px'; g.style.setProperty('--c', chip.style.getPropertyValue('--c')); plan.appendChild(g);
+        await wait(150);
+        var t = pos(slot, 10, 8); g.style.transform = 'translate(' + (t[0] - c[0]) + 'px,' + (t[1] - c[1]) + 'px)'; move([t[0] + 14, t[1] + 14]);
+        await wait(450); slot.classList.add('hover'); await wait(300);
+        g.remove(); cur.classList.remove('down'); slot.classList.remove('hover', 'empty'); slot.querySelector('b').textContent = name; slot.classList.remove('fill'); void slot.offsetWidth; slot.classList.add('fill');
+        await say('<i>✓</i><span>' + role[2] + ' assigné : ' + name + '<small>Notification envoyée par e-mail et SMS</small></span>', 1900);
+    }
+    async function cycle() {
+        reset(); var c = window.OP_SECTORS[window.opSector]; move(pos(Q('.op-plan-h'), null, 10)); await wait(900);
+        /* 0. retard détecté : l'échéance est passée, l'activité n'est pas terminée */
+        var ac = $('opBarAchat'); ac.classList.add('late');
+        var lt = document.createElement('span'); lt.className = 'op-g-tag red'; lt.textContent = 'En retard · 3 j'; ac.parentNode.appendChild(lt);
+        toast.classList.add('warn');
+        await say('<i>!</i><span>' + c.acts[1] + ' : échéance dépassée de 3 jours<small>Alerte envoyée au responsable (R), approbateur (A) en copie</small></span>', 2000);
+        toast.classList.remove('warn');
+        move(pos(ac, 30, 10)); await wait(700);
+        for (var q = 80; q <= 100; q += 5) { setP(ac, q); await wait(110); }
+        ac.classList.remove('late'); ac.classList.add('done'); lt.className = 'op-g-tag green'; lt.textContent = 'Terminé'; avg(); await wait(900);
+        /* 1. l'activité en cours avance : une saisie terrain vient d'être validée */
+        var dist = $('opBarDist'), rowD = dist.closest('.op-g-row');
+        for (var p = 30; p <= 55; p += 5) { setP(dist, p); await wait(140); } avg();
+        await say('<i>↻</i><span>' + c.acts[2] + ' : 55 %<small>12 ' + c.saisie + '</small></span>', 1700);
+        /* 2. replanification : le suivi glisse d'une semaine */
+        var su = $('opBarSuivi'); move(pos(su, 18, 10)); await wait(800);
+        cur.classList.add('down'); su.classList.add('drag'); await wait(200);
+        su.style.setProperty('--s', 4.4); move(pos(su.parentNode, su.parentNode.getBoundingClientRect().width * 4.6 / 6, 10)); await wait(750);
+        cur.classList.remove('down'); su.classList.remove('drag');
+        var tg = document.createElement('span'); tg.className = 'op-g-tag'; tg.textContent = 'Replanifié +1 sem.'; su.parentNode.appendChild(tg);
+        $('opMs').textContent = 'J-12 · tenu'; await wait(900);
+        /* 3. matrice RACI : on complète les rôles de l'activité sélectionnée */
+        rowD.classList.add('sel'); move(pos(rowD.querySelector('.nm'), 40, 18)); await wait(800);
+        var r = ROLES[round % 2], r2 = ROLES[(round + 1) % 2]; round++;
+        await drag(r[1], r); await drag(r2[1], r2);
+        move(pos(Q('.op-plan-k'), 10, 10)); await wait(1600);
+    }
+    var run = false, busy = false;
+    async function loop() { run = true; if (busy) return; busy = true; while (run) { await cycle(); if (document.hidden) run = false; } busy = false; }
+    if (reduce) { cur.style.display = 'none'; return; }
+    new IntersectionObserver(function (e) { if (e[0].isIntersecting) loop(); else run = false; }, { threshold: .3 }).observe(plan);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && plan.getBoundingClientRect().top < innerHeight) loop(); });
+})();
+</script>
+<!-- ===== Cadre logique interactif + redevabilité en direct (ajout) ===== -->
+<script>
+(function () {
+    var tree = document.getElementById('opLfTree'), det = document.getElementById('opLfD'); if (!tree || !window.OP_SECTORS) return;
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, sel = 0, auto = true, nodes = [];
+    var esc = function (t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
+    var fmt = function (v, u) { return (String(v).indexOf('.') > -1 ? String(v).replace('.', ',') : Number(v).toLocaleString('fr-FR')) + (u === '%' ? ' %' : u); };
+    function build() {
+        var lf = window.OP_SECTORS[window.opSector].lf; nodes = [['Objectif global', 'og', 'var(--m-plan)', lf.og], ['Objectif spécifique', 'os', 'var(--m-app)', lf.os]];
+        lf.r.forEach(function (r, i) { nodes.push(['Résultat ' + (i + 1), 'r', 'var(--m-suivi)', r]); });
+        tree.innerHTML = nodes.map(function (n, i) { return '<button type="button" role="tab" class="' + n[1] + '" style="--c:' + n[2] + '" data-i="' + i + '"><small>' + n[0] + '</small><b>' + esc(n[3][0]) + '</b></button>'; }).join('');
+        show(Math.min(sel, nodes.length - 1));
+    }
+    function show(i) {
+        sel = i; var n = nodes[i], d = n[3];
+        tree.querySelectorAll('button').forEach(function (b, j) { b.classList.toggle('on', j === i); b.setAttribute('aria-selected', j === i); });
+        var h = '<span class="lv" style="--c:' + n[2] + '">' + n[0] + '</span><h3>' + esc(d[0]) + '</h3><div class="op-lf-ind">';
+        d[1].forEach(function (x) {
+            var down = !!x[5], pc = down ? (x[1] - x[3]) / (x[1] - x[2]) : (x[3] - x[1]) / (x[2] - x[1]); pc = Math.max(0, Math.min(1, pc));
+            h += '<div style="--c:' + n[2] + '"><p>' + esc(x[0]) + '<b>' + fmt(x[3], x[4]) + '</b></p><div class="bar"><i data-w="' + Math.round(pc * 100) + '"></i></div><small><span>Référence ' + fmt(x[1], x[4]) + '</span><span>' + Math.round(pc * 100) + ' % du chemin · cible ' + fmt(x[2], x[4]) + '</span></small></div>';
+        });
+        h += '</div><div class="op-lf-meta"><div><b>Sources de vérification</b>' + esc(d[2]) + '</div><div><b>Hypothèse</b>' + esc(d[3]) + '</div></div>';
+        det.innerHTML = h; det.classList.remove('op-swap'); void det.offsetWidth; det.classList.add('op-swap');
+        setTimeout(function () { det.querySelectorAll('.bar i').forEach(function (b) { b.style.width = b.dataset.w + '%'; }); }, 60);
+    }
+    tree.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { auto = false; show(+b.dataset.i); } });
+    document.addEventListener('opsector', build); build();
+    if (!reduce) setInterval(function () { if (auto && !document.hidden) show((sel + 1) % nodes.length); }, 4200);
+
+    /* redevabilité : une plainte traverse les colonnes jusqu'à sa clôture */
+    var cols = document.querySelectorAll('#opRvCols > div'), log = document.getElementById('opRvLog'), n = 47, closed = 42, delays = 3.4 * 42, num = 214, run = false, busy = false;
+    var set = function (id, v) { var e = document.getElementById(id); e.textContent = v; e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump'); };
+    var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+    var STEPS = [['var(--m-eval)', 'Nouvelle plainte', function (c) { return 'via ' + c.canal + ' · ' + c.lieu; }],
+                 ['var(--m-suivi)', 'Assignée', function () { return 'à Marie E. (R) · délai cible 7 j'; }],
+                 ['var(--m-plan)', 'En traitement', function () { return 'Visite terrain planifiée demain'; }],
+                 ['var(--m-app)', 'Clôturée', function () { return 'Bénéficiaire informé · 3 j'; }]];
+    async function ticket() {
+        var c = window.OP_SECTORS[window.opSector], id = '#R-' + (num++), tk;
+        n++; set('opRvN', n); log.textContent = 'Nouveau retour reçu · ' + c.canal + ' · ' + c.lieu;
+        for (var i = 0; i < 4; i++) {
+            if (tk) tk.remove();
+            tk = document.createElement('div'); tk.className = 'tk live'; tk.style.setProperty('--c', STEPS[i][0]);
+            tk.innerHTML = '<b>' + id + ' · ' + STEPS[i][1] + '</b>' + esc(c.plainte) + '<em>' + esc(STEPS[i][2](c)) + '</em>';
+            cols[i].insertBefore(tk, cols[i].children[1] || null);
+            if (i === 1) log.textContent = 'Assignée automatiquement au responsable de l’activité';
+            if (i === 2) log.textContent = 'Réponse en cours · suivi visible par l’approbateur';
+            if (i === 3) { closed++; delays += 3; set('opRvT', Math.round(closed / n * 100) + ' %'); set('opRvD', (delays / closed).toFixed(1).replace('.', ',') + ' j'); log.textContent = 'Plainte clôturée et bénéficiaire informé'; }
+            await wait(reduce ? 0 : 1900);
+        }
+        tk.classList.remove('live'); tk.classList.add('old'); tk.textContent = id + ' · ' + c.plainte;
+        while (cols[3].querySelectorAll('.tk').length > 3) cols[3].removeChild(cols[3].lastChild);
+        await wait(1200);
+    }
+    async function loop() { run = true; if (busy) return; busy = true; while (run) { await ticket(); if (document.hidden) run = false; } busy = false; }
+    var sec = document.getElementById('cadre-logique');
+    if (reduce) { ticket(); return; }
+    new IntersectionObserver(function (e) { if (e[0].isIntersecting) loop(); else run = false; }, { threshold: .25 }).observe(sec);
+})();
+</script>
+<!-- ===== Bandeau d'annonces MEAL Afrique : défilement + fermeture (ajout) ===== -->
+<script>
+(function () {
+    var bar = document.getElementById('opAnn'), t = document.getElementById('opAnnT'); if (!bar || !t) return;
+    var root = document.documentElement;
+    try { if (sessionStorage.getItem('op-ann-off') === '1') { root.classList.add('op-ann-off'); return; } } catch (e) {}
+    /* uniquement des débats : ceux du flux s'il y en a, sinon les sujets proposés */
+    var rss = [].slice.call(t.querySelectorAll('.op-ann-rss')).filter(function (a) { var k = (a.querySelector('em').dataset.k || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''); return k.indexOf('debat') > -1; });
+    t.querySelectorAll('.op-ann-rss').forEach(function (a) { if (rss.indexOf(a) < 0) a.remove(); });
+    if (rss.length) t.querySelectorAll('.op-ann-fb').forEach(function (a) { a.remove(); });
+    /* boucle sans couture : on duplique la liste et on règle la vitesse sur sa longueur (≈ 60 px/s) */
+    var items = [].slice.call(t.children);
+    items.forEach(function (a) { var c = a.cloneNode(true); c.setAttribute('aria-hidden', 'true'); c.tabIndex = -1; t.appendChild(c); });
+    function speed() { var w = t.scrollWidth / 2; t.style.setProperty('--shift', -w + 'px'); t.style.setProperty('--dur', Math.max(18, w / 60) + 's'); }
+    speed(); addEventListener('resize', speed);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(speed);
+    /* le bandeau s'efface au défilement, la navigation remonte */
+    var tick = false;
+    addEventListener('scroll', function () {
+        if (tick) return; tick = true;
+        requestAnimationFrame(function () { var up = scrollY > 40; bar.classList.toggle('away', up); root.classList.toggle('op-ann-up', up); tick = false; });
+    }, { passive: true });
+    document.getElementById('opAnnX').addEventListener('click', function () {
+        root.classList.add('op-ann-off'); try { sessionStorage.setItem('op-ann-off', '1'); } catch (e) {}
+    });
+})();
 </script>
 </body>
 </html>

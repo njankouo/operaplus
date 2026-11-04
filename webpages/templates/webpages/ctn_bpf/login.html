@@ -99,14 +99,90 @@
         .lg-back:hover { color: var(--ink); }
         @media (max-width: 960px) { main { grid-template-columns: 1fr; } .lg-side { display: none; } .lg-right { min-height: 100vh; } #loginCard { padding: 30px 24px !important; } }
         @media (prefers-reduced-motion: reduce) { .lg-points li, .lg-bars i, #loginCard { animation: none !important; opacity: 1; transform: none; } .lg-bars i { height: var(--h); } }
+
+    </style>
+    <!-- ===================== CONNEXION : finition « niveau expert » (ajout) ===================== -->
+    <style>
+        :root { --ink: #0F1B2D; --acc: #EA580C; --acc-2: #C2410C; --line: #E7E3DA; --muted: #5B6472; --bg: #F7F5F0; --paper: #F5F3EE;
+                --m-plan: #2B3A67; --m-suivi: #C98A1B; --m-eval: #EA580C; --m-app: #2A8A7D; }
+        body { background: #fff !important; -webkit-font-smoothing: antialiased; }
+        ::selection { background: color-mix(in srgb, var(--acc) 22%, transparent); }
+        :where(a, button, input):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+        h1, h2 { text-wrap: balance; }
+
+        /* panneau gauche : papier, encre, sens */
+        .lg-side { background: var(--paper) !important; color: var(--ink) !important; border-right: 1px solid var(--line); padding: 44px 56px !important; }
+        .lg-side::after { display: none !important; }
+        .lg-brand { color: var(--ink) !important; } .lg-brand i { box-shadow: none; border-radius: 10px !important; width: 38px !important; height: 38px !important; font-size: 15px !important; }
+        .lg-kick { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 18px; font-size: 11.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--acc); }
+        .lg-kick i { font-style: normal; width: 22px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 11.5px; letter-spacing: 0; }
+        .lg-kick i:nth-child(4) { margin-right: 8px; }
+        .lg-pitch h1 { color: var(--ink) !important; font-size: clamp(30px, 3vw, 42px) !important; letter-spacing: -.034em !important; }
+        .lg-pitch h1 em { background: none !important; color: var(--acc) !important; padding: 0 !important; }
+        .lg-pitch p { color: var(--muted) !important; }
+        .lg-points, .lg-live { display: none !important; }            /* remplacés par la vue « aujourd'hui » */
+
+        .lg-today { margin-top: 28px; max-width: 440px; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+        .lg-today-h { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 10px; border-bottom: 1px solid #EEEAE2; }
+        .lg-today-h b { font-size: 13.5px; font-weight: 800; } .lg-today-h span { font-size: 12px; font-weight: 700; color: var(--muted); }
+        .lg-t { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 10px 2px; border-bottom: 1px solid #F4F1EA; opacity: 0; transform: translateY(6px); animation: lgRow .5s cubic-bezier(.2,.8,.2,1) forwards; }
+        .lg-t:last-of-type { border-bottom: 0; }
+        .lg-t:nth-of-type(2) { animation-delay: .15s; } .lg-t:nth-of-type(3) { animation-delay: .3s; }
+        @keyframes lgRow { to { opacity: 1; transform: none; } }
+        .lg-t > em { width: 26px; height: 26px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 12px; font-weight: 800; color: #fff; background: var(--c); }
+        .lg-t b { display: block; font-size: 13px; font-weight: 700; color: #344054; } .lg-t small { display: block; font-size: 11.5px; color: #98A2B3; font-weight: 600; margin-top: 1px; }
+        .lg-t > span:last-child { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; white-space: nowrap; background: color-mix(in srgb, var(--s) 12%, #fff); color: color-mix(in srgb, var(--s) 85%, #000); }
+        .lg-prog { margin-top: 10px; display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: var(--muted); }
+        .lg-prog i { flex: 1; height: 6px; border-radius: 6px; background: #F0EDE6; overflow: hidden; }
+        .lg-prog i::after { content: ""; display: block; height: 100%; width: 0; background: var(--m-app); border-radius: 6px; animation: lgProg 1.4s .5s cubic-bezier(.2,.8,.2,1) forwards; }
+        @keyframes lgProg { to { width: 64%; } }
+        .lg-prog b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+        .lg-debat { display: flex; gap: 12px; align-items: center; margin-top: 16px; max-width: 440px; padding: 12px 14px; border-radius: 14px; background: #0E3B35; color: #fff; text-decoration: none; transition: background .2s; }
+        .lg-debat:hover { background: #0B302B; }
+        .lg-debat > i { width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 10.5px; font-weight: 900; background: #F4B860; color: #0E3B35; }
+        .lg-debat small { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #8FD4C8; }
+        .lg-debat b { display: block; font-size: 13px; font-weight: 700; line-height: 1.35; margin-top: 1px; }
+        .lg-debat span:last-child { margin-left: auto; font-size: 12px; font-weight: 800; color: #F4B860; white-space: nowrap; }
+        .lg-foot { color: #98A2B3 !important; } .lg-foot a { color: var(--muted) !important; } .lg-foot a:hover { color: var(--ink) !important; }
+
+        /* panneau droit : formulaire posé, sans carte flottante */
+        .lg-right { background: #fff; }
+        #loginCard { box-shadow: none !important; border: 0 !important; padding: 0 !important; max-width: 400px !important; border-radius: 0 !important; }
+        #loginCard > div:first-child .bg-orange-600 { box-shadow: none !important; border-radius: 12px !important; }
+        #loginCard h2 { font-size: 30px !important; letter-spacing: -.034em !important; }
+        .input-pro { border-color: #D9D4C8 !important; border-radius: 12px !important; background: #fff !important; }
+        .input-pro:hover { border-color: #C8C1B2 !important; }
+        .input-pro:focus { border-color: var(--ink) !important; box-shadow: 0 0 0 4px rgba(15,27,45,.07) !important; }
+        #submitBtn { box-shadow: none !important; border-radius: 12px !important; }
+        #loginForm > div:last-child::before { content: "" !important; left: 0; right: 0; top: -20px; height: 1px; background: var(--line); }
+        #loginForm > div:last-child::after { content: "ou continuer avec"; position: absolute; left: 50%; top: -29px; transform: translateX(-50%); padding: 0 12px; background: #fff; font-size: 12px; font-weight: 600; color: #98A2B3; white-space: nowrap; }
+        #loginForm > div:last-child a { border-color: #D9D4C8 !important; border-radius: 12px !important; }
+        #loginForm > div:last-child a:hover { background: var(--bg) !important; }
+        .lg-secure { justify-content: flex-start !important; }
+        .lg-mtop, .lg-debat-m { display: none !important; }
+        @media (max-width: 960px) {
+            .lg-right { justify-content: flex-start !important; padding: 28px 22px 40px !important; }
+            .lg-debat-m { display: flex !important; width: 100%; max-width: 400px; margin-top: 28px; }
+            .lg-mtop { display: flex !important; width: 100%; max-width: 400px; justify-content: space-between; align-items: center; margin-bottom: 34px; }
+            .lg-mtop a { display: inline-flex; align-items: center; gap: 0; font-size: 19px; font-weight: 800; color: var(--ink); text-decoration: none; }
+            .lg-mtop a i { margin-right: 10px; width: 34px; height: 34px; border-radius: 10px; background: var(--acc); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
+            .lg-mtop a span { color: var(--acc); }
+            .lg-mtop .lg-kick { margin: 0; }
+            #loginCard { padding: 0 !important; }
+            #loginCard > div:first-child > div:first-child { display: none !important; }
+        }
+        @media (prefers-reduced-motion: reduce) { .lg-t, .lg-prog i::after { animation: none !important; opacity: 1; transform: none; } .lg-prog i::after { width: 64%; } }
     </style>
 </head>
 <body class="antialiased">
+{% firstof meal_afrique_url "#" as MEAL_AFRIQUE %}
 
     <main class="min-h-screen flex items-center justify-center p-6">
         <aside class="lg-side" aria-hidden="false">
             <a href="/" class="lg-brand"><i class="fa-solid fa-chart-line"></i><b style="font-weight:800">Opera<span>Plus</span></b></a>
             <div class="lg-pitch">
+                <span class="lg-kick" aria-hidden="true"><i style="background:var(--m-plan)">M</i><i style="background:var(--m-suivi)">E</i><i style="background:var(--m-eval)">A</i><i style="background:var(--m-app)">L</i>Espace de pilotage</span>
                 <h1>Bon retour.<br>Vos projets <em>vous attendent</em>.</h1>
                 <p>Retrouvez vos indicateurs, vos activités et les dernières saisies du terrain, là où vous les avez laissés.</p>
                 <ul class="lg-points">
@@ -118,10 +194,20 @@
                     <div class="lg-live-h"><span>Réalisé vs cible</span><b>En direct</b></div>
                     <div class="lg-bars"><i style="--h:45%"></i><i style="--h:52%"></i><i style="--h:58%;animation-delay:.08s"></i><i style="--h:60%;animation-delay:.08s"></i><i style="--h:68%;animation-delay:.16s"></i><i style="--h:70%;animation-delay:.16s"></i><i style="--h:82%;animation-delay:.24s"></i><i style="--h:85%;animation-delay:.24s"></i></div>
                 </div>
+                <!-- ===== Aujourd'hui dans vos projets (ajout) : ce qui attend l'utilisateur après connexion ===== -->
+                <div class="lg-today" aria-hidden="true">
+                    <div class="lg-today-h"><b>Aujourd'hui dans vos projets</b><span id="lgDate"></span></div>
+                    <div class="lg-t" style="--c:var(--m-eval);--s:var(--m-eval)"><em>A</em><span><b>Valider le rapport de distribution</b><small>Vous êtes approbateur</small></span><span>Échéance dépassée</span></div>
+                    <div class="lg-t" style="--c:var(--m-plan);--s:var(--m-suivi)"><em>R</em><span><b>Saisir l'enquête de suivi</b><small>12 fiches reçues du terrain</small></span><span>Aujourd'hui</span></div>
+                    <div class="lg-t" style="--c:#64748B;--s:var(--m-app)"><em>I</em><span><b>Rapport trimestriel au bailleur</b><small>Vous êtes informé</small></span><span>Dans 12 j</span></div>
+                    <div class="lg-prog"><span>Avancement</span><i></i><b>64 %</b></div>
+                </div>
+                <a class="lg-debat" href="{{ MEAL_AFRIQUE }}" rel="noopener"><i aria-hidden="true">MA</i><span><small>Débat MEAL Afrique</small><b>Comment rendre la redevabilité vraiment utile aux bénéficiaires ?</b></span><span>Participer</span></a>
             </div>
             <div class="lg-foot"><a href="/">Accueil</a><a href="/securite/">Sécurité</a><a href="/confidentialite/">Confidentialité</a><span>© OperaPlus</span></div>
         </aside>
         <div class="lg-right">
+        <div class="lg-mtop"><a href="/"><i class="fa-solid fa-chart-line"></i>Opera<span>Plus</span></a><span class="lg-kick" aria-hidden="true"><i style="background:var(--m-plan)">M</i><i style="background:var(--m-suivi)">E</i><i style="background:var(--m-eval)">A</i><i style="background:var(--m-app)">L</i></span></div>
         <div id="loginCard" class="glass-card p-10 rounded-3xl w-full max-w-lg">
             <div class="mb-8 text-center">
                 <div class="flex justify-center mb-4">
@@ -172,6 +258,7 @@
             <p class="lg-secure"><i class="fa-solid fa-lock"></i>Connexion chiffrée · vos données restent privées</p>
         </div>
         <a href="/" class="lg-back"><i class="fa-solid fa-arrow-left"></i> Retour à l'accueil</a>
+        <a class="lg-debat lg-debat-m" href="{{ MEAL_AFRIQUE }}" rel="noopener"><i aria-hidden="true">MA</i><span><small>Débat MEAL Afrique</small><b>Comment rendre la redevabilité vraiment utile aux bénéficiaires ?</b></span><span>Participer</span></a>
         </div>
     </main>
 
@@ -215,6 +302,7 @@
             document.getElementById('loader').classList.add('hidden'); document.getElementById('btnText').innerText = 'Se connecter'; pw.value = '';
         });
         /* l'effet d'inclinaison 3D est neutralisé par le style (transform: none) pour un rendu plus calme */
+        var d = document.getElementById('lgDate'); if (d) d.textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
