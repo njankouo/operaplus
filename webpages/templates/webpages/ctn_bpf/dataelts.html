@@ -25,17 +25,141 @@
 
 {%endblock%}
 {%block content%}
+<!-- ===================== DATA ELEMENTS : design (ajout) ===================== -->
+<style>
+    .dx { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: var(--sbx-ok, #2A8A7D); --danger: var(--sbx-danger, #E35A33);
+          --ink: #0b1220; --muted: #667085; --line: #e4e8ee; background: #f5f7fa !important; }
+    .dx > div > div.bg-white { border-radius: 18px !important; box-shadow: none !important; border: 1px solid var(--line); }
+    .dx > div > div.bg-white > div:first-child { flex-wrap: wrap; gap: 14px; padding: 20px 22px !important; border-color: var(--line) !important; align-items: flex-start !important; }
+    .dx > div > div.bg-white > div:first-child h2 { font-size: 22px !important; font-weight: 800 !important; letter-spacing: -.02em; color: var(--ink) !important; }
+    .dx-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+    .dx-kpis { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .dx-kpis div { padding: 7px 12px; border-radius: 11px; border: 1px solid var(--line); background: #fbfcfd; }
+    .dx-kpis b { display: block; font-size: 17px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.2; } .dx-kpis span { font-size: 11px; font-weight: 700; color: var(--muted); }
+    .dx-act { display: flex; gap: 8px; flex-wrap: wrap; }
+    .dx-act > button, .dx-act > a { display: inline-flex !important; align-items: center; gap: 8px; height: 42px; padding: 0 16px !important; border-radius: 12px !important; font-size: 13.5px !important; font-weight: 800 !important; box-shadow: none !important; text-decoration: none; white-space: nowrap; }
+    .dx-act > button { background: var(--dom) !important; color: #fff !important; } .dx-act > button:hover { background: color-mix(in srgb, var(--dom) 85%, #000) !important; }
+    .dx-act > a { background: #fff; color: #344054; border: 1px solid var(--line); } .dx-act > a:hover { border-color: var(--dom); color: var(--dom); }
+    .dx-tools .dx-tabs { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; }
+    .dx-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 12px 22px; border-bottom: 1px solid var(--line); background: #fbfcfd; }
+    .dx-q { position: relative; flex: 1; min-width: 220px; }
+    .dx-q svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: #98a2b3; }
+    .dx-q input { width: 100%; height: 40px; border: 1px solid var(--line); background: #fff; border-radius: 10px; padding: 0 12px 0 38px; font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; }
+    .dx-q input:focus { border-color: var(--dom); box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 10%, transparent); }
+    .dx-tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: 11px; background: #eef1f4; flex-wrap: wrap; }
+    .dx-tabs button { border: 0; background: transparent; height: 34px; padding: 0 11px; border-radius: 8px; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+    .dx-tabs button em { font-style: normal; font-size: 11px; padding: 0 6px; border-radius: 999px; background: #e1e6ec; color: #475467; }
+    .dx-tabs button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(16,24,40,.12); }
+    /* tableau */
+    .dx > div > div.bg-white > div:nth-of-type(2) { padding: 0 !important; }
+    .dx table thead { background: #fbfcfd !important; }
+    .dx table th { padding: 11px 22px !important; font-size: 11px !important; font-weight: 800 !important; color: #98a2b3 !important; letter-spacing: .08em !important; }
+    .dx table td { padding: 14px 22px !important; vertical-align: top; white-space: normal !important; }
+    .dx table tbody tr { transition: background .15s; } .dx table tbody tr:hover { background: color-mix(in srgb, var(--dom) 3%, #fff) !important; }
+    .dx table td:first-child { min-width: 320px; }
+    .dx-name { display: flex; gap: 12px; align-items: flex-start; }
+    .dx-ico { width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; background: color-mix(in srgb, var(--c, var(--dom)) 10%, #fff); color: var(--c, var(--dom)); }
+    .dx table td:first-child div.font-semibold { font-size: 14.5px; color: var(--ink) !important; }
+    .dx table td:first-child div.mt-2 { margin-top: 8px !important; padding: 0 !important; background: transparent !important; border: 0 !important; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .dx table td:first-child div.mt-2 > * { margin: 0 !important; }
+    .dx table td:first-child div.mt-2 > div:first-child a { background: #fff !important; border: 1px solid var(--line); color: var(--dom) !important; border-radius: 999px !important; font-weight: 700 !important; }
+    .dx table td:first-child div.mt-2 > div:first-child a:hover { border-color: var(--dom); }
+    /* calcul auto : petite pastille au lieu du gros bloc vert foncé */
+    .dx .bg-emerald-900 { background: color-mix(in srgb, var(--ok) 10%, #fff) !important; border: 0 !important; border-radius: 999px !important; padding: 3px 10px 3px 6px !important; }
+    .dx .bg-emerald-900 > div { gap: 5px; } .dx .bg-emerald-900 > div > * + * { margin-left: 0 !important; }
+    .dx .bg-emerald-900 p:first-child { font-size: 11px !important; text-transform: none !important; color: var(--ok) !important; letter-spacing: 0 !important; display: inline; }
+    .dx .bg-emerald-900 p:last-child { display: inline; font-size: 11px !important; color: var(--ok) !important; margin-left: 4px; }
+    .dx .bg-emerald-900 p:last-child span { text-decoration: none !important; font-style: normal !important; }
+    .dx .bg-emerald-900 svg { color: var(--ok) !important; width: 13px; height: 13px; }
+    .dx .bg-emerald-900 .flex-1 { display: flex; align-items: center; }
+    /* cumulatif */
+    .dx td:first-child .rounded-full.bg-blue-500 { background: var(--acc) !important; }
+    .dx td:first-child .flex.items-center.space-x-2:has(.bg-blue-500) { padding: 3px 10px 3px 8px; border-radius: 999px; background: color-mix(in srgb, var(--acc) 12%, #fff); }
+    .dx td:first-child .flex.items-center.space-x-2:has(.bg-blue-500) span:last-child { font-size: 11px !important; color: color-mix(in srgb, var(--acc) 75%, #000) !important; }
+    .dx td:first-child .border-l-2 { flex-basis: 100%; margin: 4px 0 0 !important; border-color: color-mix(in srgb, var(--acc) 35%, #fff) !important; font-size: 12.5px !important; }
+    .dx td:first-child .border-l-2 .italic { font-style: normal !important; display: inline !important; opacity: 1 !important; color: var(--muted); }
+    .dx td:first-child .border-l-2 .italic + span { display: inline; margin-left: 4px; }
+    .dx td:first-child .border-l-2 > div { text-transform: none !important; letter-spacing: 0 !important; font-size: 11.5px !important; }
+    /* type et agrégation */
+    .dx-raw { display: none; }
+    .dx-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; background: #f2f4f7; color: #344054; }
+    .dx-chip.agg { background: color-mix(in srgb, var(--dom) 9%, #fff); color: var(--dom); }
+    .dx table td:nth-child(3) > span.inline-flex { display: none !important; }
+    /* actions */
+    .dx table td:last-child button[data-dropdown-toggle] { width: 36px; height: 36px; border-radius: 10px !important; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; }
+    .dx table td:last-child button[data-dropdown-toggle]:hover { border-color: var(--line); background: #fff !important; }
+    .dx [id^="dropdown-"] { border-radius: 12px !important; border: 1px solid var(--line); box-shadow: 0 16px 32px -20px rgba(16,24,40,.45) !important; overflow: hidden; }
+    .dx [id^="dropdown-"] a { font-weight: 600; }
+    .dx-none { display: none; padding: 34px 16px; text-align: center; color: var(--muted); font-size: 14px; } .dx-none.on { display: block; } .dx-none b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+    mark.dx-hl { background: color-mix(in srgb, var(--acc) 28%, #fff); color: inherit; border-radius: 3px; padding: 0 1px; }
 
-<div class="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+    /* fenêtre d'ajout */
+    #modalToggle2:not(.hidden) { display: flex !important; align-items: flex-start; justify-content: center; padding-top: 6vh !important; }
+    #modalToggle2 > div > div { border-radius: 20px !important; overflow: hidden; box-shadow: 0 40px 80px -30px rgba(15,27,45,.5) !important; animation: dxPop .28s cubic-bezier(.2,.9,.3,1.2) both; }
+    @keyframes dxPop { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+    #modalToggle2 > div > div > div:first-child { background: var(--dom) !important; border: 0 !important; padding: 18px 22px !important; position: relative; }
+    #modalToggle2 > div > div > div:first-child::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--acc); }
+    #modalToggle2 > div > div > div:first-child h3 { color: #fff !important; text-transform: none !important; font-size: 18px !important; font-weight: 800 !important; }
+    #modalToggle2 > div > div > div:first-child h3::before { content: "Data element"; display: block; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: color-mix(in srgb, var(--acc) 70%, #fff); margin-bottom: 2px; }
+    #modalToggle2 [data-modal-hide] { color: #fff !important; background: rgba(255,255,255,.12) !important; border-radius: 10px !important; }
+    #modalToggle2 form > div:nth-of-type(1) { padding: 20px 22px !important; }
+    #modalToggle2 label { font-size: 13px !important; font-weight: 700 !important; color: #344054 !important; }
+    #modalToggle2 input[type=text], #modalToggle2 select { border: 1px solid #d0d5dd !important; border-radius: 11px !important; padding: 11px 12px !important; font-size: 14px !important; box-shadow: none !important; }
+    #modalToggle2 input[type=text]:focus, #modalToggle2 select:focus { border-color: var(--dom) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 10%, transparent) !important; outline: none; }
+    #modalToggle2 .dx-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    #modalToggle2 .dx-row > div { margin: 0 !important; }
+    #modalToggle2 input[type=file]::file-selector-button { background: color-mix(in srgb, var(--dom) 10%, #fff) !important; color: var(--dom) !important; }
+    #modalToggle2 label:has(#cumulatif) { border-radius: 14px !important; background: #fff !important; border-color: var(--line) !important; }
+    #modalToggle2 label:has(#cumulatif:checked) { border-color: var(--acc) !important; background: color-mix(in srgb, var(--acc) 6%, #fff) !important; }
+    #modalToggle2 #cumulatif { accent-color: var(--acc); }
+    #periode_cummul { border-radius: 14px !important; background: #fbfcfd !important; border-color: var(--line) !important; }
+    #periode_cummul .animate-pulse { animation: none !important; background: var(--acc) !important; }
+    #periode_cummul h3 { color: var(--ink) !important; }
+    .dx-sum { margin: 0; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--dom) 6%, #fff); color: var(--dom); font-size: 13px; font-weight: 700; line-height: 1.5; }
+    .dx-sum b { color: var(--ink); }
+    .dx-err { display: none; color: var(--danger); font-size: 12.5px; font-weight: 700; } .dx-err.on { display: block; }
+    #modalToggle2 form > div:last-child { padding: 14px 22px !important; background: #fbfcfd; border-color: var(--line) !important; gap: 8px; }
+    #modalToggle2 form > div:last-child button[type=submit] { background: var(--acc) !important; box-shadow: none !important; border-radius: 12px !important; padding: 11px 20px !important; }
+    #modal-backdrop { background: rgba(15,27,45,.5) !important; backdrop-filter: blur(2px); }
+    @media (max-width: 760px) { .dx table thead { display: none; } .dx table, .dx table tbody, .dx table tr, .dx table td { display: block; width: 100%; }
+        .dx table tr { position: relative; padding: 14px 16px; border-bottom: 1px solid var(--line); } .dx table td { padding: 0 !important; min-width: 0 !important; }
+        .dx table td:nth-child(2), .dx table td:nth-child(3) { display: inline-block; width: auto; margin: 10px 6px 0 48px; } .dx table td:nth-child(3) { margin-left: 0; }
+        .dx table td:last-child { position: absolute; top: 12px; right: 10px; width: auto; } .dx table td:first-child { padding-right: 40px !important; }
+        #modalToggle2 .dx-row { grid-template-columns: 1fr; } .dx-tools { padding: 12px 16px; } }
+</style>
+
+<div class="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 dx">
     <div class="max-w-7xl mx-auto">
            
    
         <div class="bg-white shadow-xl rounded-lg overflow-hidden">
             <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <div>
                 <h2 class="text-2xl font-semibold text-gray-800">Liste Des DataElements</h2>
+                <p class="dx-sub">Les variables collectées qui alimentent le calcul de vos indicateurs.</p>
+                <div class="dx-kpis" aria-live="polite">
+                    <div><b>{{ dataelts|length }}</b><span>Data elements</span></div>
+                    <div><b id="dxNum">0</b><span>Nombres</span></div>
+                    <div><b id="dxCum">0</b><span>Cumulatifs</span></div>
+                    <div><b id="dxAuto">0</b><span>Calcul auto</span></div>
+                </div>
+                </div>
+                <div class="dx-act">
                 <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out shadow-md" data-modal-target="modalToggle2" data-modal-toggle="modalToggle2">
                     Ajouter DataElement
                 </button>
+                </div>
+            </div>
+            <div class="dx-tools">
+                <label class="dx-q"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                    <input type="search" id="dxQ" placeholder="Rechercher un data element…" autocomplete="off" aria-label="Rechercher un data element"></label>
+                <div class="dx-tabs" role="group" aria-label="Filtrer">
+                    <button type="button" data-f="" class="on">Tous <em id="dxT0">0</em></button>
+                    <button type="button" data-f="number">Nombre <em id="dxT1">0</em></button>
+                    <button type="button" data-f="text">Texte <em id="dxT2">0</em></button>
+                    <button type="button" data-f="date">Date <em id="dxT3">0</em></button>
+                    <button type="button" data-f="cum">Cumulatifs <em id="dxT4">0</em></button>
+                </div>
             </div>
 
             <div class="p-6">
@@ -51,7 +175,7 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             {%for dataelt in dataelts%}
-                            <tr class="hover:bg-gray-50 transition duration-100">
+                            <tr class="hover:bg-gray-50 transition duration-100 dx-row-i" data-type="{{ dataelt.m_value_type|lower }}" data-cum="{% if dataelt.define %}1{% endif %}" data-auto="{% if dataelt.is_calcul %}1{% endif %}" data-name="{{ dataelt.m_name }}">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
 
                                 <!-- Nom principal -->
@@ -125,11 +249,12 @@
 {% endif %}
 
                             </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{dataelt.m_value_type}}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span class="dx-raw">{{dataelt.m_value_type}}</span><span class="dx-chip">{% if dataelt.m_value_type == 'Number' %}Nombre{% elif dataelt.m_value_type == 'Text' %}Texte{% elif dataelt.m_value_type == 'Date' %}Date{% else %}{{ dataelt.m_value_type }}{% endif %}</span></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
                                         {{dataelt.m_aggregation_type}}
                                     </span>
+                                    <span class="dx-chip agg">{% if dataelt.m_aggregation_type == 's' %}Somme{% elif dataelt.m_aggregation_type == 'a' %}Moyenne{% elif dataelt.m_aggregation_type == 'M' %}Maximum{% elif dataelt.m_aggregation_type == 'm' %}Minimum{% else %}{{ dataelt.m_aggregation_type }}{% endif %}</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="relative inline-block text-left">
@@ -158,6 +283,7 @@
                             {%endfor%}
                         </tbody>
                     </table>
+                    <div class="dx-none" id="dxNone"><b>Aucun data element ne correspond</b>Modifiez la recherche ou le filtre.</div>
                 </div>
             </div>
         </div>
@@ -194,9 +320,10 @@
 
                     <div class="space-y-1">
                         <label for="nom" class="block text-sm font-medium text-gray-700">Nom de l'Element de Donnée</label>
-                        <input type="text" id="nom" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" name="nom">
+                        <input type="text" id="nom" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" name="nom" required maxlength="200" autocomplete="off" placeholder="Ex. : Nombre de kits distribués">
                     </div>
 
+                    <div class="dx-row">
                     <div class="space-y-1">
                         <label for="domain_type" class="block text-sm font-medium text-gray-700">Type de Domaine</label>
                         <select id="domain_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" name="domain_type">
@@ -222,6 +349,7 @@
                             <option value="M">Max</option>
                             <option value="m">Minimum</option>
                         </select>
+                    </div>
                     </div>
 
                     <!-- div class="space-y-1">
@@ -292,7 +420,7 @@
 
         <div>
             <label for="periode_fin" class="block mb-1 text-sm font-medium text-gray-700">
-                DataElement D'association< 
+                Data element d'origine
             </label>
             <select id="dataelt" name="dataelts"
                 class="w-full px-3 py-2.5 bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
@@ -310,6 +438,7 @@
                  
                 </div>
 
+                <div style="padding:0 22px 4px"><p class="dx-sum" id="dxSum">Renseignez le nom de l'élément.</p><p class="dx-err" id="dxErr" role="alert"></p></div>
                 <div class="flex items-center justify-end p-4 border-t border-gray-200 rounded-b dark:border-gray-600">
                     <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out shadow-md" type="submit">Enregistrer</button>
                 </div>
@@ -432,4 +561,78 @@ Swal.fire({
 </script>
 {% endfor %}
 
+<!-- ===== Data elements : recherche, filtres, résumé, confirmations (ajout) ===== -->
+<script>
+(function () {
+    var root = document.querySelector('.dx'); if (!root) return;
+    var $ = function (id) { return document.getElementById(id); }, rows = [].slice.call(root.querySelectorAll('tr.dx-row-i')), f = '';
+    var cnt = function (fn) { return rows.filter(fn).length; };
+    var nNum = cnt(function (r) { return r.dataset.type === 'number'; }), nTxt = cnt(function (r) { return r.dataset.type === 'text'; }), nDat = cnt(function (r) { return r.dataset.type === 'date'; }), nCum = cnt(function (r) { return r.dataset.cum; });
+    $('dxNum').textContent = nNum; $('dxCum').textContent = nCum; $('dxAuto').textContent = cnt(function (r) { return r.dataset.auto; });
+    $('dxT0').textContent = rows.length; $('dxT1').textContent = nNum; $('dxT2').textContent = nTxt; $('dxT3').textContent = nDat; $('dxT4').textContent = nCum;
+    /* icône par type devant le nom */
+    var ICO = { number: ['123', 'var(--dom)'], text: ['Aa', 'var(--ok)'], date: ['J', 'var(--acc)'] };
+    rows.forEach(function (r) {
+        var td = r.cells[0], nm = td.querySelector('.font-semibold'), ic = ICO[r.dataset.type] || ['•', '#64748b'];
+        var wrap = document.createElement('div'); wrap.className = 'dx-name';
+        var i = document.createElement('span'); i.className = 'dx-ico'; i.style.setProperty('--c', ic[1]); i.textContent = ic[0]; i.setAttribute('aria-hidden', 'true');
+        var body = document.createElement('div'); body.style.minWidth = '0'; body.style.flex = '1';
+        while (td.firstChild) body.appendChild(td.firstChild);
+        wrap.appendChild(i); wrap.appendChild(body); td.appendChild(wrap);
+        r._nm = nm; r._txt = nm ? nm.textContent.trim() : '';
+    });
+    var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+    function hl(r, s) {
+        if (!r._nm) return; var t = r._txt, i = s ? norm(t).indexOf(s) : -1;
+        if (i < 0) { r._nm.textContent = t; return; }
+        r._nm.textContent = ''; r._nm.appendChild(document.createTextNode(t.slice(0, i)));
+        var m = document.createElement('mark'); m.className = 'dx-hl'; m.textContent = t.slice(i, i + s.length); r._nm.appendChild(m); r._nm.appendChild(document.createTextNode(t.slice(i + s.length)));
+    }
+    function apply() {
+        var s = norm($('dxQ').value.trim()), n = 0;
+        rows.forEach(function (r) { var ok = (!s || norm(r.dataset.name).indexOf(s) > -1) && (!f || (f === 'cum' ? !!r.dataset.cum : r.dataset.type === f)); r.style.display = ok ? '' : 'none'; if (ok) n++; hl(r, ok ? s : ''); });
+        $('dxNone').classList.toggle('on', rows.length > 0 && n === 0);
+    }
+    $('dxQ').addEventListener('input', apply);
+    root.querySelectorAll('.dx-tabs button').forEach(function (b) { b.addEventListener('click', function () { f = b.dataset.f; root.querySelectorAll('.dx-tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); apply(); }); });
+    apply();
+
+    /* suppression : confirmation */
+    root.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href^="/delete_data_element/"]'); if (!a) return; e.preventDefault();
+        var r = a.closest('tr'), name = r ? r.dataset.name : 'cet élément';
+        var go = function () { location.href = a.href; };
+        if (window.Swal) Swal.fire({ title: 'Supprimer ce data element ?', text: '« ' + name + ' » ne pourra plus être utilisé dans les formules des indicateurs.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Supprimer', cancelButtonText: 'Annuler', confirmButtonColor: '#E35A33', reverseButtons: true }).then(function (x) { if (x.isConfirmed) go(); });
+        else if (confirm('Supprimer « ' + name + ' » ?')) go();
+    });
+
+    /* fenêtre d'ajout : Échap, clic à côté, résumé, contrôle du cumul */
+    var modal = $('modalToggle2'), form = modal && modal.querySelector('form');
+    if (!modal || !form) return;
+    var close = function () { var b = modal.querySelector('[data-modal-hide]'); if (b && !modal.classList.contains('hidden')) b.click(); };
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+    new MutationObserver(function () { if (!modal.classList.contains('hidden')) setTimeout(function () { $('nom').focus(); }, 60); }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+    var txt = function (id) { var el = $(id); return el && el.selectedIndex > 0 ? el.options[el.selectedIndex].text.trim() : ''; };
+    var opt = function (id) { var el = $(id); return el ? el.options[el.selectedIndex].text.trim() : ''; };
+    function sum() {
+        var n = $('nom').value.trim(), h = '';
+        if (!n) { $('dxSum').textContent = "Renseignez le nom de l'élément."; return; }
+        h = '<b>' + n.replace(/[<>&]/g, '') + '</b> · ' + opt('value_type').toLowerCase() + ', agrégé par ' + opt('aggregation_type').toLowerCase();
+        if ($('cumulatif').checked) h += '<br>Cumul de <b>' + (txt('dataelt') || '…').replace(/[<>&]/g, '') + '</b> de <b>' + (txt('periode_debut') || '…') + '</b> à <b>' + (txt('periode_fin') || '…') + '</b>';
+        $('dxSum').innerHTML = h;
+    }
+    form.addEventListener('input', sum); form.addEventListener('change', sum); sum();
+    form.addEventListener('submit', function (e) {
+        var err = '';
+        if ($('cumulatif').checked) {
+            if (!txt('periode_debut') || !txt('periode_fin')) err = 'Choisissez la période de début et la période de fin du cumul.';
+            else if (!txt('dataelt')) err = "Choisissez le data element d'origine du cumul.";
+        }
+        $('dxErr').textContent = err; $('dxErr').classList.toggle('on', !!err);
+        if (err) { e.preventDefault(); return; }
+        var b = form.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Enregistrement…';
+    });
+})();
+</script>
 {%endblock%}
