@@ -247,7 +247,7 @@
         plugins: 'table advlist autolink lists link charmap preview code visualblocks wordcount paste fullpage',
         toolbar: 'undo redo | formatselect | bold italic forecolor | alignleft aligncenter alignright | table bullist numlist | code preview',
         menubar: false,
-        extended_valid_elements: 'input[class|style|name|type|title|value|readonly|min|max|step|placeholder|maxlength|pattern|data-op-required|data-op-min|data-op-max|data-op-int|data-op-soft-min|data-op-soft-max|data-op-na|data-op-sum|data-op-label|data-op-hidden-value|data-op-type|data-op-choices|data-op-unit],select[class|style|name|title|data-op-required|data-op-na|data-op-label|data-op-type],option[value|selected],textarea[class|style|name|title|rows|placeholder|maxlength|data-op-required|data-op-na|data-op-label|data-op-type],div[class|data-id|data-rules|title|contenteditable|style],hr[class],h3[class|data-op-show-if],p[class|data-op-show-if|data-q],tr[class|style|data-op-show-if]',
+        extended_valid_elements: 'input[class|style|name|type|title|value|readonly|min|max|step|placeholder|maxlength|pattern|data-op-required|data-op-min|data-op-max|data-op-int|data-op-soft-min|data-op-soft-max|data-op-na|data-op-sum|data-op-label|data-op-hidden-value|data-op-type|data-op-choices|data-op-unit|data-op-accept],select[class|style|name|title|data-op-required|data-op-na|data-op-label|data-op-type],option[value|selected],textarea[class|style|name|title|rows|placeholder|maxlength|data-op-required|data-op-na|data-op-label|data-op-type],div[class|data-id|data-rules|title|contenteditable|style],hr[class],h3[class|data-op-show-if],p[class|data-op-show-if|data-q],tr[class|style|data-op-show-if]',
         branding: false,
         content_style: `
             body { font-family: 'Inter', Arial, sans-serif; font-size: 14px; padding: 20px; color: #334155; }
@@ -352,6 +352,163 @@
     window.addEventListener('beforeunload', function (e) { if (dirty && !saving) { e.preventDefault(); e.returnValue = ''; } });
     /* recherche : message si rien ne correspond */
     var fi = $('filterInput'); if (fi) fi.addEventListener('input', function () { if (typeof filterElements === 'function') filterElements(); });
+})();
+</script>
+
+<!-- ===== Retirer un élément ou un indicateur du formulaire (ajout) =====
+     - bouton « Retirer » sur chaque élément déjà placé, dans la colonne de gauche ;
+     - pastille « Retirer » au-dessus du champ sélectionné dans l'éditeur ;
+     - la ligne du tableau part avec le champ si elle ne contient rien d'autre ;
+     - les règles et conditions qui citaient ce champ sont nettoyées ;
+     - un seul Ctrl + Z (ou « Annuler » dans le message) remet tout en place. -->
+<style>
+    .fd-rm { order: 4; display: none; margin-left: auto; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border-radius: 6px; border: 1px solid transparent;
+             background: transparent; color: #98A2B3; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+    .element-item.placed .fd-rm { display: inline-flex; }
+    .element-item .fd-rm:hover, .element-item .fd-rm:focus-visible { border-color: color-mix(in srgb, var(--danger) 35%, #fff); background: color-mix(in srgb, var(--danger) 7%, #fff); color: var(--danger); }
+    .element-item .fd-rm span { display: none; }
+    .element-item:hover .fd-rm span, .element-item .fd-rm:focus-visible span { display: inline; }
+    .element-item > .flex:first-child { align-items: center !important; gap: 6px; }
+    .element-item > .flex:first-child > .font-mono { order: 3; }
+    @media (hover: none) { .element-item .fd-rm span { display: inline; } }     /* tablette : libellé toujours visible */
+
+    .fd-chip { position: fixed; z-index: 1500; display: none; align-items: center; gap: 2px; padding: 3px; border-radius: 9px; background: var(--ink); box-shadow: 0 6px 18px -8px rgba(11,18,32,.55); }
+    .fd-chip.on { display: inline-flex; }
+    .fd-chip b { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px 0 6px; color: #fff; font-size: 12px; font-weight: 700; }
+    .fd-chip button { height: 26px; padding: 0 9px; border: 0; border-radius: 6px; background: transparent; color: #FFB4A3; font-size: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .fd-chip button:hover, .fd-chip button:focus-visible { background: rgba(255,255,255,.1); color: #fff; }
+    .fd-chip::after { content: ""; position: absolute; left: 16px; bottom: -5px; width: 10px; height: 10px; background: var(--ink); transform: rotate(45deg); border-radius: 2px; }
+
+    .fd-undo { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 12px); z-index: 2001; display: flex; align-items: center; gap: 14px; padding: 10px 10px 10px 16px;
+               border-radius: 12px; background: var(--ink); color: #fff; font-size: 13px; font-weight: 700; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100vw - 32px); }
+    .fd-undo.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+    .fd-undo button { border: 0; border-radius: 8px; padding: 6px 12px; background: var(--acc); color: #1B1406; font-weight: 800; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+</style>
+<script>
+(function () {
+    function ed() { return window.tinymce && tinymce.activeEditor; }
+    var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var CHAMP = 'input[name^="D0elt"], select[name^="D0elt"], textarea[name^="D0elt"]';
+    var nomDE = function (id) { var it = document.querySelector('#section-de .element-item[data-id="' + id + '"]'); return it ? (it._name || it.textContent.trim()) : 'Élément #' + id; };
+    var nomIND = function (id) { var it = document.querySelector('#section-ind .element-item[data-id="' + id + '"]'); return it ? (it._name || it.textContent.trim()) : 'Indicateur #' + id; };
+
+    /* ---------- message avec « Annuler » ---------- */
+    var undoBox = document.createElement('div'); undoBox.className = 'fd-undo'; undoBox.setAttribute('role', 'status');
+    undoBox.innerHTML = '<span></span><button type="button">Annuler</button>'; document.body.appendChild(undoBox);
+    undoBox.querySelector('button').addEventListener('click', function () { var e = ed(); if (e) { e.undoManager.undo(); e.fire('change'); } undoBox.classList.remove('on'); });
+    function annonce(t) { undoBox.querySelector('span').textContent = t; undoBox.classList.add('on'); clearTimeout(undoBox._t); undoBox._t = setTimeout(function () { undoBox.classList.remove('on'); }, 6000); }
+
+    /* ---------- retrait propre ---------- */
+    function vide(el) {          /* plus aucun champ, indicateur ni texte utile hors libellé */
+        return !el.querySelector(CHAMP + ', .indicSelector');
+    }
+    function retirerNoeud(e, el) {
+        var tr = el.closest('tr'), p = el.closest('p, li');
+        e.dom.remove(el);
+        if (tr && vide(tr) && !tr.closest('thead') && !tr.classList.contains('op-ind-head')) {
+            var tb = tr.parentNode; e.dom.remove(tr);
+            var table = tb && tb.closest('table');
+            if (table && vide(table)) e.dom.remove(table);                       // tableau devenu vide
+            else if (table) {                                                     // plus aucune ligne d'indicateur : on retire son titre
+                var head = table.querySelector('tr.op-ind-head'); if (head && !table.querySelector('.indicSelector')) e.dom.remove(head);
+            }
+        } else if (p && vide(p)) {
+            if (!p.textContent.replace(/[\s :]+/g, '').length || p.textContent.trim().length < 120) e.dom.remove(p);   // « Libellé : [champ] »
+        }
+    }
+    function nettoyerRegles(e, noms) {
+        var body = e.getBody(), n = 0;
+        body.querySelectorAll('.op-rules[data-rules]').forEach(function (d) {
+            var r = []; try { r = JSON.parse(d.getAttribute('data-rules')) || []; } catch (x) {}
+            var garde = r.filter(function (x) { var t = JSON.stringify(x); return !noms.some(function (nm) { return t.indexOf('"' + nm + '"') > -1 || t.indexOf(nm + ',') > -1 || t.indexOf(',' + nm) > -1; }); });
+            n += r.length - garde.length;
+            if (!garde.length) e.dom.remove(d); else e.dom.setAttrib(d, 'data-rules', JSON.stringify(garde));
+        });
+        body.querySelectorAll('[data-op-show-if]').forEach(function (g) {
+            if (noms.some(function (nm) { return (g.getAttribute('data-op-show-if') || '').indexOf(nm) > -1; })) { e.dom.setAttrib(g, 'data-op-show-if', null); n++; }
+        });
+        body.querySelectorAll('[data-op-sum]').forEach(function (f) {
+            var l = (f.getAttribute('data-op-sum') || '').split(',').filter(function (x) { return noms.indexOf(x.trim()) < 0; });
+            if (l.length !== (f.getAttribute('data-op-sum') || '').split(',').length) { e.dom.setAttrib(f, 'data-op-sum', l.join(',') || null); n++; }
+        });
+        return n;
+    }
+    function retirerDE(id) {
+        var e = ed(); if (!e) return; var nm = 'D0elt' + id, n = 0, regles = 0;
+        e.undoManager.transact(function () {
+            var els = e.getBody().querySelectorAll('[name="' + nm + '"]'); n = els.length;
+            els.forEach(function (el) { retirerNoeud(e, el); });
+            regles = nettoyerRegles(e, [nm]);
+        });
+        if (!n) return; masquerChip(); e.fire('change'); e.nodeChanged();
+        annonce('« ' + nomDE(id) + ' » retiré du formulaire' + (n > 1 ? ' (' + n + ' fois)' : '') + (regles ? ' · ' + regles + ' règle(s) ou condition(s) liée(s) retirée(s)' : '') + '.');
+    }
+    function retirerIND(id) {
+        var e = ed(); if (!e) return; var n = 0;
+        e.undoManager.transact(function () {
+            var els = e.getBody().querySelectorAll('.indicSelector[data-id="' + id + '"]'); n = els.length;
+            els.forEach(function (el) { var row = el.closest('tr.op-ind-row'); if (row && row.querySelectorAll('.indicSelector').length === 1) retirerNoeud(e, el); else retirerNoeud(e, el); });
+        });
+        if (!n) return; masquerChip(); e.fire('change'); e.nodeChanged();
+        annonce('Indicateur « ' + nomIND(id) + ' » retiré du formulaire' + (n > 1 ? ' (' + n + ' fois)' : '') + '.');
+    }
+    window.opRetirerElement = retirerDE; window.opRetirerIndicateur = retirerIND;   /* utilisables ailleurs si besoin */
+
+    /* ---------- 1. bouton « Retirer » dans la colonne de gauche ---------- */
+    function boutons() {
+        document.querySelectorAll('#section-de .element-item, #section-ind .element-item').forEach(function (it) {
+            if (it.querySelector('.fd-rm')) return;
+            var estInd = !!it.closest('#section-ind');
+            var b = document.createElement('button'); b.type = 'button'; b.className = 'fd-rm';
+            b.innerHTML = '<i class="fas fa-xmark"></i><span>Retirer</span>';
+            b.title = 'Retirer du formulaire'; b.setAttribute('aria-label', 'Retirer « ' + (it._name || '').trim() + ' » du formulaire');
+            b.addEventListener('click', function (ev) { ev.stopPropagation(); ev.preventDefault(); var id = it.dataset.id; if (estInd) retirerIND(id); else retirerDE(id); });
+            var tag = it.querySelector('.variable-tag'), head = tag && tag.parentNode;
+            (head || it).appendChild(b);
+        });
+    }
+
+    /* ---------- 2. pastille au-dessus du champ sélectionné dans l'éditeur ---------- */
+    var chip = document.createElement('div'); chip.className = 'fd-chip'; chip.setAttribute('role', 'toolbar'); chip.setAttribute('aria-label', 'Champ sélectionné');
+    chip.innerHTML = '<b></b><button type="button"><i class="fas fa-trash-can"></i>Retirer</button>'; document.body.appendChild(chip);
+    var cible = null;
+    function masquerChip() { chip.classList.remove('on'); cible = null; }
+    function trouver(n) {
+        if (!n || !n.closest) return null;
+        return n.matches && n.matches(CHAMP + ', .indicSelector') ? n : n.closest('.indicSelector') || (n.querySelector && n.childElementCount === 1 && n.querySelector(':scope > ' + CHAMP.split(', ').join(', :scope > '))) || null;
+    }
+    function placer() {
+        var e = ed(); if (!e || !cible || !cible.isConnected) { masquerChip(); return; }
+        var fr = e.iframeElement || (e.getContentAreaContainer() || {}).querySelector && e.getContentAreaContainer().querySelector('iframe');
+        if (!fr) return;
+        var a = fr.getBoundingClientRect(), r = cible.getBoundingClientRect();
+        var top = a.top + r.top - 40, left = a.left + r.left;
+        if (r.bottom < 0 || r.top > a.height) { chip.classList.remove('on'); return; }       // champ sorti de la zone visible
+        chip.style.top = Math.max(a.top + 4, top) + 'px'; chip.style.left = Math.min(left, window.innerWidth - chip.offsetWidth - 12) + 'px';
+        chip.classList.add('on');
+    }
+    chip.querySelector('button').addEventListener('click', function () {
+        if (!cible) return;
+        if (cible.classList.contains('indicSelector')) retirerIND(cible.getAttribute('data-id'));
+        else retirerDE((cible.getAttribute('name') || '').slice(5));
+    });
+    function brancher(e) {
+        e.on('NodeChange', function (ev) {
+            var el = trouver(ev.element) || trouver(e.selection.getNode());
+            if (!el) { masquerChip(); return; }
+            cible = el;
+            chip.querySelector('b').textContent = el.classList.contains('indicSelector') ? nomIND(el.getAttribute('data-id')) : nomDE((el.getAttribute('name') || '').slice(5));
+            chip.classList.add('on'); placer();
+        });
+        e.on('click', function (ev) { var el = trouver(ev.target); if (el) { e.selection.select(el); e.nodeChanged(); } });
+        e.on('ScrollWindow ResizeEditor', placer);
+        e.on('init', function () { var w = e.getWin(); if (w) w.addEventListener('scroll', placer, { passive: true }); });
+        e.on('blur remove', function () { setTimeout(function () { if (!chip.matches(':hover') && !chip.contains(document.activeElement)) masquerChip(); }, 150); });
+        e.on('keydown', function (ev) { if (ev.key === 'Escape') masquerChip(); });
+    }
+    if (window.tinymce) { tinymce.on('AddEditor', function (ev) { brancher(ev.editor); }); if (tinymce.activeEditor) { brancher(tinymce.activeEditor); var w = tinymce.activeEditor.getWin && tinymce.activeEditor.getWin(); if (w) w.addEventListener('scroll', placer, { passive: true }); } }
+    window.addEventListener('resize', placer); window.addEventListener('scroll', placer, true);
+    boutons();
 })();
 </script>
 </body>
