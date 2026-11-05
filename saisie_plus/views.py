@@ -393,3 +393,47 @@ def fichier(request, piece_id):
     r['Content-Security-Policy'] = "default-src 'none'"
     r['Cache-Control'] = 'private, max-age=3600'
     return r
+
+
+# ======================================================================
+#  Indicateurs composites (indicateur calculé à partir d'autres indicateurs)
+#  GET /saisie-plus/api/indicateurs/?institution=&exclure=   → catalogue pour l'éditeur de formule
+#  GET /saisie-plus/api/formules/verifier/?formule=&indicateur= → erreurs (boucle, inconnu…) + formule développée
+# ======================================================================
+@login_required
+@require_http_methods(['GET'])
+def indicateurs_api(request):
+    from .formules import champ_formule, _modele
+    M = _modele()
+    try:
+        cf = champ_formule()
+    except Exception:
+        cf = None
+    qs = M.objects.all()
+    noms = {f.name for f in M._meta.get_fields()}
+    inst = _int(request.GET.get('institution'))
+    for champ in ('institution', 'm_institution'):
+        if inst and champ in noms:
+            qs = qs.filter(**{champ + '_id': inst}); break
+    exclure = _int(request.GET.get('exclure'))
+    if exclure:
+        qs = qs.exclude(id=exclure)
+    data = [{'id': o.id, 'nom': str(o), 'calcule': bool((getattr(o, cf, '') or '').strip()) if cf else False} for o in qs.order_by('id')[:2000]]
+    return JsonResponse({'ok': True, 'indicateurs': data})
+
+
+@login_required
+@require_http_methods(['GET'])
+def formules_verifier(request):
+    from .formules import FormuleInvalide, developper, extraire, verifier
+    f = request.GET.get('formule', '')[:4000]
+    ind = _int(request.GET.get('indicateur'))
+    erreurs = verifier(f, indicateur_id=ind)
+    dev = ''
+    if not erreurs:
+        try:
+            dev = developper(f)
+        except FormuleInvalide as e:
+            erreurs = [str(e)]
+    return JsonResponse({'ok': not erreurs, 'erreurs': erreurs, 'developpee': dev,
+                         'elements': sorted(set(extraire(dev)[0])) if dev else []})

@@ -14,4 +14,6 @@ urlpatterns = [
     path('api/fichiers/', views.fichiers, name='fichiers'),
     path('api/fichiers/<int:piece_id>/', views.fichier_info, name='fichier_info'),
     path('fichier/<int:piece_id>/', views.fichier, name='fichier'),
+    path('api/indicateurs/', views.indicateurs_api, name='indicateurs'),
+    path('api/formules/verifier/', views.formules_verifier, name='formules_verifier'),
 ]

@@ -431,10 +431,13 @@
         function check() {
             var v = ta.value.trim(), out = '', bad = '', depth = 0, last = 'op', used = {};
             if (!v) { $('ciPrev').innerHTML = '<span class="e">Aucune formule : l\u2019indicateur sera en saisie manuelle.</span>'; return { empty: true }; }
-            var toks = v.match(/\$[^$]*\$|\d+(?:[.,]\d+)?|[-+*\/()]|\S+/g) || [];
+            var toks = v.match(/\$[^$]*\$|#[^#]*#|\d+(?:[.,]\d+)?|[-+*\/()]|\S+/g) || [];
             toks.forEach(function (t) {
                 if (t[0] === '$') { var id = t.slice(1, -1); used[id] = 1; var ok = VARS.hasOwnProperty(id); if (!ok && !bad) bad = 'Variable inconnue : ' + id;
                     out += '<span class="v' + (ok ? '' : ' bad') + '">' + esc(ok ? VARS[id] : t) + '</span>'; if (last === 'val' && !bad) bad = 'Opérateur manquant entre deux valeurs'; last = 'val'; }
+                else if (t[0] === '#' && t.length > 2) { var ii = t.slice(1, -1), I = window.ciIND || null, okI = !I || I.hasOwnProperty(ii);   /* indicateur cité : #id# */
+                    if (I && !okI && !bad) bad = 'Indicateur inconnu : ' + ii; else if (I && okI && !I[ii].calcule && !bad) bad = 'L\u2019indicateur « ' + I[ii].nom + ' » est en saisie manuelle';
+                    used['i' + ii] = 1; out += '<span class="v ind' + (okI ? '' : ' bad') + '">' + esc(I && okI ? I[ii].nom : t) + '</span>'; if (last === 'val' && !bad) bad = 'Opérateur manquant entre deux valeurs'; last = 'val'; }
                 else if (/^\d/.test(t)) { out += '<b>' + esc(t) + '</b>'; if (last === 'val' && !bad) bad = 'Opérateur manquant entre deux valeurs'; last = 'val'; }
                 else if (t === '(') { depth++; out += '<span class="o">(</span>'; last = 'op'; }
                 else if (t === ')') { depth--; if (depth < 0 && !bad) bad = 'Parenthèse fermante en trop'; out += '<span class="o">)</span>'; last = 'val'; }
@@ -443,8 +446,9 @@
             });
             if (!bad && depth > 0) bad = 'Parenthèse non fermée'; if (!bad && last === 'op') bad = 'La formule se termine par un opérateur';
             $('ciPrev').innerHTML = out;
-            document.querySelectorAll('.var-item').forEach(function (it) { it.classList.toggle('used', !!used[it.dataset.id]); });
-            return { bad: bad };
+            document.querySelectorAll('.var-item').forEach(function (it) { it.classList.toggle('used', !!used[it.dataset.ind ? 'i' + it.dataset.ind : it.dataset.id]); });
+            if (!bad && window.ciSrvErr) bad = window.ciSrvErr;          /* boucle ou indicateur sans formule, vu par le serveur */
+            return { bad: bad, ind: Object.keys(used).some(function (k) { return k[0] === 'i'; }) };
         }
         function update() {
             var r = check(), c = $('ciChk');
@@ -465,6 +469,7 @@
         window.insertVar = function (id) { _iv(id); var it = document.querySelector('.var-item[data-id="' + id + '"]'); if (it) { it.classList.remove('flash'); void it.offsetWidth; it.classList.add('flash'); } update(); };
         window.insertOp = function (op) { _io(op); update(); };
         form.addEventListener('input', update); form.addEventListener('change', update);
+        window.ciUpdate = update;
         form.addEventListener('click', function (e) { if (e.target.closest('button[onclick*="num_div"]')) setTimeout(update, 0); });
         F('nature_indicateur').addEventListener('blur', function () { this.value = this.value.trim().toUpperCase().replace(/\s+/g, '_'); update(); });
         $('filter').addEventListener('input', function () { var n = 0; document.querySelectorAll('.var-item').forEach(function (it) { if (it.style.display !== 'none') n++; }); $('ciVarN').textContent = n + ' variable' + (n > 1 ? 's' : ''); });
@@ -473,6 +478,78 @@
             var b = form.querySelector('button[type=submit]'); b.disabled = true; b.lastChild.textContent = ' Création…';
         });
         update();
+    })();
+    </script>
+
+    <!-- ===== Indicateurs composites : citer un indicateur dans la formule (#id#) — ajout ===== -->
+    <style>
+        .ci-tabs { display: flex; gap: 4px; padding: 3px; margin: 12px 0 0; border-radius: 12px; background: #f1f5f9; }
+        .ci-tabs button { flex: 1; height: 34px; border: 0; border-radius: 9px; background: transparent; font-size: 12.5px; font-weight: 800; color: #64748b; cursor: pointer; }
+        .ci-tabs button[aria-selected="true"] { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+        .ci-tabs em { font-style: normal; font-size: 11px; margin-left: 4px; color: #94a3b8; }
+        #indList .var-item .k { font-size: 9px; font-weight: 800; padding: 1px 7px; border-radius: 6px; background: #EEF2FF; color: #4338CA; text-transform: uppercase; }
+        #indList .var-item.man { opacity: .55; cursor: not-allowed; }
+        #indList .var-item.man .k { background: #f1f5f9; color: #64748b; }
+        #ciPrev .v.ind { background: #EEF2FF !important; color: #4338CA !important; border-color: #C7D2FE !important; }
+        .ci-dev { margin-top: 8px; font: 500 11.5px ui-monospace, monospace; color: #94a3b8; word-break: break-all; }
+        .ci-dev b { color: #cbd5e1; font-weight: 700; }
+    </style>
+    <script>
+    (function () {
+        var list = document.getElementById('variableList'); if (!list) return;
+        var ta = document.getElementById('num_div');
+        var params = new URLSearchParams(location.search), moi = params.get('id') || (document.querySelector('[name="edit_id"]') || {}).value || '';
+        /* onglets : éléments de données | indicateurs */
+        var tabs = document.createElement('div'); tabs.className = 'ci-tabs'; tabs.setAttribute('role', 'tablist');
+        tabs.innerHTML = '<button type="button" role="tab" aria-selected="true" data-t="de">Éléments de données</button><button type="button" role="tab" aria-selected="false" data-t="ind">Indicateurs<em id="ciIndN"></em></button>';
+        var search = document.getElementById('filter'); search.parentNode.insertAdjacentElement('afterend', tabs);
+        var indList = document.createElement('div'); indList.id = 'indList'; indList.className = list.className; indList.hidden = true; list.insertAdjacentElement('afterend', indList);
+        tabs.addEventListener('click', function (e) {
+            var b = e.target.closest('button'); if (!b) return;
+            tabs.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-selected', x === b); });
+            list.hidden = b.dataset.t !== 'de'; indList.hidden = b.dataset.t !== 'ind';
+        });
+        var esc = function (t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
+        function inserer(txt) {
+            var s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+            ta.value = v.slice(0, s) + txt + v.slice(e); ta.focus(); ta.setSelectionRange(s + txt.length, s + txt.length);
+            if (window.ciUpdate) window.ciUpdate(); verifierServeur();
+        }
+        /* catalogue des indicateurs (API saisie_plus) */
+        fetch('/saisie-plus/api/indicateurs/?institution={{ actual_institution.id|default:"" }}&exclure=' + encodeURIComponent(moi), { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+                if (!j || !j.ok) { indList.innerHTML = '<p class="text-xs text-slate-400 p-4">Catalogue des indicateurs indisponible.</p>'; return; }
+                window.ciIND = {}; j.indicateurs.forEach(function (x) { window.ciIND[String(x.id)] = x; });
+                document.getElementById('ciIndN').textContent = j.indicateurs.length;
+                indList.innerHTML = j.indicateurs.map(function (x) {
+                    return '<div class="var-item flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl ' + (x.calcule ? 'cursor-pointer' : 'man') + '" data-ind="' + x.id + '" title="' + (x.calcule ? 'Ajouter #' + x.id + '# à la formule' : 'Indicateur en saisie manuelle : pas de formule à reprendre') + '">'
+                        + '<div class="flex flex-col gap-1"><span class="text-sm font-bold text-slate-700">' + esc(x.nom) + '</span><div class="flex items-center gap-2"><span class="k">' + (x.calcule ? 'Calculé' : 'Saisie manuelle') + '</span><span class="px-2 py-0.5 bg-slate-100 text-[9px] font-mono text-slate-500 rounded">#' + x.id + '#</span></div></div></div>';
+                }).join('') || '<p class="text-xs text-slate-400 p-4">Aucun autre indicateur.</p>';
+                if (window.ciUpdate) window.ciUpdate();
+            }).catch(function () {});
+        indList.addEventListener('click', function (e) { var it = e.target.closest('.var-item'); if (it && !it.classList.contains('man')) inserer('#' + it.dataset.ind + '#'); });
+        /* la recherche filtre aussi les indicateurs */
+        search.addEventListener('input', function () { var q = search.value.toLowerCase(); indList.querySelectorAll('.var-item').forEach(function (it) { it.style.display = it.innerText.toLowerCase().indexOf(q) > -1 ? 'flex' : 'none'; }); });
+        /* vérification serveur : boucle entre indicateurs, indicateur sans formule ; aperçu de la formule développée */
+        var dev = document.createElement('div'); dev.className = 'ci-dev'; dev.setAttribute('aria-live', 'polite'); document.getElementById('ciPrev').insertAdjacentElement('afterend', dev);
+        var t = null;
+        function verifierServeur() {
+            clearTimeout(t); t = setTimeout(function () {
+                var f = ta.value.trim();
+                if (!/#\d+#/.test(f)) { window.ciSrvErr = ''; dev.innerHTML = ''; if (window.ciUpdate) window.ciUpdate(); return; }
+                fetch('/saisie-plus/api/formules/verifier/?formule=' + encodeURIComponent(f) + '&indicateur=' + encodeURIComponent(moi), { credentials: 'same-origin' })
+                    .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+                        if (!j) return;
+                        window.ciSrvErr = j.ok ? '' : j.erreurs[0];
+                        var lisible = j.developpee.replace(/\$(\d+)\$/g, function (m, id) { var it = document.querySelector('.var-item[data-id="' + id + '"] span'); return it ? '[' + it.textContent.trim() + ']' : m; });
+                        dev.innerHTML = j.ok ? '<b>Calcul réel, à partir des données brutes :</b> ' + esc(lisible) + ' <b>· ' + j.elements.length + ' élément(s) de données</b>' : '';
+                        if (window.ciUpdate) window.ciUpdate();
+                    }).catch(function () {});
+            }, 350);
+        }
+        ta.addEventListener('input', verifierServeur);
+        var _io = window.insertOp; window.insertOp = function (op) { _io(op); verifierServeur(); };
+        verifierServeur();
     })();
     </script>
 </body>
