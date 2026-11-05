@@ -2,6 +2,7 @@
 
 Une nature (DataElement.m_value_type) = une colonne :
     Number -> m_value (FloatField)   Text -> texte_element   Date -> date_element
+    File   -> fichier_element (pièce jointe saisie_plus.PieceJointe, envoyée avant l'enregistrement)
 Le type précis (tel, gps, multi…) affine le contrôle et le format enregistré.
 """
 import re
@@ -37,10 +38,20 @@ def normaliser(nature, type_champ, brut, na=False):
     spec = (type_champ or '').strip()
     t = spec.split(':', 1)[0].lower()
     v = '' if brut is None else str(brut).strip()
-    vide = {'m_value': None, 'texte_element': None, 'date_element': None}
+    vide = {'m_value': None, 'texte_element': None, 'date_element': None, 'fichier_element_id': None}
 
     if na:                                                     # « Non applicable » : jamais 0
         return dict(vide, est_na=True)
+
+    # ---------------- Fichier ----------------
+    # Un champ Fichier / Photo du designer va TOUJOURS dans fichier_element, même si la nature de
+    # l'élément n'a pas été passée à « Fichier » dans Data elements (sinon l'identifiant finissait dans texte_element).
+    if nature == 'File' or t in ('file', 'photo'):                                       # la valeur est l'identifiant de la pièce jointe
+        if v in ('', '0'):
+            return {'fichier_element_id': None, 'est_na': False}
+        if not v.isdigit():
+            raise ValeurInvalide('pièce jointe invalide : renvoyez le fichier')
+        return {'fichier_element_id': int(v), 'est_na': False}
 
     # ---------------- Date ----------------
     if nature == 'Date':

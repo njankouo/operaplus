@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import EnTete, JournalSaisie, Justification
+from .models import EnTete, JournalSaisie, Justification, PieceJointe
 
 
 @admin.register(JournalSaisie)
@@ -20,3 +20,11 @@ class JustificationAdmin(admin.ModelAdmin):
 @admin.register(EnTete)
 class EnTeteAdmin(admin.ModelAdmin):
     list_display = ('institution_id', 'dataset_id', 'ligne1', 'ligne2', 'date')
+
+
+@admin.register(PieceJointe)
+class PieceJointeAdmin(admin.ModelAdmin):
+    list_display = ('date', 'nom', 'type_mime', 'taille', 'auteur', 'dataset_id', 'structure_id', 'periode', 'element_id')
+    list_filter = ('type_mime', 'dataset_id')
+    search_fields = ('nom', 'auteur__username')
+    readonly_fields = ('sha256', 'taille', 'type_mime')

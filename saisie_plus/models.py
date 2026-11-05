@@ -69,3 +69,45 @@ class EnTete(models.Model):
 
     def __str__(self):
         return f'En-tête {self.institution_id}' + (f' · formulaire {self.dataset_id}' if self.dataset_id else ' · par défaut')
+
+
+# ======================================================================
+#  Pièces jointes des champs « Fichier » et « Photo »
+# ======================================================================
+def _stockage_prive():
+    """Hors de MEDIA_ROOT : nginx ne sert jamais ces fichiers directement.
+    Ils passent par /saisie-plus/fichier/<id>/, qui vérifie les droits."""
+    import os
+    from django.core.files.storage import FileSystemStorage
+    return FileSystemStorage(location=getattr(settings, 'PRIVATE_MEDIA_ROOT', os.path.join(settings.BASE_DIR, 'prive')))
+
+
+def _chemin_piece(instance, filename):
+    import os, uuid
+    from django.utils import timezone
+    ext = os.path.splitext(filename)[1].lower()
+    return f'pieces/{timezone.now():%Y/%m}/{uuid.uuid4().hex}{ext}'      # nom aléatoire, jamais le nom d'origine
+
+
+class PieceJointe(models.Model):
+    """Fichier envoyé depuis la page de saisie. La valeur du data element (DSet_DElt.fichier_element) pointe ici."""
+    fichier = models.FileField('fichier', upload_to=_chemin_piece, storage=_stockage_prive, max_length=200)
+    nom = models.CharField('nom d’origine', max_length=255)
+    type_mime = models.CharField('type', max_length=100)
+    taille = models.PositiveIntegerField('taille (octets)')
+    sha256 = models.CharField(max_length=64, db_index=True)
+    est_image = models.BooleanField(default=False)
+    dataset_id = models.IntegerField('formulaire', null=True, blank=True, db_index=True)
+    structure_id = models.IntegerField('unité', null=True, blank=True, db_index=True)
+    periode = models.CharField('période', max_length=64, blank=True)
+    element_id = models.IntegerField('élément de données', null=True, blank=True)
+    auteur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='envoyé par')
+    date = models.DateTimeField('date', auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date']
+        verbose_name = 'pièce jointe'
+        verbose_name_plural = 'pièces jointes'
+
+    def __str__(self):
+        return self.nom

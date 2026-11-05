@@ -127,6 +127,14 @@ def completude(request, dataset_id, periode):
         str(l['m_structure_id']): {'remplis': l['n'], 'total': total} for l in lignes if l['m_structure_id']}})
 
 
+def _fichier_de(x):
+    """Pièce jointe d'une valeur (champ Fichier / Photo), au format attendu par la page de saisie."""
+    from .models import PieceJointe
+    pid = getattr(x, 'fichier_element_id', None)
+    p = pid and PieceJointe.objects.filter(id=pid).first()
+    return info_piece(p) if p else None
+
+
 @login_required
 @require_http_methods(['GET'])
 def valeurs(request, structure_id, periode):
@@ -158,7 +166,8 @@ def valeurs(request, structure_id, periode):
         data.append({'id': cle, 'content': v,
                      'texte': getattr(x, 'texte_element', None) if 'texte_element' in champs else None,
                      'date': d.isoformat() if d else None,
-                     'na': bool(getattr(x, 'est_na', False)) if 'est_na' in champs else False})
+                     'na': bool(getattr(x, 'est_na', False)) if 'est_na' in champs else False,
+                     'fichier': _fichier_de(x) if 'fichier_element' in champs else None})
     return JsonResponse({'data': data})
 
 
@@ -275,3 +284,112 @@ def en_tete_page(request):
         'logo_herite': bool(herite and logo and not (courant and courant.logo)),
         'logo2_herite': bool(herite and logo2 and not (courant and courant.logo_partenaire)),
     })
+
+
+# ======================================================================
+#  Pièces jointes (champs « Fichier » et « Photo » du designer)
+#  POST /saisie-plus/api/fichiers/            multipart {fichier, type, element, dataset, structure, periode}
+#  GET  /saisie-plus/api/fichiers/<id>/       → {ok, fichier: {id, nom, taille, type, url, apercu}}
+#  GET  /saisie-plus/fichier/<id>/            → le fichier lui-même, après contrôle des droits
+# ======================================================================
+from .models import PieceJointe  # noqa: E402
+
+FORMATS_PIECES = {                      # extension → (début du contenu, type MIME, image ?)
+    '.pdf': (b'%PDF', 'application/pdf', False),
+    '.png': (b'\x89PNG', 'image/png', True),
+    '.jpg': (b'\xff\xd8\xff', 'image/jpeg', True),
+    '.jpeg': (b'\xff\xd8\xff', 'image/jpeg', True),
+    '.webp': (b'RIFF', 'image/webp', True),
+    '.docx': (b'PK\x03\x04', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', False),
+    '.xlsx': (b'PK\x03\x04', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', False),
+}
+PIECE_MAX = 10 * 1024 * 1024            # 10 Mo
+
+
+def _piece_valide(f, photo=False):
+    import os
+    ext = os.path.splitext(f.name)[1].lower()
+    fmt = FORMATS_PIECES.get(ext)
+    if not fmt or (photo and not fmt[2]):
+        return None, ('Photo attendue : JPG, PNG ou WebP.' if photo else 'Formats acceptés : PDF, JPG, PNG, WebP, Word (.docx), Excel (.xlsx).')
+    if f.size > PIECE_MAX:
+        return None, 'Fichier trop lourd : 10 Mo au maximum.'
+    debut = f.read(12); f.seek(0)
+    if not debut.startswith(fmt[0]) or (ext == '.webp' and debut[8:12] != b'WEBP'):
+        return None, 'Le contenu du fichier ne correspond pas à son extension.'
+    return fmt, ''
+
+
+def peut_voir_piece(user, piece):
+    """Règle par défaut : l'auteur et l'équipe d'administration.
+    Pour ouvrir aux superviseurs d'une unité, définir SAISIE_PLUS_PEUT_VOIR = 'module.fonction' dans settings
+    (la fonction reçoit (user, piece) et renvoie True / False)."""
+    from django.conf import settings
+    from django.utils.module_loading import import_string
+    if not user.is_authenticated:
+        return False
+    if user.is_staff or user.is_superuser or piece.auteur_id == user.id:
+        return True
+    chemin = getattr(settings, 'SAISIE_PLUS_PEUT_VOIR', '')
+    return bool(chemin and import_string(chemin)(user, piece))
+
+
+def info_piece(p):
+    from django.urls import reverse
+    url = reverse('saisie_plus:fichier', args=[p.id])
+    return {'id': p.id, 'nom': p.nom, 'taille': p.taille, 'type': p.type_mime, 'url': url,
+            'apercu': url + '?apercu=1' if p.est_image else None}
+
+
+@login_required
+@require_http_methods(['POST'])
+def fichiers(request):
+    import hashlib
+    f = request.FILES.get('fichier')
+    if not f:
+        return _erreur('Aucun fichier reçu.')
+    fmt, err = _piece_valide(f, photo=request.POST.get('type') == 'photo')
+    if err:
+        return _erreur(err)
+    h = hashlib.sha256()
+    for bloc in f.chunks():
+        h.update(bloc)
+    f.seek(0)
+    deja = PieceJointe.objects.filter(auteur=request.user, sha256=h.hexdigest()).first()   # même fichier renvoyé : pas de doublon
+    if deja:
+        return JsonResponse({'ok': True, 'fichier': info_piece(deja)})
+    p = PieceJointe(nom=f.name[:255], type_mime=fmt[1], taille=f.size, sha256=h.hexdigest(), est_image=fmt[2],
+                    dataset_id=_int(request.POST.get('dataset')), structure_id=_int(request.POST.get('structure')),
+                    periode=str(request.POST.get('periode') or '')[:64], element_id=_int(request.POST.get('element')),
+                    auteur=request.user)
+    p.fichier.save(f.name, f, save=False)
+    p.save()
+    return JsonResponse({'ok': True, 'fichier': info_piece(p)}, status=201)
+
+
+@login_required
+@require_http_methods(['GET'])
+def fichier_info(request, piece_id):
+    p = PieceJointe.objects.filter(id=piece_id).first()
+    if not p or not peut_voir_piece(request.user, p):
+        return _erreur('Pièce jointe introuvable.', 404)
+    return JsonResponse({'ok': True, 'fichier': info_piece(p)})
+
+
+@login_required
+@require_http_methods(['GET'])
+def fichier(request, piece_id):
+    from django.http import FileResponse, Http404
+    p = PieceJointe.objects.filter(id=piece_id).first()
+    if not p or not peut_voir_piece(request.user, p):
+        raise Http404
+    try:
+        fh = p.fichier.open('rb')
+    except FileNotFoundError:
+        raise Http404
+    # images affichées dans la page ; les autres formats toujours téléchargés (jamais interprétés par le navigateur)
+    r = FileResponse(fh, content_type=p.type_mime, as_attachment=not p.est_image, filename=p.nom)
+    r['X-Content-Type-Options'] = 'nosniff'
+    r['Content-Security-Policy'] = "default-src 'none'"
+    r['Cache-Control'] = 'private, max-age=3600'
+    return r

@@ -39,3 +39,9 @@ class NormalisationValeursTests(SimpleTestCase):
         for v in ['15/01/2026', '1800-01-01', '2999-01-01']:
             with self.assertRaises(E): N('Date', 'date', v)
 
+    def test_fichier(self):
+        self.assertEqual(N('File', 'file', '42')['fichier_element_id'], 42)
+        self.assertIsNone(N('File', 'photo', '')['fichier_element_id'])
+        self.assertIsNone(N('File', 'photo', '0')['fichier_element_id'])   # champ masqué par une condition
+        with self.assertRaises(E): N('File', 'file', 'abc')
+        self.assertEqual(N('Text', 'photo', '12')['fichier_element_id'], 12)    # nature oubliée : la pièce jointe reste une pièce jointe

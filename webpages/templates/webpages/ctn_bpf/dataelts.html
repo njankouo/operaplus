@@ -250,7 +250,7 @@
 {% endif %}
 
                             </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span class="dx-raw">{{dataelt.m_value_type}}</span><span class="dx-chip">{% if dataelt.m_value_type == 'Number' %}Nombre{% elif dataelt.m_value_type == 'Text' %}Texte{% elif dataelt.m_value_type == 'Date' %}Date{% else %}{{ dataelt.m_value_type }}{% endif %}</span></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span class="dx-raw">{{dataelt.m_value_type}}</span><span class="dx-chip">{% if dataelt.m_value_type == 'Number' %}Nombre{% elif dataelt.m_value_type == 'Text' %}Texte{% elif dataelt.m_value_type == 'Date' %}Date{% elif dataelt.m_value_type == 'File' %}Fichier{% else %}{{ dataelt.m_value_type }}{% endif %}</span></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
                                         {{dataelt.m_aggregation_type}}
@@ -338,6 +338,7 @@
                             <option value="Number">Nombre</option>
                             <option value="Text">Texte</option>
                             <option value="Date">Date</option>
+                            <option value="File">Fichier</option>
                         </select>
                         <p class="dx-nat-help" id="dxNatHelp" aria-live="polite"></p>
                     </div>
@@ -643,7 +644,8 @@ Swal.fire({
     if (!sel || !help) return;
     var T = { Number: 'Dans le designer : nombre, nombre entier, âge, pourcentage, montant, oui / non, liste de choix, échelle 1 à 5.',
               Text: 'Dans le designer : texte court ou long, téléphone, e-mail, coordonnées GPS, heure, choix multiples.',
-              Date: 'Dans le designer : champ date (calendrier).' };
+              Date: 'Dans le designer : champ date (calendrier).',
+              File: 'Dans le designer : fichier joint (PDF, image, Word, Excel) ou photo prise avec le téléphone. Jamais utilisé dans un calcul d’indicateur.' };
     var up = function () { help.textContent = T[sel.value] || ''; };
     sel.addEventListener('change', up); up();
     var _o = window.openModal; if (typeof _o === 'function') window.openModal = function () { var r = _o.apply(this, arguments); setTimeout(up, 0); return r; };

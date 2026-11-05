@@ -11,4 +11,7 @@ urlpatterns = [
     path('api/en-tete/', views.en_tete_api, name='en_tete_api'),
     path('en-tete/', views.en_tete_page, name='en_tete'),
     path('api/completude/<int:dataset_id>/<str:periode>/', views.completude, name='completude'),
+    path('api/fichiers/', views.fichiers, name='fichiers'),
+    path('api/fichiers/<int:piece_id>/', views.fichier_info, name='fichier_info'),
+    path('fichier/<int:piece_id>/', views.fichier, name='fichier'),
 ]

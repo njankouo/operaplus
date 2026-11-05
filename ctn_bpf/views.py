@@ -27451,9 +27451,12 @@ def get_dataset_accountable(request, id):
 from django.http import JsonResponse
 def load_data(request, structure_id, periode_id):
     try:
+        champs = {f.name for f in DSet_DElt._meta.get_fields()}
         lignes = (DSet_DElt.objects
                   .filter(periode_id=periode_id, m_structure_id=structure_id, m_dataelement__isnull=False)
                   .order_by('m_dataelement_id', '-id'))
+        if 'fichier_element' in champs:
+            lignes = lignes.select_related('fichier_element')      # une seule requête, même avec des pièces jointes
 
         # Une seule valeur par élément : la saisie manuelle (comment vide) passe avant le cumul automatique,
         # puis la ligne la plus récente.
@@ -27464,25 +27467,33 @@ def load_data(request, structure_id, periode_id):
             if deja is None or (manuelle and not deja[1]):
                 retenues[x.m_dataelement_id] = (x, manuelle)
 
+        try:                                                         # application saisie_plus installée ?
+            from saisie_plus.views import info_piece, peut_voir_piece
+        except ImportError:
+            info_piece = peut_voir_piece = None
+
         data_elements = []
         for x, _ in retenues.values():
             v = x.m_value
             if isinstance(v, float) and v.is_integer():
                 v = int(v)                                   # 12.0 -> 12
             d = getattr(x, 'date_element', None)
+            piece = getattr(x, 'fichier_element', None) if 'fichier_element' in champs else None
             data_elements.append({
                 'id': x.m_dataelement_id,
-                'content': v,                                # Number
-                'texte': getattr(x, 'texte_element', None),  # Text : texte, téléphone, GPS, choix multiples…
+                'content': v,                                # Number (oui/non = 1/0, choix = code, échelle = 1 à 5)
+                'texte': getattr(x, 'texte_element', None),  # Text : texte, téléphone, GPS, heure, choix multiples « 1;3 »
                 'date': d.isoformat() if d else None,        # Date : AAAA-MM-JJ
                 'na': bool(getattr(x, 'est_na', False)),     # case « N/A » recochée au chargement
+                'fichier': (info_piece(piece)                # File : {id, nom, taille, type, url, apercu}
+                            if piece and info_piece and peut_voir_piece(request.user, piece) else None),
             })
 
         return JsonResponse({'data': data_elements, 'message': 'Data loaded successfully'}, status=200)
 
     except Exception as e:
         logger.exception("Erreur load_data")
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Chargement impossible.'}, status=500)
 from django.core.exceptions import ObjectDoesNotExist
 import json
 import json
@@ -27555,8 +27566,36 @@ _CHAMPS_DSET = None
 def _champs_dset():
     global _CHAMPS_DSET
     if _CHAMPS_DSET is None:
-        _CHAMPS_DSET = {f.name for f in DSet_DElt._meta.get_fields()}
+        _CHAMPS_DSET = {f.name for f in DSet_DElt._meta.get_fields()} | {f.attname for f in DSet_DElt._meta.concrete_fields}
     return _CHAMPS_DSET
+
+
+def _piece_autorisee(piece_id, user):
+    try:
+        from saisie_plus.models import PieceJointe
+        from saisie_plus.views import peut_voir_piece
+    except ImportError:
+        return False
+    p = PieceJointe.objects.filter(id=piece_id).first()
+    return bool(p and peut_voir_piece(user, p))
+
+
+def _pl(n, sing, plur=None):
+    return f"{n} {sing if n <= 1 else (plur or sing + 's')}"
+
+
+def _texte_recu(r):
+    """« 9 valeurs enregistrées : 3 nouvelles, 5 modifiées, 1 inchangée · 2 pièces jointes · 0 ignorée »"""
+    det = [x for x in (_pl(r['nouvelles'], 'nouvelle'), _pl(r['modifiees'], 'modifiée'), _pl(r.get('effacees', 0), 'effacée'), _pl(r['inchangees'], 'inchangée')) if not x.startswith('0 ')]
+    t = _pl(r['ecrites'], 'valeur enregistrée', 'valeurs enregistrées') + (' : ' + ', '.join(det) if det else '')
+    if r['na']:
+        t += ' · ' + _pl(r['na'], 'non applicable', 'non applicables')
+    if r['pieces']:
+        t += ' · ' + _pl(r['pieces'], 'pièce jointe', 'pièces jointes')
+    if r['indicateurs']:
+        t += ' · ' + _pl(r['indicateurs'], 'indicateur', 'indicateurs')
+    t += ' · ' + _pl(len(r['ignorees']), 'ignorée', 'ignorées')
+    return t
 
 
 def save_value(request):
@@ -27584,11 +27623,15 @@ def save_value(request):
                 m_sub_period_value=r_period2,
             )
 
+            # reçu d'enregistrement : ce qui a VRAIMENT été écrit en base
+            recu = {'ecrites': 0, 'nouvelles': 0, 'modifiees': 0, 'inchangees': 0, 'effacees': 0, 'na': 0, 'pieces': 0,
+                    'indicateurs': 0, 'ignorees': [], 'avertissements': []}
             # 2. Indicateurs (inchangé)
             indicator_values = json.loads(request.POST.get('indicator-values', '{}') or '{}')
             for i_id in json.loads(request.POST.get('indicator-ids', '[]') or '[]'):
                 val = indicator_values.get(str(i_id))
                 if val is not None:
+                    recu['indicateurs'] += 1
                     IndicateurValeur.objects.update_or_create(
                         indicateur_id=i_id,
                         periode_ok_id=r_period2,
@@ -27602,11 +27645,18 @@ def save_value(request):
             ids = [e.get('id') for e in element_values if e.get('id')]
             elements = {str(d.id): d for d in DataElement.objects.filter(id__in=ids)}   # 1 requête au lieu d'une par élément
             erreurs, a_calculer = [], []
+            colonnes_valeur = [c for c in ('m_value', 'texte_element', 'date_element', 'fichier_element_id', 'valeur_json', 'est_na') if c in _champs_dset()]
+            existants = {x.m_dataelement_id: x for x in DSet_DElt.objects.filter(
+                periode_id=r_period2, m_structure_id=structure_id, comment__isnull=True,
+                m_dataelement_id__in=[int(i) for i in ids if str(i).isdigit()])}
 
             for element in element_values:
                 e_id, e_val = str(element.get('id') or ''), element.get('value')
                 data_element = elements.get(e_id)
-                if not data_element or e_val is None:
+                if e_val is None:
+                    continue
+                if not data_element:
+                    recu['ignorees'].append({'id': e_id, 'nom': f'Élément #{e_id}', 'raison': "élément de données introuvable (supprimé ?)"})
                     continue
                 na = request.POST.get(f'op_na_D0elt{e_id}') == '1'      # case « N/A » cochée à la saisie
                 try:
@@ -27615,15 +27665,52 @@ def save_value(request):
                     erreurs.append(f"{data_element.m_name} : {err}")
                     continue
 
+                pj = champs.get('fichier_element_id')
+                if pj and not _piece_autorisee(pj, request.user):   # on ne rattache que ses propres pièces jointes
+                    erreurs.append(f"{data_element.m_name} : pièce jointe introuvable, renvoyez le fichier")
+                    continue
+                if 'fichier_element_id' in champs and 'fichier_element_id' not in _champs_dset():
+                    # Colonne fichier_element pas encore ajoutée à DSet_DElt : on ne perd pas la pièce jointe,
+                    # son identifiant est rangé dans texte_element (la page de saisie sait le relire).
+                    logger.warning("DSet_DElt.fichier_element absent : pièce jointe %s rangée dans texte_element", champs['fichier_element_id'])
+                    pj_id = champs.pop('fichier_element_id')
+                    champs['texte_element'] = str(pj_id) if pj_id else None
+                    if pj_id:
+                        recu['pieces'] += 1
+                        recu['avertissements'].append(f"{data_element.m_name} : pièce jointe rangée provisoirement en texte (colonne fichier_element à ajouter)")
+                perdus = [k for k in champs if k not in _champs_dset() and k in ('m_value', 'texte_element', 'date_element', 'fichier_element_id') and champs[k] not in (None, '')]
                 champs = {k: v for k, v in champs.items() if k in _champs_dset()}
+                if perdus and not any(champs.get(k) not in (None, '', False) for k in colonnes_valeur):
+                    recu['ignorees'].append({'id': e_id, 'nom': data_element.m_name, 'raison': f"colonne {perdus[0]} absente de la base"})
+                    continue
+                ex = existants.get(data_element.id)
+                vide = not any(champs.get(k) not in (None, '', False) for k in colonnes_valeur)
+                if vide and ex is None:
+                    continue                                      # rien en base, rien à écrire : pas de ligne vide
+                if vide:
+                    champs.update({k: (False if k == 'est_na' else None) for k in colonnes_valeur})   # on efface tout, y compris un ancien identifiant rangé en texte
+                    if any(getattr(ex, k, None) not in (None, '', False) for k in colonnes_valeur):
+                        recu['effacees'] += 1                     # champ vidé par l'agent (ex. pièce jointe retirée)
+                    else:
+                        recu['inchangees'] += 1
+                elif ex is None:
+                    recu['nouvelles'] += 1
+                elif any(getattr(ex, k, None) != champs.get(k, getattr(ex, k, None)) for k in colonnes_valeur):
+                    recu['modifiees'] += 1
+                else:
+                    recu['inchangees'] += 1
+                recu['ecrites'] += 1
+                recu['na'] += 1 if champs.get('est_na') else 0
+                recu['pieces'] += 1 if champs.get('fichier_element_id') else 0
                 DSet_DElt.objects.update_or_create(
                     periode_id=r_period2,
                     m_structure_id=structure_id,
                     m_dataelement=data_element,
                     comment__isnull=True,                 # saisie manuelle (les cumuls automatiques ont un commentaire)
-                    defaults={**champs, 'm_dataset_value': entity, 'date_saisie': timezone.now()},
+                    defaults={**champs, 'm_dataset_value': entity, 'date_saisie': timezone.now(),
+                              'comment': None},          # jamais '' : sinon la ligne n'est plus retrouvée et un doublon naît à chaque enregistrement
                 )
-                if (data_element.m_value_type or 'Number') == 'Number':
+                if (data_element.m_value_type or 'Number') == 'Number' and 'fichier_element_id' not in champs:
                     a_calculer.append(data_element.id)
 
             if erreurs:                                   # tout ou rien : l'agent corrige puis renvoie
@@ -27634,10 +27721,13 @@ def save_value(request):
                 trigger_analytics_calculation.delay(i, structure_id, r_period2) for i in ids
             ])
 
-        msg = 'Informations enregistrées avec succès !'
+        recu['heure'] = timezone.localtime().strftime('%H:%M')
+        msg = _texte_recu(recu)
         if ajax:
-            return JsonResponse({'ok': True, 'message': msg})
+            return JsonResponse({'ok': True, 'message': msg, 'recu': recu})
         messages.success(request, msg)
+        for x in recu['ignorees']:
+            messages.warning(request, f"Non enregistré : {x['nom']} ({x['raison']})")
 
     except ValeurInvalide as e:                           # erreur de saisie : message clair pour l'agent
         if ajax:
@@ -27650,7 +27740,6 @@ def save_value(request):
         messages.error(request, f"Une erreur est survenue : {e}")
 
     return redirect(request.META.get('HTTP_REFERER', '/'))
-
 def add_periode(request):
     if request.method == "POST":
         try:

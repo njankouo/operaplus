@@ -103,7 +103,7 @@
   .opd-pick-n{margin:12px 4px 4px!important;font-size:12px!important;font-weight:500!important;color:#667085!important;letter-spacing:0!important;text-transform:none!important;line-height:1.45}
   .opd-pick-n a{color:#2B3A67;font-weight:700}
   .opd-natb{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px;vertical-align:1px}
-  .opd-natb.n-number{background:#EEF1F8;color:#2B3A67}.opd-natb.n-text{background:#F3ECF8;color:#7A4E9E}.opd-natb.n-date{background:#E8F4F1;color:#1F6F65}
+  .opd-natb.n-number{background:#EEF1F8;color:#2B3A67}.opd-natb.n-text{background:#F3ECF8;color:#7A4E9E}.opd-natb.n-date{background:#E8F4F1;color:#1F6F65}.opd-natb.n-file{background:#FDF3E3;color:#8A5300}
   .opd-fix{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:11px 14px;border-radius:12px;background:#FFF3EF;border:1px solid #FFC4B2;color:#9E351C;font-size:13px;line-height:1.45}
   .opd-fix[hidden]{display:none!important}
   .opd-fix.ok{background:#E8F4F1;border-color:#BFE3DA;color:#1F6F65}
@@ -180,20 +180,22 @@
     { k: 'time', g: 'Date, heure et lieu', l: 'Heure', i: 'fa-clock', d: 'hh:mm', txt: 1 },
     { k: 'gps', g: 'Date, heure et lieu', l: 'Coordonnées GPS', i: 'fa-location-crosshairs', d: 'Capturées par le téléphone', txt: 1 },
     { k: 'tel', g: 'Contact', l: 'Téléphone', i: 'fa-phone', d: 'Ex. 6XX XX XX XX', txt: 1 },
-    { k: 'email', g: 'Contact', l: 'E-mail', i: 'fa-at', d: 'nom@exemple.org', txt: 1 }
+    { k: 'email', g: 'Contact', l: 'E-mail', i: 'fa-at', d: 'nom@exemple.org', txt: 1 },
+    { k: 'file', g: 'Fichiers', l: 'Fichier joint', i: 'fa-paperclip', d: 'PDF, image, Word, Excel · 10 Mo', txt: 1 },
+    { k: 'photo', g: 'Fichiers', l: 'Photo', i: 'fa-camera', d: 'Appareil photo du téléphone', txt: 1 }
   ];
   var TYPE = {}; TYPES.forEach(function (t) { TYPE[t.k] = t; });
   /* nature de l'élément de données (page Data elements : Nombre / Texte / Date) → types de champ compatibles.
      Le serveur range la valeur selon cette nature : un champ d'un autre type serait mal enregistré. */
   var FAMILY = { num: 'Number', int: 'Number', age: 'Number', pct: 'Number', money: 'Number', yesno: 'Number', choice: 'Number', scale: 'Number',
-    multi: 'Text', text: 'Text', long: 'Text', time: 'Text', gps: 'Text', tel: 'Text', email: 'Text', date: 'Date' };
-  var FAMILY_DEF = { Number: 'num', Text: 'text', Date: 'date' };
-  var NATURE_FR = { Number: 'Nombre', Text: 'Texte', Date: 'Date' };
-  function normNature(v) { v = String(v || '').trim(); if (!v) return ''; if (/num|nomb|int|float|dec/i.test(v)) return 'Number'; if (/date/i.test(v)) return 'Date'; if (/text|texte|char|str/i.test(v)) return 'Text'; return ''; }
+    multi: 'Text', text: 'Text', long: 'Text', time: 'Text', gps: 'Text', tel: 'Text', email: 'Text', date: 'Date', file: 'File', photo: 'File' };
+  var FAMILY_DEF = { Number: 'num', Text: 'text', Date: 'date', File: 'file' };
+  var NATURE_FR = { Number: 'Nombre', Text: 'Texte', Date: 'Date', File: 'Fichier' };
+  function normNature(v) { v = String(v || '').trim(); if (!v) return ''; if (/file|fich|photo|pi[eè]ce/i.test(v)) return 'File'; if (/num|nomb|int|float|dec/i.test(v)) return 'Number'; if (/date/i.test(v)) return 'Date'; if (/text|texte|char|str/i.test(v)) return 'Text'; return ''; }
   function natureOf(id) { var it = $('#section-de .element-item[data-id="' + id + '"]') || $$('#section-de .element-item').filter(function (x) { return ((($('.font-mono', x) || {}).textContent || '').replace('#', '').trim()) === String(id); })[0]; return it ? normNature(it.getAttribute('data-nature')) : ''; }
   function compatible(k, nat) { return !nat || FAMILY[k] === nat; }
   /* suggestion d'après le libellé de l'élément (toujours dans la nature de l'élément) */
-  var GUESS = [[/t[ée]l[ée]phone|\bt[ée]l\b|\bportable\b|num[ée]ro de contact/i, 'tel'], [/e-?mail|courriel/i, 'email'], [/gps|coordonn|position|localisation|latitude|longitude/i, 'gps'],
+  var GUESS = [[/photo|image|cliché/i, 'photo'], [/pi[eè]ce jointe|scan|justificatif|document|fichier|pv sign|liste de pr[ée]sence/i, 'file'], [/t[ée]l[ée]phone|\bt[ée]l\b|\bportable\b|num[ée]ro de contact/i, 'tel'], [/e-?mail|courriel/i, 'email'], [/gps|coordonn|position|localisation|latitude|longitude/i, 'gps'],
     [/observation|commentaire|remarque|description|pr[ée]cis/i, 'long'], [/\bheure\b/i, 'time'], [/\bdate\b/i, 'date'],
     [/taux|pourcentage|proportion|%/i, 'pct'], [/(^|[^a-zà-ÿ])[âa]ge([^a-zà-ÿ]|$)/i, 'age'], [/montant|co[ûu]t|prix|budget|fcfa|d[ée]pense|recette/i, 'money'],
     [/^(nombre|nb|effectif|total)\b/i, 'int'], [/^(est-ce|y a-t-il|existe|disposez|avez)/i, 'yesno']];
@@ -240,6 +242,9 @@
       case 'gps': a.type = 'text'; a.placeholder = 'latitude, longitude'; break;
       case 'tel': a.type = 'tel'; a.placeholder = '6XX XX XX XX'; break;
       case 'email': a.type = 'email'; a.placeholder = 'nom@exemple.org'; break;
+      /* fichier : le champ garde l'identifiant de la pièce jointe ; la page de saisie affiche le bouton d'envoi */
+      case 'file': a.type = 'text'; a.readonly = 'readonly'; a.placeholder = '📎 Fichier joint (PDF, image, Word, Excel)'; a['data-op-accept'] = a['data-op-accept'] || '.pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx'; break;
+      case 'photo': a.type = 'text'; a.readonly = 'readonly'; a.placeholder = '📷 Photo prise sur le terrain'; a['data-op-accept'] = 'image/*'; break;
     }
     return { tag: tag, attrs: a, inner: inner };
   }

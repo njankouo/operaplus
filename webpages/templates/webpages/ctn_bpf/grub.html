@@ -964,20 +964,20 @@
 
     /* ---------- papier ---------- */
     body { background-color: var(--op-paper) !important; }
-    main.op-main {
+    html body main.op-main{
         background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--opr-rule) 31px 32px);
         background-attachment: local;
     }
 
     /* ---------- bandeau : encre pleine, aucun reflet ---------- */
-    header.glass-nav { background: var(--opr-head) !important; background-image: none !important; box-shadow: none !important; border-bottom: 3px solid var(--op-ochre) !important; }
-    header.glass-nav .bg-gradient-to-br { background: var(--op-ochre) !important; color: #1B1406 !important; border-color: transparent !important; box-shadow: none !important; }
+    html body header.glass-nav{ background: var(--opr-head) !important; background-image: none !important; box-shadow: none !important; border-bottom: 3px solid var(--op-ochre) !important; }
+    html body header.glass-nav .bg-gradient-to-br{ background: var(--op-ochre) !important; color: #1B1406 !important; border-color: transparent !important; box-shadow: none !important; }
 
     /* ---------- marge numérotée des sections (§ 01, § 02…) ---------- */
-    main.op-main { counter-reset: opr-sec; }
-    .op-fiche, .op-command, .op-results, .op-ledger { counter-increment: opr-sec; position: relative; }
+    html body main.op-main{ counter-reset: opr-sec; }
+    html body .op-fiche, html body .op-command, html body .op-results, html body .op-ledger{ counter-increment: opr-sec; position: relative; }
     /* numéro posé sur le filet, comme la légende d'un cadre de formulaire papier */
-    .op-fiche::before, .op-command::before, .op-results::before, .op-ledger::before {
+    html body .op-fiche::before, html body .op-command::before, html body .op-results::before, html body .op-ledger::before{
         content: "§ " counter(opr-sec, decimal-leading-zero);
         inset: auto; right: auto; bottom: auto; width: auto; height: auto; pointer-events: none;
         position: absolute; left: 14px; top: -8px; z-index: 2; padding: 0 6px; white-space: pre;
@@ -985,148 +985,148 @@
         color: var(--op-muted); background: var(--op-paper);
         background-image: none; -webkit-mask-image: none; mask-image: none;
     }
-    .op-fiche::before { content: "§ " counter(opr-sec, decimal-leading-zero) "  Fiche"; top: -12px; left: 40px; position: absolute !important; }
-    .op-command::before { content: "§ " counter(opr-sec, decimal-leading-zero) "  Sélection"; }
-    .op-results::before { content: "§ " counter(opr-sec, decimal-leading-zero) "  Résultats"; }
-    .op-ledger::before { content: "§ " counter(opr-sec, decimal-leading-zero) "  Relevé"; }
-    .op-ledger { overflow: visible !important; }
-    .op-command, .op-results, .op-ledger { margin-top: 1.6rem !important; }
+    html body .op-fiche::before{ content: "§ " counter(opr-sec, decimal-leading-zero) "  Fiche"; top: -12px; left: 40px; position: absolute !important; }
+    html body .op-command::before{ content: "§ " counter(opr-sec, decimal-leading-zero) "  Sélection"; }
+    html body .op-results::before{ content: "§ " counter(opr-sec, decimal-leading-zero) "  Résultats"; }
+    html body .op-ledger::before{ content: "§ " counter(opr-sec, decimal-leading-zero) "  Relevé"; }
+    html body .op-ledger{ overflow: visible !important; }
+    html body .op-command, html body .op-results, html body .op-ledger{ margin-top: 1.6rem !important; }
 
     /* ---------- feuilles : filet, pas d'ombre, coins francs ---------- */
-    .op-fiche, .op-command, .op-results, .op-ledger, .op-entete, #op-entete {
+    html body .op-fiche, html body .op-command, html body .op-results, html body .op-ledger, html body .op-entete, html body #op-entete{
         background: var(--op-surface) !important; box-shadow: none !important;
         border: 1px solid var(--op-line-2) !important; border-radius: 6px !important;
     }
-    .op-ledger > div:not(#op-table-toolbar) { border-radius: 0 0 6px 6px; }
-    .op-fiche {
+    html body .op-ledger > div:not(#op-table-toolbar){ border-radius: 0 0 6px 6px; }
+    html body .op-fiche{
         border-top: 4px double var(--op-ink) !important;   /* en-tête de registre */
         border-left: 1px solid var(--op-line-2) !important;
         background-image: linear-gradient(to right, transparent 26px, var(--opr-margin) 26px 27px, transparent 27px) !important;
         padding-left: 3rem !important;
     }
-    .op-fiche::after { display: none !important; }
-    .op-fiche { overflow: visible !important; }
-    .op-crumb, .op-crumb a, .op-crumb strong { font-family: var(--op-font-mono) !important; font-size: 11.5px !important; letter-spacing: .02em; text-transform: uppercase; color: var(--op-muted) !important; }
-    .op-crumb strong { color: var(--op-ink-2) !important; }
-    .op-fiche-title { font-family: var(--op-font-display) !important; font-weight: 500 !important; font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.5rem) !important; letter-spacing: -.02em !important; color: var(--op-ink) !important; font-variation-settings: "opsz" 96; }
-    .op-fiche-title.op-placeholder { font-style: italic; color: var(--op-muted) !important; font-weight: 400 !important; }
-    .op-fiche-period { font-family: var(--op-font-mono) !important; font-size: 13px !important; color: var(--op-ink-2) !important; }
-    .op-fiche-state { color: var(--op-ink-2) !important; }
+    html body .op-fiche::after{ display: none !important; }
+    html body .op-fiche{ overflow: visible !important; }
+    html body .op-crumb, html body .op-crumb a, html body .op-crumb strong{ font-family: var(--op-font-mono) !important; font-size: 11.5px !important; letter-spacing: .02em; text-transform: uppercase; color: var(--op-muted) !important; }
+    html body .op-crumb strong{ color: var(--op-ink-2) !important; }
+    html body .op-fiche-title{ font-family: var(--op-font-display) !important; font-weight: 500 !important; font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.5rem) !important; letter-spacing: -.02em !important; color: var(--op-ink) !important; font-variation-settings: "opsz" 96; }
+    html body .op-fiche-title.op-placeholder{ font-style: italic; color: var(--op-muted) !important; font-weight: 400 !important; }
+    html body .op-fiche-period{ font-family: var(--op-font-mono) !important; font-size: 13px !important; color: var(--op-ink-2) !important; }
+    html body .op-fiche-state{ color: var(--op-ink-2) !important; }
 
     /* étapes : cases d'un formulaire papier plutôt que des pastilles */
-    .op-steps { gap: 0 !important; border: 1px solid var(--op-line-2); border-radius: 4px; width: max-content; max-width: 100%; overflow: hidden; flex-wrap: wrap; }
-    .op-step { border-radius: 0 !important; background: transparent !important; border: 0 !important; border-right: 1px solid var(--op-line-2) !important; padding: .4rem .75rem !important; color: var(--op-muted) !important; font-size: 12px !important; }
-    .op-step:last-child { border-right: 0 !important; }
-    .op-step .op-num { background: transparent !important; border: 1px solid currentColor !important; border-radius: 2px !important; font-family: var(--op-font-mono) !important; color: inherit !important; }
-    .op-step.op-done { color: var(--op-ok) !important; background: var(--op-ok-soft) !important; }
-    .op-step.op-done .op-num { background: var(--op-ok) !important; border-color: var(--op-ok) !important; color: transparent !important; }
-    .op-step.op-done .op-num::after { font-family: var(--op-font-mono); }
-    @media (max-width: 640px) { .op-steps { width: 100%; } .op-step { flex: 1 1 50%; border-bottom: 1px solid var(--op-line-2) !important; } }
+    html body .op-steps{ gap: 0 !important; border: 1px solid var(--op-line-2); border-radius: 4px; width: max-content; max-width: 100%; overflow: hidden; flex-wrap: wrap; }
+    html body .op-step{ border-radius: 0 !important; background: transparent !important; border: 0 !important; border-right: 1px solid var(--op-line-2) !important; padding: .4rem .75rem !important; color: var(--op-muted) !important; font-size: 12px !important; }
+    html body .op-step:last-child{ border-right: 0 !important; }
+    html body .op-step .op-num{ background: transparent !important; border: 1px solid currentColor !important; border-radius: 2px !important; font-family: var(--op-font-mono) !important; color: inherit !important; }
+    html body .op-step.op-done{ color: var(--op-ok) !important; background: var(--op-ok-soft) !important; }
+    html body .op-step.op-done .op-num{ background: var(--op-ok) !important; border-color: var(--op-ok) !important; color: transparent !important; }
+    html body .op-step.op-done .op-num::after{ font-family: var(--op-font-mono); }
+    @media (max-width: 640px) { html body .op-steps{ width: 100%; } html body .op-step{ flex: 1 1 50%; border-bottom: 1px solid var(--op-line-2) !important; } }
 
     /* ---------- cadran (remplace l'anneau) ---------- */
-    #op-gauge { width: 188px !important; height: auto !important; display: flex !important; flex-direction: column; align-items: center; }
-    #op-gauge > svg:not(.opr-dial), #op-gauge > .op-gauge-label { display: none !important; }
-    #op-gauge .opr-dial { width: 100%; height: auto; overflow: visible; transform: none !important; }
-    .opr-dial .t { stroke: var(--op-line-2); stroke-width: 1.6; stroke-linecap: butt; transition: stroke .25s; }
-    .opr-dial .t.maj { stroke-width: 2.2; }
-    .opr-dial .t.on { stroke: var(--op-ochre); }
-    #op-gauge.opr-full .opr-dial .t.on { stroke: var(--op-ok); }
-    .opr-dial .lbl { font: 500 8.5px var(--op-font-mono); fill: var(--op-muted); }
-    .opr-dial .needle { stroke: var(--op-ink); stroke-width: 2; stroke-linecap: round; transition: transform .7s cubic-bezier(.3,.9,.3,1); transform-origin: 100px 100px; }
-    .opr-dial .hub { fill: var(--op-surface); stroke: var(--op-ink); stroke-width: 2; }
-    .opr-read { margin-top: 2px; text-align: center; line-height: 1; }
-    .opr-read b { display: inline-block; font-family: var(--op-font-display); font-weight: 500; font-size: 34px; letter-spacing: -.02em; color: var(--op-ink); font-variant-numeric: tabular-nums; font-variation-settings: "opsz" 96; }
-    .opr-read b small { font-size: 15px; color: var(--op-muted); margin-left: 2px; }
-    .opr-read > span { display: block; margin-top: 6px; font: 500 11px var(--op-font-mono); color: var(--op-muted); letter-spacing: .02em; }
-    .opr-read em { display: inline-block; margin-top: 6px; padding: 2px 7px; border: 1px solid currentColor; border-radius: 3px; font: 600 10px var(--op-font-mono); font-style: normal; text-transform: uppercase; letter-spacing: .08em; color: var(--op-muted); }
-    #op-gauge.op-partial .opr-read em { color: var(--op-ochre-ink); }
-    #op-gauge.opr-full .opr-read em { color: var(--op-ok); transform: rotate(-4deg); }   /* tampon « Complet » */
+    html body #op-gauge{ width: 188px !important; height: auto !important; display: flex !important; flex-direction: column; align-items: center; }
+    html body #op-gauge > svg:not(.opr-dial), html body #op-gauge > .op-gauge-label{ display: none !important; }
+    html body #op-gauge .opr-dial{ width: 100%; height: auto; overflow: visible; transform: none !important; }
+    html body .opr-dial .t{ stroke: var(--op-line-2); stroke-width: 1.6; stroke-linecap: butt; transition: stroke .25s; }
+    html body .opr-dial .t.maj{ stroke-width: 2.2; }
+    html body .opr-dial .t.on{ stroke: var(--op-ochre); }
+    html body #op-gauge.opr-full .opr-dial .t.on{ stroke: var(--op-ok); }
+    html body .opr-dial .lbl{ font: 500 8.5px var(--op-font-mono); fill: var(--op-muted); }
+    html body .opr-dial .needle{ stroke: var(--op-ink); stroke-width: 2; stroke-linecap: round; transition: transform .7s cubic-bezier(.3,.9,.3,1); transform-origin: 100px 100px; }
+    html body .opr-dial .hub{ fill: var(--op-surface); stroke: var(--op-ink); stroke-width: 2; }
+    html body .opr-read{ margin-top: 2px; text-align: center; line-height: 1; }
+    html body .opr-read b{ display: inline-block; font-family: var(--op-font-display); font-weight: 500; font-size: 34px; letter-spacing: -.02em; color: var(--op-ink); font-variant-numeric: tabular-nums; font-variation-settings: "opsz" 96; }
+    html body .opr-read b small{ font-size: 15px; color: var(--op-muted); margin-left: 2px; }
+    html body .opr-read > span{ display: block; margin-top: 6px; font: 500 11px var(--op-font-mono); color: var(--op-muted); letter-spacing: .02em; }
+    html body .opr-read em{ display: inline-block; margin-top: 6px; padding: 2px 7px; border: 1px solid currentColor; border-radius: 3px; font: 600 10px var(--op-font-mono); font-style: normal; text-transform: uppercase; letter-spacing: .08em; color: var(--op-muted); }
+    html body #op-gauge.op-partial .opr-read em{ color: var(--op-ochre-ink); }
+    html body #op-gauge.opr-full .opr-read em{ color: var(--op-ok); transform: rotate(-4deg); }   /* tampon « Complet » */
     @media (max-width: 640px) {
         /* téléphone : la fiche passe sur une colonne, le cadran en bas, lecture à côté */
-        .op-fiche { grid-template-columns: 1fr !important; padding: 1.4rem 1rem 1.2rem 2.4rem !important; background-image: linear-gradient(to right, transparent 18px, var(--opr-margin) 18px 19px, transparent 19px) !important; }
-        .op-fiche::before { left: 28px; }
-        #op-gauge { width: 100% !important; flex-direction: row !important; justify-content: flex-start; gap: 14px; border-top: 1px dashed var(--op-line-2); padding-top: 12px; }
-        #op-gauge .opr-dial { width: 150px; flex: 0 0 150px; }
-        .opr-read { text-align: left; margin-top: 0; }
-        .opr-read b { font-size: 30px; }
+        html body .op-fiche{ grid-template-columns: 1fr !important; padding: 1.4rem 1rem 1.2rem 2.4rem !important; background-image: linear-gradient(to right, transparent 18px, var(--opr-margin) 18px 19px, transparent 19px) !important; }
+        html body .op-fiche::before{ left: 28px; }
+        html body #op-gauge{ width: 100% !important; flex-direction: row !important; justify-content: flex-start; gap: 14px; border-top: 1px dashed var(--op-line-2); padding-top: 12px; }
+        html body #op-gauge .opr-dial{ width: 150px; flex: 0 0 150px; }
+        html body .opr-read{ text-align: left; margin-top: 0; }
+        html body .opr-read b{ font-size: 30px; }
     }
     body.op-focus #op-gauge { width: 118px !important; }
 
     /* ---------- barre de sélection ---------- */
-    .op-command label { font-family: var(--op-font-mono) !important; text-transform: uppercase !important; letter-spacing: .06em !important; font-size: 10.5px !important; color: var(--op-muted) !important; }
-    .op-command label i { display: none !important; }
-    .op-command select, #op-row-filter, #searchOrgUnit {
+    html body .op-command label{ font-family: var(--op-font-mono) !important; text-transform: uppercase !important; letter-spacing: .06em !important; font-size: 10.5px !important; color: var(--op-muted) !important; }
+    html body .op-command label i{ display: none !important; }
+    html body .op-command select, html body #op-row-filter, html body #searchOrgUnit{
         border-radius: 4px !important; background: var(--op-surface) !important; border-color: var(--op-line-2) !important; color: var(--op-ink) !important;
     }
-    .op-command select:focus, #op-row-filter:focus, #searchOrgUnit:focus { border-color: var(--op-ink) !important; box-shadow: 0 0 0 3px var(--op-ochre-soft) !important; outline: none !important; }
-    .op-nav-btn { background: var(--op-surface) !important; color: var(--op-ink) !important; border-color: var(--op-line-2) !important; font-family: var(--op-font-mono) !important; }
-    .op-nav-btn:hover { background: var(--op-surface-2) !important; }
-    #loadDataButton { background: var(--op-brand-fill) !important; color: #fff !important; border-radius: 4px !important; box-shadow: none !important; background-image: none !important; letter-spacing: .01em !important; }
-    #loadDataButton:hover { background: var(--op-brand-fill-2) !important; }
-    .op-chip { border-radius: 3px !important; background: var(--op-surface-2) !important; color: var(--op-ink) !important; border: 1px solid var(--op-line-2) !important; font-family: var(--op-font-mono); font-size: 11.5px !important; }
-    .op-chip.op-chip-active { background: var(--op-ink) !important; color: var(--op-surface) !important; border-color: var(--op-ink) !important; }
+    html body .op-command select:focus, html body #op-row-filter:focus, html body #searchOrgUnit:focus{ border-color: var(--op-ink) !important; box-shadow: 0 0 0 3px var(--op-ochre-soft) !important; outline: none !important; }
+    html body .op-nav-btn{ background: var(--op-surface) !important; color: var(--op-ink) !important; border-color: var(--op-line-2) !important; font-family: var(--op-font-mono) !important; }
+    html body .op-nav-btn:hover{ background: var(--op-surface-2) !important; }
+    html body #loadDataButton{ background: var(--op-brand-fill) !important; color: #fff !important; border-radius: 4px !important; box-shadow: none !important; background-image: none !important; letter-spacing: .01em !important; }
+    html body #loadDataButton:hover{ background: var(--op-brand-fill-2) !important; }
+    html body .op-chip{ border-radius: 3px !important; background: var(--op-surface-2) !important; color: var(--op-ink) !important; border: 1px solid var(--op-line-2) !important; font-family: var(--op-font-mono); font-size: 11.5px !important; }
+    html body .op-chip.op-chip-active{ background: var(--op-ink) !important; color: var(--op-surface) !important; border-color: var(--op-ink) !important; }
 
     /* ---------- résultats : lecture d'instrument ---------- */
-    .op-results .op-res, .op-res { border-radius: 4px !important; border: 1px solid var(--op-line) !important; border-left: 3px solid var(--op-ink) !important; background: var(--op-surface-2) !important; box-shadow: none !important; }
-    .op-res b, .op-res strong { font-family: var(--op-font-display) !important; font-weight: 500 !important; }
+    html body .op-results .op-res, html body .op-res{ border-radius: 4px !important; border: 1px solid var(--op-line) !important; border-left: 3px solid var(--op-ink) !important; background: var(--op-surface-2) !important; box-shadow: none !important; }
+    html body .op-res b, html body .op-res strong{ font-family: var(--op-font-display) !important; font-weight: 500 !important; }
 
     /* ---------- registre : marge numérotée, écriture sur la ligne ---------- */
-    #op-table-toolbar { background: var(--op-surface-2) !important; border-color: var(--op-line-2) !important; }
-    .op-tool-btn { border-radius: 4px !important; border-color: var(--op-line-2) !important; background: var(--op-surface) !important; color: var(--op-ink) !important; box-shadow: none !important; }
-    .op-tool-btn[aria-pressed="true"] { background: var(--op-ink) !important; color: var(--op-surface) !important; border-color: var(--op-ink) !important; }
-    #op-progress-bar { background: var(--op-ochre) !important; background-image: none !important; }
-    #op-progress-bar.op-full, .op-ledger .op-complete #op-progress-bar { background: var(--op-ok) !important; }
-    #op-progress-text { font-family: var(--op-font-mono); }
+    html body #op-table-toolbar{ background: var(--op-surface-2) !important; border-color: var(--op-line-2) !important; }
+    html body .op-tool-btn{ border-radius: 4px !important; border-color: var(--op-line-2) !important; background: var(--op-surface) !important; color: var(--op-ink) !important; box-shadow: none !important; }
+    html body .op-tool-btn[aria-pressed="true"]{ background: var(--op-ink) !important; color: var(--op-surface) !important; border-color: var(--op-ink) !important; }
+    html body #op-progress-bar{ background: var(--op-ochre) !important; background-image: none !important; }
+    html body #op-progress-bar.op-full, html body .op-ledger .op-complete #op-progress-bar{ background: var(--op-ok) !important; }
+    html body #op-progress-text{ font-family: var(--op-font-mono); }
 
-    .op-ledger .contenu.dhis2-table-container table { counter-reset: opr-ligne; border-collapse: collapse !important; }
-    .op-ledger .contenu.dhis2-table-container table th {
+    html body .op-ledger .contenu.dhis2-table-container table{ counter-reset: opr-ligne; border-collapse: collapse !important; }
+    html body .op-ledger .contenu.dhis2-table-container table th{
         background: var(--op-surface) !important; border-bottom: 2px solid var(--op-ink) !important; border-top: 0 !important;
         font-family: var(--op-font-mono) !important; font-size: 10.5px !important; font-weight: 600 !important; letter-spacing: .07em !important; text-transform: uppercase !important; color: var(--op-ink-2) !important;
     }
-    .op-ledger .contenu.dhis2-table-container table tr:has(input[name^="D0elt"], select[name^="D0elt"], textarea[name^="D0elt"]) { counter-increment: opr-ligne; }
-    .op-ledger .contenu.dhis2-table-container table td { border-color: var(--op-line) !important; }
-    .op-ledger .contenu.dhis2-table-container table td:first-child { position: relative; padding-left: 3.1rem !important; color: var(--op-ink) !important; }
-    .op-ledger .contenu.dhis2-table-container table tr:has(input[name^="D0elt"], select[name^="D0elt"], textarea[name^="D0elt"]) td:first-child::before {
+    html body .op-ledger .contenu.dhis2-table-container table tr:has(input[name^="D0elt"], select[name^="D0elt"], textarea[name^="D0elt"]){ counter-increment: opr-ligne; }
+    html body .op-ledger .contenu.dhis2-table-container table td{ border-color: var(--op-line) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table td:first-child{ position: relative; padding-left: 3.1rem !important; color: var(--op-ink) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:has(input[name^="D0elt"], select[name^="D0elt"], textarea[name^="D0elt"]) td:first-child::before{
         content: counter(opr-ligne, decimal-leading-zero);
         position: absolute; left: 0; top: 0; bottom: 0; width: 2.4rem; display: flex; align-items: center; justify-content: center;
         font: 500 11px var(--op-font-mono); color: var(--op-muted); border-right: 1px solid var(--opr-margin);
         height: auto; margin-top: 0; border-radius: 0; background: transparent;
     }
     /* l'état de la ligne colore son numéro de marge (remplace le point) */
-    html body .op-ledger .contenu.dhis2-table-container table tr:has(input.op-filled) td:first-child::before { color: var(--op-ok); font-weight: 600; background: transparent; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:has(input.op-filled, select.op-filled, textarea.op-filled) td:first-child::before { color: var(--op-ok); font-weight: 600; background: transparent; }
     html body .op-ledger .contenu.dhis2-table-container table tr:has(input.op-warnf) td:first-child::before { color: var(--op-ochre-ink); font-weight: 600; background: var(--op-ochre-soft); }
     html body .op-ledger .contenu.dhis2-table-container table tr:has(input.op-err) td:first-child::before,
     html body .op-ledger .contenu.dhis2-table-container table tr:has(input.opf-bad) td:first-child::before { color: #fff; font-weight: 600; background: var(--op-err); }
-    .op-ledger .contenu.dhis2-table-container table tr:focus-within td:first-child::before { color: var(--op-ochre-ink); font-weight: 600; }
-    .op-ledger .contenu.dhis2-table-container table tr:focus-within td:first-child { box-shadow: none !important; }
-    .op-ledger .contenu.dhis2-table-container table tr:focus-within td { background: var(--op-ochre-soft) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:focus-within td:first-child::before{ color: var(--op-ochre-ink); font-weight: 600; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:focus-within td:first-child{ box-shadow: none !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:focus-within td{ background: var(--op-ochre-soft) !important; }
 
     /* champs : on écrit sur une ligne, chiffres alignés */
-    .op-ledger .contenu.dhis2-table-container table input[type="number"],
-    .op-ledger .contenu.dhis2-table-container table input[type="text"],
-    .op-ledger .contenu.dhis2-table-container table input[type="tel"],
-    .op-ledger .contenu.dhis2-table-container table input[type="email"],
-    .op-ledger .contenu.dhis2-table-container table input[type="time"],
-    .op-ledger .contenu.dhis2-table-container table input[type="date"],
-    .op-ledger .contenu.dhis2-table-container table select {
+    html body .op-ledger .contenu.dhis2-table-container table input[type="number"],
+    html body .op-ledger .contenu.dhis2-table-container table input[type="text"],
+    html body .op-ledger .contenu.dhis2-table-container table input[type="tel"],
+    html body .op-ledger .contenu.dhis2-table-container table input[type="email"],
+    html body .op-ledger .contenu.dhis2-table-container table input[type="time"],
+    html body .op-ledger .contenu.dhis2-table-container table input[type="date"],
+    html body .op-ledger .contenu.dhis2-table-container table select{
         background: transparent !important; border: 0 !important; border-bottom: 1.5px solid var(--op-line-2) !important;
         border-radius: 0 !important; box-shadow: none !important; padding: .45rem .25rem !important;
         font-family: var(--op-font-mono) !important; font-size: 14.5px !important; color: var(--op-ink) !important;
     }
-    .op-ledger .contenu.dhis2-table-container table input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
-    .op-ledger .contenu.dhis2-table-container table input:focus,
-    .op-ledger .contenu.dhis2-table-container table select:focus { border-bottom: 2px solid var(--op-ochre) !important; box-shadow: none !important; outline: none !important; }
-    .op-ledger .contenu.dhis2-table-container table input.op-filled { border-left: 0 !important; border-bottom-color: var(--op-ink) !important; }
-    .op-ledger .contenu.dhis2-table-container table input:invalid,
-    .op-ledger .contenu.dhis2-table-container table input.op-err,
-    .op-ledger .contenu.dhis2-table-container table input.opf-bad { border-bottom: 2px solid var(--op-err) !important; background: var(--op-err-soft) !important; }
-    .op-ledger .contenu.dhis2-table-container table input.op-warnf,
-    .op-ledger .contenu.dhis2-table-container table input.opf-soft { border-bottom: 2px solid var(--op-ochre) !important; background: transparent !important; }
-    .op-ledger .contenu.dhis2-table-container table input.opf-calc,
-    .op-ledger .contenu.dhis2-table-container table input[readonly]:not(.opf-xhide) { border-bottom-style: dotted !important; color: var(--op-ink-2) !important; background: transparent !important; }
-    .op-ledger .contenu.dhis2-table-container textarea { border-radius: 2px !important; background: var(--op-surface-2) !important; border-color: var(--op-line-2) !important; font-family: var(--op-font-ui); }
-    .op-prev, .op-just { font-family: var(--op-font-mono) !important; }
-    .op-just { border-radius: 3px !important; }
+    html body .op-ledger .contenu.dhis2-table-container table input[type="number"]{ text-align: right; font-variant-numeric: tabular-nums; }
+    html body .op-ledger .contenu.dhis2-table-container table input:focus,
+    html body .op-ledger .contenu.dhis2-table-container table select:focus{ border-bottom: 2px solid var(--op-ochre) !important; box-shadow: none !important; outline: none !important; }
+    html body .op-ledger .contenu.dhis2-table-container table input.op-filled{ border-left: 0 !important; border-bottom-color: var(--op-ink) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table input:invalid,
+    html body .op-ledger .contenu.dhis2-table-container table input.op-err,
+    html body .op-ledger .contenu.dhis2-table-container table input.opf-bad{ border-bottom: 2px solid var(--op-err) !important; background: var(--op-err-soft) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table input.op-warnf,
+    html body .op-ledger .contenu.dhis2-table-container table input.opf-soft{ border-bottom: 2px solid var(--op-ochre) !important; background: transparent !important; }
+    html body .op-ledger .contenu.dhis2-table-container table input.opf-calc,
+    html body .op-ledger .contenu.dhis2-table-container table input[readonly]:not(.opf-xhide){ border-bottom-style: dotted !important; color: var(--op-ink-2) !important; background: transparent !important; }
+    html body .op-ledger .contenu.dhis2-table-container textarea{ border-radius: 2px !important; background: var(--op-surface-2) !important; border-color: var(--op-line-2) !important; font-family: var(--op-font-ui); }
+    html body .op-prev, html body .op-just{ font-family: var(--op-font-mono) !important; }
+    html body .op-just{ border-radius: 3px !important; }
 
     html.dark .op-ledger .contenu, html.dark .op-ledger [class*="card-body"], html.dark .op-ledger [id^="no-data-"] { background: var(--op-surface) !important; }
     html.dark .op-ledger #no-data-{{ dataset.id }} { background-color: var(--op-surface) !important; }
@@ -1134,153 +1134,348 @@
     html.dark .op-ledger .contenu.dhis2-table-container table td:first-child { background-color: var(--op-surface) !important; color: var(--op-ink) !important; border-right: 0 !important; border-bottom: 1px solid var(--op-line) !important; }
     html.dark .op-ledger .contenu.dhis2-table-container table tr:focus-within td { background-color: var(--op-ochre-soft) !important; }
     /* état vide : une page de registre vierge, sans animation */
-    .op-ledger [id^="no-data-"] h3 { font-family: var(--op-font-display) !important; font-weight: 500 !important; font-style: italic; }
-    .op-ledger [id^="no-data-"] svg { color: var(--op-ink-2) !important; }
+    html body .op-ledger [id^="no-data-"] h3{ font-family: var(--op-font-display) !important; font-weight: 500 !important; font-style: italic; }
+    html body .op-ledger [id^="no-data-"] svg{ color: var(--op-ink-2) !important; }
 
     /* ---------- arborescence : un index ---------- */
-    aside.op-aside { background: var(--op-surface) !important; }
-    #orgUnitTree ul { border-left: 1px dotted var(--op-line-2) !important; }
-    #orgUnitTree .rounded-lg { border-radius: 3px !important; }
-    #op-unit-count { background: var(--op-brand-fill) !important; color: #fff !important; border-radius: 3px !important; font-family: var(--op-font-mono); }
-    .custom-checkbox { border-radius: 2px !important; }
-    .custom-checkbox:checked { background-color: var(--op-ink) !important; border-color: var(--op-ink) !important; }
-    .op-dot { border-radius: 1px !important; }
-    aside.op-aside button.bg-\[\#276696\], aside.op-aside a.bg-\[\#276696\] { background: var(--op-brand-fill) !important; border-radius: 4px !important; box-shadow: none !important; }
-    .text-\[\#276696\] { color: var(--op-brand) !important; }
+    html body aside.op-aside{ background: var(--op-surface) !important; }
+    html body #orgUnitTree ul{ border-left: 1px dotted var(--op-line-2) !important; }
+    html body #orgUnitTree .rounded-lg{ border-radius: 3px !important; }
+    html body #op-unit-count{ background: var(--op-brand-fill) !important; color: #fff !important; border-radius: 3px !important; font-family: var(--op-font-mono); }
+    html body .custom-checkbox{ border-radius: 2px !important; }
+    html body .custom-checkbox:checked{ background-color: var(--op-ink) !important; border-color: var(--op-ink) !important; }
+    html body .op-dot{ border-radius: 1px !important; }
+    html body aside.op-aside button.bg-\[\#276696\], html body aside.op-aside a.bg-\[\#276696\]{ background: var(--op-brand-fill) !important; border-radius: 4px !important; box-shadow: none !important; }
+    html body .text-\[\#276696\]{ color: var(--op-brand) !important; }
 
     /* ---------- dock d'enregistrement : bande d'encre ---------- */
-    .op-actionbar { background: var(--opr-head) !important; border-radius: 6px !important; box-shadow: 0 0 0 1px rgba(0,0,0,.04), 0 10px 24px -14px rgba(0,0,0,.45) !important; border-top: 3px solid var(--op-ochre); }
-    .op-actionbar button[id^="myButton"] { border-radius: 4px !important; background: var(--op-ochre) !important; color: #1B1406 !important; }
-    .op-actionbar.op-idle button[id^="myButton"] { background: rgba(255,255,255,.08) !important; color: #CFC8B8 !important; }
-    .op-actionbar #op-bar-pct { font-family: var(--op-font-mono); }
-    .op-fab #loadDataButton, .op-fab button { border-radius: 4px !important; }
+    html body .op-actionbar{ background: var(--opr-head) !important; border-radius: 6px !important; box-shadow: 0 0 0 1px rgba(0,0,0,.04), 0 10px 24px -14px rgba(0,0,0,.45) !important; border-top: 3px solid var(--op-ochre); }
+    html body .op-actionbar button[id^="myButton"]{ border-radius: 4px !important; background: var(--op-ochre) !important; color: #1B1406 !important; }
+    html body .op-actionbar.op-idle button[id^="myButton"]{ background: rgba(255,255,255,.08) !important; color: #CFC8B8 !important; }
+    html body .op-actionbar #op-bar-pct{ font-family: var(--op-font-mono); }
+    html body .op-fab #loadDataButton, html body .op-fab button{ border-radius: 4px !important; }
 
     /* ---------- boîtes de dialogue ---------- */
-    .swal2-popup { border-radius: 6px !important; border-top: 4px double var(--op-ink) !important; }
-    .swal2-styled.swal2-confirm { border-radius: 4px !important; background: var(--op-brand-fill) !important; box-shadow: none !important; }
+    html body .swal2-popup{ border-radius: 6px !important; border-top: 4px double var(--op-ink) !important; }
+    html body .swal2-styled.swal2-confirm{ border-radius: 4px !important; background: var(--op-brand-fill) !important; box-shadow: none !important; }
 
 
     /* ---------- résultats en carrousel : une seule bande, quel que soit le nombre d'indicateurs ---------- */
-    .op-results { padding: .85rem 1rem .9rem !important; }
-    .op-results .op-results-h { display: none !important; }
-    .opr-rh { display: flex; align-items: center; gap: .6rem; margin-bottom: .6rem; min-height: 30px; }
-    .opr-rh b { font-size: 13.5px; font-weight: 700; color: var(--op-ink); white-space: nowrap; }
-    .opr-rh .n { font: 500 11px var(--op-font-mono); color: var(--op-muted); white-space: nowrap; }
-    .opr-rh .sp { flex: 1; }
-    .opr-rh .pos { font: 500 11.5px var(--op-font-mono); color: var(--op-ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .opr-rh button { white-space: nowrap; height: 30px; min-width: 30px; padding: 0 .55rem; border: 1px solid var(--op-line-2); border-radius: 4px; background: var(--op-surface); color: var(--op-ink); font: 600 12px var(--op-font-ui); cursor: pointer; }
-    .opr-rh button:hover:not(:disabled) { background: var(--op-surface-2); border-color: var(--op-ink-2); }
-    .opr-rh button:disabled { opacity: .35; cursor: default; }
-    .opr-rh .tout[aria-pressed="true"], .opr-rh .tout[aria-pressed="true"]:hover { background: var(--op-ink); color: var(--op-surface); border-color: var(--op-ink); }
-    .op-results .op-results-g {
+    html body .op-results{ padding: .85rem 1rem .9rem !important; }
+    html body .op-results .op-results-h{ display: none !important; }
+    html body .opr-rh{ display: flex; align-items: center; gap: .6rem; margin-bottom: .6rem; min-height: 30px; }
+    html body .opr-rh b{ font-size: 13.5px; font-weight: 700; color: var(--op-ink); white-space: nowrap; }
+    html body .opr-rh .n{ font: 500 11px var(--op-font-mono); color: var(--op-muted); white-space: nowrap; }
+    html body .opr-rh .sp{ flex: 1; }
+    html body .opr-rh .pos{ font: 500 11.5px var(--op-font-mono); color: var(--op-ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    html body .opr-rh button{ white-space: nowrap; height: 30px; min-width: 30px; padding: 0 .55rem; border: 1px solid var(--op-line-2); border-radius: 4px; background: var(--op-surface); color: var(--op-ink); font: 600 12px var(--op-font-ui); cursor: pointer; }
+    html body .opr-rh button:hover:not(:disabled){ background: var(--op-surface-2); border-color: var(--op-ink-2); }
+    html body .opr-rh button:disabled{ opacity: .35; cursor: default; }
+    html body .opr-rh .tout[aria-pressed="true"], html body .opr-rh .tout[aria-pressed="true"]:hover{ background: var(--op-ink); color: var(--op-surface); border-color: var(--op-ink); }
+    html body .op-results .op-results-g{
         display: flex !important; gap: .5rem !important; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
         overscroll-behavior-x: contain; scrollbar-width: none; padding-bottom: 2px;
     }
-    .op-results .op-results-g::-webkit-scrollbar { display: none; }
-    .op-results .op-res { flex: 0 0 172px; scroll-snap-align: start; padding: .55rem .7rem .6rem .8rem !important; }
-    .op-results .op-res p { -webkit-line-clamp: 1 !important; font-size: 11.5px !important; margin-bottom: .25rem !important; }
-    .op-results .op-res strong { font-size: 21px !important; }
-    .op-results .op-res small { font-size: 10.5px !important; margin-top: .2rem !important; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-    .op-results .op-res.opr-vu { border-left-color: var(--op-ochre) !important; }        /* l'indicateur qui vient de changer */
+    html body .op-results .op-results-g::-webkit-scrollbar{ display: none; }
+    html body .op-results .op-res{ flex: 0 0 172px; scroll-snap-align: start; padding: .55rem .7rem .6rem .8rem !important; }
+    html body .op-results .op-res p{ -webkit-line-clamp: 1 !important; font-size: 11.5px !important; margin-bottom: .25rem !important; }
+    html body .op-results .op-res strong{ font-size: 21px !important; }
+    html body .op-results .op-res small{ font-size: 10.5px !important; margin-top: .2rem !important; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+    html body .op-results .op-res.opr-vu{ border-left-color: var(--op-ochre) !important; }        /* l'indicateur qui vient de changer */
     /* « Tout voir » : grille compacte, hauteur limitée */
-    .op-results.opr-grille .op-results-g { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(172px, 1fr)); overflow-x: hidden; overflow-y: auto; max-height: 268px; scroll-snap-type: none; }
-    .op-results.opr-grille .opr-rh .nav { display: none; }
+    html body .op-results.opr-grille .op-results-g{ display: grid !important; grid-template-columns: repeat(auto-fill, minmax(172px, 1fr)); overflow-x: hidden; overflow-y: auto; max-height: 268px; scroll-snap-type: none; }
+    html body .op-results.opr-grille .opr-rh .nav{ display: none; }
     @media (max-width: 640px) {
-        .op-results .op-res { flex-basis: 142px; }
-        .opr-rh .nav, .opr-rh .pos { display: none; }      /* sur téléphone : on fait glisser du doigt */
-        .opr-rh { gap: .45rem; }
-        .opr-rh b { font-size: 13px; }
-        .opr-rh .tout { white-space: nowrap; flex: 0 0 auto; }
-        .op-results .op-results-g { margin-right: -1rem; padding-right: 1rem; }   /* la carte suivante dépasse : on comprend qu'il faut glisser */
+        html body .op-results .op-res{ flex-basis: 142px; }
+        html body .opr-rh .nav, html body .opr-rh .pos{ display: none; }      /* sur téléphone : on fait glisser du doigt */
+        html body .opr-rh{ gap: .45rem; }
+        html body .opr-rh b{ font-size: 13px; }
+        html body .opr-rh .tout{ white-space: nowrap; flex: 0 0 auto; }
+        html body .op-results .op-results-g{ margin-right: -1rem; padding-right: 1rem; }   /* la carte suivante dépasse : on comprend qu'il faut glisser */
     }
 
     /* =================== PASSE 2 · le registre jusqu'au bout =================== */
 
     /* rythme : tout sur une grille de 8 px, mêmes marges partout */
-    .op-main > section, .op-main > div { scroll-margin-top: 80px; }
+    html body .op-main > section, html body .op-main > div{ scroll-margin-top: 80px; }
 
     /* papier à en-tête : le bandeau logos et la fiche forment une seule feuille */
-    #op-entete { margin-bottom: 0 !important; border-bottom: 0 !important; border-radius: 6px 6px 0 0 !important; padding: 14px 22px 12px 3rem !important;
+    html body #op-entete{ margin-bottom: 0 !important; border-bottom: 0 !important; border-radius: 6px 6px 0 0 !important; padding: 14px 22px 12px 3rem !important;
                  background-image: linear-gradient(to right, transparent 26px, var(--opr-margin) 26px 27px, transparent 27px) !important; }
-    #op-entete .l1 { font-family: var(--op-font-display) !important; font-weight: 600 !important; font-size: 17px !important; letter-spacing: -.01em; }
-    #op-entete .l2 { font-size: 12.5px !important; }
-    #op-entete .l3 { font-family: var(--op-font-mono) !important; font-weight: 500 !important; letter-spacing: .08em !important; font-size: 10px !important; }
-    #op-entete img { filter: none !important; }
-    #op-entete + .op-fiche { margin-top: 0 !important; border-radius: 0 0 6px 6px !important; border-top: 0 !important;
+    html body #op-entete .l1{ font-family: var(--op-font-display) !important; font-weight: 600 !important; font-size: 17px !important; letter-spacing: -.01em; }
+    html body #op-entete .l2{ font-size: 12.5px !important; }
+    html body #op-entete .l3{ font-family: var(--op-font-mono) !important; font-weight: 500 !important; letter-spacing: .08em !important; font-size: 10px !important; }
+    html body #op-entete img{ filter: none !important; }
+    html body #op-entete + .op-fiche{ margin-top: 0 !important; border-radius: 0 0 6px 6px !important; border-top: 0 !important;
                              box-shadow: inset 0 1px 0 var(--op-line), inset 0 4px 0 var(--op-surface), inset 0 5px 0 var(--op-ink) !important; }
-    #op-entete + .op-fiche::before { top: -1px; }
-    #op-entete.op-vide { font-size: 12.5px; }
-    @media (max-width: 640px) { #op-entete { padding-left: 2.4rem !important; background-image: linear-gradient(to right, transparent 18px, var(--opr-margin) 18px 19px, transparent 19px) !important; } }
+    html body #op-entete + .op-fiche::before{ top: -1px; }
+    html body #op-entete.op-vide{ font-size: 12.5px; }
+    @media (max-width: 640px) { html body #op-entete{ padding-left: 2.4rem !important; background-image: linear-gradient(to right, transparent 18px, var(--opr-margin) 18px 19px, transparent 19px) !important; } }
 
     /* référence de la fiche, comme la cote d'un registre */
-    .opr-cote { display: inline-flex; align-items: center; gap: .5rem; margin: .1rem 0 .55rem; padding: 2px 8px; border: 1px solid var(--op-line-2); border-radius: 3px;
+    html body .opr-cote{ display: inline-flex; align-items: center; gap: .5rem; margin: .1rem 0 .55rem; padding: 2px 8px; border: 1px solid var(--op-line-2); border-radius: 3px;
                 font: 500 10.5px/1.5 var(--op-font-mono); letter-spacing: .06em; color: var(--op-ink-2); background: var(--op-surface-2); }
-    .opr-cote i { font-style: normal; color: var(--op-muted); }
-    .opr-cote[hidden] { display: none !important; }
+    html body .opr-cote i{ font-style: normal; color: var(--op-muted); }
+    html body .opr-cote[hidden]{ display: none !important; }
 
     /* tampon « Enregistré » qui s'imprime sur la fiche puis s'efface */
-    .opr-tampon { position: absolute; right: 230px; top: 26px; z-index: 5; pointer-events: none; padding: 8px 14px 7px; border: 3px double var(--op-ok); border-radius: 4px;
+    html body .opr-tampon{ position: absolute; right: 230px; top: 26px; z-index: 5; pointer-events: none; padding: 8px 14px 7px; border: 3px double var(--op-ok); border-radius: 4px;
                   color: var(--op-ok); font: 600 13px/1.1 var(--op-font-mono); letter-spacing: .14em; text-transform: uppercase; text-align: center;
                   transform: rotate(-7deg) scale(1.6); opacity: 0; background: color-mix(in srgb, var(--op-surface) 82%, transparent); }
-    .opr-tampon small { display: block; margin-top: 3px; font-size: 10px; letter-spacing: .06em; font-weight: 500; }
-    .opr-tampon.on { animation: opr-tampon 2.8s cubic-bezier(.2,.9,.25,1) forwards; }
+    html body .opr-tampon.opr-alerte { border-color: var(--op-ochre); color: var(--op-ochre-ink); }
+    html body .op-toast-msg { white-space: pre-line; }
+    html body .opr-tampon small{ display: block; margin-top: 3px; font-size: 10px; letter-spacing: .06em; font-weight: 500; }
+    html body .opr-tampon.on{ animation: opr-tampon 2.8s cubic-bezier(.2,.9,.25,1) forwards; }
     @keyframes opr-tampon { 0% { opacity: 0; transform: rotate(-7deg) scale(1.6); } 10% { opacity: 1; transform: rotate(-7deg) scale(1); } 78% { opacity: 1; } 100% { opacity: 0; transform: rotate(-7deg) scale(1); } }
-    @media (max-width: 640px) { .opr-tampon { right: 14px; top: 14px; } }
+    @media (max-width: 640px) { html body .opr-tampon{ right: 14px; top: 14px; } }
 
     /* arborescence : marque-page sur l'unité en cours, états en petites cases */
-    #orgUnitTree .opr-actif { background: var(--op-ochre-soft) !important; box-shadow: inset 3px 0 0 var(--op-ochre); border-radius: 0 3px 3px 0 !important; }
-    #orgUnitTree .opr-actif label, #orgUnitTree .opr-actif span { color: var(--op-ink) !important; font-weight: 600; }
-    .op-badge { border-radius: 1px !important; width: 8px !important; height: 8px !important; box-shadow: none !important; }
-    .op-badge-complet { background: var(--op-ok) !important; border: 1px solid var(--op-ok) !important; }
-    .op-badge-partiel { background: linear-gradient(to right, var(--op-ochre) 50%, transparent 50%) !important; border: 1px solid var(--op-ochre) !important; }
-    .op-badge-vide { background: transparent !important; border: 1px solid var(--op-line-2) !important; }
-    #op-legend { font-family: var(--op-font-mono); font-weight: 500 !important; letter-spacing: .02em; }
+    html body #orgUnitTree .opr-actif{ background: var(--op-ochre-soft) !important; box-shadow: inset 3px 0 0 var(--op-ochre); border-radius: 0 3px 3px 0 !important; }
+    html body #orgUnitTree .opr-actif label, html body #orgUnitTree .opr-actif span{ color: var(--op-ink) !important; font-weight: 600; }
+    html body .op-badge{ border-radius: 1px !important; width: 8px !important; height: 8px !important; box-shadow: none !important; }
+    html body .op-badge-complet{ background: var(--op-ok) !important; border: 1px solid var(--op-ok) !important; }
+    html body .op-badge-partiel{ background: linear-gradient(to right, var(--op-ochre) 50%, transparent 50%) !important; border: 1px solid var(--op-ochre) !important; }
+    html body .op-badge-vide{ background: transparent !important; border: 1px solid var(--op-line-2) !important; }
+    html body #op-legend{ font-family: var(--op-font-mono); font-weight: 500 !important; letter-spacing: .02em; }
 
     /* registre : en-tête de colonne « N° », chapitres, libellés lisibles */
-    .op-ledger .contenu.dhis2-table-container table tr:first-child th:first-child { position: relative; padding-left: 3.1rem !important; }
-    .op-ledger .contenu.dhis2-table-container table tr:first-child th:first-child::before {
+    html body .op-ledger .contenu.dhis2-table-container table tr:first-child th:first-child{ position: relative; padding-left: 3.1rem !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:first-child th:first-child::before{
         content: "N°"; position: absolute; left: 0; top: 0; bottom: 0; width: 2.4rem; display: flex; align-items: center; justify-content: center;
         border-right: 1px solid var(--opr-margin); font: inherit; color: inherit;
     }
-    .op-ledger .contenu.dhis2-table-container table td:first-child { font-size: 14px !important; line-height: 1.4; }
+    html body .op-ledger .contenu.dhis2-table-container table td:first-child{ font-size: 14px !important; line-height: 1.4; }
     /* lignes de chapitre (titre de groupe, en-tête d'indicateurs) */
-    .op-ledger .contenu.dhis2-table-container table tr:not(:has(input, select, textarea, .indicSelector)) td[colspan],
-    .op-ledger .contenu.dhis2-table-container table tr.op-ind-head td {
+    html body .op-ledger .contenu.dhis2-table-container table tr:not(:has(input, select, textarea, .indicSelector)) td[colspan],
+    html body .op-ledger .contenu.dhis2-table-container table tr.op-ind-head td{
         background: var(--op-surface-2) !important; border-top: 1px solid var(--op-ink) !important; border-bottom: 1px solid var(--op-line-2) !important;
         font: 600 11px var(--op-font-mono) !important; letter-spacing: .1em; text-transform: uppercase; color: var(--op-ink) !important; padding-top: .7rem !important; padding-bottom: .55rem !important;
     }
-    .op-ledger .contenu h1, .op-ledger .contenu h2, .op-ledger .contenu h3 { font-family: var(--op-font-display) !important; font-weight: 500 !important; letter-spacing: -.01em; color: var(--op-ink) !important; }
-    .op-ledger .contenu h2 { font-size: 22px !important; padding: 1rem 1.2rem .4rem 3.1rem; margin: 0; }
-    .op-ledger .contenu h3 { font-size: 17px !important; padding: .9rem 1.2rem .35rem 3.1rem; margin: 0; border-top: 1px solid var(--op-line); }
+    html body .op-ledger .contenu h1, html body .op-ledger .contenu h2, html body .op-ledger .contenu h3{ font-family: var(--op-font-display) !important; font-weight: 500 !important; letter-spacing: -.01em; color: var(--op-ink) !important; }
+    html body .op-ledger .contenu h2{ font-size: 22px !important; padding: 1rem 1.2rem .4rem 3.1rem; margin: 0; }
+    html body .op-ledger .contenu h3{ font-size: 17px !important; padding: .9rem 1.2rem .35rem 3.1rem; margin: 0; border-top: 1px solid var(--op-line); }
     /* lignes calculées (indicateurs dans le tableau) : écriture de la machine, pas de l'agent */
-    .op-ledger .contenu.dhis2-table-container table tr:has(.indicSelector) td { background: var(--op-surface-2) !important; }
-    .op-ledger .contenu.dhis2-table-container table tr:has(.indicSelector) td:first-child { padding-left: 3.1rem !important; font-style: italic; color: var(--op-ink-2) !important; }
-    .op-ledger .contenu.dhis2-table-container table tr:has(.indicSelector) td:first-child::before {
+    html body .op-ledger .contenu.dhis2-table-container table tr:has(.indicSelector) td{ background: var(--op-surface-2) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:has(.indicSelector) td:first-child{ padding-left: 3.1rem !important; font-style: italic; color: var(--op-ink-2) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:has(.indicSelector) td:first-child::before{
         content: "ƒ"; position: absolute; left: 0; top: 0; bottom: 0; width: 2.4rem; display: flex; align-items: center; justify-content: center;
         border-right: 1px solid var(--opr-margin); font: italic 600 13px var(--op-font-display); color: var(--op-muted); background: transparent; height: auto; margin: 0; border-radius: 0;
     }
-    .op-ledger .contenu .indicSelector { font: 500 14px var(--op-font-mono); color: var(--op-ink); }
+    html body .op-ledger .contenu .indicSelector{ font: 500 14px var(--op-font-mono); color: var(--op-ink); }
     /* annotations de période précédente : notes dans la marge, pas des badges */
-    .op-prev { background: transparent !important; border: 0 !important; padding: 0 !important; color: var(--op-muted) !important; font-size: 11px !important; }
-    .op-prev b { color: var(--op-ink-2) !important; }
+    html body .op-prev{ background: transparent !important; border: 0 !important; padding: 0 !important; color: var(--op-muted) !important; font-size: 11px !important; }
+    html body .op-prev b{ color: var(--op-ink-2) !important; }
 
     /* page vierge : dessin au trait au lieu d'une icône générique */
-    .op-ledger [id^="no-data-"] > div:first-child svg:not(.opr-vierge) { display: none !important; }
-    .op-ledger [id^="no-data-"] svg.opr-vierge { width: 148px !important; height: auto !important; color: var(--op-ink-2) !important; margin: 0 auto .4rem; display: block; }
-    .opr-vierge .r { stroke: var(--op-line-2); }
-    .opr-vierge .m { stroke: var(--opr-margin); }
-    .opr-vierge .o { stroke: var(--op-ochre); }
-    .op-ledger [id^="no-data-"] .rounded-xl, .op-ledger [id^="no-data-"] .rounded-2xl, .op-guide > div { border-radius: 4px !important; }
+    html body .op-ledger [id^="no-data-"] > div:first-child svg:not(.opr-vierge){ display: none !important; }
+    html body .op-ledger [id^="no-data-"] svg.opr-vierge{ width: 148px !important; height: auto !important; color: var(--op-ink-2) !important; margin: 0 auto .4rem; display: block; }
+    html body .opr-vierge .r{ stroke: var(--op-line-2); }
+    html body .opr-vierge .m{ stroke: var(--opr-margin); }
+    html body .opr-vierge .o{ stroke: var(--op-ochre); }
+    html body .op-ledger [id^="no-data-"] .rounded-xl, html body .op-ledger [id^="no-data-"] .rounded-2xl, html body .op-guide > div{ border-radius: 4px !important; }
 
-    .op-units-btn { border-radius: 4px !important; background: var(--op-surface) !important; border: 1px solid var(--op-ink) !important; color: var(--op-ink) !important; font-family: var(--op-font-ui); }
+    html body .op-units-btn{ border-radius: 4px !important; background: var(--op-surface) !important; border: 1px solid var(--op-ink) !important; color: var(--op-ink) !important; font-family: var(--op-font-ui); }
     /* dock : le statut devient une case, le pourcentage une lecture */
-    #op-status-dot { border-radius: 1px !important; width: 9px !important; height: 9px !important; }
-    #op-save-status { font-family: var(--op-font-ui); font-weight: 600 !important; }
+    html body #op-status-dot{ border-radius: 1px !important; width: 9px !important; height: 9px !important; }
+    html body #op-save-status{ font-family: var(--op-font-ui); font-weight: 600 !important; }
 
     /* impression : rien de décoratif */
-    @media print { .opr-tampon, .opr-cote, .opr-rh { display: none !important; } main.op-main { background: none !important; } }
-    @media (prefers-reduced-motion: reduce) { .opr-dial .needle, .opr-dial .t { transition: none !important; } }
+    @media print { html body .opr-tampon, html body .opr-cote, html body .opr-rh{ display: none !important; } html body main.op-main{ background: none !important; } }
+
+    /* =================== cases à cocher du registre (choix unique ○, choix multiples □), heure, pièces jointes =================== */
+    html body .op-ledger .opf-opts{ gap: 4px 6px; }
+    html body .op-ledger .opf-opts label{ min-height: 36px; padding: 5px 11px 5px 8px; border: 1px solid var(--op-line-2); border-radius: 4px; background: var(--op-surface);
+                                 font: 500 13.5px var(--op-font-ui); color: var(--op-ink); transition: border-color .12s, background .12s; }
+    html body .op-ledger .opf-opts label:hover{ border-color: var(--op-ink-2); }
+    html body .op-ledger .opf-opts input{ appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 16px; height: 16px; margin: 0; border: 1.5px solid var(--op-ink-2); background: var(--op-surface); display: grid; place-content: center; cursor: pointer; }
+    html body .op-ledger .opf-radio input{ border-radius: 50%; }                                  /* ○ une seule réponse, comme sur papier */
+    html body .op-ledger .opf-check input{ border-radius: 2px; }                                  /* □ plusieurs réponses */
+    html body .op-ledger .opf-radio input:checked::before{ content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--op-ink); }
+    html body .op-ledger .opf-check input:checked{ background: var(--op-ink); border-color: var(--op-ink); }
+    html body .op-ledger .opf-check input:checked::before{ content: ""; width: 9px; height: 5px; border: solid var(--op-surface); border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
+    html body .op-ledger .opf-opts label:has(input:checked){ border-color: var(--op-ink); background: var(--op-ochre-soft); color: var(--op-ink); font-weight: 600; }
+    html body .op-ledger .opf-opts label:has(input:focus-visible){ outline: 2px solid var(--op-ochre); outline-offset: 1px; }
+    html body .op-ledger .opf-opts .c{ font: 500 11px var(--op-font-mono); color: var(--op-muted); min-width: 1ch; }
+    html body .op-ledger .opf-scale{ gap: 0; }
+    html body .op-ledger .opf-scale label{ border-radius: 0; margin-left: -1px; flex-direction: column; gap: 3px; min-width: 72px; padding: 6px 8px; text-align: center; }
+    html body .op-ledger .opf-scale label:first-child{ border-radius: 4px 0 0 4px; margin-left: 0; } html body .op-ledger .opf-scale label:last-child{ border-radius: 0 4px 4px 0; }
+    html body .op-ledger .opf-scale label .t{ font-size: 11.5px; line-height: 1.2; }
+    html body .op-ledger .opf-scale label:has(input:checked){ position: relative; z-index: 1; }
+    html body .op-ledger .opf-opts-n{ font: 500 11px var(--op-font-mono); color: var(--op-muted); }
+    html body .op-ledger tr:has(.opf-bad) .opf-opts label, html body .op-ledger tr:has(select.opf-bad) .opf-opts label{ border-color: var(--op-err); }
+    html body .op-ledger .opf-now{ border-radius: 4px; border-color: var(--op-line-2); background: var(--op-surface); color: var(--op-ink); font: 600 12px var(--op-font-ui); padding: 5px 9px; }
+    html body .op-ledger .opf-now:hover{ border-color: var(--op-ink); }
+    html body .op-ledger .contenu.dhis2-table-container table input[type="time"],
+    html body .op-ledger .contenu.dhis2-table-container table input[type="date"]{ width: auto !important; min-width: 9.5rem; display: inline-block; }
+    html body .op-ledger .opf-file{ border-radius: 4px; border-color: var(--op-line-2); background: var(--op-surface-2); }
+    html body .op-ledger .opf-file.has{ border-style: solid; border-color: var(--op-ink-2); background: var(--op-surface); }
+    html body .op-ledger .opf-file.drag{ border-color: var(--op-ochre); background: var(--op-ochre-soft); }
+    html body .op-ledger .opf-file .pick{ border-radius: 4px; border-color: var(--op-ink); color: var(--op-ink); background: var(--op-surface); font: 600 12.5px var(--op-font-ui); padding: 7px 11px; }
+    html body .op-ledger .opf-file .pick.cam{ background: var(--op-ink); color: var(--op-surface); }
+    html body .op-ledger .opf-file .thumb, html body .op-ledger .opf-file .ico{ border-radius: 3px; }
+    html body .op-ledger .opf-file .ico{ font-family: var(--op-font-mono); }
+    html body .op-ledger .opf-file .info small{ font-family: var(--op-font-mono); font-size: 11px; }
+    html body .op-ledger .opf-file .pick[hidden]{ display: none; }
+    @media (max-width: 640px) { html body .op-ledger .opf-scale label{ min-width: 0; flex: 1 1 0; } html body .op-ledger .opf-opts label{ flex: 1 1 calc(50% - 6px); } html body .op-ledger .opf-radio:has(label:nth-child(2):last-child) label{ flex: 1 1 0; } }
+
+    /* téléphone : un tableau « Élément / Valeur » devient une suite de lignes de registre (libellé puis réponse, pleine largeur).
+       Les grilles de désagrégation (3 colonnes et plus) gardent le défilement horizontal. */
+    @media (max-width: 640px) {
+        html body .op-ledger { min-width: 0 !important; }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) { display: block; width: 100% !important; }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) :is(thead, tbody, tr) { display: block; width: 100%; }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) tr:first-child:has(th) { display: none; }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) td { display: block; width: 100% !important; border-bottom: 0 !important; }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) tr { border-bottom: 1px solid var(--op-line); position: relative; }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) td:first-child { padding: .7rem .9rem .15rem 3.1rem !important; font-weight: 600; font-size: 14.5px !important; border-right: 0 !important; }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) td:first-child::before { bottom: auto !important; height: 100% !important; }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) td + td { padding: .35rem .9rem .8rem 3.1rem !important; }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) tr::before { content: ""; position: absolute; left: 2.4rem; top: 0; bottom: 0; border-left: 1px solid var(--opr-margin); }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) td:first-child::before { border-right: 0 !important; }
+        html body .op-ledger .contenu.dhis2-table-container table:not(:has(tr > :nth-child(3))) td[colspan] { padding-left: 3.1rem !important; }
+        html body .op-ledger .opf-opts label { flex: 1 1 calc(50% - 6px); }
+        html body .op-ledger .opf-scale { flex-wrap: nowrap; }
+        html body .op-ledger .opf-scale label { flex: 1 1 0 !important; min-width: 0 !important; padding: 6px 2px !important; }
+        html body .op-ledger .opf-scale label .t { font-size: 10.5px; overflow-wrap: anywhere; }
+        html body .op-ledger .opf-file { min-width: 0; }
+        html body .op-ledger .opf-file .info b { max-width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) { html body .opr-dial .needle, html body .opr-dial .t{ transition: none !important; } }
 </style>
+
+    <!-- AJOUT : palette « vivante » posée par-dessus le registre — couleurs franches et codées (chaque section a sa couleur,
+         le cadran a ses zones), sans dégradé ni halo. Supprimer ce bloc = retour à la palette sobre. -->
+    <style id="op-vivant">
+    :root {
+        --v-ink: #10302B;
+        --v-teal: #0F7B6C;   --v-teal-soft: #E1F3EF;
+        --v-indigo: #3346A8; --v-indigo-soft: #E8EBFA;
+        --v-coral: #E0533D;  --v-coral-soft: #FCE9E5;
+        --v-saffron: #F2A007; --v-saffron-ink: #8A5700; --v-saffron-soft: #FEF2D8;
+        --v-plum: #8A3FA0;   --v-sky: #1C8FD0;
+        --op-paper: #FBF6EC; --op-surface: #FFFFFF; --op-surface-2: #FFFAF1;
+        --op-line: #EADFCB;  --op-line-2: #D9C9AA;
+        --op-ink: var(--v-ink); --op-ink-2: #3D5550; --op-muted: #6E7872;
+        --op-brand: var(--v-teal); --op-brand-2: #0A5E53; --op-brand-soft: var(--v-teal-soft);
+        --op-brand-fill: var(--v-teal); --op-brand-fill-2: #0A5E53; --op-primary: var(--v-teal);
+        --op-ochre: var(--v-saffron); --op-ochre-ink: var(--v-saffron-ink); --op-ochre-soft: var(--v-saffron-soft);
+        --op-ok: #1E8A5A; --op-ok-soft: #E2F4EA; --op-err: #D23F2A; --op-err-soft: #FDE8E4;
+        --opr-margin: var(--v-coral); --opr-head: var(--v-ink); --opr-rule: rgba(16,48,43,.05);
+        --sec-fiche: var(--v-teal); --sec-selection: var(--v-indigo); --sec-resultats: var(--v-coral); --sec-releve: var(--v-saffron);
+    }
+    html.dark {
+        --v-ink: #F3EEE2;
+        --v-teal: #3CC6AE;   --v-teal-soft: #0F2E29;
+        --v-indigo: #8C9BFF; --v-indigo-soft: #1C2240;
+        --v-coral: #FF8770;  --v-coral-soft: #3A1A14;
+        --v-saffron: #FFC145; --v-saffron-ink: #FFC145; --v-saffron-soft: #33270C;
+        --v-plum: #D08AE6;   --v-sky: #6CC5F5;
+        --op-paper: #0F1513; --op-surface: #161E1B; --op-surface-2: #1B2420;
+        --op-line: #27332E; --op-line-2: #36443E;
+        --op-ink: #F3EEE2; --op-ink-2: #C9C2B2; --op-muted: #9C9586;
+        --op-brand: var(--v-teal); --op-brand-2: #2BA892; --op-brand-soft: var(--v-teal-soft);
+        --op-brand-fill: #138A78; --op-brand-fill-2: #0F7466; --op-primary: var(--v-teal);
+        --op-ok: #4FD08F; --op-ok-soft: #10281C; --op-err: #FF7A62; --op-err-soft: #34160F;
+        --opr-head: #0A100E; --opr-rule: rgba(243,238,226,.03);
+    }
+
+    /* bandeau : encre + ruban aux 4 couleurs des sections (aplats, bords francs) */
+    html body header.glass-nav { border-bottom: 0 !important; box-shadow: none !important; }
+    html body header.glass-nav::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 4px; pointer-events: none;
+        background: linear-gradient(to right, var(--sec-fiche) 0 25%, var(--sec-selection) 25% 50%, var(--sec-resultats) 50% 75%, var(--sec-releve) 75% 100%); }
+    html body .op-nav-active::after { background: var(--v-saffron) !important; }
+
+    /* chaque section a sa couleur : intercalaire plein, filet de tête coloré */
+    html body .op-fiche { --sec: var(--sec-fiche); } html body .op-command { --sec: var(--sec-selection); }
+    html body .op-results { --sec: var(--sec-resultats); } html body .op-ledger { --sec: var(--sec-releve); }
+    html body :is(.op-fiche, .op-command, .op-results, .op-ledger)::before {
+        background: var(--sec) !important; color: #fff !important; border-radius: 3px; padding: 0 8px !important; font-weight: 600 !important;
+    }
+    html body .op-ledger::before { color: #2A1A00 !important; }
+    html.dark body :is(.op-fiche, .op-command, .op-results, .op-ledger)::before { color: #0F1513 !important; }
+    html body :is(.op-command, .op-results, .op-ledger) { border-top: 3px solid var(--sec) !important; }
+    html body .op-fiche { border-top-color: var(--sec-fiche) !important; }
+    html body #op-entete + .op-fiche { box-shadow: inset 0 1px 0 var(--op-line), inset 0 4px 0 var(--op-surface), inset 0 6px 0 var(--sec-fiche) !important; }
+
+    /* fiche */
+    html body .op-fiche-title { color: var(--v-ink) !important; }
+    html body .opr-cote { border-color: var(--v-teal); color: var(--v-teal); background: var(--v-teal-soft); }
+    html body .op-step.op-done { background: var(--v-teal) !important; color: #fff !important; }
+    html body .op-step.op-done .op-num { background: #fff !important; border-color: #fff !important; }
+    html body .op-step.op-done .op-num::after { color: var(--v-teal) !important; }
+    html.dark body .op-step.op-done { color: #0F1513 !important; }
+    html body .op-step:not(.op-done):first-child, html body .op-step.op-done + .op-step:not(.op-done) { background: var(--v-saffron-soft) !important; color: var(--v-saffron-ink) !important; }   /* étape en cours */
+
+    /* cadran : trois zones comme un instrument (rouge, safran, vert) */
+    html body .opr-dial .t.z1 { stroke: color-mix(in srgb, var(--v-coral) 28%, var(--op-surface)); }
+    html body .opr-dial .t.z2 { stroke: color-mix(in srgb, var(--v-saffron) 32%, var(--op-surface)); }
+    html body .opr-dial .t.z3 { stroke: color-mix(in srgb, var(--op-ok) 30%, var(--op-surface)); }
+    html body .opr-dial .t.on.z1 { stroke: var(--v-coral); } html body .opr-dial .t.on.z2 { stroke: var(--v-saffron); } html body .opr-dial .t.on.z3 { stroke: var(--op-ok); }
+    html body #op-gauge.opr-full .opr-dial .t.on { stroke: var(--op-ok); }
+    html body .opr-read b { color: var(--v-ink); }
+    html body #op-gauge .opr-read em { border-width: 1.5px; }
+    html body #op-gauge.op-partial .opr-read em { color: var(--v-saffron-ink); background: var(--v-saffron-soft); }
+    html body #op-gauge.opr-full .opr-read em { color: #fff; background: var(--op-ok); border-color: var(--op-ok); }
+    html body #op-gauge:not(.op-partial):not(.opr-full) .opr-read em { color: var(--v-coral); background: var(--v-coral-soft); }
+
+    /* sélection */
+    html body .op-fab #loadDataButton, html body #loadDataButton { background: var(--v-indigo) !important; color: #fff !important; }
+    html body .op-fab #loadDataButton:hover { background: color-mix(in srgb, var(--v-indigo) 85%, #000) !important; }
+    html body .op-fab.op-ready #loadDataButton { background: var(--v-saffron) !important; color: #2A1A00 !important; box-shadow: none !important; }   /* prochaine action à faire */
+    html body .op-command label { color: var(--v-indigo) !important; }
+    html body .op-chip.op-chip-active { background: var(--v-indigo) !important; border-color: var(--v-indigo) !important; color: #fff !important; }
+    html body .op-command select:focus { border-color: var(--v-indigo) !important; box-shadow: 0 0 0 3px var(--v-indigo-soft) !important; }
+
+    /* résultats : chaque indicateur a sa couleur (palette catégorielle), chiffre coloré */
+    html body .op-results .op-res { --c: var(--v-teal); border-left: 4px solid var(--c) !important; background: color-mix(in srgb, var(--c) 7%, var(--op-surface)) !important; }
+    html body .op-results .op-res:nth-child(6n+2) { --c: var(--v-indigo); } html body .op-results .op-res:nth-child(6n+3) { --c: var(--v-coral); }
+    html body .op-results .op-res:nth-child(6n+4) { --c: var(--v-saffron); } html body .op-results .op-res:nth-child(6n+5) { --c: var(--v-plum); }
+    html body .op-results .op-res:nth-child(6n+6) { --c: var(--v-sky); }
+    html body .op-results .op-res strong { color: color-mix(in srgb, var(--c) 78%, var(--v-ink)) !important; }
+    html body .op-results .op-res:nth-child(6n+4) strong { color: var(--v-saffron-ink) !important; }
+    html body .op-results .op-res.op-na-res { --c: var(--op-line-2); }
+    html body .op-results .op-res.opr-vu { outline: 2px solid var(--c); outline-offset: -2px; }
+    html body .opr-rh b { color: var(--v-coral); }
+
+    /* relevé : barre de progression safran → verte, chapitres colorés, cases vives */
+    html body #op-progress-bar { background: var(--v-saffron) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:not(:has(input, select, textarea, .indicSelector)) td[colspan],
+    html body .op-ledger .contenu.dhis2-table-container table tr.op-ind-head td { background: var(--v-saffron-soft) !important; color: var(--v-saffron-ink) !important; border-top: 2px solid var(--v-saffron) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table th { border-bottom-color: var(--v-saffron) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:focus-within td { background: color-mix(in srgb, var(--v-saffron) 12%, var(--op-surface)) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table input:focus,
+    html body .op-ledger .contenu.dhis2-table-container table select:focus { border-bottom-color: var(--v-saffron) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table input.op-filled { border-bottom-color: var(--v-teal) !important; }
+    html body .op-ledger .opf-opts label:has(input:checked) { background: var(--v-teal) !important; border-color: var(--v-teal) !important; color: #fff !important; }
+    html.dark body .op-ledger .opf-opts label:has(input:checked) { color: #0F1513 !important; }
+    html body .op-ledger .opf-opts label:has(input:checked) .c { color: rgba(255,255,255,.75); }
+    html body .op-ledger .opf-radio input:checked { border-color: #fff; } html body .op-ledger .opf-radio input:checked::before { background: #fff; }
+    html body .op-ledger .opf-check input:checked { background: #fff; border-color: #fff; } html body .op-ledger .opf-check input:checked::before { border-color: var(--v-teal); }
+    html body .op-ledger .opf-scale label:has(input:checked) { background: var(--v-saffron) !important; border-color: var(--v-saffron) !important; color: #2A1A00 !important; }
+    html body .op-ledger .opf-file .pick.cam { background: var(--v-teal); border-color: var(--v-teal); }
+    html body .op-ledger .opf-now:hover { border-color: var(--v-teal); color: var(--v-teal); }
+    html body .op-ledger .contenu.dhis2-table-container table tr:has(.indicSelector) td { background: color-mix(in srgb, var(--v-coral) 4%, var(--op-surface)) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:has(.indicSelector) .indicSelector { color: var(--v-coral) !important; font-weight: 600; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:has(.indicSelector) td:first-child::before { color: var(--v-coral) !important; }
+    html body .op-prev b { color: var(--v-indigo) !important; }
+    html body .op-just { background: var(--v-indigo-soft) !important; color: var(--v-indigo) !important; border-color: transparent !important; }
+
+    /* arborescence */
+    html body #orgUnitTree .opr-actif { background: var(--v-coral-soft) !important; box-shadow: inset 3px 0 0 var(--v-coral); }
+    html body .custom-checkbox:checked { background-color: var(--v-teal) !important; border-color: var(--v-teal) !important; }
+    html body #op-unit-count { background: var(--v-coral) !important; }
+    html body .op-badge-complet { background: var(--op-ok) !important; border-color: var(--op-ok) !important; }
+    html body .op-badge-partiel { background: linear-gradient(to right, var(--v-saffron) 50%, transparent 50%) !important; border-color: var(--v-saffron) !important; }
+    html body aside.op-aside button.bg-\[\#276696\], html body aside.op-aside a.bg-\[\#276696\] { background: var(--v-teal) !important; }
+
+    /* dock d'enregistrement */
+    html body .op-actionbar { border-top: 0 !important; box-shadow: inset 0 3px 0 var(--v-saffron), 0 10px 24px -14px rgba(0,0,0,.45) !important; }
+    html body .op-actionbar button[id^="myButton"] { background: var(--v-saffron) !important; color: #2A1A00 !important; }
+
+    /* tampon */
+    html body .opr-tampon { border-color: var(--op-ok); color: var(--op-ok); }
+    html body .opr-tampon.opr-alerte { border-color: var(--v-coral); color: var(--v-coral); }
+    </style>
 </head>
 <body class="bg-[#f4f7f9] font-sans text-sm text-gray-800">
 
@@ -2950,6 +3145,7 @@ $("#show-sidebar").click(function() {
         opFields().forEach(f => {
             const m = /^D0elt(\d+)$/.exec(f.name);
             if (m && f.value !== '') out.push({ id: m[1], value: f.value, type: opTypeSpec(f) });
+            else if (m && f.dataset.opCharge === '1') out.push({ id: m[1], value: '', type: opTypeSpec(f) });   // vidé par l'agent : à effacer en base
         });
         document.getElementById('elementsArea').value = JSON.stringify(out);
         return out;
@@ -2982,15 +3178,20 @@ $("#show-sidebar").click(function() {
 
             opDirty = false;
             opClearDraft();
+            window.opDernierRecu = (payload && payload.recu) || null;
+            if (typeof window.opMarquerCharges === 'function') window.opMarquerCharges();      // reçu exact renvoyé par save_value (lu par le tampon de la fiche)
             opSetStatus('Enregistré à ' + opHeure(new Date()), 'op-clean');
             opScheduleCompletude();
 
             Swal.close();
             const n = selUnit.options.length;
+            const recu = window.opDernierRecu, ign = recu && recu.ignorees ? recu.ignorees : [], avert = recu && recu.avertissements ? recu.avertissements : [];
             opNotify({
-                type: 'success',
-                title: 'Données enregistrées',
-                message: (payload && payload.message) || 'Les valeurs ont bien été enregistrées.',
+                type: ign.length ? 'warning' : 'success',
+                title: ign.length ? 'Enregistré, mais ' + ign.length + ' valeur' + (ign.length > 1 ? 's' : '') + ' non enregistrée' + (ign.length > 1 ? 's' : '') : 'Données enregistrées',
+                message: ((payload && payload.message) || 'Les valeurs ont bien été enregistrées.')
+                         + ign.map(x => '\n• ' + x.nom + ' : ' + x.raison).join('') + avert.map(a => '\n• ' + a).join(''),
+                duration: ign.length || avert.length ? 15000 : undefined,
                 actions: n > 1 ? [{ label: 'Passer à l\'unité suivante', primary: true, onClick: () => {
                     opSilent = true; opShiftUnit(1); opSilent = false;
                     document.getElementById('loadDataButton').click();
@@ -3627,6 +3828,11 @@ $("#show-sidebar").click(function() {
     // handleData d'origine ne remplit que les champs nombre, date et zone de texte :
     // on complète les autres types (texte court, téléphone, e-mail, heure, GPS, choix multiples, listes)
     const estFichier = f => /^(file|photo)$/.test(f.getAttribute('data-op-type') || '');
+    // champ qui avait une valeur en base : s'il est vidé, on envoie la valeur vide pour l'effacer (sinon l'ancienne restait)
+    function marquerCharges() {
+        champs().forEach(f => { if (/^D0elt\d+$/.test(f.name) && (f.value !== '' || f.hasAttribute('data-op-isna'))) f.dataset.opCharge = '1'; else delete f.dataset.opCharge; });
+    }
+    window.opMarquerCharges = marquerCharges;
     const nomFichier = id => { const d = id && id !== '0' && window.OperaForm && OperaForm.fichier ? OperaForm.fichier(id) : null; return id && id !== '0' ? '📎 ' + (d ? d.nom : 'pièce jointe n° ' + id) : ''; };
     function remplirAutresTypes(data) {
         const items = data && Array.isArray(data.data) ? data.data : null;
@@ -3644,7 +3850,9 @@ $("#show-sidebar").click(function() {
             const it = parNom.get(f.name); if (!it) return;
             if (estFichier(f)) {                       // pièce jointe : l'API renvoie {id, nom, taille, url, apercu}
                 if (it.fichier && window.OperaForm && OperaForm.retenirFichier) OperaForm.retenirFichier(it.fichier);
-                f.value = it.fichier ? String(it.fichier.id) : ''; return;
+                // ancienne saisie : l'identifiant a pu être rangé dans texte_element (nature « Texte ») ; le moteur retrouve le nom tout seul
+                const ancien = String(it.texte != null && it.texte !== '' ? it.texte : (it.content != null ? it.content : '')).trim();
+                f.value = it.fichier ? String(it.fichier.id) : (/^\d+$/.test(ancien) && ancien !== '0' ? ancien : ''); return;
             }
             const brut = f.tagName === 'SELECT' ? it.content : (it.texte != null && it.texte !== '' ? it.texte : it.content);
             const v = brut == null ? '' : String(brut);
@@ -3666,6 +3874,7 @@ $("#show-sidebar").click(function() {
                 ctx = { unit: selUnit.value, period: selPeriod.value,
                         periodNom: opt ? opt.text.trim() : '', unitNom: uopt ? uopt.text.trim() : '' };
                 base = instantane();
+                marquerCharges();
                 prev = null; justifs = new Map();
                 document.querySelectorAll('.op-prev, .op-just').forEach(x => x.remove());
                 chargerPrecedente(); chargerJustifs(); chargerTrace(); ajouterOutils();
@@ -3900,7 +4109,7 @@ $("#show-sidebar").click(function() {
             + (ch.length ? '<div class="op-recap-box"><table><thead><tr><th>Élément</th><th>Avant</th><th>Après</th></tr></thead><tbody>' + lignes + '</tbody></table></div>'
                 + (ch.length > 40 ? '<p class="op-recap-note">… et ' + (ch.length - 40) + ' autre(s) changement(s).</p>' : '')
               : '<p class="op-recap-note" style="margin-top:0">Aucune valeur n\'a changé depuis le chargement : les valeurs actuelles seront enregistrées à nouveau.</p>')
-            + (vid ? '<p class="op-recap-note"><i class="fa-solid fa-circle-info"></i> ' + vid + ' case(s) vidée(s) : une case vide n\'est pas envoyée, l\'ancienne valeur reste en base.</p>' : '')
+            + (vid ? '<p class="op-recap-note"><i class="fa-solid fa-circle-info"></i> ' + vid + ' case(s) vidée(s) : l\'ancienne valeur (ou pièce jointe) sera effacée.</p>' : '')
             + (ind.length ? '<p class="op-recap-note">Indicateurs : ' + ind.join(' · ') + '</p>' : '')
             + '<p class="op-recap-note">' + esc(ctx ? ctx.unitNom + ' · ' + ctx.periodNom : '') + '. En cas de doublon, ces valeurs remplacent celles déjà enregistrées.</p></div>';
         const r = await Swal.fire({ icon: 'question', title: 'Vérifier avant d\'enregistrer', html, width: 680,
@@ -4019,7 +4228,7 @@ $("#show-sidebar").click(function() {
         const l = document.createElementNS(NS, 'line');
         l.setAttribute('x1', (CX + R1 * Math.cos(a)).toFixed(2)); l.setAttribute('y1', (CY - R1 * Math.sin(a)).toFixed(2));
         l.setAttribute('x2', (CX + r2 * Math.cos(a)).toFixed(2)); l.setAttribute('y2', (CY - r2 * Math.sin(a)).toFixed(2));
-        l.setAttribute('class', 't' + (maj ? ' maj' : '')); svg.appendChild(l); ticks.push(l);
+        l.setAttribute('class', 't' + (maj ? ' maj' : '') + ' z' + (i / N < 0.4 ? 1 : i / N < 0.8 ? 2 : 3)); svg.appendChild(l); ticks.push(l);   /* zones : à commencer / en cours / presque complet */
         if (i === 0 || i === N / 2 || i === N) {
             const t = document.createElementNS(NS, 'text'), rr = 56;
             t.setAttribute('x', (CX + rr * Math.cos(a)).toFixed(1)); t.setAttribute('y', (CY - rr * Math.sin(a) + 3).toFixed(1));
@@ -4078,7 +4287,10 @@ $("#show-sidebar").click(function() {
         const t = document.createElement('div'); t.className = 'opr-tampon'; t.setAttribute('aria-hidden', 'true'); fiche.appendChild(t);
         new MutationObserver(() => {
             const m = /^Enregistré à (.+)$/.exec((st.textContent || '').trim()); if (!m) return;
-            t.innerHTML = 'Enregistré<small>' + m[1] + '</small>';
+            const r = window.opDernierRecu;
+            const det = r ? r.ecrites + ' valeur' + (r.ecrites > 1 ? 's' : '') + (r.ignorees && r.ignorees.length ? ' · ' + r.ignorees.length + ' ignorée' + (r.ignorees.length > 1 ? 's' : '') : '') : '';
+            t.classList.toggle('opr-alerte', !!(r && r.ignorees && r.ignorees.length));
+            t.innerHTML = 'Enregistré<small>' + m[1] + (det ? ' · ' + det : '') + '</small>';
             t.classList.remove('on'); void t.offsetWidth; t.classList.add('on');
         }).observe(st, { childList: true, characterData: true, subtree: true });
     }

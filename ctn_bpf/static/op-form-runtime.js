@@ -46,6 +46,33 @@
     '.opf-multi label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #E4E8EE;border-radius:999px;background:#fff;font-size:13px;font-weight:600;color:#344054;cursor:pointer;user-select:none}',
     '.opf-multi label:has(input:checked){border-color:#2B3A67;background:#EEF1F8;color:#2B3A67}',
     '.opf-multi input{width:15px;height:15px;margin:0}',
+    '.opf-file{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px dashed #C9D3DC;border-radius:12px;background:#FAFBFC;min-width:240px}',
+    '.opf-file.has{border-style:solid;border-color:#ABDBD2;background:#F3FAF8}',
+    '.opf-file.bad{border-color:#E5484D;background:#FFF5F5}',
+    '.opf-file .pick{display:inline-flex;align-items:center;gap:6px;border:1px solid #123A37;background:#fff;color:#123A37;border-radius:10px;padding:8px 12px;font-weight:800;font-size:13px;cursor:pointer}',
+    '.opf-file .pick:focus-visible{outline:2px solid #E48B0C;outline-offset:2px}',
+    '.opf-file .thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #E4E8EE;background:#fff}',
+    '.opf-file .ico{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #E4E8EE;font-size:11px;font-weight:800;color:#123A37;text-transform:uppercase}',
+    '.opf-file .info{display:flex;flex-direction:column;min-width:0;flex:1}',
+    '.opf-file .info b{font-size:13px;color:#0F1B2D;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}',
+    '.opf-file .info small{font-size:12px;color:#667085}',
+    '.opf-file .act{display:flex;gap:6px}',
+    '.opf-file .act a,.opf-file .act button{border:0;background:transparent;color:#123A37;font-weight:700;font-size:12.5px;cursor:pointer;text-decoration:underline;padding:4px}',
+    '.opf-file .act .rm{color:#B42318}',
+    '.opf-file .bar{height:4px;border-radius:4px;background:#E4E8EE;overflow:hidden;width:100%}',
+    '.opf-file .bar i{display:block;height:100%;width:0;background:#2A8A7D;transition:width .15s}',
+    '@media print{.opf-file .pick,.opf-file .act{display:none}}',
+    '.opf-opts{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;border:0;min-width:0}',
+    '.opf-opts label{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:6px 12px 6px 9px;border:1px solid #D0D5DD;border-radius:8px;background:#fff;font-size:13.5px;font-weight:600;color:#344054;cursor:pointer;user-select:none}',
+    '.opf-opts label:has(input:checked){border-color:#123A37;background:#EEF4F2;color:#123A37}',
+    '.opf-opts label:has(input:focus-visible){outline:2px solid #E48B0C;outline-offset:2px}',
+    '.opf-opts input{width:16px;height:16px;margin:0;accent-color:#123A37}',
+    '.opf-opts .c{font:600 11px ui-monospace,monospace;color:#98A2B3}',
+    '.opf-opts.dis{opacity:.45;pointer-events:none}',
+    '.opf-opts-n{display:block;margin-top:4px;font-size:11.5px;color:#667085}',
+    '.opf-now{margin-left:6px;border:1px solid #D0D5DD;background:#fff;color:#123A37;border-radius:8px;padding:6px 10px;font-weight:700;font-size:12.5px;cursor:pointer;vertical-align:middle}',
+    '.opf-file .picks{display:flex;gap:6px;flex-wrap:wrap}',
+    '.opf-file.drag{border-color:#123A37;background:#EEF4F2}',
     '.opf-xhide{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}',
     '.opf-geo{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}',
     '.opf-geo button{border:1px solid #2A8A7D;background:#fff;color:#1F6F65;border-radius:10px;padding:8px 12px;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap}',
@@ -113,15 +140,22 @@
       if (u && !(f.nextElementSibling && f.nextElementSibling.classList.contains('opf-unit'))) { var s = document.createElement('span'); s.className = 'opf-unit'; s.textContent = u; f.insertAdjacentElement('afterend', s); }
       if (t === 'tel') { f.setAttribute('inputmode', 'tel'); f.setAttribute('autocomplete', 'tel'); }
       if (t === 'email') { f.setAttribute('inputmode', 'email'); f.setAttribute('autocomplete', 'email'); }
-      if (t === 'multi' && !f._multi) {
-        var box = document.createElement('div'); box.className = 'opf-multi'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', labelOf(f));
-        choices(f).forEach(function (c) { var l = document.createElement('label'), cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = c[0]; l.appendChild(cb); l.appendChild(document.createTextNode(c[1])); box.appendChild(l); });
-        f.classList.add('opf-xhide'); f.tabIndex = -1; f.insertAdjacentElement('afterend', box); f._multi = box;
-        box.addEventListener('change', function () {
-          f.value = [].slice.call(box.querySelectorAll('input:checked')).map(function (x) { return x.value; }).join(';');
-          f.dispatchEvent(new Event('input', { bubbles: true }));
+      if (f.tagName === 'SELECT' && !f._opts && !f.hasAttribute('data-op-liste')) self.setupOptions(f, 'radio');
+      if ((t === 'time' || t === 'date' || f.type === 'time' || f.type === 'date') && !f._now && !f.readOnly) {
+        var nb = document.createElement('button'); nb.type = 'button'; nb.className = 'opf-now';
+        var heure = t === 'time' || f.type === 'time';
+        nb.textContent = heure ? 'Maintenant' : 'Aujourd’hui'; nb.setAttribute('aria-label', (heure ? 'Mettre l’heure actuelle dans ' : 'Mettre la date du jour dans ') + labelOf(f));
+        nb.addEventListener('click', function () {
+          var d = new Date(), z = function (n) { return (n < 10 ? '0' : '') + n; };
+          f.value = heure ? z(d.getHours()) + ':' + z(d.getMinutes()) : d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate());
+          f.dispatchEvent(new Event('input', { bubbles: true })); f.dispatchEvent(new Event('change', { bubbles: true }));
         });
+        if (heure && f.type !== 'time' && (!f.value || /^\d{1,2}:\d{2}$/.test(f.value))) { try { f.type = 'time'; } catch (e) {} }
+        if (heure) f.step = f.step || '60';
+        (f.nextElementSibling && f.nextElementSibling.classList.contains('opf-unit') ? f.nextElementSibling : f).insertAdjacentElement('afterend', nb); f._now = nb;
       }
+      if (t === 'multi' && !f._opts) self.setupOptions(f, 'checkbox');
+      if ((t === 'file' || t === 'photo') && !f._fichier) self.setupFichier(f, t);
       if (t === 'gps' && !f._geo) {
         var w = document.createElement('span'); w.className = 'opf-geo';
         var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Capturer la position';
@@ -139,10 +173,165 @@
     });
     this.syncTypes();
   };
+
+  /* ---------- 1 quater. listes de choix affichées en cases ----------
+     Choix unique (select : liste, oui/non, échelle) → boutons radio, 7 options au plus (au-delà : liste déroulante d'origine).
+     Choix multiples (texte « 1;3 ») → cases à cocher ; une option « Aucun / Ne sait pas » est exclusive.
+     Le champ D0elt d'origine reste le porteur de la valeur : rien ne change pour l'enregistrement. */
+  var UID = 0;
+  P.setupOptions = function (f, kind) {
+    var self = this, radio = kind === 'radio';
+    var opts = radio ? [].slice.call(f.options).filter(function (o) { return o.value !== ''; }).map(function (o) { return [o.value, o.textContent.trim()]; }) : choices(f);
+    if (!opts.length || (radio && opts.length > 7)) return;
+    var box = document.createElement('fieldset'), nom = 'opf-' + (++UID) + '-' + f.name, n = null;
+    box.className = 'opf-opts ' + (radio ? 'opf-radio' : 'opf-check') + (typ(f) === 'scale' ? ' opf-scale' : '');
+    box.setAttribute('aria-label', labelOf(f)); if (radio) box.setAttribute('role', 'radiogroup');
+    var EXCL = /^(aucun|aucune|rien|ne sait pas|nsp|refus|non concern)/i;
+    opts.forEach(function (o) {
+      var l = document.createElement('label'), i = document.createElement('input');
+      i.type = kind; i.name = nom; i.value = o[0]; if (!radio && EXCL.test(o[1])) i.setAttribute('data-excl', '1');
+      l.appendChild(i);
+      if (typ(f) === 'scale' || (radio && /^\d+$/.test(o[0]) && !/^(oui|non)$/i.test(o[1]) && opts.length > 2)) { var c = document.createElement('span'); c.className = 'c'; c.textContent = o[0]; l.appendChild(c); }
+      var t = document.createElement('span'); t.className = 't'; t.textContent = o[1]; l.appendChild(t);
+      box.appendChild(l);
+    });
+    if (!radio) { n = document.createElement('small'); n.className = 'opf-opts-n'; }
+    f.classList.add('opf-xhide'); f.tabIndex = -1;
+    f.insertAdjacentElement('afterend', box); if (n) box.insertAdjacentElement('afterend', n);
+    var ui = { box: box };
+    ui.sync = function () {
+      var v = String(f.value == null ? '' : f.value), set = radio ? null : ';' + v + ';';
+      [].forEach.call(box.querySelectorAll('input'), function (i) {
+        i.checked = radio ? (v !== '' && (i.value === v || (+i.value === +v && !isNaN(+v)))) : set.indexOf(';' + i.value + ';') > -1;
+        i.disabled = f.disabled || f.hasAttribute('data-op-isna');
+      });
+      box.classList.toggle('dis', f.hasAttribute('data-op-isna'));
+      if (n) { var k = box.querySelectorAll('input:checked').length; n.textContent = k ? k + ' réponse' + (k > 1 ? 's' : '') + ' cochée' + (k > 1 ? 's' : '') : 'Plusieurs réponses possibles'; }
+    };
+    var emettre = function () { f.dispatchEvent(new Event('input', { bubbles: true })); f.dispatchEvent(new Event('change', { bubbles: true })); };
+    if (radio) {
+      /* re-cliquer sur la réponse cochée l'efface (sauf champ obligatoire) */
+      var avant = null;
+      box.addEventListener('pointerdown', function (e) { var i = e.target.closest('label') && e.target.closest('label').querySelector('input'); avant = i && i.checked ? i : null; });
+      box.addEventListener('click', function (e) {
+        var i = e.target.closest('label') && e.target.closest('label').querySelector('input'); if (!i || e.target !== i) return;
+        if (avant === i && !f.hasAttribute('data-op-required')) { i.checked = false; f.value = ''; ui.sync(); emettre(); }
+        avant = null;
+      });
+      box.addEventListener('change', function (e) { if (e.target.checked) { f.value = e.target.value; ui.sync(); emettre(); } });
+    } else {
+      box.addEventListener('change', function (e) {
+        var i = e.target;
+        if (i.checked && i.hasAttribute('data-excl')) [].forEach.call(box.querySelectorAll('input'), function (x) { if (x !== i) x.checked = false; });
+        if (i.checked && !i.hasAttribute('data-excl')) [].forEach.call(box.querySelectorAll('input[data-excl]'), function (x) { x.checked = false; });
+        f.value = [].slice.call(box.querySelectorAll('input:checked')).map(function (x) { return x.value; }).join(';');
+        ui.sync(); emettre();
+      });
+    }
+    /* la navigation clavier de la page (Entrée, flèches) peut viser le champ porteur caché : on passe la main aux cases */
+    f.addEventListener('focus', function () { var i = box.querySelector('input:checked') || box.querySelector('input:not(:disabled)'); if (i) i.focus(); });
+    f._opts = ui; ui.sync();
+  };
+  /* ---------- 1 ter. champ fichier / photo ----------
+     Le champ D0elt reste un champ texte caché qui porte l'identifiant de la pièce jointe.
+     Le fichier part tout de suite vers /saisie-plus/api/fichiers/ ; l'enregistrement du formulaire n'envoie que l'identifiant. */
+  var FICHIERS = {};                                    /* id -> {id, nom, taille, type, url, apercu} */
+  var FICH_URL = '/saisie-plus/api/fichiers/';
+  var FICH_MAX = 10 * 1024 * 1024;
+  var FICH_ACCEPT = { file: '.pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx', photo: 'image/*' };
+  function csrf() {
+    var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/); if (m) return decodeURIComponent(m[1]);
+    var i = document.querySelector('input[name="csrfmiddlewaretoken"]'); return i ? i.value : '';
+  }
+  function taille(o) { return o < 1024 ? o + ' o' : o < 1048576 ? Math.round(o / 1024) + ' Ko' : (o / 1048576).toFixed(1).replace('.', ',') + ' Mo'; }
+  /* photo de téléphone (4 à 8 Mo) réduite à 1600 px avant l'envoi : plus rapide sur le réseau mobile */
+  function reduire(file) {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.2 * 1048576 || !window.createImageBitmap) return Promise.resolve(file);
+    return createImageBitmap(file).then(function (img) {
+      var k = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      return new Promise(function (ok) { c.toBlob(function (b) { ok(b && b.size < file.size ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file); }, 'image/jpeg', 0.82); });
+    }).catch(function () { return file; });
+  }
+  P.setupFichier = function (f, t) {
+    var self = this, ui = {}, photo = t === 'photo';
+    f.readOnly = true; f.classList.add('opf-xhide'); f.tabIndex = -1;
+    var box = document.createElement('div'); box.className = 'opf-file';
+    /* deux sources : l'appareil photo (capture directe) et la galerie / les fichiers du téléphone ou de l'ordinateur */
+    var inpCam = document.createElement('input'); inpCam.type = 'file'; inpCam.hidden = true; inpCam.accept = 'image/*'; inpCam.setAttribute('capture', 'environment');
+    var inp = document.createElement('input'); inp.type = 'file'; inp.hidden = true; inp.accept = f.getAttribute('data-op-accept') || FICH_ACCEPT[t];
+    var picks = document.createElement('span'); picks.className = 'picks';
+    var cam = document.createElement('button'); cam.type = 'button'; cam.className = 'pick cam';
+    var pick = document.createElement('button'); pick.type = 'button'; pick.className = 'pick gal';
+    picks.appendChild(cam); picks.appendChild(pick);
+    var vis = document.createElement('span'), info = document.createElement('span'); info.className = 'info';
+    var act = document.createElement('span'); act.className = 'act';
+    box.appendChild(inpCam); box.appendChild(inp); box.appendChild(vis); box.appendChild(info); box.appendChild(picks); box.appendChild(act);
+    f.insertAdjacentElement('afterend', box);
+    cam.setAttribute('aria-label', 'Prendre une photo pour ' + labelOf(f));
+    pick.setAttribute('aria-label', (photo ? 'Choisir une photo dans la galerie pour ' : 'Choisir un fichier pour ') + labelOf(f));
+    var tactile = window.matchMedia && matchMedia('(pointer: coarse)').matches;   /* ordinateur : pas d'appareil photo, on choisit ou on glisse-dépose */
+    cam.hidden = !tactile;
+    cam.addEventListener('click', function () { inpCam.click(); });
+    pick.addEventListener('click', function () { inp.click(); });
+    ['dragenter', 'dragover'].forEach(function (ev) { box.addEventListener(ev, function (e) { if (e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], 'Files') > -1) { e.preventDefault(); box.classList.add('drag'); } }); });
+    ['dragleave', 'drop'].forEach(function (ev) { box.addEventListener(ev, function () { box.classList.remove('drag'); }); });
+    box.addEventListener('drop', function (e) { e.preventDefault(); var fl = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (fl) envoyer(fl); });
+    ui.afficher = function () {
+      var id = String(f.value || '').trim(), d = id && id !== '0' ? FICHIERS[id] : null;
+      box.classList.remove('bad'); box.classList.toggle('has', !!(id && id !== '0'));
+      act.innerHTML = ''; vis.innerHTML = '';
+      if (!id || id === '0') {
+        info.innerHTML = '<b>' + (photo ? 'Aucune photo' : 'Aucun fichier') + '</b><small>' + (photo ? (tactile ? 'Appareil photo ou galerie' : 'JPG, PNG ou WebP · ou glissez-la ici') : 'PDF, image, Word ou Excel · 10 Mo max.' + (tactile ? '' : ' · ou glissez-le ici')) + '</small>';
+        cam.textContent = 'Appareil photo'; pick.textContent = photo ? (tactile ? 'Galerie' : 'Choisir une photo') : 'Choisir un fichier'; return;
+      }
+      if (!d) {                                          /* valeur chargée depuis la base : on récupère le nom */
+        info.innerHTML = '<b>Pièce jointe n° ' + id + '</b><small>Chargement…</small>';
+        fetch(FICH_URL + encodeURIComponent(id) + '/', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+          .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j && j.ok) { FICHIERS[id] = j.fichier; if (String(f.value) === id) ui.afficher(); } else info.innerHTML = '<b>Pièce jointe n° ' + id + '</b><small>Introuvable ou non autorisée</small>'; })
+          .catch(function () {});
+        cam.textContent = 'Reprendre'; pick.textContent = photo ? (tactile ? 'Galerie' : 'Autre photo') : 'Autre fichier'; return;
+      }
+      if (d.apercu) { var im = document.createElement('img'); im.className = 'thumb'; im.alt = ''; im.src = d.apercu; vis.appendChild(im); }
+      else { var ic = document.createElement('span'); ic.className = 'ico'; ic.textContent = (d.nom.split('.').pop() || 'doc').slice(0, 4); vis.appendChild(ic); }
+      info.innerHTML = ''; var b = document.createElement('b'), s = document.createElement('small'); b.textContent = d.nom; b.title = d.nom; s.textContent = taille(d.taille); info.appendChild(b); info.appendChild(s);
+      cam.textContent = 'Reprendre'; pick.textContent = photo ? (tactile ? 'Galerie' : 'Autre photo') : 'Autre fichier';
+      var a = document.createElement('a'); a.href = d.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Ouvrir'; act.appendChild(a);
+      var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'rm'; rm.textContent = 'Retirer';
+      rm.addEventListener('click', function () { f.value = ''; ui.afficher(); f.dispatchEvent(new Event('input', { bubbles: true })); }); act.appendChild(rm);
+    };
+    ui.erreur = function (m) { ui.afficher(); box.classList.add('bad'); var s = info.querySelector('small'); if (s) s.textContent = m; };
+    var choisi = function () { var file = this.files && this.files[0]; this.value = ''; if (file) envoyer(file); };
+    inp.addEventListener('change', choisi); inpCam.addEventListener('change', choisi);
+    function envoyer(file) {
+      if (photo && !/^image\//.test(file.type)) { ui.erreur('Une photo est attendue (JPG, PNG ou WebP).'); return; }
+      reduire(file).then(function (file) {
+        if (file.size > FICH_MAX) { ui.erreur('Fichier trop lourd (' + taille(file.size) + ') : 10 Mo maximum.'); return; }
+        var fd = new FormData(), ctx = (window.OperaForm && typeof window.OperaForm.contexte === 'function' && window.OperaForm.contexte()) || {};
+        fd.append('fichier', file); fd.append('element', f.name.replace('D0elt', '')); fd.append('type', t);
+        Object.keys(ctx).forEach(function (k) { if (ctx[k] != null) fd.append(k, ctx[k]); });
+        var x = new XMLHttpRequest(); x.open('POST', self.opts.fichiersUrl || FICH_URL); x.setRequestHeader('X-CSRFToken', csrf()); x.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        ui.enCours = true; pick.disabled = cam.disabled = true; act.innerHTML = '';
+        info.innerHTML = '<b></b><small>Envoi…</small><span class="bar"><i></i></span>'; info.querySelector('b').textContent = file.name;
+        var bar = info.querySelector('.bar i');
+        x.upload.onprogress = function (e) { if (e.lengthComputable) bar.style.width = Math.round(e.loaded / e.total * 100) + '%'; };
+        x.onload = function () {
+          ui.enCours = false; pick.disabled = cam.disabled = false; var j = null; try { j = JSON.parse(x.responseText); } catch (e) {}
+          if (x.status >= 200 && x.status < 300 && j && j.ok) { FICHIERS[String(j.fichier.id)] = j.fichier; f.value = String(j.fichier.id); ui.afficher(); self.msg(f, '', ''); f.dispatchEvent(new Event('input', { bubbles: true })); }
+          else ui.erreur((j && j.error) || (x.status === 403 ? 'Session expirée : reconnectez-vous.' : 'Envoi impossible (' + x.status + ').'));
+        };
+        x.onerror = function () { ui.enCours = false; pick.disabled = cam.disabled = false; ui.erreur('Pas de réseau : réessayez quand la connexion revient.'); };
+        x.send(fd);
+      });
+    }
+    f.addEventListener('focus', function () { (cam.offsetParent ? cam : pick).focus(); });
+    f._fichier = ui; ui.afficher();
+  };
   /* après un remplissage par le code (chargement des valeurs, brouillon) */
   P.syncTypes = function () {
     this.fields.forEach(function (f) {
-      if (f._multi) { var v = ';' + String(f.value || '') + ';'; [].forEach.call(f._multi.querySelectorAll('input'), function (cb) { cb.checked = v.indexOf(';' + cb.value + ';') > -1; }); }
+      if (f._fichier) f._fichier.afficher();
+      if (f._opts) f._opts.sync();
     });
   };
   P.refresh = function () { this.syncTypes(); this.recalc(); this.conditions(); };
@@ -162,6 +351,7 @@
     if (t === 'email') { if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) out.err = 'Adresse e-mail invalide.'; return out; }
     if (t === 'gps') { var g = v.match(/^\s*(-?\d{1,2}(?:\.\d+)?)\s*[,;]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/); if (!g || Math.abs(+g[1]) > 90 || Math.abs(+g[2]) > 180) out.err = 'Coordonnées invalides : « latitude, longitude » (ex. 4.0511, 9.7679).'; return out; }
     if (t === 'date') { var d = new Date(v + 'T00:00:00'); if (!isNaN(d) && d.getTime() > Date.now() + 864e5) out.warn = 'Date dans le futur : vérifiez-la.'; return out; }
+    if (t === 'file' || t === 'photo') { if (f._fichier && f._fichier.enCours) out.err = 'Envoi du fichier en cours : patientez quelques secondes.'; return out; }
     if (t === 'multi' || t === 'text' || t === 'long' || t === 'time') return out;
     if (f.type === 'number' || f.hasAttribute('data-op-min') || f.hasAttribute('data-op-max')) {
       if (isNaN(n)) { out.err = 'Saisissez un nombre.'; return out; }
@@ -194,6 +384,7 @@
       cb.addEventListener('change', function () {
         if (cb.checked) { f.setAttribute('data-op-isna', ''); f._prev = f.value; f.value = f.type === 'number' ? '0' : ''; f.readOnly = true; f.classList.add('opf-isna'); hid.value = '1'; }
         else { f.removeAttribute('data-op-isna'); f.value = f._prev || ''; f.readOnly = false; f.classList.remove('opf-isna'); hid.value = ''; }
+        if (f._opts) f._opts.sync();
         self.check(f); self.recalc(); self.saveDraftSoon();
       });
       f._na = cb;
@@ -383,7 +574,10 @@
     /* opts : { fresh: true } réinitialise après un rechargement du contenu ; { draft: false } laisse la page gérer le brouillon ;
        { submit: false } laisse la page gérer l'envoi (enregistrement AJAX) */
     init: function (el, opts) { if (opts && opts.fresh && el._opf) { el._opf.destroy(); el._opf = null; } return el._opf || (el._opf = new OperaForm(el, opts)); },
-    boot: boot
+    boot: boot,
+    /* nom lisible d'une pièce jointe (récapitulatif, fiche imprimée) */
+    fichier: function (id) { return FICHIERS[String(id)] || null; },
+    retenirFichier: function (d) { if (d && d.id) FICHIERS[String(d.id)] = d; }
   };
   onReady(boot);
 })();
