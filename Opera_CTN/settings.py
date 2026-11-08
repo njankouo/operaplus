@@ -105,8 +105,13 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.microsoft',
     'pwa',
     "vitrine",
-    "saisie_plus"
+    "saisie_plus",
+    'guardian',
 ]
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',  # Backend natif (RBAC global)
+    'guardian.backends.ObjectPermissionBackend',  # Backend Guardian (Permissions par objet)
+)
 VITRINE_BASE_TEMPLATE = "presentation.html"
 # PWA Configurations
 PWA_APP_NAME = 'OPERAPLUS'

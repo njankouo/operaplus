@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.authtoken.views import obtain_auth_token
-
+from .forms_views import *
 from . import views
 from . import views_iso
 # app_name = 'ctn_bpf'
@@ -258,7 +258,9 @@ urlpatterns = [
 
    path('ajouter-formulaire/<int:id>/', views.AjouterFormulaire, name="ajouter-formulaire"),
 
-   path('save-dataset-operation/', views.SaveDataSet, name='save-dataset-operation')
+   path('save-dataset-operation/', views.SaveDataSet, name='save-dataset-operation'),
+
+   path('detail-formulaire/<int:op_id>/<int:dataset_id>/', DetailFormulaireOp.as_view(), name='detail-formulaire')
 
 
 

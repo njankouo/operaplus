@@ -87,6 +87,18 @@
     .tk-noresult { grid-column: 1 / -1; display: none; text-align: center; padding: 36px; border: 1px dashed #d0d5dd; border-radius: 18px; background: #fff; color: #667085; font-weight: 600; }
     #canvas-wrapper:empty { display: none; }
     @media (prefers-reduced-motion: reduce) { .tk-card { transition: none !important; } }
+
+    /* ---- formulaires liés cliquables : la pastille est dans un lien <a> (ajout) ---- */
+    .tk-forms > a { flex-shrink: 0; min-width: 0; max-width: 150px; display: inline-flex; border-radius: 6px; text-decoration: none; outline: none; }
+    .tk-forms > a > span { min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block !important; line-height: 18px;
+                           color: color-mix(in srgb, var(--tk-dom) 85%, #000) !important; border-color: color-mix(in srgb, var(--tk-dom) 18%, #fff) !important; transition: background .15s, border-color .15s; }
+    .tk-forms > a > span > span { display: inline-block; vertical-align: middle; background: var(--tk-dom) !important; }
+    .tk-forms > a:hover > span { background: color-mix(in srgb, var(--tk-dom) 8%, #fff) !important; border-color: color-mix(in srgb, var(--tk-dom) 45%, #fff) !important; }
+    .tk-forms > a:focus-visible > span { box-shadow: 0 0 0 2px var(--tk-acc) !important; }
+    .tk-forms > a.tk-hide { display: none !important; }
+    .tk-pop li a { color: inherit; text-decoration: none; flex: 1; min-width: 0; border-radius: 4px; }
+    .tk-pop li a:hover, .tk-pop li a:focus-visible { text-decoration: underline; outline: none; }
+    .tk-pop li:has(a) { cursor: pointer; }
 </style>
  
 <div class="p-6 bg-black-400 min-h-screen">
@@ -255,10 +267,12 @@ document.addEventListener("DOMContentLoaded", function() {
             <div class="flex flex-wrap gap-1.5 tk-forms">
                 {% for dataset_operations in dataset_operation %}
                     {% if line.id == dataset_operations.operation_id %}
+                    <a  href="/detail-formulaire/{{line.id}}/{{dataset_operations.dataset.id}}/" >
                         <span class="inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold bg-white text-indigo-700 border border-indigo-200/60 shadow-2xs">
                             <span class="w-1 h-1 rounded-full bg-indigo-500 mr-1.5"></span>
                             {{ dataset_operations.dataset.m_name }}
                         </span>
+                    </a>
                     {% endif %}
                 {% empty %}
                     <span class="text-[11px] text-slate-400 italic">Aucun formulaire associé</span>
@@ -586,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
         /* formulaires liés : une seule ligne, « +N » ouvre la liste complète par-dessus */
         var box = c.querySelector('.tk-forms'); if (!box) return;
         box.parentNode.classList.add('tk-forms-box');
-        var pills = [].slice.call(box.children).filter(function (x) { return x.tagName === 'SPAN' && !x.classList.contains('italic'); });
+        var pills = [].slice.call(box.children).filter(function (x) { return (x.tagName === 'SPAN' || x.tagName === 'A') && !x.classList.contains('italic') && !x.classList.contains('tk-none'); });
         var empty = box.querySelector('.italic');
         if (!pills.length) { if (!empty) box.insertAdjacentHTML('beforeend', '<span class="tk-none">Aucun formulaire associé</span>'); return; }
         var label = box.parentNode.querySelector('.uppercase span, .uppercase');
@@ -601,16 +615,29 @@ document.addEventListener('DOMContentLoaded', () => {
             for (var i = pills.length - 1; i > 0 && box.scrollWidth > box.clientWidth + 1; i--) { pills[i].classList.add('tk-hide'); hidden++; btn.textContent = '+' + hidden; }
             btn.textContent = '+' + hidden;
             btn.setAttribute('aria-label', 'Voir les ' + pills.length + ' formulaires liés'); btn.setAttribute('aria-describedby', pop.id);
-            btn.addEventListener('click', function (e) { e.stopPropagation(); if (pop.classList.contains('on')) hide(true); else show(); });
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (pop.classList.contains('on') && e.detail !== 0) { hide(true); return; }
+                show();
+                if (e.detail === 0) { var l = pop.querySelector('a'); if (l) l.focus(); }   // déclenché au clavier
+            });
             btn.addEventListener('focus', show); btn.addEventListener('blur', function () { hide(); });
             c.__many = true;
         }
         /* info-bulle : la liste complète, numérotée, affichée À CÔTÉ de la carte */
         var pop = document.createElement('div'); pop.className = 'tk-pop'; pop.id = 'tkPop' + Math.random().toString(36).slice(2, 8); pop.setAttribute('role', 'tooltip');
         var ol = document.createElement('ol');
-        pills.forEach(function (p) { var li = document.createElement('li'); li.textContent = p.textContent.trim(); ol.appendChild(li); });   // textContent : aucun HTML interprété
+        pills.forEach(function (p) {
+            var li = document.createElement('li'), nom = p.textContent.trim();
+            if (p.tagName === 'A' && p.getAttribute('href')) { var a = document.createElement('a'); a.href = p.getAttribute('href'); a.textContent = nom; li.appendChild(a); }
+            else li.textContent = nom;                                                                                   // textContent : aucun HTML interprété
+            ol.appendChild(li);
+        });
         pop.insertAdjacentHTML('beforeend', '<b>Formulaires liés <em>' + pills.length + '</em></b>'); pop.appendChild(ol);
         document.body.appendChild(pop);                      // hors de la carte : jamais coupée
+        pop.addEventListener('focusin', function () { clearTimeout(tHide); });
+        pop.addEventListener('focusout', function (e) { var bt = box.querySelector('.tk-more'); if (!pop.contains(e.relatedTarget) && e.relatedTarget !== bt) hide(); });
+        pop.addEventListener('keydown', function (e) { if (e.key === 'Escape') { hide(true); var bt = box.querySelector('.tk-more'); if (bt) bt.focus(); } });
         var tHide;
         function place() {
             var r = c.getBoundingClientRect(), fr = box.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight, m = 14;

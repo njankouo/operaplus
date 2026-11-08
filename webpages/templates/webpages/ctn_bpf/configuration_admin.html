@@ -602,6 +602,197 @@
 </style>
 <!-- ===================== FIN NOUVEAU DESIGN (styles) ===================== -->
 </head>
+<!-- ===================== PARAMÈTRES DE LA PLATEFORME : identité claire (ajout) =====================
+     La page s'annonce comme « Paramètres » d'OperaPlus, dit à quoi elle s'applique (l'institution),
+     et chaque famille de réglages a sa couleur et son icône. Rien n'est renommé ; supprimer ce bloc = retour. -->
+<script>
+    /* tant que la page n'est pas réorganisée, on ne montre pas l'ancienne mise en page (filet : 2,5 s maximum) */
+    document.documentElement.classList.add('pp-wait');
+    setTimeout(function () { document.documentElement.classList.remove('pp-wait'); }, 2500);
+</script>
+<style id="op-param">
+    html.pp-wait body > .container > *:not(header) { visibility: hidden !important; }
+    html.pp-wait .floating-shapes { display: none !important; }
+    :root { --p-ink: #10302B; --p-muted: #66736E; --p-paper: #F7F3EA; --p-line: #ECE4D3; --p-r: 18px;
+            --p-teal: #0F7B6C; --p-indigo: #3346A8; --p-saffron: #D98E04; --p-coral: #E0533D; --p-plum: #8A3FA0; --p-sky: #1C7FBF; --p-red: #C8321E;
+            --p-ombre: 0 1px 2px rgba(16,48,43,.04), 0 10px 26px -18px rgba(16,48,43,.22); }
+    html body { background: var(--p-paper) !important; }
+
+    /* ---- en-tête : on sait immédiatement où l'on est ---- */
+    html body > .container > header { position: relative; overflow: hidden; padding: 26px 30px 24px !important; border-radius: 24px !important; border-bottom: 0 !important;
+        box-shadow: inset 0 -5px 0 var(--cfg-tch), 0 18px 40px -30px rgba(16,48,43,.6) !important; }
+    html body > .container > header h1, html body > .container > header p:not(.p-scope) { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .p-hero { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 20px; align-items: center; }
+    .p-emblem { grid-column: 1; grid-row: 1 / span 3; width: 74px; height: 74px; border-radius: 22px; display: grid; place-items: center; font-size: 34px;
+                background: color-mix(in srgb, var(--cfg-ink) 12%, transparent); color: var(--cfg-ink); }
+    .p-kicker { grid-column: 2; font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .75; color: var(--cfg-ink); }
+    .p-title { grid-column: 2; margin: 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.05; color: var(--cfg-ink); }
+    .p-scope { grid-column: 2; margin: 2px 0 0 !important; font-size: .95rem; opacity: .85; color: var(--cfg-ink); max-width: 64ch; }
+    .p-scope b { font-weight: 700; }
+    html body > .container > header .p-hero .p-scope { grid-column: 2 !important; grid-row: 3; }
+    html body > .container > header .p-hero .p-kicker { grid-row: 1; } html body > .container > header .p-hero .p-title { grid-row: 2; }
+    .p-inst { grid-column: 3; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .p-inst-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; font-size: .85rem; font-weight: 700;
+                   background: color-mix(in srgb, var(--cfg-ink) 14%, transparent); color: var(--cfg-ink); max-width: 320px; }
+    .p-inst-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html body > .container > header .cfg-hd-right { display: none !important; }
+    html body > .container > header .cfg-crumb { margin-bottom: 14px !important; }
+
+    /* ---- navigation : titre « Paramètres » + couleur par famille ---- */
+    .p-nav-head { display: flex; align-items: center; gap: 10px; padding: 4px 12px 12px; margin-bottom: 6px; border-bottom: 1px solid var(--p-line); }
+    .p-nav-head > i { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: var(--p-ink); color: #fff; font-size: 15px; flex: 0 0 34px; }
+    .p-nav-head b { display: block; font-size: 1rem; font-weight: 800; color: var(--p-ink); }
+    .p-nav-head small { display: block; font-size: .75rem; color: var(--p-muted); font-weight: 600; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html body .cfg-nav a { border-radius: 12px !important; }
+    html body .cfg-nav a i { color: var(--c, #98a2b3) !important; }
+    html body .cfg-nav a.is-on { box-shadow: var(--p-ombre) !important; }
+    html body .cfg-nav a.is-on::before { background: var(--c, var(--cfg-tch)) !important; }
+    html body .cfg-search { border-radius: 14px !important; border-color: var(--p-line) !important; }
+
+    /* ---- familles de réglages ---- */
+    #cfg-overview, .cfg-nav a[href="#cfg-overview"] { --c: var(--p-ink); }
+    #cfg-structure, .cfg-nav a[href="#cfg-structure"] { --c: var(--p-teal); }
+    #cfg-planification, .cfg-nav a[href="#cfg-planification"] { --c: var(--p-indigo); }
+    #cfg-periodes, .cfg-nav a[href="#cfg-periodes"] { --c: var(--p-saffron); }
+    #cfg-referentiels, .cfg-nav a[href="#cfg-referentiels"] { --c: var(--p-coral); }
+    #cfg-notifications, .cfg-nav a[href="#cfg-notifications"] { --c: var(--p-plum); }
+    #cfg-administration, .cfg-nav a[href="#cfg-administration"] { --c: var(--p-sky); }
+    #cfg-danger, .cfg-nav a[href="#cfg-danger"] { --c: var(--p-red); }
+
+    html body .cfg-section { border-radius: var(--p-r) !important; border-color: var(--p-line) !important; box-shadow: inset 0 4px 0 var(--c), var(--p-ombre) !important; }
+    html body .cfg-section-hd { border-bottom-color: var(--p-line) !important; padding-top: 22px !important; }
+    html body .cfg-section-ico { background: color-mix(in srgb, var(--c) 12%, #fff) !important; color: var(--c) !important; border-radius: 13px !important; }
+    html body .cfg-section-hd h2 { color: var(--p-ink) !important; }
+    html body .cfg-ico { background: color-mix(in srgb, var(--c, #475467) 9%, #fff) !important; color: var(--c, #475467) !important; border-radius: 12px !important; }
+    html body .setting-item.cfg-link:hover { background: color-mix(in srgb, var(--c, #000) 5%, #fff) !important; }
+    html body .setting-item.cfg-link:hover .cfg-ico { background: var(--c) !important; color: #fff !important; }
+    html body .setting-item .btn, html body .cfg-action { border-radius: 999px !important; }
+    html body .setting-item.cfg-link:hover .btn, html body .setting-item.cfg-link:hover .cfg-action { background: var(--c) !important; border-color: var(--c) !important; color: #fff !important; }
+    html body #status-form .setting-item.cfg-on { border-color: var(--c) !important; background: color-mix(in srgb, var(--c) 5%, #fff) !important; }
+    html body #status-form .cfg-choice-tag { background: var(--c) !important; color: #fff !important; }
+    html body #cfg-planification .switch input:checked + .slider { background-color: var(--c) !important; }
+    html body .periode-item { border-left-color: var(--p-saffron) !important; border-radius: 14px !important; }
+    html body .cfg-section-danger .cfg-section-ico { background: #FDEDEA !important; color: var(--p-red) !important; }
+
+    /* ---- vue d'ensemble ---- */
+    html body .cfg-stat { border-radius: 16px !important; border-color: var(--p-line) !important; box-shadow: var(--p-ombre) !important; }
+    html body .cfg-progress { border-radius: 16px !important; border-color: var(--p-line) !important; }
+    html body .cfg-bar span { background: var(--p-teal) !important; }
+    html body .cfg-step.ok i { background: var(--p-teal) !important; border-color: var(--p-teal) !important; color: #fff !important; }
+    .p-tuiles-t { margin: 6px 2px -8px; font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--p-muted); }
+    .p-tuiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .p-tuile { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 16px; background: #fff; border: 1px solid var(--p-line);
+               box-shadow: inset 0 3px 0 var(--c), var(--p-ombre); text-decoration: none; color: var(--p-ink); transition: transform .25s, box-shadow .25s; }
+    .p-tuile:hover { transform: translateY(-2px); color: var(--p-ink); }
+    .p-tuile > i { width: 40px; height: 40px; border-radius: 12px; flex: 0 0 40px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); }
+    .p-tuile b { display: block; font-size: .95rem; font-weight: 800; }
+    .p-tuile small { display: block; font-size: .8rem; color: var(--p-muted); line-height: 1.35; margin-top: 2px; }
+
+    @media (max-width: 991px) {
+        .p-hero { grid-template-columns: auto 1fr; }
+        .p-emblem { width: 56px; height: 56px; font-size: 26px; border-radius: 18px; grid-row: 1 / span 2; }
+        .p-title { font-size: 1.6rem; }
+        html body > .container > header .p-hero .p-scope { grid-column: 1 / -1 !important; grid-row: auto; }
+        .p-inst { grid-column: 1 / -1; grid-row: auto; flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+        .p-nav-head { display: none; }
+        html body .cfg-nav { background: var(--p-paper) !important; }
+        .p-tuiles { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) { .p-tuiles { grid-template-columns: 1fr; } html body > .container > header { padding: 20px !important; } }
+    @media (max-width: 640px) { html body > .container > header .p-hero .p-scope, .p-mode { display: none !important; } .p-emblem { width: 48px !important; height: 48px !important; font-size: 22px !important; } }
+    @media (prefers-reduced-motion: reduce) { .p-tuile { transition: none; } }
+    /* =================== RESTRUCTURATION : un thème par écran =================== */
+    #cfgApp.pp-on { display: block !important; }
+    #cfgApp.pp-on > .cfg-nav, #cfgApp.pp-on > .cfg-main { display: none !important; }
+    .pp-shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 28px; align-items: start; }
+    .pp-nav { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 4px; }
+    .pp-nav-head { display: flex; align-items: center; gap: 10px; padding: 4px 10px 14px; margin-bottom: 8px; border-bottom: 1px solid var(--p-line); }
+    .pp-nav-head > i { width: 36px; height: 36px; flex: 0 0 36px; border-radius: 12px; display: grid; place-items: center; background: var(--p-ink); color: #fff; }
+    .pp-nav-head b { display: block; font-size: 1.02rem; font-weight: 800; color: var(--p-ink); }
+    .pp-nav-head small { display: block; font-size: .76rem; font-weight: 600; color: var(--p-muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pp-search { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; margin: 0 0 10px; border-radius: 14px; background: #fff; border: 1px solid var(--p-line); }
+    .pp-search:focus-within { border-color: var(--p-ink); }
+    .pp-search i { color: #98a2b3; font-size: .85rem; } .pp-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: .9rem; }
+    .pp-link { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; color: #344054; font-weight: 600; font-size: .93rem; text-decoration: none; position: relative; transition: background .2s, color .2s; }
+    .pp-link i { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 10px; display: grid; place-items: center; font-size: 13px; color: var(--c); background: color-mix(in srgb, var(--c) 10%, #fff); transition: background .2s, color .2s; }
+    .pp-link:hover { background: #fff; color: var(--p-ink); }
+    .pp-link.is-on { background: #fff; color: var(--p-ink); box-shadow: var(--p-ombre); }
+    .pp-link.is-on i { background: var(--c); color: #fff; }
+    .pp-link.is-on::before { content: ""; position: absolute; left: -8px; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--c); }
+    .pp-link[data-n]::after { content: attr(data-n); margin-left: auto; font-size: .72rem; font-weight: 700; color: var(--p-muted); background: #F1ECE1; border-radius: 999px; padding: 1px 8px; }
+
+    .pp-main { min-width: 0; }
+    html.pp-anim .pp-panel { animation: ppIn .3s cubic-bezier(.22,.8,.3,1); }
+    @keyframes ppIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .pp-head { display: flex; gap: 16px; align-items: center; margin: 2px 0 18px; }
+    .pp-ico { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 16px; display: grid; place-items: center; font-size: 21px; background: var(--c); color: #fff; }
+    .pp-head h2 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; color: var(--p-ink); }
+    .pp-head p { margin: 3px 0 0; color: var(--p-muted); font-size: .93rem; }
+    .pp-group { margin-bottom: 22px; }
+    .pp-group > h3, .pp-sub { margin: 0 0 8px 4px; font-size: .76rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--p-muted); }
+    .pp-note { margin: -2px 0 8px 4px; font-size: .85rem; color: var(--p-muted); }
+    .pp-card { background: #fff; border: 1px solid var(--p-line); border-radius: 18px; box-shadow: var(--p-ombre); padding: 6px 10px; }
+    .pp-card > .setting-item { border-bottom: 1px solid #F3EEE4 !important; border-radius: 12px; }
+    .pp-card > .setting-item:last-child { border-bottom: 0 !important; }
+    .pp-panel .cfg-ico { --c: inherit; background: color-mix(in srgb, var(--c) 10%, #fff) !important; color: var(--c) !important; }
+    .pp-panel .setting-item.cfg-link:hover { background: color-mix(in srgb, var(--c) 5%, #fff) !important; }
+    .pp-panel .setting-item.cfg-link:hover .cfg-ico { background: var(--c) !important; color: #fff !important; }
+    .pp-panel .setting-item.cfg-link:hover .btn, .pp-panel .setting-item.cfg-link:hover .cfg-action { background: var(--c) !important; border-color: var(--c) !important; color: #fff !important; }
+    .pp-panel #status-form { padding: 8px 2px 4px !important; }
+    .pp-panel #status-form .setting-item.cfg-on { border-color: var(--c) !important; background: color-mix(in srgb, var(--c) 5%, #fff) !important; }
+    .pp-panel #status-form .cfg-choice-tag { background: var(--c) !important; }
+    .pp-panel .switch input:checked + .slider { background-color: var(--c) !important; }
+    .pp-panel .cfg-periods { padding: 8px 2px !important; }
+    .pp-panel .cfg-section-ft { border-top: 1px solid #F3EEE4 !important; padding: 12px 4px 6px !important; }
+    .pp-panel .config-btn { background: var(--c) !important; color: #fff !important; border-radius: 999px !important; }
+    .pp-danger .pp-card { border-color: #F6C8BF; box-shadow: none; }
+    .pp-danger > h3 { color: var(--p-red); }
+    .pp-danger .card.border-danger { border: 0 !important; box-shadow: none !important; margin: 0 !important; }
+    .pp-danger .card.border-danger > .card-header { display: none; }
+    .pp-danger .btn-danger { background: #fff !important; color: var(--p-red) !important; border: 1px solid #F3A99B !important; border-radius: 999px !important; }
+    .pp-danger .btn-danger:hover { background: var(--p-red) !important; color: #fff !important; }
+    .pp-danger .card.border-danger > .card-body { padding: 14px 10px !important; }
+    .pp-danger .card.border-danger .card-title { font-size: 1rem !important; font-weight: 800 !important; color: var(--p-ink) !important; }
+    .pp-danger .card.border-danger .card-title::after { display: none !important; }
+    .pp-danger .card.border-danger > .card-footer { background: #FFF6F4 !important; border-top: 1px solid #FBD9D2 !important; color: var(--p-red) !important; border-radius: 0 0 14px 14px; font-size: .85rem; }
+
+    /* vue d'ensemble */
+    .pp-start { padding: 18px 20px; margin-bottom: 24px; }
+    .pp-start-hd { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 8px; }
+    .pp-start-hd b { font-size: 1rem; color: var(--p-ink); } .pp-start-hd span { font-size: .85rem; color: var(--p-muted); font-weight: 600; }
+    .pp-start ol { list-style: none; margin: 0; padding: 0; }
+    .pp-start li { display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-top: 1px solid #F3EEE4; }
+    .pp-start li:first-child { border-top: 0; }
+    .pp-start .n { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .85rem; background: #F1ECE1; color: var(--p-muted); }
+    .pp-start li.ok .n { background: var(--p-teal); color: #fff; } .pp-start li.todo .n { background: #FEF2D8; color: #8A5700; }
+    .pp-start li a { flex: 1; min-width: 0; text-decoration: none; color: var(--p-ink); } .pp-start li a b { display: block; font-size: .95rem; }
+    .pp-start li a small { display: block; font-size: .82rem; color: var(--p-muted); }
+    .pp-start li > i { color: #b9b2a4; font-size: .8rem; }
+    .pp-start li.ok a b { color: var(--p-muted); }
+    .pp-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+    .pp-tile { display: grid; grid-template-columns: 42px 1fr; gap: 6px 12px; padding: 16px; border-radius: 16px; background: #fff; border: 1px solid var(--p-line);
+               box-shadow: inset 0 3px 0 var(--c), var(--p-ombre); text-decoration: none; color: var(--p-ink); transition: transform .25s; }
+    .pp-tile:hover { transform: translateY(-2px); color: var(--p-ink); }
+    .pp-tile > i { grid-row: 1 / span 2; width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); }
+    .pp-tile b { display: block; font-size: .97rem; font-weight: 800; } .pp-tile small { display: block; font-size: .8rem; color: var(--p-muted); line-height: 1.4; margin-top: 2px; }
+    .pp-tile em { grid-column: 2; justify-self: start; font-style: normal; font-size: .74rem; font-weight: 700; color: var(--c); }
+
+    .pp-searching .pp-panel { animation: none; }
+    .pp-searching .pp-head p { display: none; } .pp-searching .pp-head { margin-bottom: 10px; }
+    .pp-empty { display: none; text-align: center; padding: 40px; color: var(--p-muted); background: #fff; border: 1px dashed var(--p-line); border-radius: 18px; }
+    .p-tuiles, .p-tuiles-t { display: none !important; }
+
+    @media (max-width: 991px) {
+        .pp-shell { grid-template-columns: 1fr; gap: 14px; }
+        .pp-nav { position: sticky; top: 0; z-index: 30; flex-direction: row; overflow-x: auto; gap: 6px; padding: 10px 0; background: var(--p-paper); scrollbar-width: none; }
+        .pp-nav-head { display: none; } .pp-search { flex: 0 0 200px; margin: 0; }
+        .pp-link { flex: 0 0 auto; background: #fff; border: 1px solid var(--p-line); padding: 6px 12px 6px 6px; }
+        .pp-link.is-on { border-color: var(--c); } .pp-link.is-on::before, .pp-link[data-n]::after { display: none; }
+        .pp-head h2 { font-size: 1.25rem; } .pp-ico { width: 44px; height: 44px; flex-basis: 44px; font-size: 18px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .pp-panel { animation: none; } }
+</style>
+
 <body>
     <!-- Animation de fond -->
     <ul class="floating-shapes">
@@ -2205,11 +2396,11 @@ function filterTable() {
     /* ---------- Vue d'ensemble : chiffres et progression ---------- */
     var step = document.getElementById('is_step_checkbox'), freq = document.getElementById('is_frequency_checkbox');
     var nPer = main.querySelectorAll('.periode-item').length, nRef = bRef.querySelectorAll('.setting-item').length;
-    function modeName() { return step && step.checked ? 'Échelonnée' : freq && freq.checked ? 'Périodique' : 'Non défini'; }
+    function modeName() { return step && step.checked ? 'Échelonnée' : freq && freq.checked ? 'Périodique' : 'À choisir'; }
     function renderOverview() {
         var checks = [
             ['Structure', !!bStruct.querySelector('.setting-item'), '#cfg-structure'],
-            ['Mode de planification', modeName() !== 'Non défini', '#cfg-planification'],
+            ['Mode de planification', modeName() !== 'À choisir', '#cfg-planification'],
             ['Périodes', nPer > 0, '#cfg-periodes'],
             ['Référentiels', nRef > 0, '#cfg-referentiels']
         ];
@@ -2235,7 +2426,7 @@ function filterTable() {
         var right = el('div', 'cfg-hd-right'); right.appendChild(modeChip); hd.appendChild(right);
     }
     function syncMode() {
-        modeChip.innerHTML = '<i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Planification ' + modeName().toLowerCase();
+        modeChip.innerHTML = '<i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Planification : ' + modeName().toLowerCase();
         [step, freq].forEach(function (c) { if (c) { var r = c.closest('.setting-item'); if (r) r.classList.toggle('cfg-on', c.checked); } });
         renderOverview();
     }
@@ -2284,5 +2475,153 @@ function filterTable() {
 })();
 </script>
 <!-- ===================== FIN NOUVEAU DESIGN (script) ===================== -->
+<!-- ===================== PARAMÈTRES DE LA PLATEFORME : script (ajout) ===================== -->
+<script>
+(function () {
+    var INST = '{{ actual_institution.nom|escapejs }}' || 'votre institution';
+    document.title = 'Paramètres · ' + INST + ' · OperaPlus';
+    var esc = function (t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
+
+    /* 1. en-tête : « Paramètres » d'OperaPlus, pour quelle institution, avec quel mode */
+    var hd = document.querySelector('body > .container > header .container-fluid');
+    if (hd && !hd.querySelector('.p-hero')) {
+        var hero = document.createElement('div'); hero.className = 'p-hero';
+        hero.innerHTML = '<span class="p-emblem" aria-hidden="true"><i class="fa-solid fa-gear"></i></span>'
+            + '<span class="p-kicker">OperaPlus · Paramètres de la plateforme</span>'
+            + '<h2 class="p-title">Paramètres</h2>'
+            + '<p class="p-scope">Réglages qui s’appliquent à <b>toute l’institution ' + esc(INST) + '</b> et à tous ses projets : structure des données, planification, périodes, listes de référence, notifications et accès. Réservé aux administrateurs.</p>'
+            + '<div class="p-inst"><span class="p-inst-chip" title="Institution configurée"><i class="fa-solid fa-building" aria-hidden="true"></i><span>' + esc(INST) + '</span></span>'
+            + '<span class="p-inst-chip p-mode"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span></span></span></div>';
+        hd.appendChild(hero);
+        var chip = hd.querySelector('.cfg-mode'), pm = hero.querySelector('.p-mode span');
+        var copie = function () { if (chip && pm) pm.textContent = chip.textContent.trim(); };
+        copie(); if (chip) new MutationObserver(copie).observe(chip, { childList: true, subtree: true, characterData: true });
+        var cr = hd.querySelector('.cfg-crumb b'); if (cr) cr.textContent = 'Paramètres';
+    }
+
+    /* 2. navigation : titre « Paramètres » et institution */
+    var nav = document.querySelector('.cfg-nav');
+    if (nav && !nav.querySelector('.p-nav-head')) {
+        nav.insertAdjacentHTML('afterbegin', '<div class="p-nav-head"><i class="fa-solid fa-gear" aria-hidden="true"></i><div><b>Paramètres</b><small>' + esc(INST) + '</small></div></div>');
+    }
+
+    /* 3. RESTRUCTURATION : un thème par écran, réglages regroupés selon ce que l'on veut faire.
+          Les lignes existantes (et leurs boutons / fenêtres) sont DÉPLACÉES, jamais recréées. */
+    var montrerPage = function () { document.documentElement.classList.remove('pp-wait'); };
+    var app = document.getElementById('cfgApp'); if (!app || app.querySelector('.pp-shell')) { montrerPage(); return; }
+    var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+    var rows = [].slice.call(app.querySelectorAll('.cfg-main .setting-item')).filter(function (r) { return !r.closest('#status-form'); });
+    var row = function (re) { return rows.filter(function (r) { var t = r.querySelector('.cfg-txt > span'); return t && re.test(norm(t.textContent)); })[0] || null; };
+    var R = {
+        formulaires: row(/formulaire/), groupesDE: row(/groupes d.?el/), groupesIND: row(/groupes d.?ind/), natures: row(/nature|categorie/),
+        financement: row(/financement/), devises: row(/devise/), echelonnage: row(/echelonnage/),
+        notif: row(/notification/), roles: row(/role/), ajouter: row(/ajouter une institution/), dupliquer: row(/dupliquer/)
+    };
+    var statusForm = document.getElementById('status-form');
+    var periodes = app.querySelector('.cfg-periods'), gererPeriodes = app.querySelector('#cfg-periodes .cfg-section-ft');
+    var danger = document.querySelector('.card.border-danger');
+    var nbPer = app.querySelectorAll('.periode-item').length;
+    var step = document.getElementById('is_step_checkbox'), freq = document.getElementById('is_frequency_checkbox');
+    var mode = function () { return step && step.checked ? 'Échelonnée' : freq && freq.checked ? 'Périodique' : ''; };
+
+    var THEMES = [
+        { id: 'accueil', ico: 'fa-house', c: '--p-ink', t: 'Vue d’ensemble', d: 'Où en est la configuration de l’institution, et par où commencer.' },
+        { id: 'collecte', ico: 'fa-clipboard-list', c: '--p-teal', t: 'Collecte des données', d: 'Ce que les équipes saisissent : formulaires, éléments, indicateurs et types d’opérations.',
+          groupes: [['Formulaires', [R.formulaires]], ['Organisation des données', [R.groupesDE, R.groupesIND]], ['Opérations', [R.natures]]] },
+        { id: 'planification', ico: 'fa-calendar-check', c: '--p-indigo', t: 'Planification', d: 'Comment les activités sont planifiées et suivies dans le temps.',
+          groupes: [['Mode de planification', [statusForm], 'Un seul mode à la fois. Cliquez sur « Appliquer » pour enregistrer.'], ['Périodes de suivi', [periodes, gererPeriodes]], ['Étapes (planification échelonnée)', [R.echelonnage]]] },
+        { id: 'finances', ico: 'fa-hand-holding-dollar', c: '--p-saffron', t: 'Finances', d: 'Bailleurs, lignes de financement et monnaies des budgets.',
+          groupes: [['Financement', [R.financement]], ['Monnaies', [R.devises]]] },
+        { id: 'notifications', ico: 'fa-bell', c: '--p-plum', t: 'Notifications', d: 'Qui est prévenu, de quoi, et quand.', groupes: [['Règles', [R.notif]]] },
+        { id: 'acces', ico: 'fa-user-shield', c: '--p-sky', t: 'Institution et accès', d: 'Qui peut voir, saisir et valider ; gestion des institutions.',
+          groupes: [['Accès', [R.roles]], ['Institutions', [R.ajouter, R.dupliquer]], ['Zone de danger', [danger], 'Actions irréversibles.', 'danger']] }
+    ];
+
+    var shell = document.createElement('div'); shell.className = 'pp-shell';
+    var nav = document.createElement('nav'); nav.className = 'pp-nav'; nav.setAttribute('aria-label', 'Thèmes des paramètres');
+    nav.innerHTML = '<div class="pp-nav-head"><i class="fa-solid fa-gear" aria-hidden="true"></i><div><b>Paramètres</b><small>' + esc(INST) + '</small></div></div>'
+        + '<label class="pp-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" placeholder="Rechercher un réglage" aria-label="Rechercher un réglage"></label>';
+    var main = document.createElement('div'); main.className = 'pp-main';
+    shell.appendChild(nav); shell.appendChild(main);
+    app.appendChild(shell); app.classList.add('pp-on');
+
+    var panneaux = {};
+    THEMES.forEach(function (T) {
+        var a = document.createElement('a'); a.href = '#' + T.id; a.className = 'pp-link'; a.style.setProperty('--c', 'var(' + T.c + ')'); a.dataset.id = T.id;
+        a.innerHTML = '<i class="fa-solid ' + T.ico + '" aria-hidden="true"></i><span>' + T.t + '</span>';
+        nav.appendChild(a);
+        var sec = document.createElement('section'); sec.className = 'pp-panel'; sec.id = 'pp-' + T.id; sec.hidden = true; sec.style.setProperty('--c', 'var(' + T.c + ')');
+        sec.setAttribute('aria-labelledby', 'pp-' + T.id + '-t');
+        sec.innerHTML = '<header class="pp-head"><span class="pp-ico"><i class="fa-solid ' + T.ico + '" aria-hidden="true"></i></span><div><h2 id="pp-' + T.id + '-t">' + T.t + '</h2><p>' + T.d + '</p></div></header>';
+        (T.groupes || []).forEach(function (G) {
+            var items = G[1].filter(Boolean); if (!items.length) return;
+            var g = document.createElement('div'); g.className = 'pp-group' + (G[3] === 'danger' ? ' pp-danger' : '');
+            g.innerHTML = '<h3>' + G[0] + '</h3>' + (G[2] ? '<p class="pp-note">' + G[2] + '</p>' : '');
+            var card = document.createElement('div'); card.className = 'pp-card'; items.forEach(function (x) { card.appendChild(x); }); g.appendChild(card);
+            sec.appendChild(g); a.dataset.n = (+a.dataset.n || 0) + card.querySelectorAll('.setting-item').length;
+        });
+        main.appendChild(sec); panneaux[T.id] = { sec: sec, link: a, T: T };
+    });
+
+    /* vue d'ensemble : 3 étapes de mise en route + accès directs (avec un résumé par thème) */
+    var acc = panneaux.accueil.sec;
+    function etapes() {
+        var E = [
+            ['Choisir le mode de planification', !!mode(), '#planification', mode() ? 'Mode actuel : ' + mode().toLowerCase() : 'Aucun mode choisi'],
+            ['Créer les périodes de suivi', nbPer > 0, '#planification', nbPer ? nbPer + ' période(s) affichée(s)' : 'Aucune période'],
+            ['Concevoir les formulaires de collecte', null, '#collecte', 'À vérifier dans « Collecte des données »'],
+            ['Attribuer les rôles des membres', null, '#acces', 'À vérifier dans « Institution et accès »']
+        ];
+        var faits = E.filter(function (e) { return e[1] === true; }).length;
+        return '<div class="pp-card pp-start"><div class="pp-start-hd"><b>Mise en route de l’institution</b><span>' + faits + ' étape(s) confirmée(s) sur ' + E.length + '</span></div><ol>'
+            + E.map(function (e, k) { return '<li class="' + (e[1] === true ? 'ok' : e[1] === false ? 'todo' : 'check') + '"><span class="n">' + (e[1] === true ? '<i class="fa-solid fa-check"></i>' : k + 1) + '</span><a href="' + e[2] + '"><b>' + e[0] + '</b><small>' + e[3] + '</small></a><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></li>'; }).join('')
+            + '</ol></div>';
+    }
+    function tuiles() {
+        return '<div class="pp-tiles">' + THEMES.slice(1).map(function (T) {
+            var n = +panneaux[T.id].link.dataset.n || 0;
+            return '<a class="pp-tile" href="#' + T.id + '" style="--c: var(' + T.c + ')"><i class="fa-solid ' + T.ico + '" aria-hidden="true"></i><span><b>' + T.t + '</b><small>' + T.d + '</small></span>' + (n ? '<em>' + n + ' réglage' + (n > 1 ? 's' : '') + '</em>' : '') + '</a>';
+        }).join('') + '</div>';
+    }
+    function rendreAccueil() { acc.querySelectorAll('.pp-start, .pp-tiles, .pp-sub').forEach(function (x) { x.remove(); });
+        acc.insertAdjacentHTML('beforeend', etapes() + '<h3 class="pp-sub">Tous les thèmes</h3>' + tuiles()); }
+    rendreAccueil();
+    [step, freq].forEach(function (c) { if (c) c.addEventListener('change', function () { setTimeout(rendreAccueil, 0); }); });
+
+    /* navigation : un seul thème affiché ; l'adresse (#collecte…) permet le retour arrière et le partage du lien */
+    function montrer(id) {
+        if (!panneaux[id]) id = 'accueil';
+        Object.keys(panneaux).forEach(function (k) { var on = k === id; panneaux[k].sec.hidden = !on; panneaux[k].link.classList.toggle('is-on', on); panneaux[k].link.setAttribute('aria-current', on ? 'page' : 'false'); });
+        var cr = document.querySelector('body > .container > header .cfg-crumb b'); if (cr) cr.textContent = id === 'accueil' ? 'Paramètres' : 'Paramètres · ' + panneaux[id].T.t;
+        document.title = (id === 'accueil' ? 'Paramètres' : panneaux[id].T.t + ' · Paramètres') + ' · ' + INST;
+        var L = panneaux[id].link; if (L.parentNode.scrollWidth > L.parentNode.clientWidth) L.parentNode.scrollTo({ left: L.offsetLeft - 16, behavior: 'smooth' });   /* téléphone : onglet actif visible */
+    }
+    function depuisAdresse() { var h = (location.hash || '').replace('#', ''); montrer(h); }
+    window.addEventListener('hashchange', function () { document.documentElement.classList.add('pp-anim'); depuisAdresse(); var t = app.getBoundingClientRect().top + scrollY - 12; if (scrollY > t) scrollTo({ top: t }); });
+    depuisAdresse();
+
+    /* recherche : tous les réglages qui correspondent, quel que soit le thème */
+    var champ = nav.querySelector('input'), vide = document.createElement('p'); vide.className = 'pp-empty'; vide.textContent = 'Aucun réglage ne correspond.'; main.appendChild(vide);
+    champ.addEventListener('input', function () {
+        var q = norm(champ.value.trim());
+        if (!q) { vide.style.display = 'none'; main.classList.remove('pp-searching'); main.querySelectorAll('.pp-group, .setting-item').forEach(function (x) { x.style.display = ''; }); depuisAdresse(); return; }
+        main.classList.add('pp-searching'); var n = 0;
+        Object.keys(panneaux).forEach(function (k) {
+            var P = panneaux[k], vu = 0;
+            P.sec.querySelectorAll('.pp-group').forEach(function (g) {
+                var gHit = norm(g.querySelector('h3').textContent).indexOf(q) > -1, gv = 0;
+                g.querySelectorAll('.setting-item').forEach(function (r) { var ok = gHit || norm(r.textContent).indexOf(q) > -1; r.style.display = ok ? '' : 'none'; if (ok) gv++; });
+                if (!g.querySelector('.setting-item')) gv = gHit || norm(g.textContent).indexOf(q) > -1 ? 1 : 0;
+                g.style.display = gv ? '' : 'none'; vu += gv;
+            });
+            P.sec.hidden = !(vu && k !== 'accueil'); n += vu;
+        });
+        vide.style.display = n ? 'none' : 'block';
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === '/' && !/input|textarea|select/i.test((document.activeElement || {}).tagName) && !document.querySelector('.modal.show')) { e.preventDefault(); champ.focus(); } });
+    montrerPage();
+})();
+</script>
+
 </body>
 </html>

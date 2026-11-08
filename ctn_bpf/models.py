@@ -2425,11 +2425,18 @@ class Operation(models.Model):#PROTECT
 
     poceded_step = models.BooleanField(default=False)
 
+  
    
 
 
     class Meta:
         db_table= 'ctn_bpf_operation'
+        permissions = [
+            ("publish_tasks", "Peut planifier une tache"),
+            ("change_tasks", "Peut modifier une tache"),
+            ("delete_tasks", "Peut supprimer une tache"),
+        ]
+
     @property
     def delai_restant(self):
           delai = self.date_echeance - datetime.now().date()
@@ -3642,7 +3649,23 @@ class PersonnelInformed(models.Model):
     operation = models.ForeignKey(Operation, on_delete=models.CASCADE, null=True)
     etat=models.IntegerField(default=0)
 
+class StatutDataSet(models.TextChoices):
+    BROUILLON = 'Brouillon', 'En Attente Soumission'
+    EN_ATTENTE_VALIDATION = 'IN_PROGRESS', 'En Attente Validation'
+    TERMINE = 'DONE', 'Terminé'
 
 class DataSetOperation(models.Model):
     operation = models.ForeignKey(Operation, on_delete=models.CASCADE, null=True)
     dataset = models.ForeignKey(DataSet, on_delete=models.CASCADE, null=True)
+    count_write = models.IntegerField(default=0)
+    statut = models.CharField(
+        max_length=20,
+        choices=StatutDataSet.choices,
+        default=StatutDataSet.BROUILLON,
+
+    )
+    date_creation = models.DateTimeField(null=True)
+    soumis = models.BooleanField(default=False)
+    valide = models.BooleanField(default=False)
+    date_soumission = models.DateTimeField(null=True)
+     

@@ -2073,31 +2073,49 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 {%endif%}
 <!-- Script de configuration ApexCharts (Optimisé ERP) -->
-<section class="bg-slate-50 rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6 py-14">
+<!-- ===================== DIAGRAMME DE GANTT — version améliorée =====================
+     Inchangés : changeView('day' | 'week' | 'month'), #gantt-container, son indicateur de chargement,
+     toutes les classes d'origine. Ajouts : bouton actif, « Aujourd'hui », plein écran, légende,
+     message si le planning ne se charge pas, couleurs OperaPlus pour les barres (Frappe Gantt). -->
+<section class="bg-slate-50 rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6 py-14 op-gantt" aria-labelledby="opGanttTitre">
     <div class="max-w-3xl">
         <div class="flex items-center gap-2.5 mb-2">
-            <span class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+            <span class="p-1.5 bg-blue-50 text-blue-600 rounded-lg op-gantt-ico">
                 <i class="fas fa-stream text-sm"></i>
             </span>
-            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Planification Avancée</span>
+            <span class="text-xs font-bold text-blue-600 uppercase tracking-wider op-gantt-kicker">Planification avancée</span>
         </div>
-        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Diagramme de Gantt Opérationnel
+        <h2 id="opGanttTitre" class="text-2xl font-extrabold text-slate-900 tracking-tight">
+            Diagramme de Gantt opérationnel
         </h2>
         <p class="mt-2 text-sm text-slate-500 leading-relaxed">
-            Suivez en temps réel l'alignement des ressources, l'avancement des livrables et la dépendance des tâches de vos opérations. Utilisez les filtres temporels pour ajuster la granularité de votre analyse macro ou micro-générale.
+            Visualisez l'enchaînement des activités, leur avancement et leurs dépendances. Passez du jour au mois pour changer d'échelle&nbsp;: le détail d'une semaine ou la vue d'ensemble du projet.
         </p>
     </div>
 
     <div class="space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-            <div class="flex items-center gap-2">
-                <button onclick="changeView('day')" class="px-4 py-2 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-all text-slate-700">Jour</button>
-                <button onclick="changeView('week')" class="px-4 py-2 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-all text-slate-700">Semaine</button>
-                <button onclick="changeView('month')" class="px-4 py-2 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-all text-slate-700">Mois</button>
+        <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm op-gantt-bar">
+            <div class="flex items-center gap-2 op-gantt-vues" role="group" aria-label="Échelle de temps">
+                <button onclick="changeView('day')" data-vue="day" aria-pressed="false" class="px-4 py-2 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-all text-slate-700">Jour</button>
+                <button onclick="changeView('week')" data-vue="week" aria-pressed="false" class="px-4 py-2 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-all text-slate-700">Semaine</button>
+                <button onclick="changeView('month')" data-vue="month" aria-pressed="false" class="px-4 py-2 text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition-all text-slate-700">Mois</button>
             </div>
-            
+
+            <!-- ajout : légende et actions -->
+            <div class="op-gantt-droite">
+                <ul class="op-gantt-legende" aria-label="Légende">
+                    <li><i class="l-cours"></i>En cours</li>
+                    <li><i class="l-fini"></i>Terminée</li>
+                    <li><i class="l-retard"></i>En retard</li>
+                </ul>
+                <button type="button" class="op-gantt-act" id="opGanttAujourdhui" title="Revenir à la date du jour">
+                    <i class="fas fa-crosshairs"></i><span>Aujourd'hui</span>
+                </button>
+                <button type="button" class="op-gantt-act" id="opGanttPlein" title="Afficher en plein écran" aria-label="Plein écran">
+                    <i class="fas fa-expand"></i>
+                </button>
             </div>
+        </div>
 
         <div id="gantt-container" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="flex items-center justify-center py-40">
@@ -2106,6 +2124,128 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
     </div>
 </section>
+
+<style>
+    /* palette OperaPlus (mêmes couleurs que la page de saisie) */
+    .op-gantt { --g-ink: #10302B; --g-muted: #6E7872; --g-line: #E7E1D4; --g-teal: #0F7B6C; --g-teal-soft: #E1F3EF;
+                --g-indigo: #3346A8; --g-coral: #E0533D; --g-saffron: #F2A007; --g-ok: #1E8A5A; --g-paper: #FBF8F2;
+                background: var(--g-paper) !important; border-color: var(--g-line) !important; }
+    .op-gantt .op-gantt-ico { background: var(--g-teal-soft) !important; color: var(--g-teal) !important; border-radius: 10px !important; }
+    .op-gantt .op-gantt-kicker { color: var(--g-teal) !important; letter-spacing: .06em !important; }
+    .op-gantt h2 { color: var(--g-ink) !important; }
+    .op-gantt .op-gantt-bar { border-color: var(--g-line) !important; box-shadow: 0 1px 2px rgba(16,48,43,.04) !important; }
+
+    /* échelle de temps : contrôle segmenté, bouton actif visible */
+    .op-gantt .op-gantt-vues { gap: 0 !important; padding: 3px; border-radius: 14px; background: #F1EEE6; }
+    .op-gantt .op-gantt-vues button { background: transparent !important; border: 0 !important; border-radius: 11px !important; color: var(--g-muted) !important; min-width: 84px; }
+    .op-gantt .op-gantt-vues button:hover { color: var(--g-ink) !important; }
+    .op-gantt .op-gantt-vues button[aria-pressed="true"] { background: #fff !important; color: var(--g-ink) !important; box-shadow: 0 1px 3px rgba(16,48,43,.14); }
+    .op-gantt .op-gantt-vues button:focus-visible, .op-gantt .op-gantt-act:focus-visible { outline: 2px solid var(--g-saffron); outline-offset: 2px; }
+
+    /* légende + actions */
+    .op-gantt-droite { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .op-gantt-legende { display: flex; gap: 14px; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; font-size: 12.5px; font-weight: 600; color: var(--g-muted); }
+    .op-gantt-legende li { display: inline-flex; align-items: center; gap: 6px; }
+    .op-gantt-legende i { width: 14px; height: 8px; border-radius: 4px; display: inline-block; }
+    .op-gantt-legende .l-cours { background: #74C2B3; } .op-gantt-legende .l-fini { background: #9AD3AF; }
+    .op-gantt-legende .l-retard { background: #F2998A; }
+    .op-gantt-act { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--g-line); background: #fff;
+                    font-size: 13px; font-weight: 700; color: var(--g-ink); cursor: pointer; transition: border-color .2s, background .2s; }
+    .op-gantt-act:hover { border-color: var(--g-teal); color: var(--g-teal); }
+    #opGanttPlein { width: 38px; padding: 0; justify-content: center; }
+
+    /* zone du diagramme */
+    .op-gantt #gantt-container { border-color: var(--g-line) !important; overflow-x: auto !important; overscroll-behavior-x: contain; scroll-behavior: smooth; }
+    .op-gantt #gantt-container .animate-spin { border-bottom-color: var(--g-teal) !important; }
+    .op-gantt #gantt-container:fullscreen { background: #fff; padding: 16px; overflow: auto !important; }
+    .op-gantt-etat { padding: 72px 24px; text-align: center; color: var(--g-muted); font-size: 14px; }
+    .op-gantt-etat b { display: block; margin-bottom: 6px; color: var(--g-ink); font-size: 16px; }
+    .op-gantt-etat button { margin-top: 14px; }
+
+    /* barres (Frappe Gantt) : couleurs OperaPlus, sans dégradé */
+    .op-gantt .gantt .grid-background { fill: #fff; }
+    .op-gantt .gantt .grid-header { fill: var(--g-paper); stroke: var(--g-line); }
+    .op-gantt .gantt .grid-row:nth-child(even) { fill: #FCFAF6; }
+    .op-gantt .gantt .row-line, .op-gantt .gantt .tick { stroke: var(--g-line); }
+    .op-gantt .gantt .today-highlight { fill: rgba(242,160,7,.12); }
+    .op-gantt .gantt .upper-text, .op-gantt .gantt .lower-text { fill: var(--g-muted); font-weight: 600; }
+    .op-gantt .gantt .bar { fill: #D6EDE8; stroke: none; }
+    .op-gantt .gantt .bar-progress { fill: #74C2B3; }          /* teinte moyenne : le libellé reste lisible par-dessus */
+    .op-gantt .gantt .bar-label { fill: var(--g-ink); font-weight: 600; }
+    .op-gantt .gantt .bar-label.big { fill: var(--g-muted); }
+    .op-gantt .gantt .bar-wrapper:hover .bar { fill: #C3E4DD; }
+    .op-gantt .gantt .bar-wrapper.active .bar-progress, .op-gantt .gantt .bar-wrapper:hover .bar-progress { fill: #5BB2A2; }
+    .op-gantt .gantt .arrow { stroke: #9AA5A0; stroke-width: 1.4; }
+    .op-gantt .gantt .op-fini .bar { fill: #DCEFE3; } .op-gantt .gantt .op-fini .bar-progress { fill: #9AD3AF; }
+    .op-gantt .gantt .op-retard .bar { fill: #FCE3DD; } .op-gantt .gantt .op-retard .bar-progress { fill: #F2998A; }
+    .op-gantt .gantt .op-retard .bar-label:not(.big) { fill: #7A2416; }
+
+    @media (max-width: 640px) {
+        .op-gantt { padding: 28px 14px !important; }
+        .op-gantt .op-gantt-vues { width: 100%; } .op-gantt .op-gantt-vues button { flex: 1; min-width: 0; }
+        .op-gantt-droite { width: 100%; justify-content: space-between; }
+        .op-gantt-legende { gap: 10px; font-size: 11.5px; }
+        #opGanttAujourdhui span { display: none; } #opGanttAujourdhui { width: 38px; padding: 0; justify-content: center; }
+    }
+    @media (prefers-reduced-motion: reduce) { .op-gantt #gantt-container { scroll-behavior: auto; } }
+</style>
+
+<script>
+(function () {
+    var sec = document.querySelector('.op-gantt'); if (!sec) return;
+    var box = document.getElementById('gantt-container');
+    var boutons = sec.querySelectorAll('.op-gantt-vues button');
+
+    /* 1. bouton actif : on garde changeView d'origine et on marque l'échelle choisie (mémorisée sur l'appareil) */
+    function marquer(vue) {
+        boutons.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.vue === vue); });
+        try { localStorage.setItem('op-gantt-vue', vue); } catch (e) {}
+    }
+    /* un clic sur une échelle : changeView d'origine fait le travail (onclick), on marque juste le bouton actif */
+    boutons.forEach(function (b) { b.addEventListener('click', function () { marquer(b.dataset.vue); setTimeout(versAujourdhui, 200); }); });
+    var memo = null; try { memo = localStorage.getItem('op-gantt-vue'); } catch (e) {}
+    if (memo) marquer(memo);
+
+    /* 2. « Aujourd'hui » : centre la zone sur la colonne du jour (Frappe Gantt : .today-highlight) */
+    function versAujourdhui() {
+        var t = box.querySelector('.today-highlight, [data-today], .gantt-today');
+        if (!t) return;
+        var zone = box.querySelector('.gantt-container') || box;
+        var r = t.getBoundingClientRect(), z = zone.getBoundingClientRect();
+        zone.scrollLeft += (r.left - z.left) - zone.clientWidth / 3;
+    }
+    document.getElementById('opGanttAujourdhui').addEventListener('click', versAujourdhui);
+
+    /* 3. plein écran (Échap pour sortir) */
+    var plein = document.getElementById('opGanttPlein');
+    plein.addEventListener('click', function () {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (box.requestFullscreen) box.requestFullscreen();
+    });
+    document.addEventListener('fullscreenchange', function () {
+        var on = document.fullscreenElement === box;
+        plein.querySelector('i').className = on ? 'fas fa-compress' : 'fas fa-expand';
+        plein.setAttribute('aria-label', on ? 'Quitter le plein écran' : 'Plein écran');
+    });
+
+    /* 4. diagramme affiché : on se place sur aujourd'hui ; trop long : message clair au lieu d'un chargement sans fin */
+    var vu = false;
+    new MutationObserver(function () {
+        if (!vu && !box.querySelector('.animate-spin')) {
+            vu = true;
+            /* dernière échelle choisie sur cet appareil : on la rétablit */
+            if (memo && typeof window.changeView === 'function') { try { window.changeView(memo); } catch (e) {} }
+            setTimeout(versAujourdhui, 150);
+        }
+    }).observe(box, { childList: true, subtree: true });
+    setTimeout(function () {
+        if (vu || !box.querySelector('.animate-spin')) return;
+        box.innerHTML = '<div class="op-gantt-etat" role="status"><b>Le planning met du temps à s’afficher</b>'
+            + 'Vérifiez votre connexion, ou qu’au moins une activité a des dates de début et de fin.'
+            + '<br><button type="button" class="op-gantt-act" onclick="location.reload()"><i class="fas fa-rotate-right"></i>Recharger</button></div>';
+    }, 15000);
+})();
+</script>
 {%if request.user.personnel.is_process%}
     <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm overflow-hidden">
     <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
