@@ -146,6 +146,9 @@ PWA_APP_ICONS = [
     }
 ]
 
+SOCIALACCOUNT_EMAIL_VERIFICATION = "optional"
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
 # settings.py additionnel
 SOCIALACCOUNT_LOGIN_ON_GET = True # Permet de cliquer sur le lien sans passer par une page intermédiaire
 ACCOUNT_EMAIL_REQUIRED = True
