@@ -1,8 +1,9 @@
 from django.shortcuts import get_object_or_404, redirect
 from django.http import HttpResponseRedirect
-from django.views.generic import DetailView
-from .models import DataSetOperation, Structure, PeriodeOk
-from .utils import basis  # Assurez-vous que basis est dans un fichier utils.py
+from django.views.generic import DetailView, DeleteView
+from .models import DataSetOperation, Structure, PeriodeOk, DataSet, DSet_DElt
+from .utils import basis  
+from django.urls import reverse_lazy
 
 class DetailFormulaireOp(DetailView):
     model = DataSetOperation
@@ -53,3 +54,21 @@ class DetailFormulaireOp(DetailView):
         context['sub_structures'] = {s.id: Structure.objects.filter(parent=s) for s in structure}
         
         return context
+
+
+class DeleteDataset(DeleteView):
+    model = DataSet
+    template_name = 'dataset_confirm_delete.html'
+    success_url = reverse_lazy("configurations_admin")
+
+    def delete(self, request, *args, **kwargs):
+        # 1. Récupérer l'objet DataSet que l'on s'apprête à supprimer
+        self.object = self.get_object()
+        
+        # 2. Votre logique personnalisée (ex: vérifier ou supprimer des éléments liés)
+        related_items = DSet_DElt.objects.filter(m_dataset_value=self.object)
+        if related_items.exists():
+            related_items.delete()  # Supprime les éléments liés avant de supprimer le dataset
+
+        # 3. Laisser Django procéder à la suppression finale du DataSet
+        return super().delete(request, *args, **kwargs)

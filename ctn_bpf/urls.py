@@ -260,7 +260,9 @@ urlpatterns = [
 
    path('save-dataset-operation/', views.SaveDataSet, name='save-dataset-operation'),
 
-   path('detail-formulaire/<int:op_id>/<int:dataset_id>/', DetailFormulaireOp.as_view(), name='detail-formulaire')
+   path('detail-formulaire/<int:op_id>/<int:dataset_id>/', DetailFormulaireOp.as_view(), name='detail-formulaire'),
+
+   path('delete-dataset/<int:pk>/', DeleteDataset.as_view(), name='delete-dataset')
 
 
 

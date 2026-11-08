@@ -1,0 +1,205 @@
+
+{% extends './index.html' %}
+
+{% block main %}
+
+<style>
+    .delete-page {
+        min-height: 75vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 15px;
+    }
+
+    .delete-card {
+        width: 100%;
+        max-width: 480px;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, .06);
+    }
+
+    .delete-content {
+        padding: 35px;
+        text-align: center;
+    }
+
+    .delete-icon {
+        width: 76px;
+        height: 76px;
+        margin: 0 auto 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fef2f2;
+        color: #dc2626;
+        border-radius: 50%;
+        font-size: 30px;
+    }
+
+    .delete-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 10px;
+    }
+
+    .delete-description {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #6b7280;
+        margin-bottom: 25px;
+    }
+
+    .dataset-info {
+        text-align: left;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .dataset-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .7px;
+        color: #9ca3af;
+        margin-bottom: 7px;
+    }
+
+    .dataset-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #374151;
+        overflow-wrap: anywhere;
+    }
+
+    .delete-warning {
+        display: flex;
+        gap: 10px;
+        text-align: left;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 9px;
+        padding: 12px;
+        margin-bottom: 25px;
+        color: #9a3412;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .delete-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .delete-actions .btn {
+        flex: 1;
+        padding: 11px 15px;
+        border-radius: 9px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all .2s ease;
+    }
+
+    .btn-delete {
+        background: #dc2626;
+        color: white;
+        border: 1px solid #dc2626;
+    }
+
+    .btn-delete:hover {
+        background: #b91c1c;
+        border-color: #b91c1c;
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .btn-cancel {
+        background: #fff;
+        color: #374151;
+        border: 1px solid #d1d5db;
+    }
+
+    .btn-cancel:hover {
+        background: #f3f4f6;
+    }
+
+    @media (max-width: 480px) {
+        .delete-content {
+            padding: 25px 20px;
+        }
+
+        .delete-actions {
+            flex-direction: column-reverse;
+        }
+    }
+</style>
+
+<div class="delete-page">
+    <div class="delete-card">
+
+        <div class="delete-content">
+
+            <div class="delete-icon">
+                <i class="bi bi-trash3"></i>
+            </div>
+
+            <h4 class="delete-title">
+                Supprimer ce dataset ?
+            </h4>
+
+            <p class="delete-description">
+                Vous êtes sur le point de supprimer définitivement
+                cet élément. Veuillez vérifier les informations
+                avant de continuer.
+            </p>
+
+            <div class="dataset-info">
+                <div class="dataset-label">
+                    DATASET CONCERNÉ
+                </div>
+
+                <div class="dataset-name">
+                    {{ object.m_name }}
+                </div>
+            </div>
+
+            <div class="delete-warning">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+
+                <span>
+                    Cette opération peut être irréversible.
+                    Les données associées pourraient également
+                    être affectées selon vos règles de suppression.
+                </span>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="delete-actions">
+
+                    <a href="{% url 'configurations_admin' %}"
+                       class="btn btn-cancel">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Annuler
+                    </a>
+
+                    <button type="submit" class="btn btn-delete">
+                        <i class="bi bi-trash3 me-1"></i>
+                        Confirmer la suppression
+                    </button>
+
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}
