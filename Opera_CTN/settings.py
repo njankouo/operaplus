@@ -110,8 +110,23 @@ INSTALLED_APPS = [
 ]
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',  # Backend natif (RBAC global)
+    'allauth.account.auth_backends.AuthenticationBackend',
     'guardian.backends.ObjectPermissionBackend',  # Backend Guardian (Permissions par objet)
 )
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+    }
+}
+LOGIN_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 VITRINE_BASE_TEMPLATE = "presentation.html"
 # PWA Configurations
 PWA_APP_NAME = 'OPERAPLUS'
@@ -130,10 +145,7 @@ PWA_APP_ICONS = [
         'sizes': '512x512'
     }
 ]
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
-]
+
 # settings.py additionnel
 SOCIALACCOUNT_LOGIN_ON_GET = True # Permet de cliquer sur le lien sans passer par une page intermédiaire
 ACCOUNT_EMAIL_REQUIRED = True
@@ -258,6 +270,14 @@ CACHES = {
     }
 }
 """
+
+AUTHENTICATION_BACKENDS = [
+    # Needed to login by username in Django admin, regardless of `allauth`
+    'django.contrib.auth.backends.ModelBackend',
+
+    # `allauth` specific authentication methods, such as login by email
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
 
 """
 CACHES = {
