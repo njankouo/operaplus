@@ -9,6 +9,7 @@
     <meta name="description" content="Connectez-vous à votre espace OperaPlus pour piloter vos projets MEAL.">
     <meta name="theme-color" content="#0F1B2D">
     <meta name="referrer" content="strict-origin-when-cross-origin">
+    {%load static%}
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     {% load socialaccount %}
@@ -181,7 +182,16 @@
 
     <main class="min-h-screen flex items-center justify-center p-6">
         <aside class="lg-side" aria-hidden="false">
-            <a href="/" class="lg-brand"><i class="fa-solid fa-chart-line"></i><b style="font-weight:800">Opera<span>Plus</span></b></a>
+            <a href="/" class="lg-brand">
+                <a href="/" class="flex items-center gap-x-3 cursor-pointer group">
+    <div class="w-11 h-11 rounded-2xl overflow-hidden shadow-sm border border-slate-200">
+        <img src="{% static 'img/logov1.png' %}" alt="Logo {{ actual_institution.sigle }}" class="w-full h-full object-cover">
+    </div>
+    <span class="text-xl font-bold tracking-tight text-slate-900">
+        Opera<span class="text-orange-600">Plus</span>
+    </span>
+</a>
+               
             <div class="lg-pitch">
                 <span class="lg-kick" aria-hidden="true"><i style="background:var(--m-plan)">M</i><i style="background:var(--m-suivi)">E</i><i style="background:var(--m-eval)">A</i><i style="background:var(--m-app)">L</i>Espace de pilotage</span>
                 <h1>Bon retour.<br>Vos projets <em>vous attendent</em>.</h1>
