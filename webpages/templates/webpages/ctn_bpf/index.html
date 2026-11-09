@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {%load static%}
     <!-- ===== Correctif (ajout) : aucun modal visible au chargement, même avant que Tailwind (CDN) ait généré ses styles ===== -->
     <style>
         .hidden { display: none; }
@@ -329,7 +330,7 @@ body {
        class="bg-erp-nav hidden md:flex fixed inset-y-0 left-0 z-30 flex-col items-center py-5">
 
     <a href="/" aria-label="Accueil" class="mb-6 w-12 h-12 rounded-2xl overflow-hidden ring-2 ring-white/25 shadow-lg shrink-0 bg-white">
-        <img src="{{actual_institution.img.url}}" alt="Logo {{actual_institution.sigle}}" class="w-full h-full object-cover">
+        <img src="{%static 'img/logo.png'%}" alt="Logo {{actual_institution.sigle}}" class="w-full h-full object-cover">
     </a>
 
     <div id="sbxFavs" aria-label="Modules favoris"></div>
