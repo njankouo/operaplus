@@ -1612,6 +1612,159 @@
     }
     @media (prefers-reduced-motion: reduce) { html body * { transition: none !important; } }
     </style>
+
+    <!-- ===================== CHAMPS « MATERIAL » (ajout) =====================
+         Champs remplis (filled) avec trait animé, étiquettes qui s'activent, cases et radios animées,
+         puces de choix, onde au clic. Rien n'est renommé ; supprimer ce bloc = retour au design précédent. -->
+    <style id="op-materiel">
+    html body { --m-p: var(--v-teal, #0F7B6C); --m-ink: var(--op-ink, #10302B); --m-err: var(--op-err, #C8321E);
+                --m-fill: color-mix(in srgb, var(--m-ink) 4.5%, transparent); --m-fill-h: color-mix(in srgb, var(--m-ink) 7.5%, transparent);
+                --m-line: color-mix(in srgb, var(--m-ink) 38%, transparent); --m-out: color-mix(in srgb, var(--m-ink) 22%, transparent);
+                --m-ease: cubic-bezier(.4, 0, .2, 1); }
+
+    /* ---------- 1. champs texte, nombre, heure, date : « filled » + trait qui se déploie depuis le centre ---------- */
+    html body .op-ledger .contenu.dhis2-table-container table :is(input[type="number"], input[type="text"], input[type="tel"], input[type="email"], input[type="time"], input[type="date"]):not(.opf-xhide),
+    html body .op-ledger .contenu.dhis2-table-container table select:not([name^="D0elt"]), html body .op-ledger .contenu.dhis2-table-container textarea {
+        background-color: var(--m-fill) !important;
+        background-image: linear-gradient(var(--m-p), var(--m-p)) !important; background-repeat: no-repeat !important;
+        background-position: center bottom !important; background-size: 0% 2px !important;
+        border: 0 !important; border-bottom: 1px solid var(--m-line) !important; border-radius: 8px 8px 0 0 !important;
+        padding: 13px 14px 11px !important; min-height: 46px; box-shadow: none !important; outline: none !important;
+        font-size: 14.5px !important; color: var(--m-ink) !important; caret-color: var(--m-p);
+        transition: background-size .32s var(--m-ease), background-color .2s var(--m-ease), border-color .2s var(--m-ease) !important;
+    }
+    html body .op-ledger .contenu.dhis2-table-container table :is(input[type="number"], input[type="text"], input[type="tel"], input[type="email"], input[type="time"], input[type="date"]):not(.opf-xhide):hover, html body .op-ledger .contenu.dhis2-table-container textarea:hover { background-color: var(--m-fill-h) !important; border-bottom-color: var(--m-ink) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table :is(input, select):focus, html body .op-ledger .contenu.dhis2-table-container textarea:focus {
+        background-color: var(--m-fill-h) !important; background-size: 100% 2px !important; border-bottom-color: transparent !important; box-shadow: none !important; }
+    /* rempli : trait fin couleur principale, sans boîte */
+    html body .op-ledger .contenu.dhis2-table-container table input.op-filled:not(:focus) { background-color: var(--m-fill) !important; background-size: 100% 1px !important; border-bottom-color: transparent !important; }
+    /* erreur : trait rouge plein + fond teinté */
+    html body .op-ledger .contenu.dhis2-table-container table :is(input.opf-bad, input.op-err), html body .op-ledger .contenu.dhis2-table-container table :is(input.opf-bad, input.op-err):focus {
+        background-image: linear-gradient(var(--m-err), var(--m-err)) !important; background-size: 100% 2px !important;
+        background-color: color-mix(in srgb, var(--m-err) 7%, transparent) !important; border-bottom-color: transparent !important; }
+    /* calculé / lecture seule : pointillés, pas de fond */
+    html body .op-ledger .contenu.dhis2-table-container table :is(input.opf-calc, input[readonly]:not(.opf-xhide)) {
+        background-color: transparent !important; background-image: none !important; border: 0 !important; border-bottom: 1px dashed var(--m-out) !important; border-radius: 0 !important; }
+    html body .op-ledger .contenu.dhis2-table-container table input[type="number"] { font-variant-numeric: tabular-nums; }
+    html body .op-ledger .contenu.dhis2-table-container table input::placeholder, html body .op-ledger textarea::placeholder { color: color-mix(in srgb, var(--m-ink) 40%, transparent) !important; }
+
+    /* l'étiquette de la ligne s'active comme une étiquette Material */
+    html body .op-ledger .contenu.dhis2-table-container table tr:focus-within td { background: color-mix(in srgb, var(--m-p) 4%, var(--op-surface, #fff)) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:focus-within > td:first-child { color: var(--m-p) !important; font-weight: 700 !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr:has(:is(input.opf-bad, input.op-err)) > td:first-child { color: var(--m-err) !important; }
+    html body .op-ledger .contenu.dhis2-table-container table tr > td:first-child { transition: color .2s var(--m-ease); }
+
+    /* ---------- 2. listes de la sélection : étiquette flottante DANS le champ ---------- */
+    html body .op-command > div:has(> select), html body .op-command > div:has(> div > select) { position: relative; }
+    html body .op-command > div:has(> select) > label, html body .op-command > div:has(> div > select) > label {
+        position: absolute !important; top: 9px; left: 14px; z-index: 2; margin: 0 !important; pointer-events: none;
+        font-size: 11.5px !important; font-weight: 600 !important; letter-spacing: .02em !important; text-transform: none !important;
+        color: color-mix(in srgb, var(--m-ink) 62%, transparent) !important; transition: color .2s var(--m-ease); }
+    html body .op-command > div:has(> select) > label i, html body .op-command > div:has(> div > select) > label i { display: none; }
+    html body .op-command > div:has(select:focus) > label { color: var(--m-p) !important; }
+    html body .op-command select {
+        appearance: none !important; -webkit-appearance: none !important; height: 58px !important; padding: 24px 40px 8px 14px !important;
+        background-color: var(--m-fill) !important; border: 0 !important; border-bottom: 1px solid var(--m-line) !important; border-radius: 8px 8px 0 0 !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2310302B' fill-opacity='.6' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"), linear-gradient(var(--m-p), var(--m-p)) !important;
+        background-repeat: no-repeat !important; background-position: right 10px center, center bottom !important; background-size: 22px 22px, 0% 2px !important;
+        font-size: 15px !important; font-weight: 600 !important; color: var(--m-ink) !important; box-shadow: none !important; cursor: pointer;
+        transition: background-size .32s var(--m-ease), background-color .2s var(--m-ease), border-color .2s !important; }
+    html body .op-command select:hover { background-color: var(--m-fill-h) !important; border-bottom-color: var(--m-ink) !important; }
+    html body .op-command select:focus { background-size: 22px 22px, 100% 2px !important; background-color: var(--m-fill-h) !important; border-bottom-color: transparent !important; box-shadow: none !important; outline: none !important; }
+    html body .op-command select option { font-weight: 500; }
+    /* « et » : boutons-icônes ronds */
+    html body .op-command .flex.shadow-sm { border: 0 !important; gap: 4px; background: transparent !important; align-self: center; }
+    html body .op-command .op-nav-btn { width: 42px; height: 42px; padding: 0 !important; border: 0 !important; border-radius: 50% !important; font-size: 17px; font-weight: 700;
+        background: var(--m-fill) !important; color: var(--m-ink) !important; transition: background .2s var(--m-ease) !important; }
+    html body .op-command .op-nav-btn:hover { background: color-mix(in srgb, var(--m-p) 14%, transparent) !important; color: var(--m-p) !important; }
+    html body .op-command .op-nav-btn:focus-visible { outline: 2px solid var(--m-p); outline-offset: 2px; }
+    /* filtre des éléments : champ rempli, arrondi */
+    html body #op-row-filter { background-color: var(--m-fill) !important; border: 0 !important; border-bottom: 1px solid var(--m-line) !important; border-radius: 8px 8px 0 0 !important;
+        background-image: linear-gradient(var(--m-p), var(--m-p)) !important; background-repeat: no-repeat !important; background-position: center bottom !important; background-size: 0% 2px !important;
+        height: 40px; box-shadow: none !important; transition: background-size .32s var(--m-ease), background-color .2s !important; }
+    html body #op-row-filter:focus { background-size: 100% 2px !important; background-color: var(--m-fill-h) !important; border-bottom-color: transparent !important; box-shadow: none !important; }
+
+    /* ---------- 3. choix : puces Material, radio et case animées ---------- */
+    html body .op-ledger .opf-opts { gap: 8px !important; }
+    html body .op-ledger .opf-opts label {
+        position: relative; overflow: hidden; min-height: 38px !important; padding: 0 14px 0 10px !important; gap: 9px !important;
+        border: 1px solid var(--m-out) !important; border-radius: 10px !important; background: transparent !important; color: var(--m-ink) !important;
+        font-weight: 500 !important; transition: background .2s var(--m-ease), border-color .2s var(--m-ease), color .2s !important; }
+    html body .op-ledger .opf-opts label:hover { background: var(--m-fill) !important; border-color: var(--m-line) !important; }
+    html body .op-ledger .opf-opts label:has(input:checked) {
+        background: color-mix(in srgb, var(--m-p) 12%, transparent) !important; border-color: color-mix(in srgb, var(--m-p) 55%, transparent) !important;
+        color: var(--m-ink) !important; font-weight: 650 !important; }
+    html body .op-ledger .opf-opts label:has(input:checked) .c { color: var(--m-p) !important; }
+    html body .op-ledger .opf-opts label:has(input:focus-visible) { outline: 2px solid var(--m-p) !important; outline-offset: 2px !important; }
+    html body .op-ledger .opf-opts input {
+        appearance: none !important; -webkit-appearance: none !important; position: relative; flex: 0 0 auto; width: 18px !important; height: 18px !important; margin: 0 !important;
+        border: 2px solid color-mix(in srgb, var(--m-ink) 55%, transparent) !important; background: transparent !important; display: grid !important; place-content: center;
+        transition: border-color .2s var(--m-ease), background .2s var(--m-ease) !important; }
+    /* radio : un point qui grandit */
+    html body .op-ledger .opf-opts:not(.opf-check) input { border-radius: 50% !important; }
+    html body .op-ledger .opf-opts:not(.opf-check) input::before { content: "" !important; width: 8px !important; height: 8px !important; border: 0 !important; border-radius: 50%;
+        background: var(--m-p); transform: scale(0) !important; transition: transform .22s var(--m-ease) !important; }
+    html body .op-ledger .opf-opts:not(.opf-check) input:checked { border-color: var(--m-p) !important; background: transparent !important; }
+    html body .op-ledger .opf-opts:not(.opf-check) input:checked::before { transform: scale(1) !important; }
+    /* case : se remplit, la coche se dessine */
+    html body .op-ledger .opf-check input { border-radius: 4px !important; }
+    html body .op-ledger .opf-check input::before { content: "" !important; width: 10px !important; height: 5px !important; border: solid #fff !important; border-width: 0 0 2px 2px !important;
+        transform: translateY(-1px) rotate(-45deg) scale(0) !important; transform-origin: center; transition: transform .2s var(--m-ease) .05s !important; }
+    html body .op-ledger .opf-check input:checked { background: var(--m-p) !important; border-color: var(--m-p) !important; }
+    html body .op-ledger .opf-check input:checked::before { transform: translateY(-1px) rotate(-45deg) scale(1) !important; }
+    /* échelle : cartes à cocher */
+    html body .op-ledger .opf-scale label { min-width: 76px !important; padding: 10px 8px !important; gap: 5px !important; border-radius: 12px !important; justify-content: center; }
+    html body .op-ledger .opf-scale label:has(input:checked) { background: color-mix(in srgb, var(--m-p) 12%, transparent) !important; border-color: var(--m-p) !important; color: var(--m-ink) !important; }
+    html body .op-ledger .opf-scale label .t { font-weight: 600; }
+    html body .op-ledger tr:has(.opf-bad) .opf-opts label { border-color: color-mix(in srgb, var(--m-err) 60%, transparent) !important; }
+
+    /* ---------- 4. boutons : « Maintenant », fichiers ---------- */
+    html body .op-ledger .opf-now { position: relative; overflow: hidden; height: 34px; padding: 0 14px !important; border: 0 !important; border-radius: 999px !important;
+        background: color-mix(in srgb, var(--m-p) 11%, transparent) !important; color: var(--m-p) !important; font-weight: 650 !important; letter-spacing: .01em;
+        transition: background .2s var(--m-ease) !important; }
+    html body .op-ledger .opf-now:hover { background: color-mix(in srgb, var(--m-p) 18%, transparent) !important; }
+    html body .op-ledger .opf-file { border-radius: 14px !important; border: 1px dashed var(--m-out) !important; background: var(--m-fill) !important; }
+    html body .op-ledger .opf-file.has { border-style: solid !important; border-color: var(--m-out) !important; background: var(--op-surface, #fff) !important; }
+    html body .op-ledger .opf-file.drag { border-color: var(--m-p) !important; background: color-mix(in srgb, var(--m-p) 8%, transparent) !important; }
+    html body .op-ledger .opf-file .pick { position: relative; overflow: hidden; height: 38px; padding: 0 18px !important; border-radius: 999px !important; font-weight: 650 !important;
+        border: 1px solid var(--m-out) !important; background: transparent !important; color: var(--m-p) !important; transition: background .2s var(--m-ease) !important; }
+    html body .op-ledger .opf-file .pick:hover { background: color-mix(in srgb, var(--m-p) 8%, transparent) !important; }
+    html body .op-ledger .opf-file .pick.cam { background: var(--m-p) !important; border-color: var(--m-p) !important; color: #fff !important; }
+    html body .op-ledger .opf-file .thumb, html body .op-ledger .opf-file .ico { border-radius: 8px !important; }
+
+    /* ---------- 5. onde au clic (effet « waves » de Materialize) ---------- */
+    .m-onde { position: absolute; border-radius: 50%; pointer-events: none; background: currentColor; opacity: .18; transform: scale(0); animation: mOnde .55s var(--m-ease) forwards; }
+    @keyframes mOnde { to { transform: scale(1); opacity: 0; } }
+
+    /* ---------- sombre ---------- */
+    html.dark body { --m-ink: #E6EDEA; }
+    html.dark body .op-command select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23E6EDEA' fill-opacity='.7' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"), linear-gradient(var(--m-p), var(--m-p)) !important; }
+
+    @media (max-width: 640px) {
+        html body .op-command select { height: 54px !important; font-size: 14.5px !important; }
+        html body .op-ledger .opf-opts label { min-height: 42px !important; }
+        html body .op-ledger .opf-scale label { min-width: 0 !important; flex: 1 1 0 !important; padding: 8px 2px !important; }
+    }
+    @media (prefers-reduced-motion: reduce) { .m-onde { display: none; } }
+    </style>
+    <script>
+    /* onde au clic : délégation sur le document (aucun écouteur sur les champs eux-mêmes) */
+    (function () {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        document.addEventListener('pointerdown', function (e) {
+            var el = e.target.closest && e.target.closest('.op-ledger .opf-opts label, .op-ledger .opf-now, .op-ledger .opf-file .pick, .op-command .op-nav-btn');
+            if (!el) return;
+            var r = el.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2.2, o = document.createElement('span');
+            o.className = 'm-onde';
+            o.style.width = o.style.height = d + 'px';
+            o.style.left = (e.clientX - r.left - d / 2) + 'px'; o.style.top = (e.clientY - r.top - d / 2) + 'px';
+            if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+            el.style.overflow = 'hidden';
+            el.appendChild(o);
+            setTimeout(function () { o.remove(); }, 600);
+        }, { passive: true });
+    })();
+    </script>
 </head>
 <body class="bg-[#f4f7f9] font-sans text-sm text-gray-800">
 
@@ -1850,12 +2003,12 @@
 
       <div class="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5">
 
-    <a href="/structures/"
+    <a href="/detail-formulaire/{{dataset_fom.operation.id}}/{{dataset_fom.dataset.id}}/"
        class="w-full flex items-center justify-center gap-2 py-2.5 bg-[#276696] hover:bg-[#1d4d71] text-white text-[11px] font-bold rounded-lg transition-all uppercase tracking-widest shadow-md active:scale-95">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
         </svg>
-        Saisir 
+        lISTE SAISIE
     </a>
 
     <button type="button"

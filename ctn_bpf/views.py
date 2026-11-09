@@ -3061,6 +3061,11 @@ def operations_details(request, operation_id):
     context['financement_operation'] = financement_operation
     maintenant = timezone.now()
     context['fields'] = FieldsTaks.objects.filter(institution=actual_institution)
+
+    operation_dataset = DataSetOperation.objects.filter(operation_id=operation_id).count()
+    context['operation_dataset'] = operation_dataset
+
+    context['operation_dataset_brouillon'] = DataSetOperation.objects.filter(operation_id=operation_id, statut='BROUILLON').count()
    
 
     operations_delay = Operation.objects.filter(

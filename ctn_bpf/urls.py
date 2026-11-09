@@ -262,7 +262,9 @@ urlpatterns = [
 
    path('detail-formulaire/<int:op_id>/<int:dataset_id>/', DetailFormulaireOp.as_view(), name='detail-formulaire'),
 
-   path('delete-dataset/<int:pk>/', DeleteDataset.as_view(), name='delete-dataset')
+   path('delete-dataset/<int:pk>/', DeleteDataset.as_view(), name='delete-dataset'),
+
+   path('saisie-formulaire/<int:op_id>/<int:dataset_id>/',  SaisieFormulaireOp.as_view(), name='saisie-formulaire')
 
 
 

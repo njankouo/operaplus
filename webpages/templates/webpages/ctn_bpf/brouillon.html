@@ -1,6 +1,231 @@
 {% extends './index.html' %}
+{% load saisie_brouillon %}
 
 {% block main %}
+{% saisie_du_brouillon dataset_fom as sb %}
+<!-- ===================== BROUILLON : design (ajout) ===================== -->
+<style id="bf-design">
+    .bf { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: var(--sbx-ok, #2A8A7D); --warn: #F2A007;
+          --danger: var(--sbx-danger, #E35A33); --ink: #0b1220; --muted: #5d6b7a; --line: #e6e9ee; --paper: #f6f7f9; }
+    .bf [hidden] { display: none !important; }              /* l'attribut hidden l'emporte sur les display: flex */
+    .bf-in, .bf > div > div:first-child, .bf > div > div:nth-child(2) > div:first-child > div:first-child, .bf-circuit-carte { animation: bfIn .6s cubic-bezier(.2,.8,.2,1) both; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child { animation-delay: .1s; } .bf-circuit-carte { animation-delay: .2s; }
+    @keyframes bfIn { from { opacity: 0; transform: translateY(14px); } }
+
+    /* =============== EN-TÊTE : tout l'essentiel, d'un coup d'œil =============== */
+    .bf > div > div:first-child { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "txt age" "act age" "temps temps";
+                   gap: 22px 40px !important; align-items: start !important; padding: 30px 34px 26px !important; margin-bottom: 22px !important;
+                   background: var(--dom) !important; border: 0 !important; border-radius: 26px !important; color: #fff;
+                   box-shadow: 0 36px 60px -44px color-mix(in srgb, var(--dom) 90%, #000) !important; }
+    .bf > div > div:first-child > div:first-child { grid-area: txt; min-width: 0; }
+    .bf > div > div:first-child > div:nth-child(2) { grid-area: act; }
+    /* pastille « brouillon » */
+    .bf > div > div:first-child > div:first-child > div:first-child { background: color-mix(in srgb, var(--warn) 18%, transparent) !important; color: #FFD27A !important;
+                    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) 45%, transparent) !important; font-weight: 700 !important; letter-spacing: .01em; }
+    .bf > div > div:first-child > div:first-child > div:first-child .bg-amber-400, .bf > div > div:first-child > div:first-child > div:first-child .bg-amber-500 { background: var(--warn) !important; }
+    /* titre : net, fin, deux lignes au plus */
+    .bf > div > div:first-child h1 { margin-top: 14px !important; font-size: clamp(18px, 1.7vw, 23px) !important; font-weight: 650 !important; line-height: 1.36 !important;
+                      letter-spacing: -.012em !important; color: #fff !important; align-items: flex-start !important; gap: 12px !important; }
+    .bf > div > div:first-child h1 > svg { width: 20px !important; height: 20px !important; padding: 7px; box-sizing: content-box; border-radius: 11px; margin-top: 1px;
+                            background: rgba(255,255,255,.1); color: var(--warn) !important; }
+    .bf-nom { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-wrap: balance; max-width: 62ch; }
+    .bf > div > div:first-child > div:first-child > p { margin-top: 10px !important; color: rgba(255,255,255,.62) !important; padding-left: 46px; }
+    .bf > div > div:first-child > div:first-child > p .text-slate-400 { color: rgba(255,255,255,.55) !important; }
+    .bf > div > div:first-child > div:first-child > p .bg-indigo-50 { background: rgba(255,255,255,.1) !important; color: #fff !important; }
+    .bf-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 0 0; padding-left: 46px; font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,.6); }
+    .bf-meta span { display: inline-flex; align-items: center; gap: 7px; }
+    .bf-meta b { color: #fff; font-variant-numeric: tabular-nums; }
+    .bf-meta i { font-size: 11px; opacity: .7; }
+    /* actions */
+    .bf > div > div:first-child > div:nth-child(2) { padding-left: 46px; gap: 10px !important; }
+    .bf-cta { display: inline-flex; align-items: center; gap: 10px; height: 46px; padding: 0 22px; border-radius: 14px; background: var(--acc); color: #fff !important;
+              font-size: 14.5px; font-weight: 750; text-decoration: none; box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--acc) 80%, #000); transition: transform .2s, filter .2s; }
+    .bf-cta:hover { transform: translateY(-2px); filter: brightness(1.06); }
+    .bf-cta:focus-visible, .bf > div > div:first-child a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+    .bf-cta svg { width: 17px; height: 17px; }
+    .bf-cta .bf-fl { transition: transform .2s; } .bf-cta:hover .bf-fl { transform: translateX(3px); }
+    .bf > div > div:first-child a[href="javascript:history.back()"] { height: 46px; background: transparent !important; color: rgba(255,255,255,.85) !important;
+            border-color: rgba(255,255,255,.22) !important; border-radius: 14px !important; box-shadow: none !important; }
+    .bf > div > div:first-child a[href="javascript:history.back()"]:hover { background: rgba(255,255,255,.08) !important; }
+    .bf > div > div:first-child a[href="javascript:history.back()"] svg { color: currentColor !important; }
+
+    /* jauge d'ancienneté */
+    .bf-age { grid-area: age; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 6px 0; }
+    .bf-ring { position: relative; width: 132px; height: 132px; }
+    .bf-ring svg { width: 132px; height: 132px; transform: rotate(-90deg); }
+    .bf-ring .v { transition: stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1) .2s; }
+    .bf-ring b { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1;
+                 font-size: 40px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+    .bf-ring b small { margin-top: 5px; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.6); }
+    .bf-tag { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .bf-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .bf-tag.ok { background: color-mix(in srgb, var(--ok) 28%, transparent); color: #8FE3D1; }
+    .bf-tag.warn { background: color-mix(in srgb, var(--warn) 22%, transparent); color: #FFD27A; }
+    .bf-tag.danger { background: color-mix(in srgb, var(--danger) 26%, transparent); color: #FFB4A3; }
+
+    /* ligne du temps */
+    .bf-temps { grid-area: temps; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.1); }
+    .bf-temps-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .bf-temps-top b { font-size: 14px; font-weight: 700; }
+    .bf-temps-top span { font-size: 12.5px; color: rgba(255,255,255,.6); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .bf-rail { position: relative; height: 6px; border-radius: 999px; background: rgba(255,255,255,.12); }
+    .bf-rail i { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit; background: rgba(255,255,255,.88);
+                 transition: width 1.2s cubic-bezier(.2,.8,.2,1) .3s; }
+    .bf-temps.retard .bf-rail i { background: var(--danger); }
+    .bf-pt { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--dom); border: 2px solid rgba(255,255,255,.7); }
+    .bf-pt.fin { margin-left: -6px; border-radius: 3px; transform: rotate(45deg); border-color: #fff; }
+    .bf-pt.auj { width: 16px; height: 16px; margin: -8px 0 0 -8px; background: var(--acc); border: 3px solid var(--dom); box-shadow: 0 0 0 2px var(--acc);
+                 transition: left 1.2s cubic-bezier(.2,.8,.2,1) .3s; }
+    .bf-temps-bas { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11.5px; font-weight: 600; color: rgba(255,255,255,.55); font-variant-numeric: tabular-nums; }
+
+    /* =============== RÉSUMÉ : un bandeau de faits, pas quatre boîtes =============== */
+    .bf > div > div:nth-child(2) { display: block !important; }
+    .bf > div > div:nth-child(2) > div { display: flex; flex-direction: column; gap: 18px !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child { border-radius: 22px !important; border-color: var(--line) !important; box-shadow: 0 1px 2px rgba(16,24,40,.04) !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child > div:first-child { background: #fff !important; padding: 18px 24px !important; border-bottom-color: #f0f2f5 !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child > div:first-child h3 { font-size: 15px !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child > div:first-child > span { display: none; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child > div:last-child { padding: 6px 8px !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child dl { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 0 !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div:nth-child(4) { box-shadow: inset 0 1px 0 #eef1f4; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div:nth-child(5), .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div:nth-child(6) { box-shadow: inset 1px 0 0 #eef1f4, inset 0 1px 0 #eef1f4; }
+    .bf-dd { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bf-sous { margin: 3px 0 0; font-size: 12px; color: var(--muted); font-weight: 500; }
+    .bf-autres { margin: 4px 10px 10px; padding: 14px 16px; border-radius: 14px; background: var(--paper); }
+    .bf-autres-t { margin: 0 0 8px; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+    .bf-autres-t b { color: var(--ink); }
+    .bf-autres ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .bf-autres li { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 12px;
+                    border-radius: 10px; background: #fff; font-size: 13px; }
+    .bf-a-s { font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bf-a-p { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bf-a-n { font-size: 12px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div { background: transparent !important; border: 0 !important; border-radius: 0 !important; padding: 16px 18px !important; gap: 12px !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div + div { box-shadow: inset 1px 0 0 #eef1f4; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div > div:first-child { padding: 8px !important; border-radius: 11px !important; box-shadow: none !important; background: var(--paper) !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div > div:first-child svg { width: 18px !important; height: 18px !important; color: var(--dom) !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child dt { font-size: 11px !important; color: var(--muted) !important; letter-spacing: .06em !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child dd { font-size: 14px !important; }
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > a { display: none !important; }            /* l'action est portée par l'en-tête */
+
+    /* =============== CIRCUIT DE VALIDATION =============== */
+    .bf-circuit-carte { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 22px 28px 26px; }
+    .bf-circuit-carte h4 { margin: 0 0 22px; font-size: 15px; font-weight: 800; color: var(--ink); display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .bf-circuit-carte h4 span { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+    .bf-circuit { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); position: relative; }
+    .bf-circuit-zone { position: relative; }
+    .bf > div > div:nth-child(2) > div > * + * { margin-top: 0 !important; }
+    .bf-piste { position: absolute; top: 17px; left: 16.66%; right: 16.66%; height: 4px; border-radius: 4px; background: #eef1f4; }
+    .bf-piste i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--ok); transition: width 1s cubic-bezier(.2,.8,.2,1) .4s; }
+    .bf-circuit li { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 0 10px; }
+    .bf-circuit li > span { width: 38px; height: 38px; margin-bottom: 8px; border-radius: 50%; display: grid; place-items: center; z-index: 1; background: #fff;
+                            border: 2px solid #e1e5ea; font-size: 14px; font-weight: 800; color: #98a2b3; }
+    .bf-circuit li b { font-size: 14px; color: #98a2b3; }
+    .bf-circuit li small { font-size: 12px; line-height: 1.4; color: #98a2b3; max-width: 200px; }
+    .bf-circuit li.fait > span { background: var(--ok); border-color: var(--ok); color: #fff; }
+    .bf-circuit li.fait b { color: var(--ok); }
+    .bf-circuit li.actif > span { border-color: var(--acc); color: var(--acc); animation: bfPouls 2.6s ease-in-out infinite; }
+    .bf-circuit li.actif b { color: var(--ink); } .bf-circuit li.actif small { color: var(--muted); }
+    @keyframes bfPouls { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--acc) 16%, transparent); } }
+
+    /* =============== MOBILE =============== */
+    @media (max-width: 900px) {
+        .bf > div > div:first-child { grid-template-columns: minmax(0, 1fr); grid-template-areas: "txt" "age" "act" "temps"; padding: 24px 22px !important; gap: 20px !important; }
+        .bf > div > div:first-child > div:first-child > p, .bf-meta, .bf > div > div:first-child > div:nth-child(2) { padding-left: 0; }
+        .bf-age { flex-direction: row; justify-content: flex-start; gap: 16px; padding: 0; }
+        .bf-ring, .bf-ring svg { width: 96px; height: 96px; }
+        .bf-ring b { font-size: 30px; }
+        .bf > div > div:first-child > div:nth-child(2) { flex-wrap: nowrap !important; }
+        .bf > div > div:first-child > div:nth-child(2) > a { justify-content: center; white-space: nowrap; }
+        .bf > div > div:first-child > div:nth-child(2) > .bf-cta { flex: 1; padding: 0 16px; }
+        .bf > div > div:nth-child(2) > div:first-child > div:first-child dl { grid-template-columns: 1fr 1fr !important; }
+        .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div:nth-child(3) { box-shadow: inset 0 1px 0 #eef1f4; }
+        .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div:nth-child(4), .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div:nth-child(6) { box-shadow: inset 1px 0 0 #eef1f4, inset 0 1px 0 #eef1f4; }
+        .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div:nth-child(5) { box-shadow: inset 0 1px 0 #eef1f4; }
+        .bf-autres li { grid-template-columns: minmax(0, 1fr) auto; }
+        .bf-a-p { grid-column: 1; grid-row: 2; }
+        .bf-a-n { grid-row: 1 / span 2; grid-column: 2; }
+        .bf-circuit-carte { padding: 20px 14px 22px; }
+        .bf-circuit li { padding: 0 4px; }
+    }
+    @media (max-width: 560px) {
+        .bf > div > div:nth-child(2) > div:first-child > div:first-child dl { grid-template-columns: 1fr !important; }
+        .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div + div, .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div:nth-child(n) { box-shadow: inset 0 1px 0 #eef1f4 !important; }
+        .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div:first-child { box-shadow: none !important; }
+        .bf > div > div:nth-child(2) > div:first-child > div:first-child dl > div { padding: 14px 16px !important; }
+    }
+
+    /* =============== SAISIES DU BROUILLON · style Materialize =============== */
+    .bf { --z1: 0 2px 2px 0 rgba(0,0,0,.14), 0 3px 1px -2px rgba(0,0,0,.12), 0 1px 5px 0 rgba(0,0,0,.2);
+          --z2: 0 4px 5px 0 rgba(0,0,0,.14), 0 1px 10px 0 rgba(0,0,0,.12), 0 2px 4px -1px rgba(0,0,0,.3);
+          --c1: #009688; --c2: #3F51B5; --c3: #FF9800; --c4: #E91E63; --c5: #673AB7; --c6: #03A9F4; --c7: #8BC34A; }
+    /* cartes de la page : ombre « z-depth-1 » de Materialize, sans bordure */
+    .bf > div > div:nth-child(2) > div:first-child > div:first-child, .bf-circuit-carte, .bf-saisies { border: 0 !important; box-shadow: var(--z1) !important; border-radius: 12px !important; }
+    .bf-saisies { background: #fff; padding: 22px 24px 18px; animation: bfIn .6s cubic-bezier(.2,.8,.2,1) .15s both; }
+    .bf-s-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+    .bf-s-tete h4 { margin: 0; font-size: 18px; font-weight: 500; color: rgba(0,0,0,.87); letter-spacing: 0; }
+    .bf-s-tete p { margin: 4px 0 0; font-size: 13px; color: rgba(0,0,0,.54); }
+    .bf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .bf-chip { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 12px; border-radius: 16px; background: #e4e4e4; font-size: 13px; color: rgba(0,0,0,.6); }
+    .bf-chip b { font-weight: 500; color: rgba(0,0,0,.87); font-variant-numeric: tabular-nums; }
+
+    .bf-s-corps { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 26px; align-items: center; }
+    .bf-donut { position: relative; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .bf-donut svg { width: 180px; height: 180px; transform: rotate(-90deg); overflow: visible; }
+    .bf-donut .seg { fill: none; stroke-width: 18; transition: stroke-dasharray .9s cubic-bezier(.4,0,.2,1), stroke-width .2s; cursor: default; }
+    .bf-donut .seg.on { stroke-width: 24; }
+    .bf-donut-c { position: absolute; top: 0; left: 50%; width: 180px; height: 180px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+    .bf-donut-c b { font-size: 34px; font-weight: 300; color: rgba(0,0,0,.87); line-height: 1; font-variant-numeric: tabular-nums; }
+    .bf-donut-c b small { font-size: 16px; margin-left: 1px; }
+    .bf-donut-c > span { margin-top: 4px; font-size: 11.5px; color: rgba(0,0,0,.54); text-align: center; max-width: 110px; }
+    .bf-donut figcaption { font-size: 12px; color: rgba(0,0,0,.54); text-align: center; max-width: 200px; line-height: 1.4; }
+
+    .bf-collection { list-style: none; margin: 0; padding: 0; border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden; }
+    .bf-item { --c: var(--c1); position: relative; display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 16px;
+               background: #fff; border-bottom: 1px solid #e0e0e0; transition: background .2s; animation: bfIn .5s cubic-bezier(.2,.8,.2,1) both; }
+    .bf-item:last-child { border-bottom: 0; }
+    .bf-item:hover, .bf-item.on { background: #f5f5f5; }
+    .bf-item:nth-child(1) { --c: var(--c1); animation-delay: .25s; } .bf-item:nth-child(2) { --c: var(--c2); animation-delay: .32s; }
+    .bf-item:nth-child(3) { --c: var(--c3); animation-delay: .39s; } .bf-item:nth-child(4) { --c: var(--c4); animation-delay: .46s; }
+    .bf-item:nth-child(5) { --c: var(--c5); animation-delay: .53s; } .bf-item:nth-child(6) { --c: var(--c6); animation-delay: .6s; }
+    .bf-item:nth-child(7) { --c: var(--c7); animation-delay: .67s; }
+    .bf-avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; font-size: 14px; font-weight: 500; letter-spacing: .02em; }
+    .bf-item-txt { min-width: 0; }
+    .bf-item-titre { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500; color: rgba(0,0,0,.87); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .bf-badge { flex-shrink: 0; height: 20px; line-height: 20px; padding: 0 7px; border-radius: 2px; background: var(--c); color: #fff; font-size: 11px; font-weight: 400; }
+    .bf-item-sous { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 2px; font-size: 13px; color: rgba(0,0,0,.54); }
+    .bf-item-sous i { font-size: 11px; }
+    .bf-frais { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 10px; font-size: 11.5px; }
+    .bf-frais:empty { display: none; }
+    .bf-frais.ok { background: #e0f2f1; color: #00796b; } .bf-frais.warn { background: #fff3e0; color: #e65100; } .bf-frais.danger { background: #fce4ec; color: #c2185b; }
+    /* barre de progression linéaire Materialize */
+    .bf-progress { position: relative; height: 4px; margin-top: 9px; border-radius: 2px; background: color-mix(in srgb, var(--c) 22%, #fff); overflow: hidden; }
+    .bf-progress i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--c); transition: width .9s cubic-bezier(.4,0,.2,1); }
+    .bf-item-val { text-align: right; }
+    .bf-item-val b { display: block; font-size: 20px; font-weight: 400; color: var(--c); font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .bf-item-val span { font-size: 12px; color: rgba(0,0,0,.54); white-space: nowrap; }
+    .bf-s-pied { margin: 12px 0 0; font-size: 12.5px; color: rgba(0,0,0,.54); }
+    .bf-vide { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 12px; text-align: center; color: rgba(0,0,0,.54); }
+    .bf-vide i { font-size: 34px; color: #bdbdbd; margin-bottom: 4px; }
+    .bf-vide b { font-size: 15px; font-weight: 500; color: rgba(0,0,0,.87); }
+    @media (max-width: 760px) {
+        .bf-s-corps { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+        .bf-saisies { padding: 18px 14px 14px; }
+        .bf-item { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px; padding: 12px; }
+        .bf-avatar { width: 38px; height: 38px; font-size: 13px; }
+        .bf-item-titre { flex-wrap: wrap; white-space: normal; row-gap: 4px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .bf-saisies, .bf-item { animation: none !important; } .bf-donut .seg, .bf-progress i { transition: none !important; } }
+    @media (prefers-reduced-motion: reduce) {
+        .bf > div > div:first-child, .bf > div > div:nth-child(2) > div:first-child > div:first-child, .bf-circuit-carte, .bf-in, .bf-circuit li.actif > span { animation: none !important; }
+        .bf-ring .v, .bf-rail i, .bf-pt.auj, .bf-piste i { transition: none !important; }
+    }
+</style>
+<div class="bf" id="bfPage"
+     data-creation="{{ dataset_fom.date_creation|date:'Y-m-d' }}"
+     data-echeance="{{ dataset_fom.operation.date_echeance|date:'Y-m-d' }}"
+     data-ecritures="{{ dataset_fom.count_write|default:0 }}"
+     data-statut="{{ dataset_fom.statut|default:'BROUILLON' }}">
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     
     <!-- En-tête de la page avec effet design -->
@@ -20,13 +245,20 @@
                 <svg class="w-8 h-8 text-indigo-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012-2m-6 9l2 2 4-4"></path>
                 </svg>
-                {{ dataset_fom.operation.nom|default:"Opération non définie" }}
+                <span class="bf-nom" title="{{ dataset_fom.operation.nom|default:'' }}">{{ dataset_fom.operation.nom|default:"Opération non définie" }}</span>
             </h1>
             
             <!-- Nom du formulaire -->
             <p class="text-sm font-medium text-slate-600 flex items-center gap-2">
                 <span class="text-slate-400">Formulaire associé :</span> 
                 <span class="text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-md font-semibold">{{ dataset_fom.dataset.m_name|default:"Formulaire sans nom" }}</span>
+            </p>
+            <p class="bf-meta">
+                <span><i class="fa-solid fa-building" aria-hidden="true"></i>{{ actual_institution.nom|default:"N/A" }}</span>
+                {% if sb.structure %}<span><i class="fa-solid fa-sitemap" aria-hidden="true"></i><b>{{ sb.structure.nom }}</b></span>{% endif %}
+                {% if sb.periode %}<span><i class="fa-regular fa-calendar-check" aria-hidden="true"></i><b>{{ sb.periode.nom }}</b></span>{% endif %}
+                <span><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i><b id="bfEcr">{{ dataset_fom.count_write|default:0 }}</b>&nbsp;enregistrements</span>
+                <span id="bfRythmeL" hidden><i class="fa-solid fa-gauge-simple" aria-hidden="true"></i><b id="bfRythme">0</b>&nbsp;par jour en moyenne</span>
             </p>
         </div>
 
@@ -36,7 +268,31 @@
                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Retour
             </a>
+            <a href="/saisie-formulaire/{{dataset_fom.operation_id}}/{{dataset_fom.dataset_id}}/" class="bf-cta">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Reprendre l'édition <span class="bf-fl" aria-hidden="true">&rarr;</span>
+            </a>
           
+        </div>
+
+        <!-- ===== Âge du brouillon (ajout) ===== -->
+        <div class="bf-age" id="bfAge" hidden>
+            <div class="bf-ring" role="img" id="bfAgeRing" aria-label="Âge du brouillon">
+                <svg viewBox="0 0 132 132" aria-hidden="true"><circle cx="66" cy="66" r="56" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="10"/><circle class="v" cx="66" cy="66" r="56" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="351.86"/></svg>
+                <b><span id="bfAgeN">0</span><small id="bfAgeU">jours</small></b>
+            </div>
+            <span class="bf-tag" id="bfAgeTag"></span>
+        </div>
+
+        <!-- ===== Calendrier création → échéance (ajout) ===== -->
+        <div class="bf-temps" id="bfTemps" hidden>
+            <div class="bf-temps-top"><b id="bfTempsT"></b><span id="bfTempsP"></span></div>
+            <div class="bf-rail" role="img" id="bfRailBox"><i id="bfRail"></i>
+                <span class="bf-pt" style="left:0"></span>
+                <span class="bf-pt fin" style="left:100%"></span>
+                <span class="bf-pt auj" id="bfAuj" style="left:0"></span>
+            </div>
+            <div class="bf-temps-bas"><span id="bfDebut"></span><span id="bfFin"></span></div>
         </div>
     </div>
 
@@ -106,6 +362,29 @@
                                 <dd class="mt-1 text-sm font-semibold text-slate-800">{{ dataset_fom.date_creation|default:"Récemment" }}</dd>
                             </div>
                         </div>
+
+                        <!-- Structure saisie (ajout) -->
+                        <div class="p-4 rounded-xl bg-slate-50/50 border border-slate-100 flex items-start gap-3">
+                            <div class="p-2 bg-white rounded-lg shadow-sm text-slate-600 mt-0.5">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v6m0 0H6a2 2 0 00-2 2v2m8-4h6a2 2 0 012 2v2M4 13v4m16-4v4M12 9v8m-8 0h.01M12 17h.01M20 17h.01"></path></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Structure saisie</dt>
+                                <dd class="mt-1 text-sm font-semibold text-slate-800 bf-dd">{{ sb.structure.nom|default:"Aucune valeur saisie" }}</dd>
+                            </div>
+                        </div>
+
+                        <!-- Période saisie (ajout) -->
+                        <div class="p-4 rounded-xl bg-slate-50/50 border border-slate-100 flex items-start gap-3">
+                            <div class="p-2 bg-white rounded-lg shadow-sm text-slate-600 mt-0.5">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2zm4-5l2 2 4-4"></path></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <dt class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Période saisie</dt>
+                                <dd class="mt-1 text-sm font-semibold text-slate-800 bf-dd">{{ sb.periode.nom|default:"—" }}</dd>
+                                {% if sb.trouve %}<p class="bf-sous">{{ sb.nb_valeurs }} valeur{{ sb.nb_valeurs|pluralize }}{% if sb.derniere %} · saisie le {{ sb.derniere|date:"d/m/Y" }}{% endif %}</p>{% endif %}
+                            </div>
+                        </div>
                           <a href="/detail-formulaire/{{dataset_fom.operation_id}}/{{dataset_fom.dataset_id}}/" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md shadow-indigo-200">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                 Reprendre l'édition
@@ -113,6 +392,81 @@
                     </dl>
                 </div>
             </div>
+
+            <!-- ===== Saisies de ce brouillon : graphique + liste (ajout, style Materialize) ===== -->
+            <section class="bf-saisies" aria-labelledby="bfSaisiesT">
+                <div class="bf-s-tete">
+                    <div>
+                        <h4 id="bfSaisiesT">Saisies de ce brouillon</h4>
+                        <p>Chaque couple structure × période déjà commencé, du plus récent au plus ancien.</p>
+                    </div>
+                    {% if sb.trouve %}
+                    <div class="bf-chips" role="list">
+                        <span class="bf-chip" role="listitem"><b>{{ sb.nb_couples }}</b> saisie{{ sb.nb_couples|pluralize }}</span>
+                        <span class="bf-chip" role="listitem"><b>{{ sb.nb_structures }}</b> structure{{ sb.nb_structures|pluralize }}</span>
+                        <span class="bf-chip" role="listitem"><b>{{ sb.nb_periodes }}</b> période{{ sb.nb_periodes|pluralize }}</span>
+                        <span class="bf-chip" role="listitem"><b>{{ sb.total_valeurs }}</b> valeur{{ sb.total_valeurs|pluralize }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if sb.trouve %}
+                <div class="bf-s-corps">
+                    <!-- anneau : part des valeurs de chaque saisie (les couleurs renvoient à la liste) -->
+                    <figure class="bf-donut" aria-labelledby="bfDonutL">
+                        <svg viewBox="0 0 160 160" role="img" aria-describedby="bfDonutL" id="bfDonut">
+                            <circle cx="80" cy="80" r="62" fill="none" stroke="#eef1f4" stroke-width="18"/>
+                        </svg>
+                        <div class="bf-donut-c">
+                            {% if sb.completude_moyenne is not None %}
+                            <b><span class="bf-compte" data-fin="{{ sb.completude_moyenne }}">0</span><small>%</small></b><span>complétude moyenne</span>
+                            {% else %}
+                            <b><span class="bf-compte" data-fin="{{ sb.total_valeurs }}">0</span></b><span>valeurs saisies</span>
+                            {% endif %}
+                        </div>
+                        <figcaption id="bfDonutL">Répartition des {{ sb.total_valeurs }} valeurs entre les saisies{% if sb.nb_elements %} · formulaire de {{ sb.nb_elements }} éléments{% endif %}</figcaption>
+                    </figure>
+
+                    <!-- liste « collection » Materialize -->
+                    <ul class="bf-collection" id="bfCollection">
+                        {% for c in sb.couples %}
+                        <li class="bf-item" data-n="{{ c.nb_valeurs }}" data-pct="{% if c.completude is not None %}{{ c.completude }}{% endif %}" data-derniere="{{ c.derniere|date:'Y-m-d' }}">
+                            <span class="bf-avatar" aria-hidden="true">{{ c.structure.nom|default:"?"|slice:":2"|upper }}</span>
+                            <div class="bf-item-txt">
+                                <b class="bf-item-titre">{{ c.structure.nom|default:"Structure non précisée" }}{% if forloop.first %}<span class="bf-badge">Principale</span>{% endif %}</b>
+                                <span class="bf-item-sous"><i class="fa-regular fa-calendar" aria-hidden="true"></i>{{ c.periode.nom|default:"Période non précisée" }}<span class="bf-frais"></span></span>
+                                <div class="bf-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Complétude de la saisie"><i></i></div>
+                            </div>
+                            <div class="bf-item-val">
+                                <b>{% if c.completude is not None %}{{ c.completude }} %{% else %}{{ c.nb_valeurs }}{% endif %}</b>
+                                <span>{% if sb.nb_elements %}{{ c.nb_valeurs }} / {{ sb.nb_elements }} valeurs{% else %}valeur{{ c.nb_valeurs|pluralize }}{% endif %}</span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% if sb.nb_couples > sb.couples|length %}<p class="bf-s-pied">Et {{ sb.nb_couples|add:"-7" }} autre{{ sb.nb_couples|add:"-7"|pluralize }} saisie{{ sb.nb_couples|add:"-7"|pluralize }} plus ancienne{{ sb.nb_couples|add:"-7"|pluralize }}.</p>{% endif %}
+                {% else %}
+                <div class="bf-vide">
+                    <i class="fa-regular fa-folder-open" aria-hidden="true"></i>
+                    <b>Aucune valeur saisie pour l'instant</b>
+                    <span>Le brouillon existe, mais aucune structure ni période n'a encore reçu de valeur.</span>
+                </div>
+                {% endif %}
+            </section>
+
+            <!-- ===== Circuit de validation (ajout) ===== -->
+            <section class="bf-circuit-carte" aria-labelledby="bfCircuitT">
+                <h4 id="bfCircuitT">Circuit de validation <span id="bfCircuitS">Étape 1 sur 3</span></h4>
+                <div class="bf-circuit-zone">
+                <div class="bf-piste" aria-hidden="true"><i id="bfPiste"></i></div>
+                <ol class="bf-circuit" id="bfCircuit">
+                    <li data-etape="1"><span>1</span><b>Brouillon</b><small>Vous complétez la saisie</small></li>
+                    <li data-etape="2"><span>2</span><b>Soumis</b><small>En attente du superviseur</small></li>
+                    <li data-etape="3"><span>3</span><b>Validé</b><small>Données retenues dans les résultats</small></li>
+                </ol>
+                </div>
+            </section>
         </div>
 
     
@@ -120,4 +474,110 @@
     </div>
 
 </div>
+</div>
+<!-- ===================== BROUILLON : graphiques et animations (ajout) ===================== -->
+<script>
+(function () {
+    var page = document.getElementById('bfPage'); if (!page) return;
+    var $ = function (id) { return document.getElementById(id); };
+
+    var jour = function (s) { return s ? new Date(s + 'T00:00:00') : null; };
+    var court = function (d) { return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); };
+    var auj = new Date(); auj.setHours(0, 0, 0, 0);
+    var creation = jour(page.dataset.creation), echeance = jour(page.dataset.echeance);
+    var ecritures = parseInt(page.dataset.ecritures, 10) || 0;
+    var reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function compter(el, fin, dec) {
+        if (!el) return;
+        var f = function (v) { return v.toLocaleString('fr-FR', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 }); };
+        if (reduit) { el.textContent = f(fin); return; }
+        var t0 = null;
+        requestAnimationFrame(function pas(t) { t0 = t0 || t; var k = Math.min((t - t0) / 1000, 1); el.textContent = f(fin * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(pas); });
+    }
+
+    /* 1) âge du brouillon : jauge sur 14 jours */
+    var age = creation ? Math.max(0, Math.round((auj - creation) / 864e5)) : null;
+    if (age !== null) {
+        $('bfAge').hidden = false;
+        var C = 351.86, ring = $('bfAgeRing').querySelector('.v'), niv = age <= 3 ? 'ok' : (age <= 7 ? 'warn' : 'danger');
+        ring.style.stroke = { ok: '#5CC8B2', warn: '#F2A007', danger: '#F07A62' }[niv];
+        requestAnimationFrame(function () { requestAnimationFrame(function () { ring.style.strokeDashoffset = C * (1 - Math.min(age, 14) / 14); }); });
+        compter($('bfAgeN'), age);
+        $('bfAgeU').textContent = age > 1 ? 'jours' : 'jour';
+        var tag = $('bfAgeTag'); tag.classList.add(niv);
+        tag.textContent = { ok: 'Brouillon récent', warn: 'À finaliser bientôt', danger: 'Brouillon ancien' }[niv];
+        $('bfAgeRing').setAttribute('aria-label', 'Brouillon créé il y a ' + age + ' jour' + (age > 1 ? 's' : ''));
+        if (age > 0) { $('bfRythmeL').hidden = false; compter($('bfRythme'), ecritures / age, 1); }
+    }
+    compter($('bfEcr'), ecritures);
+
+    /* 2) calendrier : création → aujourd'hui → échéance de l'opération */
+    if (creation && echeance && echeance > creation) {
+        $('bfTemps').hidden = false;
+        var pct = Math.max(0, Math.min((auj - creation) / (echeance - creation), 1)) * 100, reste = Math.round((echeance - auj) / 864e5);
+        $('bfDebut').textContent = 'Créé le ' + court(creation);
+        $('bfFin').textContent = 'Échéance ' + court(echeance);
+        $('bfTempsT').textContent = reste < 0 ? 'Échéance dépassée de ' + (-reste) + ' jour' + (-reste > 1 ? 's' : '')
+            : (reste === 0 ? "Échéance aujourd'hui" : reste + ' jour' + (reste > 1 ? 's' : '') + " avant l'échéance de l'opération");
+        $('bfTempsP').textContent = Math.round(pct) + ' % du temps écoulé';
+        $('bfTemps').classList.toggle('retard', reste < 0);
+        $('bfRailBox').setAttribute('aria-label', Math.round(pct) + " % du temps écoulé entre la création et l'échéance");
+        requestAnimationFrame(function () { requestAnimationFrame(function () { $('bfRail').style.width = pct + '%'; $('bfAuj').style.left = pct + '%'; }); });
+    }
+
+    /* 3) circuit de validation, d'après le statut */
+    var st = (page.dataset.statut || '').toLowerCase(), etape = /valid/.test(st) ? 3 : (/soumi|envoy|attente/.test(st) ? 2 : 1);
+    document.querySelectorAll('#bfCircuit li').forEach(function (li) {
+        var n = +li.dataset.etape;
+        li.classList.toggle('fait', n < etape); li.classList.toggle('actif', n === etape);
+        if (n < etape) li.querySelector('span').textContent = '\u2713';
+        if (n === etape) li.setAttribute('aria-current', 'step');
+    });
+    $('bfCircuitS').textContent = 'Étape ' + etape + ' sur 3';
+    requestAnimationFrame(function () { requestAnimationFrame(function () { $('bfPiste').style.width = (etape - 1) * 50 + '%'; }); });
+
+    /* 4) saisies du brouillon : anneau de répartition, barres, fraîcheur */
+    var items = [].slice.call(document.querySelectorAll('#bfCollection .bf-item')), svg = $('bfDonut');
+    if (items.length && svg) {
+        var couleurs = ['#009688', '#3F51B5', '#FF9800', '#E91E63', '#673AB7', '#03A9F4', '#8BC34A'];
+        var tot = items.reduce(function (a, li) { return a + (+li.dataset.n || 0); }, 0) || 1;
+        var maxN = Math.max.apply(null, items.map(function (li) { return +li.dataset.n || 0; })) || 1;
+        var R = 62, CIRC = 2 * Math.PI * R, ecart = items.length > 1 ? 3 : 0, deja = 0, NS = 'http://www.w3.org/2000/svg';
+        items.forEach(function (li, i) {
+            var n = +li.dataset.n || 0, part = n / tot, long = Math.max(part * CIRC - ecart, 0.5);
+            var c = document.createElementNS(NS, 'circle');
+            c.setAttribute('cx', 80); c.setAttribute('cy', 80); c.setAttribute('r', R); c.setAttribute('class', 'seg');
+            c.style.stroke = couleurs[i % couleurs.length];
+            c.style.strokeDasharray = '0 ' + CIRC;                                     /* départ : segment vide */
+            c.style.strokeDashoffset = -deja * CIRC; deja += part;
+            var t = document.createElementNS(NS, 'title');
+            t.textContent = li.querySelector('.bf-item-titre').firstChild.textContent.trim() + ' : ' + n + ' valeur' + (n > 1 ? 's' : '') + ' (' + Math.round(part * 100) + ' %)';
+            c.appendChild(t); svg.appendChild(c);
+            requestAnimationFrame(function () { requestAnimationFrame(function () { c.style.strokeDasharray = long + ' ' + (CIRC - long); }); });
+            /* survol lié : segment ↔ ligne */
+            var lier = function (on) { c.classList.toggle('on', on); li.classList.toggle('on', on); };
+            li.addEventListener('mouseenter', function () { lier(true); }); li.addEventListener('mouseleave', function () { lier(false); });
+            c.addEventListener('mouseenter', function () { lier(true); }); c.addEventListener('mouseleave', function () { lier(false); });
+
+            /* initiales : une lettre par mot (« District Bafoussam » → DB) */
+            var av = li.querySelector('.bf-avatar'), nom = li.querySelector('.bf-item-titre').firstChild.textContent.trim();
+            if (av && nom) av.textContent = nom.split(/[\s\-']+/).filter(Boolean).slice(0, 2).map(function (m) { return m.charAt(0); }).join('').toUpperCase();
+
+            /* barre : complétude si connue, sinon part relative au plus gros volume */
+            var pct = li.dataset.pct !== '' ? +li.dataset.pct : Math.round(n / maxN * 100), barre = li.querySelector('.bf-progress');
+            barre.setAttribute('aria-valuenow', pct);
+            requestAnimationFrame(function () { requestAnimationFrame(function () { barre.firstElementChild.style.width = pct + '%'; }); });
+
+            /* fraîcheur de la dernière saisie */
+            var d = jour(li.dataset.derniere), f = li.querySelector('.bf-frais');
+            if (d && f) {
+                var j = Math.max(0, Math.round((auj - d) / 864e5));
+                f.textContent = j === 0 ? "aujourd'hui" : (j === 1 ? 'hier' : 'il y a ' + j + ' j');
+                f.classList.add(j <= 3 ? 'ok' : (j <= 7 ? 'warn' : 'danger'));
+            }
+        });
+    }
+    document.querySelectorAll('.bf-compte').forEach(function (el) { compter(el, +el.dataset.fin || 0); });
+})();
+</script>
 {% endblock %}
