@@ -454,6 +454,10 @@ gestionnaire_url_patterns = [
    path('planification-by-lots/', views.planification_by_lot, name='planification-by-lots'),
 
    path('planification-lot/', views.planification_by_lot, name='planification_by_lot'),
+
+   path('completude-collecte/<int:id>/', views.completude_collecte, name='completude-collecte'),
+
+   path('completude-collecte/<int:id>/', views.completude_collecte, name='completude_collecte'),
    
 ]  
 ajax_urls_patterns = [

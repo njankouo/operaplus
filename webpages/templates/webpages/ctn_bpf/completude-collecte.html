@@ -1,0 +1,416 @@
+{% extends './index.html' %}
+{% block main %}
+<div class="cc-ui">
+
+{# ================= EN-TÊTE + BAROMÈTRE ================= #}
+<section class="cc-hero">
+    <div class="cc-hero-txt">
+        <a href="javascript:history.back()" class="cc-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>Retour
+        </a>
+        <h1>Complétude de la collecte</h1>
+        <p class="cc-sub"><span class="cc-ds">{{ dataset.m_name|default:dataset }}</span></p>
+        <div class="cc-meta">
+            {% if dataset.periodicite %}<span class="cc-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>{{ dataset.periodicite }}</span>{% endif %}
+            <span class="cc-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>{{ total_structures }} structure{% if total_structures > 1 %}s{% endif %} déclarée{% if total_structures > 1 %}s{% endif %}</span>
+            {% if annees %}
+            <form method="get" class="cc-year-f">
+                <select name="annee" onchange="this.form.submit()" aria-label="Année" class="cc-year">
+                    {% for a in annees %}<option value="{{ a }}" {% if a|stringformat:'s' == annee %}selected{% endif %}>{{ a }}</option>{% endfor %}
+                </select>
+            </form>
+            {% endif %}
+        </div>
+
+        {# Répartition des structures #}
+        <div class="cc-split">
+            <div class="cc-split-bar" role="img" aria-label="{{ nb_ajour }} à jour, {{ nb_retard }} en retard, {{ nb_jamais }} sans saisie">
+                {% if nb_ajour %}<span class="s-ok" style="flex: {{ nb_ajour }}" title="{{ nb_ajour }} à jour"></span>{% endif %}
+                {% if nb_retard %}<span class="s-warn" style="flex: {{ nb_retard }}" title="{{ nb_retard }} en retard"></span>{% endif %}
+                {% if nb_jamais %}<span class="s-no" style="flex: {{ nb_jamais }}" title="{{ nb_jamais }} sans saisie"></span>{% endif %}
+            </div>
+            <div class="cc-split-leg">
+                <span><i class="s-ok"></i><b>{{ nb_ajour }}</b> à jour</span>
+                <span><i class="s-warn"></i><b>{{ nb_retard }}</b> en retard</span>
+                <span><i class="s-no"></i><b>{{ nb_jamais }}</b> rien saisi</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="cc-gauge">
+        <svg viewBox="0 0 200 118" aria-hidden="true">
+            <defs>
+                <linearGradient id="ccG" x1="0" x2="1"><stop offset="0" stop-color="#d4697a"/><stop offset=".5" stop-color="#e3a23a"/><stop offset="1" stop-color="#43a074"/></linearGradient>
+            </defs>
+            <path d="M22 104 A78 78 0 0 1 178 104" class="cc-g-bg" pathLength="100"/>
+            <path d="M22 104 A78 78 0 0 1 178 104" class="cc-g-val" pathLength="100" style="--t: {{ taux }}"/>
+            <g class="cc-g-needle" style="--t: {{ taux }}"><line x1="100" y1="104" x2="100" y2="40"/><circle cx="100" cy="104" r="6"/></g>
+        </svg>
+        <div class="cc-g-num"><b>{{ taux }}<small>%</small></b><span>de complétude</span></div>
+        <p class="cc-g-cap">{{ cases_ok }} saisie{% if cases_ok > 1 %}s{% endif %} sur {{ cases_dues }} attendue{% if cases_dues > 1 %}s{% endif %}<br><small>{{ total_structures }} structures × {{ nb_periodes }} période{% if nb_periodes > 1 %}s{% endif %} exigible{% if nb_periodes > 1 %}s{% endif %}</small></p>
+    </div>
+</section>
+
+{% if periodes %}
+{# ================= PAR PÉRIODE ================= #}
+<section class="cc-sec">
+    <div class="cc-sec-head">
+        <h2>Par période</h2>
+        <span class="cc-hint">Cliquez sur une période pour voir qui a saisi</span>
+    </div>
+    <div class="cc-strip" role="tablist">
+        {% for p in periodes %}
+        <button type="button" role="tab" class="cc-per-card st-{{ p.statut }}{% if p.periode.id == periode_courante.periode.id %} is-on{% endif %}" data-p="{{ p.periode.id }}" style="--i: {{ forloop.counter0 }}">
+            <span class="cc-per-top">
+                <span class="cc-per-name">{{ p.label }}</span>
+                <span class="cc-st">{% if p.statut == 'a_venir' %}À venir{% elif p.statut == 'en_cours' %}En cours{% else %}Clôturée{% endif %}</span>
+            </span>
+            <span class="cc-per-mid">
+                <span class="cc-ring" style="--p: {{ p.pct }}"><em>{{ p.pct }}%</em></span>
+                <span class="cc-per-nums">
+                    <span class="n-ok"><b>{{ p.nb_saisies }}</b> saisie{% if p.nb_saisies > 1 %}s{% endif %}</span>
+                    <span class="n-no{% if not p.nb_non_saisies or not p.du %} is-zero{% endif %}"><b>{{ p.nb_non_saisies }}</b> {% if p.du %}manquante{% if p.nb_non_saisies > 1 %}s{% endif %}{% else %}à saisir{% endif %}</span>
+                </span>
+            </span>
+            {% if p.periode.date_debut or p.periode.date_fin %}<span class="cc-per-dates">{{ p.periode.date_debut|date:"d/m" }} → {{ p.periode.date_fin|date:"d/m/Y" }}</span>{% endif %}
+        </button>
+        {% endfor %}
+    </div>
+
+    {% for p in periodes %}
+    <div class="cc-panel" id="ccP-{{ p.periode.id }}" {% if p.periode.id != periode_courante.periode.id %}hidden{% endif %}>
+        <div class="cc-panel-col">
+            <h3 class="h-no"><span></span>Pas encore saisi · {{ p.nb_non_saisies }}</h3>
+            <ul>{% for s in p.non_saisies %}<li class="li-no">{{ s.nom|default:s }}</li>{% empty %}<li class="li-none">Toutes les structures ont saisi.</li>{% endfor %}</ul>
+        </div>
+        <div class="cc-panel-col">
+            <h3 class="h-ok"><span></span>Déjà saisi · {{ p.nb_saisies }}</h3>
+            <ul>{% for s in p.saisies %}<li class="li-ok">{{ s.nom|default:s }}</li>{% empty %}<li class="li-none">Aucune structure pour l'instant.</li>{% endfor %}</ul>
+        </div>
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+{# ================= 1. STRUCTURES DÉCLARÉES ================= #}
+<section class="cc-sec">
+    <div class="cc-sec-head">
+        <h2><span class="cc-step">1</span>Structures déclarées</h2>
+        <div class="cc-tools">
+            <div class="cc-tabs">
+                <button type="button" class="is-on" data-f="all">Toutes <i>{{ total_structures }}</i></button>
+                <button type="button" data-f="ajour">À jour <i>{{ nb_ajour }}</i></button>
+                <button type="button" data-f="retard">En retard <i>{{ nb_retard }}</i></button>
+                <button type="button" data-f="jamais">Rien saisi <i>{{ nb_jamais }}</i></button>
+            </div>
+            <label class="cc-find">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input type="search" id="ccFind" placeholder="Rechercher…">
+            </label>
+        </div>
+    </div>
+
+    <div class="cc-card cc-table-wrap">
+        <table class="cc-table" id="ccDecl">
+            <thead>
+                <tr>
+                    <th class="th-name">Structure</th>
+                    <th>Statut</th>
+                    {% for p in periodes %}<th class="th-per st-{{ p.statut }}" title="{{ p.label }}">{{ p.label }}</th>{% endfor %}
+                    <th class="th-tot">Progression</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in structures_info %}
+                <tr data-etat="{{ s.etat }}" data-nom="{{ s.nom|lower }}">
+                    <td class="td-name">{{ s.nom }}</td>
+                    <td><span class="cc-badge b-{{ s.etat }}">{% if s.etat == 'ajour' %}À jour{% elif s.etat == 'retard' %}En retard{% else %}Rien saisi{% endif %}</span></td>
+                    {% for c in s.cases %}
+                    <td class="td-cell">
+                        <span class="cc-cell {% if c.ok %}c-ok{% elif c.du %}c-no{% elif c.statut == 'en_cours' %}c-cours{% else %}c-wait{% endif %}"
+                              title="{{ s.nom }} · {{ c.label }} : {% if c.ok %}saisi{% elif c.du %}pas encore saisi{% elif c.statut == 'en_cours' %}période en cours, pas encore saisi{% else %}période à venir{% endif %}">
+                            {% if c.ok %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>{% elif c.du %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8 12h8"/></svg>{% endif %}
+                        </span>
+                    </td>
+                    {% endfor %}
+                    <td class="td-tot">
+                        <span class="cc-mini"><span style="--w: {{ s.pct }}%"></span></span>
+                        <b>{{ s.nb_periodes }}</b><small>/{{ nb_periodes }}</small>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="99" class="li-none cc-pad">Aucune structure n'est rattachée à ce jeu de données.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="cc-nomatch" id="ccNoMatch" hidden>Aucune structure ne correspond.</p>
+    </div>
+    <div class="cc-keys">
+        <span><i class="cc-cell c-ok"></i>Saisi</span>
+        <span><i class="cc-cell c-no"></i>Pas encore saisi</span>
+        <span><i class="cc-cell c-cours"></i>Période en cours</span>
+        <span><i class="cc-cell c-wait"></i>Période à venir</span>
+    </div>
+</section>
+
+{# ================= 2. STRUCTURES AYANT DÉJÀ SAISI ================= #}
+<section class="cc-sec">
+    <div class="cc-sec-head">
+        <h2><span class="cc-step">2</span>Structures ayant déjà saisi</h2>
+        <span class="cc-count">{{ nb_ont_saisi }} sur {{ total_structures }}</span>
+    </div>
+
+    <div class="cc-two">
+        <div class="cc-card cc-rank">
+            <h3 class="cc-card-t">Périodes couvertes par structure</h3>
+            {% for s in structures_saisies %}
+            <div class="cc-rank-row" style="--i: {{ forloop.counter0 }}">
+                <span class="cc-rank-pos">{{ forloop.counter }}</span>
+                <div class="cc-rank-main">
+                    <div class="cc-rank-line">
+                        <span class="cc-rank-name" title="{{ s.nom }}">{{ s.nom }}</span>
+                        <span class="cc-rank-val">{{ s.pct }}%</span>
+                    </div>
+                    <span class="cc-rank-bar"><span class="{% if s.pct >= 100 %}r-ok{% elif s.pct >= 50 %}r-warn{% else %}r-no{% endif %}" style="--w: {{ s.pct }}%"></span></span>
+                    <div class="cc-rank-sub">
+                        <span class="cc-dots">{% for c in s.cases %}<i class="{% if c.ok %}d-ok{% elif c.du %}d-no{% elif c.statut == 'en_cours' %}d-cours{% else %}d-wait{% endif %}" title="{{ c.label }}"></i>{% endfor %}</span>
+                        <span>{{ s.nb_valeurs }} valeur{% if s.nb_valeurs > 1 %}s{% endif %}{% if s.derniere %} · dernière le {{ s.derniere|date:"d/m/Y" }}{% endif %}</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="cc-empty">Aucune structure n'a encore saisi{% if annee %} en {{ annee }}{% endif %}.</p>
+            {% endfor %}
+        </div>
+
+        <div class="cc-card cc-relance">
+            <h3 class="cc-card-t">Manque encore</h3>
+            {% for s in structures_info %}{% if s.manquantes %}
+            <div class="cc-rel-row">
+                <div class="cc-rel-name"><span class="cc-badge b-{{ s.etat }} b-dot"></span>{{ s.nom }}</div>
+                <div class="cc-rel-pers">{% for m in s.manquantes %}<span>{{ m }}</span>{% endfor %}</div>
+            </div>
+            {% endif %}{% endfor %}
+            {% if nb_retard == 0 and nb_jamais == 0 %}
+            <div class="cc-allgood">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                Toutes les structures sont à jour.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+</div>
+
+<style>
+@property --p { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --t { syntax: '<number>'; inherits: false; initial-value: 0; }
+.cc-ui { --ink:#1e293b; --ink-2:#64748b; --ink-3:#94a3b8; --line:#e8ebf1; --ok:#43a074; --warn:#e3a23a; --no:#d4697a; --wait:#cbd5e1;
+         --navy:#1e1b4b; color: var(--ink); max-width: 76rem; font-size: 14px; }
+.cc-ui *, .cc-ui *::before, .cc-ui *::after { box-sizing: border-box; }
+.cc-ui h1, .cc-ui h2, .cc-ui h3, .cc-ui p, .cc-ui ul { margin: 0; }
+.cc-ui button { font: inherit; }
+.cc-ui [hidden] { display: none !important; }
+.cc-ui .cc-card { background: #fff; border: 1px solid var(--line); border-radius: 1rem; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+
+/* ---------- Hero ---------- */
+.cc-ui .cc-hero { position: relative; display: grid; grid-template-columns: 1fr 19rem; gap: 2rem; align-items: center; padding: 1.6rem 1.8rem;
+    border-radius: 1.3rem; background: radial-gradient(120% 140% at 100% 0%, #eef2ff 0%, #fff 55%); border: 1px solid var(--line); overflow: hidden;
+    animation: ccIn .45s ease both; }
+.cc-ui .cc-hero::after { content: ""; position: absolute; right: -4rem; bottom: -6rem; width: 18rem; height: 18rem; border-radius: 50%; background: radial-gradient(#e7f5ee, transparent 70%); pointer-events: none; }
+@media (max-width: 820px) { .cc-ui .cc-hero { grid-template-columns: 1fr; } }
+.cc-ui .cc-back { display: inline-flex; align-items: center; gap: .2rem; font-size: .78rem; font-weight: 600; color: #6366f1; text-decoration: none; }
+.cc-ui .cc-back svg { width: 1rem; height: 1rem; }
+.cc-ui h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; color: var(--navy); margin-top: .35rem; }
+.cc-ui .cc-sub { font-size: .95rem; margin-top: .3rem; }
+.cc-ui .cc-ds { font-weight: 600; text-decoration: underline; text-decoration-color: var(--warn); text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.cc-ui .cc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .9rem; }
+.cc-ui .cc-pill { display: inline-flex; align-items: center; gap: .35rem; height: 2rem; padding: 0 .75rem; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: .78rem; font-weight: 600; color: #475569; }
+.cc-ui .cc-pill svg { width: .95rem; height: .95rem; color: #6366f1; }
+.cc-ui .cc-year { height: 2rem; border: 1px solid #c7d2fe; border-radius: 999px; background: #eef2ff; color: #3730a3; padding: 0 1.8rem 0 .8rem; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.cc-ui .cc-split { margin-top: 1.3rem; max-width: 34rem; }
+.cc-ui .cc-split-bar { display: flex; gap: 3px; height: .7rem; border-radius: .4rem; overflow: hidden; background: #f1f4f8; }
+.cc-ui .cc-split-bar span { animation: ccGrowX .9s ease both .2s; transform-origin: left; }
+.cc-ui .cc-split-leg { display: flex; flex-wrap: wrap; gap: 1.1rem; margin-top: .55rem; font-size: .8rem; color: var(--ink-2); }
+.cc-ui .cc-split-leg span { display: inline-flex; align-items: center; gap: .4rem; }
+.cc-ui .cc-split-leg b { color: var(--ink); font-size: .95rem; }
+.cc-ui .cc-split-leg i { width: .65rem; height: .65rem; border-radius: .2rem; }
+.cc-ui .s-ok { background: var(--ok); } .cc-ui .s-warn { background: var(--warn); } .cc-ui .s-no { background: var(--no); }
+
+.cc-ui .cc-gauge { position: relative; z-index: 1; text-align: center; }
+.cc-ui .cc-gauge svg { width: 100%; max-width: 16rem; display: block; margin: 0 auto; overflow: visible; }
+.cc-ui .cc-g-bg { fill: none; stroke: #edf0f5; stroke-width: 15; stroke-linecap: round; }
+.cc-ui .cc-g-val { fill: none; stroke: url(#ccG); stroke-width: 15; stroke-linecap: round; stroke-dasharray: var(--t) 100; animation: ccArc 1.4s cubic-bezier(.2,.8,.3,1) both .2s; }
+.cc-ui .cc-g-needle { transform-origin: 100px 104px; transform: rotate(calc(var(--t) * 1.8deg - 90deg)); animation: ccNeedle 1.4s cubic-bezier(.2,.8,.3,1) both .2s; }
+.cc-ui .cc-g-needle line { stroke: var(--navy); stroke-width: 3; stroke-linecap: round; }
+.cc-ui .cc-g-needle circle { fill: var(--navy); stroke: #fff; stroke-width: 3; }
+@keyframes ccArc { from { --t: 0; } }
+@keyframes ccNeedle { from { --t: 0; } }
+.cc-ui .cc-g-num { margin-top: -.3rem; }
+.cc-ui .cc-g-num b { display: block; font-size: 2.3rem; font-weight: 800; line-height: 1; color: var(--navy); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.cc-ui .cc-g-num b small { font-size: 1.1rem; color: var(--ink-2); margin-left: .1rem; }
+.cc-ui .cc-g-num span { font-size: .78rem; color: var(--ink-2); font-weight: 600; }
+.cc-ui .cc-g-cap { margin-top: .6rem; font-size: .78rem; color: var(--ink-2); line-height: 1.4; }
+.cc-ui .cc-g-cap small { color: var(--ink-3); }
+
+/* ---------- Sections ---------- */
+.cc-ui .cc-sec { margin-top: 2rem; }
+.cc-ui .cc-sec-head { display: flex; justify-content: space-between; align-items: center; gap: .8rem; flex-wrap: wrap; margin-bottom: .85rem; }
+.cc-ui .cc-sec-head h2 { display: flex; align-items: center; gap: .55rem; font-size: 1.1rem; font-weight: 700; color: var(--navy); }
+.cc-ui .cc-step { width: 1.6rem; height: 1.6rem; border-radius: .5rem; background: var(--navy); color: #fff; font-size: .78rem; display: grid; place-items: center; }
+.cc-ui .cc-hint, .cc-ui .cc-count { font-size: .78rem; color: var(--ink-3); }
+.cc-ui .cc-count { font-weight: 700; color: #475569; background: #f1f4f8; padding: .3rem .75rem; border-radius: 999px; }
+
+/* ---------- Bande des périodes ---------- */
+.cc-ui .cc-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(12.5rem, 1fr); gap: .75rem; overflow-x: auto; padding: .2rem .1rem .6rem; scroll-snap-type: x mandatory; }
+.cc-ui .cc-per-card { scroll-snap-align: start; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: .75rem; padding: .95rem 1rem;
+    background: #fff; border: 1.5px solid var(--line); border-radius: 1rem; transition: border-color .2s, box-shadow .2s, transform .2s; animation: ccIn .4s ease both; animation-delay: calc(var(--i) * 60ms); }
+.cc-ui .cc-per-card:hover { transform: translateY(-2px); box-shadow: 0 14px 26px -18px rgba(30,27,75,.45); }
+.cc-ui .cc-per-card.is-on { border-color: #818cf8; box-shadow: 0 0 0 4px #eef2ff, 0 14px 26px -18px rgba(79,70,229,.55); }
+.cc-ui .cc-per-top { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.cc-ui .cc-per-name { font-weight: 700; font-size: .95rem; color: var(--navy); }
+.cc-ui .cc-st { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: .2rem .5rem; border-radius: .4rem; background: #f1f4f8; color: #64748b; }
+.cc-ui .st-en_cours .cc-st { background: #eef2ff; color: #4f46e5; }
+.cc-ui .st-a_venir .cc-st { background: #f8fafc; color: var(--ink-3); }
+.cc-ui .st-a_venir.cc-per-card { background: repeating-linear-gradient(135deg, #fff 0 10px, #fafbfc 10px 20px); }
+.cc-ui .cc-per-mid { display: flex; align-items: center; gap: .8rem; }
+.cc-ui .cc-ring { --p: 0; flex: none; width: 3.3rem; height: 3.3rem; border-radius: 50%; display: grid; place-items: center;
+    background: radial-gradient(closest-side, #fff 74%, transparent 76%), conic-gradient(var(--ok) calc(var(--p) * 1%), #f6d5db 0);
+    animation: ccRing 1.1s ease both .25s; }
+.cc-ui .st-en_cours .cc-ring, .cc-ui .st-a_venir .cc-ring { background: radial-gradient(closest-side, #fff 74%, transparent 76%), conic-gradient(var(--ok) calc(var(--p) * 1%), #e8ecf1 0); }
+.cc-ui .cc-ring em { font-style: normal; font-size: .72rem; font-weight: 800; color: #2f8a60; }
+@keyframes ccRing { from { --p: 0; } }
+.cc-ui .cc-per-nums { display: flex; flex-direction: column; gap: .15rem; font-size: .78rem; color: var(--ink-2); }
+.cc-ui .cc-per-nums b { font-size: 1.05rem; margin-right: .15rem; font-variant-numeric: tabular-nums; }
+.cc-ui .n-ok b { color: #2f8a60; } .cc-ui .n-no b { color: #c0566a; } .cc-ui .n-no.is-zero b { color: var(--ink-3); }
+.cc-ui .cc-per-dates { font-size: .7rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+.cc-ui .cc-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: .4rem; padding: 1.1rem 1.2rem; background: #fff; border: 1px solid var(--line); border-radius: 1rem; animation: ccIn .3s ease both; }
+@media (max-width: 680px) { .cc-ui .cc-panel { grid-template-columns: 1fr; } }
+.cc-ui .cc-panel h3 { display: flex; align-items: center; gap: .45rem; font-size: .8rem; font-weight: 700; margin-bottom: .6rem; }
+.cc-ui .cc-panel h3 span { width: .55rem; height: .55rem; border-radius: 50%; }
+.cc-ui .h-no { color: #b04a5e; } .cc-ui .h-no span { background: var(--no); }
+.cc-ui .h-ok { color: #2f7a57; } .cc-ui .h-ok span { background: var(--ok); }
+.cc-ui .cc-panel ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .35rem; }
+.cc-ui .cc-panel li { font-size: .78rem; padding: .28rem .7rem; border-radius: 999px; }
+.cc-ui .li-no { background: #fcecef; color: #8a3a4a; }
+.cc-ui .li-ok { background: #e9f6ef; color: #2f7a57; }
+.cc-ui .li-none { color: var(--ink-3); font-size: .8rem; }
+
+/* ---------- Tableau des structures ---------- */
+.cc-ui .cc-tools { display: flex; gap: .5rem; flex-wrap: wrap; }
+.cc-ui .cc-tabs { display: inline-flex; background: #f1f4f8; border-radius: .75rem; padding: .22rem; }
+.cc-ui .cc-tabs button { border: 0; background: none; font-size: .78rem; font-weight: 600; color: var(--ink-2); padding: .38rem .75rem; border-radius: .58rem; cursor: pointer; }
+.cc-ui .cc-tabs button i { font-style: normal; font-size: .7rem; color: var(--ink-3); margin-left: .15rem; }
+.cc-ui .cc-tabs button.is-on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(15,23,42,.14); }
+.cc-ui .cc-find { display: flex; align-items: center; gap: .4rem; height: 2.25rem; padding: 0 .75rem; background: #fff; border: 1px solid var(--line); border-radius: .7rem; color: var(--ink-3); }
+.cc-ui .cc-find:focus-within { border-color: #a5b4fc; box-shadow: 0 0 0 3px #eef2ff; }
+.cc-ui .cc-find svg { width: 1rem; height: 1rem; }
+.cc-ui .cc-find input { border: 0; outline: 0; font-size: .8rem; width: 10rem; background: transparent; color: var(--ink); }
+
+.cc-ui .cc-table-wrap { overflow: auto; max-height: 32rem; }
+.cc-ui .cc-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
+.cc-ui .cc-table th { position: sticky; top: 0; z-index: 1; background: #f8fafc; color: var(--ink-2); font-weight: 600; font-size: .72rem; padding: .7rem .7rem; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.cc-ui .cc-table th.th-per.st-a_venir { color: var(--ink-3); font-weight: 500; }
+.cc-ui .cc-table .th-name { text-align: left; left: 0; z-index: 2; min-width: 13rem; }
+.cc-ui .cc-table td { padding: .55rem .7rem; border-bottom: 1px solid #f2f4f7; text-align: center; }
+.cc-ui .cc-table tbody tr:last-child td { border-bottom: 0; }
+.cc-ui .cc-table tbody tr:hover td { background: #fafaff; }
+.cc-ui .td-name { text-align: left !important; position: sticky; left: 0; background: #fff; font-weight: 600; white-space: nowrap; }
+.cc-ui .cc-pad { padding: 2rem !important; }
+.cc-ui .cc-badge { display: inline-block; font-size: .68rem; font-weight: 700; padding: .22rem .55rem; border-radius: 999px; white-space: nowrap; }
+.cc-ui .b-ajour { background: #e4f4eb; color: #2f7a57; }
+.cc-ui .b-retard { background: #fdf1dc; color: #9a6410; }
+.cc-ui .b-jamais { background: #fbe6ea; color: #a8475a; }
+.cc-ui .cc-cell { width: 1.55rem; height: 1.55rem; border-radius: .45rem; display: inline-grid; place-items: center; vertical-align: middle; }
+.cc-ui .cc-cell svg { width: .85rem; height: .85rem; }
+.cc-ui .c-ok { background: var(--ok); color: #fff; }
+.cc-ui .c-no { background: #fcecef; color: #d4697a; box-shadow: inset 0 0 0 1px #f2c4cc; }
+.cc-ui .c-cours { background: #fff8ec; box-shadow: inset 0 0 0 1.5px #f0cf94; }
+.cc-ui .c-wait { background: repeating-linear-gradient(135deg, #f1f4f8 0 3px, #fff 3px 6px); box-shadow: inset 0 0 0 1px #e5e9ef; }
+.cc-ui .td-tot { white-space: nowrap; color: var(--ink-3); }
+.cc-ui .td-tot b { color: var(--ink); }
+.cc-ui .cc-mini { display: inline-block; width: 4rem; height: .42rem; border-radius: .25rem; background: #f6d5db; overflow: hidden; vertical-align: middle; margin-right: .45rem; }
+.cc-ui .cc-mini span { display: block; height: 100%; width: var(--w); background: var(--ok); animation: ccGrow .9s ease both .2s; }
+.cc-ui .cc-nomatch { padding: 1.6rem; text-align: center; color: var(--ink-3); font-size: .82rem; }
+.cc-ui .cc-keys { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: .6rem; font-size: .74rem; color: var(--ink-2); }
+.cc-ui .cc-keys span { display: inline-flex; align-items: center; gap: .4rem; }
+.cc-ui .cc-keys .cc-cell { width: .9rem; height: .9rem; border-radius: .25rem; }
+
+/* ---------- Classement + relance ---------- */
+.cc-ui .cc-two { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+@media (max-width: 900px) { .cc-ui .cc-two { grid-template-columns: 1fr; } }
+.cc-ui .cc-card-t { font-size: .82rem; font-weight: 700; color: var(--ink-2); padding: 1rem 1.1rem .4rem; }
+.cc-ui .cc-rank { padding-bottom: .6rem; }
+.cc-ui .cc-rank-row { display: flex; gap: .8rem; padding: .7rem 1.1rem; animation: ccIn .35s ease both; animation-delay: calc(var(--i) * 40ms); }
+.cc-ui .cc-rank-row + .cc-rank-row { border-top: 1px solid #f2f4f7; }
+.cc-ui .cc-rank-pos { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #f1f4f8; color: var(--ink-2); font-size: .72rem; font-weight: 700; display: grid; place-items: center; }
+.cc-ui .cc-rank-row:nth-child(2) .cc-rank-pos { background: var(--navy); color: #fff; }
+.cc-ui .cc-rank-main { flex: 1; min-width: 0; }
+.cc-ui .cc-rank-line { display: flex; justify-content: space-between; gap: .6rem; margin-bottom: .35rem; }
+.cc-ui .cc-rank-name { font-weight: 600; font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-ui .cc-rank-val { font-weight: 800; font-size: .86rem; font-variant-numeric: tabular-nums; }
+.cc-ui .cc-rank-bar { display: block; height: .55rem; border-radius: .3rem; background: #f1f4f8; overflow: hidden; }
+.cc-ui .cc-rank-bar span { display: block; height: 100%; width: var(--w); border-radius: inherit; animation: ccGrow 1s cubic-bezier(.2,.8,.3,1) both .25s; }
+.cc-ui .r-ok { background: linear-gradient(90deg, #6cc59a, var(--ok)); }
+.cc-ui .r-warn { background: linear-gradient(90deg, #efc06b, var(--warn)); }
+.cc-ui .r-no { background: linear-gradient(90deg, #e797a4, var(--no)); }
+.cc-ui .cc-rank-sub { display: flex; justify-content: space-between; align-items: center; gap: .6rem; margin-top: .4rem; font-size: .72rem; color: var(--ink-3); }
+.cc-ui .cc-dots { display: inline-flex; gap: 3px; }
+.cc-ui .cc-dots i { width: .7rem; height: .7rem; border-radius: .2rem; }
+.cc-ui .d-ok { background: var(--ok); } .cc-ui .d-no { background: #f2c4cc; } .cc-ui .d-wait { background: #e8ecf1; } .cc-ui .d-cours { background: #f6dfb4; }
+
+.cc-ui .cc-relance { padding-bottom: .5rem; }
+.cc-ui .cc-rel-row { padding: .65rem 1.1rem; }
+.cc-ui .cc-rel-row + .cc-rel-row { border-top: 1px solid #f2f4f7; }
+.cc-ui .cc-rel-name { display: flex; align-items: center; gap: .5rem; font-weight: 600; font-size: .84rem; }
+.cc-ui .b-dot { width: .55rem; height: .55rem; padding: 0; }
+.cc-ui .b-dot.b-retard { background: var(--warn); } .cc-ui .b-dot.b-jamais { background: var(--no); }
+.cc-ui .cc-rel-pers { display: flex; flex-wrap: wrap; gap: .25rem; margin: .4rem 0 0 1.05rem; }
+.cc-ui .cc-rel-pers span { font-size: .7rem; padding: .15rem .5rem; border-radius: 999px; background: #fcecef; color: #8a3a4a; }
+.cc-ui .cc-allgood { display: flex; align-items: center; gap: .5rem; margin: .4rem 1.1rem .8rem; padding: .8rem 1rem; border-radius: .8rem; background: #e9f6ef; color: #2f7a57; font-size: .82rem; font-weight: 600; }
+.cc-ui .cc-allgood svg { width: 1.2rem; height: 1.2rem; }
+.cc-ui .cc-empty { text-align: center; padding: 2rem 1rem; color: var(--ink-3); font-size: .85rem; }
+
+@keyframes ccIn { from { opacity: 0; transform: translateY(8px); } }
+@keyframes ccGrow { from { width: 0; } }
+@keyframes ccGrowX { from { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .cc-ui * { animation: none !important; transition: none !important; } }
+</style>
+
+<script>
+(function () {
+    /* Choix de la période */
+    document.querySelectorAll('.cc-per-card').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.cc-per-card').forEach(function (b) { b.classList.remove('is-on'); });
+            btn.classList.add('is-on');
+            document.querySelectorAll('.cc-panel').forEach(function (p) { p.hidden = p.id !== 'ccP-' + btn.dataset.p; });
+        });
+    });
+    var actif = document.querySelector('.cc-per-card.is-on');
+    if (actif && actif.scrollIntoView) actif.parentNode.scrollLeft = actif.offsetLeft - 20;
+
+    /* Filtres du tableau */
+    var tbl = document.getElementById('ccDecl');
+    if (!tbl) return;
+    var rows = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr[data-etat]'));
+    var find = document.getElementById('ccFind'), filtre = 'all';
+    function appliquer() {
+        var q = (find.value || '').trim().toLowerCase(), n = 0;
+        rows.forEach(function (r) {
+            var ok = (filtre === 'all' || r.dataset.etat === filtre) && (!q || r.dataset.nom.indexOf(q) !== -1);
+            r.hidden = !ok; if (ok) n++;
+        });
+        document.getElementById('ccNoMatch').hidden = !(rows.length && n === 0);
+    }
+    document.querySelectorAll('.cc-tabs button').forEach(function (b) {
+        b.addEventListener('click', function () {
+            document.querySelectorAll('.cc-tabs button').forEach(function (x) { x.classList.remove('is-on'); });
+            b.classList.add('is-on'); filtre = b.dataset.f; appliquer();
+        });
+    });
+    find.addEventListener('input', appliquer);
+})();
+</script>
+{% endblock %}

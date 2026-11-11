@@ -1,1031 +1,633 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 {% extends './evaluer.html' %}
 {% load static %}
 
-{% block style %}
-<style type="text/css">
-    /* Animation pour les options du FAB */
-    .fab-transition {
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    /* Style spécifique pour ressembler aux boutons de la barre latérale DHIS2 */
-    .dhis2-card {
-        border: 1px solid #e1e1e1;
-        transition: border-color 0.15s ease-in-out;
-    }
-    .dhis2-card:hover {
-        border-color: #2c6693;
-        background-color: #fbfbfb;
-    }
-</style>
-{% endblock %}
-{%block design%}
+{% block style %}{{ block.super }}{% endblock %}
+
+{% block design %}
+<style>.ds-search{background:#fff;border-radius:18px;padding:6px;display:flex;align-items:center;gap:6px;margin-bottom:2.5rem}</style>
 <div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
-                <div class="text-white">
-                    <h2 class="text-3xl font-extrabold tracking-tight">Formulaires {{actual_institution.nom}}</h2>
-                    <p class="text-blue-100/70 text-sm font-medium mt-1">Gérez les Formulaires de collecte</p>
-                </div>
-               
-            </div>
+  <div class="text-white">
+    <h2 class="text-3xl font-extrabold tracking-tight">Formulaires {{ actual_institution.nom }}</h2>
+    <p class="text-blue-100/70 text-sm font-medium mt-1">Saisissez les données et suivez qui a déjà saisi, période par période</p>
+  </div>
+</div>
 
-            <div class="search-container bg-white rounded-2xl p-2 shadow-xl mb-12 transition-all duration-300">
-                <form method="GET" action="" class="flex items-center gap-2">
-                    <div class="relative flex-1">
-                        <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" name="q" id="searchInput" value="{{ search_query }}"
-                               placeholder="Rechercher par libellé, code technique ou année..." 
-                               class="w-full pl-12 pr-4 py-3 bg-transparent outline-none text-sm font-medium text-slate-700">
-                    </div>
-                    <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-xs transition-all">
-                        FILTRER
-                    </button>
-                </form>
-            </div>
+<form method="GET" action="" class="ds-search search-container">
+  <label for="searchInput">
+    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="m20 20-3.5-3.5"/></svg>
+    <input type="text" name="q" id="searchInput" value="{{ search_query }}" autocomplete="off"
+           placeholder="Rechercher un formulaire par nom ou identifiant…">
+  </label>
+  <button type="submit">FILTRER</button>
+</form>
+{% endblock %}
 
-
-{%endblock%}
 {% block content %}
-<div class="min-h-screen bg-[#f3f6f9] pb-24">
-  
+<style>
+  /* ====== Formulaires de collecte (ds-) ====== */
+  :root{--ds-ink:#1f2a37;--ds-muted:#6b7686;--ds-line:#e3e8ef;--ds-brand:#2c6693;--ds-brand-d:#1d4e74;
+           --ds-ok:#43a074;--ds-warn:#e3a23a;--ds-ko:#d4697a;}
+  [hidden]{display:none!important}
+  .ds-wrap a,.ds-modal a{text-decoration:none}
+  .ds-search button,.ds-btn,.ds-fab button,.ds-modal button{border:0;cursor:pointer;font-family:inherit}
+  .ds-ghost{border:1px solid #dbe2ea!important}
+  .ds-link{background:none}
 
-    <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {% for datasets in dataset %}
-            <div class="dhis2-card bg-white p-5 flex flex-col justify-between rounded-sm shadow-sm">
-                <div>
-                    <div class="flex justify-between items-start mb-3">
-                        <h3 class="text-base font-bold text-[#212934] uppercase tracking-tight line-clamp-2">
-                            {{ datasets.m_name }}
-                        </h3>
-                        <i class='bx bx-info-circle text-gray-300 hover:text-blue-500 cursor-help'></i>
-                    </div>
-                    <div class="h-1 w-full bg-gray-100 rounded-full mb-4">
-                        <div class="h-1 bg-[#2c6693] rounded-full w-1/4"></div>
-                    </div>
-                    <p class="text-xs text-gray-500 mb-6 leading-relaxed">
-                        ID: <span class="font-mono text-[10px]">{{ datasets.id }}</span><br>
-                        Dernière modification : Aujourd'hui
-                    </p>
-                </div>
+  /* Recherche */
+  .ds-search{background:#fff;border-radius:18px;padding:6px;box-shadow:0 18px 40px -18px rgba(15,40,70,.35);
+             display:flex;align-items:center;gap:6px;margin-bottom:2.5rem}
+  .ds-search label{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:0 14px;color:#94a0b0}
+  .ds-search input{flex:1;min-width:0;border:0;outline:0;background:transparent;padding:12px 0;font-size:.9rem;color:#1f2a37}
+  .ds-search button{background:#eef3f8;color:#2c6693;font-weight:700;font-size:.75rem;letter-spacing:.06em;
+             padding:12px 22px;border-radius:13px;transition:background .2s}
+  .ds-search button:hover{background:#dde8f2}
 
-                <a href="/grub_form/{{ datasets.id }}/" 
-                   class="flex items-center justify-center gap-2 w-full py-2 bg-[#2c6693] hover:bg-[#1d4e74] text-white text-sm font-medium rounded shadow-sm transition-colors">
-                    <i class='bx bx-pencil text-lg'></i>
-                    Saisir les données
-                </a>
-            </div>
-            {% empty %}
-            <div class="col-span-full py-20 text-center bg-white border border-dashed border-gray-300 rounded">
-                <i class='bx bx-folder-open text-6xl text-gray-200 mb-4'></i>
-                <p class="text-gray-400 font-medium italic">Aucun ensemble de données disponible pour votre unité d'organisation.</p>
-            </div>
-            {% endfor %}
+  /* Compteurs */
+  .ds-stats{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 1.4rem;padding-top:1.4rem}
+  .ds-stat{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--ds-line);border-radius:14px;padding:10px 16px}
+  .ds-stat b{font-size:1.15rem;color:var(--ds-ink)}
+  .ds-stat span{font-size:.75rem;color:var(--ds-muted)}
+  .ds-stat i{width:32px;height:32px;border-radius:10px;display:grid;place-items:center}
+
+  /* Cartes */
+  .ds-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+  .ds-card{position:relative;background:#fff;border:1px solid var(--ds-line);border-radius:18px;padding:20px;
+           display:flex;flex-direction:column;gap:14px;overflow:hidden;
+           transition:transform .25s ease,box-shadow .25s ease,border-color .25s;
+           animation:ds-in .45s ease both;animation-delay:calc(var(--i,0) * 45ms)}
+  .ds-card::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,var(--ds-brand),#5aa6d6)}
+  .ds-card:hover{transform:translateY(-3px);box-shadow:0 18px 34px -20px rgba(44,102,147,.55);border-color:#c9d9e8}
+  @keyframes ds-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  .ds-head{display:flex;gap:12px;align-items:flex-start}
+  .ds-ico{flex:none;width:42px;height:42px;border-radius:12px;background:#eaf2f9;color:var(--ds-brand);display:grid;place-items:center}
+  .ds-name{font-weight:700;color:var(--ds-ink);font-size:.95rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ds-id{font-family:ui-monospace,monospace;font-size:.68rem;color:#9aa5b4;margin-top:2px}
+
+  .ds-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .ds-chip{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;padding:4px 9px;border-radius:999px;background:#f3f6f9;color:#4b5767}
+  .ds-chip svg{width:13px;height:13px}
+  .ds-chip.per{background:#fff6e6;color:#a86d10}
+
+  .ds-actions{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:auto}
+  .ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:.82rem;font-weight:600;
+          border-radius:12px;padding:10px 14px;transition:background .2s,color .2s,transform .15s}
+  .ds-btn:active{transform:scale(.97)}
+  .ds-btn svg{width:17px;height:17px}
+  .ds-btn-primary{background:var(--ds-brand);color:#fff}
+  .ds-btn-primary:hover{background:var(--ds-brand-d)}
+  .ds-btn-soft{background:#eef6f1;color:#2f7a55}
+  .ds-btn-soft:hover{background:#ddefe4}
+
+  .ds-empty{grid-column:1/-1;text-align:center;padding:70px 20px;background:#fff;border:1.5px dashed #cfd8e3;border-radius:18px;color:#8794a5}
+  .ds-empty svg{width:56px;height:56px;margin:0 auto 12px;color:#c4cfdc}
+
+  /* Bouton flottant */
+  .ds-fab{position:fixed;right:28px;bottom:28px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+  .ds-fab-menu{display:flex;flex-direction:column;gap:10px;opacity:0;transform:translateY(10px);pointer-events:none;transition:all .22s ease}
+  .ds-fab.open .ds-fab-menu{opacity:1;transform:none;pointer-events:auto}
+  .ds-fab-item{display:flex;align-items:center;gap:10px}
+  .ds-fab-item span{background:#1f2a37;color:#fff;font-size:.7rem;font-weight:700;letter-spacing:.04em;padding:6px 10px;border-radius:8px;box-shadow:0 8px 20px -8px rgba(0,0,0,.4)}
+  .ds-fab-item i{width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid var(--ds-line);display:grid;place-items:center;box-shadow:0 10px 24px -10px rgba(0,0,0,.35);transition:transform .2s}
+  .ds-fab-item:hover i{transform:scale(1.07)}
+  .ds-fab-main{width:60px;height:60px;border-radius:50%;background:var(--ds-brand);color:#fff;display:grid;place-items:center;
+               box-shadow:0 16px 30px -12px rgba(44,102,147,.8);transition:background .2s}
+  .ds-fab-main:hover{background:var(--ds-brand-d)}
+  .ds-fab-main svg{transition:transform .3s}
+  .ds-fab.open .ds-fab-main svg{transform:rotate(45deg)}
+
+  /* Modales */
+  .ds-modal{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;
+            background:rgba(15,23,42,.45);backdrop-filter:blur(4px)}
+  .ds-box{background:#fff;width:100%;border-radius:22px;box-shadow:0 30px 60px -20px rgba(15,23,42,.45);display:flex;flex-direction:column;
+          max-height:92vh;overflow:hidden;animation:ds-pop .25s ease}
+  @keyframes ds-pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+  .ds-box-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 24px;border-bottom:1px solid var(--ds-line)}
+  .ds-box-head h2{font-size:1.05rem;font-weight:700;color:var(--ds-ink)}
+  .ds-box-head p{font-size:.78rem;color:var(--ds-muted);margin-top:2px}
+  .ds-x{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#8a95a5}
+  .ds-x:hover{background:#f3f5f8;color:var(--ds-ko)}
+  .ds-box-body{padding:20px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:18px}
+  .ds-box-foot{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:16px 24px;border-top:1px solid var(--ds-line);background:#fafbfd}
+  .ds-field label{display:block;font-size:.78rem;font-weight:600;color:#4b5767;margin-bottom:6px}
+  .ds-field select,.ds-field input[type=text]{width:100%;padding:10px 12px;border:1px solid #dbe2ea;border-radius:12px;font-size:.85rem;outline:0;background:#fff}
+  .ds-field select:focus,.ds-field input[type=text]:focus{border-color:#7fb0d6;box-shadow:0 0 0 3px #e3eff8}
+  .ds-ghost{padding:9px 16px;border-radius:12px;font-size:.82rem;color:#5b6676;border:1px solid #dbe2ea;background:#fff}
+  .ds-ghost:hover{background:#f3f5f8}
+  .ds-go{padding:9px 18px;border-radius:12px;font-size:.82rem;font-weight:600;color:#fff;background:var(--ds-brand);display:inline-flex;align-items:center;gap:8px}
+  .ds-go:hover{background:var(--ds-brand-d)}
+  .ds-go:disabled{opacity:.55;cursor:not-allowed}
+  .ds-spin{width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:ds-rot .7s linear infinite}
+  @keyframes ds-rot{to{transform:rotate(360deg)}}
+
+  .ds-ind-list{max-height:250px;overflow-y:auto;border:1px solid var(--ds-line);border-radius:14px;padding:8px;background:#f8fafc;display:flex;flex-direction:column;gap:6px}
+  .ds-ind{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fff;border:1px solid transparent;border-radius:10px;cursor:pointer;font-size:.84rem;color:#344050}
+  .ds-ind:hover{border-color:#cfe0ee}
+  .ds-ind:has(input:checked){border-color:#9cc3e2;background:#f2f8fd}
+  .ds-ind input{accent-color:var(--ds-brand);width:16px;height:16px}
+  .ds-link{font-size:.75rem;font-weight:600;color:var(--ds-brand)}
+  .ds-count{font-size:.72rem;color:var(--ds-muted)}
+
+  .ds-drop{position:relative;border:1.5px dashed #c9d4e0;border-radius:16px;padding:30px;text-align:center;background:#f8fafc;transition:all .2s;cursor:pointer}
+  .ds-drop:hover,.ds-drop.over{border-color:#7fb0d6;background:#f1f7fc}
+  .ds-drop.ready{border-color:var(--ds-ok);background:#f1faf5}
+  .ds-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .ds-drop-ico{width:46px;height:46px;border-radius:50%;margin:0 auto 10px;display:grid;place-items:center;background:#fff;color:var(--ds-brand);box-shadow:0 4px 12px -6px rgba(0,0,0,.25)}
+  .ds-drop.ready .ds-drop-ico{background:#e2f3ea;color:var(--ds-ok)}
+  .ds-progress{height:6px;background:#e8edf3;border-radius:999px;overflow:hidden}
+  .ds-progress > div{height:100%;width:0;background:linear-gradient(90deg,#4b8fc4,#43a074);transition:width .5s}
+  .ds-step{border:1px solid var(--ds-line);border-radius:14px;padding:12px 14px;background:#fff}
+  .ds-badge{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:6px}
+
+  /* Toasts */
+  #ds-toasts{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;width:320px;max-width:calc(100vw - 40px)}
+  .ds-toast{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--ds-line);border-left:4px solid var(--c);
+            border-radius:12px;padding:12px 14px;box-shadow:0 16px 30px -16px rgba(15,23,42,.4);font-size:.83rem;color:#344050;
+            animation:ds-toast .3s ease}
+  .ds-toast svg{flex:none;width:18px;height:18px;color:var(--c);margin-top:1px}
+  @keyframes ds-toast{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+</style>
+<div class="ds-wrap min-h-screen bg-[#f3f6f9] pb-28">
+  <div class="container mx-auto px-4">
+
+    {% with total=dataset|length %}
+    <div class="ds-stats">
+      <div class="ds-stat">
+        <i style="background:#eaf2f9;color:#2c6693"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path stroke-linecap="round" d="M8 8h8M8 12h8M8 16h5"/></svg></i>
+        <div><b id="dsVisible">{{ total }}</b> <span>formulaire{% if total > 1 %}s{% endif %}</span></div>
+      </div>
+    </div>
+    {% endwith %}
+
+    <div class="ds-grid" id="dsGrid">
+      {% for datasets in dataset %}
+      <article class="ds-card dhis2-card" style="--i:{{ forloop.counter0 }}"
+               data-search="{{ datasets.m_name|lower }} {{ datasets.id }}">
+        <div class="ds-head">
+          <div class="ds-ico">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path stroke-linecap="round" d="M8 8h8M8 12h8M8 16h5"/></svg>
+          </div>
+          <div class="min-w-0">
+            <h3 class="ds-name" title="{{ datasets.m_name }}">{{ datasets.m_name }}</h3>
+            <div class="ds-id">#{{ datasets.id }}</div>
+          </div>
         </div>
+
+        <div class="ds-chips">
+          {% if datasets.periodicite %}
+          <span class="ds-chip per">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M3 10h18M8 3v4M16 3v4"/></svg>
+            {{ datasets.periodicite }}
+          </span>
+          {% endif %}
+          {% with ni=datasets.m_indicateurs.count ns=datasets.m_structures.count %}
+          <span class="ds-chip">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            {{ ni }} indicateur{% if ni > 1 %}s{% endif %}
+          </span>
+          <span class="ds-chip">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linejoin="round" d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
+            {{ ns }} structure{% if ns > 1 %}s{% endif %}
+          </span>
+          {% endwith %}
+        </div>
+
+        <div class="ds-actions">
+          <a href="/grub_form/{{ datasets.id }}/" class="ds-btn ds-btn-primary">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg>
+            Saisir les données
+          </a>
+          <a href="/completude-collecte/{{ datasets.id }}/" class="ds-btn ds-btn-soft" title="Structures qui ont déjà saisi / pas encore, par période">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 11l2.5 2.5L16 9"/><rect x="3" y="3" width="18" height="18" rx="4"/></svg>
+            Complétude
+          </a>
+        </div>
+      </article>
+      {% empty %}
+      <div class="ds-empty">
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linejoin="round" d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+        <p class="font-medium">Aucun formulaire disponible pour votre institution.</p>
+      </div>
+      {% endfor %}
+      <div class="ds-empty" id="dsNoMatch" hidden>
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="m20 20-3.5-3.5"/></svg>
+        <p class="font-medium">Aucun formulaire ne correspond à « <span id="dsTerm"></span> ».</p>
+      </div>
     </div>
+  </div>
 
-    <div class="fixed bottom-8 right-8 z-[100] group">
-    
-    <div class="flex flex-col gap-3 mb-4 opacity-0 translate-y-4 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto fab-transition">
-        
-        <!-- IMPORT CSV -->
-        <button onclick="openModal('CSV')" class="flex items-center justify-end gap-3">
-            <span class="bg-[#212934] text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-lg">
-                IMPORT CSV
-            </span>
-            <div class="w-12 h-12 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center text-emerald-600 hover:bg-emerald-50 transition-all">
-                <i class='bx bxs-file-import text-xl'></i>
-            </div>
-        </button>
-
-        <!-- CALCUL INDICATEURS -->
-        <button onclick="openIndicatorModal()" class="flex items-center justify-end gap-3">
-            <span class="bg-[#1f6feb] text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-lg">
-                CALCUL INDICATEURS
-            </span>
-            <div class="w-12 h-12 bg-white border border-gray-200 rounded-full shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all">
-                <i class='bx bx-calculator text-xl'></i>
-            </div>
-        </button>
-
+  <!-- ====== Bouton flottant ====== -->
+  <div class="ds-fab" id="dsFab">
+    <div class="ds-fab-menu fab-transition">
+      <button type="button" class="ds-fab-item" onclick="openModal('CSV')">
+        <span>IMPORT CSV / EXCEL</span>
+        <i style="color:#43a074"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></i>
+      </button>
+      <button type="button" class="ds-fab-item" onclick="openIndicatorModal()">
+        <span>CALCUL INDICATEURS</span>
+        <i style="color:#2c6693"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path stroke-linecap="round" d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg></i>
+      </button>
     </div>
-
-    <!-- bouton principal -->
-    <button class="w-16 h-16 bg-[#2c6693] hover:bg-[#1d4e74] rounded-full shadow-2xl flex items-center justify-center text-white text-3xl transition-all active:scale-95">
-        <i class='bx bx-plus group-hover:rotate-45 transition-transform duration-300'></i>
+    <button type="button" class="ds-fab-main" aria-label="Actions" onclick="document.getElementById('dsFab').classList.toggle('open')">
+      <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
     </button>
-
+  </div>
 </div>
-</div>
-<div id="indicatorModal"
-     class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-[200]">
 
-    <!-- MODAL CARD -->
-    <div class="bg-white w-[800px] max-w-[95%] rounded-2xl shadow-2xl p-8 border border-gray-100">
-
-        <!-- HEADER -->
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h2 class="text-xl font-semibold text-gray-800">
-                    Calcul des indicateurs
-                </h2>
-                <p class="text-sm text-gray-500">
-                    Sélectionnez la période, l’unité et les indicateurs à calculer
-                </p>
-            </div>
-
-            <button onclick="closeIndicatorModal()"
-                    class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 hover:text-red-500 transition">
-                ✕
-            </button>
-        </div>
-        
-        <!-- GRID INPUTS -->
-        <div class="grid grid-cols-2 gap-4 mb-6">
-
-            <!-- PERIODE -->
-            <div>
-                <label class="text-sm font-medium text-gray-600">Période</label>
-               
-                <select  class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition" id="period">
-                    {%for period in periode%}
-                    <option value="{{period.id}}">{{period.nom}}</option>
-                    {%endfor%}
-                </select>
-            </div>
-
-            <!-- ORG UNIT -->
-            <div>
-                <label class="text-sm font-medium text-gray-600">Unité organisationnelle</label>
-               
-
-                 <select  class="w-full mt-1 px-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition" id="orgUnit">
-                    {%for orgUnit in structure%}
-                    <option value="{{orgUnit.id}}">{{orgUnit.nom}}</option>
-                    {%endfor%}
-                </select>
-            </div>
-
-        </div>
-
-        <!-- INDICATORS -->
-        <div class="mb-6">
-            <div class="flex justify-between items-center mb-2">
-                <label class="text-sm font-medium text-gray-600">
-                    Indicateurs disponibles
-                </label>
-                <span class="text-xs text-gray-400">multi-sélection</span>
-            </div>
-
-            <div class="h-64 overflow-y-auto border border-gray-100 rounded-xl p-4 space-y-3 bg-gray-50">
-
-              {%for indicateur in indicateurs%}
-                <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-sm transition cursor-pointer">
-                    <input type="checkbox" value="{{indicateur.id}}" class="accent-blue-600" name="indicateur">
-                    <span class="text-gray-700">{{indicateur.m_name}}</span>
-                </label>
-                {%endfor%}
-
-            </div>
-        </div>
-
-        <!-- ACTION -->
-        <div class="flex justify-end gap-3">
-
-            <button onclick="closeIndicatorModal()"
-                    class="px-5 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
-                Annuler
-            </button>
-
-            <button onclick="runCalculation()"
-                    class="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-md transition">
-                Lancer le calcul
-            </button>
-
-        </div>
-
-
+<!-- ====== Modale calcul des indicateurs ====== -->
+<div id="indicatorModal" class="ds-modal" hidden>
+  <div class="ds-box" style="max-width:760px">
+    <div class="ds-box-head">
+      <div>
+        <h2>Calcul des indicateurs</h2>
+        <p>Choisissez la période, la structure et les indicateurs à calculer</p>
+      </div>
+      <button type="button" class="ds-x" onclick="closeIndicatorModal()" aria-label="Fermer">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
     </div>
-</div>
-<div id="importModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-
-    <div id="modalBox"
-        class="bg-white/90 backdrop-blur-xl w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden
-        transform scale-95 opacity-0 transition-all duration-300 flex flex-col max-h-[92vh] border border-white/30">
-
-        <!-- HEADER -->
-        <div class="relative bg-gradient-to-r from-[#2c6693] to-blue-500 px-6 py-5">
-
-            <!-- subtle glow -->
-            <div class="absolute inset-0 bg-white/5"></div>
-
-            <div class="relative flex justify-between items-center">
-                <div>
-                    <h2 class="text-white font-semibold text-sm tracking-wide">Import intelligent</h2>
-                    <p class="text-[10px] text-white/70 mt-0.5">
-                        Analyse automatique & validation des données
-                    </p>
-                </div>
-
-                <span id="globalBadge"
-                    class="text-[10px] font-semibold px-3 py-1 rounded-full bg-white/15 text-white backdrop-blur">
-                    Prêt
-                </span>
-            </div>
+    <div class="ds-box-body">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="ds-field">
+          <label for="period">Période</label>
+          <select id="period">
+            {% for period in periode %}<option value="{{ period.id }}">{{ period.nom }}</option>{% endfor %}
+          </select>
         </div>
-
-        <!-- BODY -->
-        <div class="p-5 space-y-5 overflow-y-auto">
-
-            <!-- DROPZONE -->
-            <div id="dropZone"
-                class="group relative border border-dashed border-slate-300/70 rounded-2xl p-8 text-center
-                bg-slate-50/40 hover:bg-slate-50 transition-all cursor-pointer">
-
-                <input type="file" id="fileInput"
-                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-
-                <div id="uploadContent" class="space-y-2">
-
-                    <div class="w-10 h-10 mx-auto rounded-full bg-white shadow-sm flex items-center justify-center">
-                        📄
-                    </div>
-
-                    <p class="text-sm font-medium text-slate-700">
-                        Glisser ou choisir un fichier
-                    </p>
-
-                    <p class="text-[10px] text-slate-400">
-                        Excel (.xlsx, .csv)
-                    </p>
-                </div>
-            </div>
-
-            <!-- PROGRESS -->
-            <div class="space-y-1">
-                <div class="flex justify-between text-[11px] text-slate-500">
-                    <span>Progression</span>
-                    <span id="progressText" class="font-semibold text-slate-600">0%</span>
-                </div>
-
-                <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div id="globalProgress"
-                        class="h-full w-0 bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500">
-                    </div>
-                </div>
-            </div>
-
-            <!-- PIPELINE -->
-            <div id="pipeline" class="space-y-2 hidden"></div>
-
+        <div class="ds-field">
+          <label for="orgUnit">Structure</label>
+          <select id="orgUnit">
+            {% for orgUnit in structure %}<option value="{{ orgUnit.id }}">{{ orgUnit.nom }}</option>{% endfor %}
+          </select>
         </div>
-
-        <!-- FOOTER -->
-        <div class="p-4 border-t bg-slate-50/40 flex justify-between items-center">
-
-            <p class="text-[10px] text-slate-400">
-                Système sécurisé • validation en temps réel
-            </p>
-
-            <div class="flex gap-2">
-                <button onclick="closeModal()"
-                    class="px-4 py-2 text-[11px] text-slate-500 hover:text-slate-700 transition">
-                    Fermer
-                </button>
-
-                <button id="startBtn" onclick="runPipeline()"
-                    class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-semibold shadow-sm transition">
-                    Lancer l’analyse
-                </button>
-            </div>
+      </div>
+      <div class="ds-field">
+        <div class="flex justify-between items-center mb-2">
+          <label class="!mb-0">Indicateurs <span class="ds-count" id="indCount">(0 sélectionné)</span></label>
+          <button type="button" class="ds-link" id="indAll">Tout sélectionner</button>
         </div>
+        <input type="text" id="indSearch" placeholder="Filtrer les indicateurs…" class="mb-2">
+        <div class="ds-ind-list" id="indList">
+          {% for indicateur in indicateurs %}
+          <label class="ds-ind" data-search="{{ indicateur.m_name|lower }}">
+            <input type="checkbox" value="{{ indicateur.id }}" name="indicateur">
+            <span>{{ indicateur.m_name }}</span>
+          </label>
+          {% empty %}
+          <p class="ds-count p-3">Aucun indicateur disponible.</p>
+          {% endfor %}
+        </div>
+      </div>
     </div>
+    <div class="ds-box-foot">
+      <button type="button" class="ds-ghost" onclick="closeIndicatorModal()">Annuler</button>
+      <button type="button" class="ds-go" id="calcBtn" onclick="runCalculation()">Lancer le calcul</button>
+    </div>
+  </div>
 </div>
+
+<!-- ====== Modale import ====== -->
+<div id="importModal" class="ds-modal" hidden>
+  <div class="ds-box" id="modalBox" style="max-width:640px">
+    <div class="ds-box-head">
+      <div>
+        <h2>Importer des données</h2>
+        <p>Le fichier est vérifié (périodes, indicateurs, structures) avant l'enregistrement</p>
+      </div>
+      <span id="globalBadge" class="ds-badge" style="background:#eef3f8;color:#2c6693">Prêt</span>
+    </div>
+    <div class="ds-box-body">
+      <div id="dropZone" class="ds-drop">
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+        <div id="uploadContent">
+          <div class="ds-drop-ico">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linejoin="round" d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path stroke-linejoin="round" d="M14 3v5h5"/><path stroke-linecap="round" d="M12 17v-6m0 0-2.5 2.5M12 11l2.5 2.5"/></svg>
+          </div>
+          <p class="text-sm font-semibold text-slate-700">Glisser un fichier ici ou cliquer pour choisir</p>
+          <p class="text-[11px] text-slate-400 mt-1">Excel (.xlsx, .xls) ou CSV</p>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-slate-500 mb-1">
+          <span>Progression</span><span id="progressText" class="font-semibold">0%</span>
+        </div>
+        <div class="ds-progress"><div id="globalProgress"></div></div>
+      </div>
+      <div id="pipeline" class="space-y-2" hidden></div>
+    </div>
+    <div class="ds-box-foot">
+      <button type="button" class="ds-ghost" onclick="closeModal()">Fermer</button>
+      <button type="button" class="ds-go" id="startBtn" onclick="runPipeline()">Lancer la vérification</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== Modale anomalies ====== -->
+<div id="errorModal" class="ds-modal" style="z-index:300" hidden>
+  <div class="ds-box" style="max-width:640px">
+    <div class="ds-box-head" style="background:#fdf3f5">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl grid place-items-center" style="background:#f8dde3;color:#c4566a">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.2 14.21A1.5 1.5 0 0 0 3.3 20h17.4a1.5 1.5 0 0 0 1.3-2.23L13.71 3.86a1.5 1.5 0 0 0-2.62 0z"/></svg>
+        </div>
+        <div>
+          <h2>Anomalies détectées</h2>
+          <p>Vérifiez les lignes signalées avant d'importer</p>
+        </div>
+      </div>
+      <span id="errorSummaryBadge" class="ds-badge" style="background:#f8dde3;color:#b04a5e">Analyse</span>
+    </div>
+    <div class="ds-box-body">
+      <div class="grid grid-cols-3 gap-3">
+        <div class="rounded-xl p-3 border" style="border-color:#e3e8ef"><div class="text-[11px] text-slate-500">Total</div><div id="totalErrors" class="text-lg font-bold text-slate-800">0</div></div>
+        <div class="rounded-xl p-3 border" style="border-color:#f3dfb8;background:#fff9ee"><div class="text-[11px]" style="color:#a86d10">Avertissements</div><div id="warningErrors" class="text-lg font-bold" style="color:#a86d10">0</div></div>
+        <div class="rounded-xl p-3 border" style="border-color:#f1cbd3;background:#fdf3f5"><div class="text-[11px]" style="color:#b04a5e">Bloquants</div><div id="criticalErrors" class="text-lg font-bold" style="color:#b04a5e">0</div></div>
+      </div>
+      <div id="errorContent" class="space-y-3 text-xs"></div>
+    </div>
+    <div class="ds-box-foot" style="justify-content:space-between">
+      <p class="text-[11px] text-slate-400">Corrigez le fichier ou continuez avec les lignes valides</p>
+      <div class="flex gap-2">
+        <button type="button" class="ds-ghost" onclick="closeErrorModal()">Annuler</button>
+        <button type="button" class="ds-go" id="continueBtn" style="background:#e3a23a" onclick="confirmAndImport()">Continuer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ds-toasts"></div>
 <div id="toastContainer" class="fixed top-5 right-5 z-[999] space-y-3"></div>
-<div id="errorModal"
-     class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
-
-    <div class="bg-white/95 backdrop-blur-xl w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-white/30 flex flex-col max-h-[85vh]">
-
-        <!-- HEADER -->
-        <div class="bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 px-6 py-5 relative">
-
-            <div class="absolute inset-0 bg-white/10"></div>
-
-            <div class="relative flex items-start justify-between gap-4">
-
-                <!-- ICON -->
-                <div class="flex items-center gap-3">
-
-                    <div class="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-                                  d="M12 9v4m0 4h.01M10.29 3.86l-8.2 14.21A1.5 1.5 0 003.3 20h17.4a1.5 1.5 0 001.3-2.23L13.71 3.86a1.5 1.5 0 00-2.62 0z"/>
-                        </svg>
-                    </div>
-
-                    <div>
-                        <h3 class="text-white font-semibold text-sm">
-                            Rapport d’anomalies
-                        </h3>
-                        <p class="text-[10px] text-white/80">
-                            Analyse terminée avec incohérences détectées
-                        </p>
-                    </div>
-
-                </div>
-
-                <!-- SUMMARY BADGE -->
-                <div id="errorSummaryBadge"
-                     class="text-[10px] font-semibold px-3 py-1 rounded-full bg-white/15 text-white">
-                    En cours d’analyse
-                </div>
-
-            </div>
-        </div>
-
-        <!-- BODY -->
-        <div class="p-5 overflow-y-auto flex-1 space-y-4">
-
-            <!-- SUMMARY CARD -->
-            <div class="grid grid-cols-3 gap-3">
-
-                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
-                    <div class="text-[10px] text-slate-400">Total erreurs</div>
-                    <div id="totalErrors" class="text-sm font-semibold text-slate-800">0</div>
-                </div>
-
-                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                    <div class="text-[10px] text-amber-500">Avertissements</div>
-                    <div id="warningErrors" class="text-sm font-semibold text-amber-600">0</div>
-                </div>
-
-                <div class="bg-rose-50 border border-rose-200 rounded-xl p-3">
-                    <div class="text-[10px] text-rose-500">Bloquants</div>
-                    <div id="criticalErrors" class="text-sm font-semibold text-rose-600">0</div>
-                </div>
-
-            </div>
-
-            <!-- ERROR LIST -->
-            <div id="errorContent" class="space-y-3 text-xs"></div>
-
-        </div>
-
-        <!-- FOOTER -->
-        <div class="p-4 bg-slate-50/60 border-t flex justify-between items-center">
-
-            <p class="text-[10px] text-slate-400">
-                Corrigez les erreurs ou continuez avec les données valides
-            </p>
-
-            <div class="flex gap-2">
-
-                <button onclick="closeErrorModal()"
-                        class="px-4 py-2 text-[11px] text-slate-500 hover:text-slate-700 transition rounded-xl">
-                    Annuler
-                </button>
-
-                <button onclick="confirmAndImport()"
-                        class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[11px] font-semibold transition">
-                    Continuer
-                </button>
-
-            </div>
-
-        </div>
-    </div>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <div id="toast-container" class="fixed top-5 right-5 z-[9999] space-y-3 w-[320px]"></div>
-
-<script>
-let toastQueue = [];
-let toastActiveCount = 0;
-const MAX_TOAST = 3;
-
-/* =========================
-   ENTERPRISE TOAST ENGINE
-========================= */
-function showToast(message, type = "info", duration = 3500) {
-
-    const container = document.getElementById("toast-container");
-
-    const styles = {
-        success: "bg-emerald-600",
-        error: "bg-rose-600",
-        warning: "bg-amber-500",
-        info: "bg-blue-600"
-    };
-
-  const icons = {
-    success: `
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-            d="M5 13l4 4L19 7"/>
-        </svg>
-    `,
-    error: `
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-            d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-    `,
-    warning: `
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-            d="M12 9v4m0 4h.01M10.29 3.86l-8.2 14.21A1.5 1.5 0 003.3 20h17.4a1.5 1.5 0 001.3-2.23L13.71 3.86a1.5 1.5 0 00-2.62 0z"/>
-        </svg>
-    `,
-    info: `
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-            d="M13 16h-1v-4h-1m1-4h.01M12 18a6 6 0 100-12 6 6 0 000 12z"/>
-        </svg>
-    `
-};
-
-    // LIMIT STACK (anti spam)
-    if (toastActiveCount >= MAX_TOAST) {
-        toastQueue.push({message, type, duration});
-        return;
-    }
-
-    toastActiveCount++;
-
-    const toast = document.createElement("div");
-
-    toast.className = `
-        ${styles[type]} text-white rounded-2xl shadow-2xl
-        px-5 py-4 flex gap-3 items-start
-        opacity-0 translate-x-6 transition-all duration-300
-    `;
-
-    toast.innerHTML = `
-        <div class="text-lg leading-none">${icons[type]}</div>
-        <div class="flex-1">
-            <div class="text-xs font-black uppercase opacity-90">Système</div>
-            <div class="text-sm">${message}</div>
-        </div>
-    `;
-
-    container.appendChild(toast);
-
-    // animation entrée
-    setTimeout(() => {
-        toast.classList.remove("opacity-0","translate-x-6");
-    }, 10);
-
-    // auto remove
-    setTimeout(() => {
-        toast.classList.add("opacity-0","translate-x-6");
-
-        setTimeout(() => {
-            toast.remove();
-            toastActiveCount--;
-
-            // process queue
-            if (toastQueue.length > 0) {
-                const next = toastQueue.shift();
-                showToast(next.message, next.type, next.duration);
-            }
-
-        }, 2000);
-
-    }, duration);
-}
-</script>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-/**
- * SYSTÈME D'IMPORTATION INTELLIGENT - OPERA+
- * Version : 2.0 (UX Premium & Feedback Contextuel)
- * Auteur : Njankouo Ndam Dairou
- */
+(function () {
+  /* ---------- Utilitaires ---------- */
+  function getCookie(name) {
+    const m = document.cookie.match('(?:^|;)\\s*' + name + '=([^;]*)');
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const steps = [
-    { id: 'periods',  label: 'Périodes',  desc: 'Analyse de la chronologie et des doublons', est: 5 },
-    { id: 'elements', label: 'Indicateurs', desc: 'Validation des formats et données', est: 12 },
-    { id: 'orgunits', label: 'Structures',  desc: 'Rapprochement hiérarchique', est: 8 }
-];
+  const TOAST = {
+    success: ['#43a074', '<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>'],
+    error:   ['#d4697a', '<path stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/>'],
+    warning: ['#e3a23a', '<path stroke-linecap="round" d="M12 8v5m0 4h.01"/><circle cx="12" cy="12" r="9"/>'],
+    info:    ['#2c6693', '<path stroke-linecap="round" d="M12 11v6m0-10h.01"/><circle cx="12" cy="12" r="9"/>']
+  };
+  function showToast(msg, type = 'info', duration = 3800) {
+    const [c, icon] = TOAST[type] || TOAST.info;
+    const t = document.createElement('div');
+    t.className = 'ds-toast';
+    t.style.setProperty('--c', c);
+    t.innerHTML = `<svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">${icon}</svg><div>${esc(msg)}</div>`;
+    const box = $('ds-toasts');
+    box.appendChild(t);
+    while (box.children.length > 3) box.firstChild.remove();
+    setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = 0; setTimeout(() => t.remove(), 300); }, duration);
+  }
+  window.showToast = showToast;
 
-let pendingErrors = {};
-const fileInput = document.getElementById('fileInput');
-const uploadContent = document.getElementById('uploadContent');
-const dropZone = document.getElementById('dropZone');
+  /* ---------- Recherche instantanée ---------- */
+  const search = $('searchInput');
+  const cards = Array.from(document.querySelectorAll('#dsGrid .ds-card'));
+  function filterCards() {
+    const q = search.value.trim().toLowerCase();
+    let n = 0;
+    cards.forEach(c => { const ok = !q || c.dataset.search.includes(q); c.hidden = !ok; if (ok) n++; });
+    $('dsVisible').textContent = n;
+    $('dsNoMatch').hidden = !(cards.length && n === 0);
+    $('dsTerm').textContent = search.value;
+  }
+  if (search) { search.addEventListener('input', filterCards); if (search.value) filterCards(); }
 
-// --- UTILITAIRES ---
-const getCookie = (name) => {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
+  /* ---------- Bouton flottant : fermer au clic à l'extérieur ---------- */
+  document.addEventListener('click', e => {
+    const fab = $('dsFab');
+    if (fab && !fab.contains(e.target)) fab.classList.remove('open');
+  });
+
+  /* ---------- Modale calcul ---------- */
+  const indBoxes = () => Array.from(document.querySelectorAll('#indList input[type=checkbox]'));
+  function majCompte() {
+    const n = indBoxes().filter(b => b.checked).length;
+    $('indCount').textContent = `(${n} sélectionné${n > 1 ? 's' : ''})`;
+    $('indAll').textContent = n && n === indBoxes().filter(b => !b.closest('.ds-ind').hidden).length ? 'Tout désélectionner' : 'Tout sélectionner';
+  }
+  $('indList').addEventListener('change', majCompte);
+  $('indAll').addEventListener('click', () => {
+    const visibles = indBoxes().filter(b => !b.closest('.ds-ind').hidden);
+    const tout = visibles.every(b => b.checked);
+    visibles.forEach(b => b.checked = !tout);
+    majCompte();
+  });
+  $('indSearch').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('#indList .ds-ind').forEach(l => l.hidden = q && !l.dataset.search.includes(q));
+    majCompte();
+  });
+
+  window.openIndicatorModal = () => { $('dsFab').classList.remove('open'); $('indicatorModal').hidden = false; };
+  window.closeIndicatorModal = () => { $('indicatorModal').hidden = true; };
+
+  window.runCalculation = async function () {
+    const period = $('period').value, orgUnit = $('orgUnit').value;
+    if (!period || !orgUnit) return showToast("Choisissez la période et la structure.", 'warning');
+    const indicators = indBoxes().filter(b => b.checked).map(b => b.value);
+    if (!indicators.length) return showToast("Sélectionnez au moins un indicateur.", 'warning');
+
+    const btn = $('calcBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="ds-spin"></span> Calcul en cours…';
+    try {
+      const res = await fetch('/api/indicators/calculate/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({ period, orgUnit, indicators })
+      });
+      if (!res.ok) throw new Error(res.status);
+      await res.json().catch(() => ({}));
+      showToast(`Calcul terminé pour ${indicators.length} indicateur${indicators.length > 1 ? 's' : ''}.`, 'success');
+      closeIndicatorModal();
+    } catch (err) {
+      console.error(err);
+      showToast("Le calcul a échoué. Réessayez ou contactez l'administrateur.", 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Lancer le calcul';
     }
-    return cookieValue;
-};
+  };
 
-// --- INITIALISATION UI ---
-function initPipeline() {
-    const container = document.getElementById('pipeline');
-    container.classList.remove('hidden');
-    container.innerHTML = steps.map(s => `
-        <div id="step-${s.id}" class="p-4 border border-slate-100 rounded-2xl bg-white/50 transition-all duration-300 mb-3">
-            <div class="flex justify-between items-start mb-2">
-                <div>
-                    <h4 class="text-sm font-bold text-slate-700">${s.label}</h4>
-                    <p class="text-[10px] text-slate-400 italic">${s.desc}</p>
-                </div>
-                <span class="status-badge px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-400">
-                    En attente
-                </span>
-            </div>
-            <div class="bg-slate-100 h-1.5 w-full rounded-full overflow-hidden">
-                <div class="bar bg-blue-500 h-full w-0 transition-all duration-700 ease-out"></div>
-            </div>
+  /* ---------- Import : vérification en 3 étapes ---------- */
+  const steps = [
+    { id: 'periods',  label: 'Périodes',    desc: 'Chronologie et doublons' },
+    { id: 'elements', label: 'Indicateurs', desc: 'Formats et valeurs' },
+    { id: 'orgunits', label: 'Structures',  desc: 'Correspondance avec les structures' }
+  ];
+  const BADGE = {
+    wait: ['En attente', '#f1f4f8', '#8a95a5', '#c9d2dd'],
+    run:  ['Analyse…',   '#e8f1f9', '#2c6693', '#4b8fc4'],
+    ok:   ['OK',         '#e2f3ea', '#2f7a55', '#43a074'],
+    warn: ['Alertes',    '#fff3dd', '#a86d10', '#e3a23a'],
+    ko:   ['Erreur',     '#f8dde3', '#b04a5e', '#d4697a']
+  };
+  let pendingErrors = {};
+  const fileInput = $('fileInput'), uploadContent = $('uploadContent'), dropZone = $('dropZone');
+
+  function setStep(id, etat) {
+    const el = $('step-' + id); if (!el) return;
+    const [txt, bg, fg, bar] = BADGE[etat];
+    const b = el.querySelector('.ds-badge');
+    b.textContent = txt; b.style.background = bg; b.style.color = fg;
+    const p = el.querySelector('.bar');
+    p.style.background = bar;
+    p.style.width = etat === 'wait' ? '0' : (etat === 'run' ? '55%' : '100%');
+  }
+  function initPipeline() {
+    const c = $('pipeline');
+    c.hidden = false;
+    c.innerHTML = steps.map(s => `
+      <div id="step-${s.id}" class="ds-step">
+        <div class="flex justify-between items-start mb-2">
+          <div><div class="text-sm font-semibold text-slate-700">${s.label}</div><div class="text-[11px] text-slate-400">${s.desc}</div></div>
+          <span class="ds-badge"></span>
         </div>
-    `).join('');
-}
+        <div class="ds-progress"><div class="bar"></div></div>
+      </div>`).join('');
+    steps.forEach(s => setStep(s.id, 'wait'));
+  }
+  function updateGlobalProgress(v) {
+    $('globalProgress').style.width = v + '%';
+    $('progressText').textContent = Math.round(v) + '%';
+  }
 
-// --- GESTION DU FICHIER ---
-fileInput.addEventListener('change', e => {
+  ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.add('over')));
+  ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.remove('over')));
+
+  fileInput.addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
-
     const ext = file.name.split('.').pop().toLowerCase();
     if (!['csv', 'xlsx', 'xls'].includes(ext)) {
-        showToast("Format non supporté. Utilisez Excel ou CSV.", "error");
-        fileInput.value = '';
-        return;
+      showToast("Format non pris en charge : utilisez un fichier Excel ou CSV.", 'error');
+      fileInput.value = '';
+      return;
     }
-
-    const sizeKB = (file.size / 1024).toFixed(1);
-    dropZone.classList.replace('border-slate-300/70', 'border-emerald-400');
-    dropZone.classList.add('bg-emerald-50/30');
-
+    dropZone.classList.add('ready');
     uploadContent.innerHTML = `
-        <div class="space-y-2 animate-in fade-in zoom-in duration-300 text-center">
-            <div class="w-10 h-10 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <p class="text-sm font-bold text-emerald-800">Fichier prêt pour l'analyse</p>
-            <p class="text-[11px] text-slate-500 font-mono">${file.name} (${sizeKB} KB)</p>
-        </div>
-    `;
-});
+      <div class="ds-drop-ico"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+      <p class="text-sm font-semibold" style="color:#2f7a55">Fichier prêt</p>
+      <p class="text-[11px] text-slate-500 font-mono mt-1">${esc(file.name)} · ${(file.size / 1024).toFixed(1)} Ko</p>`;
+  });
 
-// --- EXECUTION DU PIPELINE ---
-async function runPipeline() {
+  window.runPipeline = async function () {
     const file = fileInput.files[0];
-    if (!file) return showToast("Veuillez choisir un fichier", "warning");
-
+    if (!file) return showToast("Choisissez d'abord un fichier.", 'warning');
+    const start = $('startBtn');
+    start.disabled = true;
     initPipeline();
     pendingErrors = {};
-    document.getElementById('globalProgress').style.width = "0%";
-    
-    const formData = new FormData();
-    formData.append('file', file);
+    updateGlobalProgress(0);
+    const fd = new FormData();
+    fd.append('file', file);
 
     for (let i = 0; i < steps.length; i++) {
-        const step = steps[i];
-        const el = document.getElementById(`step-${step.id}`);
-        const bar = el.querySelector('.bar');
-        const badge = el.querySelector('.status-badge');
-
-        badge.innerText = "Analyse...";
-        badge.classList.replace('bg-slate-100', 'bg-blue-100');
-        badge.classList.replace('text-slate-400', 'text-blue-600');
-
-        try {
-            const res = await fetch(`/check-${step.id}/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                body: formData
-            });
-
-            const result = await res.json();
-            bar.style.width = "100%";
-
-            if (result.errors && result.errors.length > 0) {
-                pendingErrors[step.id] = result.errors;
-                badge.innerText = "Alertes";
-                badge.classList.replace('bg-blue-100', 'bg-amber-100');
-                badge.classList.replace('text-blue-600', 'text-amber-600');
-                bar.classList.replace('bg-blue-500', 'bg-amber-500');
-            } else {
-                badge.innerText = "OK";
-                badge.classList.replace('bg-blue-100', 'bg-emerald-100');
-                badge.classList.replace('text-blue-600', 'text-emerald-600');
-                bar.classList.replace('bg-blue-500', 'bg-emerald-500');
-            }
-        } catch (e) {
-            badge.innerText = "Erreur";
-            bar.classList.replace('bg-blue-500', 'bg-rose-500');
-        }
-        
-        await new Promise(r => setTimeout(r, 300));
-        updateGlobalProgress(((i + 1) / steps.length) * 100);
+      const s = steps[i];
+      setStep(s.id, 'run');
+      try {
+        const res = await fetch(`/check-${s.id}/`, { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') }, body: fd });
+        const result = await res.json();
+        if (result.errors && result.errors.length) { pendingErrors[s.id] = result.errors; setStep(s.id, 'warn'); }
+        else setStep(s.id, 'ok');
+      } catch (e) {
+        pendingErrors[s.id] = [{ type: 'critical', value: '', message: "Vérification impossible (erreur serveur)." }];
+        setStep(s.id, 'ko');
+      }
+      await new Promise(r => setTimeout(r, 250));
+      updateGlobalProgress(((i + 1) / steps.length) * 100);
     }
+    start.disabled = false;
 
-    // --- DÉCISION FINALE ---
-    const hasErrors = Object.keys(pendingErrors).length > 0;
-    if (hasErrors) {
-        showToast("Analyse terminée : des anomalies ont été détectées.", "warning");
-        setTimeout(showErrors, 600); // Ouvre le modal automatiquement
+    if (Object.keys(pendingErrors).length) {
+      showToast("Vérification terminée : des anomalies ont été trouvées.", 'warning');
+      setTimeout(showErrors, 500);
     } else {
-        handleSuccessAction();
+      handleSuccessAction();
     }
-}
+  };
 
-// --- AFFICHAGE DU RAPPORT D'ERREURS ---
-
-function showErrors() {
-    const modal = document.getElementById('errorModal');
-    const content = document.getElementById('errorContent');
-    const badge = document.getElementById('errorSummaryBadge');
-    
-    // Compteurs
-    let total = 0;
-    let warnings = 0;
-    let critical = 0;
-    let html = '';
-
-    // Parcours des erreurs stockées pendant le pipeline
+  function showErrors() {
+    let total = 0, warnings = 0, critical = 0, html = '';
     Object.entries(pendingErrors).forEach(([stepId, errors]) => {
-        const stepName = steps.find(s => s.id === stepId)?.label || stepId;
-        total += errors.length;
-
-        html += `
-            <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm mb-4">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">${stepName}</span>
-                    <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-500">${errors.length} anomalie(s)</span>
-                </div>
-                <div class="space-y-2">
-        `;
-
-        errors.forEach(err => {
-            const isCritical = err.type === "critical";
-            isCritical ? critical++ : warnings++;
-
-            html += `
-                <div class="flex gap-3 p-3 rounded-xl border ${isCritical ? 'bg-rose-50/50 border-rose-100' : 'bg-amber-50/50 border-amber-100'}">
-                    <div class="mt-0.5">
-                        ${isCritical 
-                            ? '<svg class="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/></svg>' 
-                            : '<svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"/></svg>'}
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-[10px] font-mono text-slate-500 mb-0.5">Valeur : <span class="font-bold text-slate-700">${err.value || 'N/A'}</span></div>
-                        <div class="text-[11px] leading-snug ${isCritical ? 'text-rose-600' : 'text-amber-700'}">${err.message}</div>
-                    </div>
-                </div>
-            `;
-        });
-
-        html += `</div></div>`;
+      const nom = (steps.find(s => s.id === stepId) || {}).label || stepId;
+      total += errors.length;
+      html += `<div class="ds-step"><div class="flex justify-between items-center mb-2">
+                 <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">${esc(nom)}</span>
+                 <span class="text-[11px] text-slate-400">${errors.length} anomalie${errors.length > 1 ? 's' : ''}</span></div><div class="space-y-2">`;
+      errors.forEach(err => {
+        const crit = err.type === 'critical';
+        crit ? critical++ : warnings++;
+        html += `<div class="flex gap-3 p-3 rounded-xl" style="background:${crit ? '#fdf3f5' : '#fff9ee'}">
+                   <svg width="16" height="16" fill="none" stroke="${crit ? '#c4566a' : '#c88a1e'}" stroke-width="2.4" viewBox="0 0 24 24" style="flex:none;margin-top:1px">
+                     ${crit ? '<path stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/>' : '<path stroke-linecap="round" d="M12 8v5m0 4h.01"/>'}</svg>
+                   <div><div class="text-[11px] text-slate-500 font-mono">Valeur : <b class="text-slate-700">${esc(err.value || 'N/A')}</b></div>
+                   <div class="text-[12px]" style="color:${crit ? '#b04a5e' : '#8a5a0c'}">${esc(err.message)}</div></div></div>`;
+      });
+      html += '</div></div>';
     });
+    $('totalErrors').textContent = total;
+    $('warningErrors').textContent = warnings;
+    $('criticalErrors').textContent = critical;
+    $('errorSummaryBadge').textContent = critical ? 'Import bloqué' : 'Avertissements';
+    const btn = $('continueBtn');
+    btn.disabled = critical > 0;
+    btn.textContent = critical ? 'Correction requise' : "Continuer l'import";
+    $('errorContent').innerHTML = html;
+    $('errorModal').hidden = false;
+  }
 
-    // Mise à jour des compteurs dans ton HTML
-    document.getElementById('totalErrors').innerText = total;
-    document.getElementById('warningErrors').innerText = warnings;
-    document.getElementById('criticalErrors').innerText = critical;
-    
-    // Mise à jour du badge header
-    badge.innerText = critical > 0 ? "Importation bloquée" : "Avertissements détectés";
-    badge.className = `text-[10px] font-semibold px-3 py-1 rounded-full bg-white/15 text-white ${critical > 0 ? 'ring-1 ring-white/50' : ''}`;
-
-    // Logique du bouton Continuer
-    const btnContinue = document.querySelector('button[onclick="confirmAndImport()"]');
-    if (critical > 0) {
-        btnContinue.disabled = true;
-        btnContinue.classList.add('opacity-50', 'cursor-not-allowed');
-        btnContinue.innerText = "Correction requise";
-    } else {
-        btnContinue.disabled = false;
-        btnContinue.classList.remove('opacity-50', 'cursor-not-allowed');
-        btnContinue.innerText = "Continuer l'importation";
-    }
-
-    content.innerHTML = html;
-    modal.classList.remove('hidden');
-}
-// --- ACTIONS FINALES ---
-function handleSuccessAction() {
+  function handleSuccessAction() {
+    if (!window.Swal) { if (confirm("Fichier valide. Importer maintenant ?")) executeFinalImport(); return; }
     Swal.fire({
-        html: `
-            <div class="p-2 text-center">
-                <div class="flex justify-center mb-8">
-                    <div class="relative w-20 h-20 flex items-center justify-center">
-                        <div class="absolute inset-0 rounded-full border border-emerald-500/20 animate-[ping_3s_linear_infinite]"></div>
-                        <div class="absolute inset-2 rounded-full border border-emerald-500/10"></div>
-                        
-                        <svg class="w-10 h-10 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" 
-                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" 
-                                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                            </path>
-                        </svg>
-                    </div>
-                </div>
+      title: 'Fichier valide',
+      text: "Aucune anomalie trouvée. Voulez-vous importer les données maintenant ?",
+      icon: 'success',
+      showCancelButton: true,
+      confirmButtonText: 'Importer',
+      cancelButtonText: 'Plus tard',
+      confirmButtonColor: '#2c6693'
+    }).then(r => { if (r.isConfirmed) executeFinalImport(); });
+  }
 
-                <h3 class="text-xs font-black tracking-[0.3em] text-emerald-500 uppercase mb-4">
-                    Statut : <span class="text-white">Synchronisé</span>
-                </h3>
-                
-                <h2 class="text-2xl font-light tracking-tight text-slate-100 mb-4">
-                    Analyse <span class="font-bold border-b border-emerald-500/50">terminée</span>
-                </h2>
-                
-                <p class="text-[10px] leading-relaxed text-slate-400 font-medium uppercase tracking-[0.15em] max-w-[280px] mx-auto mb-8">
-                    L'intégrité structurelle des données a été validée. 
-                    <span class="block mt-1 text-slate-500 font-light lowercase italic">Prêt pour l'exécution des algorithmes de calcul.</span>
-                </p>
-
-                <div class="flex justify-center items-center gap-2 mb-2">
-                    <div class="h-[1px] w-8 bg-slate-800"></div>
-                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500/50"></div>
-                    <div class="h-[1px] w-8 bg-slate-800"></div>
-                </div>
-            </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'EXÉCUTER LES CALCULS',
-        cancelButtonText: 'TERMINER',
-        customClass: {
-            container: 'backdrop-blur-md bg-slate-950/40',
-            popup: 'rounded-[32px] border border-slate-800 shadow-2xl p-10 bg-slate-900',
-            confirmButton: `
-                px-8 py-4 bg-emerald-600 text-white text-[10px] font-black tracking-[0.25em] 
-                rounded-xl transition-all duration-500 hover:bg-emerald-500 hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]
-            `,
-            cancelButton: `
-                px-8 py-4 text-slate-500 text-[10px] font-bold tracking-[0.25em] 
-                rounded-xl hover:text-slate-300 transition-colors
-            `
-        },
-        buttonsStyling: false,
-        showClass: { popup: 'animate__animated animate__fadeIn animate__faster' },
-        hideClass: { popup: 'animate__animated animate__fadeOut animate__faster' }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            executeFinalImport();
-        }
-    });
-}
-
-async function executeFinalImport() {
+  async function executeFinalImport() {
     closeErrorModal();
-    
-    // Notification de début de processus (Style minimaliste)
-    showToast("Synchronisation avec le serveur central en cours...", "info");
-
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-
+    showToast("Import en cours…", 'info');
+    const fd = new FormData();
+    fd.append('file', fileInput.files[0]);
     try {
-        const res = await fetch('/final-import-data/', {
-            method: 'POST',
-            headers: { 'X-CSRFToken': getCookie('csrftoken') },
-            body: formData
-        });
-
-        if (res.ok) {
-            // Feedback final : Esthétique "Mission Accomplished"
-            Swal.fire({
-                html: `
-                    <div class="p-4 text-center">
-                        <div class="flex justify-center mb-6">
-                            <div class="relative w-16 h-16">
-                                <div class="absolute inset-0 rounded-full border-2 border-emerald-500/20"></div>
-                                <svg class="w-16 h-16 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" 
-                                          d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
-                                    <path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75" class="text-emerald-500"></path>
-                                </svg>
-                            </div>
-                        </div>
-
-                        <h3 class="text-xs font-black tracking-[0.4em] text-emerald-500 uppercase mb-2">
-                            Base de données
-                        </h3>
-                        
-                        <h2 class="text-xl font-light tracking-tight text-white mb-4">
-                            Persistance <span class="font-bold">validée</span>
-                        </h2>
-                        
-                        <p class="text-[10px] text-slate-500 uppercase tracking-widest leading-relaxed">
-                            Les indicateurs MEAL ont été injectés <br/> avec une intégrité de 100%
-                        </p>
-                    </div>
-                `,
-                showConfirmButton: false,
-                timer: 3500,
-                timerProgressBar: true,
-                background: '#0f172a', // Slate-950
-                customClass: {
-                    popup: 'rounded-[32px] border border-slate-800 shadow-2xl p-8',
-                    timerProgressBar: 'bg-emerald-500/30'
-                },
-                showClass: { popup: 'animate__animated animate__fadeInUp animate__faster' }
-            });
-
-            updateGlobalProgress(100);
-            
-            // Mise à jour optionnelle d'un badge d'état global sur l'interface
-            const globalBadge = document.getElementById('globalBadge');
-            if (globalBadge) {
-                globalBadge.innerText = "Synchronisé";
-                globalBadge.classList.replace('text-slate-400', 'text-emerald-500');
-            }
-
-        } else {
-            throw new Error("Server response not OK");
-        }
-
+      const res = await fetch('/final-import-data/', { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') }, body: fd });
+      if (!res.ok) throw new Error(res.status);
+      updateGlobalProgress(100);
+      const b = $('globalBadge');
+      b.textContent = 'Importé'; b.style.background = '#e2f3ea'; b.style.color = '#2f7a55';
+      showToast("Données importées avec succès.", 'success');
     } catch (e) {
-        // Alerte d'échec critique (Thème Rose/Dark)
-        Swal.fire({
-            html: `
-                <div class="text-center p-2">
-                    <div class="text-rose-500 mb-4 flex justify-center">
-                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-xs font-black uppercase tracking-widest text-rose-500 mb-2">Erreur Critique</h3>
-                    <p class="text-sm text-slate-300 font-light italic text-pretty">La synchronisation a été interrompue par le serveur distant.</p>
-                </div>
-            `,
-            background: '#0f172a',
-            showConfirmButton: true,
-            confirmButtonText: 'REVOIR LES LOGS',
-            customClass: {
-                popup: 'rounded-3xl border border-rose-500/20 p-8',
-                confirmButton: 'bg-rose-500 text-white px-6 py-2 rounded-xl text-[10px] font-bold tracking-widest uppercase'
-            },
-            buttonsStyling: false
-        });
-        showToast("Échec de l'écriture SQL", "error");
+      console.error(e);
+      showToast("L'import a échoué côté serveur.", 'error', 6000);
     }
-}
+  }
+  window.confirmAndImport = () => { if (!$('continueBtn').disabled) executeFinalImport(); };
 
-function updateGlobalProgress(val) {
-    document.getElementById('globalProgress').style.width = val + "%";
-}
+  window.openModal = () => { $('dsFab').classList.remove('open'); $('importModal').hidden = false; };
+  window.closeModal = () => location.reload();
+  window.closeErrorModal = () => { $('errorModal').hidden = true; };
 
-function closeErrorModal() {
-    document.getElementById('errorModal').classList.add('hidden');
-}
-
-function showToast(msg, type) {
-    // Configuration des accents de bordure (Glow technique)
-    const accents = { 
-        success: '#10b981', // Emerald
-        error: '#f43f5e',   // Rose
-        warning: '#f59e0b',  // Amber
-        info: '#3b82f6'      // Blue
-    };
-
-    const accentColor = accents[type] || '#64748b';
-
-    Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: undefined, // On retire l'icône standard pour un design plus épuré
-        html: `
-            <div class="flex items-center gap-3 px-1">
-                <div class="w-1 h-6 rounded-full" style="background-color: ${accentColor}"></div>
-                
-                <div class="flex flex-col">
-                    <span class="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
-                        Système • ${type}
-                    </span>
-                    <span class="text-[11px] font-medium text-slate-200 tracking-tight">
-                        ${msg}
-                    </span>
-                </div>
-            </div>
-        `,
-        showConfirmButton: false,
-        timer: 3500,
-        timerProgressBar: true,
-        
-        // Design Dark Carbon
-        background: '#0f172a', // Slate-950
-        color: '#f8fafc',
-        
-        // Personnalisation avancée via les classes CSS de SweetAlert
-        customClass: {
-            popup: 'rounded-xl border border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.5)] p-3',
-            timerProgressBar: 'bg-opacity-30'
-        },
-        
-        // Couleur de la barre de progression
-        didOpen: (toast) => {
-            const progressBar = toast.querySelector('.swal2-timer-progress-bar');
-            if (progressBar) progressBar.style.backgroundColor = accentColor;
-            
-            // Animation d'entrée
-            toast.addEventListener('mouseenter', Swal.stopTimer);
-            toast.addEventListener('mouseleave', Swal.resumeTimer);
-        }
-    });
-}
-
-// MODALS
-function openModal(){
-    const m = document.getElementById('importModal');
-    const b = document.getElementById('modalBox');
-    m.classList.remove('hidden');
-    setTimeout(()=>b.classList.remove('scale-95','opacity-0'),10);
-}
-
-function closeModal(){
-    location.reload();
-}
-
-function closeErrorModal(){
-    document.getElementById('errorModal').classList.add('hidden');
-}
-
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!$('errorModal').hidden) closeErrorModal();
+    else if (!$('indicatorModal').hidden) closeIndicatorModal();
+  });
+})();
 </script>
-<script>
-    function openIndicatorModal() {
-    document.getElementById("indicatorModal").classList.remove("hidden");
-    document.getElementById("indicatorModal").classList.add("flex");
-}
-
-function closeIndicatorModal() {
-    document.getElementById("indicatorModal").classList.add("hidden");
-    document.getElementById("indicatorModal").classList.remove("flex");
-}
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-const csrftoken = getCookie('csrftoken');
-function runCalculation() {
-    const period = document.getElementById("period").value;
-    const orgUnit = document.getElementById("orgUnit").value;
-
-    if (!period || !orgUnit) {
-        alert("Veuillez sélectionner la période et l’unité");
-        return;
-    }
-
-    const selected = Array.from(
-        document.querySelectorAll("#indicatorModal input[type=checkbox]:checked")
-    ).map(cb => cb.value);
-
-    if (selected.length === 0) {
-        alert("Veuillez sélectionner au moins un indicateur");
-        return;
-    }
-
-    const csrftoken = getCookie('csrftoken');
-
-    fetch('/api/indicators/calculate/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken
-        },
-        body: JSON.stringify({
-            period,
-            orgUnit,
-            indicators: selected
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        console.log(data);
-          showToast("calcul Terminé");
-        closeIndicatorModal();
-    })
-    .catch(err => {
-        console.error(err);
-          showToast("Erreur de Calcul", "err");
-    });
-}
-</script>
-
 {% endblock %}

@@ -35502,5 +35502,166 @@ def planification_by_lot(request):
     return render(request, template, context)
 
 
-# urls.py :
-# path('planification-lot/', views.planification_by_lot, name='planification_by_lot'),
+from django.db.models import Count, Max, Q
+from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
+
+# from .models import DataSet, IndicateurValeur, PeriodeOk   (déjà importés chez toi)
+
+
+def _lib(obj):
+    for champ in ('nom', 'm_nom', 'intitule', 'libelle', 'm_name', 'name'):
+        val = getattr(obj, champ, None)
+        if val:
+            return str(val)
+    return str(obj)
+
+
+def _lib_periode(p):
+    return p.nicename or p.nom or str(p)
+
+
+def _periodes_du_dataset(dataset):
+    """PeriodeOk correspondant à la périodicité du DataSet (FK vers Periode ou simple texte)."""
+    qs = PeriodeOk.objects.all()
+    pid = getattr(dataset, 'periodicite_id', None)
+    if pid:                                        # DataSet.periodicite = ForeignKey(Periode)
+        qs = qs.filter(periodicite_id=pid)
+    elif getattr(dataset, 'periodicite', None):    # DataSet.periodicite = texte ("Trimestrielle"…)
+        qs = qs.filter(periodicite__nom__iexact=str(dataset.periodicite))
+    else:
+        return PeriodeOk.objects.none()
+    inst = getattr(dataset, 'm_institution_id', None)
+    if inst:
+        qs = qs.filter(Q(institution_id=inst) | Q(institution__isnull=True))
+    return qs
+
+
+def _statut(p, today):
+    debut = p.date_debut.date() if p.date_debut and hasattr(p.date_debut, 'date') else p.date_debut
+    if debut and debut > today:
+        return 'a_venir'
+    if p.date_fin and p.date_fin >= today:
+        return 'en_cours'
+    return 'cloturee'
+
+
+def completude_collecte(request, id):
+    """
+    Complétude de la collecte d'un DataSet :
+      - périodes attendues (selon la périodicité du DataSet) et nombre de structures saisies / non saisies ;
+      - liste des structures déclarées avec leur statut par période ;
+      - structures ayant déjà saisi (classement, périodes couvertes).
+    Une structure a « saisi » une période dès qu'elle a au moins une valeur (hors cible) pour un indicateur du DataSet.
+    """
+    dataset = get_object_or_404(DataSet, id=int(id))
+    context = basis(request)
+    today = timezone.localdate() if timezone.is_aware(timezone.now()) else timezone.now().date()
+
+    indicateurs = list(dataset.m_indicateurs.all())
+    if not indicateurs and dataset.m_indicateur_id:
+        indicateurs = [dataset.m_indicateur]
+    structures = sorted(dataset.m_structures.all(), key=lambda s: _lib(s).lower())
+    total = len(structures)
+
+    valeurs = IndicateurValeur.objects.filter(
+        indicateur_id__in=[i.id for i in indicateurs],
+        structure_id__in=[s.id for s in structures],
+        valeur__isnull=False, reference_cible=False, periode_ok__isnull=False,
+    )
+    periodes_ds = _periodes_du_dataset(dataset)
+
+    # ---- Années disponibles : celles des périodes attendues + celles où il y a des saisies
+    annees = {a for a in valeurs.values_list('periode_ok__annee', flat=True) if a}
+    annees |= {a for a in periodes_ds.values_list('annee', flat=True) if a}
+    annees = sorted(annees, reverse=True)
+    annee = request.GET.get('annee') or (str(today.year) if today.year in annees else (str(annees[0]) if annees else ''))
+    if annee:
+        valeurs = valeurs.filter(periode_ok__annee=annee)
+        periodes_ds = periodes_ds.filter(annee=annee)
+
+    # ---- Qui a saisi quoi
+    ont_saisi, par_structure = {}, {}
+    for p_id, s_id in valeurs.values_list('periode_ok_id', 'structure_id').distinct():
+        ont_saisi.setdefault(p_id, set()).add(s_id)
+        par_structure.setdefault(s_id, set()).add(p_id)
+
+    # ---- Périodes : attendues + toute période où il y a déjà une saisie
+    ids_periodes = set(periodes_ds.values_list('id', flat=True)) | set(ont_saisi)
+    periodes_objs = list(PeriodeOk.objects.filter(id__in=ids_periodes)
+                         .order_by('annee', 'numero_ordre', 'date_debut', 'id'))
+
+    periodes = []
+    for p in periodes_objs:
+        ids = ont_saisi.get(p.id, set())
+        saisies = [s for s in structures if s.id in ids]
+        non_saisies = [s for s in structures if s.id not in ids]
+        statut = _statut(p, today)
+        periodes.append({
+            'periode': p,
+            'label': _lib_periode(p),
+            'statut': statut,
+            'du': statut == 'cloturee',     # exigible = période terminée (une période en cours ne met personne en retard)
+            'nb_saisies': len(saisies),
+            'nb_non_saisies': len(non_saisies),
+            'pct': round(100 * len(saisies) / total) if total else 0,
+            'saisies': saisies,
+            'non_saisies': non_saisies,
+        })
+    dues = [x for x in periodes if x['du']]
+    ids_dues = {x['periode'].id for x in dues}
+    nb_dues = len(dues)
+
+    # ---- Par structure
+    stats = {r['structure_id']: r for r in
+             valeurs.values('structure_id').annotate(nb=Count('id'), derniere=Max('date_saisie'))}
+    structures_info = []
+    for s in structures:
+        faites = par_structure.get(s.id, set())
+        faites_dues = faites & ids_dues
+        nb_ok = len(faites_dues)
+        etat = 'jamais' if not faites else ('ajour' if nb_ok == nb_dues else 'retard')
+        st = stats.get(s.id, {})
+        structures_info.append({
+            'structure': s,
+            'nom': _lib(s),
+            'etat': etat,
+            'cases': [{'periode': x['periode'], 'label': x['label'], 'statut': x['statut'],
+                       'ok': x['periode'].id in faites, 'du': x['du']} for x in periodes],
+            'manquantes': [x['label'] for x in dues if x['periode'].id not in faites],
+            'nb_periodes': nb_ok,
+            'pct': round(100 * nb_ok / nb_dues) if nb_dues else 0,
+            'nb_valeurs': st.get('nb', 0),
+            'derniere': st.get('derniere'),
+        })
+
+    structures_saisies = sorted((x for x in structures_info if x['etat'] != 'jamais'),
+                                key=lambda x: (-x['pct'], -x['nb_valeurs'], x['nom'].lower()))
+    cases_dues = total * nb_dues
+    cases_ok = sum(x['nb_saisies'] for x in dues)
+    taux = round(100 * cases_ok / cases_dues) if cases_dues else 0
+    nb_ajour = sum(1 for x in structures_info if x['etat'] == 'ajour')
+    nb_retard = sum(1 for x in structures_info if x['etat'] == 'retard')
+    nb_jamais = sum(1 for x in structures_info if x['etat'] == 'jamais')
+    courante = next((x for x in reversed(dues)), periodes[0] if periodes else None)
+
+    context.update({
+        'dataset': dataset,
+        'annees': annees,
+        'annee': annee,
+        'total_structures': total,
+        'periodes': periodes,
+        'periode_courante': courante,
+        'structures_info': structures_info,
+        'structures_saisies': structures_saisies,
+        'nb_periodes': nb_dues,
+        'nb_ont_saisi': len(structures_saisies),
+        'nb_ajour': nb_ajour,
+        'nb_retard': nb_retard,
+        'nb_jamais': nb_jamais,
+        'taux': taux,
+        'cases_ok': cases_ok,
+        'cases_dues': cases_dues,
+        'pct_ont_saisi': round(100 * len(structures_saisies) / total) if total else 0,
+    })
+    return render(request, 'completude-collecte.html', context)
