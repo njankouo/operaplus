@@ -338,7 +338,6 @@ CELERY_BEAT_SCHEDULE = {
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
-
 # Production (Docker) par défaut ; en local, le .env du Fedora remplace ces chemins
 STATIC_ROOT = os.getenv('STATIC_ROOT', '/app/static/')
 MEDIA_ROOT = os.getenv('MEDIA_ROOT', '/app/media/')
@@ -348,4 +347,3 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
-
