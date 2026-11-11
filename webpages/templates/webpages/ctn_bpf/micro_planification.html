@@ -1,19 +1,16 @@
 {% extends './index.html' %}
 {% block main %}
 
-<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
-    
-    <!-- BARRE DE CONTRÔLE ET RECHERCHE STYLE ODOO -->
-    <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-2xs">
+<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6 mp">
+
+    <!-- BARRE DE CONTRÔLE ET RECHERCHE -->
+    <div class="bg-white border border-slate-200 rounded-lg p-4 shadow-2xs mp-bar">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-            
-            <!-- TITRE ERP -->
+
             <div class="md:col-span-3">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-md flex items-center justify-center text-white font-bold shadow-2xs" style="background-color: {{ request.user.personnel.color_fond|default:'#714B67' }};">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L3.5 7V17L12 22L20.5 17V7L12 2Z"/>
-                        </svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L3.5 7V17L12 22L20.5 17V7L12 2Z"/></svg>
                     </div>
                     <div>
                         <h1 class="text-slate-800 font-bold text-sm tracking-tight uppercase">MICRO PLAN</h1>
@@ -22,7 +19,6 @@
                 </div>
             </div>
 
-            <!-- SÉLECTEUR DE STRUCTURE -->
             <div class="md:col-span-4">
                 <form id="planification-form" class="m-0">
                     {% csrf_token %}
@@ -31,132 +27,394 @@
                         <select id="structureSelect" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-md pl-9 pr-8 py-2 font-medium outline-none focus:border-indigo-600 focus:bg-white transition-colors appearance-none cursor-pointer" name="structures">
                             <option disabled selected>Chargement des structures...</option>
                         </select>
-                        <div class="absolute right-3 pointer-events-none text-slate-400">
-                            <i class="bx bx-chevron-down"></i>
-                        </div>
+                        <div class="absolute right-3 pointer-events-none text-slate-400"><i class="bx bx-chevron-down"></i></div>
                     </div>
                 </form>
             </div>
 
-            <!-- RECHERCHE DYNAMIQUE -->
             <div class="md:col-span-5">
                 <div class="relative flex items-center">
                     <i class="bx bx-search absolute left-3 text-slate-400 text-base"></i>
-                    <input type="text" id="filterInput" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-md pl-9 pr-12 py-2 outline-none focus:border-indigo-600 focus:bg-white transition-colors placeholder:text-slate-400" placeholder="Rechercher par nom, responsable ou budget...">
+                    <input type="text" id="filterInput" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-md pl-9 pr-12 py-2 outline-none focus:border-indigo-600 focus:bg-white transition-colors placeholder:text-slate-400" placeholder="Rechercher par nom, code, tâche ou responsable..." autocomplete="off">
                     <span class="absolute right-2.5 bg-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded font-bold min-w-[20px] text-center" id="resultCount">0</span>
                 </div>
             </div>
-
         </div>
     </div>
 
-    <!-- ZONE DE RÉSULTAT ET VUE KANBAN/LISTE -->
+    <!-- ZONE DE RÉSULTAT -->
     <div id="result-container" class="transition-all duration-300">
-        <!-- État initial ERP -->
         <div id="initial-message" class="bg-white border border-slate-200 rounded-lg p-12 text-center shadow-2xs flex flex-col items-center justify-center">
-            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3 border border-slate-200">
-                <i class="bx bx-data text-xl"></i>
-            </div>
+            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3 border border-slate-200"><i class="bx bx-data text-xl"></i></div>
             <h3 class="text-sm font-bold text-slate-700">Aucune structure sélectionnée</h3>
             <p class="text-xs text-slate-400 mt-1">Veuillez choisir une structure dans le menu ci-dessus pour charger la planification.</p>
         </div>
     </div>
+
+    <!-- Tableau de bord de la structure (rempli en JSON, quelle que soit la taille : pagination et calculs côté serveur) -->
+    <div id="mpDash" hidden>
+        <!-- Indicateurs : un clic filtre la liste -->
+        <div class="mp-kpis" id="mpKpis">
+            <button type="button" class="mp-kpi" data-statut=""><span>Opérations</span><b data-k="total">0</b><small>dans la structure</small></button>
+            <button type="button" class="mp-kpi k-ok" data-statut="valide"><span>Validées</span><b data-k="valide">0</b><small data-p="valide"></small></button>
+            <button type="button" class="mp-kpi k-mid" data-statut="attente"><span>En attente</span><b data-k="attente">0</b><small data-p="attente"></small></button>
+            <button type="button" class="mp-kpi k-no" data-statut="nonvalide"><span>Non validées</span><b data-k="nonvalide">0</b><small data-p="nonvalide"></small></button>
+            <button type="button" class="mp-kpi k-low" data-statut="retard"><span>En retard</span><b data-k="retard">0</b><small>échéance dépassée</small></button>
+        </div>
+
+        <!-- Graphiques -->
+        <div class="mp-charts">
+            <section class="mp-card">
+                <header><h3>Répartition par statut</h3><p>Avancement moyen validé : <b id="mpMoy">–</b></p></header>
+                <div id="mpDonut" class="mp-chart"></div>
+            </section>
+            <section class="mp-card mp-span2">
+                <header><h3>Échéances par mois</h3><p>Opérations à rendre chaque mois ; en rouge, celles déjà en retard.</p></header>
+                <div id="mpMois" class="mp-chart"></div>
+            </section>
+            <section class="mp-card mp-span3">
+                <header><h3>Charge par responsable</h3><p>Les 8 personnes les plus chargées. Cliquez sur une barre pour filtrer la liste.</p></header>
+                <div id="mpResp" class="mp-chart"></div>
+            </section>
+        </div>
+
+        <!-- Liste -->
+        <section class="mp-card mp-list">
+            <header class="mp-list-head">
+                <div class="mp-tabs" role="tablist" aria-label="Filtrer par statut">
+                    <button type="button" class="is-on" data-statut="">Toutes</button>
+                    <button type="button" data-statut="retard">En retard</button>
+                    <button type="button" data-statut="attente">En attente</button>
+                    <button type="button" data-statut="nonvalide">Non validées</button>
+                    <button type="button" data-statut="valide">Validées</button>
+                </div>
+                <div class="mp-tools">
+                    <label class="mp-select"><i class="fas fa-user"></i>
+                        <select id="mpResponsable" aria-label="Filtrer par responsable"><option value="">Tous les responsables</option></select>
+                    </label>
+                    <label class="mp-select"><i class="fas fa-arrow-down-wide-short"></i>
+                        <select id="mpTri" aria-label="Trier">
+                            <option value="echeance">Échéance la plus proche</option>
+                            <option value="-echeance">Échéance la plus lointaine</option>
+                            <option value="avancement">Moins avancées d'abord</option>
+                            <option value="-avancement">Plus avancées d'abord</option>
+                            <option value="nom">Nom (A → Z)</option>
+                            <option value="responsable">Responsable</option>
+                        </select>
+                    </label>
+                </div>
+            </header>
+
+            <div class="mp-table-wrap">
+                <table class="mp-table">
+                    <thead>
+                        <tr><th>Opération</th><th>Responsable</th><th>Échéance</th><th>Avancement</th><th>Statut</th><th aria-label="Ouvrir"></th></tr>
+                    </thead>
+                    <tbody id="mpRows"></tbody>
+                </table>
+                <div class="mp-empty" id="mpVide" hidden><i class="fas fa-filter-circle-xmark"></i>Aucune opération ne correspond à ces filtres.</div>
+            </div>
+
+            <footer class="mp-pager">
+                <span id="mpInfo">–</span>
+                <div class="mp-pages">
+                    <label class="mp-select mp-taille"><select id="mpTaille" aria-label="Lignes par page"><option>25</option><option selected>50</option><option>100</option></select></label>
+                    <button type="button" id="mpPrev" aria-label="Page précédente"><i class="fas fa-chevron-left"></i></button>
+                    <span id="mpPage">1 / 1</span>
+                    <button type="button" id="mpNext" aria-label="Page suivante"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </footer>
+        </section>
+    </div>
 </div>
 
 <style>
-    .card-hidden {
-        display: none !important;
+    .card-hidden { display: none !important; }
+    .mp { --ok: #43A047; --mid: #FBC02D; --low: #E53935; --no: #94a3b8; --line: rgba(15,23,42,.07);
+          --shadow: 0 1px 2px rgba(15,23,42,.03), 0 14px 34px -22px rgba(15,23,42,.22); }
+    .mp [hidden] { display: none !important; }
+    .mp-bar, #initial-message { border-radius: 20px !important; border-color: var(--line) !important; box-shadow: var(--shadow) !important; }
+    .mp-card { background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 1.1rem 1.25rem; min-width: 0; }
+    .mp-card header h3 { font-size: .95rem; font-weight: 700; color: #0f172a; }
+    .mp-card header p { font-size: .76rem; color: #64748b; margin-top: .15rem; }
+    .mp-card header p b { color: #0f172a; }
+    #mpDash > * + * { margin-top: 1rem; }
+
+    /* Indicateurs */
+    .mp-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; }
+    .mp-kpi { --c: var(--nav-bg-color, #334155); text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: .9rem 1rem;
+              box-shadow: var(--shadow); cursor: pointer; position: relative; overflow: hidden; transition: transform .3s ease, box-shadow .3s ease, border-color .3s; }
+    .mp-kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); }
+    .mp-kpi:hover { transform: translateY(-2px); }
+    .mp-kpi.is-on { border-color: color-mix(in srgb, var(--c) 55%, #fff); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 15%, transparent), var(--shadow); }
+    .mp-kpi span { display: block; font-size: .74rem; font-weight: 600; color: #64748b; }
+    .mp-kpi b { display: block; font-size: 1.7rem; font-weight: 800; color: #0f172a; line-height: 1.15; font-variant-numeric: tabular-nums; }
+    .mp-kpi small { font-size: .7rem; color: #94a3b8; }
+    .mp-kpi.k-ok { --c: var(--ok); } .mp-kpi.k-mid { --c: var(--mid); } .mp-kpi.k-no { --c: var(--no); } .mp-kpi.k-low { --c: var(--low); }
+    .mp-kpi.k-low b { color: var(--low); }
+
+    /* Graphiques */
+    .mp-charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .mp-span2 { grid-column: span 2; } .mp-span3 { grid-column: 1 / -1; }
+    .mp-chart { min-height: 220px; margin-top: .5rem; }
+    .mp-chart:empty { border-radius: 14px; background: linear-gradient(90deg, #f1f4f8 25%, #f8fafc 50%, #f1f4f8 75%); background-size: 200% 100%; animation: mpShim 1.2s linear infinite; }
+    .mp-msg { display: grid; place-items: center; min-height: 200px; color: #94a3b8; font-size: .82rem; font-weight: 600; }
+    @keyframes mpShim { to { background-position: -200% 0; } }
+
+    /* Liste */
+    .mp-list { padding: 0; overflow: hidden; }
+    .mp-list-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; padding: 1rem 1.25rem; border-bottom: 1px solid var(--line); }
+    .mp-tabs { display: inline-flex; flex-wrap: wrap; gap: .2rem; padding: .25rem; border-radius: 999px; background: #f1f4f8; }
+    .mp-tabs button { border: 0; background: none; padding: .4rem .85rem; border-radius: 999px; font-size: .78rem; font-weight: 600; color: #64748b; cursor: pointer; transition: background .25s, color .25s; }
+    .mp-tabs button.is-on { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+    .mp-tools { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .mp-select { display: inline-flex; align-items: center; gap: .45rem; height: 2.2rem; padding: 0 .7rem; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: #94a3b8; font-size: .8rem; }
+    .mp-select select { border: 0; outline: 0; background: transparent; font-weight: 600; color: #0f172a; max-width: 13rem; cursor: pointer; }
+    .mp-select:focus-within { border-color: color-mix(in srgb, var(--nav-bg-color) 50%, #fff); }
+
+    .mp-table-wrap { overflow: auto; max-height: 34rem; position: relative; }
+    .mp-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
+    .mp-table thead th { position: sticky; top: 0; z-index: 1; background: #f8fafc; text-align: left; font-size: .72rem; font-weight: 700; color: #64748b; padding: .65rem 1rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    .mp-table td { padding: .6rem 1rem; border-bottom: 1px solid #f1f4f8; vertical-align: middle; }
+    .mp-table tbody tr { transition: background .2s; }
+    .mp-table tbody tr:hover td { background: #fafbfd; }
+    .mp-table tbody tr.is-late td:first-child { box-shadow: inset 3px 0 0 var(--low); }
+    .mp-op b { display: block; font-weight: 700; color: #0f172a; max-width: 22rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mp-op span { font-size: .72rem; color: #94a3b8; }
+    .mp-resp { display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; }
+    .mp-av { width: 1.6rem; height: 1.6rem; border-radius: 50%; display: grid; place-items: center; font-size: .62rem; font-weight: 800; color: #fff; background: var(--nav-bg-color, #334155); flex: none; }
+    .mp-av.none { background: #e2e8f0; color: #94a3b8; }
+    .mp-date { white-space: nowrap; }
+    .mp-date small { display: block; font-size: .7rem; color: #94a3b8; }
+    .mp-date small.late { color: var(--low); font-weight: 700; }
+    .mp-date small.soon { color: #b08300; font-weight: 700; }
+    .mp-prog { display: flex; align-items: center; gap: .5rem; min-width: 9rem; }
+    .mp-prog-bar { position: relative; flex: 1; height: .45rem; border-radius: .3rem; background: #eef1f5; overflow: hidden; }
+    .mp-prog-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: inherit; }
+    .mp-prog-bar i.d { background: #e2e8f0; }
+    .mp-prog b { font-size: .78rem; font-variant-numeric: tabular-nums; min-width: 2.8rem; text-align: right; }
+    .mp-chip { display: inline-flex; align-items: center; gap: .3rem; font-size: .7rem; font-weight: 700; padding: .2rem .55rem; border-radius: 999px; white-space: nowrap; }
+    .mp-chip.valide { background: #e8f5e9; color: #2e7d32; } .mp-chip.attente { background: #fff8e1; color: #9a6d00; }
+    .mp-chip.nonvalide { background: #f1f5f9; color: #64748b; } .mp-chip.retard { background: #fdecec; color: #c62828; margin-left: .25rem; }
+    .mp-go { color: #94a3b8; padding: .3rem .5rem; border-radius: 8px; }
+    .mp-go:hover { color: var(--nav-bg-color); background: #f1f4f8; }
+    .mp-empty { display: flex; flex-direction: column; align-items: center; gap: .4rem; padding: 2.5rem 1rem; color: #94a3b8; font-size: .85rem; font-weight: 600; }
+    .mp-empty i { font-size: 1.4rem; }
+    .mp-loading tbody { opacity: .45; transition: opacity .2s; }
+
+    .mp-pager { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; padding: .75rem 1.25rem; border-top: 1px solid var(--line); font-size: .78rem; color: #64748b; }
+    .mp-pages { display: flex; align-items: center; gap: .5rem; }
+    .mp-pages button { width: 2.1rem; height: 2.1rem; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: #334155; cursor: pointer; }
+    .mp-pages button:disabled { opacity: .4; cursor: default; }
+    .mp-pages #mpPage { font-weight: 700; color: #0f172a; min-width: 4rem; text-align: center; }
+    .mp-taille { height: 2.1rem; }
+
+    @media (max-width: 900px) { .mp-charts { grid-template-columns: 1fr; } .mp-span2, .mp-span3 { grid-column: auto; } }
+    @media (max-width: 640px) {
+        .mp-table thead { display: none; }
+        .mp-table, .mp-table tbody, .mp-table tr, .mp-table td { display: block; width: 100%; }
+        .mp-table tr { padding: .6rem 1rem; border-bottom: 1px solid #f1f4f8; }
+        .mp-table td { padding: .2rem 0; border: 0; }
+        .mp-table td:last-child { display: none; }
     }
 </style>
 
 <script>
-/**
- * FILTRE TEMPS RÉEL
- */
-document.getElementById('filterInput').addEventListener('input', function(e) {
-    const term = e.target.value.toLowerCase();
-    const cards = document.querySelectorAll('#result-container .neo-card, #result-container .operation-card');
-    let visibleCount = 0;
+(function () {
+    const VERT = '#43A047', JAUNE = '#FBC02D', ROUGE = '#E53935', GRIS = '#94a3b8';
+    const etat = { structure: '', q: '', statut: '', responsable: '', tri: 'echeance', page: 1, taille: 50 };
+    let charts = {}, ctrl = null;
+    const $ = id => document.getElementById(id);
+    const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const nf = v => (Math.round(v * 10) / 10).toLocaleString('fr-FR');
+    const niveau = v => v >= 80 ? VERT : v >= 50 ? JAUNE : ROUGE;
+    const initiales = n => (n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
+    const police = () => getComputedStyle(document.body).fontFamily;
+    const nav = () => (getComputedStyle(document.documentElement).getPropertyValue('--nav-bg-color') || '').trim() || '#334155';
+    const LIB = { valide: 'Validée', attente: 'En attente', nonvalide: 'Non validée' };
 
-    cards.forEach(card => {
-        const text = card.innerText.toLowerCase();
-        const container = card.closest('[class*="col-span"]') || card.parentElement; 
-        if (text.includes(term)) {
-            container.classList.remove('card-hidden');
-            visibleCount++;
-        } else {
-            container.classList.add('card-hidden');
+    /* ---------- Structures (inchangé) ---------- */
+    window.loadStructures = async function () {
+        const select = $('structureSelect');
+        try {
+            const response = await fetch('/structure_planification/');
+            const data = await response.json();
+            const structures = data['Vos Structures'] || [];
+            select.innerHTML = '<option value="" disabled selected>Sélectionner une structure...</option>';
+            structures.forEach(s => select.add(new Option(s.nom, s.id)));
+        } catch (e) {
+            select.innerHTML = '<option disabled>Erreur de connexion</option>';
         }
+    };
+
+    /* ---------- Chargement JSON (filtres, tri et pagination côté serveur) ---------- */
+    async function charger(majGraphes) {
+        if (!etat.structure) return;
+        if (ctrl) ctrl.abort();
+        ctrl = new AbortController();
+        const params = new URLSearchParams({ structure: etat.structure, q: etat.q, statut: etat.statut, responsable: etat.responsable, tri: etat.tri, page: etat.page, taille: etat.taille });
+        document.querySelector('.mp-table').classList.add('mp-loading');
+        try {
+            const r = await fetch('/microplan-operations/?' + params, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin', signal: ctrl.signal });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const d = await r.json();
+            $('result-container').hidden = true;
+            $('mpDash').hidden = false;
+            if (majGraphes) { stats(d); graphes(d); remplirResponsables(d.liste_responsables || []); }
+            lignes(d);
+        } catch (e) {
+            if (e.name === 'AbortError') return;
+            console.error('Micro plan :', e);
+            $('mpDash').hidden = true;
+            const rc = $('result-container'); rc.hidden = false;
+            rc.innerHTML = '<div class="bg-red-50 border border-red-200 rounded-lg p-8 text-center text-red-600"><i class="bx bx-error-alt text-2xl mb-2"></i><p class="text-xs font-bold">Une erreur est survenue lors de la récupération des données.</p></div>';
+        } finally {
+            document.querySelector('.mp-table').classList.remove('mp-loading');
+        }
+    }
+
+    /* Nom d'origine conservé : appelé quand on change de structure */
+    window.autoSubmit = function () {
+        etat.structure = $('structureSelect').value;
+        Object.assign(etat, { q: '', statut: '', responsable: '', page: 1 });
+        $('filterInput').value = '';
+        $('mpResponsable').value = '';
+        marquerStatut('');
+        $('mpDash').hidden = true;
+        const rc = $('result-container'); rc.hidden = false;
+        rc.innerHTML = '<div class="bg-white border border-slate-200 rounded-lg p-12 text-center shadow-2xs flex flex-col items-center justify-center"><div class="animate-spin rounded-full h-8 w-8 border-2 border-indigo-600 border-t-transparent mb-3"></div><p class="text-xs font-semibold text-slate-600">Chargement des opérations en cours...</p></div>';
+        charger(true);
+    };
+
+    /* ---------- Indicateurs ---------- */
+    function stats(d) {
+        const s = d.stats, t = s.total || 0;
+        Object.keys(s).forEach(k => { const el = document.querySelector('[data-k="' + k + '"]'); if (el) el.textContent = (s[k] || 0).toLocaleString('fr-FR'); });
+        ['valide', 'attente', 'nonvalide'].forEach(k => { const el = document.querySelector('[data-p="' + k + '"]'); if (el) el.textContent = t ? Math.round(s[k] / t * 100) + ' % du total' : ''; });
+        $('mpMoy').textContent = nf(s.moy_valide) + ' %';
+    }
+
+    /* ---------- Graphiques ---------- */
+    function graphes(d) {
+        Object.values(charts).forEach(c => { try { c.destroy(); } catch (e) {} });
+        charts = {};
+        if (typeof ApexCharts === 'undefined') { ['mpDonut', 'mpMois', 'mpResp'].forEach(id => $(id).innerHTML = '<div class="mp-msg">Graphique indisponible</div>'); return; }
+        const s = d.stats;
+
+        if (!s.total) $('mpDonut').innerHTML = '<div class="mp-msg">Aucune opération</div>';
+        else {
+            $('mpDonut').innerHTML = '';
+            charts.donut = new ApexCharts($('mpDonut'), {
+                series: [s.valide, s.attente, s.nonvalide], labels: ['Validées', 'En attente', 'Non validées'],
+                chart: { type: 'donut', height: 250, fontFamily: police(), events: { dataPointSelection: (e, c, o) => filtrerStatut(['valide', 'attente', 'nonvalide'][o.dataPointIndex]) } },
+                colors: [VERT, JAUNE, GRIS], stroke: { width: 3, colors: ['#fff'] }, dataLabels: { enabled: false },
+                plotOptions: { pie: { donut: { size: '72%', labels: { show: true, value: { fontSize: '22px', fontWeight: 800, color: '#0f172a', offsetY: 4 },
+                    total: { show: true, showAlways: true, label: 'Validées', fontSize: '12px', color: '#64748b', formatter: () => Math.round(s.valide / s.total * 100) + ' %' } } } } },
+                legend: { position: 'bottom', fontSize: '12px', fontWeight: 600, labels: { colors: '#475569' }, markers: { radius: 3 }, formatter: (n, o) => n + ' · ' + o.w.globals.series[o.seriesIndex] }
+            });
+            charts.donut.render();
+        }
+
+        const E = d.echeances || [];
+        if (!E.length) $('mpMois').innerHTML = '<div class="mp-msg">Aucune échéance sur la période</div>';
+        else {
+            $('mpMois').innerHTML = '';
+            const mois = E.map(e => new Date(e.mois + '-01T00:00:00').toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }));
+            const courant = d.aujourdhui.slice(0, 7);
+            charts.mois = new ApexCharts($('mpMois'), {
+                series: [{ name: 'Validées', data: E.map(e => e.validees) }, { name: 'En retard', data: E.map(e => e.retard) },
+                         { name: 'Autres', data: E.map(e => Math.max(0, e.n - e.validees - e.retard)) }],
+                chart: { type: 'bar', stacked: true, height: 250, fontFamily: police(), toolbar: { show: false } },
+                colors: [VERT, ROUGE, '#cbd5e1'],
+                plotOptions: { bar: { columnWidth: '55%', borderRadius: 4, borderRadiusApplication: 'end', borderRadiusWhenStacked: 'last' } },
+                dataLabels: { enabled: false },
+                xaxis: { categories: mois, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { colors: E.map(e => e.mois === courant ? '#0f172a' : '#64748b'), fontSize: '11px', fontWeight: 600 } } },
+                yaxis: { labels: { formatter: v => Math.round(v), style: { colors: '#94a3b8' } } },
+                grid: { borderColor: '#eef1f5', strokeDashArray: 3 },
+                legend: { position: 'top', horizontalAlign: 'left', fontSize: '12px', fontWeight: 600, labels: { colors: '#475569' }, markers: { radius: 3 } },
+                tooltip: { shared: true, intersect: false, y: { formatter: v => v + ' opération' + (v > 1 ? 's' : '') } }
+            });
+            charts.mois.render();
+        }
+
+        const R = d.responsables || [];
+        if (!R.length) $('mpResp').innerHTML = '<div class="mp-msg">Aucun responsable</div>';
+        else {
+            $('mpResp').innerHTML = '';
+            charts.resp = new ApexCharts($('mpResp'), {
+                series: [{ name: 'En retard', data: R.map(r => r.retard) }, { name: 'En attente', data: R.map(r => r.attente) },
+                         { name: 'Autres', data: R.map(r => Math.max(0, r.n - r.retard - r.attente)) }],
+                chart: { type: 'bar', stacked: true, height: Math.max(180, R.length * 34 + 70), fontFamily: police(), toolbar: { show: false },
+                         events: { dataPointSelection: (e, c, o) => { const id = R[o.dataPointIndex].id; filtrerResponsable(id ? String(id) : 'aucun'); } } },
+                colors: [ROUGE, JAUNE, nav()],
+                plotOptions: { bar: { horizontal: true, barHeight: '58%', borderRadius: 4, borderRadiusApplication: 'end', borderRadiusWhenStacked: 'last' } },
+                dataLabels: { enabled: false },
+                xaxis: { categories: R.map(r => r.nom), labels: { formatter: v => Math.round(v), style: { colors: '#94a3b8' } } },
+                yaxis: { labels: { maxWidth: 180, style: { colors: '#334155', fontSize: '12px', fontWeight: 600 } } },
+                grid: { borderColor: '#eef1f5', strokeDashArray: 3, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+                legend: { position: 'top', horizontalAlign: 'left', fontSize: '12px', fontWeight: 600, labels: { colors: '#475569' }, markers: { radius: 3 } },
+                tooltip: { shared: true, intersect: false, y: { formatter: v => v + ' opération' + (v > 1 ? 's' : '') } },
+                states: { hover: { filter: { type: 'darken', value: .9 } } }
+            });
+            charts.resp.render();
+        }
+    }
+
+    /* ---------- Liste ---------- */
+    function lignes(d) {
+        const tb = $('mpRows');
+        $('mpVide').hidden = d.liste.length > 0;
+        tb.innerHTML = d.liste.map(o => {
+            const j = o.jours, quand = j == null ? '' : o.statut === 'valide' && o.valide >= 100 ? '' :
+                j < 0 ? '<small class="late">' + (-j) + ' j de retard</small>' : j <= 7 ? '<small class="soon">dans ' + j + ' j</small>' : '<small>dans ' + j + ' j</small>';
+            const ech = o.echeance ? new Date(o.echeance + 'T00:00:00').toLocaleDateString('fr-FR') : '—';
+            return '<tr class="' + (o.retard ? 'is-late' : '') + '">' +
+                '<td class="mp-op"><b title="' + esc(o.nom) + '">' + esc(o.nom) + '</b><span>' + esc([o.code, o.tache].filter(Boolean).join(' · ')) + '</span></td>' +
+                '<td>' + (o.responsable ? '<span class="mp-resp"><span class="mp-av">' + esc(initiales(o.responsable)) + '</span>' + esc(o.responsable) + '</span>'
+                                        : '<span class="mp-resp"><span class="mp-av none">?</span><i style="color:#94a3b8">Non attribuée</i></span>') + '</td>' +
+                '<td class="mp-date">' + ech + quand + '</td>' +
+                '<td><div class="mp-prog" title="Déclaré ' + nf(o.declare) + ' % · validé ' + nf(o.valide) + ' %"><span class="mp-prog-bar"><i class="d" style="width:' + Math.min(100, o.declare) + '%"></i><i style="width:' + Math.min(100, o.valide) + '%;background:' + niveau(o.valide) + '"></i></span><b style="color:' + niveau(o.valide) + '">' + nf(o.valide) + ' %</b></div></td>' +
+                '<td><span class="mp-chip ' + o.statut + '">' + LIB[o.statut] + '</span>' + (o.retard ? '<span class="mp-chip retard">Retard</span>' : '') + '</td>' +
+                '<td><a class="mp-go" href="/detail-gantt/' + o.id + '/" title="Ouvrir"><i class="fas fa-chevron-right"></i></a></td></tr>';
+        }).join('');
+        $('resultCount').textContent = d.resultats.toLocaleString('fr-FR');
+        const de = d.resultats ? (d.page - 1) * d.taille + 1 : 0, a = Math.min(d.page * d.taille, d.resultats);
+        $('mpInfo').textContent = d.resultats ? de.toLocaleString('fr-FR') + '–' + a.toLocaleString('fr-FR') + ' sur ' + d.resultats.toLocaleString('fr-FR') + ' opération' + (d.resultats > 1 ? 's' : '') : '0 opération';
+        $('mpPage').textContent = d.page + ' / ' + d.pages;
+        $('mpPrev').disabled = d.page <= 1; $('mpNext').disabled = d.page >= d.pages;
+        etat.page = d.page;
+    }
+
+    function remplirResponsables(L) {
+        const sel = $('mpResponsable'), memo = etat.responsable;
+        sel.innerHTML = '<option value="">Tous les responsables</option>' + L.map(r => '<option value="' + r.id + '">' + esc(r.nom) + ' (' + r.n + ')</option>').join('') + '<option value="aucun">Non attribuées</option>';
+        sel.value = memo;
+    }
+
+    /* ---------- Filtres ---------- */
+    function marquerStatut(v) {
+        document.querySelectorAll('.mp-tabs button, .mp-kpi').forEach(b => b.classList.toggle('is-on', b.dataset.statut === v && (b.classList.contains('mp-kpi') ? v !== '' : true)));
+    }
+    function filtrerStatut(v) { etat.statut = v; etat.page = 1; marquerStatut(v); charger(false); $('mpRows').closest('.mp-list').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    function filtrerResponsable(v) { etat.responsable = v; etat.page = 1; $('mpResponsable').value = v; charger(false); $('mpRows').closest('.mp-list').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+
+    document.querySelectorAll('.mp-tabs button, .mp-kpi').forEach(b => b.addEventListener('click', () => filtrerStatut(b.dataset.statut)));
+    $('mpResponsable').addEventListener('change', e => { etat.responsable = e.target.value; etat.page = 1; charger(false); });
+    $('mpTri').addEventListener('change', e => { etat.tri = e.target.value; etat.page = 1; charger(false); });
+    $('mpTaille').addEventListener('change', e => { etat.taille = +e.target.value; etat.page = 1; charger(false); });
+    $('mpPrev').addEventListener('click', () => { etat.page--; charger(false); });
+    $('mpNext').addEventListener('click', () => { etat.page++; charger(false); });
+
+    /* Recherche : envoyée au serveur 300 ms après la dernière frappe (plus de parcours de 1 000 cartes à chaque touche) */
+    let t;
+    $('filterInput').addEventListener('input', e => {
+        clearTimeout(t);
+        t = setTimeout(() => { etat.q = e.target.value.trim(); etat.page = 1; charger(false); }, 300);
     });
 
-    document.getElementById('resultCount').textContent = visibleCount;
-});
-
-/**
- * LOGIQUE DE CHARGEMENT DES STRUCTURES
- */
-async function loadStructures() {
-    const select = document.getElementById('structureSelect');
-    try {
-        const response = await fetch('/structure_planification/');
-        const data = await response.json();
-        const structures = data['Vos Structures'];
-
-        select.innerHTML = '<option value="" disabled selected>Sélectionner une structure...</option>';
-        structures.forEach(s => {
-            select.add(new Option(s.nom, s.id));
-        });
-    } catch (e) {
-        select.innerHTML = '<option disabled>Erreur de connexion</option>';
-    }
-}
-
-/**
- * AUTO-SUBMIT AVEC ÉTAT DE CHARGEMENT STYLE ODOO
- */
-async function autoSubmit() {
-    const resultContainer = document.getElementById('result-container');
-    const form = document.getElementById('planification-form');
-    const formData = new FormData(form);
-
-    resultContainer.classList.add('opacity-60');
-    resultContainer.innerHTML = `
-        <div class="bg-white border border-slate-200 rounded-lg p-12 text-center shadow-2xs flex flex-col items-center justify-center">
-            <div class="animate-spin rounded-full h-8 w-8 border-2 border-indigo-600 border-t-transparent mb-3"></div>
-            <p class="text-xs font-semibold text-slate-600">Chargement des opérations en cours...</p>
-        </div>
-    `;
-
-    try {
-        const response = await fetch('/planification_all_operations/', {
-            method: 'POST',
-            headers: { 'X-CSRFToken': formData.get('csrfmiddlewaretoken') },
-            body: formData
-        });
-        
-        if (!response.ok) throw new Error('Erreur réseau');
-        
-        const html = await response.text();
-        
-        resultContainer.innerHTML = html;
-        resultContainer.classList.remove('opacity-60');
-        
-        const cards = document.querySelectorAll('#result-container .neo-card, #result-container .operation-card');
-        document.getElementById('resultCount').textContent = cards.length;
-        document.getElementById('filterInput').value = ''; 
-    } catch (error) {
-        resultContainer.innerHTML = `
-            <div class="bg-red-50 border border-red-200 rounded-lg p-8 text-center text-red-600">
-                <i class="bx bx-error-alt text-2xl mb-2"></i>
-                <p class="text-xs font-bold uppercase tracking-wider">Une erreur est survenue lors de la récupération des données.</p>
-            </div>
-        `;
-        resultContainer.classList.remove('opacity-60');
-    }
-}
-
-document.addEventListener('DOMContentLoaded', loadStructures);
-document.getElementById('structureSelect').addEventListener('change', autoSubmit);
+    document.addEventListener('DOMContentLoaded', loadStructures);
+    $('structureSelect').addEventListener('change', autoSubmit);
+})();
 </script>
 
 {% endblock %}

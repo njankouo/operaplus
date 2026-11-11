@@ -422,6 +422,9 @@ gestionnaire_url_patterns = [
 
    path('check-orgunits/',views.check_orgunits, name='check-orgunits'),
 
+   path('supprimer-transaction/<int:id>/', views.supprimer_transaction, name='supprimer-transaction'),
+   path('microplan-operations/', views.microplan_operations, name='microplan-operations'),
+
    path('final-import-data/', views.final_import_data, name='final-import-data'),
 
    path('save_dataelts/', views.save_dataelts, name='save_dataelts'),

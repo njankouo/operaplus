@@ -2,21 +2,25 @@
 {% load static %}
 {% block main %}
 
-<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
-    
-    <!-- En-tête style Odoo (Breadcrumb / Titre & Actions) -->
-    <div class="bg-white border border-slate-200 rounded-lg p-6 shadow-2xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                <span>Projets</span>
+<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6 dg">
+
+    <!-- En-tête (fil d'Ariane / titre / état) -->
+    <div class="bg-white border border-slate-200 rounded-lg p-6 shadow-2xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4 dg-head">
+        <div class="min-w-0">
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 dg-crumb">
+                <a href="/" class="hover:text-slate-600">Projets</a>
                 <i class="fas fa-chevron-right text-[10px]"></i>
                 <span class="text-indigo-600">Planification</span>
             </div>
             <h1 class="text-2xl font-bold text-slate-800 tracking-tight">
                 {{ operation.nom|default:"Projet Sans Nom" }}
             </h1>
+            <p class="dg-sub">
+                {% if operation.date_debut %}<span><i class="far fa-calendar"></i>{{ operation.date_debut|date:"d/m/Y" }}{% if operation.date_echeance %} → {{ operation.date_echeance|date:"d/m/Y" }}{% endif %}</span>{% endif %}
+                {% if operation.personnel %}<span><i class="far fa-user"></i>{{ operation.personnel.nom }}</span>{% endif %}
+            </p>
         </div>
-        
+
         <div class="flex items-center gap-2">
             <span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                 <i class="fas fa-shield-alt mr-1.5 text-indigo-600"></i> Mode Édition
@@ -24,7 +28,7 @@
         </div>
     </div>
 
-    <!-- Formulaire principal (Style Fiche Odoo) -->
+    <!-- Formulaire principal -->
     <div class="bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden">
         <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
             <div class="flex items-center gap-2 text-sm font-bold text-slate-700">
@@ -35,7 +39,7 @@
 
         <form method="POST" action='{% url "update-planification" %}' class="p-6 space-y-6">
             {% csrf_token %}
-            
+
             {% if form.errors %}
             <div class="bg-red-50 text-red-700 p-4 rounded-md border border-red-200 text-sm space-y-1">
                 <div class="font-bold flex items-center gap-2">
@@ -48,10 +52,9 @@
                 </ul>
             </div>
             {% endif %}
-            
+
             <input type="hidden" value="{{ operation.id }}" name="operation">
-            
-            <!-- Champs en grille type formulaire ERP -->
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="date_debut" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Date de début</label>
@@ -60,26 +63,24 @@
                 {% include 'includes/date.html' %}
             </div>
 
-            <!-- Jours de réalisation -->
             <div>
                 <label for="days-input" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Jours pour la réalisation</label>
                 <div class="flex items-center border border-slate-300 rounded-md bg-white max-w-xs overflow-hidden">
-                    <button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border-r border-slate-300 transition-colors text-xs" type="button" id="btn-minus"><i class="fas fa-minus"></i></button>
+                    <button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border-r border-slate-300 transition-colors text-xs" type="button" id="btn-minus" aria-label="Un jour de moins"><i class="fas fa-minus"></i></button>
                     <input type="number" class="w-full text-center py-2 bg-transparent font-bold text-slate-800 text-sm outline-none" id="days-input" name="nombre_jour" value="{{ operation.nombre_jour|default:1 }}" min="1" max="365" required>
-                    <button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border-l border-slate-300 transition-colors text-xs" type="button" id="btn-plus"><i class="fas fa-plus"></i></button>
+                    <button class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border-l border-slate-300 transition-colors text-xs" type="button" id="btn-plus" aria-label="Un jour de plus"><i class="fas fa-plus"></i></button>
                 </div>
                 <p class="text-xs text-slate-500 mt-1.5 font-medium">
-                    Durée totale estimée : <span id="total-duration-display" class="font-bold text-indigo-600">{{ total_duration|default:1 }} jour{{ total_duration|default:1|pluralize }}</span>
+                    Durée totale estimée : <span id="total-duration-display" class="font-bold text-indigo-600">{{ total_duration|default:1 }} jour{% if total_duration > 1 %}s{% endif %}</span>
                 </p>
             </div>
-            
+
             <input type="hidden" value="{{ operation.personnel.id }}" name="responsable">
-            
+
             {% if actual_institution.is_frequency %}
                 {% include 'includes/frequence.html' %}
             {% endif %}
 
-            <!-- Boutons d'action pied de formulaire -->
             <div class="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
                 <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-semibold text-xs tracking-wider uppercase transition-colors shadow-2xs flex items-center gap-2" id="submitBtn">
                     <i class="fas fa-save"></i>
@@ -89,28 +90,69 @@
         </form>
     </div>
 
-    <!-- Registre Actif (Transactions - Style Liste/Tableau Odoo) -->
+    <!-- Registre des transactions -->
     {% if operation_transaction %}
     <div class="bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden space-y-4" id="transactions-section">
-        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center flex-wrap gap-3">
             <div>
                 <h3 class="font-bold text-slate-800 text-sm">Registre des Transactions</h3>
-                <p class="text-xs text-slate-500">Suivi en temps réel des flux opérationnels.</p>
+                <p class="text-xs text-slate-500">Saisies de réalisation liées à cette activité.</p>
             </div>
             <span class="px-2.5 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded">
                 Total : {{ operation_transaction|length }}
             </span>
         </div>
 
-        <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Mini-statistiques -->
+        <div class="dg-stats">
+            <div><span>Transactions</span><b>{{ stats.total }}</b></div>
+            <div class="is-ok"><span>Validées</span><b>{{ stats.validees }}</b></div>
+            <div class="is-mid"><span>En attente</span><b>{{ stats.en_attente }}</b></div>
+            <div><span>Progression moyenne</span><b>{{ stats.moyenne|floatformat:"-1" }}<small> %</small></b></div>
+        </div>
+
+        <!-- Graphiques -->
+        <div class="dg-charts">
+            <div class="dg-chart dg-chart-line">
+                <div class="dg-chart-head">
+                    <h4>Évolution de la progression</h4>
+                    <p>Chaque point est une transaction saisie ; la ligne pointillée montre l'avancement attendu selon les dates de l'activité.</p>
+                </div>
+                <div id="dgLine" class="dg-chart-body"></div>
+            </div>
+            <div class="dg-chart">
+                <div class="dg-chart-head">
+                    <h4>État de validation</h4>
+                    <p>Transactions validées et en attente.</p>
+                </div>
+                <div id="dgDonut" class="dg-chart-body"></div>
+            </div>
+            <div class="dg-chart dg-chart-wide" id="dgRespWrap">
+                <div class="dg-chart-head">
+                    <h4>Transactions par responsable</h4>
+                    <p>Qui saisit, et ce qui reste à valider pour chacun.</p>
+                </div>
+                <div id="dgResp" class="dg-chart-body"></div>
+            </div>
+        </div>
+        {{ graph_data|json_script:"dgData" }}
+
+        <!-- Filtre rapide -->
+        <div class="dg-filtres" role="tablist" aria-label="Filtrer les transactions">
+            <button type="button" class="is-on" data-f="all">Toutes <i>{{ stats.total }}</i></button>
+            <button type="button" data-f="attente">En attente <i>{{ stats.en_attente }}</i></button>
+            <button type="button" data-f="valide">Validées <i>{{ stats.validees }}</i></button>
+        </div>
+
+        <div class="p-6 pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="dgCartes">
             {% for transaction in operation_transaction %}
-            
-            <!-- Modale Odoo -->
-            <div class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs items-center justify-center p-4" id="editModal{{ transaction.id }}">
+
+            <!-- Fenêtre de modification -->
+            <div class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-xs items-center justify-center p-4 dg-modal" id="editModal{{ transaction.id }}">
                 <div class="bg-white rounded-lg w-full max-w-lg shadow-xl border border-slate-200 overflow-hidden">
                     <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                        <h4 class="text-sm font-bold text-slate-800">Configuration - TRX-{{ forloop.counter|stringformat:"03d" }}</h4>
-                        <button type="button" class="text-slate-400 hover:text-slate-600" onclick="document.getElementById('editModal{{ transaction.id }}').style.display='none'">
+                        <h4 class="text-sm font-bold text-slate-800">Modifier · TRX-{{ forloop.counter|stringformat:"03d" }}</h4>
+                        <button type="button" class="text-slate-400 hover:text-slate-600" aria-label="Fermer" onclick="document.getElementById('editModal{{ transaction.id }}').style.display='none'">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -124,7 +166,7 @@
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Responsable</label>
                             <select class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:border-indigo-600 outline-none bg-white" name="responsable">
-                                {% for personnels in personnel %}<option value="{{ personnels.id }}">{{ personnels.nom }}</option>{% endfor %}
+                                {% for personnels in personnel %}<option value="{{ personnels.id }}" {% if personnels.id == transaction.personnel_id %}selected{% endif %}>{{ personnels.nom }}</option>{% endfor %}
                             </select>
                         </div>
 
@@ -135,7 +177,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Valeur (%)</label>
-                                <input type="number" name="valeur" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:border-indigo-600 outline-none" value="{{ transaction.valeur|floatformat:'0' }}" max="100" min="0" required>
+                                <input type="number" name="valeur" class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:border-indigo-600 outline-none" value="{{ transaction.pct_css }}" step="0.1" max="100" min="0" required>
                             </div>
                         </div>
 
@@ -147,47 +189,142 @@
                 </div>
             </div>
 
-            <!-- Carte Transaction Style Kanban Odoo -->
-            <div class="bg-white p-4 rounded-md border border-slate-200 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
+            <!-- Carte transaction -->
+            <div class="bg-white p-4 rounded-md border border-slate-200 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between dg-card n-{{ transaction.niveau }}" data-etat="{% if transaction.est_valide %}valide{% else %}attente{% endif %}">
                 <div>
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 uppercase">TRX-{{ forloop.counter|stringformat:"03d" }}</span>
-                        <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full {% if transaction.etat %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
-                            {% if transaction.etat %}Traitée{% else %}En attente{% endif %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full {% if transaction.est_valide %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                            <i class="fas {% if transaction.est_valide %}fa-check{% else %}fa-hourglass-half{% endif %}"></i>{% if transaction.est_valide %}Validée{% else %}En attente{% endif %}
                         </span>
                     </div>
-                    <h4 class="font-bold text-slate-800 text-sm mb-0.5 truncate">{{ transaction.nom|default:"Sans Nom"|title }}</h4>
-                    <p class="text-xs text-slate-400 mb-3"><i class="far fa-calendar-alt mr-1"></i> {{ transaction.date_enregistrement }}</p>
-                    
+                    <h4 class="font-bold text-slate-800 text-sm mb-0.5 truncate" title="{{ transaction.nom|default:'Sans nom' }}">{{ transaction.nom|default:"Sans nom"|capfirst }}</h4>
+                    <p class="text-xs text-slate-400 mb-3 dg-meta">
+                        <span><i class="far fa-calendar-alt"></i> {{ transaction.date_enregistrement|date:"d/m/Y" }}</span>
+                        {% if transaction.personnel %}<span><i class="far fa-user"></i> {{ transaction.personnel.nom }}</span>{% endif %}
+                    </p>
+
                     <div class="space-y-1 mb-4">
                         <div class="flex justify-between text-xs text-slate-500 font-medium">
                             <span>Progression</span>
-                            <span class="font-bold text-slate-700">{{ transaction.valeur }}%</span>
+                            <span class="font-bold text-slate-700 dg-pct">{{ transaction.pct|floatformat:"-1" }} %</span>
                         </div>
                         <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-indigo-600 h-full rounded-full" style="width: {{ transaction.valeur }}%;"></div>
+                            <div class="bg-indigo-600 h-full rounded-full dg-bar" style="width: {{ transaction.pct_css }}%;"></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="pt-2 border-t border-slate-100">
-                    {% if not transaction.etat %}
+                    {% if not transaction.est_valide %}
                         <div class="flex gap-2">
-                            <a href="/send-transaction/{{ transaction.id }}/" class="flex-1 text-center py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-xs font-semibold transition-colors">Soumettre</a>
-                            <button onclick="document.getElementById('editModal{{ transaction.id }}').style.display='flex'" class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded text-xs transition-colors"><i class="fas fa-cog"></i></button>
+                            <a href="/send-transaction/{{ transaction.id }}/" class="flex-1 text-center py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-xs font-semibold transition-colors"><i class="fas fa-paper-plane mr-1"></i>Soumettre</a>
+                            <button type="button" title="Modifier" aria-label="Modifier" onclick="document.getElementById('editModal{{ transaction.id }}').style.display='flex'" class="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded text-xs transition-colors"><i class="fas fa-pen"></i></button>
+                            <button type="button" title="Supprimer" aria-label="Supprimer" class="px-3 py-1.5 border border-slate-200 text-slate-500 rounded text-xs transition-colors dg-del"
+                                    data-url="/supprimer-transaction/{{ transaction.id }}/" data-nom="{{ transaction.nom|default:'cette transaction' }}" data-ref="TRX-{{ forloop.counter|stringformat:'03d' }}"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     {% else %}
-                        <div class="w-full text-center py-1.5 text-emerald-700 bg-emerald-50/60 rounded text-xs font-semibold">Validé</div>
+                        <div class="w-full text-center py-1.5 text-emerald-700 bg-emerald-50/60 rounded text-xs font-semibold"><i class="fas fa-lock mr-1"></i>Validée</div>
                     {% endif %}
                 </div>
             </div>
             {% endfor %}
+            <p class="dg-vide" id="dgVide" hidden>Aucune transaction dans ce filtre.</p>
         </div>
+    </div>
+    {% else %}
+    <div class="dg-empty">
+        <i class="fas fa-inbox"></i>
+        <b>Aucune transaction pour cette activité</b>
+        <span>Les saisies de réalisation apparaîtront ici.</span>
     </div>
     {% endif %}
 </div>
 
-<!-- Script logique inchangé -->
+<!-- Confirmation de suppression -->
+<div class="dg-confirm" id="dgConfirm" hidden role="dialog" aria-modal="true" aria-labelledby="dgConfirmTitre">
+    <form method="POST" action="" class="dg-confirm-box" id="dgConfirmForm">
+        {% csrf_token %}
+        <div class="dg-confirm-ico"><i class="fas fa-trash-alt"></i></div>
+        <h4 id="dgConfirmTitre">Supprimer la transaction ?</h4>
+        <p><b id="dgConfirmNom"></b> (<span id="dgConfirmRef"></span>) sera définitivement supprimée. Cette action ne peut pas être annulée.</p>
+        <div class="dg-confirm-actions">
+            <button type="button" class="dg-btn-ghost" id="dgConfirmNon">Annuler</button>
+            <button type="submit" class="dg-btn-danger"><i class="fas fa-trash-alt"></i> Supprimer</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .dg, .dg-confirm { --dg-line: rgba(15,23,42,.07); --dg-shadow: 0 1px 2px rgba(15,23,42,.03), 0 14px 34px -22px rgba(15,23,42,.22);
+          --dg-ok: #43A047; --dg-mid: #FBC02D; --dg-low: #E53935; }
+    .dg [hidden], .dg-confirm[hidden] { display: none !important; }
+    .dg > div { border-radius: 20px !important; border-color: var(--dg-line) !important; box-shadow: var(--dg-shadow) !important; }
+    .dg > div > div.bg-slate-50:first-child { background: color-mix(in srgb, var(--nav-bg-color) 4%, #fafbfc) !important; border-color: var(--dg-line) !important; }
+    .dg-sub { display: flex; flex-wrap: wrap; gap: .9rem; margin-top: .35rem; font-size: .8rem; color: #64748b; }
+    .dg-sub i { margin-right: .35rem; color: #94a3b8; }
+    .dg-crumb a { color: inherit; text-decoration: none; }
+
+    /* Mini-statistiques */
+    .dg-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .75rem; padding: 0 1.5rem; }
+    .dg-stats > div { padding: .75rem 1rem; border-radius: 14px; background: #f8fafc; border: 1px solid var(--dg-line); }
+    .dg-stats span { display: block; font-size: .72rem; font-weight: 600; color: #64748b; }
+    .dg-stats b { display: block; margin-top: .15rem; font-size: 1.45rem; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
+    .dg-stats b small { font-size: .85rem; color: #94a3b8; }
+    .dg-stats .is-ok b { color: var(--dg-ok); }
+    .dg-stats .is-mid b { color: #b08300; }
+
+    /* Filtres */
+    .dg-filtres { display: inline-flex; gap: .25rem; margin: 0 1.5rem; padding: .25rem; border-radius: 999px; background: #f1f4f8; }
+    .dg-filtres button { border: 0; background: none; padding: .4rem .9rem; border-radius: 999px; font-size: .78rem; font-weight: 600; color: #64748b; cursor: pointer; transition: background .25s, color .25s; }
+    .dg-filtres button i { font-style: normal; font-size: .7rem; color: #94a3b8; margin-left: .2rem; }
+    .dg-filtres button.is-on { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+
+    /* Cartes : arrondies, barre rouge / jaune / vert selon la progression */
+    .dg-card { border-radius: 16px !important; border-color: var(--dg-line) !important; transition: box-shadow .35s ease, transform .35s ease !important; }
+    .dg-card:hover { transform: translateY(-2px); box-shadow: 0 16px 30px -22px rgba(15,23,42,.4) !important; }
+    .dg-card .dg-bar { transition: width 1s cubic-bezier(.2,.8,.3,1); }
+    .dg-card.n-ok .dg-bar { background: var(--dg-ok) !important; }  .dg-card.n-mid .dg-bar { background: var(--dg-mid) !important; }  .dg-card.n-low .dg-bar { background: var(--dg-low) !important; }
+    .dg-card.n-ok .dg-pct { color: var(--dg-ok) !important; }       .dg-card.n-mid .dg-pct { color: #b08300 !important; }           .dg-card.n-low .dg-pct { color: var(--dg-low) !important; }
+    .dg-meta { display: flex; flex-wrap: wrap; gap: .3rem .9rem; }
+    .dg-meta i { margin-right: .2rem; }
+    .dg-del:hover { background: #fdecec !important; border-color: #f5c2c2 !important; color: var(--dg-low) !important; }
+    .dg-vide { grid-column: 1 / -1; text-align: center; color: #94a3b8; font-size: .85rem; font-weight: 600; padding: 1.5rem; }
+    .dg-empty { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: 2.5rem 1rem; background: #fff; text-align: center; color: #64748b; font-size: .85rem; }
+    .dg-empty i { font-size: 1.6rem; color: #cbd5e1; margin-bottom: .3rem; }
+    .dg-empty b { color: #0f172a; font-size: .95rem; }
+
+    /* Fenêtres */
+    .dg-modal > div { border-radius: 20px !important; }
+    .dg-confirm { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15,23,42,.45); backdrop-filter: blur(3px); animation: dgFade .2s ease; }
+    .dg-confirm-box { width: 100%; max-width: 26rem; background: #fff; border-radius: 22px; padding: 1.6rem; text-align: center; box-shadow: 0 30px 60px -24px rgba(15,23,42,.5); animation: dgPop .3s cubic-bezier(.2,.9,.3,1.2); }
+    .dg-confirm-ico { width: 3.2rem; height: 3.2rem; margin: 0 auto .9rem; border-radius: 50%; display: grid; place-items: center; background: #fdecec; color: var(--dg-low); font-size: 1.1rem; }
+    .dg-confirm-box h4 { font-size: 1.05rem; font-weight: 800; color: #0f172a; }
+    .dg-confirm-box p { margin: .5rem 0 1.3rem; font-size: .85rem; color: #64748b; line-height: 1.5; }
+    .dg-confirm-box p b { color: #0f172a; }
+    .dg-confirm-actions { display: flex; gap: .6rem; }
+    .dg-confirm-actions button { flex: 1; padding: .7rem 1rem; border-radius: 12px; font-size: .85rem; font-weight: 700; cursor: pointer; }
+    .dg-btn-ghost { border: 1px solid #e2e8f0; background: #fff; color: #334155; }
+    .dg-btn-ghost:hover { background: #f8fafc; }
+    .dg-btn-danger { border: 0; background: var(--dg-low); color: #fff; }
+    .dg-btn-danger:hover { filter: brightness(.93); }
+    @keyframes dgFade { from { opacity: 0; } }
+    @keyframes dgPop { from { opacity: 0; transform: scale(.95) translateY(8px); } }
+    /* Graphiques */
+    .dg-charts { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: .9rem; padding: 0 1.5rem; }
+    .dg-chart { border: 1px solid var(--dg-line); border-radius: 16px; padding: 1rem 1rem .4rem; background: #fff; min-width: 0; }
+    .dg-chart-wide { grid-column: 1 / -1; }
+    .dg-chart-head h4 { font-size: .9rem; font-weight: 700; color: #0f172a; }
+    .dg-chart-head p { font-size: .75rem; color: #64748b; margin-top: .15rem; }
+    .dg-chart-body { min-height: 120px; }
+    .dg-chart-body:empty { border-radius: 12px; margin-top: .6rem; background: linear-gradient(90deg, #f1f4f8 25%, #f8fafc 50%, #f1f4f8 75%); background-size: 200% 100%; animation: dgShim 1.2s linear infinite; }
+    .dg-chart-msg { display: grid; place-items: center; min-height: 160px; color: #94a3b8; font-size: .82rem; font-weight: 600; text-align: center; }
+    @keyframes dgShim { to { background-position: -200% 0; } }
+    @media (max-width: 900px) { .dg-charts { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .dg-stats { padding: 0 1rem; } .dg-filtres { margin: 0 1rem; } }
+    @media (max-width: 640px) { .dg-charts { padding: 0 1rem; } }
+</style>
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const daysInput = document.getElementById('days-input');
@@ -195,6 +332,14 @@
         const endDateInput = document.getElementById('date_fin');
         const btnMinus = document.getElementById('btn-minus');
         const btnPlus = document.getElementById('btn-plus');
+        const durationDisplay = document.getElementById('total-duration-display');
+
+        /* « Durée totale estimée » suit le nombre de jours */
+        const updateDuration = () => {
+            if (!durationDisplay || !daysInput) return;
+            const n = parseInt(daysInput.value, 10);
+            durationDisplay.textContent = isNaN(n) ? '—' : n + ' jour' + (n > 1 ? 's' : '');
+        };
 
         const updateEndDate = () => {
             if (!startDateInput || !endDateInput || !daysInput) return;
@@ -218,12 +363,13 @@
 
             if (!startDate || !endDate || endDate < startDate) {
                 daysInput.value = '';
+                updateDuration();
                 return;
             }
 
             const timeDifference = endDate.getTime() - startDate.getTime();
-            const dayDifference = Math.ceil(timeDifference / (1000 * 3600 * 24));
-            daysInput.value = dayDifference;
+            daysInput.value = Math.ceil(timeDifference / (1000 * 3600 * 24));
+            updateDuration();
         };
 
         const updateDays = (delta) => {
@@ -237,6 +383,7 @@
             if (currentValue >= min && currentValue <= max) {
                 daysInput.value = currentValue;
                 updateEndDate();
+                updateDuration();
             }
         };
 
@@ -245,8 +392,7 @@
 
         if (startDateInput) startDateInput.addEventListener('change', updateEndDate);
         if (daysInput) {
-            daysInput.addEventListener('change', updateEndDate);
-            daysInput.addEventListener('input', updateEndDate);
+            ['change', 'input'].forEach(ev => daysInput.addEventListener(ev, () => { updateEndDate(); updateDuration(); }));
         }
         if (endDateInput) endDateInput.addEventListener('change', updateDaysFromDates);
 
@@ -254,6 +400,120 @@
             startDateInput.valueAsDate = new Date();
             updateEndDate();
         }
+        updateDuration();
+
+        /* Filtre des transactions */
+        const cartes = Array.from(document.querySelectorAll('#dgCartes .dg-card'));
+        document.querySelectorAll('.dg-filtres button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.dg-filtres button').forEach(b => b.classList.toggle('is-on', b === btn));
+                let n = 0;
+                cartes.forEach(c => { const ok = btn.dataset.f === 'all' || c.dataset.etat === btn.dataset.f; c.hidden = !ok; if (ok) n++; });
+                const vide = document.getElementById('dgVide'); if (vide) vide.hidden = n > 0;
+            });
+        });
+
+        /* Suppression : confirmation avant l'envoi (POST, jeton CSRF) */
+        const confirmBox = document.getElementById('dgConfirm');
+        const confirmForm = document.getElementById('dgConfirmForm');
+        const fermer = () => { confirmBox.hidden = true; };
+        document.querySelectorAll('.dg-del').forEach(btn => {
+            btn.addEventListener('click', () => {
+                confirmForm.action = btn.dataset.url;
+                document.getElementById('dgConfirmNom').textContent = btn.dataset.nom;
+                document.getElementById('dgConfirmRef').textContent = btn.dataset.ref;
+                confirmBox.hidden = false;
+                document.getElementById('dgConfirmNon').focus();
+            });
+        });
+        document.getElementById('dgConfirmNon').addEventListener('click', fermer);
+        confirmBox.addEventListener('click', e => { if (e.target === confirmBox) fermer(); });
+        confirmForm.addEventListener('submit', () => {
+            const b = confirmForm.querySelector('.dg-btn-danger'); b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Suppression…';
+        });
+
+        /* Graphiques (ApexCharts, déjà chargé par la page de base) */
+        (function () {
+            const src = document.getElementById('dgData');
+            if (!src) return;
+            const D = JSON.parse(src.textContent);
+            const VERT = '#43A047', JAUNE = '#FBC02D', ROUGE = '#E53935';
+            const nav = (getComputedStyle(document.documentElement).getPropertyValue('--nav-bg-color') || '').trim() || '#123A37';
+            const police = getComputedStyle(document.body).fontFamily;
+            const niveau = v => v >= 80 ? VERT : v >= 50 ? JAUNE : ROUGE;
+            const msg = (id, t) => { const el = document.getElementById(id); if (el) el.innerHTML = '<div class="dg-chart-msg">' + t + '</div>'; };
+            const fmt = v => (Math.round(v * 10) / 10).toLocaleString('fr-FR') + ' %';
+            if (typeof ApexCharts === 'undefined') { ['dgLine', 'dgDonut', 'dgResp'].forEach(id => msg(id, 'Graphique indisponible')); return; }
+
+            /* 1. Évolution de la progression + avancement attendu */
+            const pts = (D.points || []).map(p => ({ x: new Date(p.date).getTime(), y: p.valeur, nom: p.nom, valide: p.valide }));
+            if (!pts.length) msg('dgLine', 'Aucune transaction datée');
+            else {
+                const series = [{ name: 'Progression saisie', type: 'line', data: pts.map(p => ({ x: p.x, y: p.y })) }];
+                const debut = D.debut ? new Date(D.debut).getTime() : null, fin = D.fin ? new Date(D.fin).getTime() : null;
+                if (debut && fin && fin > debut) series.push({ name: 'Avancement attendu', type: 'line', data: [{ x: debut, y: 0 }, { x: fin, y: 100 }] });
+                const now = Date.now();
+                new ApexCharts(document.getElementById('dgLine'), {
+                    series,
+                    chart: { type: 'line', height: 280, fontFamily: police, toolbar: { show: false }, zoom: { enabled: false }, animations: { speed: 700 } },
+                    colors: [nav, '#94a3b8'],
+                    stroke: { width: [3, 2], curve: 'straight', dashArray: [0, 6] },
+                    markers: { size: [6, 0], strokeWidth: 2, strokeColors: '#fff', hover: { sizeOffset: 2 },
+                               discrete: pts.map((p, i) => ({ seriesIndex: 0, dataPointIndex: i, fillColor: niveau(p.y), strokeColor: '#fff', size: 6 })) },
+                    xaxis: { type: 'datetime', labels: { datetimeUTC: false, format: 'dd MMM', style: { colors: '#64748b', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+                    yaxis: { min: 0, max: 100, tickAmount: 4, labels: { formatter: v => Math.round(v) + ' %', style: { colors: '#94a3b8', fontSize: '11px' } } },
+                    grid: { borderColor: '#eef1f5', strokeDashArray: 3 },
+                    annotations: {
+                        yaxis: [{ y: 100, borderColor: VERT, strokeDashArray: 0, opacity: .5, label: { text: 'Cible', position: 'left', textAnchor: 'start', offsetX: 6, style: { background: VERT, color: '#fff', fontSize: '10px' } } }],
+                        xaxis: (debut && fin && now > debut && now < fin + 864e5 * 60) ? [{ x: now, borderColor: ROUGE, strokeDashArray: 4, label: { text: "Aujourd'hui", orientation: 'horizontal', style: { background: ROUGE, color: '#fff', fontSize: '10px' } } }] : []
+                    },
+                    legend: { position: 'top', horizontalAlign: 'left', fontSize: '12px', fontWeight: 600, labels: { colors: '#475569' }, markers: { radius: 3 } },
+                    tooltip: { shared: false, intersect: true, custom: ({ seriesIndex, dataPointIndex, w }) => {
+                        if (seriesIndex !== 0) return '<div style="padding:8px 10px;font-size:12px">Avancement attendu</div>';
+                        const p = pts[dataPointIndex];
+                        const d = new Date(p.x).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+                        return '<div style="padding:8px 10px;font-size:12px;line-height:1.5"><b>' + p.nom.replace(/</g, '&lt;') + '</b><br>' + d + ' · <b style="color:' + niveau(p.y) + '">' + fmt(p.y) + '</b><br>' + (p.valide ? '✓ Validée' : '⏳ En attente') + '</div>';
+                    } }
+                }).render();
+            }
+
+            /* 2. État de validation */
+            const val = (D.responsables || []).reduce((a, r) => a + r.validees, 0), att = (D.responsables || []).reduce((a, r) => a + r.attente, 0);
+            if (!(val + att)) msg('dgDonut', 'Aucune transaction');
+            else new ApexCharts(document.getElementById('dgDonut'), {
+                series: [val, att], labels: ['Validées', 'En attente'],
+                chart: { type: 'donut', height: 260, fontFamily: police },
+                colors: [VERT, JAUNE], stroke: { width: 3, colors: ['#fff'] }, dataLabels: { enabled: false },
+                plotOptions: { pie: { donut: { size: '72%', labels: { show: true,
+                    value: { fontSize: '22px', fontWeight: 800, color: '#0f172a', offsetY: 4 },
+                    total: { show: true, showAlways: true, label: 'Validées', fontSize: '12px', color: '#64748b', formatter: () => Math.round(val / (val + att) * 100) + ' %' } } } } },
+                legend: { position: 'bottom', fontSize: '12px', fontWeight: 600, labels: { colors: '#475569' }, markers: { radius: 3 },
+                          formatter: (n, o) => n + ' · ' + o.w.globals.series[o.seriesIndex] }
+            }).render();
+
+            /* 3. Par responsable (barres empilées) — masqué s'il n'y a qu'une personne */
+            const R = D.responsables || [];
+            if (R.length < 2) { const w = document.getElementById('dgRespWrap'); if (w) w.hidden = true; }
+            else new ApexCharts(document.getElementById('dgResp'), {
+                series: [{ name: 'Validées', data: R.map(r => r.validees) }, { name: 'En attente', data: R.map(r => r.attente) }],
+                chart: { type: 'bar', stacked: true, height: Math.max(150, R.length * 42 + 60), fontFamily: police, toolbar: { show: false } },
+                colors: [VERT, JAUNE],
+                plotOptions: { bar: { horizontal: true, barHeight: '55%', borderRadius: 4, borderRadiusApplication: 'end', borderRadiusWhenStacked: 'last' } },
+                dataLabels: { enabled: true, style: { fontSize: '11px', colors: ['#fff', '#3f2d00'] }, formatter: v => v || '' },
+                xaxis: { categories: R.map(r => r.nom), labels: { formatter: v => Math.round(v), style: { colors: '#94a3b8' } }, tickAmount: Math.min(6, Math.max(...R.map(r => r.validees + r.attente))) },
+                yaxis: { labels: { style: { colors: '#334155', fontSize: '12px', fontWeight: 600 } } },
+                grid: { borderColor: '#eef1f5', strokeDashArray: 3, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+                legend: { position: 'top', horizontalAlign: 'left', fontSize: '12px', fontWeight: 600, labels: { colors: '#475569' }, markers: { radius: 3 } },
+                tooltip: { y: { formatter: v => v + ' transaction' + (v > 1 ? 's' : '') } }
+            }).render();
+        })();
+
+        /* Échap : ferme la confirmation et les fenêtres de modification */
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Escape') return;
+            fermer();
+            document.querySelectorAll('.dg-modal').forEach(m => { m.style.display = 'none'; });
+        });
     });
 </script>
 

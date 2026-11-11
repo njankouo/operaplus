@@ -32787,6 +32787,28 @@ def alert_supression(request, id):
 
 
 
+from decimal import Decimal, InvalidOperation
+
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+# from .models import Operation, Personnel, IndicateurValeur   (déjà importés chez toi)
+
+
+def _pourcentage(valeur):
+    """Valeur stockée (Decimal à 12 décimales) → nombre propre entre 0 et 100."""
+    try:
+        v = float(Decimal(str(valeur)))
+    except (InvalidOperation, TypeError, ValueError):
+        return 0.0
+    return max(0.0, min(100.0, v))
+
+
+def _est_validee(t):
+    return bool(getattr(t, 'etat', None) or getattr(t, 'etat_validation', None))
+
+
 def detail_gantt(request, id):
     template = 'datails_gantt.html'
 
@@ -32794,23 +32816,72 @@ def detail_gantt(request, id):
 
     context = basis(request)
     actual_institution = context['actual_institution']
-    operation = Operation.objects.get(id=int(id))
+    operation = get_object_or_404(Operation, id=int(id))
+
     context['operation'] = operation
-    context['operation'] = operation
-    context['operations_delay'] = ops_count # Ajouté pour être complet
+    context['operations_delay'] = ops_count
     context['transaction_delay'] = trans_count
+    context['personnel'] = Personnel.objects.filter(actual_institution=actual_institution).order_by('nom')
+    context['total_duration'] = operation.nombre_jour or 1
 
-    context['personnel'] = Personnel.objects.filter(actual_institution = actual_institution)
-
-
-    operation_transaction = IndicateurValeur.objects.filter(institution_id = context['actual_institution'],  operation=operation)
-    
+    operation_transaction = list(
+        IndicateurValeur.objects
+        .filter(institution=actual_institution, operation=operation)
+        .select_related('personnel')
+        .order_by('-date_enregistrement', '-id')
+    )
+    # Chiffres prêts à afficher : plus de « 62.500000000000 »
+    for t in operation_transaction:
+        t.pct = _pourcentage(t.valeur)
+        t.pct_css = f'{t.pct:.1f}'                     # pour style="width:…%" (point décimal, jamais de virgule)
+        t.est_valide = _est_validee(t)
+        t.niveau = 'ok' if t.pct >= 80 else 'mid' if t.pct >= 50 else 'low'
     context['operation_transaction'] = operation_transaction
 
-    
+    nb = len(operation_transaction)
+    nb_valides = sum(1 for t in operation_transaction if t.est_valide)
+    context['stats'] = {
+        'total': nb,
+        'validees': nb_valides,
+        'en_attente': nb - nb_valides,
+        'moyenne': round(sum(t.pct for t in operation_transaction) / nb, 1) if nb else 0,
+    }
+    # Données des graphiques (ordre chronologique)
+    chrono = sorted(operation_transaction, key=lambda t: (t.date_enregistrement is None, t.date_enregistrement, t.id))
+    par_responsable = {}
+    for t in operation_transaction:
+        nom = t.personnel.nom if getattr(t, 'personnel', None) else 'Non attribué'
+        r = par_responsable.setdefault(nom, {'nom': nom, 'validees': 0, 'attente': 0})
+        r['validees' if t.est_valide else 'attente'] += 1
+    context['graph_data'] = {
+        'points': [{
+            'date': t.date_enregistrement.isoformat() if t.date_enregistrement else None,
+            'valeur': round(t.pct, 1),
+            'valide': t.est_valide,
+            'nom': t.nom or 'Sans nom',
+        } for t in chrono if t.date_enregistrement],
+        'debut': operation.date_debut.isoformat() if getattr(operation, 'date_debut', None) else None,
+        'fin': operation.date_echeance.isoformat() if getattr(operation, 'date_echeance', None) else None,
+        'responsables': sorted(par_responsable.values(), key=lambda r: -(r['validees'] + r['attente'])),
+    }
     return render(request, template, context)
 
 
+@require_POST
+def supprimer_transaction(request, id):
+    """Supprime une transaction en attente de l'institution courante, puis revient au détail de l'opération."""
+    actual_institution = basis(request)['actual_institution']
+    transaction = get_object_or_404(IndicateurValeur, id=int(id), institution=actual_institution)
+    retour = f'/detail-gantt/{transaction.operation_id}/' if transaction.operation_id else '/'
+
+    if _est_validee(transaction):
+        messages.error(request, "Cette transaction est déjà validée : elle ne peut pas être supprimée.")
+        return redirect(retour)
+
+    nom = transaction.nom or 'Transaction'
+    transaction.delete()
+    messages.success(request, f"« {nom} » a été supprimée.")
+    return redirect(retour)
 
 
 
@@ -35665,3 +35736,178 @@ def completude_collecte(request, id):
         'pct_ont_saisi': round(100 * len(structures_saisies) / total) if total else 0,
     })
     return render(request, 'completude-collecte.html', context)
+
+
+from datetime import timedelta
+
+from django.core.paginator import Paginator
+from django.db.models import Avg, Case, CharField, Count, F, IntegerField, Q, Value, When
+from django.db.models.functions import Coalesce, TruncMonth
+from django.http import JsonResponse
+from django.utils import timezone
+
+# from .models import Operation   (déjà importé chez toi)
+
+TAILLES = (25, 50, 100)
+TRIS = {
+    'echeance': ('date_echeance', 'id'),
+    '-echeance': ('-date_echeance', '-id'),
+    'nom': ('nom', 'id'),
+    'avancement': ('_valide', 'id'),
+    '-avancement': ('-_valide', '-id'),
+    'responsable': ('personnel__nom', 'nom'),
+}
+
+
+def _champs_operation():
+    return {f.name for f in Operation._meta.get_fields()}
+
+
+def _nom_personne(p):
+    if not p:
+        return None
+    return getattr(p, 'full_name', None) or ' '.join(x for x in [getattr(p, 'nom', ''), getattr(p, 'prenom', '')] if x).strip() or str(p)
+
+
+def microplan_operations(request):
+    """
+    Micro-planification d'une structure, en JSON, pensée pour des milliers d'opérations :
+      - filtres côté serveur (recherche, statut, responsable), tri et pagination ;
+      - statistiques calculées en base (quelques requêtes agrégées, pas de boucle Python sur toutes les lignes).
+    Paramètres GET : structure, q, statut (valide|attente|nonvalide|retard), responsable, tri, page, taille.
+    Statut : déclaré > validé → en attente ; validé > 0 → validé ; sinon non validé (même règle que la page des opérations).
+    """
+    try:
+        structure_id = int(request.GET.get('structure') or 0)
+    except ValueError:
+        structure_id = 0
+    if not structure_id:
+        return JsonResponse({'erreur': 'Structure manquante'}, status=400)
+
+    champs = _champs_operation()
+    today = timezone.localdate() if timezone.is_aware(timezone.now()) else timezone.now().date()
+
+    base = Operation.objects.filter(structure_id=structure_id)
+    if 'is_deleted' in champs:
+        base = base.filter(is_deleted=False)
+    institution = basis(request).get('actual_institution')
+    if institution is not None and 'm_institution' in champs:
+        base = base.filter(m_institution=institution)
+
+    declare = Coalesce(F('niveau_execution'), Value(0)) if 'niveau_execution' in champs else Value(0)
+    valide = Coalesce(F('niveau_execution_valide'), Value(0)) if 'niveau_execution_valide' in champs else Value(0)
+    base = base.annotate(
+        _declare=declare,
+        _valide=valide,
+    ).annotate(
+        _statut=Case(
+            When(_declare__gt=F('_valide'), then=Value('attente')),
+            When(_valide__gt=0, then=Value('valide')),
+            default=Value('nonvalide'), output_field=CharField()),
+        _retard=Case(
+            When(Q(date_echeance__lt=today) & Q(_valide__lt=100), then=Value(1)),
+            default=Value(0), output_field=IntegerField()),
+    )
+
+    # ---------- Statistiques de la structure (tous filtres de liste ignorés) ----------
+    agg = base.aggregate(
+        total=Count('id'),
+        valide=Count('id', filter=Q(_statut='valide')),
+        attente=Count('id', filter=Q(_statut='attente')),
+        nonvalide=Count('id', filter=Q(_statut='nonvalide')),
+        retard=Count('id', filter=Q(_retard=1)),
+        sans_responsable=Count('id', filter=Q(personnel__isnull=True)),
+        moy_declare=Avg('_declare'),
+        moy_valide=Avg('_valide'),
+    )
+    for k in ('moy_declare', 'moy_valide'):
+        agg[k] = round(float(agg[k] or 0), 1)
+
+    # Échéances par mois : 2 mois passés → 6 mois à venir, avec la part en retard
+    debut = (today.replace(day=1) - timedelta(days=45)).replace(day=1)
+    fin = (today.replace(day=1) + timedelta(days=200)).replace(day=1)
+    par_mois = (base.filter(date_echeance__gte=debut, date_echeance__lt=fin)
+                .annotate(mois=TruncMonth('date_echeance')).values('mois')
+                .annotate(n=Count('id'), retard=Count('id', filter=Q(_retard=1)), validees=Count('id', filter=Q(_statut='valide')))
+                .order_by('mois'))
+    echeances = [{'mois': (r['mois'].date() if hasattr(r['mois'], 'date') else r['mois']).isoformat()[:7],
+                  'n': r['n'], 'retard': r['retard'], 'validees': r['validees']} for r in par_mois]
+
+    # Charge par responsable : les 8 plus chargés
+    resp = (base.values('personnel_id').annotate(n=Count('id'), retard=Count('id', filter=Q(_retard=1)),
+                                                 attente=Count('id', filter=Q(_statut='attente')))
+            .order_by('-n')[:8])
+    ids = [r['personnel_id'] for r in resp if r['personnel_id']]
+    noms = {p.id: _nom_personne(p) for p in Operation._meta.get_field('personnel').related_model.objects.filter(id__in=ids)}
+    responsables = [{'id': r['personnel_id'], 'nom': noms.get(r['personnel_id']) or 'Non attribué',
+                     'n': r['n'], 'retard': r['retard'], 'attente': r['attente']} for r in resp]
+
+    # Liste complète des responsables de la structure (pour le filtre)
+    tous = dict(base.values_list('personnel_id').annotate(n=Count('id')).values_list('personnel_id', 'n'))
+    Personne = Operation._meta.get_field('personnel').related_model
+    liste_resp = sorted(({'id': p.id, 'nom': _nom_personne(p), 'n': tous.get(p.id, 0)}
+                         for p in Personne.objects.filter(id__in=[i for i in tous if i])), key=lambda r: (r['nom'] or '').lower())
+
+    # ---------- Liste filtrée, triée, paginée ----------
+    qs = base.select_related('personnel', *(['tache'] if 'tache' in champs else []))
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        cond = Q(nom__icontains=q) | Q(personnel__nom__icontains=q)
+        if 'code' in champs:
+            cond |= Q(code__icontains=q)
+        if 'tache' in champs:
+            champs_tache = {f.name for f in Operation._meta.get_field('tache').related_model._meta.get_fields()}
+            cond |= Q(**{'tache__%s__icontains' % ('m_nom' if 'm_nom' in champs_tache else 'nom'): q})
+        qs = qs.filter(cond)
+    statut = request.GET.get('statut') or ''
+    if statut in ('valide', 'attente', 'nonvalide'):
+        qs = qs.filter(_statut=statut)
+    elif statut == 'retard':
+        qs = qs.filter(_retard=1)
+    responsable = request.GET.get('responsable') or ''
+    if responsable == 'aucun':
+        qs = qs.filter(personnel__isnull=True)
+    elif responsable.isdigit():
+        qs = qs.filter(personnel_id=int(responsable))
+
+    qs = qs.order_by(*TRIS.get(request.GET.get('tri') or 'echeance', TRIS['echeance']))
+    try:
+        taille = int(request.GET.get('taille') or 50)
+    except ValueError:
+        taille = 50
+    taille = taille if taille in TAILLES else 50
+    pages = Paginator(qs, taille)
+    page = pages.get_page(request.GET.get('page') or 1)
+
+    def ligne(op):
+        ech = op.date_echeance.date() if hasattr(op.date_echeance, 'date') else op.date_echeance
+        deb = op.date_debut.date() if hasattr(op.date_debut, 'date') else op.date_debut
+        tache = getattr(op, 'tache', None)
+        return {
+            'id': op.id,
+            'nom': op.nom or 'Sans nom',
+            'code': getattr(op, 'code', None) or '',
+            'tache': (getattr(tache, 'm_nom', None) or str(tache)) if tache else '',
+            'responsable': _nom_personne(op.personnel),
+            'debut': deb.isoformat() if deb else None,
+            'echeance': ech.isoformat() if ech else None,
+            'jours': (ech - today).days if ech else None,
+            'declare': round(float(op._declare or 0), 1),
+            'valide': round(float(op._valide or 0), 1),
+            'statut': op._statut,
+            'retard': bool(op._retard),
+        }
+
+    return JsonResponse({
+        'stats': agg,
+        'echeances': echeances,
+        'responsables': responsables,
+        'liste_responsables': liste_resp,
+        'liste': [ligne(op) for op in page.object_list],
+        'page': page.number,
+        'pages': pages.num_pages,
+        'resultats': pages.count,
+        'taille': taille,
+        'aujourdhui': today.isoformat(),
+    })
+

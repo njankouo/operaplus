@@ -397,10 +397,6 @@
         </div>
     {% endif %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 
 <style>
     /* --- Légende améliorée --- */
@@ -435,9 +431,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
   
  
-<script src="https://cdn.amcharts.com/lib/4/core.js"></script>
-<script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
-<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
     {% if request.user.personnel.is_finance %}
         <div class="col-md-8">
             <div class='card my-4' style='
@@ -644,399 +637,6 @@ to { transform: rotate(360deg); }
 
 
 
-<script>
-    am4core.ready(function() {
-        // Appliquer les thèmes
-        am4core.useTheme(am4themes_animated);
-
-        // Créer une instance de graphique
-        var chart = am4core.create("chartdiv", am4charts.GaugeChart);
-        chart.hiddenState.properties.opacity = 0;
-        chart.innerRadius = am4core.percent(60);
-        chart.responsive.enabled = true;
-        chart.padding(20, 20, 20, 20);
-
-        // Créer un axe de valeur
-        var axis = chart.xAxes.push(new am4charts.ValueAxis());
-        axis.min = 0;
-        axis.max = 100;
-        axis.strictMinMax = true;
-
-        // Simplifier le style de l'axe
-        axis.renderer.axisFills.template.disabled = true;
-        axis.renderer.ticks.template.disabled = true;
-        axis.renderer.labels.template.fontSize = 10;
-        axis.renderer.grid.template.strokeOpacity = 0.05;
-        axis.renderer.line.strokeOpacity = 0.5;
-        axis.renderer.line.strokeWidth = 2;
-        axis.renderer.line.stroke = am4core.color("#ffffff");
-
-        // Palette de couleurs
-        var colors = {
-            critique: "#e76f51",
-            faible: "#f4a261",
-            moyen: "#2a9d8f",
-            acceptable: "#264653"
-        };
-
-        // Créer des plages de couleurs
-        function createRange(axis, start, end, color) {
-            var range = axis.axisRanges.create();
-            range.value = start;
-            range.endValue = end;
-            range.axisFill.fillOpacity = 1;
-            range.axisFill.fill = am4core.color(color);
-            range.axisFill.zIndex = -1;
-            range.label.disabled = true;
-            return range;
-        }
-
-        createRange(axis, 0, 20, colors.critique);
-        createRange(axis, 20, 40, colors.faible);
-        createRange(axis, 40, 80, colors.moyen);
-        createRange(axis, 80, 100, colors.acceptable);
-
-        // Créer l'aiguille
-        var hand = chart.hands.push(new am4charts.ClockHand());
-        hand.radius = am4core.percent(90);
-        hand.startWidth = 15;
-        hand.pin.radius = 12;
-        hand.pin.disabled = false;
-        hand.fill = am4core.color("{{request.user.personnel.color}}");
-        hand.stroke = am4core.color("{{request.user.personnel.color}}");
-        hand.pin.fill = am4core.color("{{request.user.personnel.color}}");
-
-        // Ajouter le label de valeur centrale
-        var label = chart.radarContainer.createChild(am4core.Label);
-        label.horizontalCenter = "middle";
-        label.verticalCenter = "bottom";
-        label.fontSize = 40;
-        label.fontWeight = "bold";
-        label.dy = 50;
-        label.fill = am4core.color("{{request.user.personnel.color}}");
-
-        // Ajouter le label de description
-        var descLabel = chart.radarContainer.createChild(am4core.Label);
-        descLabel.text = "Niveau d'exécution";
-        descLabel.horizontalCenter = "middle";
-        descLabel.verticalCenter = "bottom";
-        descLabel.fontSize = 16;
-        descLabel.fontWeight = "normal";
-        descLabel.dy = 15;
-        descLabel.fill = am4core.color("{{request.user.personnel.color}}");
-
-        // Créer la légende
-        var legend = new am4charts.Legend();
-        legend.parent = chart.chartContainer;
-        // legend.data = [
-        //     { name: "Critique (0-20%)", fill: am4core.color(colors.critique) },
-        //     { name: "Faible (20-40%)", fill: am4core.color(colors.faible) },
-        //     { name: "Moyen (40-80%)", fill: am4core.color(colors.moyen) },
-        //     { name: "Acceptable (80-100%)", fill: am4core.color(colors.acceptable) }
-        // ];
-        legend.itemContainers.template.togglable = false;
-        legend.labels.template.fill = am4core.color("{{request.user.personnel.color}}");
-        legend.valueLabels.template.fill = am4core.color("{{request.user.personnel.color}}");
-        legend.markers.template.width = 20;
-        legend.markers.template.height = 20;
-
-        // Positionnement de la légende
-        legend.align = "center";
-        legend.valign = "top";
-        legend.marginTop = 20;
-        legend.contentAlign = "center";
-
-        // Fonction pour mettre à jour le graphique
-        function updateChart(value) {
-            let niveauExecution = value;
-            hand.showValue(niveauExecution, 1500, am4core.ease.cubicOut);
-            label.text = niveauExecution.toFixed(1) + "%";
-
-            if (niveauExecution < 20) {
-                label.fill = am4core.color(colors.critique);
-            } else if (niveauExecution < 40) {
-                label.fill = am4core.color(colors.faible);
-            } else if (niveauExecution < 80) {
-                label.fill = am4core.color(colors.moyen);
-            } else {
-                label.fill = am4core.color(colors.acceptable);
-            }
-        }
-
-        // Fonction pour récupérer les données de l'API Django
-        function fetchData() {
-            const url = "/api/process_valid/";
-            fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Données reçues :', data);
-                if (data.status === 'success' && data.data !== undefined) {
-                    updateChart(data.data);
-                } else {
-                    console.error("Format de données invalide de l'API :", data);
-                    updateChart(0);
-                }
-            })
-            .catch(error => {
-                console.error("Erreur lors de la récupération des données :", error);
-                updateChart(0);
-            });
-        }
-
-        // Initialisation
-        fetchData();
-       
-        chart.appear(1500, 100);
-
-        window.addEventListener('resize', function() {
-            chart.invalidateSize();
-        });
-    });
-</script>
-<script>
-    am4core.ready(function() {
-        // Appliquer les thèmes
-        am4core.useTheme(am4themes_animated);
-
-        // Créer une instance de graphique
-        var chart = am4core.create("chart_finance", am4charts.GaugeChart);
-        chart.hiddenState.properties.opacity = 0;
-        chart.innerRadius = am4core.percent(70); // Augmenté pour un design plus épuré
-        chart.responsive.enabled = true;
-        chart.padding(15, 15, 15, 15); // Padding réduit pour maximiser l'espace utile
-
-        // Ajouter un fond arrondi au conteneur du graphique
-        chart.background.cornerRadius = 15;
-        chart.background.fill = am4core.color("#f8f9fa");
-        chart.background.fillOpacity = 0.7;
-        chart.background.stroke = am4core.color("{{request.user.personnel.color}}");
-        chart.background.strokeOpacity = 0.2;
-        chart.background.strokeWidth = 1;
-
-        // Créer un axe de valeur
-        var axis = chart.xAxes.push(new am4charts.ValueAxis());
-        axis.min = 0;
-        axis.max = 100;
-        axis.strictMinMax = true;
-
-        // Amélioration du style de l'axe
-        axis.renderer.axisFills.template.disabled = true;
-        axis.renderer.ticks.template.disabled = true;
-        axis.renderer.labels.template.fontSize = 11;
-        axis.renderer.labels.template.fill = am4core.color("#495057");
-        axis.renderer.labels.template.fontWeight = "500";
-        axis.renderer.grid.template.strokeOpacity = 0.1;
-        axis.renderer.line.strokeOpacity = 0.7;
-        axis.renderer.line.strokeWidth = 2.5;
-        axis.renderer.line.stroke = am4core.color("{{request.user.personnel.color}}");
-
-        // Palette de couleurs améliorée avec dégradés
-        var colors = {
-            critique: "#e76f51",
-            faible: "#f4a261",
-            moyen: "#2a9d8f",
-            acceptable: "#264653"
-        };
-
-        // Créer des plages de couleurs avec dégradés
-        function createRange(axis, start, end, color) {
-            var range = axis.axisRanges.create();
-            range.value = start;
-            range.endValue = end;
-            range.axisFill.fillOpacity = 0.9;
-
-            // Créer un dégradé pour un effet plus moderne
-            var gradient = new am4core.LinearGradient();
-            gradient.addColor(am4core.color(color));
-            gradient.addColor(am4core.color(am4core.colors.brighten(am4core.color(color), 0.2)));
-            range.axisFill.fill = gradient;
-
-            range.axisFill.zIndex = -1;
-            range.label.disabled = true;
-
-            // Ajouter un effet d'ombre subtil
-            range.axisFill.filter = new am4core.DropShadowFilter();
-            range.axisFill.filter.opacity = 0.2;
-            range.axisFill.filter.blur = 4;
-
-            return range;
-        }
-
-        createRange(axis, 0, 20, colors.critique);
-        createRange(axis, 20, 40, colors.faible);
-        createRange(axis, 40, 80, colors.moyen);
-        createRange(axis, 80, 100, colors.acceptable);
-
-        // Amélioration de l'aiguille
-        var hand = chart.hands.push(new am4charts.ClockHand());
-        hand.radius = am4core.percent(85); // Légèrement réduit pour plus d'élégance
-        hand.startWidth = 12;
-        hand.pin.radius = 10;
-        hand.pin.disabled = false;
-
-        // Utiliser un dégradé pour l'aiguille
-        var handGradient = new am4core.LinearGradient();
-        handGradient.addColor(am4core.color("{{request.user.personnel.color}}"));
-        handGradient.addColor(am4core.color(am4core.colors.brighten(am4core.color("{{request.user.personnel.color}}"), -0.2)));
-        hand.fill = handGradient;
-        hand.stroke = am4core.color(am4core.colors.brighten(am4core.color("{{request.user.personnel.color}}"), -0.3));
-        hand.strokeWidth = 1;
-
-        hand.pin.fill = am4core.color("{{request.user.personnel.color}}");
-        hand.pin.stroke = am4core.color(am4core.colors.brighten(am4core.color("{{request.user.personnel.color}}"), -0.3));
-        hand.pin.strokeWidth = 1.5;
-
-        // Ajouter un effet d'ombre à l'aiguille
-        hand.filter = new am4core.DropShadowFilter();
-        hand.filter.opacity = 0.3;
-        hand.filter.blur = 3;
-        hand.filter.dy = 1;
-
-        // Ajouter le label de valeur centrale avec style amélioré
-        var label = chart.radarContainer.createChild(am4core.Label);
-        label.horizontalCenter = "middle";
-        label.verticalCenter = "bottom";
-        label.fontSize = 42;
-        label.fontWeight = "800";
-        label.dy = 60;
-        label.fill = am4core.color("{{request.user.personnel.color}}");
-
-        // Ajouter un effet d'ombre subtil au texte
-        label.filter = new am4core.DropShadowFilter();
-        label.filter.opacity = 0.2;
-        label.filter.blur = 3;
-
-        // Ajouter le label de description avec style amélioré
-        var descLabel = chart.radarContainer.createChild(am4core.Label);
-        descLabel.text = "NIVEAU D'EXÉCUTION";
-        descLabel.horizontalCenter = "middle";
-        descLabel.verticalCenter = "bottom";
-        descLabel.fontSize = 14;
-        descLabel.fontWeight = "600";
-        descLabel.dy = 20;
-        descLabel.letterSpacing = 1.2;
-        descLabel.fill = am4core.color("#495057");
-
-        // Ajouter un indicateur de statut textuel
-        var statusLabel = chart.radarContainer.createChild(am4core.Label);
-        statusLabel.horizontalCenter = "middle";
-        statusLabel.verticalCenter = "bottom";
-        statusLabel.fontSize = 16;
-        statusLabel.fontWeight = "bold";
-        statusLabel.dy = -10;
-        statusLabel.fill = am4core.color("#495057");
-
-        // Créer la légende avec style amélioré
-        var legend = new am4charts.Legend();
-        legend.parent = chart.chartContainer;
-        legend.itemContainers.template.togglable = false;
-        legend.labels.template.fill = am4core.color("#495057");
-        legend.labels.template.fontSize = 12;
-        legend.valueLabels.template.fill = am4core.color("#495057");
-        legend.valueLabels.template.fontSize = 12;
-        legend.markers.template.width = 22;
-        legend.markers.template.height = 22;
-        legend.markers.template.cornerRadius = 3;
-
-        // Positionnement de la légende
-        legend.align = "center";
-        legend.valign = "top";
-        legend.marginTop = 25;
-        legend.marginBottom = 15;
-        legend.contentAlign = "center";
-
-        // Ajouter un fond à la légende
-        legend.background.fill = am4core.color("#ffffff");
-        legend.background.fillOpacity = 0.7;
-        legend.background.cornerRadius = 8;
-        legend.background.padding(10, 10, 10, 10);
-        legend.background.stroke = am4core.color("#dee2e6");
-        legend.background.strokeWidth = 1;
-
-        // Fonction pour mettre à jour le graphique
-        function updateChart(value) {
-            let niveauExecution = value;
-            hand.showValue(niveauExecution, 1500, am4core.ease.cubicOut);
-            label.text = niveauExecution.toFixed(1) + "%";
-
-            // Mettre à jour le statut textuel
-            let statusText = "";
-            let statusColor = "";
-
-            if (niveauExecution < 20) {
-                label.fill = am4core.color(colors.critique);
-                statusText = "CRITIQUE";
-                statusColor = colors.critique;
-            } else if (niveauExecution < 40) {
-                label.fill = am4core.color(colors.faible);
-                statusText = "FAIBLE";
-                statusColor = colors.faible;
-            } else if (niveauExecution < 80) {
-                label.fill = am4core.color(colors.moyen);
-                statusText = "MOYEN";
-                statusColor = colors.moyen;
-            } else {
-                label.fill = am4core.color(colors.acceptable);
-                statusText = "EXCELLENT";
-                statusColor = colors.acceptable;
-            }
-
-            statusLabel.text = statusText;
-            statusLabel.fill = am4core.color(statusColor);
-        }
-
-        // Fonction pour récupérer les données de l'API Django
-        function fetchData() {
-            const url = "/api/taux_valid/";
-            fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Données reçues :', data);
-                if (data.status === 'success' && data.data !== undefined) {
-                    updateChart(data.data);
-                } else {
-                    console.error("Format de données invalide de l'API :", data);
-                    updateChart(0);
-                }
-            })
-            .catch(error => {
-                console.error("Erreur lors de la récupération des données :", error);
-                updateChart(0);
-            });
-        }
-
-        // Initialisation
-        fetchData();
-        
-        chart.appear(1500, 100);
-
-        window.addEventListener('resize', function() {
-            chart.invalidateSize();
-        });
-    });
-</script>
 
 {%endif%}
 
@@ -1056,331 +656,8 @@ to { transform: rotate(360deg); }
 
 
 <!-- Resources -->
-<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-    // Initial chart setup
-    var options = {
-        chart: {
-            height: 1000,
-            type: "radialBar",
-            animations: { // Enable animations for the chart
-                enabled: true,
-                easing: 'easeinout',
-                speed: 800,
-                animateGradually: {
-                    enabled: true,
-                    delay: 150
-                },
-                dynamicAnimation: {
-                    enabled: true,
-                    speed: 350
-                }
-            }
-        },
-        series: [67], // Initial placeholder value
-        colors: ["#d4d83c"],
-        plotOptions: {
-            radialBar: {
-                hollow: {
-                    margin: 0,
-                    size: "70%",
-                    background: "{{request.user.personnel.color_fond}}"
-                },
-                track: {
-                    dropShadow: {
-                        enabled: true,
-                        top: 2,
-                        left: 0,
-                        blur: 4,
-                        opacity: 0.15
-                    }
-                },
-                dataLabels: {
-                    name: {
-                        offsetY: -10,
-                        color: "#fff",
-                        fontSize: "16px"
-                    },
-                    value: {
-                        color: "#fff",
-                        fontSize: "90px",
-                        show: true,
-                        formatter: function(val) { // Add a formatter to potentially style the value
-                            return val + '%';
-                        }
-                    }
-                }
-            }
-        },
-        fill: {
-            type: "gradient",
-            gradient: {
-                shade: "white",
-                type: "vertical",
-                gradientToColors: ["{{request.user.personnel.color_fond}}"],
-                stops: [0, 100]
-            }
-        },
-        stroke: {
-            lineCap: "round"
-        },
-        labels: ["TEP DECLARE (Process)"]
-    };
 
-    var chart = new ApexCharts(document.querySelector("#chartdivs"), options);
-    chart.render();
-
-    // Function to update the chart with new data
-    function updateChart(value) {
-        chart.updateSeries([value]);
-    }
-
-    // Function to handle fetching data and updating the chart
-    function fetchData() {
-        const endpoints = [
-            '/api/count_process/',
-            window.location.origin + '/api/count_process/'
-        ];
-
-        let attempts = 0;
-
-        function tryFetch(url) {
-            fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    cache: 'no-cache'
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Data received:', data);
-                    const value = data.data || data.value || data.count || 0;
-                    updateChart(value);
-                })
-                .catch(error => {
-                    attempts++;
-                    if (attempts < endpoints.length) {
-                        console.log(`Attempt ${attempts} failed, trying next endpoint`);
-                        tryFetch(endpoints[attempts]);
-                    } else {
-                        console.log("All attempts failed, using fallback value");
-                        console.error("Error fetching data:", error);
-                        updateChart(50);
-                    }
-                });
-        }
-        tryFetch(endpoints[0]);
-    }
-
-    fetchData();
-  
-
-    // Add a simple CSS animation for a continuous subtle effect (optional, but adds dynamism)
-    // You'd typically put this in a <style> tag in your HTML head or a CSS file
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.02); opacity: 0.95; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        #chartdivs .apexcharts-radialbar-series path {
-            animation: pulse 2s infinite alternate;
-            transform-origin: center center;
-        }
-        .apexcharts-datalabel-value {
-            transition: transform 0.3s ease-in-out, font-size 0.3s ease-in-out;
-        }
-        /* Optional: Add a class to apply on update for a pop effect */
-        .apexcharts-datalabel-value.pop {
-            transform: scale(1.1);
-        }
-    `;
-    document.head.appendChild(style);
-
-    // To make the percentage pop on update, we'll need a small tweak.
-    // ApexCharts might re-render the label, so a direct class toggle is tricky.
-    // However, the `dynamicAnimation` in ApexCharts handles the value change smoothly already.
-    // The CSS `transition` on `.apexcharts-datalabel-value` will make the text change smoothly.
-
-});
-</script>
-
-<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
-
-
-           
-            
-<script>
-    // Passer la valeur via JSON
-    var financialData = {
-        // S'assurer que la conversion en float se fait correctement, même avec une virgule.
-        taux_financier: parseFloat("{{ actual_institution.taux_financier_declare|default:0 }}".replace(',', '.')) || 0
-    };
-    
-    console.log("Données financières:", financialData);
-    
-    var tauxFinancier = financialData.taux_financier;
-
-    // Assurez-vous que le taux est bien entre 0 et 100 pour un graphique de progression
-    // Si votre taux est déjà un pourcentage (ex: 75 pour 75%), alors c'est bon.
-    // Si c'est une proportion (ex: 0.75 pour 75%), il faut le multiplier par 100.
-    // Supposons ici que c'est déjà un pourcentage ou sera géré par toFixed(2)
-    // Pour ApexCharts, la valeur doit être un nombre entre 0 et 100.
-    if (tauxFinancier > 100) tauxFinancier = 100;
-    if (tauxFinancier < 0) tauxFinancier = 0;
-
-
-    var options = {
-        series: [parseFloat(tauxFinancier.toFixed(2))], // Arrondi à 2 décimales pour l'affichage
-        chart: {
-            height: 380, // Légèrement plus haut pour l'espace des labels
-            type: 'radialBar',
-            offsetY: 0, // Ajuster l'offset pour un meilleur centrage
-            fontFamily: 'Roboto, sans-serif', // Police moderne
-        },
-        plotOptions: {
-            radialBar: {
-                startAngle: -135,
-                endAngle: 135,
-                hollow: {
-                    margin: 0,
-                    size: '70%', // Taille du cercle intérieur
-                    background: '#fff', // Fond du cercle intérieur
-                    image: undefined,
-                    imageOffsetX: 0,
-                    imageOffsetY: 0,
-                    position: 'front',
-                    dropShadow: { // Ajout d'une ombre subtile au cercle intérieur
-                        enabled: true,
-                        top: 3,
-                        left: 0,
-                        blur: 4,
-                        opacity: 0.1
-                    }
-                },
-                track: {
-                    show: true,
-                    background: '#FFEBEE', // Rouge très clair pour la partie non remplie
-                    strokeWidth: '97%', // La piste occupe presque tout l'espace
-                    opacity: 1,
-                    margin: 5, // Espace entre la piste et le segment rempli
-                    dropShadow: { // Ombre subtile pour la piste
-                        enabled: true,
-                        top: 0,
-                        left: 0,
-                        blur: 5,
-                        opacity: 0.05
-                    }
-                },
-                dataLabels: {
-                    showOn: 'always',
-                    name: {
-                        show: true,
-                        fontSize: '18px', // Taille plus grande pour le label
-                        fontWeight: '600',
-                        color: '#666666', // Couleur plus douce
-                        offsetY: 20 // Positionner le label au-dessus du pourcentage
-                    },
-                    value: {
-                        show: true,
-                        fontSize: '48px', // Très grande taille pour le pourcentage
-                        fontWeight: '700',
-                        color: '#333333', // Couleur foncée pour le contraste
-                        offsetY: -10, // Positionner le pourcentage au centre
-                        formatter: function (val) {
-                            return val.toFixed(1) + "%"; // Afficher une décimale pour le pourcentage
-                        }
-                    },
-                    total: { // Option pour un total si besoin, désactivé ici
-                        show: false,
-                    }
-                }
-            }
-        },
-        fill: {
-            type: 'gradient',
-            gradient: {
-                shade: 'dark',
-                type: 'horizontal',
-                shadeIntensity: 0.5,
-                gradientToColors: ['#00E396'], // Vert plus clair pour le dégradé
-                inverseColors: true,
-                opacityFrom: 1,
-                opacityTo: 1,
-                stops: [0, 100]
-            },
-            colors: ['#008FFB'] // Couleur de base du dégradé (bleu vif, sera remplacé par le vert)
-        },
-        // Surcharge pour s'assurer que le vert est utilisé
-        colors: ['#00C853'], // Vert dominant pour la partie remplie
-        stroke: {
-            lineCap: 'round', // Bouts arrondis pour les barres
-            width: 8 // Épaisseur de la ligne
-        },
-        labels: ['Taux Financier'], // Texte au-dessus du pourcentage
-        title: {
-            // Titre pour le graphique
-            align: 'center',
-            margin: 10,
-            offsetX: 0,
-            offsetY: 0,
-            floating: false,
-            style: {
-                fontSize: '20px',
-                fontWeight: 'bold',
-                fontFamily: 'Roboto, sans-serif',
-                color: '#333333'
-            },
-        },
-        tooltip: { // Amélioration du tooltip
-            enabled: true,
-            y: {
-                formatter: function (val) {
-                    return val.toFixed(2) + "%";
-                }
-            },
-            style: {
-                fontFamily: 'Roboto, sans-serif',
-            }
-        },
-        responsive: [{
-            breakpoint: 480,
-            options: {
-                chart: {
-                    height: 300
-                },
-                plotOptions: {
-                    radialBar: {
-                        dataLabels: {
-                            value: {
-                                fontSize: '36px'
-                            },
-                            name: {
-                                fontSize: '14px'
-                            }
-                        }
-                    }
-                }
-            }
-        }]
-    };
-    
-    var chart = new ApexCharts(document.querySelector("#chart_finance_declare"), options);
-    chart.render();
-</script>
 
 
 
@@ -3299,6 +2576,252 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
+<!-- ===================== BAROMÈTRES (SVG, sans bibliothèque) ===================== -->
+<style>
+    /* Les anciens conteneurs gardent leur id ; on neutralise les hauteurs fixes des anciens graphiques */
+    .sbx-host { width: 100% !important; height: auto !important; min-height: 0 !important; margin-left: 0 !important; margin-right: 0 !important; color: #1e293b; }
+    .sbx-baro { position: relative; max-width: 22rem; margin: 0 auto; text-align: center; }
+    .sbx-baro svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .sbx-baro .sbx-lbl { font-size: 9px; font-weight: 600; fill: #94a3b8; font-variant-numeric: tabular-nums; }
+    .sbx-baro .sbx-arc { transition: stroke-dasharray 1.4s cubic-bezier(.2,.8,.3,1); }
+    .sbx-baro .sbx-needle { transition: transform 1.6s cubic-bezier(.34,1.35,.5,1); }
+    .sbx-foot { display: flex; align-items: center; justify-content: center; gap: .75rem; flex-wrap: wrap; margin-top: .3rem; }
+    .sbx-value { display: flex; align-items: baseline; gap: .15rem; }
+    .sbx-value span { font-size: 2.4rem; font-weight: 700; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: #0f172a; }
+    .sbx-value small { font-size: 1rem; font-weight: 600; color: #94a3b8; }
+    .sbx-value em { font-style: normal; font-size: .78rem; color: #94a3b8; margin-left: .35rem; }
+    .sbx-status { display: inline-flex; align-items: center; gap: .35rem; font-size: .74rem; font-weight: 700; padding: .3rem .7rem; border-radius: 999px; opacity: 0; transform: translateY(4px); transition: opacity .5s ease 1.2s, transform .5s ease 1.2s; }
+    .sbx-status.is-on { opacity: 1; transform: none; }
+    .sbx-status svg { width: .95rem; height: .95rem; }
+    .sbx-status.is-ok  { background: #e4f4eb; color: #2f7a57; }
+    .sbx-status.is-mid { background: #fdf1dc; color: #9a6210; }
+    .sbx-status.is-low { background: #fbe6ea; color: #a8475a; }
+    .sbx-legend { display: flex; justify-content: center; flex-wrap: wrap; gap: .5rem 1.2rem; margin-top: .9rem; padding-top: .8rem; border-top: 1px dashed #e5e9f0; font-size: .78rem; color: #64748b; }
+    .sbx-legend span { display: inline-flex; align-items: center; gap: .4rem; }
+    .sbx-legend b { color: #1e293b; font-variant-numeric: tabular-nums; }
+    .sbx-legend i { width: .7rem; height: .7rem; border-radius: .2rem; display: inline-block; }
+    .sbx-zones { display: flex; justify-content: center; gap: .9rem; margin-top: .55rem; font-size: .7rem; color: #94a3b8; }
+    .sbx-zones span { display: inline-flex; align-items: center; gap: .3rem; }
+    .sbx-zones i { width: .55rem; height: .55rem; border-radius: 50%; display: inline-block; }
+
+    /* Chargement / erreur */
+    .sbx-state { font-size: .78rem; font-weight: 600; color: #94a3b8; margin-top: .4rem; min-height: 1.1rem; }
+    .sbx-loading .sbx-value span { color: transparent; background: linear-gradient(90deg, #eef1f5 25%, #f8fafc 50%, #eef1f5 75%); background-size: 200% 100%; border-radius: .4rem; animation: sbxShim 1.2s linear infinite; }
+    .sbx-loading .sbx-needle { animation: sbxSeek 1.6s ease-in-out infinite alternate; }
+    .sbx-error .sbx-state { color: #c0566a; }
+    @keyframes sbxShim { to { background-position: -200% 0; } }
+    @keyframes sbxSeek { from { transform: rotate(-90deg); } to { transform: rotate(-70deg); } }
+
+    /* Anneau compact (cartes « Déclaré ») */
+    @property --sbx-p { syntax: '<number>'; inherits: false; initial-value: 0; }
+    .sbx-ring-wrap { display: flex; flex-direction: column; align-items: center; gap: .9rem; padding: .3rem 0; }
+    .sbx-ring { --sbx-p: 0; width: 11rem; height: 11rem; border-radius: 50%; display: grid; place-items: center; position: relative;
+        background: radial-gradient(closest-side, #fff 78%, transparent 79.5%), conic-gradient(var(--sbx-c, #e3a23a) calc(var(--sbx-p) * 1%), #eef1f5 0);
+        transition: --sbx-p 1.4s cubic-bezier(.2,.8,.3,1); }
+    .sbx-ring-in { text-align: center; }
+    .sbx-ring-in b { display: block; font-size: 2.1rem; font-weight: 700; line-height: 1; letter-spacing: -.03em; color: #0f172a; font-variant-numeric: tabular-nums; }
+    .sbx-ring-in b small { font-size: .95rem; color: #94a3b8; font-weight: 600; }
+    .sbx-ring-in > span { display: block; font-size: .72rem; font-weight: 600; color: #94a3b8; margin-top: .3rem; text-transform: uppercase; letter-spacing: .06em; }
+    .sbx-ring-rows { width: 100%; max-width: 15rem; display: grid; gap: .45rem; }
+    .sbx-ring-row { display: grid; grid-template-columns: 5.2rem 1fr 3rem; align-items: center; gap: .5rem; font-size: .76rem; color: #64748b; }
+    .sbx-ring-row b { text-align: right; color: #1e293b; font-variant-numeric: tabular-nums; }
+    .sbx-ring-bar { height: .45rem; border-radius: .25rem; background: #eef1f5; overflow: hidden; }
+    .sbx-ring-bar span { display: block; height: 100%; width: 0; border-radius: inherit; transition: width 1.2s cubic-bezier(.2,.8,.3,1) .2s; }
+    .sbx-ring-wrap.sbx-loading .sbx-ring { animation: sbxPulse 1.2s ease-in-out infinite alternate; }
+    @keyframes sbxPulse { from { opacity: .55; } to { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .sbx-baro *, .sbx-ring, .sbx-ring-bar span, .sbx-status { transition: none !important; animation: none !important; } }
+</style>
+
+<script>
+(function () {
+    var uid = 0;
+    var C = { ok: '#43a074', mid: '#e3a23a', low: '#d4697a', decl: '#f3d39a' };
+    var ICONS = {
+        ok:  '<path d="M20 6 9 17l-5-5"/>',
+        mid: '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+        low: '<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>'
+    };
+    function clamp(v) { v = Number(v); return isFinite(v) ? Math.max(0, Math.min(100, v)) : 0; }
+    function num(x) { if (x === null || x === undefined || x === '') return NaN; return parseFloat(String(x).replace(/\s/g, '').replace(',', '.')); }
+    function fmt(v) { return (Math.round(v * 10) / 10).toLocaleString('fr-FR', { maximumFractionDigits: 1 }); }
+    function niveau(v) { return v >= 80 ? ['ok', 'Satisfaisant'] : v >= 50 ? ['mid', 'En progression'] : ['low', 'À renforcer']; }
+    function countUp(el, to, ms) {
+        var t0 = null;
+        function step(t) { if (!t0) t0 = t; var k = Math.min(1, (t - t0) / ms); el.textContent = fmt(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }
+        requestAnimationFrame(step);
+    }
+    function hostOf(sel) { var el = typeof sel === 'string' ? document.getElementById(sel) : sel; if (el) el.classList.add('sbx-host'); return el; }
+    window.sbxNum = num;
+
+    /* ---------- Baromètre semi-circulaire ---------- */
+    window.sbxBaro = function (sel, opts) {
+        var host = hostOf(sel); if (!host) return null;
+        opts = opts || {};
+        var id = 'sbxb' + (++uid), cx = 130, cy = 138;
+        function pt(r, p) { var a = Math.PI * (1 - p / 100); return [cx + r * Math.cos(a), cy - r * Math.sin(a)]; }
+        function arc(r, p0, p1) { var a = pt(r, p0), b = pt(r, p1); return 'M' + a[0].toFixed(2) + ' ' + a[1].toFixed(2) + ' A' + r + ' ' + r + ' 0 0 1 ' + b[0].toFixed(2) + ' ' + b[1].toFixed(2); }
+
+        var s = '<defs><linearGradient id="' + id + 'g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9fd9bb"/><stop offset="1" stop-color="#2f8a60"/></linearGradient>' +
+                '<radialGradient id="' + id + 'h" cx=".35" cy=".35" r=".8"><stop offset="0" stop-color="#64748b"/><stop offset="1" stop-color="var(--nav-bg-color, #0f172a)"/></radialGradient></defs>';
+        [[0, 49.4, '#f2c4cc'], [50.6, 79.4, '#f6dcaa'], [80.6, 100, '#bfe3cf']].forEach(function (z) {
+            s += '<path d="' + arc(118, z[0], z[1]) + '" stroke="' + z[2] + '" stroke-width="5" fill="none" stroke-linecap="round"/>';
+        });
+        for (var p = 0; p <= 100; p += 2) {
+            var major = p % 10 === 0, a = pt(108, p), b = pt(major ? 99 : 103, p);
+            s += '<line x1="' + a[0].toFixed(2) + '" y1="' + a[1].toFixed(2) + '" x2="' + b[0].toFixed(2) + '" y2="' + b[1].toFixed(2) + '" stroke="' + (major ? '#94a3b8' : '#d5dbe3') + '" stroke-width="' + (major ? 1.6 : 1) + '" stroke-linecap="round"/>';
+        }
+        [0, 25, 50, 75, 100].forEach(function (p) { var q = pt(62, p); s += '<text x="' + q[0].toFixed(1) + '" y="' + (q[1] + 4).toFixed(1) + '" text-anchor="middle" class="sbx-lbl">' + p + '</text>'; });
+        s += '<path d="' + arc(84, 0, 100) + '" stroke="#eef1f5" stroke-width="16" fill="none" stroke-linecap="round"/>';
+        if (opts.declare) s += '<path class="sbx-arc sbx-decl" d="' + arc(84, 0, 100) + '" stroke="' + C.decl + '" stroke-width="16" fill="none" stroke-linecap="round" pathLength="100" stroke-dasharray="0 101" style="opacity:0"><title></title></path>';
+        s += '<path class="sbx-arc sbx-val" d="' + arc(84, 0, 100) + '" stroke="url(#' + id + 'g)" stroke-width="16" fill="none" stroke-linecap="round" pathLength="100" stroke-dasharray="0 101" style="opacity:0"><title></title></path>';
+        s += '<g class="sbx-needle" style="transform-origin:' + cx + 'px ' + cy + 'px;transform:rotate(-90deg)"><path d="M' + (cx - 4.5) + ' ' + cy + ' L' + cx + ' ' + (cy - 78) + ' L' + (cx + 4.5) + ' ' + cy + ' Z" fill="var(--nav-bg-color, #1e293b)"/></g>' +
+             '<circle cx="' + cx + '" cy="' + cy + '" r="15" fill="#f1f5f9"/><circle cx="' + cx + '" cy="' + cy + '" r="9" fill="url(#' + id + 'h)"/><circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#fff"/>';
+
+        var leg = opts.declare
+            ? '<div class="sbx-legend"><span><i style="background:' + C.ok + '"></i>Validé <b class="sbx-l-v">–</b></span><span><i style="background:' + C.decl + '"></i>Déclaré <b class="sbx-l-d">–</b></span><span><i style="background:#cbd5e1"></i>En attente de validation <b class="sbx-l-e">–</b></span></div>'
+            : '';
+        host.innerHTML = '<div class="sbx-baro sbx-loading" role="img" aria-label="' + (opts.titre || 'Baromètre') + '">' +
+            '<svg viewBox="0 0 260 158">' + s + '</svg>' +
+            '<div class="sbx-foot"><div class="sbx-value"><span>00</span><small>%</small><em>' + (opts.label || 'validé') + '</em></div><span class="sbx-status"></span></div>' +
+            '<div class="sbx-state">Chargement des données…</div>' + leg +
+            '<div class="sbx-zones"><span><i style="background:' + C.low + '"></i>0–50 %</span><span><i style="background:' + C.mid + '"></i>50–80 %</span><span><i style="background:' + C.ok + '"></i>80–100 %</span></div></div>';
+
+        var box = host.firstChild, q = function (c) { return box.querySelector(c); };
+        return {
+            set: function (valide, declare) {
+                var v = clamp(valide), hasD = opts.declare && isFinite(Number(declare)), d = hasD ? clamp(declare) : 0;
+                box.classList.remove('sbx-loading', 'sbx-error');
+                q('.sbx-state').textContent = opts.note || '';
+                q('.sbx-value span').style.color = '';
+                var vArc = q('.sbx-val'), dArc = q('.sbx-decl');
+                vArc.querySelector('title').textContent = 'Validé : ' + fmt(v) + ' %';
+                if (dArc) dArc.querySelector('title').textContent = 'Déclaré : ' + fmt(d) + ' %';
+                requestAnimationFrame(function () { requestAnimationFrame(function () {
+                    if (dArc) { dArc.style.opacity = 1; dArc.setAttribute('stroke-dasharray', Math.max(d, v) + ' 101'); }
+                    vArc.style.opacity = 1; vArc.setAttribute('stroke-dasharray', v + ' 101');
+                    q('.sbx-needle').style.transform = 'rotate(' + ((v - 50) * 1.8) + 'deg)';
+                }); });
+                countUp(q('.sbx-value span'), v, 1300);
+                var n = niveau(v), st = q('.sbx-status');
+                st.className = 'sbx-status is-' + n[0];
+                st.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[n[0]] + '</svg>' + n[1];
+                setTimeout(function () { st.classList.add('is-on'); }, 30);
+                if (opts.declare) {
+                    q('.sbx-l-v').textContent = fmt(v) + ' %';
+                    q('.sbx-l-d').textContent = hasD ? fmt(d) + ' %' : '–';
+                    q('.sbx-l-e').textContent = hasD ? fmt(Math.max(d - v, 0)) + ' %' : '–';
+                }
+                if (typeof opts.onSet === 'function') opts.onSet(v, d);
+            },
+            error: function (msg) {
+                box.classList.remove('sbx-loading'); box.classList.add('sbx-error');
+                q('.sbx-value span').textContent = '–';
+                q('.sbx-state').textContent = msg || 'Données indisponibles pour le moment.';
+            }
+        };
+    };
+
+    /* ---------- Anneau compact ---------- */
+    window.sbxRing = function (sel, opts) {
+        var host = hostOf(sel); if (!host) return null;
+        opts = opts || {};
+        host.innerHTML = '<div class="sbx-ring-wrap sbx-loading"><div class="sbx-ring" style="--sbx-c:' + (opts.color || C.mid) + '"><div class="sbx-ring-in"><b><span class="sbx-r-n">–</span><small>%</small></b><span>' + (opts.label || 'Déclaré') + '</span></div></div>' +
+            '<div class="sbx-ring-rows">' +
+            '<div class="sbx-ring-row">Déclaré<span class="sbx-ring-bar"><span class="sbx-r-bd" style="background:' + C.mid + '"></span></span><b class="sbx-r-d">–</b></div>' +
+            '<div class="sbx-ring-row">Validé<span class="sbx-ring-bar"><span class="sbx-r-bv" style="background:' + C.ok + '"></span></span><b class="sbx-r-v">–</b></div>' +
+            '</div><div class="sbx-state">Chargement…</div></div>';
+        var box = host.firstChild, q = function (c) { return box.querySelector(c); };
+        return {
+            set: function (declare, valide) {
+                var d = clamp(declare), hasV = isFinite(Number(valide)), v = hasV ? clamp(valide) : 0;
+                box.classList.remove('sbx-loading');
+                q('.sbx-state').textContent = hasV ? 'Dont ' + fmt(Math.max(d - v, 0)) + ' % en attente de validation' : '';
+                requestAnimationFrame(function () { requestAnimationFrame(function () {
+                    q('.sbx-ring').style.setProperty('--sbx-p', d);
+                    q('.sbx-r-bd').style.width = d + '%';
+                    q('.sbx-r-bv').style.width = v + '%';
+                }); });
+                countUp(q('.sbx-r-n'), d, 1300);
+                q('.sbx-r-d').textContent = fmt(d) + ' %';
+                q('.sbx-r-v').textContent = hasV ? fmt(v) + ' %' : '–';
+            },
+            error: function (msg) {
+                box.classList.remove('sbx-loading');
+                q('.sbx-state').textContent = msg || 'Données indisponibles.';
+                q('.sbx-state').style.color = '#c0566a';
+            }
+        };
+    };
+
+    /* ---------- Récupération JSON tolérante ---------- */
+    window.sbxFetch = function (url, pick) {
+        return fetch(url, { headers: { 'Accept': 'application/json' }, cache: 'no-cache' })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(function (data) { var v = num(pick(data)); if (!isFinite(v)) throw new Error('Valeur absente'); return v; });
+    };
+})();
+</script>
+
+<script>
+/* ---------- Branchement sur les données du tableau de bord ---------- */
+console.info('[OPERA+] Baromètres SVG v2 chargés');
+function sbxInitBarometres() {
+    if (window.__sbxBaroInit) return;
+    window.__sbxBaroInit = true;
+    var valeur = function (d) { return d && (d.data !== undefined ? d.data : (d.value !== undefined ? d.value : d.count)); };
+
+    /* PROCESS : taux d'exécution physique */
+    var baroProcess = sbxBaro('chartdiv', { titre: "Taux d'exécution physique", label: 'validé', declare: true });
+    var ringProcess = sbxRing('chartdivs', { label: 'TEP déclaré' });
+    if (baroProcess || ringProcess) {
+        var pV = sbxFetch('/api/process_valid/', valeur).catch(function () { return NaN; });
+        var pD = sbxFetch('/api/count_process/', valeur).catch(function () { return NaN; });
+        Promise.all([pV, pD]).then(function (r) {
+            var v = r[0], d = r[1];
+            if (baroProcess) { isFinite(v) ? baroProcess.set(v, d) : baroProcess.error(); }
+            if (ringProcess) { isFinite(d) ? ringProcess.set(d, v) : ringProcess.error(); }
+        });
+    }
+
+    /* FINANCE : taux d'exécution financier */
+    var declareFin = sbxNum("{{ actual_institution.taux_financier_declare|default:0 }}");
+    var baroFinance = sbxBaro('chart_finance', { titre: "Taux d'exécution financier", label: 'validé', declare: true });
+    var ringFinance = sbxRing('chart_finance_declare', { label: 'TEF déclaré' });
+    if (baroFinance || ringFinance) {
+        sbxFetch('/api/taux_valid/', valeur).catch(function () { return NaN; }).then(function (v) {
+            if (baroFinance) { isFinite(v) ? baroFinance.set(v, declareFin) : baroFinance.error(); }
+            if (ringFinance) ringFinance.set(isFinite(declareFin) ? declareFin : 0, v);
+        });
+    }
+
+    /* TECHNIQUE : performance globale (rafraîchie toutes les 5 minutes) */
+    var baroTech = sbxBaro('chartdiv_technic', { titre: "Taux d'exécution technique", label: 'atteint', declare: false, note: 'Mis à jour toutes les 5 minutes' });
+    if (baroTech) {
+        var rafraichir = function () {
+            fetch('/performance_technique/', { headers: { 'Accept': 'application/json' }, cache: 'no-cache' })
+                .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                .then(function (data) {
+                    var v = sbxNum(data.score_global);
+                    if (!isFinite(v)) throw new Error('score absent');
+                    baroTech.set(v);
+                    var g = document.getElementById('performance-global');
+                    if (g) g.innerHTML = data.score_global + '<span class="text-lg ml-0.5 opacity-80">%</span>';
+                })
+                .catch(function (e) { console.error('Performance technique :', e); baroTech.error(); });
+        };
+        rafraichir();
+        clearInterval(window.__sbxTechTimer);
+        window.__sbxTechTimer = setInterval(rafraichir, 300000);
+    }
+}
+/* Fonctionne que la page soit déjà chargée ou non, et après un rechargement partiel (htmx) */
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sbxInitBarometres);
+else sbxInitBarometres();
+document.addEventListener('htmx:afterSettle', function () {
+    if (document.querySelector('#chartdiv:not(.sbx-host), #chart_finance:not(.sbx-host), #chartdiv_technic:not(.sbx-host)')) { window.__sbxBaroInit = false; sbxInitBarometres(); }
+});
+</script>
+<!-- ===================== FIN BAROMÈTRES ===================== -->
 <!-- ===================== ASSOCIATIONS : script (ajout) ===================== -->
 <script>
     (function () {
@@ -3549,162 +3072,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
-    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
-    <script src="https://cdn.amcharts.com/lib/5/radar.js"></script>
-    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
-    <script>
-        am5.ready(function() {
-            // Créer l'élément racine
-            var root = am5.Root.new("chartdiv");
-
-            // Définir les thèmes
-            root.setThemes([
-                am5themes_Animated.new(root)
-            ]);
-
-            // Créer le graphique radar
-            var chart = root.container.children.push(am5radar.RadarChart.new(root, {
-                panX: false,
-                panY: false,
-                startAngle: 160,
-                endAngle: 380
-            }));
-
-            // Créer l'axe et son rendu
-            var axisRenderer = am5radar.AxisRendererCircular.new(root, {
-                innerRadius: -60
-            });
-
-            axisRenderer.grid.template.setAll({
-                stroke: root.interfaceColors.get("background"),
-                visible: true,
-                strokeOpacity: 0.8
-            });
-
-            var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
-                maxDeviation: 0,
-                min: 0,
-                max: 100,
-                strictMinMax: true,
-                renderer: axisRenderer
-            }));
-
-            var axisDataItem = xAxis.makeDataItem({});
-            var clockHand = am5radar.ClockHand.new(root, {
-                pinRadius: am5.percent(20),
-                radius: am5.percent(100),
-                bottomWidth: 40
-            });
-
-            var bullet = axisDataItem.set("bullet", am5xy.AxisBullet.new(root, {
-                sprite: clockHand
-            }));
-
-            xAxis.createAxisRange(axisDataItem);
-
-            var label = chart.radarContainer.children.push(am5.Label.new(root, {
-                fill: am5.color(0xffffff),
-                centerX: am5.percent(50),
-                textAlign: "center",
-                centerY: am5.percent(50),
-                fontSize: "3em"
-            }));
-
-            // Initial value
-            axisDataItem.set("value", 0);
-
-            bullet.get("sprite").on("rotation", function () {
-                var value = axisDataItem.get("value");
-                var fill = am5.color(0x000000);
-
-                xAxis.axisRanges.each(function (axisRange) {
-                    if (value >= axisRange.get("value") && value <= axisRange.get("endValue")) {
-                        fill = axisRange.get("axisFill").get("fill");
-                    }
-                });
-
-                label.set("text", Math.round(value).toString());
-
-                clockHand.pin.animate({ key: "fill", to: fill, duration: 500, easing: am5.ease.out(am5.ease.cubic) });
-                clockHand.hand.animate({ key: "fill", to: fill, duration: 500, easing: am5.ease.out(am5.ease.cubic) });
-            });
-
-            // Fetch operations percentage from the server
-            // Fetch operations percentage from the server
-function fetchOperationsPercentage() {
-    const dateDebut = document.querySelector('input[name="date_debut"]').value;
-    const dateFin = document.querySelector('input[name="date_fin"]').value;
-    const date_f = document.getElementById("date_f");
-
-    const date_d = document.getElementById("date_d");
-    const progressions = document.getElementById("progressions");
-
-    date_f.textContent=dateFin;
-    date_d.textContent=dateDebut;
-    $.ajax({
-        url: '/calculators_operations/', // Update with the correct URL
-        type: 'POST', // Change to POST since you're sending data
-        data: {
-            date_debut: dateDebut,
-            date_fin: dateFin,
-            csrfmiddlewaretoken: '{{ csrf_token }}' // Include CSRF token for security
-        },
-        dataType: 'json',
-        success: function(data) {
-            var operationsPercentage = data.operations_percentage;
-            progressions.textContent=operationsPercentage+"%";
-            // console.log(operationsPercentage);
-            axisDataItem.animate({
-                key: "value",
-                to: operationsPercentage,
-                duration: 500,
-                easing: am5.ease.out(am5.ease.cubic)
-            });
-        },
-        error: function(xhr, status, error) {
-            console.error('Error fetching data:', error);
-        }
-    });
-
-
-}
-
-            // Créer les plages d'axes
-            var bandsData = [
-                { title: "Critique", color: "#ee1f25", lowScore: 0, highScore: 20 },
-                { title: "Faible", color: "#f04922", lowScore: 20, highScore: 40 },
-                { title: "Moyen", color: "#fdae19", lowScore: 40, highScore: 60 },
-                { title: "Bon", color: "#f3eb0c", lowScore: 60, highScore: 80 },
-                { title: "Excellent", color: "#b0d136", lowScore: 80, highScore: 100 }
-            ];
-
-            am5.array.each(bandsData, function (data) {
-                var axisRange = xAxis.createAxisRange(xAxis.makeDataItem({}));
-                axisRange.setAll({
-                    value: data.lowScore,
-                    endValue: data.highScore
-                });
-
-                axisRange.get("axisFill").setAll({
-                    visible: true,
-                    fill: am5.color(data.color),
-                    fillOpacity: 0.8
-                });
-
-                axisRange.get("label").setAll({
-                    text: data.title,
-                    inside: true,
-                    radius: 15,
-                    fontSize: "0.9em",
-                    fill: root.interfaceColors.get("background")
-                });
-            });
-
-            // Animation à l'ouverture
-            chart.appear(1000, 100);
-        }); // Fin de am5.ready()
-    </script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -3855,140 +3222,6 @@ Highcharts.chart('containers_partitions_technic', {
         }]
     }]
 });
-</script>
-<script>
-    // --- INITIALISATION AMCHARTS 5 ---
-    var root = am5.Root.new("chartdiv_technic");
-    root.setThemes([am5themes_Animated.new(root)]);
-
-    var chart = root.container.children.push(
-        am5radar.RadarChart.new(root, {
-            startAngle: -180,
-            endAngle: 0,
-            innerRadius: am5.percent(30)
-        })
-    );
-
-    var axisRenderer = am5radar.AxisRendererCircular.new(root, { innerRadius: -80 });
-    axisRenderer.grid.template.setAll({ forceHidden: true });
-    
-    var xAxis = chart.xAxes.push(
-        am5xy.ValueAxis.new(root, {
-            min: 0, max: 100,
-            strictMinMax: true,
-            renderer: axisRenderer
-        })
-    );
-
-    // --- LE POINTEUR (L'AIGUILLE) - RESTE À 0 PAR DÉFAUT ---
-    var axisDataItem = xAxis.makeDataItem({ value: 0 });  // ✅ Démarre à 0 (loading)
-    var clockHand = am5radar.ClockHand.new(root, {
-        pinRadius: am5.percent(10),
-        radius: am5.percent(95),
-        bottomWidth: 10
-    });
-
-    var bullet = axisDataItem.set("bullet", am5xy.AxisBullet.new(root, {
-        sprite: clockHand
-    }));
-
-    xAxis.createAxisRange(axisDataItem);
-
-    // --- LABELS DE TEXTE (DYNAMIQUE) ---
-    var valueLabel = chart.children.push(am5.Label.new(root, {
-        centerX: am5.percent(50), x: am5.percent(50), y: am5.percent(95),
-        fontSize: "2.5em", fontWeight: "900",
-        text: "--"  // ✅ Loading initial
-    }));
-
-    var riskLabel = chart.children.push(am5.Label.new(root, {
-        centerX: am5.percent(50), x: am5.percent(50), y: am5.percent(82),
-        fontSize: "1.1em", fontWeight: "600",
-        text: "Chargement..."  // ✅ Loading initial
-    }));
-
-    // Écouteur de rotation pour mettre à jour les textes
-    bullet.get("sprite").on("rotation", function() {
-        var value = axisDataItem.get("value");
-        
-        var fill = am5.color(0x555555);
-        var title = "Indéfini";
-
-        xAxis.axisRanges.each(function(range) {
-            if (value >= range.get("value") && value <= range.get("endValue")) {
-                fill = range.get("axisFill").get("fill");
-                title = range.get("axisFill").get("tooltipText");
-            }
-        });
-
-        valueLabel.set("fill", fill);
-        riskLabel.setAll({ text: title, fill: fill });
-    });
-
-    // --- BANDES DE COULEURS ---
-    var bandsData = [
-        { title: "Critique", color: am5.color(0xf44336), from: 0, to: 30 },
-        { title: "Insuffisant", color: am5.color(0xff9800), from: 30, to: 50 },
-        { title: "Moyen", color: am5.color(0xffc107), from: 50, to: 75 },
-        { title: "Bon", color: am5.color(0x8bc34a), from: 75, to: 90 },
-        { title: "Excellent", color: am5.color(0x5cb85c), from: 90, to: 100 }
-    ];
-
-    am5.array.each(bandsData, function(data) {
-        var range = xAxis.createAxisRange(xAxis.makeDataItem({ value: data.from, endValue: data.to }));
-        range.get("axisFill").setAll({
-            visible: true, fill: data.color, fillOpacity: 0.9, tooltipText: data.title
-        });
-    });
-
-    // --- FONCTION DE RÉCUPÉRATION DES DONNÉES (AVEC OSCILLATION ERP) ---
-    async function refreshPerformance() {
-        try {
-            // ✅ Loading state (aiguille déjà à 0, textes mis à jour)
-            valueLabel.set("text", "--");
-            riskLabel.set("text", "Chargement...");
-
-            const response = await fetch('/performance_technique/');
-            const data = await response.json();
-
-            const targetValue = data.score_global;
-            
-            // Étape 1 : Overshoot (oscillation ERP-style)
-            axisDataItem.animate({
-                key: "value",
-                to: targetValue * 1.1,
-                duration: 1500,
-                easing: am5.ease.out(am5.ease.elastic)
-            });
-
-            // Étape 2 : Stabilisation au target
-            setTimeout(() => {
-                axisDataItem.animate({
-                    key: "value",
-                    to: targetValue,
-                    duration: 800,
-                    easing: am5.ease.out(am5.ease.cubic)
-                });
-            }, 1500);
-
-            // Mise à jour bandeau HTML
-            document.getElementById('performance-global').innerHTML = `
-                ${data.score_global}<span class="text-lg ml-0.5 opacity-80">%</span>
-            `;
-
-        } catch (error) {
-            console.error("Erreur de synchro:", error);
-            valueLabel.set("text", "ERR");
-            riskLabel.set("text", "Erreur");
-        }
-    }
-
-    // Lancement
-    document.addEventListener('DOMContentLoaded', () => {
-        refreshPerformance();
-        // Rafraîchir toutes les 5 minutes
-        setInterval(refreshPerformance, 300000);
-    });
 </script>
 
 <script src="https://unpkg.com/gojs@2.2.14/release/go.js"></script>
