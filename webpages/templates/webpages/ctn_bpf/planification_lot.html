@@ -1,0 +1,609 @@
+{% extends './index.html' %}
+{% block main %}
+{% comment %}
+    Attribution du RACI par lots — OPERAPLUS
+    Fonctionne comme un formulaire classique : 1. cocher des opérations, 2. choisir les personnes par rôle, 3. appliquer.
+    Le JavaScript n'ajoute que le confort (compteurs, récapitulatif, filtres) ; sans lui, le formulaire marche quand même.
+{% endcomment %}
+
+<div class="pl-ui">
+
+<!-- ═════════ EN-TÊTE ═════════ -->
+<header class="pl-hero">
+    <nav class="pl-crumbs" aria-label="Fil d'Ariane">
+        <a href="{% if tache %}/taches/{{ tache.id }}/{% else %}javascript:history.back(){% endif %}">
+            <svg class="pl-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Opérations
+        </a>
+        <span>/</span><span>Attribution du RACI par lots</span>
+    </nav>
+
+    <div class="pl-hero-row">
+        <div class="min-w-0">
+            <h1 class="pl-title">Attribution du RACI par lots</h1>
+            <p class="pl-parent">
+                {% if tache %}<span class="pl-chip-amber">Tâche</span><span class="pl-underline">{{ tache }}</span>
+                {% else %}<span class="pl-chip-indigo">Toutes les tâches</span>{% endif %}
+            </p>
+            <form method="get" class="pl-tache-form">
+                <label class="pl-tache-pick">
+                    <svg class="pl-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+                    <select name="tache" onchange="this.form.submit()" aria-label="Changer de tâche" class="no-select2">
+                        <option value="">Toutes les tâches</option>
+                        {% for t in taches %}<option value="{{ t.id }}" {% if tache and t.id == tache.id %}selected{% endif %}>{{ t }}</option>{% endfor %}
+                    </select>
+                </label>
+                <noscript><button type="submit" class="pl-btn pl-btn-ghost">Filtrer</button></noscript>
+            </form>
+        </div>
+        <div class="pl-stats">
+            <div class="pl-stat pl-s-indigo"><b>{{ total_operations }}</b><span>opération{{ total_operations|pluralize }}</span></div>
+            <div class="pl-stat pl-s-rose"><b>{{ sans_responsable }}</b><span>sans responsable</span></div>
+            <div class="pl-stat pl-s-sky"><b>{{ nb_membres }}</b><span>membre{{ nb_membres|pluralize }} disponibles</span></div>
+        </div>
+    </div>
+</header>
+
+<!-- ═════════ BAROMÈTRES ═════════ -->
+<section class="pl-baros" aria-labelledby="pl-baro-t">
+    <div class="pl-baro-main">
+        <h2 id="pl-baro-t" class="pl-baro-title"><span class="pl-ph"><svg class="pl-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/></svg></span>Complétude du RACI</h2>
+        <div class="pl-gauge" data-gauge="{{ taux_complet }}">
+            <svg viewBox="0 0 260 150" role="img" aria-label="RACI complet sur {{ taux_complet }} % des opérations"></svg>
+        </div>
+        <div class="pl-gauge-val"><b data-count="{{ taux_complet }}">{{ taux_complet }}</b><small>%</small></div>
+        <p class="pl-gauge-cap">{{ nb_complet }} opération{{ nb_complet|pluralize }} sur {{ total_operations }} {{ nb_complet|pluralize:"a,ont" }} un RACI complet</p>
+    </div>
+    <div class="pl-baro-roles">
+        {% for b in barometres %}
+        <div class="pl-mini pl-mini-{{ b.cle }}" style="--p: {{ b.pct }}; --i: {{ forloop.counter0 }}" title="{{ b.libelle }} : {{ b.n }} / {{ total_operations }}">
+            <svg viewBox="0 0 120 70" aria-hidden="true">
+                <path d="M12 62 A48 48 0 0 1 108 62" class="pl-mini-track"/>
+                <path d="M12 62 A48 48 0 0 1 108 62" class="pl-mini-arc" pathLength="100"/>
+            </svg>
+            <div class="pl-mini-val"><b>{{ b.pct }}</b><small>%</small></div>
+            <div class="pl-mini-lbl"><i class="pl-{{ b.cle }}">{{ b.cle|upper }}</i>{{ b.libelle }}</div>
+            <div class="pl-mini-sub">{{ b.n }} / {{ total_operations }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Mode d'emploi -->
+<ol class="pl-guide" aria-label="Mode d'emploi">
+    <li id="pl-g1"><span class="pl-gn">1</span><div><b>Cochez les opérations</b><small>dans la liste de gauche</small></div></li>
+    <li id="pl-g2"><span class="pl-gn">2</span><div><b>Choisissez les personnes</b><small>pour chaque rôle à modifier</small></div></li>
+    <li id="pl-g3"><span class="pl-gn">3</span><div><b>Appliquez</b><small>vérifiez le récapitulatif puis validez</small></div></li>
+</ol>
+
+<form method="post" id="pl-form" class="pl-layout">
+    {% csrf_token %}
+
+    <!-- ═════════ 1. OPÉRATIONS ═════════ -->
+    <section class="pl-card pl-ops" aria-labelledby="pl-ops-t">
+        <header class="pl-card-head">
+            <h2 id="pl-ops-t"><span class="pl-step">1</span>Opérations à modifier</h2>
+            <span class="pl-pill" id="pl-sel-pill"><b id="pl-sel-n">0</b>&nbsp;cochée<span id="pl-sel-s"></span></span>
+        </header>
+
+        <div class="pl-ops-tools">
+            <label class="pl-search">
+                <svg class="pl-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input type="search" id="pl-search" placeholder="Rechercher une opération…" autocomplete="off">
+            </label>
+            <label class="pl-checkall"><input type="checkbox" id="pl-all"> Tout cocher</label>
+            <button type="button" class="pl-link" id="pl-only-nor">Cocher celles sans responsable</button>
+        </div>
+
+        <div class="pl-elsewhere" id="pl-elsewhere" {% if not preselection_hors_page %}hidden{% endif %}>
+            <svg class="pl-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span><b id="pl-else-n">{{ preselection_hors_page|length }}</b> autre<span id="pl-else-s">{{ preselection_hors_page|length|pluralize }}</span> opération<span id="pl-else-s2">{{ preselection_hors_page|length|pluralize }}</span> cochée<span id="pl-else-s3">{{ preselection_hors_page|length|pluralize }}</span> sur d'autres pages — elles seront aussi modifiées.</span>
+            <button type="button" class="pl-link" id="pl-clear-all">Tout désélectionner</button>
+        </div>
+        <div id="pl-hidden-ops">{% for id in preselection_hors_page %}<input type="hidden" name="operations" value="{{ id }}">{% endfor %}</div>
+
+        <div class="pl-oplist">
+            {% for op in operations %}
+            <label class="pl-op{% if op.id in preselection %} is-on{% endif %}" data-name="{{ op.nom|default:op|lower }}" data-nor="{% if op.personnel_id %}0{% else %}1{% endif %}">
+                <input type="checkbox" name="operations" value="{{ op.id }}" class="pl-op-check" {% if op.id in preselection %}checked{% endif %}>
+                <span class="pl-op-box" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+                <span class="pl-op-main">
+                    <span class="pl-op-top">
+                        <span class="pl-op-title">{{ op.nom|default:op }}</span>
+                        <span class="pl-op-ring {% if op.raci_complet %}is-full{% elif op.raci_score <= 1 %}is-low{% endif %}" style="--p: {{ op.raci_pct }}" title="RACI : {{ op.raci_score }} rôle{{ op.raci_score|pluralize }} sur 5"><b>{{ op.raci_score }}/5</b></span>
+                    </span>
+                    <span class="pl-op-sub">
+                        {% if not tache and op.tache %}<em class="pl-op-tache">{{ op.tache }}</em>{% endif %}
+                        {% if op.structure %}<em>{{ op.structure.nom }}</em>{% endif %}
+                        {% if op.date_debut %}<em>{{ op.date_debut|date:"d M" }} → {{ op.date_echeance|date:"d M Y"|default:"—" }}</em>{% endif %}
+                    </span>
+                    <span class="pl-raci-grid">
+                        <span class="pl-rg-row">
+                            <span class="pl-rg {% if not op.personnel %}is-missing{% endif %}"><i class="pl-r">R</i><span>{% if op.personnel %}{{ op.personnel.full_name|default:op.personnel }}{% else %}À attribuer{% endif %}</span></span>
+                            <span class="pl-rg {% if not op.accountable %}is-empty{% endif %}"><i class="pl-a">A</i><span>{% if op.accountable %}{{ op.accountable.full_name|default:op.accountable }}{% else %}Non défini{% endif %}</span></span>
+                            <span class="pl-rg {% if not op.participant %}is-empty{% endif %}"><i class="pl-m">M</i><span>{% if op.participant %}{{ op.participant.full_name|default:op.participant }}{% else %}Non défini{% endif %}</span></span>
+                        </span>
+                        <span class="pl-rg-line">
+                            <i class="pl-c">C</i>
+                            {% for nom in op.raci_c %}{% if forloop.counter <= 3 %}<span class="pl-pchip pl-pchip-c" title="{{ nom }}"><b>{{ nom|slice:":1"|upper }}</b>{{ nom }}</span>{% endif %}{% empty %}<span class="pl-none">Aucun consulté</span>{% endfor %}
+                            {% if op.raci_c|length > 3 %}<span class="pl-pchip pl-more" title="{{ op.raci_c|slice:'3:'|join:', ' }}">+{{ op.raci_c|length|add:'-3' }}</span>{% endif %}
+                        </span>
+                        <span class="pl-rg-line">
+                            <i class="pl-i">I</i>
+                            {% for nom in op.raci_i %}{% if forloop.counter <= 3 %}<span class="pl-pchip pl-pchip-i" title="{{ nom }}"><b>{{ nom|slice:":1"|upper }}</b>{{ nom }}</span>{% endif %}{% empty %}<span class="pl-none">Aucun informé</span>{% endfor %}
+                            {% if op.raci_i|length > 3 %}<span class="pl-pchip pl-more" title="{{ op.raci_i|slice:'3:'|join:', ' }}">+{{ op.raci_i|length|add:'-3' }}</span>{% endif %}
+                        </span>
+                    </span>
+                </span>
+            </label>
+            {% empty %}
+            <div class="pl-empty">Aucune opération à planifier.</div>
+            {% endfor %}
+            <div class="pl-empty" id="pl-none" hidden>Aucune opération ne correspond.</div>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <nav class="pl-pager" aria-label="Pagination" data-tache="{% if tache %}{{ tache.id }}{% endif %}">
+            <span>{{ page_obj.start_index }}–{{ page_obj.end_index }} sur {{ total_operations }}</span>
+            <div>
+                {% if page_obj.has_previous %}<a class="pl-pg" href="?{% if tache %}tache={{ tache.id }}&{% endif %}page={{ page_obj.previous_page_number }}{% if ops_param %}&ops={{ ops_param }}{% endif %}" data-page="{{ page_obj.previous_page_number }}">‹</a>{% endif %}
+                <span class="pl-pg is-on">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}<a class="pl-pg" href="?{% if tache %}tache={{ tache.id }}&{% endif %}page={{ page_obj.next_page_number }}{% if ops_param %}&ops={{ ops_param }}{% endif %}" data-page="{{ page_obj.next_page_number }}">›</a>{% endif %}
+            </div>
+        </nav>
+        {% endif %}
+    </section>
+
+    <!-- ═════════ 2. RÔLES + 3. APPLIQUER ═════════ -->
+    <aside class="pl-side">
+        <section class="pl-card" aria-labelledby="pl-roles-t">
+            <header class="pl-card-head">
+                <h2 id="pl-roles-t"><span class="pl-step">2</span>Personnes à attribuer</h2>
+            </header>
+            <p class="pl-help">Laissez « Ne pas modifier » pour garder ce qui existe déjà sur chaque opération.</p>
+
+            <div class="pl-role" data-role="r">
+                <label class="pl-role-head" for="pl-r"><i class="pl-r">R</i><span><b>Responsable</b><small>réalise l'opération</small></span><em class="pl-state">Inchangé</em></label>
+                <select name="r" id="pl-r" class="pl-select no-select2" data-simple>
+                    <option value="">Ne pas modifier</option>
+                    <option value="0">Retirer le responsable</option>
+                    {% for g in groupes_structures %}<optgroup label="{{ g.structure.nom }}">{% for m in g.membres %}<option value="{{ m.personne.id }}">{{ m.personne.full_name|default:m.personne }}{% if m.responsable %} (resp. de structure){% endif %}</option>{% endfor %}</optgroup>{% endfor %}
+                </select>
+            </div>
+            <div class="pl-role" data-role="a">
+                <label class="pl-role-head" for="pl-a"><i class="pl-a">A</i><span><b>Accountable</b><small>valide et rend des comptes</small></span><em class="pl-state">Inchangé</em></label>
+                <select name="a" id="pl-a" class="pl-select no-select2" data-simple>
+                    <option value="">Ne pas modifier</option>
+                    <option value="0">Retirer l'accountable</option>
+                    {% for g in groupes_structures %}<optgroup label="{{ g.structure.nom }}">{% for m in g.membres %}<option value="{{ m.personne.id }}">{{ m.personne.full_name|default:m.personne }}{% if m.responsable %} (resp. de structure){% endif %}</option>{% endfor %}</optgroup>{% endfor %}
+                </select>
+            </div>
+
+            {% for role in "ci" %}
+            <div class="pl-role" data-role="{{ role }}">
+                <div class="pl-role-head"><i class="pl-{{ role }}">{{ role|upper }}</i><span><b>{% if role == 'c' %}Consultés{% else %}Informés{% endif %}</b><small>{% if role == 'c' %}donnent leur avis{% else %}sont tenus au courant{% endif %}</small></span><em class="pl-state">Inchangé</em></div>
+                <div class="pl-modes" role="radiogroup" aria-label="Action sur les {% if role == 'c' %}consultés{% else %}informés{% endif %}">
+                    <label><input type="radio" name="{{ role }}_mode" value="" checked><span>Ne pas modifier</span></label>
+                    <label><input type="radio" name="{{ role }}_mode" value="ajouter"><span>Ajouter</span></label>
+                    <label><input type="radio" name="{{ role }}_mode" value="remplacer"><span>Remplacer</span></label>
+                    <label><input type="radio" name="{{ role }}_mode" value="retirer"><span>Retirer</span></label>
+                </div>
+                <div class="pl-people">
+                    <input type="search" class="pl-people-filter" placeholder="Filtrer…" aria-label="Filtrer les membres">
+                    <div class="pl-people-list">
+                        {% for g in groupes_structures %}
+                        <div class="pl-people-group">{{ g.structure.nom }}</div>
+                        {% for m in g.membres %}
+                        <label class="pl-person"><input type="checkbox" name="{{ role }}" value="{{ m.personne.id }}"><i>{{ m.personne.full_name|default:m.personne|slice:":1"|upper }}</i><span>{{ m.personne.full_name|default:m.personne }}</span>{% if m.responsable %}<em>resp.</em>{% endif %}</label>
+                        {% endfor %}
+                        {% empty %}
+                        <p class="pl-empty">Aucun membre dans les structures de l'institution.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="pl-role" data-role="m">
+                <label class="pl-role-head" for="pl-m"><i class="pl-m">M</i><span><b>Manager</b><small>supervise</small></span><em class="pl-state">Inchangé</em></label>
+                <select name="m" id="pl-m" class="pl-select no-select2" data-simple>
+                    <option value="">Ne pas modifier</option>
+                    <option value="0">Retirer le manager</option>
+                    {% for g in groupes_structures %}<optgroup label="{{ g.structure.nom }}">{% for m in g.membres %}<option value="{{ m.personne.id }}">{{ m.personne.full_name|default:m.personne }}{% if m.responsable %} (resp. de structure){% endif %}</option>{% endfor %}</optgroup>{% endfor %}
+                </select>
+            </div>
+        </section>
+
+        <section class="pl-card pl-apply" aria-labelledby="pl-apply-t">
+            <header class="pl-card-head">
+                <h2 id="pl-apply-t"><span class="pl-step">3</span>Récapitulatif</h2>
+            </header>
+            <ul class="pl-summary" id="pl-summary">
+                <li class="pl-sum-empty">Cochez des opérations et choisissez au moins une personne.</li>
+            </ul>
+            <button type="submit" class="pl-btn pl-btn-primary pl-btn-block" id="pl-go">
+                <svg class="pl-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                <span id="pl-go-txt">Appliquer aux opérations cochées</span>
+            </button>
+            <button type="reset" class="pl-btn pl-btn-ghost pl-btn-block" id="pl-reset">Tout réinitialiser</button>
+        </section>
+    </aside>
+</form>
+
+{% if messages %}
+<div class="pl-toasts" aria-live="polite">
+    {% for message in messages %}
+    <div class="pl-toast pl-toast-{{ message.tags|default:'info' }}">
+        <svg class="pl-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">{% if message.tags == 'success' %}<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/>{% else %}<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>{% endif %}</svg>
+        <span>{{ message }}</span>
+        <button type="button" onclick="this.parentElement.remove()" aria-label="Fermer">×</button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+</div>
+
+<style>
+.pl-ui { --ink:#1e293b; --ink-2:#64748b; --ink-3:#94a3b8; --line:#e7eaf0; --t-indigo:#eef0ff; --t-green:#e9f6ef; --t-amber:#fdf3e1; --t-rose:#fcecef; --t-blue:#eef4ff; --t-sky:#e8f4fb;
+    --accent: {{ request.user.personnel.color|default:"#4f46e5" }}; --ease: cubic-bezier(.22,.8,.3,1); color: var(--ink); }
+.pl-ui [hidden] { display: none !important; }
+.pl-ui .pl-ic { width: 1.1em; height: 1.1em; flex-shrink: 0; display: inline-block; vertical-align: -.18em; }
+
+/* En-tête */
+.pl-ui .pl-hero { border: 1px solid var(--line); border-radius: 1.25rem; padding: 1.4rem 1.5rem; background: radial-gradient(120% 140% at 0% 0%, #eef0ff 0%, transparent 55%), radial-gradient(120% 140% at 100% 0%, #e9f6ef 0%, transparent 50%), #fff; animation: plRise .45s var(--ease) both; }
+.pl-ui .pl-crumbs { display: flex; gap: .5rem; font-size: .78rem; color: var(--ink-3); margin-bottom: .8rem; }
+.pl-ui .pl-crumbs a { display: inline-flex; align-items: center; gap: .2rem; color: #6366f1; font-weight: 600; text-decoration: none; }
+.pl-ui .pl-hero-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1rem; }
+.pl-ui .pl-title { font-size: clamp(1.35rem, 2.6vw, 1.8rem); font-weight: 700; letter-spacing: -.02em; color: #1e1b4b; }
+.pl-ui .pl-parent { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; margin-top: .45rem; font-weight: 600; }
+.pl-ui .pl-chip-amber, .pl-ui .pl-chip-indigo { font-size: .7rem; font-weight: 600; padding: .1rem .55rem; border-radius: 999px; }
+.pl-ui .pl-chip-amber { color: #a16207; background: #fdf6e7; border: 1px solid #f6e3b8; }
+.pl-ui .pl-chip-indigo { color: #4f46e5; background: var(--t-indigo); }
+.pl-ui .pl-underline { text-decoration: underline; text-decoration-color: #e3a23a; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.pl-ui .pl-tache-form { margin-top: .7rem; display: flex; gap: .5rem; }
+.pl-ui .pl-tache-pick { position: relative; display: inline-flex; align-items: center; max-width: 100%; }
+.pl-ui .pl-tache-pick .pl-ic { position: absolute; left: .7rem; color: var(--ink-3); pointer-events: none; }
+.pl-ui .pl-tache-pick select { height: 2.3rem; max-width: 26rem; border: 1px solid var(--line); border-radius: .65rem; background: #fff; padding: 0 2rem 0 2.1rem; font-size: .82rem; cursor: pointer; }
+.pl-ui .pl-stats { display: flex; flex-wrap: wrap; gap: .6rem; }
+.pl-ui .pl-stat { padding: .65rem .9rem; border-radius: .8rem; min-width: 7rem; }
+.pl-ui .pl-stat b { display: block; font-size: 1.4rem; font-weight: 600; line-height: 1.1; }
+.pl-ui .pl-stat span { font-size: .72rem; color: #475569; }
+.pl-ui .pl-s-indigo { background: var(--t-indigo); } .pl-ui .pl-s-indigo b { color: #4f46e5; }
+.pl-ui .pl-s-rose { background: var(--t-rose); } .pl-ui .pl-s-rose b { color: #c0566a; }
+.pl-ui .pl-s-sky { background: var(--t-sky); } .pl-ui .pl-s-sky b { color: #2b7bb0; }
+
+/* Mode d'emploi */
+.pl-ui .pl-guide { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .6rem; }
+.pl-ui .pl-guide li { display: flex; align-items: center; gap: .7rem; padding: .75rem .9rem; border-radius: .9rem; background: #fff; border: 1.5px solid var(--line); transition: border-color .25s, background .25s; }
+.pl-ui .pl-guide b { display: block; font-size: .84rem; } .pl-ui .pl-guide small { font-size: .72rem; color: var(--ink-3); }
+.pl-ui .pl-gn { width: 1.9rem; height: 1.9rem; border-radius: 999px; display: grid; place-items: center; font-weight: 700; font-size: .8rem; background: #f1f4f8; color: var(--ink-3); flex-shrink: 0; transition: all .25s var(--ease); }
+.pl-ui .pl-guide li.is-current { border-color: #a5b4fc; background: #f8f8ff; }
+.pl-ui .pl-guide li.is-current .pl-gn { background: #6366f1; color: #fff; box-shadow: 0 0 0 4px rgba(99,102,241,.15); }
+.pl-ui .pl-guide li.is-done { border-color: #bfe3cf; }
+.pl-ui .pl-guide li.is-done .pl-gn { background: #43a074; color: #fff; }
+
+/* Mise en page */
+.pl-ui .pl-layout { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem; align-items: start; }
+@media (min-width: 1100px) { .pl-ui .pl-layout { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); } .pl-ui .pl-side { position: sticky; top: .75rem; } }
+.pl-ui .pl-side { display: grid; gap: 1rem; }
+.pl-ui .pl-card { background: #fff; border: 1px solid var(--line); border-radius: 1rem; padding: 1rem 1.1rem 1.1rem; animation: plRise .45s var(--ease) both .1s; }
+.pl-ui .pl-card-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .8rem; }
+.pl-ui .pl-card-head h2 { display: flex; align-items: center; gap: .55rem; font-size: .95rem; font-weight: 600; }
+.pl-ui .pl-step { width: 1.6rem; height: 1.6rem; border-radius: 999px; display: grid; place-items: center; font-size: .78rem; font-weight: 700; background: #6366f1; color: #fff; }
+.pl-ui .pl-pill { font-size: .78rem; color: var(--ink-2); background: #f4f6f9; padding: .25rem .7rem; border-radius: 999px; transition: all .2s; }
+.pl-ui .pl-pill.is-on { background: var(--t-indigo); color: #3730a3; }
+.pl-ui .pl-help { font-size: .76rem; color: var(--ink-3); margin: -.3rem 0 .8rem; }
+
+/* 1. Liste des opérations */
+.pl-ui .pl-ops-tools { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; margin-bottom: .75rem; }
+.pl-ui .pl-search { position: relative; display: inline-flex; align-items: center; flex: 1; min-width: 12rem; }
+.pl-ui .pl-search .pl-ic { position: absolute; left: .7rem; color: var(--ink-3); width: 1rem; height: 1rem; }
+.pl-ui .pl-search input { width: 100%; height: 2.3rem; border: 1px solid var(--line); border-radius: .65rem; padding: 0 .75rem 0 2.15rem; font-size: .82rem; }
+.pl-ui .pl-search input:focus, .pl-ui .pl-select:focus, .pl-ui .pl-people-filter:focus { outline: none; border-color: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,.18); }
+.pl-ui .pl-checkall { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--ink-2); cursor: pointer; }
+.pl-ui .pl-checkall input { width: 1rem; height: 1rem; accent-color: #6366f1; }
+.pl-ui .pl-link { font-size: .78rem; font-weight: 600; color: #6366f1; }
+.pl-ui .pl-link:hover { text-decoration: underline; }
+.pl-ui .pl-oplist { display: grid; gap: .5rem; max-height: 70vh; overflow-y: auto; padding: .15rem; }
+.pl-ui .pl-op { position: relative; display: flex; gap: .8rem; align-items: flex-start; padding: .8rem .9rem; border: 1.5px solid var(--line); border-radius: .85rem; cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s; user-select: none; }
+.pl-ui .pl-op:hover { border-color: #c7d2fe; }
+.pl-ui .pl-op input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pl-ui .pl-op-box { width: 1.25rem; height: 1.25rem; border-radius: .4rem; border: 1.6px solid #cbd5e1; display: grid; place-items: center; color: transparent; flex-shrink: 0; margin-top: .1rem; transition: all .15s var(--ease); background: #fff; }
+.pl-ui .pl-op-box svg { width: .8rem; height: .8rem; }
+.pl-ui .pl-op:has(input:checked), .pl-ui .pl-op.is-on { border-color: #6366f1; background: #f7f7ff; box-shadow: 0 6px 16px -14px rgba(99,102,241,.8); }
+.pl-ui .pl-op input:checked + .pl-op-box { background: #6366f1; border-color: #6366f1; color: #fff; }
+.pl-ui .pl-op input:focus-visible + .pl-op-box { box-shadow: 0 0 0 3px rgba(99,102,241,.3); }
+.pl-ui .pl-op-main { min-width: 0; flex: 1; display: grid; gap: .3rem; }
+.pl-ui .pl-op-title { font-weight: 600; font-size: .88rem; line-height: 1.35; }
+.pl-ui .pl-op-sub { display: flex; flex-wrap: wrap; gap: .2rem .7rem; font-size: .7rem; color: var(--ink-3); }
+.pl-ui .pl-op-sub em { font-style: normal; }
+.pl-ui .pl-op-tache { color: #4f46e5 !important; font-weight: 600; }
+.pl-ui .pl-ok { color: #2f7a57 !important; font-weight: 600; }
+.pl-ui .pl-r { background: var(--t-green); color: #2f8a60; } .pl-ui .pl-a { background: var(--t-rose); color: #c0566a; }
+.pl-ui .pl-c { background: var(--t-amber); color: #b7791f; } .pl-ui .pl-i { background: var(--t-blue); color: #2563eb; }
+.pl-ui .pl-m { background: #e9edf2; color: #475569; }
+.pl-ui .pl-empty { text-align: center; color: var(--ink-3); font-size: .82rem; padding: 1.5rem .5rem; }
+.pl-ui .pl-pager { display: flex; justify-content: space-between; align-items: center; margin-top: .8rem; font-size: .76rem; color: var(--ink-3); }
+.pl-ui .pl-pager div { display: flex; gap: .3rem; }
+.pl-ui .pl-pg { min-width: 2rem; height: 2rem; padding: 0 .55rem; border-radius: .55rem; display: inline-grid; place-items: center; border: 1px solid var(--line); color: var(--ink-2); font-weight: 600; text-decoration: none; }
+.pl-ui .pl-pg.is-on { background: #6366f1; border-color: #6366f1; color: #fff; }
+
+/* 2. Rôles */
+.pl-ui .pl-role { padding: .75rem 0; border-top: 1px dashed var(--line); display: grid; gap: .55rem; }
+.pl-ui .pl-role:first-of-type { border-top: 0; padding-top: 0; }
+.pl-ui .pl-role-head { display: flex; align-items: center; gap: .6rem; cursor: default; }
+.pl-ui .pl-role-head > i { width: 1.6rem; height: 1.6rem; font-size: .72rem; border-radius: .45rem; }
+.pl-ui .pl-role-head span { flex: 1; min-width: 0; }
+.pl-ui .pl-role-head b { display: block; font-size: .84rem; font-weight: 600; }
+.pl-ui .pl-role-head small { font-size: .7rem; color: var(--ink-3); }
+.pl-ui .pl-state { font-style: normal; font-size: .68rem; font-weight: 600; color: var(--ink-3); background: #f4f6f9; padding: .12rem .5rem; border-radius: 999px; transition: all .2s; }
+.pl-ui .pl-role.is-set .pl-state { color: #9a6210; background: var(--t-amber); }
+.pl-ui .pl-select { width: 100%; height: 2.45rem; border: 1px solid var(--line); border-radius: .65rem; background: #fff; padding: 0 .75rem; font-size: .84rem; color: var(--ink); cursor: pointer; }
+.pl-ui .pl-role.is-set .pl-select { border-color: #e3a23a; background: #fffcf6; font-weight: 600; }
+.pl-ui .pl-modes { display: flex; flex-wrap: wrap; background: #f1f4f8; border-radius: .65rem; padding: 3px; gap: 2px; }
+.pl-ui .pl-modes label { flex: 1; cursor: pointer; }
+.pl-ui .pl-modes input { position: absolute; opacity: 0; }
+.pl-ui .pl-modes span { display: block; text-align: center; padding: .35rem .4rem; border-radius: .5rem; font-size: .74rem; font-weight: 600; color: var(--ink-2); white-space: nowrap; transition: all .15s; }
+.pl-ui .pl-modes input:checked + span { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+.pl-ui .pl-modes input:focus-visible + span { box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
+.pl-ui .pl-people { display: grid; gap: .4rem; }
+.pl-ui .pl-role:not(.has-mode) .pl-people { display: none; }
+.pl-ui .pl-people-filter { height: 2.1rem; border: 1px solid var(--line); border-radius: .6rem; padding: 0 .7rem; font-size: .8rem; }
+.pl-ui .pl-people-list { max-height: 12rem; overflow-y: auto; border: 1px solid var(--line); border-radius: .7rem; padding: .3rem; }
+.pl-ui .pl-people-group { font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); padding: .45rem .45rem .2rem; }
+.pl-ui .pl-person { display: flex; align-items: center; gap: .5rem; padding: .32rem .45rem; border-radius: .5rem; font-size: .8rem; cursor: pointer; }
+.pl-ui .pl-person:hover { background: #f4f6f9; }
+.pl-ui .pl-person input { width: 1rem; height: 1rem; accent-color: #6366f1; flex-shrink: 0; }
+.pl-ui .pl-person i { font-style: normal; width: 1.4rem; height: 1.4rem; border-radius: 999px; display: grid; place-items: center; background: #f1f5f9; color: var(--ink-2); font-size: .62rem; font-weight: 700; flex-shrink: 0; }
+.pl-ui .pl-person span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-ui .pl-person em { font-style: normal; font-size: .64rem; font-weight: 600; color: #2f8a60; background: var(--t-green); padding: .05rem .4rem; border-radius: 999px; }
+.pl-ui .pl-person:has(input:checked) { background: #f5f6ff; }
+.pl-ui .pl-person:has(input:checked) i { background: #6366f1; color: #fff; }
+
+/* Baromètres */
+.pl-ui .pl-baros { margin-top: 1rem; display: grid; grid-template-columns: 1fr; gap: 1rem; background: #fff; border: 1px solid var(--line); border-radius: 1rem; padding: 1rem 1.25rem 1.1rem; animation: plRise .45s var(--ease) both .05s; }
+@media (min-width: 900px) { .pl-ui .pl-baros { grid-template-columns: minmax(16rem, 4fr) 8fr; align-items: center; } }
+.pl-ui .pl-baro-main { text-align: center; }
+.pl-ui .pl-baro-title { display: flex; align-items: center; gap: .55rem; font-size: .92rem; font-weight: 600; text-align: left; margin-bottom: .2rem; }
+.pl-ui .pl-ph { width: 1.7rem; height: 1.7rem; border-radius: .55rem; display: grid; place-items: center; background: var(--t-green); color: #2f8a60; }
+.pl-ui .pl-ph .pl-ic { width: .95rem; height: .95rem; }
+.pl-ui .pl-gauge { max-width: 17rem; margin: 0 auto; }
+.pl-ui .pl-gauge svg { width: 100%; height: auto; display: block; overflow: visible; }
+.pl-ui .pl-gauge-lbl { font-size: 9px; font-weight: 600; fill: #94a3b8; }
+.pl-ui .pl-gauge .pl-g-arc { transition: stroke-dasharray 1.4s var(--ease); }
+.pl-ui .pl-gauge .pl-g-needle { transition: transform 1.6s cubic-bezier(.34,1.35,.5,1); }
+.pl-ui .pl-gauge-val { margin-top: -.2rem; }
+.pl-ui .pl-gauge-val b { font-size: 2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pl-ui .pl-gauge-val small { font-size: .9rem; color: var(--ink-3); margin-left: .1rem; }
+.pl-ui .pl-gauge-cap { font-size: .76rem; color: var(--ink-2); margin-top: .1rem; }
+.pl-ui .pl-baro-roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: .6rem; }
+.pl-ui .pl-mini { position: relative; text-align: center; padding: .7rem .5rem .75rem; border-radius: .9rem; background: #fafbfc; animation: plRise .45s var(--ease) both; animation-delay: calc(var(--i) * 70ms + 150ms); }
+.pl-ui .pl-mini svg { width: 100%; max-width: 7.5rem; height: auto; display: block; margin: 0 auto; }
+.pl-ui .pl-mini-track { fill: none; stroke: #e9edf2; stroke-width: 10; stroke-linecap: round; }
+.pl-ui .pl-mini-arc { fill: none; stroke-width: 10; stroke-linecap: round; stroke-dasharray: 0 100; animation: plArc 1.3s var(--ease) forwards; animation-delay: calc(var(--i) * 90ms + 250ms); }
+@keyframes plArc { to { stroke-dasharray: calc(var(--p) * 1) 100; } }
+.pl-ui .pl-mini-r .pl-mini-arc { stroke: #43a074; } .pl-ui .pl-mini-a .pl-mini-arc { stroke: #d4697a; }
+.pl-ui .pl-mini-c .pl-mini-arc { stroke: #e3a23a; } .pl-ui .pl-mini-i .pl-mini-arc { stroke: #3b82f6; }
+.pl-ui .pl-mini-m .pl-mini-arc { stroke: #64748b; }
+.pl-ui .pl-mini-val { margin-top: -1.55rem; }
+.pl-ui .pl-mini-val b { font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pl-ui .pl-mini-val small { font-size: .7rem; color: var(--ink-3); }
+.pl-ui .pl-mini-lbl { display: flex; align-items: center; justify-content: center; gap: .35rem; margin-top: .35rem; font-size: .74rem; font-weight: 600; }
+.pl-ui .pl-mini-lbl i { font-style: normal; width: 1.15rem; height: 1.15rem; border-radius: .3rem; display: inline-grid; place-items: center; font-size: .58rem; font-weight: 800; }
+.pl-ui .pl-mini-sub { font-size: .68rem; color: var(--ink-3); }
+
+/* Carte d'opération : anneau et RACI lisible */
+.pl-ui .pl-op-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; }
+.pl-ui .pl-op-ring { --p: 0; position: relative; width: 2.3rem; height: 2.3rem; border-radius: 999px; flex-shrink: 0; display: grid; place-items: center; background: conic-gradient(#e3a23a calc(var(--p) * 1%), #eef1f5 0); }
+.pl-ui .pl-op-ring::before { content: ""; position: absolute; inset: 4px; border-radius: inherit; background: #fff; }
+.pl-ui .pl-op-ring.is-full { background: conic-gradient(#43a074 100%, #eef1f5 0); }
+.pl-ui .pl-op-ring.is-low { background: conic-gradient(#d4697a calc(var(--p) * 1%), #eef1f5 0); }
+.pl-ui .pl-op-ring b, .pl-ui .pl-op-ring small { position: relative; }
+.pl-ui .pl-op-ring b { font-size: .62rem; font-weight: 700; letter-spacing: -.02em; }
+.pl-ui .pl-raci-grid { display: grid; gap: .35rem; margin-top: .15rem; }
+.pl-ui .pl-rg-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
+@media (max-width: 640px) { .pl-ui .pl-rg-row { grid-template-columns: 1fr; } }
+.pl-ui .pl-rg { display: flex; align-items: center; gap: .35rem; min-width: 0; padding: .2rem .5rem .2rem .2rem; border-radius: .55rem; background: #f6f7f9; font-size: .74rem; color: var(--ink); }
+.pl-ui .pl-rg > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-ui .pl-rg.is-empty { color: var(--ink-3); }
+.pl-ui .pl-rg.is-missing { background: #fff5f6; color: #c0566a; font-weight: 600; }
+.pl-ui .pl-rg i, .pl-ui .pl-rg-line > i { font-style: normal; width: 1.25rem; height: 1.25rem; border-radius: .35rem; display: inline-grid; place-items: center; font-size: .62rem; font-weight: 800; flex-shrink: 0; }
+.pl-ui .pl-rg-line { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
+.pl-ui .pl-pchip { display: inline-flex; align-items: center; gap: .3rem; max-width: 11rem; padding: .12rem .55rem .12rem .14rem; border-radius: 999px; font-size: .72rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-ui .pl-pchip b { width: 1.15rem; height: 1.15rem; border-radius: 999px; display: grid; place-items: center; background: #fff; font-size: .58rem; font-weight: 700; flex-shrink: 0; }
+.pl-ui .pl-pchip-c { background: var(--t-amber); color: #7c4f0e; } .pl-ui .pl-pchip-c b { color: #b7791f; }
+.pl-ui .pl-pchip-i { background: var(--t-blue); color: #1e4fae; } .pl-ui .pl-pchip-i b { color: #2563eb; }
+.pl-ui .pl-more { background: #eef1f5; color: var(--ink-2); padding: .12rem .5rem; font-weight: 600; }
+.pl-ui .pl-none { font-size: .72rem; color: var(--ink-3); }
+.pl-ui .pl-elsewhere { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-bottom: .7rem; padding: .55rem .75rem; border-radius: .7rem; background: var(--t-indigo); color: #3730a3; font-size: .78rem; }
+.pl-ui .pl-elsewhere .pl-link { margin-left: auto; }
+
+/* 3. Récapitulatif */
+.pl-ui .pl-summary { list-style: none; margin: 0 0 .9rem; padding: 0; display: grid; gap: .4rem; }
+.pl-ui .pl-summary li { display: flex; gap: .5rem; align-items: flex-start; font-size: .8rem; padding: .5rem .6rem; border-radius: .6rem; background: #fafbfc; animation: plFade .25s var(--ease); }
+.pl-ui .pl-summary li i { font-style: normal; width: 1.25rem; height: 1.25rem; border-radius: .35rem; display: grid; place-items: center; font-size: .62rem; font-weight: 800; flex-shrink: 0; }
+.pl-ui .pl-summary .pl-sum-ops { background: var(--t-indigo); color: #3730a3; font-weight: 600; }
+.pl-ui .pl-summary .pl-sum-empty { background: transparent; color: var(--ink-3); padding: .2rem 0; }
+.pl-ui .pl-summary .pl-sum-warn { background: #fff5f6; color: #a8475a; }
+.pl-ui .pl-btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; height: 2.6rem; padding: 0 1rem; border-radius: .7rem; font-size: .85rem; font-weight: 600; transition: transform .2s var(--ease), box-shadow .2s, opacity .2s; cursor: pointer; }
+.pl-ui .pl-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.pl-ui .pl-btn:disabled { opacity: .45; cursor: not-allowed; }
+.pl-ui .pl-btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 18px -10px var(--accent); }
+.pl-ui .pl-btn-ghost { background: #fff; color: var(--ink-2); border: 1px solid var(--line); }
+.pl-ui .pl-btn-block { width: 100%; margin-top: .45rem; }
+
+.pl-ui .pl-toasts { position: fixed; top: 1rem; right: 1rem; z-index: 70; display: grid; gap: .5rem; max-width: min(28rem, calc(100vw - 2rem)); }
+.pl-ui .pl-toast { display: flex; align-items: flex-start; gap: .55rem; background: #fff; border: 1px solid var(--line); border-left: 4px solid #43a074; border-radius: .7rem; padding: .7rem .8rem; font-size: .82rem; box-shadow: 0 10px 24px -12px rgba(15,23,42,.3); animation: plRise .3s var(--ease); }
+.pl-ui .pl-toast .pl-ic { color: #43a074; margin-top: .05rem; }
+.pl-ui .pl-toast-warning, .pl-ui .pl-toast-error { border-left-color: #d4697a; } .pl-ui .pl-toast-warning .pl-ic, .pl-ui .pl-toast-error .pl-ic { color: #d4697a; }
+.pl-ui .pl-toast-info { border-left-color: #6366f1; } .pl-ui .pl-toast-info .pl-ic { color: #6366f1; }
+.pl-ui .pl-toast button { margin-left: auto; color: var(--ink-3); font-size: 1.1rem; line-height: 1; }
+@keyframes plRise { from { opacity: 0; transform: translateY(8px); } }
+@keyframes plFade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pl-ui *, .pl-ui *::before { animation: none !important; transition: none !important; } }
+</style>
+
+<script>
+(function () {
+    function init() {
+        const ui = document.querySelector('.pl-ui');
+        if (!ui) return;
+        const form = document.getElementById('pl-form');
+        const ops = Array.from(ui.querySelectorAll('.pl-op-check'));
+        const roles = Array.from(ui.querySelectorAll('.pl-role'));
+        const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const LBL = { r: 'Responsable', a: 'Accountable', c: 'Consultés', i: 'Informés', m: 'Manager' };
+        const MODE = { ajouter: 'ajouter', remplacer: 'remplacer par', retirer: 'retirer' };
+
+        const visible = el => el.closest('.pl-op').style.display !== 'none';
+        // Opérations cochées sur d'autres pages (champs cachés envoyés avec le formulaire)
+        const hiddenBox = document.getElementById('pl-hidden-ops');
+        const elsewhere = () => Array.from(hiddenBox.querySelectorAll('input')).map(i => i.value);
+        const checkedOps = () => ops.filter(o => o.checked);
+        const totalChecked = () => checkedOps().length + elsewhere().length;
+        const renderElsewhere = () => {
+            const k = elsewhere().length, s = k > 1 ? 's' : '';
+            document.getElementById('pl-elsewhere').hidden = k === 0;
+            document.getElementById('pl-else-n').textContent = k;
+            ['pl-else-s', 'pl-else-s2', 'pl-else-s3'].forEach(id => { document.getElementById(id).textContent = s; });
+        };
+
+        function roleChanges() {
+            const out = [];
+            roles.forEach(box => {
+                const role = box.dataset.role;
+                const sel = box.querySelector('select[data-simple]');
+                let set = false;
+                if (sel) {
+                    if (sel.value !== '') {
+                        set = true;
+                        out.push({ role, text: sel.value === '0' ? `${LBL[role]} : retiré` : `${LBL[role]} : ${sel.options[sel.selectedIndex].text.replace(/ \(resp\. de structure\)$/, '')}` });
+                    }
+                } else {
+                    const mode = (box.querySelector('input[type=radio]:checked') || {}).value || '';
+                    box.classList.toggle('has-mode', mode !== '');
+                    const seen = new Map(); box.querySelectorAll('.pl-person input:checked').forEach(i => seen.set(i.value, i.closest('.pl-person').querySelector('span').textContent)); const names = [...seen.values()];
+                    if (mode === 'remplacer' || (mode && names.length)) {
+                        set = true;
+                        out.push({ role, text: `${LBL[role]} : ${MODE[mode]} ${names.length ? names.join(', ') : 'personne (liste vidée)'}` });
+                    } else if (mode) {
+                        out.push({ role, warn: true, text: `${LBL[role]} : cochez au moins une personne` });
+                    }
+                }
+                box.classList.toggle('is-set', set);
+                const st = box.querySelector('.pl-state'); if (st) st.textContent = set ? 'Sera modifié' : 'Inchangé';
+            });
+            return out;
+        }
+
+        function refresh() {
+            renderElsewhere();
+            const n = totalChecked();
+            ops.forEach(o => o.closest('.pl-op').classList.toggle('is-on', o.checked));
+            document.getElementById('pl-sel-n').textContent = n;
+            document.getElementById('pl-sel-s').textContent = n > 1 ? 's' : '';
+            document.getElementById('pl-sel-pill').classList.toggle('is-on', n > 0);
+            const vis = ops.filter(visible), all = document.getElementById('pl-all');
+            all.checked = vis.length > 0 && vis.every(o => o.checked);
+            all.indeterminate = !all.checked && vis.some(o => o.checked);
+
+            const changes = roleChanges();
+            const valid = changes.filter(c => !c.warn);
+            const list = document.getElementById('pl-summary');
+            if (!n && !changes.length) {
+                list.innerHTML = '<li class="pl-sum-empty">Cochez des opérations et choisissez au moins une personne.</li>';
+            } else {
+                list.innerHTML =
+                    `<li class="pl-sum-ops">${n ? `${n} opération${n > 1 ? 's' : ''} cochée${n > 1 ? 's' : ''}` : 'Aucune opération cochée (étape 1)'}</li>` +
+                    (changes.length ? changes.map(c => `<li class="${c.warn ? 'pl-sum-warn' : ''}"><i class="pl-${c.role}">${c.role.toUpperCase()}</i><span>${esc(c.text)}</span></li>`).join('')
+                                    : '<li class="pl-sum-warn"><span>Aucune personne choisie (étape 2)</span></li>');
+            }
+            const go = document.getElementById('pl-go');
+            go.disabled = !(n && valid.length);
+            document.getElementById('pl-go-txt').textContent = n ? `Appliquer à ${n} opération${n > 1 ? 's' : ''}` : 'Appliquer aux opérations cochées';
+
+            const g = [document.getElementById('pl-g1'), document.getElementById('pl-g2'), document.getElementById('pl-g3')];
+            g.forEach(li => li.classList.remove('is-current', 'is-done'));
+            if (!n) g[0].classList.add('is-current');
+            else { g[0].classList.add('is-done'); if (!valid.length) g[1].classList.add('is-current'); else { g[1].classList.add('is-done'); g[2].classList.add('is-current'); } }
+        }
+
+        // Écoute native + jQuery (si une bibliothèque comme select2 modifie les listes)
+        // Une personne présente dans deux structures : ses deux cases restent synchronisées
+        form.addEventListener('change', e => {
+            const t = e.target;
+            if (t.matches('.pl-person input')) {
+                t.closest('.pl-people-list').querySelectorAll(`input[value="${CSS.escape(t.value)}"]`).forEach(i => { i.checked = t.checked; });
+            }
+        });
+        form.addEventListener('change', refresh);
+        form.addEventListener('input', e => { if (e.target.matches('.pl-people-filter')) return; refresh(); });
+        if (window.jQuery) window.jQuery(form).on('change', 'select', refresh);
+
+        document.getElementById('pl-all').addEventListener('change', function () { ops.forEach(o => { if (visible(o)) o.checked = this.checked; }); refresh(); });
+        document.getElementById('pl-only-nor').addEventListener('click', () => { ops.forEach(o => { if (o.closest('.pl-op').dataset.nor === '1') o.checked = true; }); refresh(); });
+        document.getElementById('pl-search').addEventListener('input', function () {
+            const q = this.value.trim().toLowerCase(); let k = 0;
+            ops.forEach(o => { const row = o.closest('.pl-op'); const ok = !q || row.dataset.name.includes(q); row.style.display = ok ? '' : 'none'; if (ok) k++; });
+            document.getElementById('pl-none').hidden = k > 0 || !ops.length;
+            refresh();
+        });
+        ui.querySelectorAll('.pl-people-filter').forEach(f => f.addEventListener('input', () => {
+            const q = f.value.trim().toLowerCase();
+            f.nextElementSibling.querySelectorAll('.pl-person').forEach(p => { p.style.display = p.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+        }));
+        form.addEventListener('reset', () => setTimeout(refresh, 0));
+        // Pagination : on emporte la sélection dans l'URL
+        document.querySelectorAll('.pl-pager a[data-page]').forEach(a => a.addEventListener('click', e => {
+            e.preventDefault();
+            const ids = [...new Set([...elsewhere(), ...checkedOps().map(o => o.value)])];
+            const params = new URLSearchParams();
+            const tache = a.closest('.pl-pager').dataset.tache;
+            if (tache) params.set('tache', tache);
+            params.set('page', a.dataset.page);
+            if (ids.length) params.set('ops', ids.join(','));
+            window.location.href = '?' + params.toString();
+        }));
+        document.getElementById('pl-clear-all').addEventListener('click', () => {
+            hiddenBox.innerHTML = ''; ops.forEach(o => { o.checked = false; }); refresh();
+        });
+
+        // Baromètre principal
+        const gauge = ui.querySelector('.pl-gauge');
+        if (gauge) {
+            const v = Math.max(0, Math.min(100, parseInt(gauge.dataset.gauge, 10) || 0));
+            const svg = gauge.querySelector('svg'), cx = 130, cy = 132;
+            const pt = (r, p) => { const a = Math.PI * (1 - p / 100); return [cx + r * Math.cos(a), cy - r * Math.sin(a)]; };
+            const arc = (r, p0, p1) => { const [x0, y0] = pt(r, p0), [x1, y1] = pt(r, p1); return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
+            let h = `<defs><linearGradient id="pl-gg" x1="0" x2="1"><stop offset="0" stop-color="#9fd9bb"/><stop offset="1" stop-color="#2f8a60"/></linearGradient></defs>`;
+            [[0, 39.4, '#f2c4cc'], [40.6, 69.4, '#f6dcaa'], [70.6, 100, '#bfe3cf']].forEach(([a, b, c]) => h += `<path d="${arc(116, a, b)}" stroke="${c}" stroke-width="5" fill="none" stroke-linecap="round"/>`);
+            for (let p = 0; p <= 100; p += 2) { const M = p % 10 === 0, [x0, y0] = pt(106, p), [x1, y1] = pt(M ? 97 : 101, p);
+                h += `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="${M ? '#94a3b8' : '#d5dbe3'}" stroke-width="${M ? 1.6 : 1}" stroke-linecap="round"/>`; }
+            [0, 50, 100].forEach(p => { const [x, y] = pt(60, p); h += `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" class="pl-gauge-lbl">${p}</text>`; });
+            h += `<path d="${arc(82, 0, 100)}" stroke="#eef1f5" stroke-width="16" fill="none" stroke-linecap="round"/>
+                  <path class="pl-g-arc" d="${arc(82, 0, 100)}" stroke="url(#pl-gg)" stroke-width="16" fill="none" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
+                  <g class="pl-g-needle" style="transform-origin:${cx}px ${cy}px; transform: rotate(-90deg)"><path d="M${cx - 4.5} ${cy} L${cx} ${cy - 74} L${cx + 4.5} ${cy} Z" fill="#1e293b"/></g>
+                  <circle cx="${cx}" cy="${cy}" r="14" fill="#f1f5f9"/><circle cx="${cx}" cy="${cy}" r="8" fill="#1e293b"/><circle cx="${cx}" cy="${cy}" r="3" fill="#fff"/>`;
+            svg.innerHTML = h;
+            requestAnimationFrame(() => setTimeout(() => {
+                svg.querySelector('.pl-g-arc').setAttribute('stroke-dasharray', v + ' 100');
+                svg.querySelector('.pl-g-needle').style.transform = `rotate(${(v - 50) * 1.8}deg)`;
+            }, 250));
+            const num = ui.querySelector('.pl-gauge-val b');
+            if (num && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && v) {
+                const t0 = performance.now();
+                const step = now => { const p = Math.min((now - t0) / 1200, 1); num.textContent = Math.round(v * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+                requestAnimationFrame(step);
+            }
+        }
+
+        form.addEventListener('submit', e => {
+            if (!totalChecked()) { e.preventDefault(); document.getElementById('pl-g1').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+            const go = document.getElementById('pl-go'); go.disabled = true; document.getElementById('pl-go-txt').textContent = 'Enregistrement…';
+        });
+        setTimeout(() => ui.querySelectorAll('.pl-toast').forEach(t => t.remove()), 9000);
+        refresh();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+{% endblock %}

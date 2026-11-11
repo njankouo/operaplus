@@ -1,0 +1,927 @@
+{% extends './index.html' %}
+{% block main %}
+{% comment %}
+    Page « Détail d'une opération » — OPERAPLUS
+    Variables de la vue : operation, transaction (IndicateurValeur), dataset_operation (DataSetOperation),
+    structure (pour la duplication), personnel_consulted (PersonnelConsulted), personnelinformed (PersonnelInformed),
+    financement_operation (FinancementOperation).
+    Les noms de champs non certains sont lus avec {% firstof %} : si un champ n'existe pas, rien ne s'affiche
+    (Django n'émet pas d'erreur). Adaptez-les à vos modèles si besoin — voir la liste en bas du fichier.
+{% endcomment %}
+
+{% with d=operation.niveau_execution|default:0 v=operation.niveau_execution_valide|default:0 %}
+<div class="od-ui is-loading" aria-busy="true"
+     data-declare="{{ d|stringformat:'d' }}" data-valide="{{ v|stringformat:'d' }}"
+     data-start="{% firstof operation.date_debut|date:'Y-m-d' operation.debut|date:'Y-m-d' %}"
+     data-end="{% firstof operation.date_echeance|date:'Y-m-d' operation.date_fin|date:'Y-m-d' operation.echeance|date:'Y-m-d' %}">
+
+<script>
+    setTimeout(function () {
+        var u = document.querySelector('.od-ui.is-loading');
+        if (u) { u.classList.remove('is-loading'); u.removeAttribute('aria-busy'); }
+    }, 6000);
+</script>
+
+<!-- ═════════ LOADER ═════════ -->
+<div id="od-loader" class="od-loader" role="status" aria-live="polite">
+    <div class="od-loader-box">
+        <svg class="od-spinner" viewBox="0 0 80 80" aria-hidden="true">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#eef1f5" stroke-width="5"/>
+            <circle class="od-arc od-arc-1" cx="40" cy="40" r="34" fill="none" stroke="#43a074" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="22 78"/>
+            <circle cx="40" cy="40" r="24" fill="none" stroke="#f3f5f8" stroke-width="5"/>
+            <circle class="od-arc od-arc-2" cx="40" cy="40" r="24" fill="none" stroke="#e3a23a" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="28 72"/>
+            <circle cx="40" cy="40" r="14" fill="none" stroke="#f6f7fa" stroke-width="5"/>
+            <circle class="od-arc od-arc-3" cx="40" cy="40" r="14" fill="none" stroke="#6366f1" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="35 65"/>
+        </svg>
+        <p class="od-loader-title">Chargement de l'opération<span class="od-dots"><i>.</i><i>.</i><i>.</i></span></p>
+        <p class="od-loader-sub">{{ operation.nom|default:operation }}</p>
+    </div>
+</div>
+
+<!-- ═════════ EN-TÊTE ═════════ -->
+<header class="od-hero">
+    <nav class="od-crumbs" aria-label="Fil d'Ariane">
+        <a href="javascript:history.back()">
+            <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+            Opérations
+        </a>
+        <span>/</span>
+        <span class="od-crumb-cur">Détail</span>
+    </nav>
+
+    <div class="od-hero-row">
+        <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+                {% if d > v %}
+                    <span class="od-badge od-b-attente"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>En attente de validation</span>
+                {% elif v > 0 %}
+                    <span class="od-badge od-b-valide"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Validé</span>
+                {% else %}
+                    <span class="od-badge od-b-nonvalide"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Non validé</span>
+                {% endif %}
+                {% firstof operation.categorie.intitule operation.categorie.nom as cat %}
+                {% if cat %}<span class="od-chip">{{ cat }}</span>{% endif %}
+                {% firstof operation.nature_operation.intitule operation.nature_operation.nom operation.nature_operation as nat %}
+                {% if nat %}<span class="od-chip">{{ nat }}</span>{% endif %}
+                {% if operation.code %}<span class="od-chip od-chip-muted">{{ operation.code }}</span>{% endif %}
+                {% if operation.priorite %}<span class="od-chip od-chip-amber">Priorité {{ operation.priorite }}</span>{% endif %}
+            </div>
+            <h1 class="od-title">{{ operation.nom|default:operation }}</h1>
+            <div class="od-meta">
+                <span><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                    {% firstof operation.date_debut|date:"d M Y" operation.debut|date:"d M Y" "—" %}
+                    →
+                    {% firstof operation.date_echeance|date:"d M Y" operation.date_fin|date:"d M Y" operation.echeance|date:"d M Y" "—" %}
+                </span>
+                <span><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.4A9 9 0 0 1 20.6 9H15z"/></svg>Pondération {{ operation.ponderation|default:0 }} %</span>
+            </div>
+        </div>
+
+        <div class="od-actions">
+            <a href="/ajouter-formulaire/{{ operation.id }}/" class="od-btn od-btn-ghost" title="Formulaire">
+                <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>Formulaire</span>
+            </a>
+            <a href="/detail-gantt/{{ operation.id }}/" class="od-btn od-btn-ghost" title="Fréquence de suivi">
+                <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 8h8M7 12h11M7 16h5"/></svg><span>Suivi</span>
+            </a>
+            <button type="button" class="od-btn od-btn-ghost" onclick="document.getElementById('od-dup').showModal()" title="Dupliquer vers des structures">
+                <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg><span>Dupliquer</span>
+            </button>
+            <a href="/alert-supression/{{ operation.id }}/" class="od-btn od-btn-icon od-btn-danger" title="Supprimer" aria-label="Supprimer">
+                <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
+            </a>
+            <a href="/editer-tache/{{ operation.id }}/" class="od-btn od-btn-primary">
+                <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Modifier</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Chiffres clés -->
+    <div class="od-kpis">
+        <div class="od-kpi od-k-blue" style="--d:0">
+            <span class="od-kpi-ico"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span>
+            <span class="od-kpi-lbl">Déclaré</span>
+            <span class="od-kpi-num"><span data-count="{{ d|stringformat:'d' }}">0</span><small>%</small></span>
+        </div>
+        <div class="od-kpi od-k-green" style="--d:1">
+            <span class="od-kpi-ico"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <span class="od-kpi-lbl">Validé</span>
+            <span class="od-kpi-num"><span data-count="{{ v|stringformat:'d' }}">0</span><small>%</small></span>
+        </div>
+        <div class="od-kpi od-k-amber" style="--d:2">
+            <span class="od-kpi-ico"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span>
+            <span class="od-kpi-lbl">Résultat</span>
+            <span class="od-kpi-num">{{ operation.resultat_niveau_execution|default:"0" }}</span>
+        </div>
+        <div class="od-kpi od-k-indigo" style="--d:3">
+            <span class="od-kpi-ico"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5"/></svg></span>
+            <span class="od-kpi-lbl">Résultat validé</span>
+            <span class="od-kpi-num">{{ operation.resultat_niveau_execution_valide|default:"0" }}</span>
+        </div>
+        <div class="od-kpi od-k-sky" style="--d:4">
+            <span class="od-kpi-ico"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg></span>
+            <span class="od-kpi-lbl">Transactions</span>
+            <span class="od-kpi-num"><span data-count="{{ transaction|length }}">0</span></span>
+        </div>
+    </div>
+</header>
+
+<!-- ═════════ GRAPHIQUES ═════════ -->
+<div class="od-grid">
+    <section class="od-panel od-col-4" aria-labelledby="od-baro-t">
+        <header class="od-panel-head">
+            <h2 id="od-baro-t"><span class="od-ph od-ph-green"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/></svg></span>Baromètre d'exécution</h2>
+        </header>
+        <div class="od-baro"><svg id="od-baro" viewBox="0 0 260 158" role="img" aria-label="Exécution validée et déclarée"></svg></div>
+        <div class="od-baro-foot">
+            <div class="od-baro-val"><span id="od-baro-num">0</span><small>%</small><em>validé</em></div>
+            <span id="od-baro-status" class="od-baro-status"></span>
+        </div>
+        <div class="od-legend-row">
+            <span><i class="od-key" style="background:#43a074"></i>Validé <b>{{ v|stringformat:'d' }} %</b></span>
+            <span><i class="od-key" style="background:#f3d39a"></i>Déclaré <b>{{ d|stringformat:'d' }} %</b></span>
+        </div>
+    </section>
+
+    <section class="od-panel od-col-8" aria-labelledby="od-time-t">
+        <header class="od-panel-head">
+            <h2 id="od-time-t"><span class="od-ph od-ph-indigo"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>Délais & calendrier</h2>
+            <span id="od-time-badge" class="od-time-badge"></span>
+        </header>
+
+        <div class="od-time">
+            <div class="od-time-ends">
+                <div><small>Début</small><b>{% firstof operation.date_debut|date:"d M Y" operation.debut|date:"d M Y" "—" %}</b></div>
+                <div class="text-right"><small>Échéance</small><b>{% firstof operation.date_echeance|date:"d M Y" operation.date_fin|date:"d M Y" operation.echeance|date:"d M Y" "—" %}</b></div>
+            </div>
+            <div class="od-track" id="od-track">
+                <div class="od-track-time" id="od-track-time"></div>
+                <div class="od-track-exec" id="od-track-exec"></div>
+                <div class="od-today" id="od-today"><span>Aujourd'hui</span></div>
+            </div>
+            <div class="od-time-legend">
+                <span><i class="od-key" style="background:#c7d2fe"></i>Temps écoulé <b id="od-elapsed">—</b></span>
+                <span><i class="od-key" style="background:#43a074"></i>Exécution validée <b>{{ v|stringformat:'d' }} %</b></span>
+            </div>
+        </div>
+
+        <div class="od-facts">
+            <div><small>Durée prévue</small><b>{% firstof operation.nombre_jour operation.duree "—" %} <em>jours</em></b></div>
+            <div><small>Jours restants</small><b id="od-remaining">—</b></div>
+            <div><small>Fréquence de suivi</small><b>{% firstof operation.frequence "—" %} <em>jours</em></b></div>
+            <div><small>Financement</small><b>{{ operation.montant_total_source_financement|floatformat:"0g" }} <em>FCFA</em></b>
+                <small class="od-fin-sub">Déclaré {{ operation.montant_declare|floatformat:"0g" }} · Validé {{ operation.montant_valide|floatformat:"0g" }} · {{ operation.taux_financier|floatformat:"-1" }} %</small></div>
+        </div>
+    </section>
+</div>
+
+<!-- ═════════ RACI + JEUX DE DONNÉES ═════════ -->
+<div class="od-grid">
+    <section class="od-panel od-col-5" aria-labelledby="od-raci-t">
+        <header class="od-panel-head">
+            <h2 id="od-raci-t"><span class="od-ph od-ph-rose"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-5-6.7"/></svg></span>Équipe (RACI)</h2>
+        </header>
+        <ul class="od-raci">
+            {% firstof operation.perso.full_name operation.personnel.full_name operation.perso operation.personnel as r_name %}
+            <li><span class="od-role od-role-r">R</span><div><small>Responsable</small><b>{% if r_name %}{{ r_name }}{% else %}<em>Non défini</em>{% endif %}</b></div></li>
+            {% firstof operation.accountable.full_name operation.accountable as a_name %}
+            <li><span class="od-role od-role-a">A</span><div><small>Accountable</small><b>{% if a_name %}{{ a_name }}{% else %}<em>Non défini</em>{% endif %}</b></div></li>
+            <li><span class="od-role od-role-c">C</span><div><small>Consultés</small>
+                <div class="od-people">
+                    {% for pc in personnel_consulted %}{% if pc.consulted %}{% firstof pc.consulted.full_name pc.consulted as pname %}<span class="od-pchip" title="{{ pname }}"><i>{{ pname|slice:":1" }}</i>{{ pname }}</span>{% endif %}{% empty %}{% if operation.consulted %}{% firstof operation.consulted.full_name operation.consulted as pname %}<span class="od-pchip" title="{{ pname }}"><i>{{ pname|slice:":1" }}</i>{{ pname }}</span>{% else %}<em>Aucun</em>{% endif %}{% endfor %}
+                </div></div></li>
+            <li><span class="od-role od-role-i">I</span><div><small>Informés</small>
+                <div class="od-people">
+                    {% for pi in personnelinformed %}{% if pi.informed %}{% firstof pi.informed.full_name pi.informed as pname %}<span class="od-pchip od-pchip-i" title="{{ pname }}"><i>{{ pname|slice:":1" }}</i>{{ pname }}</span>{% endif %}{% empty %}{% if operation.informed %}{% firstof operation.informed.full_name operation.informed as pname %}<span class="od-pchip od-pchip-i" title="{{ pname }}"><i>{{ pname|slice:":1" }}</i>{{ pname }}</span>{% else %}<em>Aucun</em>{% endif %}{% endfor %}
+                </div></div></li>
+            {% firstof operation.participant.full_name operation.manager.full_name operation.participant operation.manager as m_name %}
+            <li><span class="od-role od-role-m">M</span><div><small>Manager</small><b>{% if m_name %}{{ m_name }}{% else %}<em>Non défini</em>{% endif %}</b></div></li>
+        </ul>
+    </section>
+
+    <section class="od-panel od-col-7" aria-labelledby="od-ds-t">
+        <header class="od-panel-head">
+            <h2 id="od-ds-t"><span class="od-ph od-ph-amber"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span>Jeux de données</h2>
+            <span class="od-count">{{ dataset_operation|length }}</span>
+        </header>
+        <div class="od-ds">
+            {% for ds in dataset_operation %}
+            <article class="od-ds-card" style="--i: {{ forloop.counter0 }}">
+                <span class="od-ds-ico"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></svg></span>
+                <div class="min-w-0 flex-1">
+                    <b class="od-ds-name">{% firstof ds.dataset.m_name ds.dataset.intitule ds.m_name ds.intitule ds %}</b>
+                    <small>{% firstof ds.date|date:"d M Y" ds.created_at|date:"d M Y" ds.date_creation|date:"d M Y" "" %}{% if ds.description %} · {{ ds.description|truncatechars:60 }}{% endif %}</small>
+                </div>
+                {% if ds.fichier %}
+                <a href="{{ ds.fichier.url }}" class="od-btn od-btn-icon" title="Télécharger" aria-label="Télécharger" download>
+                    <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+                </a>
+                {% endif %}
+            </article>
+            {% empty %}
+            <div class="od-empty">
+                <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/></svg>
+                <p>Aucun jeu de données rattaché à cette opération.</p>
+                <a href="/ajouter-formulaire/{{ operation.id }}/" class="od-btn od-btn-ghost">Ajouter un formulaire</a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+
+<!-- ═════════ TRANSACTIONS ═════════ -->
+<section class="od-panel od-mt" aria-labelledby="od-tx-t">
+    <header class="od-panel-head">
+        <h2 id="od-tx-t"><span class="od-ph od-ph-sky"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg></span>Transactions <span class="od-count">{{ transaction|length }}</span></h2>
+        <div class="od-tools">
+            <label class="od-search">
+                <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                <input type="search" id="od-tx-search" placeholder="Rechercher une transaction…" autocomplete="off">
+            </label>
+            <select id="od-tx-type" class="od-select" aria-label="Filtrer par type">
+                <option value="">Tous les types</option>
+                <option value="0">Réalisations</option>
+                <option value="1">Cibles</option>
+            </select>
+            <select id="od-tx-structure" class="od-select" aria-label="Filtrer par structure">
+                <option value="">Toutes les structures</option>
+                {% for s in structure %}<option value="{{ s.id }}">{{ s.nom }}</option>{% endfor %}
+            </select>
+            <select id="od-tx-statut" class="od-select" aria-label="Filtrer par statut">
+                <option value="">Tous les statuts</option>
+                <option value="1">Validé</option>
+                <option value="0">En attente</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Réalisation par rapport à la cible (affichée si des cibles sont renseignées) -->
+    <div class="od-target" id="od-chart-wrap" hidden>
+        <div class="od-target-head">
+            <span>Réalisation par rapport à la cible <em class="od-target-note">(somme des réalisations / valeur cible)</em></span>
+            <span class="od-target-leg"><i class="od-key" style="background:#43a074"></i>Réalisé validé <i class="od-key" style="background:#f3d39a"></i>Réalisé en attente <i class="od-key" style="background:#94a3b8;width:2px"></i>Cible</span>
+        </div>
+        <div id="od-target-rows" class="od-target-rows"></div>
+    </div>
+
+    <div class="od-table-wrap">
+        <table class="od-table">
+            <thead>
+                <tr>
+                    <th>Transaction</th>
+                    <th>Type</th>
+                    <th>Structure</th>
+                    <th>Période / date</th>
+                    <th class="text-right">Valeur</th>
+                    <th>Saisi par</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody id="od-tx-body">
+                {% for t in transaction %}
+                <tr class="od-tx" style="--i: {{ forloop.counter0 }}"
+                    data-name="{% firstof t.nom t.indicateur.nom t.indicateur '' %}"
+                    data-key="{% firstof t.indicateur_id t.nom '' %}"
+                    data-ref="{{ t.reference_cible|yesno:'1,0' }}"
+                    data-structure="{{ t.structure_id|default_if_none:'' }}"
+                    data-statut="{{ t.etat_validation|yesno:'1,0' }}"
+                    data-date="{% firstof t.date_saisie|date:'Y-m-d' t.date_enregistrement|date:'Y-m-d' '' %}"
+                    data-value="{{ t.valeur|default_if_none:''|stringformat:'s' }}">
+                    <td class="od-td-name">
+                        {% firstof t.nom t.indicateur.nom t.indicateur "—" %}
+                        {% if t.type_donnee %}<small class="od-td-sub">{{ t.type_donnee }}</small>{% endif %}
+                    </td>
+                    <td>
+                        {% if t.reference_cible %}
+                        <span class="od-badge od-b-cible"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Cible</span>
+                        {% else %}
+                        <span class="od-badge od-b-real"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 6-6 4 4 8-8"/></svg>Réalisation</span>
+                        {% endif %}
+                    </td>
+                    <td>{% firstof t.structure.nom "—" %}</td>
+                    <td>
+                        {% if t.periode_ok %}{{ t.periode_ok }}<small class="od-td-sub">{% firstof t.date_saisie|date:"d M Y" t.date_enregistrement|date:"d M Y" "" %}</small>
+                        {% else %}{% firstof t.date_saisie|date:"d M Y" t.date_enregistrement|date:"d M Y" "—" %}{% endif %}
+                    </td>
+                    <td class="text-right od-td-val">{% if t.valeur is not None %}{{ t.valeur|floatformat:"-2g" }}{% else %}—{% endif %}</td>
+                    <td>{% firstof t.personnel.full_name t.user.get_full_name t.user.username "—" %}</td>
+                    <td>
+                        {% if t.etat_validation %}<span class="od-badge od-b-valide"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Validé</span>
+                        {% else %}<span class="od-badge od-b-attente"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>En attente</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">
+                    <div class="od-empty">
+                        <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>
+                        <p>Aucune transaction enregistrée pour l'instant.</p>
+                    </div>
+                </td></tr>
+                {% endfor %}
+                <tr id="od-tx-none" hidden><td colspan="7" class="od-td-muted" style="text-align:center;padding:1.5rem">Aucun résultat pour ce filtre.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ═════════ DUPLICATION VERS DES STRUCTURES ═════════ -->
+<dialog id="od-dup" class="od-dialog" aria-labelledby="od-dup-t">
+    <form method="post" action="/dupliquer-operation-structures/{{ operation.id }}/" id="od-dup-form">
+        {% csrf_token %}
+        <input type="hidden" name="tache" value="{{ operation.tache_id|default_if_none:'' }}">
+        <header class="od-dlg-head">
+            <span class="od-dlg-ico"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></span>
+            <div class="min-w-0">
+                <h2 id="od-dup-t">Dupliquer l'opération</h2>
+                <p>Une copie complète sera créée pour chaque structure cochée.</p>
+            </div>
+            <button type="button" class="od-dlg-close" onclick="document.getElementById('od-dup').close()" aria-label="Fermer">
+                <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+        </header>
+
+        <div class="od-dlg-body">
+            <div class="od-dup-src">
+                <small>Opération source</small>
+                <b>{{ operation.nom|default:operation }}</b>
+            </div>
+
+            <!-- Étape 1 : structures -->
+            <div class="od-dup-step">
+                <div class="od-dup-step-head">
+                    <span class="od-step-n">1</span>
+                    <h3>Structures de destination</h3>
+                    <label class="od-check-all"><input type="checkbox" id="od-dup-all"> Tout sélectionner</label>
+                </div>
+                <label class="od-search od-search-full">
+                    <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                    <input type="search" id="od-dup-search" placeholder="Rechercher une structure…" autocomplete="off">
+                </label>
+                <div class="od-struct-list" id="od-struct-list">
+                    {% for s in structure %}
+                    <label class="od-struct" data-name="{{ s.nom|lower }}">
+                        <input type="checkbox" name="structures" value="{{ s.id }}">
+                        <span class="od-struct-av">{{ s.nom|slice:":1"|upper }}</span>
+                        <span class="od-struct-name">{{ s.nom }}</span>
+                        <span class="od-struct-tick"><svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+                    </label>
+                    {% empty %}
+                    <p class="od-td-muted" style="padding:1rem;text-align:center">Aucune structure dans votre institution.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Étape 2 : éléments liés -->
+            <div class="od-dup-step">
+                <div class="od-dup-step-head">
+                    <span class="od-step-n">2</span>
+                    <h3>Éléments à copier avec l'opération</h3>
+                </div>
+                <div class="od-copy-grid">
+                    <label class="od-switch"><input type="checkbox" name="copier" value="datasets" checked><span class="od-sw"></span><span>Jeux de données <em>{{ dataset_operation|length }}</em></span></label>
+                    <label class="od-switch"><input type="checkbox" name="copier" value="consulted" checked><span class="od-sw"></span><span>Personnes consultées <em>{{ personnel_consulted|length }}</em></span></label>
+                    <label class="od-switch"><input type="checkbox" name="copier" value="informed" checked><span class="od-sw"></span><span>Personnes informées <em>{{ personnelinformed|length }}</em></span></label>
+                    <label class="od-switch"><input type="checkbox" name="copier" value="valeurs" checked><span class="od-sw"></span><span>Transactions <em>{{ transaction|length }}</em></span></label>
+                    <label class="od-switch"><input type="checkbox" name="copier" value="financements" checked><span class="od-sw"></span><span>Financements <em>{{ financement_operation|length }}</em></span></label>
+                </div>
+                <label class="od-switch od-switch-line"><input type="checkbox" name="suffixe" value="1" checked><span class="od-sw"></span><span>Ajouter le nom de la structure au nom de chaque copie</span></label>
+            </div>
+        </div>
+
+        <footer class="od-dlg-foot">
+            <div class="od-dup-sum"><b id="od-dup-n">0</b><span id="od-dup-lbl">copie sera créée</span></div>
+            <div class="flex gap-2">
+                <button type="button" class="od-btn od-btn-ghost" onclick="document.getElementById('od-dup').close()">Annuler</button>
+                <button type="submit" class="od-btn od-btn-primary" id="od-dup-go" disabled>
+                    <svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+                    <span>Dupliquer</span>
+                </button>
+            </div>
+        </footer>
+    </form>
+</dialog>
+
+{% if messages %}
+<div class="od-toasts" aria-live="polite">
+    {% for message in messages %}
+    <div class="od-toast od-toast-{{ message.tags|default:'info' }}">
+        {% if message.tags == 'success' %}<svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>
+        {% else %}<svg class="od-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>{% endif %}
+        <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div id="od-tip" class="od-tip" role="tooltip" hidden></div>
+</div>
+{% endwith %}
+
+<style>
+.od-ui {
+    --ink: #1e293b; --ink-2: #64748b; --ink-3: #94a3b8; --line: #e7eaf0;
+    --c-valide: #43a074; --c-attente: #e3a23a; --c-nonvalide: #d4697a;
+    --t-indigo: #eef0ff; --t-green: #e9f6ef; --t-amber: #fdf3e1; --t-rose: #fcecef; --t-sky: #e8f4fb; --t-blue: #eef4ff;
+    --accent: {{ request.user.personnel.color|default:"#4f46e5" }};
+    --ease: cubic-bezier(.22,.8,.3,1);
+    color: var(--ink);
+}
+.od-ui.is-loading > :not(#od-loader):not(script) { display: none !important; }
+.od-ui .od-ic { width: 1.1em; height: 1.1em; flex-shrink: 0; display: inline-block; vertical-align: -.18em; }
+
+/* Loader */
+.od-ui .od-loader { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgba(248,250,252,.92); backdrop-filter: blur(4px);
+    opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s linear .35s; }
+.od-ui.is-loading .od-loader, .od-ui.is-leaving .od-loader { opacity: 1; visibility: visible; transition: opacity .2s ease, visibility 0s; }
+.od-ui.is-loading .od-loader { background: #f8fafc; }
+.od-ui .od-loader-box { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 1.5rem; }
+.od-ui .od-spinner { width: 4.5rem; height: 4.5rem; }
+.od-ui .od-arc { transform-origin: 40px 40px; animation: odSpin 1.4s cubic-bezier(.5,.15,.5,.85) infinite; }
+.od-ui .od-arc-2 { animation-duration: 1.1s; animation-direction: reverse; }
+.od-ui .od-arc-3 { animation-duration: .9s; }
+.od-ui .od-loader-title { margin-top: 1.1rem; font-size: .9rem; font-weight: 600; }
+.od-ui .od-loader-sub { margin-top: .25rem; font-size: .78rem; color: var(--ink-3); max-width: 22rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.od-ui .od-dots i { font-style: normal; animation: odDot 1.2s infinite; opacity: .2; }
+.od-ui .od-dots i:nth-child(2) { animation-delay: .2s; } .od-ui .od-dots i:nth-child(3) { animation-delay: .4s; }
+
+/* En-tête */
+.od-ui .od-hero {
+    border: 1px solid var(--line); border-radius: 1.25rem; padding: 1.4rem 1.5rem 1.5rem;
+    background: radial-gradient(120% 140% at 0% 0%, #eef0ff 0%, transparent 55%), radial-gradient(120% 140% at 100% 0%, #e9f6ef 0%, transparent 50%), #fff;
+    animation: odRise .55s var(--ease) both;
+}
+@media (min-width: 768px) { .od-ui .od-hero { padding: 1.6rem 2rem 1.75rem; } }
+.od-ui .od-crumbs { display: flex; align-items: center; gap: .5rem; font-size: .78rem; color: var(--ink-3); margin-bottom: 1rem; }
+.od-ui .od-crumbs a { display: inline-flex; align-items: center; gap: .2rem; color: #6366f1; font-weight: 600; text-decoration: none; }
+.od-ui .od-crumbs a:hover { text-decoration: underline; }
+.od-ui .od-crumb-cur { color: var(--ink-2); }
+.od-ui .od-hero-row { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: flex-end; justify-content: space-between; padding-bottom: 1.25rem; border-bottom: 1px solid rgba(15,23,42,.07); }
+.od-ui .od-title { font-size: clamp(1.35rem, 2.6vw, 1.85rem); font-weight: 700; letter-spacing: -.02em; color: #1e1b4b; line-height: 1.25; }
+.od-ui .od-meta { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-top: .6rem; font-size: .82rem; color: var(--ink-2); }
+.od-ui .od-meta span { display: inline-flex; align-items: center; gap: .35rem; }
+.od-ui .od-meta .od-ic { color: var(--ink-3); }
+.od-ui .od-chip { font-size: .72rem; font-weight: 600; color: #4f46e5; background: var(--t-indigo); padding: .15rem .6rem; border-radius: 999px; }
+.od-ui .od-badge { display: inline-flex; align-items: center; gap: .3rem; font-size: .72rem; font-weight: 600; padding: .18rem .6rem .18rem .5rem; border-radius: 999px; white-space: nowrap; }
+.od-ui .od-badge .od-ic { width: .85rem; height: .85rem; }
+.od-ui .od-b-valide { background: var(--t-green); color: #2f7a57; }
+.od-ui .od-b-attente { background: var(--t-amber); color: #9a6210; }
+.od-ui .od-b-nonvalide { background: var(--t-rose); color: #a8475a; }
+.od-ui .od-b-neutre { background: #f1f5f9; color: var(--ink-2); }
+
+.od-ui .od-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.od-ui .od-btn { display: inline-flex; align-items: center; gap: .45rem; height: 2.4rem; padding: 0 1rem; border-radius: .65rem; font-size: .82rem; font-weight: 600; text-decoration: none; transition: transform .2s var(--ease), background .15s, box-shadow .2s, color .15s; }
+.od-ui .od-btn:hover { transform: translateY(-1px); }
+.od-ui .od-btn-primary { background: var(--accent); color: #fff; box-shadow: 0 6px 16px -8px var(--accent); }
+.od-ui .od-btn-primary:hover { box-shadow: 0 10px 22px -10px var(--accent); color: #fff; }
+.od-ui .od-btn-ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+.od-ui .od-btn-ghost:hover { background: #f8fafc; }
+.od-ui .od-btn-icon { width: 2.4rem; padding: 0; justify-content: center; background: #fff; color: var(--ink-2); border: 1px solid var(--line); }
+.od-ui .od-btn-icon:hover { color: var(--ink); background: #f8fafc; }
+.od-ui .od-btn-danger:hover { color: var(--c-nonvalide); background: #fdf0f2; border-color: #f2c4cc; }
+
+/* KPI */
+.od-ui .od-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1.25rem; }
+@media (min-width: 1024px) { .od-ui .od-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.od-ui .od-kpi { display: flex; flex-direction: column; gap: .3rem; padding: .9rem 1rem; border-radius: .9rem; animation: odRise .5s var(--ease) both; animation-delay: calc(var(--d) * 70ms + 120ms); }
+.od-ui .od-kpi-ico { width: 2rem; height: 2rem; border-radius: .6rem; display: grid; place-items: center; background: rgba(255,255,255,.8); margin-bottom: .15rem; }
+.od-ui .od-kpi-lbl { font-size: .75rem; color: #475569; font-weight: 500; }
+.od-ui .od-kpi-num { font-size: 1.5rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.od-ui .od-kpi-num small { font-size: .85rem; color: var(--ink-3); margin-left: .1rem; font-weight: 500; }
+.od-ui .od-k-blue { background: var(--t-blue); } .od-ui .od-k-blue .od-kpi-ico { color: #2563eb; }
+.od-ui .od-k-green { background: var(--t-green); } .od-ui .od-k-green .od-kpi-ico { color: #2f8a60; }
+.od-ui .od-k-amber { background: var(--t-amber); } .od-ui .od-k-amber .od-kpi-ico { color: #b7791f; }
+.od-ui .od-k-indigo { background: var(--t-indigo); } .od-ui .od-k-indigo .od-kpi-ico { color: #5458d6; }
+.od-ui .od-k-sky { background: var(--t-sky); } .od-ui .od-k-sky .od-kpi-ico { color: #2b7bb0; }
+
+/* Grille & panneaux */
+.od-ui .od-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem; }
+@media (min-width: 1024px) {
+    .od-ui .od-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+    .od-ui .od-col-4 { grid-column: span 4; } .od-ui .od-col-5 { grid-column: span 5; }
+    .od-ui .od-col-7 { grid-column: span 7; } .od-ui .od-col-8 { grid-column: span 8; }
+}
+.od-ui .od-mt { margin-top: 1rem; }
+.od-ui .od-panel { background: #fff; border: 1px solid var(--line); border-radius: 1rem; padding: 1.1rem 1.25rem 1.25rem; animation: odRise .55s var(--ease) both .3s; transition: box-shadow .25s var(--ease); min-width: 0; }
+.od-ui .od-panel:hover { box-shadow: 0 14px 30px -22px rgba(15,23,42,.35); }
+.od-ui .od-panel-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.od-ui .od-panel-head h2 { display: flex; align-items: center; gap: .55rem; font-size: .92rem; font-weight: 600; }
+.od-ui .od-ph { width: 1.7rem; height: 1.7rem; border-radius: .55rem; display: grid; place-items: center; }
+.od-ui .od-ph .od-ic { width: .95rem; height: .95rem; }
+.od-ui .od-ph-green { background: var(--t-green); color: #2f8a60; } .od-ui .od-ph-indigo { background: var(--t-indigo); color: #6366f1; }
+.od-ui .od-ph-rose { background: var(--t-rose); color: #c0566a; } .od-ui .od-ph-amber { background: var(--t-amber); color: #b7791f; }
+.od-ui .od-ph-sky { background: var(--t-sky); color: #2b7bb0; }
+.od-ui .od-count { font-size: .72rem; font-weight: 700; color: #6366f1; background: var(--t-indigo); padding: .1rem .55rem; border-radius: 999px; }
+.od-ui .od-key { width: .55rem; height: .55rem; border-radius: 2px; display: inline-block; }
+.od-ui .od-legend-row, .od-ui .od-time-legend { display: flex; justify-content: center; flex-wrap: wrap; gap: .5rem 1.1rem; font-size: .75rem; color: var(--ink-2); }
+.od-ui .od-legend-row span, .od-ui .od-time-legend span { display: inline-flex; align-items: center; gap: .35rem; }
+.od-ui .od-legend-row b, .od-ui .od-time-legend b { color: var(--ink); font-weight: 600; }
+
+/* Baromètre */
+.od-ui .od-baro { max-width: 18rem; margin: -.25rem auto 0; }
+.od-ui .od-baro svg { width: 100%; height: auto; display: block; overflow: visible; }
+.od-ui .od-baro-lbl { font-size: 9px; font-weight: 600; fill: #94a3b8; }
+.od-ui #od-baro-v, .od-ui #od-baro-d { transition: stroke-dasharray 1.4s var(--ease); }
+.od-ui #od-needle { transition: transform 1.6s cubic-bezier(.34,1.35,.5,1); }
+.od-ui .od-baro-foot { display: flex; align-items: center; justify-content: center; gap: .75rem; flex-wrap: wrap; margin: .35rem 0 .8rem; }
+.od-ui .od-baro-val { display: flex; align-items: baseline; gap: .15rem; }
+.od-ui .od-baro-val span { font-size: 2rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.od-ui .od-baro-val small { color: var(--ink-3); font-size: .9rem; }
+.od-ui .od-baro-val em { font-style: normal; font-size: .75rem; color: var(--ink-3); margin-left: .35rem; }
+.od-ui .od-baro-status { display: inline-flex; align-items: center; gap: .35rem; font-size: .72rem; font-weight: 600; padding: .25rem .6rem; border-radius: 999px; }
+.od-ui .od-baro-status svg { width: .9rem; height: .9rem; }
+.od-ui .od-baro-status.is-ok { background: var(--t-green); color: #2f7a57; }
+.od-ui .od-baro-status.is-mid { background: var(--t-amber); color: #9a6210; }
+.od-ui .od-baro-status.is-low { background: var(--t-rose); color: #a8475a; }
+
+/* Calendrier */
+.od-ui .od-time { padding: .25rem 0 1rem; }
+.od-ui .od-time-ends { display: flex; justify-content: space-between; margin-bottom: .75rem; }
+.od-ui .od-time-ends small, .od-ui .od-facts small { display: block; font-size: .72rem; color: var(--ink-3); }
+.od-ui .od-time-ends b { font-size: .92rem; font-weight: 600; }
+.od-ui .od-track { position: relative; height: 1.35rem; border-radius: .7rem; background: #f1f4f8; margin: 1.6rem 0 .9rem; }
+.od-ui .od-track-time { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: inherit; background: repeating-linear-gradient(135deg, #dfe4ff 0 7px, #c7d2fe 7px 14px); transition: width 1.3s var(--ease); }
+.od-ui .od-track-exec { position: absolute; left: 0; top: 50%; height: 6px; transform: translateY(-50%); width: 0; border-radius: 3px; background: linear-gradient(90deg, #9fd9bb, #2f8a60); transition: width 1.3s var(--ease) .25s; margin-left: 4px; max-width: calc(100% - 8px); }
+.od-ui .od-today { position: absolute; top: -.45rem; bottom: -.45rem; width: 2px; background: #1e293b; border-radius: 1px; left: 0; opacity: 0; transition: left 1.3s var(--ease), opacity .3s .9s; }
+.od-ui .od-today span { position: absolute; bottom: 100%; left: 50%; transform: translate(-50%, -.25rem); font-size: .66rem; font-weight: 600; color: #fff; background: #1e293b; padding: .1rem .45rem; border-radius: .35rem; white-space: nowrap; }
+.od-ui .od-time-badge { font-size: .72rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; }
+.od-ui .od-time-badge.is-ok { background: var(--t-green); color: #2f7a57; }
+.od-ui .od-time-badge.is-warn { background: var(--t-amber); color: #9a6210; }
+.od-ui .od-time-badge.is-late { background: var(--t-rose); color: #a8475a; }
+.od-ui .od-time-badge.is-info { background: var(--t-indigo); color: #4f46e5; }
+.od-ui .od-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; border-top: 1px dashed var(--line); padding-top: 1rem; }
+@media (min-width: 768px) { .od-ui .od-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.od-ui .od-facts > div { background: #fafbfc; border-radius: .7rem; padding: .7rem .85rem; }
+.od-ui .od-facts b { font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.od-ui .od-facts em, .od-ui .od-raci em { font-style: normal; font-size: .75rem; color: var(--ink-3); font-weight: 500; }
+
+/* RACI */
+.od-ui .od-raci { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.od-ui .od-raci li { display: flex; align-items: center; gap: .8rem; padding: .55rem .65rem; border-radius: .75rem; transition: background .15s; }
+.od-ui .od-raci li:hover { background: #fafbfc; }
+.od-ui .od-raci small { display: block; font-size: .7rem; color: var(--ink-3); }
+.od-ui .od-raci b { font-size: .88rem; font-weight: 600; }
+.od-ui .od-role { width: 2.1rem; height: 2.1rem; border-radius: .65rem; display: grid; place-items: center; font-size: .78rem; font-weight: 700; flex-shrink: 0; }
+.od-ui .od-role-r { background: var(--t-green); color: #2f8a60; } .od-ui .od-role-a { background: var(--t-rose); color: #c0566a; }
+.od-ui .od-role-c { background: var(--t-amber); color: #b7791f; } .od-ui .od-role-i { background: var(--t-blue); color: #2563eb; }
+.od-ui .od-role-m { background: #f1f5f9; color: #475569; }
+.od-ui .od-people { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .2rem; }
+.od-ui .od-person { width: 1.7rem; height: 1.7rem; border-radius: 999px; display: grid; place-items: center; font-size: .7rem; font-weight: 700; background: var(--t-indigo); color: #4f46e5; border: 2px solid #fff; text-transform: uppercase; cursor: default; }
+.od-ui .od-person:nth-child(3n+2) { background: var(--t-green); color: #2f8a60; }
+.od-ui .od-person:nth-child(3n) { background: var(--t-amber); color: #b7791f; }
+
+/* Jeux de données */
+.od-ui .od-ds { display: grid; gap: .6rem; max-height: 22rem; overflow-y: auto; }
+.od-ui .od-ds-card { display: flex; align-items: center; gap: .8rem; padding: .75rem .85rem; border: 1px solid var(--line); border-radius: .8rem; animation: odRise .45s var(--ease) both; animation-delay: calc(var(--i) * 50ms + 400ms); transition: border-color .15s, transform .2s var(--ease); }
+.od-ui .od-ds-card:hover { border-color: #d5dbe3; transform: translateY(-1px); }
+.od-ui .od-ds-ico { width: 2.3rem; height: 2.3rem; border-radius: .65rem; display: grid; place-items: center; background: var(--t-amber); color: #b7791f; flex-shrink: 0; }
+.od-ui .od-ds-name { display: block; font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.od-ui .od-ds-card small { font-size: .74rem; color: var(--ink-3); }
+.od-ui .od-empty { display: flex; flex-direction: column; align-items: center; gap: .6rem; text-align: center; padding: 2rem 1rem; color: var(--ink-3); font-size: .85rem; }
+.od-ui .od-empty > .od-ic { width: 2rem; height: 2rem; color: #cbd5e1; }
+
+/* Table */
+.od-ui .od-tools { display: flex; flex-wrap: wrap; gap: .5rem; }
+.od-ui .od-search { position: relative; display: inline-flex; align-items: center; }
+.od-ui .od-search .od-ic { position: absolute; left: .7rem; color: var(--ink-3); width: 1rem; height: 1rem; }
+.od-ui .od-search input, .od-ui .od-select { height: 2.3rem; border: 1px solid var(--line); border-radius: .6rem; background: #fff; font-size: .82rem; color: var(--ink); padding: 0 .75rem; }
+.od-ui .od-search input { padding-left: 2.1rem; width: 15rem; max-width: 100%; }
+.od-ui .od-search input:focus, .od-ui .od-select:focus { outline: none; border-color: #94a3b8; box-shadow: 0 0 0 3px rgba(148,163,184,.18); }
+.od-ui .od-target { margin-bottom: 1rem; padding: .9rem 1rem 1rem; border-radius: .8rem; background: #fafbfc; }
+.od-ui .od-target-head { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; font-size: .78rem; font-weight: 600; color: var(--ink-2); margin-bottom: .8rem; }
+.od-ui .od-target-leg { display: inline-flex; align-items: center; gap: .35rem; font-weight: 500; color: var(--ink-3); flex-wrap: wrap; }
+.od-ui .od-target-leg i { margin-left: .5rem; }
+.od-ui .od-target-rows { display: grid; gap: .6rem; }
+.od-ui .od-target-row { display: grid; grid-template-columns: minmax(0, 13rem) 1fr 3.2rem; align-items: center; gap: .8rem; font-size: .8rem; cursor: default; }
+@media (max-width: 640px) { .od-ui .od-target-row { grid-template-columns: 1fr 3rem; } .od-ui .od-target-track { grid-column: 1 / -1; grid-row: 2; } }
+.od-ui .od-target-name { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.od-ui .od-target-track { position: relative; height: 8px; border-radius: 4px; background: #e9edf2; }
+.od-ui .od-target-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: inherit; transition: width 1s var(--ease); }
+.od-ui .od-target-goal { position: absolute; right: -1px; top: -3px; bottom: -3px; width: 2px; border-radius: 1px; background: #94a3b8; }
+.od-ui .od-fill-ok { background: linear-gradient(90deg, #8fd0ae, #43a074); }
+.od-ui .od-fill-wait { background: repeating-linear-gradient(135deg, #f3d39a 0 5px, #f7e2b8 5px 10px); border-radius: 0 4px 4px 0; transition: width 1s var(--ease) .2s, left 1s var(--ease); }
+.od-ui .od-target-pct.is-ok { color: #2f7a57; }
+.od-ui .od-target-note { font-style: normal; font-weight: 400; color: var(--ink-3); margin-left: .25rem; }
+.od-ui .od-td-sub { display: block; font-size: .7rem; font-weight: 400; color: var(--ink-3); margin-top: .1rem; }
+.od-ui .od-chip-muted { background: #f1f5f9; color: var(--ink-2); }
+.od-ui .od-chip-amber { background: var(--t-amber); color: #9a6210; }
+.od-ui .od-fin-sub { display: block; margin-top: .2rem; font-size: .68rem !important; color: var(--ink-3); }
+.od-ui .od-pchip { display: inline-flex; align-items: center; gap: .35rem; padding: .15rem .55rem .15rem .15rem; border-radius: 999px; background: var(--t-amber); color: #7c4f0e; font-size: .74rem; font-weight: 600; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.od-ui .od-pchip i { font-style: normal; width: 1.3rem; height: 1.3rem; border-radius: 999px; display: grid; place-items: center; background: #fff; color: #b7791f; font-size: .66rem; font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
+.od-ui .od-pchip-i { background: var(--t-blue); color: #1e4fae; }
+.od-ui .od-pchip-i i { color: #2563eb; }
+.od-ui .od-b-cible { background: var(--t-indigo); color: #4f46e5; }
+.od-ui .od-b-real { background: var(--t-sky); color: #2b7bb0; }
+.od-ui .od-target-pct { text-align: right; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.od-ui .od-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: .8rem; }
+.od-ui .od-table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+.od-ui .od-table th { text-align: left; font-size: .72rem; font-weight: 600; color: var(--ink-2); background: #fafbfc; padding: .7rem 1rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.od-ui .od-table td { padding: .75rem 1rem; border-bottom: 1px solid #f1f4f8; color: var(--ink-2); white-space: nowrap; }
+.od-ui .od-table tr:last-child td { border-bottom: 0; }
+.od-ui .od-tx { animation: odFade .4s var(--ease) both; animation-delay: calc(var(--i) * 30ms + 450ms); transition: background .15s; }
+.od-ui .od-tx:hover td { background: #fafbff; }
+.od-ui .od-td-name { color: var(--ink) !important; font-weight: 600; white-space: normal !important; min-width: 12rem; }
+.od-ui .od-td-val { color: var(--ink) !important; font-weight: 600; font-variant-numeric: tabular-nums; }
+.od-ui .od-td-muted { color: var(--ink-3) !important; }
+.od-ui .od-tip { position: fixed; z-index: 60; pointer-events: none; background: #fff; border: 1px solid var(--line); border-radius: .6rem; padding: .45rem .7rem; font-size: .75rem; line-height: 1.5; box-shadow: 0 6px 18px rgba(15,23,42,.08); color: var(--ink); }
+
+/* Fenêtre de duplication */
+.od-ui .od-dialog { padding: 0; border: 0; border-radius: 1.1rem; width: min(40rem, calc(100vw - 2rem)); max-height: 92vh; box-shadow: 0 30px 60px -20px rgba(15,23,42,.35); overflow: hidden; color: var(--ink); }
+.od-ui .od-dialog[open] { animation: odPop .3s var(--ease); display: flex; flex-direction: column; }
+.od-ui .od-dialog::backdrop { background: rgba(15,23,42,.35); backdrop-filter: blur(3px); }
+.od-ui .od-dialog form { display: flex; flex-direction: column; min-height: 0; max-height: 92vh; }
+.od-ui .od-dlg-head { display: flex; align-items: center; gap: .85rem; padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, #eef0ff, #fff 70%); }
+.od-ui .od-dlg-ico { width: 2.5rem; height: 2.5rem; border-radius: .75rem; display: grid; place-items: center; background: #fff; color: #6366f1; box-shadow: 0 2px 8px rgba(99,102,241,.15); flex-shrink: 0; }
+.od-ui .od-dlg-head h2 { font-size: 1rem; font-weight: 600; }
+.od-ui .od-dlg-head p { font-size: .78rem; color: var(--ink-2); margin-top: .1rem; }
+.od-ui .od-dlg-close { margin-left: auto; width: 2.1rem; height: 2.1rem; border-radius: .6rem; display: grid; place-items: center; color: var(--ink-3); border: 1px solid var(--line); background: #fff; flex-shrink: 0; }
+.od-ui .od-dlg-close:hover { color: var(--ink); }
+.od-ui .od-dlg-body { padding: 1.1rem 1.25rem; overflow-y: auto; display: grid; gap: 1.1rem; background: #fafbfc; }
+.od-ui .od-dup-src { background: #fff; border: 1px solid var(--line); border-radius: .8rem; padding: .7rem .9rem; }
+.od-ui .od-dup-src small { display: block; font-size: .7rem; color: var(--ink-3); }
+.od-ui .od-dup-src b { font-size: .9rem; font-weight: 600; }
+.od-ui .od-dup-step { background: #fff; border: 1px solid var(--line); border-radius: .9rem; padding: .9rem 1rem 1rem; display: grid; gap: .75rem; }
+.od-ui .od-dup-step-head { display: flex; align-items: center; gap: .55rem; }
+.od-ui .od-dup-step-head h3 { font-size: .85rem; font-weight: 600; }
+.od-ui .od-step-n { width: 1.45rem; height: 1.45rem; border-radius: 999px; display: grid; place-items: center; font-size: .72rem; font-weight: 700; background: var(--t-indigo); color: #6366f1; }
+.od-ui .od-check-all { margin-left: auto; display: inline-flex; align-items: center; gap: .4rem; font-size: .76rem; color: var(--ink-2); cursor: pointer; }
+.od-ui .od-check-all input { accent-color: #6366f1; width: 1rem; height: 1rem; }
+.od-ui .od-search-full { display: flex; }
+.od-ui .od-search-full input { width: 100%; }
+.od-ui .od-struct-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: .5rem; max-height: 15rem; overflow-y: auto; padding: .1rem; }
+.od-ui .od-struct { position: relative; display: flex; align-items: center; gap: .6rem; padding: .55rem .7rem; border: 1.5px solid var(--line); border-radius: .75rem; cursor: pointer; transition: border-color .15s, background .15s, transform .15s; user-select: none; }
+.od-ui .od-struct:hover { border-color: #c7d2fe; }
+.od-ui .od-struct input { position: absolute; opacity: 0; pointer-events: none; }
+.od-ui .od-struct-av { width: 1.9rem; height: 1.9rem; border-radius: .55rem; display: grid; place-items: center; font-size: .78rem; font-weight: 700; background: #f1f5f9; color: var(--ink-2); flex-shrink: 0; transition: background .15s, color .15s; }
+.od-ui .od-struct-name { font-size: .82rem; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.od-ui .od-struct-tick { width: 1.2rem; height: 1.2rem; border-radius: 999px; display: grid; place-items: center; border: 1.5px solid #d5dbe3; color: transparent; flex-shrink: 0; transition: all .15s; }
+.od-ui .od-struct-tick .od-ic { width: .7rem; height: .7rem; }
+.od-ui .od-struct:has(input:checked) { border-color: #6366f1; background: #f5f6ff; }
+.od-ui .od-struct:has(input:checked) .od-struct-av { background: #6366f1; color: #fff; }
+.od-ui .od-struct:has(input:checked) .od-struct-tick { background: #6366f1; border-color: #6366f1; color: #fff; transform: scale(1.05); }
+.od-ui .od-struct:has(input:focus-visible) { box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
+.od-ui .od-copy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .5rem; }
+.od-ui .od-switch { display: flex; align-items: center; gap: .65rem; padding: .55rem .7rem; border-radius: .7rem; background: #fafbfc; font-size: .82rem; cursor: pointer; }
+.od-ui .od-switch input { position: absolute; opacity: 0; pointer-events: none; }
+.od-ui .od-switch em { font-style: normal; font-size: .7rem; font-weight: 700; color: #6366f1; background: var(--t-indigo); padding: .05rem .45rem; border-radius: 999px; margin-left: .25rem; }
+.od-ui .od-sw { position: relative; width: 2.1rem; height: 1.2rem; border-radius: 999px; background: #d5dbe3; flex-shrink: 0; transition: background .2s; }
+.od-ui .od-sw::after { content: ""; position: absolute; top: .15rem; left: .15rem; width: .9rem; height: .9rem; border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.25); transition: transform .2s var(--ease); }
+.od-ui .od-switch input:checked + .od-sw { background: var(--c-valide); }
+.od-ui .od-switch input:checked + .od-sw::after { transform: translateX(.9rem); }
+.od-ui .od-switch input:focus-visible + .od-sw { box-shadow: 0 0 0 3px rgba(67,160,116,.3); }
+.od-ui .od-switch-line { background: transparent; padding: .2rem 0 0; color: var(--ink-2); }
+.od-ui .od-dlg-foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: .9rem 1.25rem; border-top: 1px solid var(--line); background: #fff; }
+.od-ui .od-dup-sum { display: flex; align-items: baseline; gap: .4rem; font-size: .82rem; color: var(--ink-2); }
+.od-ui .od-dup-sum b { font-size: 1.5rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; transition: color .2s; }
+.od-ui .od-dup-sum.is-on b { color: #6366f1; }
+.od-ui .od-dup-sum.bump b { animation: odBump .3s var(--ease); }
+.od-ui .od-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+.od-ui button.od-btn { border: 0; cursor: pointer; }
+.od-ui button.od-btn-ghost { border: 1px solid var(--line); }
+
+/* Messages */
+.od-ui .od-toasts { position: fixed; top: 1rem; right: 1rem; z-index: 70; display: grid; gap: .5rem; }
+.od-ui .od-toast { display: flex; align-items: center; gap: .55rem; background: #fff; border: 1px solid var(--line); border-left-width: 4px; border-radius: .7rem; padding: .7rem .9rem; font-size: .82rem; box-shadow: 0 10px 24px -12px rgba(15,23,42,.3); animation: odToast 4.5s var(--ease) both; max-width: 22rem; }
+.od-ui .od-toast-success { border-left-color: var(--c-valide); } .od-ui .od-toast-success .od-ic { color: var(--c-valide); }
+.od-ui .od-toast-warning, .od-ui .od-toast-error { border-left-color: var(--c-nonvalide); } .od-ui .od-toast-warning .od-ic, .od-ui .od-toast-error .od-ic { color: var(--c-nonvalide); }
+.od-ui .od-toast-info { border-left-color: #6366f1; } .od-ui .od-toast-info .od-ic { color: #6366f1; }
+@keyframes odPop { from { opacity: 0; transform: translateY(12px) scale(.98); } }
+@keyframes odBump { 50% { transform: scale(1.25); } }
+@keyframes odToast { 0% { opacity: 0; transform: translateX(20px); } 8%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateX(20px); visibility: hidden; } }
+
+@keyframes odRise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes odFade { from { opacity: 0; } }
+@keyframes odSpin { to { transform: rotate(360deg); } }
+@keyframes odDot { 40% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+    .od-ui *, .od-ui *::before { animation: none !important; transition: none !important; }
+    .od-ui .od-arc { animation: odSpin 2.5s linear infinite !important; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ui = document.querySelector('.od-ui');
+    if (!ui) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const clamp = n => Math.max(0, Math.min(100, n));
+    const d = clamp(parseInt(ui.dataset.declare, 10) || 0);
+    const v = clamp(parseInt(ui.dataset.valide, 10) || 0);
+    const NS = 'http://www.w3.org/2000/svg';
+    const ICON = (p) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+
+    const tip = document.getElementById('od-tip');
+    const showTip = (html, e) => { tip.innerHTML = html; tip.hidden = false;
+        tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; };
+    const hideTip = () => { tip.hidden = true; };
+
+    const countUp = (el, to, ms = 900) => {
+        if (!el) return;
+        if (reduce || !to) { el.textContent = to; return; }
+        const t0 = performance.now();
+        const step = now => { const p = Math.min((now - t0) / ms, 1); el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+    };
+    document.querySelectorAll('[data-count]').forEach(el => countUp(el, parseInt(el.dataset.count, 10) || 0));
+
+    // ── Baromètre ──
+    const baro = document.getElementById('od-baro');
+    if (baro) {
+        const cx = 130, cy = 138;
+        const pt = (r, p) => { const a = Math.PI * (1 - p / 100); return [cx + r * Math.cos(a), cy - r * Math.sin(a)]; };
+        const arc = (r, p0, p1) => { const [x0, y0] = pt(r, p0), [x1, y1] = pt(r, p1); return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
+        let h = `<defs><linearGradient id="od-g" x1="0" x2="1"><stop offset="0" stop-color="#9fd9bb"/><stop offset="1" stop-color="#2f8a60"/></linearGradient>
+                 <radialGradient id="od-hub" cx=".35" cy=".35" r=".8"><stop offset="0" stop-color="#475569"/><stop offset="1" stop-color="#0f172a"/></radialGradient></defs>`;
+        [[0, 39.4, '#f2c4cc'], [40.6, 69.4, '#f6dcaa'], [70.6, 100, '#bfe3cf']].forEach(([a, b, c]) => h += `<path d="${arc(118, a, b)}" stroke="${c}" stroke-width="5" fill="none" stroke-linecap="round"/>`);
+        for (let p = 0; p <= 100; p += 2) {
+            const M = p % 10 === 0, [x0, y0] = pt(108, p), [x1, y1] = pt(M ? 99 : 103, p);
+            h += `<line x1="${x0.toFixed(2)}" y1="${y0.toFixed(2)}" x2="${x1.toFixed(2)}" y2="${y1.toFixed(2)}" stroke="${M ? '#94a3b8' : '#d5dbe3'}" stroke-width="${M ? 1.6 : 1}" stroke-linecap="round"/>`;
+        }
+        [0, 25, 50, 75, 100].forEach(p => { const [x, y] = pt(62, p); h += `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" class="od-baro-lbl">${p}</text>`; });
+        h += `<path d="${arc(84, 0, 100)}" stroke="#eef1f5" stroke-width="16" fill="none" stroke-linecap="round"/>
+              <path id="od-baro-d" d="${arc(84, 0, 100)}" stroke="#f3d39a" stroke-width="16" fill="none" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
+              <path id="od-baro-v" d="${arc(84, 0, 100)}" stroke="url(#od-g)" stroke-width="16" fill="none" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
+              <g id="od-needle" style="transform-origin:${cx}px ${cy}px; transform: rotate(-90deg)"><path d="M${cx - 4.5} ${cy} L${cx} ${cy - 78} L${cx + 4.5} ${cy} Z" fill="#1e293b"/></g>
+              <circle cx="${cx}" cy="${cy}" r="15" fill="#f1f5f9"/><circle cx="${cx}" cy="${cy}" r="9" fill="url(#od-hub)"/><circle cx="${cx}" cy="${cy}" r="3" fill="#fff"/>`;
+        baro.innerHTML = h;
+        const vA = baro.querySelector('#od-baro-v'), dA = baro.querySelector('#od-baro-d');
+        vA.addEventListener('mousemove', e => showTip(`<b>Validé</b><br>${v} %`, e));
+        dA.addEventListener('mousemove', e => showTip(`<b>Déclaré</b><br>${d} % (dont ${Math.max(d - v, 0)} % en attente)`, e));
+        [vA, dA].forEach(el => el.addEventListener('mouseleave', hideTip));
+        setTimeout(() => {
+            dA.setAttribute('stroke-dasharray', d + ' 100');
+            vA.setAttribute('stroke-dasharray', v + ' 100');
+            baro.querySelector('#od-needle').style.transform = `rotate(${(v - 50) * 1.8}deg)`;
+        }, 350);
+        countUp(document.getElementById('od-baro-num'), v, 1300);
+        const st = document.getElementById('od-baro-status');
+        const lvl = v >= 70 ? ['ok', 'Satisfaisant', '<path d="M20 6 9 17l-5-5"/>']
+                  : v >= 40 ? ['mid', 'En progression', '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>']
+                  : ['low', 'À renforcer', '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>'];
+        st.className = 'od-baro-status is-' + lvl[0];
+        st.innerHTML = ICON(lvl[2]) + lvl[1];
+    }
+
+    // ── Calendrier : temps écoulé vs exécution ──
+    const start = ui.dataset.start ? new Date(ui.dataset.start + 'T00:00:00') : null;
+    const end = ui.dataset.end ? new Date(ui.dataset.end + 'T00:00:00') : null;
+    const badge = document.getElementById('od-time-badge');
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if (start && end && end > start) {
+        const total = (end - start) / 864e5;
+        const elapsed = Math.min(Math.max((today - start) / 864e5, 0), total);
+        const tPct = Math.round(elapsed / total * 100);
+        const remaining = Math.round((end - today) / 864e5);
+        document.getElementById('od-elapsed').textContent = tPct + ' %';
+        document.getElementById('od-remaining').innerHTML = remaining >= 0 ? `${remaining} <em>jours</em>` : `${-remaining} <em>jours de retard</em>`;
+        setTimeout(() => {
+            document.getElementById('od-track-time').style.width = tPct + '%';
+            document.getElementById('od-track-exec').style.width = `calc(${v}% - 8px)`;
+            const t = document.getElementById('od-today'); t.style.left = `calc(${tPct}% - 1px)`; t.style.opacity = 1;
+        }, 350);
+        let cls, txt;
+        if (today < start) { cls = 'is-info'; txt = 'Pas encore commencée'; }
+        else if (v >= 100) { cls = 'is-ok'; txt = 'Terminée'; }
+        else if (today > end) { cls = 'is-late'; txt = 'Échéance dépassée'; }
+        else if (v >= tPct - 10) { cls = 'is-ok'; txt = 'Dans les temps'; }
+        else { cls = 'is-warn'; txt = 'En retard sur le planning'; }
+        badge.className = 'od-time-badge ' + cls; badge.textContent = txt;
+    } else {
+        badge.className = 'od-time-badge is-info'; badge.textContent = 'Dates non renseignées';
+        document.getElementById('od-today').style.display = 'none';
+        setTimeout(() => { document.getElementById('od-track-exec').style.width = `calc(${v}% - 8px)`; }, 350);
+    }
+
+    // ── Valeurs : filtres ──
+    const rows = Array.from(document.querySelectorAll('.od-tx'));
+    const search = document.getElementById('od-tx-search');
+    const none = document.getElementById('od-tx-none');
+    const fType = document.getElementById('od-tx-type');
+    const fStruct = document.getElementById('od-tx-structure');
+    const fStatut = document.getElementById('od-tx-statut');
+    if (fStruct && !rows.some(r => r.dataset.structure)) fStruct.style.display = 'none';
+    const apply = () => {
+        const q = (search.value || '').trim().toLowerCase();
+        const ty = fType.value, st = fStruct.value, sv = fStatut.value;
+        let n = 0;
+        rows.forEach(r => {
+            const ok = (!q || r.dataset.name.toLowerCase().includes(q))
+                    && (!ty || r.dataset.ref === ty)
+                    && (!st || r.dataset.structure === st)
+                    && (!sv || r.dataset.statut === sv);
+            r.style.display = ok ? '' : 'none'; if (ok) n++;
+        });
+        none.hidden = n > 0 || rows.length === 0;
+    };
+    search && search.addEventListener('input', apply);
+    [fType, fStruct, fStatut].forEach(el => el && el.addEventListener('change', apply));
+
+    // ── Transactions : réalisation / cible (regroupées par indicateur, libellées par transaction) ──
+    const num = x => parseFloat(String(x || '').replace(/\s/g, '').replace(',', '.'));
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const fmt = n => n.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+    const groups = new Map();
+    rows.forEach(r => {
+        const val = num(r.dataset.value);
+        if (isNaN(val)) return;
+        const key = r.dataset.key || r.dataset.name;
+        if (!groups.has(key)) groups.set(key, { name: r.dataset.name, target: null, targetDate: '', ok: 0, wait: 0, n: 0 });
+        const g = groups.get(key);
+        if (r.dataset.ref === '1') {
+            // la cible la plus récente fait foi, et donne son nom à la ligne du graphique
+            if (g.target === null || (r.dataset.date || '') >= g.targetDate) { g.target = val; g.targetDate = r.dataset.date || ''; g.name = r.dataset.name || g.name; }
+        } else {
+            g.n++;
+            if (r.dataset.statut === '1') g.ok += val; else g.wait += val;
+        }
+    });
+    const items = Array.from(groups.values()).filter(g => g.target > 0);
+    if (items.length) {
+        document.getElementById('od-chart-wrap').hidden = false;
+        const box = document.getElementById('od-target-rows');
+        items.forEach((g, i) => {
+            const done = g.ok + g.wait;
+            const pct = Math.round(done / g.target * 100);
+            const okW = Math.min(g.ok / g.target * 100, 100);
+            const waitW = Math.min(g.wait / g.target * 100, 100 - okW);
+            const row = document.createElement('div');
+            row.className = 'od-target-row';
+            row.innerHTML = `<span class="od-target-name" title="${esc(g.name)}">${esc(g.name)}</span>
+                <span class="od-target-track"><span class="od-target-fill od-fill-ok"></span><span class="od-target-fill od-fill-wait"></span><span class="od-target-goal"></span></span>
+                <span class="od-target-pct ${pct >= 100 ? 'is-ok' : ''}">${pct} %</span>`;
+            row.addEventListener('mousemove', e => showTip(`<b>${esc(g.name)}</b><br>Cible : ${fmt(g.target)}<br>Réalisé validé : ${fmt(g.ok)}<br>Réalisé en attente : ${fmt(g.wait)}<br>${g.n} saisie${g.n > 1 ? 's' : ''}`, e));
+            row.addEventListener('mouseleave', hideTip);
+            box.appendChild(row);
+            setTimeout(() => {
+                const ok = row.querySelector('.od-fill-ok'), wait = row.querySelector('.od-fill-wait');
+                ok.style.width = okW + '%';
+                wait.style.left = okW + '%'; wait.style.width = waitW + '%';
+            }, 450 + i * 80);
+        });
+    }
+
+    // ── Duplication : sélection des structures ──
+    const dupList = document.getElementById('od-struct-list');
+    if (dupList) {
+        const boxes = Array.from(dupList.querySelectorAll('input[name="structures"]'));
+        const all = document.getElementById('od-dup-all');
+        const nEl = document.getElementById('od-dup-n'), lbl = document.getElementById('od-dup-lbl');
+        const sum = nEl.closest('.od-dup-sum'), go = document.getElementById('od-dup-go');
+        const refresh = () => {
+            const n = boxes.filter(b => b.checked).length;
+            if (nEl.textContent !== String(n)) { sum.classList.remove('bump'); void sum.offsetWidth; sum.classList.add('bump'); }
+            nEl.textContent = n;
+            lbl.textContent = n > 1 ? 'copies seront créées' : 'copie sera créée';
+            sum.classList.toggle('is-on', n > 0);
+            go.disabled = n === 0;
+            go.querySelector('span').textContent = n ? `Dupliquer (${n})` : 'Dupliquer';
+            const visible = boxes.filter(b => b.closest('.od-struct').style.display !== 'none');
+            all.checked = visible.length > 0 && visible.every(b => b.checked);
+        };
+        boxes.forEach(b => b.addEventListener('change', refresh));
+        all.addEventListener('change', () => {
+            boxes.forEach(b => { if (b.closest('.od-struct').style.display !== 'none') b.checked = all.checked; });
+            refresh();
+        });
+        document.getElementById('od-dup-search').addEventListener('input', function () {
+            const q = this.value.trim().toLowerCase();
+            dupList.querySelectorAll('.od-struct').forEach(l => { l.style.display = l.dataset.name.includes(q) ? '' : 'none'; });
+            refresh();
+        });
+        document.getElementById('od-dup-form').addEventListener('submit', () => {
+            go.disabled = true;
+            const t = ui.querySelector('.od-loader-title');
+            if (t) t.firstChild.textContent = 'Duplication en cours';
+        });
+        refresh();
+    }
+
+    // ── Données prêtes ──
+    requestAnimationFrame(() => { ui.classList.remove('is-loading'); ui.removeAttribute('aria-busy'); });
+
+    // ── Loader pendant le passage à une autre page ──
+    const leave = () => { ui.classList.add('is-leaving'); clearTimeout(window.__odT); window.__odT = setTimeout(() => ui.classList.remove('is-leaving'), 15000); };
+    document.addEventListener('click', e => {
+        const a = e.target.closest('a[href]');
+        if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        const href = a.getAttribute('href') || '';
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || a.hasAttribute('download')) return;
+        if ((a.target && a.target !== '_self') || a.origin !== location.origin) return;
+        leave();
+    });
+    window.addEventListener('beforeunload', leave);
+    window.addEventListener('pageshow', ev => { if (ev.persisted) ui.classList.remove('is-leaving', 'is-loading'); });
+});
+</script>
+
+{% comment %}
+    Champs utilisés (à renommer si vos modèles diffèrent) :
+    Operation        : nom, code, priorite, categorie, nature_operation, date_debut, date_echeance, nombre_jour,
+                       frequence, ponderation, niveau_execution, niveau_execution_valide, resultat_niveau_execution,
+                       resultat_niveau_execution_valide, montant_total_source_financement, montant_declare,
+                       montant_valide, taux_financier, personnel, accountable, participant, tache
+    PersonnelConsulted : consulted.full_name   ·   PersonnelInformed : informed.full_name
+    IndicateurValeur (transactions) : nom, indicateur, type_donnee, reference_cible, structure, periode_ok, date_saisie,
+                       date_enregistrement, valeur, personnel / user, etat_validation
+    DataSetOperation : dataset.nom ou nom, date / created_at, description, fichier
+{% endcomment %}
+{% endblock %}

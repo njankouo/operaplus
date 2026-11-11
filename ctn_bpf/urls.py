@@ -344,7 +344,7 @@ gestionnaire_url_patterns = [
 
    path('editer-tache/<int:id>/',views.file_duplik,name='editer-tache'),
 
-   path('duplicate_operation/<int:id>/',views.duplicate_operation,name='duplicate_operation'),
+
    path('forms/',views.forms_data,name='forms'),
    # path('set_language/', views.set_language, name='set_language'),
    path('delete_indicateur/<int:id>/',views.delete_indicateur,name='delete_indicateur'),
@@ -445,7 +445,15 @@ gestionnaire_url_patterns = [
 
    path('accountable/', views.accountable, name='accountable'),
 
-   path('count_accountable_operation/', views.count_accountable_operation, name='count_accountable_operation')
+   path('count_accountable_operation/', views.count_accountable_operation, name='count_accountable_operation'),
+
+   path('duplicate-operation/<int:id>/', views.details_operation, name='duplicate-operation'),
+
+   path('dupliquer-operation-structures/<int:id>/', views.dupliquer_operation_structures,name='dupliquer_operation_structures'),
+
+   path('planification-by-lots/', views.planification_by_lot, name='planification-by-lots'),
+
+   path('planification-lot/', views.planification_by_lot, name='planification_by_lot'),
    
 ]  
 ajax_urls_patterns = [

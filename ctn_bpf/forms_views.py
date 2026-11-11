@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, redirect
 from django.http import HttpResponseRedirect
 from django.views.generic import DetailView, DeleteView
-from .models import DataSetOperation, Structure, PeriodeOk, DataSet, DSet_DElt
+from .models import DataSetOperation, Structure, PeriodeOk, DataSet, DSet_DElt, Operation
 from .utils import basis  
 from django.urls import reverse_lazy
 
@@ -128,3 +128,5 @@ class SaisieFormulaireOp(DetailView):
      
         
         return context
+
+

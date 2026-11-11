@@ -28071,53 +28071,7 @@ def grub_form(request,id):
     template ='grub.html'
     return render(request,template,context)
 
-@transaction.atomic
-def duplicate_operation(request, id):
-    context = basis(request)
-    actual_institution = context['actual_institution']
 
-    # Attempt to retrieve the original item or raise 404 if not found
-    try:
-        original_item = Operation.objects.get(id=int(id))
-    except Operation.DoesNotExist:
-        raise Http404("Operation not found")
-
-    # Creating a new object with the same attributes
-    duplicated_item = Operation(
-        nom=original_item.nom,
-        personnel=original_item.personnel,
-        code=original_item.code,
-        accountable=original_item.accountable,
-        informed=original_item.informed,
-        consulted=original_item.consulted,
-        date_echeance=original_item.date_echeance,
-        m_institution=actual_institution,
-        priorite = original_item.priorite,
-        etat=original_item.etat,
-        montant=original_item.montant,
-        montant2=original_item.montant2,
-        date_creation = original_item.date_creation,
-        m_tache_plannification = original_item.m_tache_plannification,
-        tache=original_item.tache,
-        is_deleted = original_item.is_deleted,
-        periode = original_item.periode,
-        periode_ok = original_item.periode_ok,
-        categorie = original_item.categorie,
-        nature_operation = original_item.nature_operation,
-
-    )
-
-    # Save the duplicated object in the database
-    duplicated_item.save()
-
-    # If dataset is a ManyToMany field, replicate relationships
-    duplicated_item.dataset.set(original_item.dataset.all())  # Make sure to handle many-to-many correctly
-
-    # Success message
-    messages.success(request, f'L\'operation "{duplicated_item.nom}" a été dupliqué avec succès.')
-
-    # Redirecting to the previous page or a default fallback
-    return redirect(request.META.get('HTTP_REFERER', '/'))
 
 def gantt_planification(request):
     context = basis(request)
@@ -35122,3 +35076,342 @@ def SaveDataSet(request):
         return redirect('ajouter-formulaire', id=operation.id)
         
     return redirect('/')
+
+
+
+
+
+from django.contrib import messages
+from django.core.exceptions import FieldDoesNotExist
+from django.db import transaction as db_transaction
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+# from .models import (Operation, IndicateurValeur, DataSetOperation, Structure, PersonnelInformed,
+#                      PersonnelConsulted, FinancementOperation)
+# from .utils import basis
+
+
+def details_operation(request, id):
+    operation = get_object_or_404(Operation, id=int(id))
+    template = 'details-operation.html'
+
+    context = basis(request)
+    actual_institution = context.get('actual_institution')
+
+    context.update({
+        'operation': operation,
+        'transaction': (IndicateurValeur.objects
+                        .filter(operation=operation)
+                        .select_related('indicateur', 'structure', 'periode_ok', 'personnel', 'user')
+                        .order_by('-reference_cible', 'indicateur_id', 'date_saisie')),
+        'dataset_operation': DataSetOperation.objects.filter(operation=operation),
+        'structure': Structure.objects.filter(institution=actual_institution),   # structures proposées pour la duplication
+        'personnelinformed': PersonnelInformed.objects.filter(operation=operation).select_related('informed'),
+        'personnel_consulted': PersonnelConsulted.objects.filter(operation=operation).select_related('consulted'),
+        'financement_operation': FinancementOperation.objects.filter(operation=operation).select_related('source_financement'),
+    })
+    return render(request, template, context)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Duplication d'une opération : une copie par structure cochée,
+#  avec les éléments liés choisis dans la fenêtre « Dupliquer ».
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Éléments liés à copier : clé envoyée par le formulaire -> modèle (lié par le champ `operation`)
+RELATED_MODELS = {
+    'datasets': lambda: DataSetOperation,
+    'consulted': lambda: PersonnelConsulted,
+    'informed': lambda: PersonnelInformed,
+    'valeurs': lambda: IndicateurValeur,
+    'financements': lambda: FinancementOperation,
+}
+
+
+def _has_field(model, name):
+    try:
+        model._meta.get_field(name)
+        return True
+    except FieldDoesNotExist:
+        return False
+
+
+def _clone(instance, **overrides):
+    """Copie une ligne en base (nouvel id), avec ses ManyToMany simples."""
+    model = type(instance)
+    fresh = model.objects.get(pk=instance.pk)          # copie de travail, l'original n'est pas modifié
+    m2m = {
+        f.name: list(getattr(fresh, f.name).all())
+        for f in model._meta.many_to_many
+        if f.remote_field.through._meta.auto_created     # on ignore les M2M avec table intermédiaire perso
+    }
+    fresh.pk = None
+    fresh.id = None
+    fresh._state.adding = True
+    for field, value in overrides.items():
+        setattr(fresh, field, value)
+    fresh.save()
+    for name, values in m2m.items():
+        getattr(fresh, name).set(values)
+    return fresh
+
+
+def _page_retour(request, source):
+    """Retour vers la page de la tâche de l'opération (ou, à défaut, la page précédente)."""
+    tache_id = source.tache_id or request.POST.get('tache')
+    if tache_id:
+        return f'/taches/{tache_id}/'
+    return request.META.get('HTTP_REFERER') or '/'
+
+
+@require_POST
+def dupliquer_operation_structures(request, id):
+    source = get_object_or_404(Operation, id=int(id))
+    retour = _page_retour(request, source)
+
+    context = basis(request)
+    actual_institution = context.get('actual_institution')
+
+    # Une copie par structure cochée — uniquement les structures de l'institution courante
+    ids = [i for i in request.POST.getlist('structures') if str(i).isdigit()]
+    structures = list(Structure.objects.filter(institution=actual_institution, id__in=ids))
+    if not structures:
+        messages.warning(request, "Sélectionnez au moins une structure pour dupliquer l'opération.")
+        return redirect(retour)
+
+    a_copier = set(request.POST.getlist('copier'))
+    ajouter_suffixe = request.POST.get('suffixe') == '1'
+
+    copies = []
+    with db_transaction.atomic():                       # tout ou rien : pas de copie à moitié faite
+        for structure in structures:
+            overrides = {'structure': structure}
+            if ajouter_suffixe:
+                overrides['nom'] = f"{source.nom or ''} — {structure.nom}".strip(' —')
+
+            # Copie de l'opération : tous les champs + le ManyToMany `dataset`
+            copie = _clone(source, **overrides)
+
+            # Copie des éléments liés cochés dans la fenêtre
+            for cle, get_model in RELATED_MODELS.items():
+                if cle not in a_copier:
+                    continue
+                model = get_model()
+                extra = {'structure': structure} if _has_field(model, 'structure') else {}
+                for ligne in model.objects.filter(operation=source):
+                    _clone(ligne, operation=copie, **extra)
+
+            copies.append(copie)
+
+    n = len(copies)
+    noms = ', '.join(s.nom for s in structures[:3]) + (f' et {n - 3} autre(s)' if n > 3 else '')
+    messages.success(
+        request,
+        f"« {source.nom} » dupliquée en {n} opération{'s' if n > 1 else ''} : {noms}.",
+    )
+    return redirect(retour)
+
+
+
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db import transaction as db_transaction
+from django.db.models import Count, Exists, OuterRef, Q
+from django.shortcuts import redirect, render
+from urllib.parse import urlencode
+
+# from .models import (Operation, Tache, Personnel, Personnel_Structure,
+#                      PersonnelConsulted, PersonnelInformed)
+# from .utils import basis
+
+PAR_PAGE = 50
+ROLES_SIMPLES = (('r', 'personnel', 'Responsable'), ('a', 'accountable', 'Accountable'), ('m', 'participant', 'Manager'))
+ROLES_MULTIPLES = (('c', 'PersonnelConsulted', 'consulted', 'Consultés'), ('i', 'PersonnelInformed', 'informed', 'Informés'))
+
+
+def _nom(personne):
+    return getattr(personne, 'full_name', None) or str(personne)
+
+
+def _ids(valeur):
+    """'3,7,12' ou ['3', '7'] -> {3, 7, 12}"""
+    if isinstance(valeur, (list, tuple)):
+        valeur = ','.join(str(v) for v in valeur)
+    return {int(x) for x in str(valeur or '').split(',') if x.strip().isdigit()}
+
+
+def _personnel_institution(actual_institution):
+    """Personnel rattaché (Personnel_Structure) aux structures de l'institution, groupé par structure."""
+    liens = (Personnel_Structure.objects
+             .filter(m_structure__institution=actual_institution, m_personnel__isnull=False)
+             .select_related('m_personnel', 'm_structure')
+             .order_by('m_structure__nom'))
+    personnes, groupes = {}, {}
+    for lien in liens:
+        p, s = lien.m_personnel, lien.m_structure
+        personnes[p.id] = p
+        groupes.setdefault(s.id, {'structure': s, 'membres': []})['membres'].append(
+            {'personne': p, 'responsable': bool(lien.m_responsable)})
+    for g in groupes.values():
+        g['membres'].sort(key=lambda m: (not m['responsable'], _nom(m['personne']).lower()))
+    return personnes, list(groupes.values())
+
+
+def _url_retour(request, garder_selection=False):
+    """Même page (tâche + numéro de page) ; la sélection n'est gardée que si rien n'a été appliqué."""
+    params = {k: request.GET[k] for k in ('tache', 'page') if request.GET.get(k)}
+    if garder_selection:
+        ids = sorted(_ids(request.POST.getlist('operations')))
+        if ids:
+            params['ops'] = ','.join(map(str, ids))
+    return request.path + ('?' + urlencode(params) if params else '')
+
+
+def planification_by_lot(request):
+    """
+    Attribution du RACI par lots, en 3 étapes :
+      1. cocher des opérations   2. choisir les personnes par rôle   3. appliquer.
+    URL : /planification-lot/?tache=<id>&ops=<id,id>&page=<n>
+    """
+    template = 'planification_lot.html'
+    context = basis(request)
+    actual_institution = context.get('actual_institution')
+
+    base = Operation.objects.filter(m_institution=actual_institution).exclude(is_deleted=True)
+
+    tache = None
+    tache_id = request.GET.get('tache', '')
+    operations = base
+    if tache_id.isdigit():
+        tache = Tache.objects.filter(id=int(tache_id)).first()
+        if tache:
+            operations = operations.filter(tache=tache)
+
+    personnes, groupes_structures = _personnel_institution(actual_institution)
+
+    # ── 3. Appliquer ──────────────────────────────────────────────────────────
+    if request.method == 'POST':
+        cibles = list(base.filter(id__in=_ids(request.POST.getlist('operations'))))
+        if not cibles:
+            messages.warning(request, "Étape 1 : cochez au moins une opération.")
+            return redirect(_url_retour(request))
+
+        # Rôles simples : '' = ne pas modifier, '0' = retirer, sinon id d'un membre de l'institution
+        simples, resume = {}, []
+        for cle, champ, libelle in ROLES_SIMPLES:
+            v = request.POST.get(cle, '')
+            if v == '0':
+                simples[champ] = None
+                resume.append(f"{libelle} retiré")
+            elif v.isdigit() and int(v) in personnes:
+                simples[champ] = personnes[int(v)]
+                resume.append(f"{libelle} : {_nom(personnes[int(v)])}")
+
+        # Rôles multiples : mode = '' (ne pas modifier) | ajouter | remplacer | retirer
+        modeles = {'PersonnelConsulted': PersonnelConsulted, 'PersonnelInformed': PersonnelInformed}
+        multiples = []
+        for cle, nom_modele, champ, libelle in ROLES_MULTIPLES:
+            mode = request.POST.get(f'{cle}_mode', '')
+            choisis = [i for i in _ids(request.POST.getlist(cle)) if i in personnes]
+            if mode in ('ajouter', 'retirer') and not choisis:
+                continue
+            if mode in ('ajouter', 'remplacer', 'retirer'):
+                multiples.append((modeles[nom_modele], champ, mode, set(choisis)))
+                noms = ', '.join(_nom(personnes[i]) for i in choisis)
+                if mode == 'remplacer' and not choisis:
+                    resume.append(f"{libelle} : liste vidée")
+                else:
+                    resume.append({'ajouter': f"{libelle} + {noms}",
+                                   'remplacer': f"{libelle} = {noms}",
+                                   'retirer': f"{libelle} − {noms}"}[mode])
+
+        if not simples and not multiples:
+            messages.warning(request, "Étape 2 : choisissez au moins une personne pour un rôle.")
+            return redirect(_url_retour(request, garder_selection=True))
+
+        with db_transaction.atomic():
+            for op in cibles:
+                if simples:
+                    for champ, valeur in simples.items():
+                        setattr(op, champ, valeur)
+                    op.save(update_fields=list(simples))
+                for model, champ, mode, choisis in multiples:
+                    lignes = model.objects.filter(operation=op)
+                    actuels = set(lignes.values_list(f'{champ}_id', flat=True))
+                    if mode == 'remplacer':
+                        lignes.exclude(**{f'{champ}_id__in': choisis}).delete()
+                        a_creer = choisis - actuels
+                    elif mode == 'ajouter':
+                        a_creer = choisis - actuels
+                    else:  # retirer
+                        lignes.filter(**{f'{champ}_id__in': choisis}).delete()
+                        a_creer = set()
+                    model.objects.bulk_create([model(operation=op, **{f'{champ}_id': pid}) for pid in a_creer])
+
+        n = len(cibles)
+        messages.success(request, f"RACI appliqué à {n} opération{'s' if n > 1 else ''} — " + ' · '.join(resume))
+        return redirect(_url_retour(request))
+
+    # ── Affichage ─────────────────────────────────────────────────────────────
+    # Baromètres : couverture de chaque rôle sur TOUTES les opérations filtrées (pas seulement la page)
+    a_c = Exists(PersonnelConsulted.objects.filter(operation=OuterRef('pk'), consulted__isnull=False))
+    a_i = Exists(PersonnelInformed.objects.filter(operation=OuterRef('pk'), informed__isnull=False))
+    couverture = operations.annotate(a_c=a_c, a_i=a_i).aggregate(
+        total=Count('id'),
+        r=Count('id', filter=Q(personnel__isnull=False)),
+        a=Count('id', filter=Q(accountable__isnull=False)),
+        c=Count('id', filter=Q(a_c=True)),
+        i=Count('id', filter=Q(a_i=True)),
+        m=Count('id', filter=Q(participant__isnull=False)),
+        complet=Count('id', filter=Q(personnel__isnull=False, accountable__isnull=False,
+                                     participant__isnull=False, a_c=True, a_i=True)),
+    )
+    total = couverture['total'] or 0
+    pct = lambda n: round(100 * n / total) if total else 0
+    barometres = [
+        {'cle': cle, 'libelle': lib, 'n': couverture[cle], 'pct': pct(couverture[cle])}
+        for cle, lib in (('r', 'Responsable'), ('a', 'Accountable'), ('c', 'Consultés'), ('i', 'Informés'), ('m', 'Manager'))
+    ]
+
+    operations = (operations
+                  .select_related('personnel', 'accountable', 'participant', 'structure', 'tache')
+                  .order_by('tache_id', 'date_debut', 'id'))
+    page_obj = Paginator(operations, PAR_PAGE).get_page(request.GET.get('page'))
+    preselection = _ids(request.GET.get('ops'))
+    lignes = list(page_obj.object_list)
+    ids_page = [op.id for op in lignes]
+
+    consultes, informes = {}, {}
+    for row in PersonnelConsulted.objects.filter(operation_id__in=ids_page, consulted__isnull=False).select_related('consulted'):
+        consultes.setdefault(row.operation_id, []).append(_nom(row.consulted))
+    for row in PersonnelInformed.objects.filter(operation_id__in=ids_page, informed__isnull=False).select_related('informed'):
+        informes.setdefault(row.operation_id, []).append(_nom(row.informed))
+    for op in lignes:                                   # RACI actuel, prêt pour le template
+        op.raci_c = consultes.get(op.id, [])
+        op.raci_i = informes.get(op.id, [])
+        op.raci_score = sum(map(bool, (op.personnel_id, op.accountable_id, op.raci_c, op.raci_i, op.participant_id)))
+        op.raci_pct = op.raci_score * 20
+        op.raci_complet = op.raci_score == 5
+
+    context.update({
+        'tache': tache,
+        'taches': Tache.objects.filter(id__in=base.exclude(tache__isnull=True).values('tache_id')),
+        'operations': lignes,
+        'page_obj': page_obj,
+        'total_operations': page_obj.paginator.count,
+        'preselection': preselection,
+        'preselection_hors_page': sorted(preselection - set(ids_page)),   # cochées sur d'autres pages
+        'ops_param': ','.join(map(str, sorted(preselection))),
+        'barometres': barometres,
+        'taux_complet': pct(couverture['complet']),
+        'nb_complet': couverture['complet'],
+        'groupes_structures': groupes_structures,
+        'nb_membres': len(personnes),
+        'sans_responsable': total - couverture['r'],
+    })
+    return render(request, template, context)
+
+
+# urls.py :
+# path('planification-lot/', views.planification_by_lot, name='planification_by_lot'),
