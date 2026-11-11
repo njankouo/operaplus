@@ -2,461 +2,620 @@
 {% load static %}
 {% load humanize %}
 {% block main %}
-<div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 border-b border-slate-200 pb-6">
-    <!-- Section Titre -->
-    <div class="relative">
-        <h1 class="text-3xl font-black tracking-tight bg-gradient-to-r from-blue-600 via-green-500 to-orange-500 bg-clip-text text-transparent">
-         Edition   Tâches planifiées
-        </h1>
-        
-        <!-- Séparateur Mixte : Pointillé -> Solide -->
-        <div class="flex items-center mt-3 w-full max-w-sm">
-            <!-- Partie pointillée (début) -->
-            <div class="h-[2px] w-1/3 border-t-2 border-dashed border-slate-300"></div>
-            <!-- Partie solide gradient (fin) -->
-            <div class="h-1 flex-grow rounded-r-full bg-gradient-to-r from-blue-500 via-green-500 to-orange-500"></div>
-        </div>
-        
-        <p class="text-slate-500 mt-3 text-sm font-medium">
-            Modifiez La Tâche {{operation.nom}}.
-        </p>
-    </div>
-    
-   
-</div>
- <div id="canvas-wrapper"></div>
-<div class="p-6 max-w-7xl mx-auto">
-    <form method="POST" action="/add_cat_nat/{{ operation.id }}/" class="space-y-6">
-        {% csrf_token %}
+{% comment %}
+    Modification d'une opération — OPERAPLUS
+    Vue d'affichage : file_duplik  ·  Enregistrement : add_cat_nat (/add_cat_nat/<id>/)
+{% endcomment %}
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="flex flex-col gap-6">
-                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                        <h6 class="font-bold text-slate-800 m-0">Modification {{operation.nom}}</h6>
-                    </div>
-                    <div class="p-6 space-y-4">
-                        <div class="form-group">
-                            <label class="font-bold block mb-2 text-sm">Nom</label>
-                            <input type="text" class="w-full px-4 py-2 border rounded-lg" name="nom" id="nomAct" required value="{{operation.nom}}">
-                        </div>
-                        <div class="form-group">
-                            <label class="font-bold block mb-2 text-sm">Entité / Tache</label>
-                            <select name="tache_change" class="w-full px-4 py-2 border rounded-lg" required>
-                                <option value="" disabled>Sélectionner l'entité responsable...</option>
-                                {% for entity in task_entities %}
-                                    <option value="{{ entity.id }}" {% if entity.id == operation.tache.id %}selected{% endif %}>
-                                        {{ entity.m_nom|default:entity }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                </div>
+{% with d=operation.niveau_execution|default:0 v=operation.niveau_execution_valide|default:0 %}
+<div class="oe-ui">
+<div id="canvas-wrapper" hidden></div>
 
-                <input type="hidden" name="entite_tache" value="{{operation.tache.id}}">
-
-                <div id="delais-container" class="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden transition-all duration-300">
-<div class="relative group">
-
-    <div id="lock-message" class="hidden group-hover:flex absolute inset-0 z-10 bg-slate-50/80 backdrop-blur-[2px] items-center justify-center cursor-not-allowed">
-        <div class="bg-white px-4 py-2 rounded-full border border-amber-200 text-amber-700 text-sm font-semibold shadow-sm flex items-center gap-2">
-            <span>🔒 Modification verrouillée</span>
-        </div>
-    </div>
-
-    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
-        <h6 class="font-bold text-slate-800 m-0">Délais & Fréquence</h6>
-    </div>
-    
-    <div class="p-6 space-y-4">
-        <div class="form-group">
-            <label class="font-bold block mb-2 text-sm">Jours pour la réalisation</label>
-            <div class="flex items-center gap-2">
-                <button class="px-3 py-2 border rounded" type="button" id="btn-minus">-</button>
-                <input type="number" class="w-full px-3 py-2 border rounded text-center" min="1" max="365" id="days-input" name="nombre_jour" value="{{operation.nombre_jour}}">
-                <button class="px-3 py-2 border rounded" type="button" id="btn-plus">+</button>
+<!-- ═════════ EN-TÊTE ═════════ -->
+<header class="oe-hero">
+    <nav class="oe-crumbs" aria-label="Fil d'Ariane">
+        <a href="/taches/{{ operation.tache.id }}/"><svg class="oe-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>Opérations</a>
+        <span>/</span><span>Modifier</span>
+    </nav>
+    <div class="oe-hero-row">
+        <div class="min-w-0">
+            <span class="oe-eyebrow">Édition de la tâche planifiée</span>
+            <h1 class="oe-title">{{ operation.nom|default:"Opération sans nom" }}</h1>
+            <div class="oe-chips">
+                {% if d > v %}<span class="oe-badge oe-b-wait">En attente de validation</span>{% elif v > 0 %}<span class="oe-badge oe-b-ok">Validé {{ v }} %</span>{% else %}<span class="oe-badge oe-b-no">Non validé</span>{% endif %}
+                {% if operation.code %}<span class="oe-chip">{{ operation.code }}</span>{% endif %}
+                {% if operation.tache %}<span class="oe-chip oe-chip-indigo">{{ operation.tache }}</span>{% endif %}
+                {% if operation.structure %}<span class="oe-chip">{{ operation.structure.nom }}</span>{% endif %}
             </div>
         </div>
-
-       <div class="grid grid-cols-2 gap-4">
-            <div class="form-group">
-                <label class="font-bold block mb-2 text-sm">Date de début</label>
-                <input type="date" class="w-full px-3 py-2 border rounded" name="date_debut" value="{{operation.date_debut|date:'Y-m-d'}}">
-            </div>
-            <div class="form-group">
-                <label class="font-bold block mb-2 text-sm">Date de fin</label>
-                <input type="date" class="w-full px-3 py-2 border rounded" name="date_fin" value="{{operation.date_echeance|date:'Y-m-d'}}">
-            </div>
+        <div class="oe-alerts">
+            {% if operations_delay %}<div class="oe-alert oe-al-rose"><b>{{ operations_delay }}</b><span>opération{{ operations_delay|pluralize }} en retard</span></div>{% endif %}
+            {% if transaction_delay %}<div class="oe-alert oe-al-amber"><b>{{ transaction_delay }}</b><span>transaction{{ transaction_delay|pluralize }} en retard</span></div>{% endif %}
         </div>
     </div>
-</div>
-</div>
-                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
-                        <h6 class="font-bold text-slate-800 m-0">Informations complémentaires</h6>
-                    </div>
-                    <div class="p-6 space-y-4">
-                        <div class="grid grid-cols-1 gap-4">
-                            {% if actual_institution.nature != False %}
-                            <div class="form-group">
-                                <label class="font-bold block mb-2 text-sm">Nature</label>
-                                <select name="nature" class="w-full px-3 py-2 border rounded" id="natureSelect">
-                                    <option value=""></option>
-                                    {% for natures in nature %}
-                                    <option value="{{ natures.id }}" {% if natures.id == operation.nature_operation_id %}selected{% endif %}>{{natures.intitule}}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            {% endif %}
-                            <div class="form-group">
-                                <label class="font-bold block mb-2 text-sm">Catégorie</label>
-                                <select name="categorie" class="w-full px-3 py-2 border rounded" id="categorieSelect">
-                                    <option value=""></option>
-                                    {% for categorie_operations in categorie_operation %}
-                                    <option value="{{ categorie_operations.id }}" {% if categorie_operations.id == operation.categorie_id %}selected{% endif %}>{{categorie_operations.intitule}}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="font-bold block mb-2 text-sm">Mode de notification</label>
-                                <select name="notification" class="w-full px-3 py-2 border rounded">
-                                    <option value="2">SMS & Email</option>
-                                    <option value="1">Adresse Mail</option>
-                                    <option value="0">SMS</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-6">
-                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
-        <h6 class="font-bold text-slate-800 m-0">Gestion des Responsabilités (RACI)</h6>
+    <!-- Progression du remplissage -->
+    <div class="oe-progress" aria-hidden="true">
+        <div class="oe-progress-bar"><span id="oe-progress-fill"></span></div>
+        <span class="oe-progress-txt"><b id="oe-progress-n">0</b>/6 sections complètes</span>
     </div>
-    <div class="p-6 space-y-4">
-        <div class="form-group">
-            <label class="block mb-2 text-sm font-bold text-emerald-600">
-                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs mr-2">R</span>Principal Responsable
-            </label>
-            <select name="personnel" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
-                <option value=""></option>
-                {% for personnes in personne %}
-                <option value="{{ personnes.id }}" {% if operation.personnel_id == personnes.id %}selected{% endif %}>
-                    {{personnes.nom}} - {{personnes.prenom}}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
+</header>
 
-        <div class="form-group">
-            <label class="block mb-2 text-sm font-bold text-red-600">
-                <span class="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs mr-2">A</span>Accountable
-            </label>
-            <select name="accountable" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none">
-                <option value=""></option>
-                {% for personnes in personne %}
-                <option value="{{ personnes.id }}" {% if operation.accountable_id == personnes.id %}selected{% endif %}>
-                    {{personnes.nom}} - {{personnes.prenom}}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
+<form method="POST" action="/add_cat_nat/{{ operation.id }}/" id="oe-form" class="oe-layout">
+    {% csrf_token %}
+    <input type="hidden" name="entite_tache" value="{{operation.tache.id}}">
 
-        <div class="form-group">
-            <label class="block mb-2 text-sm font-bold text-amber-600">
-                <span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs mr-2">C</span>Consulted
-            </label>
-            <select name="consulted" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none">
-                <option value=""></option>
-                {% for personnes in personne %}
-                <option value="{{ personnes.id }}" {% if operation.consulted_id == personnes.id %}selected{% endif %}>
-                    {{personnes.nom}} - {{personnes.prenom}}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
+    <!-- ══════════ COLONNE GAUCHE ══════════ -->
+    <div class="oe-col">
 
-        <div class="form-group">
-            <label class="block mb-2 text-sm font-bold text-sky-600">
-                <span class="px-2 py-0.5 bg-sky-100 text-sky-700 rounded text-xs mr-2">I</span>Informed
-            </label>
-            <select name="informed" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 outline-none">
-                <option value=""></option>
-                {% for personnes in personne %}
-                <option value="{{ personnes.id }}" {% if operation.informed_id == personnes.id %}selected{% endif %}>
-                    {{personnes.nom}} - {{personnes.prenom}}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label class="block mb-2 text-sm font-bold text-slate-600">
-                <span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-xs mr-2">I</span>Manager
-            </label>
-            <select name="participant" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 outline-none">
-                <option value=""></option>
-                {% for personnes in personne %}
-                <option value="{{ personnes.id }}" {% if operation.participant_id == personnes.id %}selected{% endif %}>
-                    {{personnes.nom}} - {{personnes.prenom}}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-    </div>
-</div>
-             
-<div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/70 flex justify-between items-center">
-        <h6 class="font-semibold text-slate-800 m-0 flex items-center gap-2">
-            Plan de Financement
-        </h6>
-        <span id="sources-count" class="text-xs font-medium text-slate-400 bg-slate-200/60 px-2.5 py-1 rounded-full">
-            0 sélectionnée(s)
-        </span>
-    </div>
-    
-    <div class="p-6 space-y-4">
-        {% for item in finances_globales %}
-        <div id="card_{{ item.id }}" class="finance-card group relative bg-slate-50/30 hover:bg-slate-50 p-3.5 rounded-xl border border-slate-100 transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
-            
-            <div class="flex items-center gap-3">
-                <input 
-                    type="checkbox" 
-                    id="checkbox_{{ item.id }}" 
-                    data-id="{{ item.id }}"
-                    class="finance-checker h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                    {% if item.is_linked %}checked{% endif %}
-                >
-                <label for="checkbox_{{ item.id }}" class="text-sm font-medium text-slate-700 cursor-pointer select-none">
-                    {{ item.nom }}
+        <!-- 1. Identification -->
+        <section class="oe-card" data-section="1">
+            <header class="oe-card-head"><span class="oe-step">1</span><h2>Identification</h2><em class="oe-done">Complet</em></header>
+            <div class="oe-fields">
+                <label class="form-group oe-field oe-span-2">
+                    <span class="oe-label">Nom de l'opération <i class="oe-req">*</i></span>
+                    <input type="text" class="oe-input" name="nom" id="nomAct" required value="{{operation.nom|default:''}}" data-req>
+                </label>
+                <label class="form-group oe-field oe-span-2">
+                    <span class="oe-label">Entité / Tâche <i class="oe-req">*</i></span>
+                    <select name="tache_change" class="oe-input" required data-req>
+                        <option value="" disabled>Sélectionner l'entité responsable…</option>
+                        {% for entity in task_entities %}
+                        <option value="{{ entity.id }}" {% if entity.id == operation.tache.id %}selected{% endif %}>{{ entity.m_nom|default:entity }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="form-group oe-field">
+                    <span class="oe-label">Structure</span>
+                    <select name="structure" id="structureSelect" class="oe-input" data-req>
+                        <option value="">Aucune structure</option>
+                        {% for s in structure %}<option value="{{ s.id }}" {% if s.id == operation.structure_id %}selected{% endif %}>{{ s.nom }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="form-group oe-field">
+                    <span class="oe-label">Période</span>
+                    <select name="mois" class="oe-input">
+                        <option value="">Aucune période</option>
+                        {% for p in periode_ok %}<option value="{{ p.id }}" {% if p.id == operation.periode_ok_id %}selected{% endif %}>{{ p.nom }}{% if p.annee %} {{ p.annee }}{% endif %}</option>{% endfor %}
+                    </select>
                 </label>
             </div>
-            
-            <div class="relative rounded-lg shadow-sm w-full md:w-64">
-                <input 
-                    type="number" 
-                    id="finance_{{ item.id }}"
-                    name="finance_{{ item.id }}" 
-                    data-id="{{ item.id }}"
-                    class="finance-input block w-full rounded-lg border-slate-200 pr-10 pl-3 py-2 text-sm text-right text-slate-900 focus:border-indigo-500 focus:ring-indigo-500 transition-colors disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                    min="0" 
-                    step="0.01"
-                    placeholder="0.00"
-                    value="{% if item.montant > 0 %}{{ item.montant|floatformat:'2' }}{% endif %}"
-                    {% if not item.is_linked %}disabled{% endif %}
-                >
-                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                    <span class="text-xs font-semibold text-slate-400">{{actual_institution.devise.symbole}}</span>
+        </section>
+
+        <!-- 2. Délais -->
+        <section class="oe-card{% if operation.is_locked %} is-locked{% endif %}" data-section="2" id="delais-container">
+            <header class="oe-card-head"><span class="oe-step">2</span><h2>Délais & fréquence</h2><em class="oe-done">Complet</em></header>
+            {% if operation.is_locked %}
+            <div id="lock-message" class="oe-lock"><svg class="oe-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Modification des délais verrouillée</div>
+            {% endif %}
+            <div class="oe-fields">
+                <label class="form-group oe-field">
+                    <span class="oe-label">Date de début</span>
+                    <input type="date" class="oe-input" name="date_debut" id="date_debut" value="{{operation.date_debut|date:'Y-m-d'}}" data-req>
+                </label>
+                <label class="form-group oe-field">
+                    <span class="oe-label">Date de fin (échéance)</span>
+                    <input type="date" class="oe-input" name="date_fin" id="date_fin" value="{{operation.date_echeance|date:'Y-m-d'}}" data-req>
+                </label>
+                <div class="form-group oe-field oe-span-2">
+                    <span class="oe-label">Jours pour la réalisation</span>
+                    <div class="oe-stepper">
+                        <button type="button" id="btn-minus" aria-label="Retirer un jour"><svg class="oe-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+                        <input type="number" min="1" max="365" id="days-input" name="nombre_jour" value="{{operation.nombre_jour|default:''}}" aria-label="Nombre de jours">
+                        <button type="button" id="btn-plus" aria-label="Ajouter un jour"><svg class="oe-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+                    </div>
                 </div>
             </div>
-
-        </div>
-        {% empty %}
-        <div class="text-center py-6">
-            <p class="text-sm text-slate-500">Aucune source de financement disponible.</p>
-        </div>
-        {% endfor %}
-    </div>
-
-    <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
-        <span class="text-sm font-semibold tracking-wide uppercase text-slate-400">Total Plan de Financement</span>
-        <div class="flex items-center gap-2">
-            <input type="text" id="total-global-display" class="bg-transparent border-none p-0 text-right text-2xl font-bold text-white focus:ring-0 select-all" readonly value="0" style="width: 50px;" name="montant_total_source_financement">
-            <span class="text-xl font-bold text-slate-400">{{actual_institution.devise.symbole}}</span>
-            <input type="hidden" id="total-global-value" name="total_global" value="0.00">
-        </div>
-    </div>
-</div>
+            <!-- Aperçu du calendrier -->
+            <div class="oe-cal" id="oe-cal">
+                <div class="oe-cal-track"><span class="oe-cal-span" id="oe-cal-span"></span><span class="oe-cal-today" id="oe-cal-today"><em>Aujourd'hui</em></span></div>
+                <div class="oe-cal-legend"><span id="oe-cal-start">—</span><b id="oe-cal-badge">—</b><span id="oe-cal-end">—</span></div>
             </div>
+        </section>
+
+        <!-- 3. Classification -->
+        <section class="oe-card" data-section="3">
+            <header class="oe-card-head"><span class="oe-step">3</span><h2>Classification & notification</h2><em class="oe-done">Complet</em></header>
+            <div class="oe-fields">
+                {% if actual_institution.nature != False %}
+                <label class="form-group oe-field">
+                    <span class="oe-label">Nature</span>
+                    <select name="nature" class="oe-input" id="natureSelect" data-req>
+                        <option value=""></option>
+                        {% for natures in nature %}<option value="{{ natures.id }}" {% if natures.id == operation.nature_operation_id %}selected{% endif %}>{{natures.intitule}}</option>{% endfor %}
+                    </select>
+                </label>
+                {% endif %}
+                <label class="form-group oe-field">
+                    <span class="oe-label">Catégorie</span>
+                    <select name="categorie" class="oe-input" id="categorieSelect" data-req>
+                        <option value=""></option>
+                        {% for categorie_operations in categorie_operation %}<option value="{{ categorie_operations.id }}" {% if categorie_operations.id == operation.categorie_id %}selected{% endif %}>{{categorie_operations.intitule}}</option>{% endfor %}
+                    </select>
+                </label>
+                <div class="form-group oe-field oe-span-2">
+                    <span class="oe-label">Mode de notification</span>
+                    <div class="oe-notif" role="radiogroup" aria-label="Mode de notification">
+                        <label><input type="radio" name="notification" value="2" {% if operation.notification == "2" or not operation.notification %}checked{% endif %}><span>
+                            <svg class="oe-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>SMS & e-mail</span></label>
+                        <label><input type="radio" name="notification" value="1" {% if operation.notification == "1" %}checked{% endif %}><span>
+                            <svg class="oe-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>E-mail</span></label>
+                        <label><input type="radio" name="notification" value="0" {% if operation.notification == "0" %}checked{% endif %}><span>
+                            <svg class="oe-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>SMS</span></label>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ══════════ COLONNE DROITE ══════════ -->
+    <div class="oe-col">
+
+        <!-- 4. RACI -->
+        <section class="oe-card" data-section="4">
+            <header class="oe-card-head"><span class="oe-step">4</span><h2>Responsabilités (RACI)</h2><em class="oe-done">Complet</em><span class="oe-raci-score" id="oe-raci-score">0/5</span></header>
+
+            <div class="oe-raci-row">
+                <label class="form-group oe-role" data-role="r">
+                    <span class="oe-role-head"><i class="oe-r">R</i><span><b>Responsable</b><small>réalise l'opération</small></span></span>
+                    <select name="personnel" class="oe-input" data-req>
+                        <option value="">À attribuer</option>
+                        {% for personnes in personne %}<option value="{{ personnes.id }}" {% if operation.personnel_id == personnes.id %}selected{% endif %}>{{personnes.nom}} {{personnes.prenom}}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="form-group oe-role" data-role="a">
+                    <span class="oe-role-head"><i class="oe-a">A</i><span><b>Accountable</b><small>valide et rend des comptes</small></span></span>
+                    <select name="accountable" class="oe-input" data-req>
+                        <option value="">Non défini</option>
+                        {% for personnes in personne %}<option value="{{ personnes.id }}" {% if operation.accountable_id == personnes.id %}selected{% endif %}>{{personnes.nom}} {{personnes.prenom}}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="form-group oe-role" data-role="m">
+                    <span class="oe-role-head"><i class="oe-m">M</i><span><b>Manager</b><small>supervise</small></span></span>
+                    <select name="participant" class="oe-input" data-req>
+                        <option value="">Non défini</option>
+                        {% for personnes in personne %}<option value="{{ personnes.id }}" {% if operation.participant_id == personnes.id %}selected{% endif %}>{{personnes.nom}} {{personnes.prenom}}</option>{% endfor %}
+                    </select>
+                </label>
+            </div>
+
+            <div class="oe-multi-row">
+                {% for role in "ci" %}
+                <div class="oe-multi" data-role="{{ role }}">
+                    <div class="oe-multi-head">
+                        <i class="oe-{{ role }}">{{ role|upper }}</i>
+                        <span><b>{% if role == 'c' %}Consultés{% else %}Informés{% endif %}</b><small>{% if role == 'c' %}donnent leur avis{% else %}sont tenus au courant{% endif %}</small></span>
+                        <em class="oe-count" data-count>0</em>
+                    </div>
+                    <div class="oe-chips-sel" data-chips><span class="oe-none">Personne pour l'instant</span></div>
+                    <input type="search" class="oe-input oe-filter" placeholder="Rechercher un membre…" aria-label="Filtrer">
+                    <div class="oe-plist">
+                        {% for personnes in personne %}
+                        <label class="oe-person">
+                            <input type="checkbox" name="{% if role == 'c' %}consulted{% else %}informed{% endif %}" value="{{ personnes.id }}"
+                                {% if role == 'c' and personnes.id in consulted_ids %}checked{% elif role == 'i' and personnes.id in informed_ids %}checked{% endif %}>
+                            <b>{{ personnes.nom|slice:":1"|upper }}{{ personnes.prenom|slice:":1"|upper }}</b>
+                            <span>{{ personnes.nom }} {{ personnes.prenom }}</span>
+                        </label>
+                        {% empty %}
+                        <p class="oe-none">Aucun personnel dans l'institution.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- 5. Financement -->
+        <section class="oe-card oe-fin" data-section="5">
+            <header class="oe-card-head"><span class="oe-step">5</span><h2>Plan de financement</h2><em class="oe-done">Complet</em>
+                <span id="sources-count" class="oe-pill">0 sélectionnée(s)</span></header>
+
+            <div class="oe-fin-dist" id="oe-fin-dist" aria-hidden="true"></div>
+
+            <div class="oe-fin-list">
+                {% for item in finances_globales %}
+                <div id="card_{{ item.id }}" class="finance-card oe-src{% if item.is_linked %} is-on{% endif %}" style="--i: {{ forloop.counter0 }}">
+                    <label class="oe-switch" for="checkbox_{{ item.id }}">
+                        <input type="checkbox" id="checkbox_{{ item.id }}" data-id="{{ item.id }}" class="finance-checker" {% if item.is_linked %}checked{% endif %}>
+                        <span class="oe-sw"></span>
+                        <span class="oe-src-name">{{ item.nom }}</span>
+                    </label>
+                    <div class="oe-amount">
+                        <input type="number" id="finance_{{ item.id }}" name="finance_{{ item.id }}" data-id="{{ item.id }}" class="finance-input"
+                               min="0" step="0.01" placeholder="0" value="{{ item.montant_input|default:'' }}" {% if not item.is_linked %}disabled{% endif %}>
+                        <span>{{actual_institution.devise.symbole}}</span>
+                    </div>
+                    <span class="oe-src-pct" data-pct></span>
+                </div>
+                {% empty %}
+                <p class="oe-none" style="padding:1rem;text-align:center">Aucune source de financement disponible.</p>
+                {% endfor %}
+            </div>
+
+            <div class="oe-fin-total">
+                <span>Total du plan de financement</span>
+                <div>
+                    <input type="text" id="total-global-display" name="montant_total_source_financement" readonly value="0" aria-label="Total">
+                    <em>{{actual_institution.devise.symbole}}</em>
+                    <input type="hidden" id="total-global-value" name="total_global" value="0.00">
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Barre d'enregistrement -->
+    <div class="oe-savebar" id="oe-savebar">
+        <span class="oe-save-state" id="oe-save-state"><i></i><span>Aucune modification</span></span>
+        <div class="oe-save-actions">
+            <a class="oe-btn oe-btn-ghost" href="/taches/{{operation.tache.id}}/">Annuler</a>
+            <button type="submit" class="oe-btn oe-btn-primary" id="oe-save">
+                <svg class="oe-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                Enregistrer
+            </button>
         </div>
+    </div>
 
-        <div class="flex justify-end gap-4 p-6 bg-slate-50 rounded-2xl border">
-            <a class="px-6 py-2 border rounded-lg font-bold" href="/taches/{{operation.tache.id}}/">Annuler</a>
-            <button type="submit" class="px-6 py-2 bg-slate-900 text-white rounded-lg font-bold">Enregistrer</button>
-        </div>
+    <input type="hidden" name="redirect" {% if detail_g_v == True %} value="{{base_val.id}}" {% else %} value="-1" {% endif %}>
+    <input type="hidden" name="RACI_hidden" id="RACI_hidden">
+    <input type="hidden" name="RACI_hidden_roles" id="RACI_hidden_roles">
+    <input type="hidden" name="edit_or_create" value="c">
+    <input type="hidden" name="edit_id" id="edit_id">
+    <input type="hidden" name="generator" value="o">
+    <input type="hidden" name="tache" value="{{base_val.id}}">
+    <input type="hidden" name="who_assign" id="who_assign" value="0">
+    <input type="hidden" id="chronogr" name="chronogr">
+</form>
 
-        <input type="hidden" name="redirect" {% if detail_g_v == True %} value="{{base_val.id}}" {% else %} value="-1" {% endif %}>
-        <input type="hidden" name="RACI_hidden" id="RACI_hidden">
-        <input type="hidden" name="RACI_hidden_roles" id="RACI_hidden_roles">
-        <input type="hidden" name="edit_or_create" value="c">
-        <input type="hidden" name="edit_id" id="edit_id">
-        <input type="hidden" name="generator" value="o">
-        <input type="hidden" name="tache" value="{{base_val.id}}">
-        <input type="hidden" name="who_assign" id="who_assign" value="0">
-        <input type="hidden" id="chronogr" name="chronogr">
-
-    </form>
+{% if messages %}
+<div class="oe-toasts">{% for message in messages %}<div class="oe-toast oe-toast-{{ message.tags|default:'info' }}"><span>{{ message }}</span><button type="button" onclick="this.parentElement.remove()" aria-label="Fermer">×</button></div>{% endfor %}</div>
+{% endif %}
 </div>
+{% endwith %}
 
+<style>
+.oe-ui { --ink:#1e293b; --ink-2:#64748b; --ink-3:#94a3b8; --line:#e7eaf0; --t-indigo:#eef0ff; --t-green:#e9f6ef; --t-amber:#fdf3e1; --t-rose:#fcecef; --t-blue:#eef4ff; --t-sky:#e8f4fb;
+    --accent: {{ request.user.personnel.color|default:"#4f46e5" }}; --ease: cubic-bezier(.22,.8,.3,1); color: var(--ink); padding-bottom: 6rem; }
+.oe-ui [hidden] { display: none !important; }
+.oe-ui .oe-ic { width: 1.1em; height: 1.1em; flex-shrink: 0; display: inline-block; vertical-align: -.18em; }
+.oe-ui .oe-hero { border: 1px solid var(--line); border-radius: 1.25rem; padding: 1.3rem 1.5rem 1.1rem; background: radial-gradient(120% 140% at 0% 0%, #eef0ff 0%, transparent 55%), radial-gradient(120% 140% at 100% 0%, #e9f6ef 0%, transparent 50%), #fff; animation: oeRise .45s var(--ease) both; }
+.oe-ui .oe-crumbs { display: flex; gap: .5rem; font-size: .78rem; color: var(--ink-3); margin-bottom: .8rem; }
+.oe-ui .oe-crumbs a { display: inline-flex; align-items: center; gap: .2rem; color: #6366f1; font-weight: 600; text-decoration: none; }
+.oe-ui .oe-hero-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1rem; }
+.oe-ui .oe-eyebrow { font-size: .72rem; font-weight: 600; color: #6366f1; }
+.oe-ui .oe-title { font-size: clamp(1.3rem, 2.5vw, 1.75rem); font-weight: 700; letter-spacing: -.02em; color: #1e1b4b; line-height: 1.25; margin-top: .15rem; text-decoration: underline; text-decoration-color: #e3a23a; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+.oe-ui .oe-chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .7rem; }
+.oe-ui .oe-chip, .oe-ui .oe-badge { font-size: .7rem; font-weight: 600; padding: .15rem .6rem; border-radius: 999px; background: #f1f5f9; color: var(--ink-2); }
+.oe-ui .oe-chip-indigo { background: var(--t-indigo); color: #4f46e5; }
+.oe-ui .oe-b-ok { background: var(--t-green); color: #2f7a57; } .oe-ui .oe-b-wait { background: var(--t-amber); color: #9a6210; } .oe-ui .oe-b-no { background: var(--t-rose); color: #a8475a; }
+.oe-ui .oe-alerts { display: flex; gap: .5rem; flex-wrap: wrap; }
+.oe-ui .oe-alert { padding: .5rem .8rem; border-radius: .75rem; min-width: 7.5rem; }
+.oe-ui .oe-alert b { display: block; font-size: 1.2rem; font-weight: 600; line-height: 1.1; }
+.oe-ui .oe-alert span { font-size: .7rem; }
+.oe-ui .oe-al-rose { background: var(--t-rose); color: #a8475a; } .oe-ui .oe-al-amber { background: var(--t-amber); color: #9a6210; }
+.oe-ui .oe-progress { display: flex; align-items: center; gap: .8rem; margin-top: 1rem; padding-top: .9rem; border-top: 1px solid rgba(15,23,42,.07); }
+.oe-ui .oe-progress-bar { flex: 1; height: 6px; border-radius: 3px; background: #eef1f5; overflow: hidden; }
+.oe-ui .oe-progress-bar span { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #6366f1, #43a074); transition: width .6s var(--ease); }
+.oe-ui .oe-progress-txt { font-size: .75rem; color: var(--ink-2); white-space: nowrap; }
 
+.oe-ui .oe-layout { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem; align-items: start; }
+@media (min-width: 1024px) { .oe-ui .oe-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.oe-ui .oe-col { display: grid; gap: 1rem; min-width: 0; }
+.oe-ui .oe-card { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 1rem; padding: 1rem 1.15rem 1.15rem; animation: oeRise .45s var(--ease) both; transition: border-color .25s, box-shadow .25s; }
+.oe-ui .oe-card:focus-within { border-color: #c7d2fe; box-shadow: 0 12px 28px -22px rgba(99,102,241,.6); }
+.oe-ui .oe-card-head { display: flex; align-items: center; gap: .55rem; margin-bottom: .9rem; flex-wrap: wrap; }
+.oe-ui .oe-card-head h2 { font-size: .95rem; font-weight: 600; }
+.oe-ui .oe-step { width: 1.6rem; height: 1.6rem; border-radius: 999px; display: grid; place-items: center; font-size: .78rem; font-weight: 700; background: #f1f4f8; color: var(--ink-2); transition: all .25s var(--ease); }
+.oe-ui .oe-card.is-complete .oe-step { background: #43a074; color: #fff; }
+.oe-ui .oe-done { font-style: normal; font-size: .66rem; font-weight: 700; color: #2f7a57; background: var(--t-green); padding: .1rem .5rem; border-radius: 999px; opacity: 0; transform: scale(.8); transition: all .25s var(--ease); }
+.oe-ui .oe-card.is-complete .oe-done { opacity: 1; transform: none; }
+.oe-ui .oe-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+@media (max-width: 560px) { .oe-ui .oe-fields { grid-template-columns: 1fr; } }
+.oe-ui .oe-span-2 { grid-column: 1 / -1; }
+.oe-ui .oe-field { display: grid; gap: .35rem; min-width: 0; }
+.oe-ui .oe-label { font-size: .74rem; font-weight: 600; color: var(--ink-2); }
+.oe-ui .oe-req { font-style: normal; color: #d4697a; }
+.oe-ui .oe-input { width: 100%; height: 2.5rem; border: 1px solid var(--line); border-radius: .65rem; background: #fff; padding: 0 .8rem; font-size: .86rem; color: var(--ink); transition: border-color .15s, box-shadow .15s, background .15s; }
+.oe-ui .oe-input:hover { border-color: #cbd5e1; }
+.oe-ui .oe-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.16); }
+.oe-ui .oe-input.is-changed, .oe-ui .oe-stepper.is-changed { border-color: #e3a23a; background: #fffcf6; }
+.oe-ui .oe-stepper { display: flex; height: 2.5rem; border: 1px solid var(--line); border-radius: .65rem; overflow: hidden; }
+.oe-ui .oe-stepper button { width: 2.8rem; display: grid; place-items: center; color: var(--ink-2); background: #f8fafc; transition: background .15s, color .15s; }
+.oe-ui .oe-stepper button:hover { background: #6366f1; color: #fff; }
+.oe-ui .oe-stepper input { flex: 1; min-width: 0; text-align: center; border: 0; font-weight: 600; font-size: .95rem; background: transparent; }
+.oe-ui .oe-stepper input:focus { outline: none; }
+.oe-ui .oe-lock { display: flex; align-items: center; gap: .45rem; margin-bottom: .8rem; padding: .5rem .75rem; border-radius: .6rem; background: var(--t-amber); color: #9a6210; font-size: .78rem; font-weight: 600; }
+.oe-ui .oe-card.is-locked .oe-fields { pointer-events: none; opacity: .55; }
 
- <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Sélection des éléments du DOM
-      const daysInput = document.getElementById('days-input');
-      const startDateInput = document.getElementById('date_debut');
-      const endDateInput = document.getElementById('date_fin');
-      const btnMinus = document.getElementById('btn-minus');
-      const btnPlus = document.getElementById('btn-plus');
+.oe-ui .oe-cal { margin-top: 1rem; padding: .85rem .9rem .75rem; border-radius: .8rem; background: #fafbfc; }
+.oe-ui .oe-cal-track { position: relative; height: .7rem; border-radius: .35rem; background: #e9edf2; margin-top: 1.1rem; }
+.oe-ui .oe-cal-span { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: inherit; background: repeating-linear-gradient(135deg, #c7d2fe 0 6px, #dfe4ff 6px 12px); transition: width .7s var(--ease); }
+.oe-ui .oe-cal-today { position: absolute; top: -.4rem; bottom: -.4rem; width: 2px; background: #1e293b; border-radius: 1px; left: 0; transition: left .7s var(--ease); }
+.oe-ui .oe-cal-today em { position: absolute; bottom: 100%; left: 50%; transform: translate(-50%, -.2rem); font-style: normal; font-size: .62rem; font-weight: 600; color: #fff; background: #1e293b; padding: .05rem .4rem; border-radius: .3rem; white-space: nowrap; }
+.oe-ui .oe-cal-legend { display: flex; justify-content: space-between; align-items: center; margin-top: .6rem; font-size: .74rem; color: var(--ink-2); }
+.oe-ui .oe-cal-legend b { font-size: .7rem; padding: .12rem .55rem; border-radius: 999px; background: #f1f5f9; }
+.oe-ui .oe-cal-legend b.is-late { background: var(--t-rose); color: #a8475a; } .oe-ui .oe-cal-legend b.is-soon { background: var(--t-amber); color: #9a6210; } .oe-ui .oe-cal-legend b.is-ok { background: var(--t-green); color: #2f7a57; }
 
-      /**
-       * Calcule et met à jour la date de fin en fonction de la date de début
-       * et du nombre de jours saisis.
-       */
-      const updateEndDate = () => {
-          const startDate = startDateInput.valueAsDate;
-          const daysToAdd = parseInt(daysInput.value, 10);
+.oe-ui .oe-notif { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+.oe-ui .oe-notif label { cursor: pointer; }
+.oe-ui .oe-notif input { position: absolute; opacity: 0; }
+.oe-ui .oe-notif span { display: flex; flex-direction: column; align-items: center; gap: .35rem; padding: .7rem .4rem; border: 1.5px solid var(--line); border-radius: .75rem; font-size: .78rem; font-weight: 600; color: var(--ink-2); text-align: center; transition: all .15s var(--ease); }
+.oe-ui .oe-notif span .oe-ic { width: 1.3rem; height: 1.3rem; }
+.oe-ui .oe-notif input:checked + span { border-color: #6366f1; background: #f5f6ff; color: #3730a3; box-shadow: 0 6px 14px -10px rgba(99,102,241,.7); }
+.oe-ui .oe-notif input:focus-visible + span { box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
 
-          // S'assure que les valeurs sont valides
-          if (!startDate || isNaN(daysToAdd)) {
-              endDateInput.value = '';
-              return;
-          }
+.oe-ui .oe-raci-score { margin-left: auto; font-size: .72rem; font-weight: 700; color: #4f46e5; background: var(--t-indigo); padding: .12rem .55rem; border-radius: 999px; }
+.oe-ui .oe-raci-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+@media (max-width: 640px) { .oe-ui .oe-raci-row { grid-template-columns: 1fr; } }
+.oe-ui .oe-role { display: grid; gap: .4rem; padding: .65rem; border-radius: .8rem; background: #fafbfc; min-width: 0; }
+.oe-ui .oe-role-head { display: flex; align-items: center; gap: .45rem; min-width: 0; }
+.oe-ui .oe-role-head span { min-width: 0; } .oe-ui .oe-role-head b { display: block; font-size: .78rem; } .oe-ui .oe-role-head small { font-size: .66rem; color: var(--ink-3); }
+.oe-ui .oe-role-head i, .oe-ui .oe-multi-head i { font-style: normal; width: 1.5rem; height: 1.5rem; border-radius: .45rem; display: grid; place-items: center; font-size: .68rem; font-weight: 800; flex-shrink: 0; }
+.oe-ui .oe-r { background: var(--t-green); color: #2f8a60; } .oe-ui .oe-a { background: var(--t-rose); color: #c0566a; }
+.oe-ui .oe-c { background: var(--t-amber); color: #b7791f; } .oe-ui .oe-i { background: var(--t-blue); color: #2563eb; }
+.oe-ui .oe-m { background: #e9edf2; color: #475569; }
+.oe-ui .oe-role select { height: 2.3rem; font-size: .8rem; }
+.oe-ui .oe-role.is-empty[data-role="r"] select { border-color: #f2c4cc; color: #c0566a; background: #fffafb; }
+.oe-ui .oe-multi-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin-top: .7rem; }
+@media (max-width: 640px) { .oe-ui .oe-multi-row { grid-template-columns: 1fr; } }
+.oe-ui .oe-multi { display: grid; gap: .45rem; padding: .65rem; border-radius: .8rem; border: 1px solid var(--line); min-width: 0; }
+.oe-ui .oe-multi-head { display: flex; align-items: center; gap: .45rem; }
+.oe-ui .oe-multi-head span { flex: 1; min-width: 0; } .oe-ui .oe-multi-head b { display: block; font-size: .8rem; } .oe-ui .oe-multi-head small { font-size: .66rem; color: var(--ink-3); }
+.oe-ui .oe-count { font-style: normal; font-size: .7rem; font-weight: 700; color: #4f46e5; background: var(--t-indigo); padding: .05rem .5rem; border-radius: 999px; }
+.oe-ui .oe-chips-sel { display: flex; flex-wrap: wrap; gap: .25rem; min-height: 1.6rem; }
+.oe-ui .oe-pchip { display: inline-flex; align-items: center; gap: .3rem; max-width: 100%; padding: .12rem .3rem .12rem .14rem; border-radius: 999px; font-size: .72rem; font-weight: 600; animation: oePop .2s var(--ease); }
+.oe-ui .oe-pchip b { width: 1.2rem; height: 1.2rem; border-radius: 999px; display: grid; place-items: center; background: #fff; font-size: .55rem; flex-shrink: 0; }
+.oe-ui .oe-pchip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oe-ui .oe-pchip button { width: 1.1rem; height: 1.1rem; border-radius: 999px; display: grid; place-items: center; font-size: .8rem; line-height: 1; opacity: .6; }
+.oe-ui .oe-pchip button:hover { opacity: 1; background: rgba(255,255,255,.7); }
+.oe-ui .oe-multi[data-role="c"] .oe-pchip { background: var(--t-amber); color: #7c4f0e; }
+.oe-ui .oe-multi[data-role="i"] .oe-pchip { background: var(--t-blue); color: #1e4fae; }
+.oe-ui .oe-filter { height: 2.1rem; font-size: .78rem; }
+.oe-ui .oe-plist { max-height: 10.5rem; overflow-y: auto; display: grid; gap: .1rem; }
+.oe-ui .oe-person { display: flex; align-items: center; gap: .5rem; padding: .3rem .4rem; border-radius: .5rem; font-size: .8rem; cursor: pointer; }
+.oe-ui .oe-person:hover { background: #f4f6f9; }
+.oe-ui .oe-person input { width: 1rem; height: 1rem; accent-color: #6366f1; flex-shrink: 0; }
+.oe-ui .oe-person b { width: 1.45rem; height: 1.45rem; border-radius: 999px; display: grid; place-items: center; background: #f1f5f9; color: var(--ink-2); font-size: .58rem; flex-shrink: 0; }
+.oe-ui .oe-person span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oe-ui .oe-person:has(input:checked) { background: #f5f6ff; }
+.oe-ui .oe-person:has(input:checked) b { background: #6366f1; color: #fff; }
+.oe-ui .oe-none { font-size: .74rem; color: var(--ink-3); }
 
-          const endDate = new Date(startDate);
-          endDate.setDate(startDate.getDate() + daysToAdd);
-          endDateInput.valueAsDate = endDate;
-      };
+.oe-ui .oe-pill { margin-left: auto; font-size: .72rem; font-weight: 600; color: var(--ink-2); background: #f1f5f9; padding: .15rem .6rem; border-radius: 999px; }
+.oe-ui .oe-fin-dist { display: flex; gap: 2px; height: .55rem; border-radius: .3rem; overflow: hidden; background: #eef1f5; margin-bottom: .85rem; }
+.oe-ui .oe-fin-dist span { height: 100%; transition: flex-basis .5s var(--ease); }
+.oe-ui .oe-fin-list { display: grid; gap: .5rem; }
+.oe-ui .oe-src { display: grid; grid-template-columns: minmax(0, 1fr) minmax(8rem, 13rem) 2.8rem; align-items: center; gap: .7rem; padding: .6rem .75rem; border: 1.5px solid var(--line); border-radius: .8rem; transition: border-color .2s, background .2s; animation: oeRise .35s var(--ease) both; animation-delay: calc(var(--i) * 40ms + 150ms); }
+@media (max-width: 560px) { .oe-ui .oe-src { grid-template-columns: 1fr auto; } .oe-ui .oe-amount { grid-column: 1 / -1; grid-row: 2; } }
+.oe-ui .oe-src.is-on { border-color: #bfe3cf; background: #f7fcf9; }
+.oe-ui .oe-switch { display: flex; align-items: center; gap: .6rem; cursor: pointer; min-width: 0; }
+.oe-ui .oe-switch input { position: absolute; opacity: 0; }
+.oe-ui .oe-sw { position: relative; width: 2.05rem; height: 1.15rem; border-radius: 999px; background: #d5dbe3; flex-shrink: 0; transition: background .2s; }
+.oe-ui .oe-sw::after { content: ""; position: absolute; top: .125rem; left: .125rem; width: .9rem; height: .9rem; border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,.25); transition: transform .2s var(--ease); }
+.oe-ui .oe-switch input:checked + .oe-sw { background: #43a074; }
+.oe-ui .oe-switch input:checked + .oe-sw::after { transform: translateX(.9rem); }
+.oe-ui .oe-switch input:focus-visible + .oe-sw { box-shadow: 0 0 0 3px rgba(67,160,116,.3); }
+.oe-ui .oe-src-name { font-size: .84rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oe-ui .oe-amount { position: relative; }
+.oe-ui .oe-amount input { width: 100%; height: 2.3rem; border: 1px solid var(--line); border-radius: .6rem; padding: 0 2.6rem 0 .7rem; text-align: right; font-size: .86rem; font-weight: 600; font-variant-numeric: tabular-nums; background: #fff; }
+.oe-ui .oe-amount input:focus { outline: none; border-color: #43a074; box-shadow: 0 0 0 3px rgba(67,160,116,.15); }
+.oe-ui .oe-amount input:disabled { background: #f6f7f9; color: var(--ink-3); cursor: not-allowed; }
+.oe-ui .oe-amount span { position: absolute; right: .65rem; top: 50%; transform: translateY(-50%); font-size: .7rem; font-weight: 700; color: var(--ink-3); pointer-events: none; }
+.oe-ui .oe-src-pct { font-size: .74rem; font-weight: 700; color: var(--ink-3); text-align: right; font-variant-numeric: tabular-nums; }
+.oe-ui .oe-src.is-on .oe-src-pct { color: #2f7a57; }
+.oe-ui .oe-fin-total { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: .9rem; padding: .85rem 1rem; border-radius: .85rem; background: #1e1b4b; color: #c7d2fe; font-size: .78rem; font-weight: 600; }
+.oe-ui .oe-fin-total div { display: flex; align-items: baseline; gap: .4rem; }
+.oe-ui .oe-fin-total input { background: transparent; border: 0; padding: 0; color: #fff; font-size: 1.5rem; font-weight: 700; text-align: right; width: 9rem; font-variant-numeric: tabular-nums; }
+.oe-ui .oe-fin-total input:focus { outline: none; }
+.oe-ui .oe-fin-total em { font-style: normal; color: #a5b4fc; font-weight: 700; }
 
-      /**
-       * Met à jour le nombre de jours en fonction de la date de début et de fin.
-       */
-      const updateDaysFromDates = () => {
-          const startDate = startDateInput.valueAsDate;
-          const endDate = endDateInput.valueAsDate;
-
-          // S'assure que les valeurs sont valides
-          if (!startDate || !endDate || endDate < startDate) {
-              daysInput.value = '';
-              return;
-          }
-
-          const timeDifference = endDate.getTime() - startDate.getTime();
-          const dayDifference = Math.ceil(timeDifference / (1000 * 3600 * 24));
-          daysInput.value = dayDifference;
-      };
-
-      /**
-       * Met à jour le nombre de jours et recalcule la date de fin.
-       * @param {number} delta - La valeur à ajouter ou soustraire (1 ou -1).
-       */
-      const updateDays = (delta) => {
-          let currentValue = parseInt(daysInput.value, 10);
-          const min = parseInt(daysInput.min, 10) || 1;
-          const max = parseInt(daysInput.max, 10) || 365;
-
-          currentValue += delta;
-
-          // Limite la valeur entre min et max
-          if (currentValue >= min && currentValue <= max) {
-              daysInput.value = currentValue;
-              updateEndDate();
-          }
-      };
-
-      // Écouteurs d'événements pour les boutons
-      btnMinus.addEventListener('click', () => updateDays(-1));
-      btnPlus.addEventListener('click', () => updateDays(1));
-
-      // Écouteurs pour les champs de saisie
-      const relevantInputs = [daysInput, startDateInput];
-      relevantInputs.forEach(input => input.addEventListener('change', updateEndDate));
-      daysInput.addEventListener('input', updateEndDate);
-
-      // Nouvel écouteur pour mettre à jour le nombre de jours lorsque la date de fin change
-      endDateInput.addEventListener('change', updateDaysFromDates);
-
-
-      // Initialisation
-      startDateInput.valueAsDate = new Date();
-      updateEndDate();
-    });
-</script>
+.oe-ui .oe-savebar { position: fixed; left: 50%; bottom: 1.1rem; z-index: 50; transform: translateX(-50%); display: flex; align-items: center; gap: 1rem; padding: .5rem .5rem .5rem 1rem; background: #fff; border: 1px solid var(--line); border-radius: 1rem; box-shadow: 0 18px 40px -16px rgba(15,23,42,.3); max-width: calc(100vw - 1.5rem); flex-wrap: wrap; }
+.oe-ui .oe-save-state { display: inline-flex; align-items: center; gap: .5rem; font-size: .8rem; color: var(--ink-2); }
+.oe-ui .oe-save-state i { width: .55rem; height: .55rem; border-radius: 999px; background: #cbd5e1; }
+.oe-ui .oe-savebar.is-dirty { background: #1e1b4b; border-color: #1e1b4b; }
+.oe-ui .oe-savebar.is-dirty .oe-save-state { color: #e0e7ff; }
+.oe-ui .oe-savebar.is-dirty .oe-save-state i { background: #e3a23a; box-shadow: 0 0 0 4px rgba(227,162,58,.25); animation: oeBlink 1.6s infinite; }
+.oe-ui .oe-save-actions { display: flex; gap: .45rem; }
+.oe-ui .oe-btn { display: inline-flex; align-items: center; gap: .45rem; height: 2.4rem; padding: 0 1.1rem; border-radius: .7rem; font-size: .84rem; font-weight: 600; text-decoration: none; transition: transform .2s var(--ease), box-shadow .2s; cursor: pointer; }
+.oe-ui .oe-btn:hover { transform: translateY(-1px); }
+.oe-ui .oe-btn-ghost { background: #fff; color: var(--ink-2); border: 1px solid var(--line); }
+.oe-ui .oe-btn-primary { background: var(--accent); color: #fff; box-shadow: 0 8px 18px -10px var(--accent); }
+.oe-ui .oe-savebar.is-dirty .oe-btn-primary { background: #fff; color: #1e1b4b; }
+.oe-ui .oe-toasts { position: fixed; top: 1rem; right: 1rem; z-index: 70; display: grid; gap: .5rem; max-width: min(26rem, calc(100vw - 2rem)); }
+.oe-ui .oe-toast { display: flex; gap: .6rem; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-left: 4px solid #43a074; border-radius: .7rem; padding: .7rem .85rem; font-size: .82rem; box-shadow: 0 10px 24px -12px rgba(15,23,42,.3); animation: oeRise .3s var(--ease); }
+.oe-ui .oe-toast-error, .oe-ui .oe-toast-warning { border-left-color: #d4697a; }
+.oe-ui .oe-toast button { margin-left: auto; color: var(--ink-3); font-size: 1.1rem; line-height: 1; }
+@keyframes oeRise { from { opacity: 0; transform: translateY(8px); } }
+@keyframes oePop { from { opacity: 0; transform: scale(.9); } }
+@keyframes oeBlink { 50% { box-shadow: 0 0 0 7px rgba(227,162,58,0); } }
+@media (prefers-reduced-motion: reduce) { .oe-ui *, .oe-ui *::before, .oe-ui *::after { animation: none !important; transition: none !important; } }
+</style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const inputs = document.querySelectorAll('.finance-input');
-    const checkboxes = document.querySelectorAll('.finance-checker');
-    const displayTotal = document.getElementById('total-global-display');
-    const hiddenTotal = document.getElementById('total-global-value');
-    const sourcesCount = document.getElementById('sources-count');
+document.addEventListener('DOMContentLoaded', () => {
+  // ── Délais : jours <-> dates ──
+  const daysInput = document.getElementById('days-input');
+  const startDateInput = document.getElementById('date_debut');
+  const endDateInput = document.getElementById('date_fin');
+  const btnMinus = document.getElementById('btn-minus');
+  const btnPlus = document.getElementById('btn-plus');
+  if (!daysInput || !startDateInput || !endDateInput) return;
 
-    function calculateTotal() {
-        let total = 0;
-        let checkedCount = 0;
-        
-        inputs.forEach(input => {
-            const id = input.dataset.id;
-            const checkbox = document.getElementById('checkbox_' + id);
-            const card = document.getElementById('card_' + id);
-            
-            if (checkbox && checkbox.checked) {
-                checkedCount++;
-                const val = parseFloat(input.value) || 0;
-                total += val;
-                
-                // Style visuel de la ligne sélectionnée (Vert)
-                if (card) {
-                    card.classList.add('border-emerald-200', 'bg-emerald-50/30');
-                    card.classList.remove('bg-slate-50/30', 'border-slate-100');
-                }
-            } else {
-                // Style visuel de la ligne non sélectionnée (Neutre)
-                if (card) {
-                    card.classList.remove('border-emerald-200', 'bg-emerald-50/30');
-                    card.classList.add('bg-slate-50/30', 'border-slate-100');
-                }
-            }
-        });
-        
-        // Mettre à jour le compteur dans l'en-tête
-        if (sourcesCount) {
-            sourcesCount.textContent = `${checkedCount} sélectionnée(s)`;
-        }
-        
-        // Mettre à jour les totaux
-        hiddenTotal.value = total.toFixed(2);
-        displayTotal.value = new Intl.NumberFormat('fr-FR', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2
-        }).format(total);
+  const updateEndDate = () => {
+      const startDate = startDateInput.valueAsDate;
+      const daysToAdd = parseInt(daysInput.value, 10);
+      if (!startDate || isNaN(daysToAdd)) return;
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + daysToAdd);
+      endDateInput.valueAsDate = endDate;
+      window.oeRefresh && window.oeRefresh();
+  };
+  const updateDaysFromDates = () => {
+      const startDate = startDateInput.valueAsDate, endDate = endDateInput.valueAsDate;
+      if (!startDate || !endDate || endDate < startDate) return;
+      daysInput.value = Math.ceil((endDate - startDate) / (1000 * 3600 * 24));
+      window.oeRefresh && window.oeRefresh();
+  };
+  const updateDays = (delta) => {
+      let currentValue = parseInt(daysInput.value, 10) || 0;
+      const min = parseInt(daysInput.min, 10) || 1, max = parseInt(daysInput.max, 10) || 365;
+      currentValue += delta;
+      if (currentValue >= min && currentValue <= max) { daysInput.value = currentValue; updateEndDate(); }
+  };
+  btnMinus.addEventListener('click', () => updateDays(-1));
+  btnPlus.addEventListener('click', () => updateDays(1));
+  startDateInput.addEventListener('change', updateEndDate);
+  daysInput.addEventListener('input', updateEndDate);
+  endDateInput.addEventListener('change', updateDaysFromDates);
 
-        // Ajuster la largeur de l'affichage
-        displayTotal.style.width = ((displayTotal.value.length + 1) * 15) + 'px';
-    }
-
-    // Gestion du clic sur les cases à cocher
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const id = this.dataset.id;
-            const input = document.getElementById('finance_' + id);
-            
-            if (input) {
-                input.disabled = !this.checked; // Active/Désactive l'input
-                if (!this.checked) {
-                    input.value = ''; // Vide la valeur si décoché
-                } else {
-                    input.focus(); // Met le focus directement si coché
-                }
-            }
-            calculateTotal();
-        });
-    });
-
-    // Événements sur les inputs de montant
-    inputs.forEach(input => {
-        input.addEventListener('input', calculateTotal);
-        input.addEventListener('focus', function() { this.select(); });
-    });
-
-    // Initialisation au chargement
-    calculateTotal();
+  // Initialisation : on garde les dates existantes ; aujourd'hui seulement si la date de début est vide
+  if (!startDateInput.value) { startDateInput.valueAsDate = new Date(); updateEndDate(); }
+  else if (!daysInput.value && endDateInput.value) updateDaysFromDates();
 });
 </script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // ── Plan de financement ──
+  const inputs = document.querySelectorAll('.finance-input');
+  const checkboxes = document.querySelectorAll('.finance-checker');
+  const displayTotal = document.getElementById('total-global-display');
+  const hiddenTotal = document.getElementById('total-global-value');
+  const sourcesCount = document.getElementById('sources-count');
+  const dist = document.getElementById('oe-fin-dist');
+  const COLORS = ['#6366f1', '#43a074', '#e3a23a', '#3b82f6', '#d4697a', '#14b8a6', '#8b5cf6', '#64748b'];
 
+  function calculateTotal() {
+      let total = 0, checkedCount = 0;
+      const parts = [];
+      inputs.forEach((input, idx) => {
+          const id = input.dataset.id;
+          const checkbox = document.getElementById('checkbox_' + id);
+          const card = document.getElementById('card_' + id);
+          const on = checkbox && checkbox.checked;
+          if (on) { checkedCount++; const val = parseFloat(input.value) || 0; total += val; parts.push({ id, val, color: COLORS[idx % COLORS.length], name: card.querySelector('.oe-src-name').textContent }); }
+          if (card) card.classList.toggle('is-on', !!on);
+      });
+      document.querySelectorAll('.finance-card [data-pct]').forEach(el => {
+          const id = el.closest('.finance-card').id.replace('card_', '');
+          const p = parts.find(x => x.id === id);
+          el.textContent = p && total ? Math.round(p.val / total * 100) + ' %' : '';
+      });
+      if (dist) dist.innerHTML = total ? parts.filter(p => p.val > 0).map(p => `<span title="${p.name.replace(/"/g, '&quot;')} : ${Math.round(p.val / total * 100)} %" style="flex-basis:${p.val / total * 100}%;background:${p.color}"></span>`).join('') : '';
+      if (sourcesCount) sourcesCount.textContent = `${checkedCount} sélectionnée(s)`;
+      hiddenTotal.value = total.toFixed(2);
+      displayTotal.value = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(total);
+      window.oeRefresh && window.oeRefresh();
+  }
+  checkboxes.forEach(checkbox => checkbox.addEventListener('change', function () {
+      const input = document.getElementById('finance_' + this.dataset.id);
+      if (input) { input.disabled = !this.checked; if (!this.checked) input.value = ''; else input.focus(); }
+      calculateTotal();
+  }));
+  inputs.forEach(input => { input.addEventListener('input', calculateTotal); input.addEventListener('focus', function () { this.select(); }); });
+  calculateTotal();
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('oe-form');
+  if (!form) return;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ── Consultés / informés : étiquettes, compteur, filtre ──
+  document.querySelectorAll('.oe-multi').forEach(box => {
+      const chips = box.querySelector('[data-chips]'), count = box.querySelector('[data-count]');
+      const render = () => {
+          const sel = Array.from(box.querySelectorAll('.oe-person input:checked'));
+          count.textContent = sel.length;
+          chips.innerHTML = sel.length ? sel.map(i => {
+              const l = i.closest('.oe-person');
+              return `<span class="oe-pchip"><b>${esc(l.querySelector('b').textContent)}</b><span>${esc(l.querySelector('span').textContent)}</span><button type="button" data-v="${esc(i.value)}" aria-label="Retirer">×</button></span>`;
+          }).join('') : '<span class="oe-none">Personne pour l\'instant</span>';
+      };
+      box.addEventListener('change', render);
+      chips.addEventListener('click', e => {
+          const b = e.target.closest('button[data-v]'); if (!b) return;
+          const i = box.querySelector(`.oe-person input[value="${CSS.escape(b.dataset.v)}"]`); if (i) { i.checked = false; i.dispatchEvent(new Event('change', { bubbles: true })); }
+      });
+      box.querySelector('.oe-filter').addEventListener('input', function () {
+          const q = this.value.trim().toLowerCase();
+          box.querySelectorAll('.oe-person').forEach(p => { p.style.display = p.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+      });
+      render();
+  });
+
+  // ── Calendrier : aperçu de la durée et de l'échéance ──
+  const calRender = () => {
+      const s = document.getElementById('date_debut').value, e = document.getElementById('date_fin').value;
+      const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+      document.getElementById('oe-cal-start').textContent = s ? fmt(s) : '—';
+      document.getElementById('oe-cal-end').textContent = e ? fmt(e) : '—';
+      const badge = document.getElementById('oe-cal-badge'), span = document.getElementById('oe-cal-span'), today = document.getElementById('oe-cal-today');
+      badge.className = '';
+      if (!s || !e || e < s) { badge.textContent = 'Dates à compléter'; span.style.width = '0'; today.style.display = 'none'; return; }
+      const t0 = new Date(s + 'T00:00:00'), t1 = new Date(e + 'T00:00:00'), now = new Date(); now.setHours(0, 0, 0, 0);
+      const total = Math.max((t1 - t0) / 864e5, 1), el = Math.min(Math.max((now - t0) / 864e5, 0), total), rest = Math.round((t1 - now) / 864e5);
+      span.style.width = (el / total * 100) + '%';
+      today.style.display = now >= t0 && now <= t1 ? '' : 'none'; today.style.left = `calc(${el / total * 100}% - 1px)`;
+      if (rest < 0) { badge.textContent = `Échéance dépassée de ${-rest} j`; badge.className = 'is-late'; }
+      else if (now < t0) { badge.textContent = `Démarre dans ${Math.round((t0 - now) / 864e5)} j · ${Math.round(total)} j`; badge.className = 'is-ok'; }
+      else { badge.textContent = `${rest} j restants sur ${Math.round(total)}`; badge.className = rest <= 7 ? 'is-soon' : 'is-ok'; }
+  };
+
+  // ── Complétude des sections + suivi des modifications ──
+  const initial = new Map();
+  const snapshot = () => { const m = new Map(); new FormData(form).forEach((v, k) => { if (k === 'csrfmiddlewaretoken') return; m.set(k, (m.get(k) || []).concat(v)); }); return m; };
+  const asKey = m => JSON.stringify([...m.entries()].map(([k, v]) => [k, v.slice().sort()]).sort());
+  let baseKey = '';
+
+  window.oeRefresh = function () {
+      calRender();
+      // RACI
+      const val = n => (form.querySelector(`[name="${n}"]`) || {}).value;
+      const nC = form.querySelectorAll('input[name="consulted"]:checked').length, nI = form.querySelectorAll('input[name="informed"]:checked').length;
+      const score = [val('personnel'), val('accountable'), val('participant')].filter(Boolean).length + (nC ? 1 : 0) + (nI ? 1 : 0);
+      document.getElementById('oe-raci-score').textContent = score + '/5';
+      form.querySelectorAll('.oe-role').forEach(r => r.classList.toggle('is-empty', !r.querySelector('select').value));
+      // Sections complètes
+      const done = {
+          1: !!val('nom') && !!val('tache_change'),
+          2: !!val('date_debut') && !!val('date_fin') && !!val('nombre_jour'),
+          3: !!(val('categorie')) && !!form.querySelector('input[name="notification"]:checked'),
+          4: score === 5,
+          5: parseFloat(document.getElementById('total-global-value').value) > 0,
+      };
+      let n = 0;
+      form.querySelectorAll('.oe-card[data-section]').forEach(c => { const ok = !!done[c.dataset.section]; c.classList.toggle('is-complete', ok); if (ok) n++; });
+      const saveOk = n === 5 ? 1 : 0;
+      document.getElementById('oe-progress-n').textContent = n + saveOk;
+      document.getElementById('oe-progress-fill').style.width = ((n + saveOk) / 6 * 100) + '%';
+      // Modifications non enregistrées
+      if (baseKey) {
+          const now = snapshot(), dirty = asKey(now) !== baseKey;
+          document.getElementById('oe-savebar').classList.toggle('is-dirty', dirty);
+          document.querySelector('#oe-save-state span').textContent = dirty ? 'Modifications non enregistrées' : 'Aucune modification';
+          form.querySelectorAll('.oe-input[name], .oe-stepper input').forEach(el => {
+              if (!el.name || el.type === 'search') return;
+              const a = (initial.get(el.name) || [''])[0], b = el.value;
+              (el.closest('.oe-stepper') || el).classList.toggle('is-changed', a !== b);
+          });
+      }
+  };
+  form.addEventListener('input', () => window.oeRefresh());
+  form.addEventListener('change', () => window.oeRefresh());
+  if (window.jQuery) window.jQuery(form).on('change', 'select', () => window.oeRefresh());
+
+  setTimeout(() => {   // après les initialisations des autres scripts
+      snapshot().forEach((v, k) => initial.set(k, v));
+      baseKey = asKey(initial);
+      window.oeRefresh();
+  }, 0);
+
+  let submitting = false;
+  form.addEventListener('submit', () => { submitting = true; const b = document.getElementById('oe-save'); b.disabled = true; b.lastChild.textContent = ' Enregistrement…'; });
+  window.addEventListener('beforeunload', e => { if (!submitting && document.getElementById('oe-savebar').classList.contains('is-dirty')) { e.preventDefault(); e.returnValue = ''; } });
+  setTimeout(() => document.querySelectorAll('.oe-toast').forEach(t => t.remove()), 8000);
+});
+</script>
 {%endblock%}

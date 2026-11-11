@@ -26976,101 +26976,190 @@ def api_count_operations_by_categorie(request):
     
     return JsonResponse(data_list, safe=False)
 
-from django.db import transaction
-from decimal import Decimal
-
 import re
-from decimal import Decimal, InvalidOperation as DecimalInvalid
-from django.shortcuts import get_object_or_404, redirect
+from decimal import Decimal, InvalidOperation
+
 from django.contrib import messages
 from django.db import transaction as db_transaction
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
+# from .models import (Operation, Tache, DataSet, PeriodeOk, Structure, Personnel, NatureOperation,
+#                      CategorieOperation, IndicateurValeur, EntityType, Entity, SourceFinancement,
+#                      FinancementOperation, PersonnelConsulted, PersonnelInformed)
+# from .utils import basis, update_hierarchy_recursive
+
+
+def _decimal(valeur):
+    """'1 500 000,50' / '1500000.50' -> Decimal('1500000.50')"""
+    propre = re.sub(r'[^0-9,.]', '', str(valeur or '')).replace(',', '.')
+    if propre.count('.') > 1:                       # séparateurs de milliers éventuels
+        entier, _, dec = propre.rpartition('.')
+        propre = entier.replace('.', '') + '.' + dec
+    try:
+        return Decimal(propre) if propre else Decimal('0')
+    except InvalidOperation:
+        return Decimal('0')
+
+
+def _id_ou_none(valeur):
+    return int(valeur) if str(valeur or '').isdigit() else None
+
+
+def file_duplik(request, id):
+    """Affiche le formulaire de modification d'une opération."""
+    template = 'operations_clone.html'
+    context = basis(request)
+    actual_institution = context['actual_institution']
+
+    operation = get_object_or_404(Operation, id=int(id))
+    context['operation'] = operation
+
+    datasets = DataSet.objects.filter(m_institution=actual_institution)
+    operation_dataset = operation.dataset.all()
+    context.update({
+        'datasets': datasets,
+        'operation_dataset': operation_dataset,
+        'dataset_None_operation': datasets.exclude(id__in=operation_dataset.values_list('id', flat=True)),
+        'periode_ok': PeriodeOk.objects.distinct('annee', 'nom'),
+        'structure': Structure.objects.filter(institution=actual_institution),
+        'personne': Personnel.objects.filter(actual_institution=actual_institution),
+        'nature': NatureOperation.objects.all(),
+        'categorie_operation': CategorieOperation.objects.filter(institution=actual_institution),
+    })
+
+    # Consultés / informés actuels (tables PersonnelConsulted / PersonnelInformed)
+    consulted_ids = list(PersonnelConsulted.objects.filter(operation=operation, consulted__isnull=False)
+                         .values_list('consulted_id', flat=True))
+    informed_ids = list(PersonnelInformed.objects.filter(operation=operation, informed__isnull=False)
+                        .values_list('informed_id', flat=True))
+    # Compatibilité : anciens champs simples sur Operation
+    if not consulted_ids and operation.consulted_id:
+        consulted_ids = [operation.consulted_id]
+    if not informed_ids and operation.informed_id:
+        informed_ids = [operation.informed_id]
+    context['consulted_ids'] = consulted_ids
+    context['informed_ids'] = informed_ids
+
+    maintenant = timezone.now().date()
+    context['operations_delay'] = Operation.objects.filter(
+        date_echeance__lt=maintenant, m_institution=actual_institution, etat=0).count()
+    context['transaction_delay'] = IndicateurValeur.objects.filter(
+        institution_id=actual_institution, date_enregistrement__lt=maintenant, etat_echeance=False).count()
+
+    task_entity_types = EntityType.objects.filter(
+        is_tache=True, insitutionentities__m_institution=actual_institution).distinct()
+    context['task_entity_types'] = task_entity_types
+    context['task_entities'] = Entity.objects.filter(m_type_entity__in=task_entity_types).select_related('m_type_entity')
+
+    # Financement : toutes les sources + montants déjà attribués
+    dict_finances = {f.source_financement_id: f.montant_attribue
+                     for f in FinancementOperation.objects.filter(operation=operation)}
+    context['finances_globales'] = [{
+        'id': source.id,
+        'nom': source.nom,
+        'montant': dict_finances.get(source.id) or 0,
+        'montant_input': format(dict_finances[source.id], '.2f') if dict_finances.get(source.id) else '',  # non localisé
+        'is_linked': source.id in dict_finances,
+    } for source in SourceFinancement.objects.filter(institution=actual_institution)]
+
+    return render(request, template, context)
+
 
 def add_cat_nat(request, id):
+    """Enregistre la modification d'une opération."""
     operation = get_object_or_404(Operation, id=int(id))
     tache_id_origine = getattr(operation, 'tache_id', None)
+    retour_origine = f'/taches/{tache_id_origine}/' if tache_id_origine else '/'
 
-    # Protection : Bloquer si l'opération est verrouillée (si votre modèle le gère)
     if getattr(operation, 'is_locked', False):
         messages.error(request, "Opération verrouillée : modification impossible.")
-        return redirect(f'/taches/{tache_id_origine}/')
+        return redirect(retour_origine)
 
-    if request.method == "POST":
-        try:
-            with db_transaction.atomic():
-                # 1. Mise à jour de la Tâche
-                tache_pk = request.POST.get('tache_change')
-                if not tache_pk:
-                    raise ValueError("L'entité est obligatoire.")
-                instance_tache = get_object_or_404(Tache, id=int(tache_pk))
+    if request.method != "POST":
+        return redirect(retour_origine)
 
-                # 2. Nettoyage robuste du montant total (REGEX pour exclure tout sauf chiffres/points/virgules)
-                raw_total = request.POST.get('montant_total_source_financement', '0')
-                clean_total = re.sub(r'[^0-9,.]', '', raw_total).replace(',', '.')
-                nouveau_montant_total = Decimal(clean_total) if clean_total else Decimal('0')
+    context = basis(request)
+    actual_institution = context.get('actual_institution')
+    personnel_ok = set(Personnel.objects.filter(actual_institution=actual_institution).values_list('id', flat=True))
 
-                # Calcul du différentiel
-                ancien_montant_operation = operation.montant_total_source_financement or 0
-                differentiel = nouveau_montant_total - Decimal(ancien_montant_operation)
+    def personne(valeur):
+        pid = _id_ou_none(valeur)
+        return pid if pid in personnel_ok else None
 
-                # 3. Mise à jour des champs de l'opération (dates incluses)
-                operation.nom = request.POST.get('nom')
-                operation.date_debut = request.POST.get('date_debut') or None
-                operation.date_fin = request.POST.get('date_fin') or None
-                operation.nature_operation_id = request.POST.get('nature') or None
-                operation.categorie_id = request.POST.get('categorie') or None
-                operation.structure_id = request.POST.get('structure') or None
-                operation.periode_ok_id = request.POST.get('mois') or None
-                operation.personnel_id = request.POST.get('personnel') or None
-                operation.accountable_id = request.POST.get('accountable') or None
-                operation.consulted_id = request.POST.get('consulted') or None
-                operation.informed_id = request.POST.get('informed') or None
-                operation.tache = instance_tache
-                operation.participant = request.POST.get('participant') or None
-                operation.montant_total_source_financement = nouveau_montant_total
-                operation.save()
+    try:
+        with db_transaction.atomic():
+            # 1. Tâche
+            tache_pk = request.POST.get('tache_change')
+            if not tache_pk:
+                raise ValueError("L'entité / tâche est obligatoire.")
+            instance_tache = get_object_or_404(Tache, id=int(tache_pk))
+            ancienne_tache = operation.tache
 
-                # 4. Gestion des financements
-                sources_envoyees = []
-                for key, raw_val in request.POST.items():
-                    if key.startswith('finance_'):
-                        source_id = key.split('_')[1]
-                        sources_envoyees.append(source_id)
-                        
-                        # Nettoyage robuste
-                        clean_val = re.sub(r'[^0-9,.]', '', raw_val).replace(',', '.')
-                        montant_source = Decimal(clean_val) if clean_val else Decimal('0')
-                        
-                        if montant_source > 0:
-                            FinancementOperation.objects.update_or_create(
-                                operation=operation,
-                                source_financement_id=source_id,
-                                defaults={'montant_attribue': montant_source}
-                            )
-                        else:
-                            FinancementOperation.objects.filter(
-                                operation=operation, 
-                                source_financement_id=source_id
-                            ).delete()
+            # 2. Montant total (calculé à partir des sources, plus sûr que le champ affiché)
+            montants = {}
+            for key, raw_val in request.POST.items():
+                if key.startswith('finance_') and key.split('_', 1)[1].isdigit():
+                    montants[int(key.split('_', 1)[1])] = _decimal(raw_val)
+            nouveau_montant_total = sum(montants.values(), Decimal('0'))
+            ancien_montant_operation = Decimal(operation.montant_total_source_financement or 0)
+            differentiel = nouveau_montant_total - ancien_montant_operation
 
-                FinancementOperation.objects.filter(operation=operation).exclude(
-                    source_financement_id__in=sources_envoyees
-                ).delete()
+            # 3. Champs de l'opération
+            consultes = [p for p in (personne(v) for v in request.POST.getlist('consulted')) if p]
+            informes = [p for p in (personne(v) for v in request.POST.getlist('informed')) if p]
 
-                # 5. MISE À JOUR RÉCURSIVE DE LA HIÉRARCHIE
-                if differentiel != 0:
-                    update_hierarchy_recursive(instance_tache)
+            operation.nom = request.POST.get('nom')
+            operation.date_debut = request.POST.get('date_debut') or None
+            operation.date_echeance = request.POST.get('date_fin') or None          # (et non date_fin)
+            nombre_jour = request.POST.get('nombre_jour')
+            operation.nombre_jour = int(nombre_jour) if str(nombre_jour).isdigit() else operation.nombre_jour
+            operation.nature_operation_id = _id_ou_none(request.POST.get('nature'))
+            operation.categorie_id = _id_ou_none(request.POST.get('categorie'))
+            operation.structure_id = _id_ou_none(request.POST.get('structure'))
+            if 'mois' in request.POST:                                             # ne pas effacer si absent du formulaire
+                operation.periode_ok_id = _id_ou_none(request.POST.get('mois'))
+            operation.notification = request.POST.get('notification') or operation.notification
+            operation.personnel_id = personne(request.POST.get('personnel'))
+            operation.accountable_id = personne(request.POST.get('accountable'))
+            operation.participant_id = personne(request.POST.get('participant'))   # (participant_id, pas participant)
+            operation.consulted_id = consultes[0] if consultes else None           # compatibilité ancien champ
+            operation.informed_id = informes[0] if informes else None
+            operation.tache = instance_tache
+            operation.montant_total_source_financement = nouveau_montant_total
+            operation.save()
 
-            messages.success(request, "L'opération a été mise à jour avec succès.")
-            return redirect(f'/taches/{instance_tache.id}/')
+            # 4. Consultés / informés (synchronisation des tables)
+            for model, champ, voulus in ((PersonnelConsulted, 'consulted', set(consultes)),
+                                         (PersonnelInformed, 'informed', set(informes))):
+                actuels = set(model.objects.filter(operation=operation).values_list(f'{champ}_id', flat=True))
+                model.objects.filter(operation=operation).exclude(**{f'{champ}_id__in': voulus}).delete()
+                model.objects.bulk_create([model(operation=operation, **{f'{champ}_id': pid})
+                                           for pid in voulus - actuels])
 
-        except Exception as e:
-            import traceback, sys
-            print(f"DEBUG LOG: Erreur {type(e).__name__} à la ligne {sys.exc_info()[-1].tb_lineno}: {str(e)}")
-            print(traceback.format_exc())
-            messages.error(request, f"Erreur technique : {str(e)}")
-            return redirect(f'/taches/{tache_id_origine}/') if tache_id_origine else redirect('/')
+            # 5. Financements
+            for source_id, montant in montants.items():
+                if montant > 0:
+                    FinancementOperation.objects.update_or_create(
+                        operation=operation, source_financement_id=source_id,
+                        defaults={'montant_attribue': montant, 'institution': actual_institution})
+            FinancementOperation.objects.filter(operation=operation).exclude(
+                source_financement_id__in=[s for s, m in montants.items() if m > 0]).delete()
 
-    return redirect(f'/taches/{tache_id_origine}/') if tache_id_origine else redirect('/')
+            # 6. Hiérarchie : nouvelle tâche, et l'ancienne si l'opération a changé de tâche
+            if differentiel != 0 or (ancienne_tache and ancienne_tache.id != instance_tache.id):
+                update_hierarchy_recursive(instance_tache)
+                if ancienne_tache and ancienne_tache.id != instance_tache.id:
+                    update_hierarchy_recursive(ancienne_tache)
+
+        messages.success(request, "L'opération a été mise à jour avec succès.")
+        return redirect(f'/taches/{instance_tache.id}/')
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        messages.error(request, f"Erreur technique : {e}")
+        return redirect(retour_origine)
 
 # Fonction utilitaire en dehors de la vue
 from django.db.models import Sum
