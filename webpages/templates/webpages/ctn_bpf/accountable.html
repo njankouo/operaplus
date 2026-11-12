@@ -70,6 +70,38 @@
     .vq-grid > .col-span-full { border-radius: 20px !important; }
     .vq-grid > .col-span-full > div:first-child { background: color-mix(in srgb, var(--ok) 10%, #fff) !important; color: var(--ok) !important; border-color: transparent !important; }
 
+
+    /* ---- Navigation Tâches / Transactions (ajout) ---- */
+    .vq-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px !important; }
+    .vq-nav a { flex: 1 1 260px; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--line); background: #fff; text-decoration: none; color: var(--ink); transition: border-color .2s, box-shadow .2s, transform .2s; position: relative; }
+    .vq-nav a:hover { border-color: color-mix(in srgb, var(--dom) 35%, var(--line)); box-shadow: 0 14px 30px -22px color-mix(in srgb, var(--dom) 80%, #000); transform: translateY(-1px); }
+    .vq-nav a:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+    .vq-nav a.on { border-color: var(--dom); box-shadow: inset 0 0 0 1px var(--dom); cursor: default; transform: none; }
+    .vq-nav-ico { width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; flex: none; font-size: 16px; background: color-mix(in srgb, var(--dom) 9%, #fff); color: var(--dom); }
+    .vq-nav a.vq-tx .vq-nav-ico { background: color-mix(in srgb, var(--acc) 12%, #fff); color: color-mix(in srgb, var(--acc) 80%, #000); }
+    .vq-nav-t { min-width: 0; flex: 1; }
+    .vq-nav-t b { display: block; font-size: 14px; font-weight: 800; letter-spacing: -.01em; }
+    .vq-nav-t span { display: block; font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .vq-nav-n { min-width: 34px; height: 26px; padding: 0 9px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; background: #f2f4f7; color: #344054; }
+    .vq-nav a.on .vq-nav-n { background: var(--dom); color: #fff; }
+    .vq-nav a.vq-tx .vq-nav-n.has { background: var(--acc); color: #fff; }
+    .vq-nav-n.is-load { color: transparent; background: linear-gradient(90deg, #f2f4f7, #e4e7ec, #f2f4f7); background-size: 200% 100%; animation: vqLoad 1.2s linear infinite; }
+    @keyframes vqLoad { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+    .vq-nav-go { color: #98a2b3; font-size: 13px; transition: transform .2s, color .2s; }
+    .vq-nav a:hover .vq-nav-go { transform: translateX(3px); color: var(--dom); }
+    .vq-nav a.on .vq-nav-go { display: none; }
+    .vq-stats a { color: inherit; text-decoration: none; }
+    .vq-stats a:hover b { text-decoration: underline; text-underline-offset: 3px; }
+
+    /* lien « Transactions » sur chaque carte */
+    .vq-card > div:last-child { gap: 8px; }
+    .vq-card > div:last-child a.vq-tx-lien { background: #fff !important; color: #344054 !important; border: 1px solid var(--line); padding: 8px 11px !important; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; text-decoration: none; margin-left: auto; }
+    .vq-card > div:last-child a.vq-tx-lien:hover, .vq-card:hover > div:last-child a.vq-tx-lien { background: #fff !important; gap: 6px !important; }
+    .vq-card > div:last-child a.vq-tx-lien:hover { border-color: var(--acc); color: color-mix(in srgb, var(--acc) 80%, #000) !important; }
+    .vq-card > div:last-child .vq-hint { display: none; }   /* déjà signalé par le badge « Action requise » */
+    .vq-card > div:last-child a { white-space: nowrap; }
+    @media (prefers-reduced-motion: reduce) { .vq-nav-n.is-load { animation: none; } }
+
     @media (max-width: 700px) { .vq-stats div { padding: 0 12px; } .vq-tabs { width: 100%; overflow-x: auto; } }
     @media (prefers-reduced-motion: reduce) { .vq-card { animation: none !important; } }
 </style>
@@ -93,6 +125,7 @@
                 <div class="late"><b id="vqLate">0</b><span>En retard</span></div>
                 <div><b id="vqWeek">0</b><span>Échéance ≤ 7 j</span></div>
                 <div><b id="vqAct">0</b><span>Action requise</span></div>
+                <div><a href="/valid-transaction/" title="Voir les transactions en attente"><b id="vqTxStat">—</b><span>Transactions</span></a></div>
             </div>
         </div>
         
@@ -101,6 +134,22 @@
             <p class="text-sm font-mono font-extrabold text-slate-800">{{ operation_accountable|length }} Élément(s)</p>
         </div>
     </div>
+
+
+    <!-- ===== Accès aux deux files de validation (ajout) ===== -->
+    <nav class="vq-nav" aria-label="Files de validation">
+        <a href="#vqGrid" class="on" aria-current="page">
+            <span class="vq-nav-ico"><i class="fas fa-list-check"></i></span>
+            <span class="vq-nav-t"><b>Tâches à valider</b><span>Opérations dont vous êtes l'approbateur</span></span>
+            <span class="vq-nav-n">{{ operation_accountable|length }}</span>
+        </a>
+        <a href="/valid-transaction/" class="vq-tx" id="vqTxNav">
+            <span class="vq-nav-ico"><i class="fas fa-money-check-dollar"></i></span>
+            <span class="vq-nav-t"><b>Transactions à valider</b><span>Déclarations d'avancement soumises par les équipes</span></span>
+            <span class="vq-nav-n is-load" id="vqTxN" aria-label="Chargement">0</span>
+            <i class="fas fa-arrow-right vq-nav-go" aria-hidden="true"></i>
+        </a>
+    </nav>
 
     {% if operation_accountable %}
     <div class="vq-tools">
@@ -183,6 +232,7 @@
                 <!-- Pied de carte (Actions) -->
                 <div class="px-5 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end">
                     <span class="vq-hint">{% if line.has_dataset %}Données à examiner{% endif %}</span>
+                    <a href="/valid-transaction/?operation={{ line.id }}" class="vq-tx-lien" title="Voir les transactions de cette opération"><i class="fas fa-money-check-dollar"></i><span>Transactions</span></a>
                     <a href="/decision/o/{{line.id}}/" 
                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-indigo-200 hover:shadow-indigo-300">
                         <span>Valider / Rejeter</span>
@@ -260,6 +310,22 @@
         b.addEventListener('click', function () { f = b.dataset.f; document.querySelectorAll('.vq-tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); apply(); });
     });
     order(); apply();
+})();
+</script>
+
+<!-- ===================== Nombre de transactions en attente (ajout) ===================== -->
+<script>
+(function () {
+    var n = document.getElementById('vqTxN'), st = document.getElementById('vqTxStat'), nav = document.getElementById('vqTxNav');
+    function poser(v) {
+        if (n) { n.classList.remove('is-load'); n.removeAttribute('aria-label'); n.textContent = v; n.classList.toggle('has', v > 0); }
+        if (st) st.textContent = v;
+        if (nav) nav.querySelector('.vq-nav-t span').textContent = v > 0 ? (v + ' déclaration' + (v > 1 ? 's' : '') + ' attend' + (v > 1 ? 'ent' : '') + ' votre validation') : 'Aucune déclaration en attente';
+    }
+    fetch('/count_transaction/', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) { poser(d && d.data != null ? (parseInt(d.data, 10) || 0) : '—'); })
+        .catch(function () { poser('—'); });
 })();
 </script>
 

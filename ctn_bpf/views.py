@@ -24623,8 +24623,17 @@ def save_comment(request):
     except Exception as e:
         messages.error(request, f"Erreur : {str(e)}")
         return redirect(request.META.get('HTTP_REFERER', '/'))
-
 logger = logging.getLogger(__name__)
+
+
+def _nb(x):
+    """None, Decimal, int, float, texte → float (0 si vide ou invalide)."""
+    try:
+        return float(x or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def save_transaction_ajax(request):
     context = basis(request)
     actual_institution = context['actual_institution']
@@ -24638,139 +24647,121 @@ def save_transaction_ajax(request):
         commentaire = request.POST.get('commentaire')
         history = request.POST.get('history')
 
-        indicateur_id = IndicateurValeur.objects.get(id=int(history))
-        indicateur_id.etat = True
-        indicateur_id.etat_echeance = True
-        indicateur_id.save()
-
         if not commentaire or not operation_id:
             raise ValidationError("Le commentaire et l'ID d'opération sont obligatoires")
 
+        niveau_execution = request.POST.get('precision') or request.POST.get('niveau_execution')   # ← corrigé
+        if niveau_execution in (None, ''):
+            raise ValidationError("Choisissez un niveau d'avancement")
+        niveau_execution_float = _nb(str(niveau_execution).replace(',', '.'))
+        if not 0 <= niveau_execution_float <= 100:
+            raise ValidationError("L'avancement doit être compris entre 0 et 100 %")
+
         # Récupération des données
         operation = Operation.objects.get(id=int(operation_id))
-      
         file_uploaded = request.FILES.get('file')
         date_now = datetime.datetime.now()
-        niveau_execution = request.POST.get('precision',0) or request.POST.get('niveau_execution')
+        date_realisation = request.POST.get('date_realisation') or date_now                     # ← corrigé : '' → maintenant
 
-        niveau_execution_float = float(niveau_execution)
+        with db_transaction.atomic():                                                                # ← corrigé : tout ou rien
+            indicateur_id = IndicateurValeur.objects.get(id=int(history))
+            indicateur_id.etat = True
+            indicateur_id.etat_echeance = True
+            indicateur_id.save()
 
-        # Enregistrement historique
-        historic = HistoricRACI.objects.create(
-            mail=request.POST.get('email'),
-            m_date_realisation=date_now,
-            m_commentaire=commentaire,
-            m_operation_id=operation_id,
-            file=file_uploaded if file_uploaded else None,
-            institution=actual_institution,
-        )
-        
-        # Enregistrement pièce jointe si présente
-        if file_uploaded:
-            save_rapport = OperationRapport.objects.create(
-                piece_jointe=file_uploaded,
-                commentaire=commentaire,
-                operation_id=operation_id
+            # Enregistrement historique
+            HistoricRACI.objects.create(
+                mail=request.POST.get('email') or getattr(getattr(request.user, 'personnel', None), 'mail', '') or request.user.email,
+                m_date_realisation=date_now,
+                m_commentaire=commentaire,
+                m_operation_id=operation_id,
+                file=file_uploaded if file_uploaded else None,
+                institution=actual_institution,
             )
-            save_rapport.save()
 
-        indicateur = IndicateurValeur.objects.create(
-            operation=operation,  
-            date_enregistrement=date_now if request.POST.get('date_realisation') is None else request.POST.get('date_realisation'),
-            type_donnee='DECLARATION',
-            valeur=niveau_execution_float,
-            etat=True,
-            commentaire=commentaire
-        )
-        indicateur.save()
-
-        # Calcul et mise à jour opération
-        total_operation = (operation.ponderation * niveau_execution_float) / 100
-        operation.niveau_execution = niveau_execution_float
-        operation.resultat_niveau_execution = total_operation
-        operation.save()
-
-        # 1. Mise à jour de la tâche directe
-        tache = operation.tache
-        operations_tache = Operation.objects.filter(tache=tache)
-
-        total_tache = sum(
-            (op.resultat_niveau_execution or 0)
-            for op in operations_tache
-            if op is not None and op.resultat_niveau_execution is not None
-        )
-        tache.resultat_niveau_execution = total_tache
-        tache.save()
-
-        # 2. Propagation dans la hiérarchie des entités supérieures
-        def update_parent_entities(current_entity):
-            parent_relations = EntityHierachie.objects.filter(m_sub_entity=current_entity)
-
-            for relation in parent_relations:
-                parent_entity = relation.m_sup_entity
-                if not parent_entity:
-                    continue
-                entite = parent_entity.m_type_entity
-
-                # Calculer le nouveau total pour l'entité parente en filtrant les None
-                child_relations = EntityHierachie.objects.filter(m_sup_entity=parent_entity)
-
-                total_parent = sum(
-                    ((rel.m_sub_entity.resultat_niveau_execution or 0) * (rel.m_sub_entity.ponderation or 0) / 100)
-                    for rel in child_relations
-                    if rel.m_sub_entity is not None and getattr(rel.m_sub_entity, 'resultat_niveau_execution', None) is not None
+            # Enregistrement pièce jointe si présente
+            if file_uploaded:
+                OperationRapport.objects.create(
+                    piece_jointe=file_uploaded,
+                    commentaire=commentaire,
+                    operation_id=operation_id
                 )
 
-                # Mettre à jour le parent
-                parent_entity.resultat_niveau_execution = total_parent
-                parent_entity.save()
+            IndicateurValeur.objects.create(
+                operation=operation,
+                date_enregistrement=date_realisation,
+                type_donnee='DECLARATION',
+                valeur=niveau_execution_float,
+                etat=True,
+                commentaire=commentaire
+            )
 
-                # Vérifier les entités institutionnelles correspondantes
-                institution_entities = InsitutionEntities.objects.filter(
-                    m_entity_type=entite,
-                    m_institution=actual_institution,
-                    m_hierachie=0
-                )
+            # Calcul et mise à jour opération
+            operation.niveau_execution = niveau_execution_float
+            operation.resultat_niveau_execution = round(_nb(operation.ponderation) * niveau_execution_float / 100, 2)
+            operation.save()
 
-                # Calculer le total pour l'institution en filtrant proprement
-                if institution_entities.exists():
-                    related_entities = Entity.objects.filter(
-                        m_type_entity=entite,  # Corrigé ici (m_type_entity au lieu de m_entity_type)
-                    ).distinct()
+            # 1. Mise à jour de la tâche directe
+            tache = operation.tache
+            total_tache = sum(_nb(op.resultat_niveau_execution) for op in Operation.objects.filter(tache=tache))
+            tache.resultat_niveau_execution = round(total_tache, 2)
+            tache.save()
 
-                    total_institution = sum(
-                        ((entity.resultat_niveau_execution or 0) * (entity.ponderation or 0) / 100)
-                        for entity in related_entities
-                        if entity is not None and getattr(entity, 'resultat_niveau_execution', None) is not None
+            # 2. Propagation dans la hiérarchie des entités supérieures
+            deja_vus = set()                                                                      # ← corrigé : pas de boucle infinie
+
+            def update_parent_entities(current_entity):
+                parent_relations = EntityHierachie.objects.filter(m_sub_entity=current_entity)
+
+                for relation in parent_relations:
+                    parent_entity = relation.m_sup_entity
+                    if not parent_entity or parent_entity.pk in deja_vus:
+                        continue
+                    deja_vus.add(parent_entity.pk)
+                    entite = parent_entity.m_type_entity
+
+                    child_relations = EntityHierachie.objects.filter(m_sup_entity=parent_entity)
+                    total_parent = sum(
+                        _nb(rel.m_sub_entity.resultat_niveau_execution) * _nb(rel.m_sub_entity.ponderation) / 100
+                        for rel in child_relations
+                        if rel.m_sub_entity is not None
                     )
+                    parent_entity.resultat_niveau_execution = round(total_parent, 2)
+                    parent_entity.save()
 
-                    # Mettre à jour l'institution
-                    actual_institution.process = total_institution
-                    actual_institution.save()
+                    institution_entities = InsitutionEntities.objects.filter(
+                        m_entity_type=entite,
+                        m_institution=actual_institution,
+                        m_hierachie=0
+                    )
+                    if institution_entities.exists():
+                        related_entities = Entity.objects.filter(m_type_entity=entite).distinct()
+                        total_institution = sum(
+                            _nb(entity.resultat_niveau_execution) * _nb(entity.ponderation) / 100
+                            for entity in related_entities
+                        )
+                        actual_institution.process = round(total_institution, 2)
+                        actual_institution.save()
 
-                # Continuer à remonter la hiérarchie
-                update_parent_entities(parent_entity)
+                    update_parent_entities(parent_entity)
 
-        # Lancer la mise à jour à partir de la tâche
-        update_parent_entities(tache)
+            update_parent_entities(tache)
 
         messages.success(request, "Commentaire et résultats enregistrés avec succès")
         return redirect('/alert_notifs/0/0/')
 
     except ValidationError as e:
-        messages.error(request, str(e))
-        logger.error(f"Validation error: {str(e)}")
+        messages.error(request, e.messages[0] if getattr(e, 'messages', None) else str(e))
+        logger.error(f"Validation error: {e}")
         return redirect(request.META.get('HTTP_REFERER', '/'))
-    except Operation.DoesNotExist:
-        messages.error(request, "Opération introuvable")
-        logger.error("Operation not found")
+    except (Operation.DoesNotExist, IndicateurValeur.DoesNotExist):
+        messages.error(request, "Opération ou échéance introuvable")
+        logger.error("Operation / IndicateurValeur not found")
         return redirect(request.META.get('HTTP_REFERER', '/'))
     except Exception as e:
-        messages.error(request, f"Erreur lors de l'enregistrement: {str(e)}")
-        logger.error(f"Error saving data: {str(e)}", exc_info=True)
+        messages.error(request, f"Erreur lors de l'enregistrement: {e}")
+        logger.error(f"Error saving data: {e}", exc_info=True)
         return redirect(request.META.get('HTTP_REFERER', '/'))
-
-
 
 def file(request,id):
     upload_file=HistoricRACI.objects.get(id=id)

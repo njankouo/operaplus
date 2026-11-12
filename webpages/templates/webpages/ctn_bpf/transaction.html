@@ -1,19 +1,125 @@
 {% extends './index.html' %}
-{% load static %}
+{% load static l10n %}
 
 {% block main %}
+<!-- ===================== VD : validation d'une déclaration (styles AVANT le contenu ; ids, names et URL inchangés) ===================== -->
+<style>
+    .vd { --vd-acc: var(--primary-color, #4f46e5); --vd-dom: {{ request.user.personnel.color_fond|default:'#1e293b' }};
+          --vd-ink: #0f172a; --vd-txt: #334155; --vd-mute: #64748b; --vd-line: #e5e7eb; --vd-soft: #f8fafc; --vd-ok: #047857; --vd-warn: #b45309; }
+    .vd { background: transparent !important; }
+    .vd-fil { display: flex; align-items: center; gap: .45rem; font-size: .78rem; color: var(--vd-mute); margin-bottom: .6rem; }
+    .vd-fil a { color: var(--vd-mute); text-decoration: none; font-weight: 600; }
+    .vd-fil a:hover { color: var(--vd-ink); }
+    .vd-tete { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
+    .vd-tete h1 { font-size: 1.45rem !important; font-weight: 800 !important; letter-spacing: -.02em; color: var(--vd-ink) !important; line-height: 1.25; margin-top: .35rem; }
+    .vd-tete p { font-size: .85rem !important; color: var(--vd-mute) !important; margin-top: .25rem; }
+    .vd-etat { display: inline-flex; align-items: center; gap: .4rem; padding: .2rem .65rem; border-radius: 99px; background: #fef3c7; color: #92400e; font-size: .72rem; font-weight: 700; }
+    .vd-etat i { font-size: .65rem; }
+    .vd-tete .flex a, .vd-tete .flex button { border-radius: 11px !important; font-size: .82rem !important; padding: .6rem 1rem !important; }
+    .vd-tete .flex button { background: var(--vd-ink) !important; box-shadow: none !important; }
+    .vd-tete .flex button:hover { background: var(--vd-acc) !important; }
 
-<div class="max-w-7xl mx-auto p-6 bg-slate-50 min-h-screen">
-    
-    <div class="flex justify-between items-center mb-6">
+    .vd .grid > div > div, .vd-carte { border-radius: 16px !important; border-color: var(--vd-line) !important; box-shadow: 0 1px 2px rgba(15,23,42,.04) !important; }
+    .vd h3 { font-size: .72rem !important; letter-spacing: .07em !important; color: var(--vd-mute) !important; margin-bottom: .9rem !important; }
+
+    /* Déclaration */
+    .vd-decl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1.1rem; align-items: center; }
+    .vd-anneau { position: relative; width: 104px; height: 104px; }
+    .vd-anneau svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .vd-anneau circle { fill: none; stroke-width: 10; }
+    .vd-anneau .vd-arc { stroke: var(--vd-acc); stroke-linecap: round; animation: vdArc .9s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes vdArc { from { stroke-dasharray: 0 999; } }
+    .vd-anneau span { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .vd-anneau b { font-size: 1.5rem; font-weight: 800; color: var(--vd-ink); line-height: 1; }
+    .vd-anneau small { font-size: .62rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--vd-mute); margin-top: .2rem; }
+    .vd-qui { display: flex; align-items: center; gap: .7rem; }
+    .vd-qui img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--vd-line); }
+    .vd-qui b { display: block; font-size: .92rem; color: var(--vd-ink); }
+    .vd-qui span { font-size: .76rem; color: var(--vd-mute); }
+    .vd-com { margin-top: .8rem; padding: .8rem .95rem; border-radius: 12px; background: var(--vd-soft); border: 1px solid var(--vd-line); font-size: .86rem; line-height: 1.55; color: var(--vd-txt); white-space: pre-line; }
+    .vd-com.is-vide { color: var(--vd-mute); font-style: italic; }
+    .vd-alerte { margin-top: .7rem; display: flex; gap: .5rem; align-items: flex-start; padding: .6rem .8rem; border-radius: 11px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: .78rem; font-weight: 600; }
+
+    /* RACI */
+    .vd-raci { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+    .vd-raci > div { display: flex; align-items: center; gap: .65rem; padding: .65rem .75rem; border: 1px solid var(--vd-line); border-radius: 12px; background: #fff; min-width: 0; }
+    .vd-raci em { font-style: normal; width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 800; color: #fff; flex: none; }
+    .vd-raci .r em { background: #10b981; } .vd-raci .a em { background: #a855f7; } .vd-raci .c em { background: #f59e0b; } .vd-raci .i em { background: #3b82f6; }
+    .vd-raci p { margin: 0; min-width: 0; }
+    .vd-raci p small { display: block; font-size: .64rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--vd-mute); }
+    .vd-raci p b { display: block; font-size: .85rem; font-weight: 600; color: var(--vd-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .vd-raci p b.is-vide { color: #94a3b8; font-weight: 500; }
+    .vd-raci .is-moi { border-color: color-mix(in srgb, var(--vd-acc) 40%, #fff); background: color-mix(in srgb, var(--vd-acc) 5%, #fff); }
+
+    /* Justificatifs */
+    .vd-docs > div { border-color: var(--vd-line) !important; border-radius: 12px !important; }
+    .vd-docs i.fa-file-pdf { width: 34px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: #fef2f2; color: #dc2626 !important; font-size: .9rem !important; }
+    .vd-docs a { text-decoration: none !important; border: 1px solid var(--vd-line); border-radius: 9px; padding: .35rem .7rem; color: var(--vd-txt) !important; display: inline-flex; align-items: center; gap: .35rem; }
+    .vd-docs a:hover { border-color: var(--vd-acc); color: var(--vd-acc) !important; }
+    .vd-sans-doc { font-size: .82rem; color: var(--vd-mute); padding: .8rem; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center; }
+    .vd-sans-doc[hidden] { display: none; }
+
+    /* Progression */
+    .vd-prog > div { margin-bottom: 1rem !important; }
+    .vd-prog .h-2 { height: 6px !important; }
+    .vd-contrib { font-size: .78rem; color: var(--vd-mute); padding-top: .8rem; border-top: 1px solid var(--vd-line); }
+    .vd-contrib b { color: var(--vd-ink); }
+
+    /* Panneau de décision (ancien modal, désormais dans la page) */
+    #validationModal{{operation.id}} { position: sticky !important; inset: auto !important; top: 1rem; z-index: 5 !important; display: block !important; padding: 0 !important; background: none !important; backdrop-filter: none !important; }
+    #validationModal{{operation.id}} > div { max-width: none !important; border-radius: 16px !important; border: 1px solid var(--vd-line); box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 18px 40px -28px rgba(15,23,42,.4) !important; transform: none !important; }
+    #validationModal{{operation.id}} > div > div:first-child { padding: 1rem 1.25rem !important; }
+    #validationModal{{operation.id}} > div > div:first-child, #validationModal{{operation.id}} .flex.border > span { background-color: var(--vd-dom); color: #fff; }   /* repli si color_fond est vide */
+    #validationModal{{operation.id}} > div > div:first-child h5 { font-size: 1rem !important; }
+    #validationModal{{operation.id}} > div > div:first-child button { display: none; }
+    #validationModal{{operation.id}} form > div:first-of-type { padding: 1.25rem !important; }
+    #validationModal{{operation.id}} label.block { font-size: .78rem !important; color: var(--vd-txt) !important; }
+    #validationModal{{operation.id}} textarea, #validationModal{{operation.id}} input[type=date], #validationModal{{operation.id}} input[type=number], #validationModal{{operation.id}} select { border-color: #d1d5db !important; border-radius: 11px !important; font-size: .88rem; padding: .65rem .8rem !important; }
+    #validationModal{{operation.id}} textarea:focus, #validationModal{{operation.id}} input:focus, #validationModal{{operation.id}} select:focus { border-color: var(--vd-acc) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--vd-acc) 16%, transparent) !important; --tw-ring-shadow: 0 0 #0000 !important; }
+    #validationModal{{operation.id}} .flex.border { border-radius: 11px !important; }
+    #validationModal{{operation.id}} .flex.border input { border: 0 !important; border-radius: 0 !important; }
+    #validationModal{{operation.id}} .flex.border input:focus { box-shadow: none !important; }
+    /* interrupteur « Préciser » (la classe after:width-5 d'origine n'existe pas : bouton déformé) */
+    #validationModal{{operation.id}} #preciser_checkbox + div { width: 44px; height: 24px; border-radius: 99px; background: #e2e8f0; position: relative; flex: none; transition: background .2s; }
+    #validationModal{{operation.id}} #preciser_checkbox + div::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.25); transition: transform .2s; border: 0 !important; }
+    #validationModal{{operation.id}} #preciser_checkbox:checked + div { background: var(--vd-acc); }
+    #validationModal{{operation.id}} #preciser_checkbox:checked + div::after { transform: translateX(20px); }
+    #validationModal{{operation.id}} #preciser_checkbox:focus-visible + div { outline: 2px solid var(--vd-acc); outline-offset: 2px; }
+    .vd-paliers { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .35rem; }
+    .vd-paliers button { padding: .5rem 0; border-radius: 10px; border: 1.5px solid var(--vd-line); background: #fff; font-size: .82rem; font-weight: 700; color: var(--vd-ink); cursor: pointer; font-variant-numeric: tabular-nums; position: relative; }
+    .vd-paliers button:hover { border-color: #94a3b8; }
+    .vd-paliers button[aria-checked="true"] { border-color: var(--vd-acc); background: color-mix(in srgb, var(--vd-acc) 8%, #fff); color: var(--vd-acc); }
+    .vd-paliers button.is-decl::after { content: "déclaré"; position: absolute; left: 50%; bottom: -1.05rem; transform: translateX(-50%); font-size: .58rem; font-weight: 700; color: var(--vd-mute); white-space: nowrap; }
+    .vd-select-cache { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .vd-ecart { margin-top: .6rem; font-size: .78rem; font-weight: 600; color: var(--vd-mute); }
+    .vd-ecart.is-diff { color: var(--vd-warn); }
+    #validationModal{{operation.id}} form > div:last-child { background: var(--vd-soft) !important; border-top: 1px solid var(--vd-line); padding: .9rem 1.25rem !important; }
+    #validationModal{{operation.id}} form > div:last-child button[type=submit] { flex: 1; background: var(--vd-ok) !important; border-radius: 11px !important; padding: .7rem 1rem !important; box-shadow: none !important; display: inline-flex; align-items: center; justify-content: center; gap: .45rem; }
+    #validationModal{{operation.id}} form > div:last-child button[type=submit]:hover { filter: brightness(.93); }
+    #validationModal{{operation.id}} form > div:last-child button[type=submit][disabled] { opacity: .7; cursor: progress; }
+    #validationModal{{operation.id}} form > div:last-child button[type=button] { display: none; }
+    .vd-ro { padding: 1.1rem 1.25rem; border-radius: 16px; border: 1px solid var(--vd-line); background: #fff; font-size: .85rem; color: var(--vd-txt); display: flex; gap: .6rem; }
+    .vd-ro i { color: var(--vd-mute); margin-top: .15rem; }
+    .vd-erreur { padding: .55rem .75rem; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: .78rem; font-weight: 600; }
+    .vd-erreur[hidden] { display: none; }
+    @media (max-width: 1023px) { #validationModal{{operation.id}} { position: static !important; } }
+    @media (max-width: 640px) { .vd-decl { grid-template-columns: 1fr; justify-items: start; } .vd-raci { grid-template-columns: 1fr; } }
+    @media (prefers-reduced-motion: reduce) { .vd-anneau .vd-arc { animation: none; } }
+</style>
+
+<div class="vd max-w-7xl mx-auto p-6 bg-slate-50 min-h-screen">
+
+    <nav class="vd-fil" aria-label="Fil d'Ariane"><a href="javascript:history.back()"><i class="fas fa-arrow-left"></i> Transactions en attente</a><span>/</span><span>Validation</span></nav>
+    <div class="vd-tete flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">Validation Opérationnelle</h1>
-            <p class="text-slate-500 text-sm">Gestion du flux de travail pour : {{ operation.operation.nom }}</p>
+            <span class="vd-etat"><i class="fas fa-circle"></i> En attente de validation</span>
+            <h1 class="text-2xl font-bold text-slate-900">{{ operation.operation.nom }}</h1>
+            <p class="text-slate-500 text-sm">{% if operation.operation.tache %}{{ operation.operation.tache.m_nom }} · {% endif %}Validation opérationnelle de la déclaration d'avancement</p>
         </div>
         <div class="flex gap-3">
             <a href="javascript:history.back()" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium text-sm">Retour</a>
             {% if operation.operation.accountable == operation.personnel %}
-            <button data-bs-toggle="modal" data-bs-target="#validationModal{{operation.id}}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-sm shadow-md">
+            <button type="button" data-bs-toggle="modal" data-bs-target="#validationModal{{operation.id}}" id="vdAllerDecision" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold text-sm shadow-md">
                 <i class="fas fa-check-circle mr-2"></i> Valider l'opération
             </button>
             {% endif %}
@@ -21,146 +127,166 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         <div class="lg:col-span-2 space-y-6">
-            
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Matrice RACI</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="flex items-center p-3 border border-slate-100 rounded-lg bg-slate-50/50">
-                        <img src="{% if operation.personnel.photo %}{{ operation.personnel.photo.url }}{% else %}{% static 'version/images.jpeg' %}{% endif %}" class="w-10 h-10 rounded-full mr-3 border border-white shadow">
-                        <div>
-                            <p class="text-[10px] font-bold text-emerald-600 uppercase">Responsible</p>
-                            <p class="text-sm font-semibold text-slate-800">{{ operation.operation.personnel }}</p>
+
+            <!-- Déclaration à valider -->
+            <div class="vd-carte bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Déclaration à valider</h3>
+                <div class="vd-decl">
+                    <div class="vd-anneau" role="img" aria-label="Niveau déclaré : {{ operation.valeur|floatformat:'-1' }} %">
+                        <svg viewBox="0 0 110 110"><circle cx="55" cy="55" r="46" stroke="#eef2f6"></circle><circle class="vd-arc" id="vdArc" cx="55" cy="55" r="46" data-v="{{ operation.valeur|default:0|unlocalize }}" style="stroke-dasharray: 0 999"></circle></svg>
+                        <span><b>{{ operation.valeur|floatformat:'-1' }}%</b><small>déclaré</small></span>
+                    </div>
+                    <div>
+                        <div class="vd-qui">
+                            <img src="{% if operation.personnel.photo %}{{ operation.personnel.photo.url }}{% else %}{% static 'version/images.jpeg' %}{% endif %}" alt="">
+                            <div><b>{{ operation.personnel }}</b><span>Déclaré le {{ operation.date_enregistrement|date:"d F Y" }}</span></div>
                         </div>
+                        <div class="vd-com {% if not operation.commentaire %}is-vide{% endif %}">{% if operation.commentaire %}{{ operation.commentaire }}{% else %}Aucun commentaire n'accompagne cette déclaration.{% endif %}</div>
+                        {% if operation.valeur >= 100 %}<div class="vd-alerte" id="vdAlerte100"><i class="fas fa-triangle-exclamation"></i><span>Déclaration à 100 % : vérifiez qu'un justificatif de réalisation est bien joint avant de valider.</span></div>{% endif %}
                     </div>
-                    </div>
+                </div>
             </div>
 
+            <!-- Matrice RACI -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Documents & Rapports</h3>
-                <div class="space-y-3">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Matrice RACI</h3>
+                <div class="vd-raci">
+                    <div class="r"><em>R</em><p><small>Réalise</small><b class="{% if not operation.operation.personnel %}is-vide{% endif %}">{{ operation.operation.personnel|default:'Non défini' }}</b></p></div>
+                    <div class="a {% if operation.operation.accountable == request.user.personnel %}is-moi{% endif %}"><em>A</em><p><small>Approuve{% if operation.operation.accountable == request.user.personnel %} · vous{% endif %}</small><b class="{% if not operation.operation.accountable %}is-vide{% endif %}">{{ operation.operation.accountable|default:'Non défini' }}</b></p></div>
+                    <div class="c"><em>C</em><p><small>Consulté</small><b class="{% if not operation.operation.consulted %}is-vide{% endif %}">{{ operation.operation.consulted|default:'Non défini' }}</b></p></div>
+                    <div class="i"><em>I</em><p><small>Informé</small><b class="{% if not operation.operation.informed %}is-vide{% endif %}">{{ operation.operation.informed|default:'Non défini' }}</b></p></div>
+                </div>
+            </div>
+
+            <!-- Justificatifs -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Justificatifs et rapports</h3>
+                <div class="vd-docs space-y-3" id="vdDocs">
                    {% for rapports in rapport %}
                     {% if operation.operation.id == rapports.operation_id %}
                     <div class="flex items-center justify-between p-3 border border-slate-100 rounded-lg hover:bg-slate-50 transition">
-                        <div class="flex items-center">
+                        <div class="flex items-center" style="gap:.75rem;min-width:0">
                             <i class="fas fa-file-pdf text-indigo-400 mr-3 text-lg"></i>
-                            <span class="text-sm text-slate-600 font-medium">Rapport du {{ rapports.date_enregistrement|date:"d M Y" }}</span>
+                            <div style="min-width:0">
+                                <span class="text-sm text-slate-600 font-medium">Rapport du {{ rapports.date_enregistrement|date:"d M Y" }}</span>
+                                {% if rapports.commentaire %}<div style="font-size:.75rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ rapports.commentaire|truncatechars:90 }}</div>{% endif %}
+                            </div>
                         </div>
-                        <a href="/download/{{rapports.id}}/" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs underline">Télécharger</a>
+                        <a href="/download/{{rapports.id}}/" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs underline"><i class="fas fa-download"></i> Télécharger</a>
                     </div>
                     {%endif%}
                     {% endfor %}
                 </div>
+                <p class="vd-sans-doc" id="vdSansDoc" hidden><i class="far fa-folder-open"></i> Aucun justificatif joint à cette opération.</p>
             </div>
         </div>
 
         <div class="space-y-6">
-            
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Progression</h3>
-                
-                <div class="mb-5">
-                    <div class="flex justify-between text-xs mb-1">
-                        <span class="text-slate-600">Pondération</span>
-                        <span class="font-bold">{{ operation.operation.ponderation }}%</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-2">
-                        <div class="bg-slate-400 h-2 rounded-full" style="width: {{ operation.operation.ponderation }}%"></div>
-                    </div>
-                </div>
 
-                <div class="mb-5">
-                    <div class="flex justify-between text-xs mb-1">
-                        <span class="text-slate-600">Niveau Réalisé</span>
-                        <span class="font-bold text-indigo-600">{{ operation.valeur }}%</span>
+            {% if operation.operation.accountable == operation.personnel %}
+            <div id="validationModal{{operation.id}}">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+                    <div class="px-6 py-4 text-white" style="background-color: {{request.user.personnel.color_fond}};">
+                        <div class="flex justify-between items-center">
+                            <h5 class="text-lg font-bold"><i class="fas fa-stamp" style="margin-right:.5rem"></i>Décision de validation</h5>
+                            <button type="button" class="text-white hover:text-gray-200" aria-hidden="true" tabindex="-1"></button>
+                        </div>
                     </div>
-                    <div class="w-full bg-slate-100 rounded-full h-2">
-                        <div class="bg-indigo-600 h-2 rounded-full" style="width: {{ operation.valeur }}%"></div>
-                    </div>
+
+                    <form method="POST" action="/validation_transaction/" id="vdForm" novalidate>
+                        {% csrf_token %}
+                        <div class="p-6 space-y-5">
+                            <div class="vd-erreur" id="vdErreur" role="alert" hidden></div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-800 mb-2">Niveau validé</label>
+                                <div class="vd-paliers" role="radiogroup" aria-label="Niveau validé">
+                                    <button type="button" role="radio" data-v="0">0</button><button type="button" role="radio" data-v="25">25</button><button type="button" role="radio" data-v="50">50</button><button type="button" role="radio" data-v="75">75</button><button type="button" role="radio" data-v="100">100</button>
+                                </div>
+                                <div class="vd-select-cache">
+                                    <select class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" id="progression_select" name="niveau" tabindex="-1" aria-hidden="true">
+                                        <option value="" selected disabled>-- Sélectionnez un niveau --</option>
+                                        <option value="0">0% - Non commencé</option>
+                                        <option value="25">25% - En cours</option>
+                                        <option value="50">50% - À mi-chemin</option>
+                                        <option value="75">75% - Presque terminé</option>
+                                        <option value="100">100% - Complété</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <label class="flex items-center cursor-pointer gap-3" style="margin-top:1.6rem">
+                                <input type="checkbox" id="preciser_checkbox" class="sr-only peer">
+                                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer"></div>
+                                <span class="text-sm font-bold text-gray-700">Valeur précise (%)</span>
+                            </label>
+
+                            <div id="preciser_input_group" class="hidden">
+                                <div class="flex border rounded-lg overflow-hidden border-gray-300">
+                                    <input name="precision" type="number" id="precision_value" min="0" max="100" step="0.1" class="w-full p-3 outline-none" aria-label="Valeur précise en pourcentage">
+                                    <span class="px-4 py-3 text-white font-bold" style="background-color: {{request.user.personnel.color_fond}};">%</span>
+                                </div>
+                            </div>
+                            <p class="vd-ecart" id="vdEcart" aria-live="polite"></p>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2" for="vdCom">Commentaire de validation</label>
+                                <textarea name="commentaire" id="vdCom" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex. : Validé au vu du rapport de supervision et de la liste de présence." required></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2" for="vdDate">Date de validation</label>
+                                <input type="date" name="date_validation" id="vdDate" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                            </div>
+
+                            <input type="hidden" name="operations" value="{{ operation.operation.id }}">
+                            <input type="hidden" name="transaction" value="{{ operation.id }}">
+                            <input type="hidden" name="mail" value="{{ operation.personnel }}">
+                        </div>
+
+                        <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
+                            <button type="button" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg">Annuler</button>
+                            <button type="submit" class="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md"><i class="fas fa-check"></i> <span>Confirmer la validation</span></button>
+                        </div>
+                    </form>
                 </div>
             </div>
+            {% else %}
+            <div class="vd-ro"><i class="fas fa-lock"></i><span>Seul l'approbateur (A) de cette opération peut valider cette déclaration.</span></div>
+            {% endif %}
 
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Historique</h3>
-                <div class="text-xs text-slate-600 space-y-3">
-                    <p><i class="fas fa-clock mr-2 text-slate-400"></i>Soumis le {{ operation.date_realisation|date:"d M Y" }}</p>
-                    <p><i class="fas fa-user mr-2 text-slate-400"></i>Par {{ operation.personnel }}</p>
+            <div class="vd-prog bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Poids dans le projet</h3>
+                <div class="mb-5">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-600">Pondération de l'opération</span>
+                        <span class="font-bold">{{ operation.operation.ponderation|floatformat:'-1' }}%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-slate-400 h-2 rounded-full" style="width: {{ operation.operation.ponderation|default:0|unlocalize }}%; max-width:100%"></div>
+                    </div>
                 </div>
+                <div class="mb-5">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-600">Niveau déclaré</span>
+                        <span class="font-bold text-indigo-600">{{ operation.valeur|floatformat:'-1' }}%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2">
+                        <div class="bg-indigo-600 h-2 rounded-full" style="width: {{ operation.valeur|default:0|unlocalize }}%; max-width:100%"></div>
+                    </div>
+                </div>
+                <p class="vd-contrib" id="vdContrib" data-pond="{{ operation.operation.ponderation|default:0|unlocalize }}" data-decl="{{ operation.valeur|default:0|unlocalize }}"></p>
             </div>
         </div>
     </div>
 </div>
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" id="validationModal{{operation.id}}">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
-        
-        <div class="px-6 py-4 text-white" style="background-color: {{request.user.personnel.color_fond}};">
-            <div class="flex justify-between items-center">
-                <h5 class="text-lg font-bold">Confirmation de validation</h5>
-                <button onclick="document.getElementById('validationModal{{operation.id}}').classList.add('hidden')" class="text-white hover:text-gray-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-        </div>
 
-        <form method="POST" action="/validation_transaction/">
-            {% csrf_token %}
-            <div class="p-6 space-y-5">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">Commentaire</label>
-                    <textarea name="commentaire" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ajouter un commentaire..." required></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">Date de validation</label>
-                    <input type="date" name="date_validation" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-bold text-gray-800 mb-2">Progression</label>
-                    <div class="flex items-center gap-3">
-                        <select class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" id="progression_select" name="niveau">
-                            <option value="" selected disabled>-- Sélectionnez un niveau --</option>
-                            <option value="0">0% - Non commencé</option>
-                            <option value="25">25% - En cours</option>
-                            <option value="50">50% - À mi-chemin</option>
-                            <option value="75">75% - Presque terminé</option>
-                            <option value="100">100% - Complété</option>
-                        </select>
-                    </div>
-                </div>
-
-                <label class="flex items-center cursor-pointer gap-3">
-                    <input type="checkbox" id="preciser_checkbox" class="sr-only peer">
-                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:width-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    <span class="text-sm font-bold text-gray-700">Préciser la progression (%)</span>
-                </label>
-
-                <div id="preciser_input_group" class="hidden">
-                    <label class="block text-sm font-bold text-gray-700 mb-2">Précisez la valeur</label>
-                    <div class="flex border rounded-lg overflow-hidden border-gray-300">
-                        <input name="precision" type="number" id="precision_value" min="0" max="100" class="w-full p-3 outline-none">
-                        <span class="px-4 py-3 text-white font-bold" style="background-color: {{request.user.personnel.color_fond}};">%</span>
-                    </div>
-                </div>
-
-                <input type="hidden" name="operations" value="{{ operation.operation.id }}">
-                <input type="hidden" name="transaction" value="{{ operation.id }}">
-                <input type="hidden" name="mail" value="{{ operation.personnel }}">
-            </div>
-
-            <div class="px-6 py-4 bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
-                <button type="button" onclick="document.getElementById('validationModal{{operation.id}}').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded-lg">Annuler</button>
-                <button type="submit" class="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md">Confirmer la validation</button>
-            </div>
-        </form>
-    </div>
-</div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Cette fonction gère tous les modals présents sur la page
         const modals = document.querySelectorAll('[id^="validationModal"]');
-        
+
         modals.forEach(modal => {
             const progressionSelect = modal.querySelector('#progression_select');
             const preciserCheckbox = modal.querySelector('#preciser_checkbox');
@@ -193,5 +319,75 @@
             });
         });
     });
+</script>
+
+<script>
+/* ===== VD : anneau, justificatifs, pré-remplissage, contrôles (ajout) ===== */
+(function () {
+    function num(v) { v = parseFloat(String(v || '0').replace(',', '.')); return isNaN(v) ? 0 : v; }
+    var nf = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+    var arc = document.getElementById('vdArc');
+    var decl = arc ? num(arc.dataset.v) : 0;
+    if (arc) arc.style.strokeDasharray = (2 * Math.PI * 46 * Math.min(Math.max(decl, 0), 100) / 100) + ' 999';
+
+    var docs = document.getElementById('vdDocs');
+    if (docs && !docs.children.length) document.getElementById('vdSansDoc').hidden = false;
+    else { var a = document.getElementById('vdAlerte100'); if (a) a.style.display = 'none'; }
+
+    var c = document.getElementById('vdContrib');
+    if (c) { var p = num(c.dataset.pond); c.innerHTML = 'Une fois validée, cette déclaration apporte <b>' + nf.format(p * decl / 100) + ' point' + (p * decl / 100 >= 2 ? 's' : '') + '</b> sur ' + nf.format(p) + ' possibles à la tâche.'; }
+
+    var form = document.getElementById('vdForm'); if (!form) return;
+    var sel = document.getElementById('progression_select'), chk = document.getElementById('preciser_checkbox'), val = document.getElementById('precision_value');
+    var paliers = [].slice.call(form.querySelectorAll('.vd-paliers button')), ecart = document.getElementById('vdEcart');
+
+    function valeur() { return chk.checked && val.value !== '' ? num(val.value) : (sel.value !== '' ? num(sel.value) : null); }
+    function maj() {
+        paliers.forEach(function (b) { b.setAttribute('aria-checked', !chk.checked && sel.value === b.dataset.v ? 'true' : 'false'); });
+        var v = valeur();
+        if (v === null) { ecart.textContent = ''; return; }
+        var d = v - decl;
+        ecart.className = 'vd-ecart' + (Math.abs(d) > 0.05 ? ' is-diff' : '');
+        ecart.textContent = Math.abs(d) <= 0.05 ? 'Vous validez le niveau déclaré (' + nf.format(v) + ' %).'
+            : 'Vous validez ' + nf.format(v) + ' % au lieu de ' + nf.format(decl) + ' % déclarés (' + (d > 0 ? '+' : '−') + nf.format(Math.abs(d)) + ' pts) : justifiez-le dans le commentaire.';
+    }
+    paliers.forEach(function (b) {
+        if (num(b.dataset.v) === decl) b.classList.add('is-decl');
+        b.addEventListener('click', function () { sel.value = b.dataset.v; sel.dispatchEvent(new Event('change')); maj(); });
+    });
+    form.querySelector('.vd-paliers').addEventListener('keydown', function (e) {
+        var i = paliers.indexOf(document.activeElement); if (i < 0 || ['ArrowLeft', 'ArrowRight'].indexOf(e.key) < 0) return;
+        e.preventDefault(); var n = paliers[(i + (e.key === 'ArrowLeft' ? -1 : 1) + paliers.length) % paliers.length]; n.focus(); n.click();
+    });
+    chk.addEventListener('change', function () { if (chk.checked && val.value === '') val.value = decl; maj(); });
+    val.addEventListener('input', maj);
+
+    /* pré-remplissage : le niveau déclaré, la date du jour */
+    document.addEventListener('DOMContentLoaded', function () {
+        if ([0, 25, 50, 75, 100].indexOf(decl) > -1) { sel.value = String(decl); }
+        else { chk.checked = true; chk.dispatchEvent(new Event('change')); val.value = decl; }
+        maj();
+    });
+    var d = document.getElementById('vdDate'), t = new Date(), iso = new Date(t.getTime() - t.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    d.max = iso; if (!d.value) d.value = iso;
+
+    /* « Valider l'opération » (en-tête) : amène au panneau de décision */
+    var go = document.getElementById('vdAllerDecision');
+    if (go) go.addEventListener('click', function (e) { e.preventDefault(); document.getElementById('vdForm').scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(function () { document.getElementById('vdCom').focus(); }, 350); });
+
+    /* contrôles + anti double envoi */
+    form.addEventListener('submit', function (e) {
+        var m = [], v = valeur(), err = document.getElementById('vdErreur');
+        if (v === null) m.push('Choisissez le niveau validé.');
+        else if (v < 0 || v > 100) m.push('Le niveau doit être compris entre 0 et 100 %.');
+        if (!document.getElementById('vdCom').value.trim()) m.push('Ajoutez un commentaire de validation.');
+        if (!d.value) m.push('Indiquez la date de validation.');
+        else if (d.value > iso) m.push('La date de validation ne peut pas être dans le futur.');
+        if (m.length) { e.preventDefault(); err.textContent = m.join(' '); err.hidden = false; return; }
+        err.hidden = true;
+        var b = form.querySelector('button[type=submit]'); b.disabled = true; b.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> <span>Validation…</span>';
+    });
+    form.addEventListener('input', function () { document.getElementById('vdErreur').hidden = true; });
+})();
 </script>
 {% endblock %}

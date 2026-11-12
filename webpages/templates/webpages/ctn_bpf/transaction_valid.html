@@ -1,85 +1,203 @@
 {% extends './index.html' %}
 
 {% block main %}
-<div class="max-w-5xl mx-auto p-4 sm:p-6">
+<!-- ===================== OC : formulaire de commentaire (styles AVANT le contenu, aucun id ni name modifié) ===================== -->
+<style>
+    .oc { --oc-acc: var(--primary-color, #2563eb); --oc-dom: {{ request.user.personnel.color_fond|default:'#1e293b' }};
+          --oc-ink: #0f172a; --oc-txt: #334155; --oc-mute: #64748b; --oc-line: #e5e7eb; --oc-soft: #f8fafc; }
+    .oc > div { border-radius: 20px !important; box-shadow: 0 1px 2px rgba(15,23,42,.05), 0 20px 40px -28px rgba(15,23,42,.35) !important; border-color: var(--oc-line) !important; }
+    .oc-head { padding: 1.25rem 1.5rem !important; }
+    .oc-head h5 { font-size: 1.05rem !important; letter-spacing: -.01em; }
+    .oc-head h5 i { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,.16); margin-right: .7rem !important; font-size: .9rem; }
+    .oc-op { margin-top: .55rem; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; font-size: .82rem; opacity: .92; }
+    .oc-op b { font-weight: 700; }
+    .oc-op .oc-pill { display: inline-flex; align-items: center; gap: .35rem; padding: .15rem .6rem; border-radius: 99px; background: rgba(255,255,255,.16); font-size: .74rem; font-weight: 700; }
+    .oc form { gap: 0; }
+    .oc form > * + * { margin-top: 0 !important; }
+    .oc-bloc { padding: 1.15rem 0; border-top: 1px solid var(--oc-line); }
+    .oc-bloc:first-of-type { border-top: 0; padding-top: 0; }
+    .oc-t { display: flex; align-items: center; gap: .55rem; margin-bottom: .75rem; font-size: .9rem; font-weight: 700; color: var(--oc-ink); }
+    .oc-t em { font-style: normal; width: 22px; height: 22px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; background: var(--oc-soft); border: 1px solid var(--oc-line); font-size: .7rem; color: var(--oc-mute); }
+    .oc-t small { margin-left: auto; font-size: .72rem; font-weight: 600; color: var(--oc-mute); }
+    .oc label.block { font-size: .78rem !important; color: var(--oc-txt) !important; }
+    .oc textarea, .oc input[type=number], .oc input[type=date], .oc select { border-color: #d1d5db !important; border-radius: 12px !important; font-size: .9rem; color: var(--oc-ink); background: #fff; transition: border-color .15s, box-shadow .15s; }
+    .oc textarea:focus, .oc input[type=number]:focus, .oc input[type=date]:focus, .oc select:focus { outline: none !important; border-color: var(--oc-acc) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--oc-acc) 18%, transparent) !important; --tw-ring-shadow: 0 0 #0000 !important; }
+    .oc textarea { min-height: 120px; resize: vertical; line-height: 1.55; }
+    .oc-compte { margin-top: .35rem; display: flex; justify-content: space-between; font-size: .72rem; color: var(--oc-mute); }
+    .oc-compte.is-court b { color: #b45309; }
+    .oc-modeles { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+    .oc-modeles button { height: 28px; padding: 0 .65rem; border-radius: 99px; border: 1px solid var(--oc-line); background: #fff; font-size: .72rem; font-weight: 600; color: var(--oc-txt); cursor: pointer; }
+    .oc-modeles button:hover { border-color: #94a3b8; color: var(--oc-ink); }
+
+    /* Avancement */
+    .oc-actuel { display: flex; align-items: center; gap: .75rem; margin-bottom: .8rem; font-size: .78rem; color: var(--oc-mute); }
+    .oc-actuel .oc-barre { flex: 1; height: 6px; border-radius: 99px; background: #eef2f6; overflow: hidden; position: relative; }
+    .oc-actuel .oc-barre i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: #94a3b8; }
+    .oc-actuel .oc-barre i.oc-nouv { background: var(--oc-acc); opacity: .9; transition: width .3s ease; }
+    .oc-actuel b { color: var(--oc-ink); font-variant-numeric: tabular-nums; }
+    .oc-select-row { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .oc-paliers { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .45rem; }
+    .oc-paliers button { display: flex; flex-direction: column; align-items: center; gap: .15rem; padding: .6rem .3rem; border-radius: 12px; border: 1.5px solid var(--oc-line); background: #fff; cursor: pointer; transition: border-color .15s, background .15s; }
+    .oc-paliers button b { font-size: 1rem; font-weight: 800; color: var(--oc-ink); font-variant-numeric: tabular-nums; }
+    .oc-paliers button span { font-size: .66rem; font-weight: 600; color: var(--oc-mute); text-align: center; line-height: 1.2; }
+    .oc-paliers button:hover { border-color: #94a3b8; }
+    .oc-paliers button[aria-checked="true"] { border-color: var(--oc-acc); background: color-mix(in srgb, var(--oc-acc) 8%, #fff); }
+    .oc-paliers button[aria-checked="true"] b { color: var(--oc-acc); }
+    .oc-paliers button:focus-visible, .oc-modeles button:focus-visible { outline: 2px solid var(--oc-acc); outline-offset: 2px; }
+    .oc-precis { margin-top: .8rem; }
+    .oc-precis > .flex { gap: 0; }
+    #preciser_checkbox { accent-color: var(--oc-acc); }
+    .oc-curseur { width: 100%; margin-top: .7rem; accent-color: var(--oc-acc); }
+    .oc-resume { margin-top: .8rem; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .8rem; padding: .65rem .85rem; border-radius: 12px; background: var(--oc-soft); border: 1px solid var(--oc-line); font-size: .8rem; color: var(--oc-txt); }
+    .oc-resume[hidden] { display: none; }
+    .oc-resume b { color: var(--oc-ink); font-size: .95rem; }
+    .oc-resume .oc-delta { font-weight: 700; color: #047857; }
+    .oc-resume.is-baisse { background: #fffbeb; border-color: #fde68a; }
+    .oc-resume.is-baisse .oc-delta { color: #b45309; }
+
+    /* Pièce jointe */
+    .oc label[for="attachment"] { border-color: #cbd5e1 !important; border-width: 1.5px !important; background: var(--oc-soft); padding: 1.1rem !important; transition: border-color .15s, background .15s; }
+    .oc label[for="attachment"] i { font-size: 1.6rem !important; color: var(--oc-acc) !important; }
+    .oc label[for="attachment"]:hover, .oc label[for="attachment"].is-survol { border-color: var(--oc-acc) !important; background: color-mix(in srgb, var(--oc-acc) 6%, #fff) !important; }
+    .oc label[for="attachment"]:focus-within { outline: 2px solid var(--oc-acc); outline-offset: 2px; }
+    #files-names > div { background: #fff !important; border: 1px solid var(--oc-line); border-radius: 10px !important; padding: .45rem .55rem .45rem .7rem !important; gap: .5rem; color: var(--oc-txt) !important; }
+    .oc-fsize { color: var(--oc-mute); font-weight: 500; }
+    .oc-fx { margin-left: .2rem; width: 24px; height: 24px; border-radius: 7px; border: 0; background: #f1f5f9; color: var(--oc-mute); cursor: pointer; }
+    .oc-fx:hover { background: #fee2e2; color: #b91c1c; }
+    .oc-ferr { margin-top: .45rem; font-size: .76rem; font-weight: 600; color: #b91c1c; }
+    .oc-ferr:empty { display: none; }
+
+    /* Actions */
+    .oc-actions { border-top: 1px solid var(--oc-line); padding-top: 1.1rem !important; align-items: center; gap: .6rem; }
+    .oc-actions a { border-radius: 12px !important; font-weight: 600 !important; padding: .7rem 1.2rem !important; }
+    .oc-actions button[type=submit] { background: var(--oc-acc) !important; color: var(--accent-ink, #fff) !important; border-radius: 12px !important; font-weight: 700 !important; box-shadow: none !important; transform: none !important; display: inline-flex; align-items: center; gap: .5rem; padding: .75rem 1.5rem !important; }
+    .oc-actions button[type=submit] i { margin: 0 !important; }
+    .oc-actions button[type=submit]:hover { filter: brightness(.94); }
+    .oc-actions button[type=submit][disabled] { opacity: .7; cursor: progress; }
+    .oc-erreur { padding: .65rem .85rem; margin-bottom: 1rem; border-radius: 12px; background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: .82rem; font-weight: 600; }
+    .oc-erreur[hidden] { display: none; }
+    .oc-invalide { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(239,68,68,.12) !important; }
+    @media (max-width: 640px) { .oc-paliers { grid-template-columns: repeat(3, minmax(0, 1fr)); } .oc-actions { flex-direction: column-reverse; align-items: stretch; } .oc-actions > * { text-align: center; justify-content: center; } }
+</style>
+
+<div class="oc max-w-5xl mx-auto p-4 sm:p-6">
     <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
-        <div class="px-6 py-4 text-white" style="background-color: {{ request.user.personnel.color_fond }};">
+        <div class="oc-head px-6 py-4 text-white" style="background-color: {{ request.user.personnel.color_fond }};">
             <h5 class="text-lg font-bold flex items-center">
                 <i class="fas fa-comment-dots mr-2"></i> Nouveau Commentaire
             </h5>
+            {% if historic.operation %}
+            <div class="oc-op">
+                <span>Opération : <b>{{ historic.operation.nom }}</b></span>
+                {% if historic.operation.date_echeance %}<span class="oc-pill"><i class="far fa-calendar"></i> Échéance {{ historic.operation.date_echeance|date:"d/m/Y" }}</span>{% endif %}
+            </div>
+            {% endif %}
         </div>
 
         <div class="p-6">
-            <form method="POST" action="/transaction-rapport/" enctype="multipart/form-data" class="space-y-6">
+            <div class="oc-erreur" id="ocErreur" role="alert" hidden></div>
+            <form method="POST" action="/transaction-rapport/" enctype="multipart/form-data" class="space-y-6" id="ocForm" novalidate>
                 {% csrf_token %}
 
-                <div>
+                <div class="oc-bloc">
+                    <div class="oc-t"><em>1</em>Ce qui a été fait</div>
                     <label for="commentaire" class="block text-sm font-bold text-slate-700 mb-2">Votre Commentaire <span class="text-red-500">*</span></label>
                     <div class="relative">
-                        <textarea id="commentaire" name="commentaire" rows="4" required
+                        <textarea id="commentaire" name="commentaire" rows="4" required maxlength="2000"
                             class="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                            placeholder="Saisissez votre commentaire ici..."></textarea>
+                            placeholder="Décrivez ce qui a été réalisé, les difficultés rencontrées et la suite prévue…"></textarea>
+                    </div>
+                    <div class="oc-compte" id="ocCompte"><span>Un commentaire précis facilite la validation.</span><span><b>0</b> / 2000</span></div>
+                    <div class="oc-modeles" aria-label="Phrases d'aide">
+                        <button type="button" data-txt="Activité réalisée conformément au plan. ">Réalisé comme prévu</button>
+                        <button type="button" data-txt="Difficultés rencontrées : ">Difficultés</button>
+                        <button type="button" data-txt="Prochaine étape : ">Prochaine étape</button>
+                        <button type="button" data-txt="Justificatif joint : ">Justificatif joint</button>
                     </div>
                 </div>
 
                 <input type="hidden" name="history" value="{{historic.id}}">
 
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Pièces jointes <span class="text-slate-400 font-normal">(Optionnel)</span></label>
-                    <label for="attachment" class="flex flex-col items-center justify-center w-full py-6 border-2 border-dashed border-blue-400 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors">
-                        <i class="fas fa-cloud-upload-alt text-4xl text-blue-500 mb-2"></i>
-                        <h6 class="font-semibold text-slate-700">Glissez-déposez vos fichiers</h6>
-                        <p class="text-xs text-slate-500">ou cliquez pour sélectionner</p>
-                    </label>
-                    <input type="file" id="attachment" name="file" class="hidden">
-                    <div id="files-names" class="mt-3 flex flex-wrap gap-2"></div>
+                <div class="oc-bloc">
+                    <div class="oc-t"><em>2</em>Avancement de l'opération</div>
+                    {% if historic.operation %}
+                    <div class="oc-actuel" id="ocActuel" data-actuel="{{ historic.operation.niveau_execution|default:0|stringformat:'s' }}">
+                        <span>Actuel : <b>{{ historic.operation.niveau_execution|default:0|floatformat:"-1" }} %</b></span>
+                        <span class="oc-barre" aria-hidden="true"><i class="oc-nouv" style="width:0"></i><i class="oc-anc"></i></span>
+                    </div>
+                    {% endif %}
+                    <div class="oc-paliers" role="radiogroup" aria-label="Niveau d'avancement">
+                        <button type="button" role="radio" data-v="0"><b>0 %</b><span>Non commencé</span></button>
+                        <button type="button" role="radio" data-v="25"><b>25 %</b><span>En cours</span></button>
+                        <button type="button" role="radio" data-v="50"><b>50 %</b><span>À mi-chemin</span></button>
+                        <button type="button" role="radio" data-v="75"><b>75 %</b><span>Presque terminé</span></button>
+                        <button type="button" role="radio" data-v="100"><b>100 %</b><span>Complété</span></button>
+                    </div>
+
+                    <div class="oc-select-row">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Progression</label>
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-tasks text-blue-600 text-lg"></i>
+                            <select id="progression_select" name="niveau_execution" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500" tabindex="-1" aria-hidden="true">
+                                <option value="" selected disabled>-- Sélectionnez un niveau --</option>
+                                <option value="0">0% - Non commencé</option>
+                                <option value="25">25% - En cours</option>
+                                <option value="50">50% - À mi-chemin</option>
+                                <option value="75">75% - Presque terminé</option>
+                                <option value="100">100% - Complété</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="oc-precis">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="preciser_checkbox" class="w-5 h-5 text-green-600 rounded focus:ring-green-500 border-slate-300">
+                            <label for="preciser_checkbox" class="ml-3 text-sm font-bold text-slate-700">Préciser la progression (en %)</label>
+                        </div>
+
+                        <div id="preciser_input_group" class="hidden" style="margin-top:.75rem">
+                            <label class="block text-sm font-bold text-slate-700 mb-2" for="precision_value">Précisez le pourcentage</label>
+                            <div class="flex items-center">
+                                <input type="number" name="precision" id="precision_value" min="0" max="100" step="1" inputmode="numeric" class="w-full p-3 border border-slate-300 rounded-l-xl focus:ring-2 focus:ring-blue-500" style="border-top-right-radius:0!important;border-bottom-right-radius:0!important">
+                                <span class="px-4 py-3 text-white rounded-r-xl" style="background-color: {{request.user.personnel.color_fond}};">%</span>
+                            </div>
+                            <input type="range" class="oc-curseur" id="ocCurseur" min="0" max="100" step="1" value="0" aria-label="Pourcentage d'avancement">
+                        </div>
+                    </div>
+
+                    <div class="oc-resume" id="ocResume" hidden aria-live="polite"></div>
                 </div>
 
                 <input type="hidden" value="{{ historic.operation_id }}" name="operation_id">
                 <input type="hidden" value="{{ line.personnel.nom }}" name="role">
 
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Progression</label>
-                    <div class="flex items-center space-x-3">
-                        <i class="fas fa-tasks text-blue-600 text-lg"></i>
-                        <select id="progression_select" name="niveau_execution" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500">
-                            <option value="" selected disabled>-- Sélectionnez un niveau --</option>
-                            <option value="0">0% - Non commencé</option>
-                            <option value="25">25% - En cours</option>
-                            <option value="50">50% - À mi-chemin</option>
-                            <option value="75">75% - Presque terminé</option>
-                            <option value="100">100% - Complété</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex items-center">
-                    <input type="checkbox" id="preciser_checkbox" class="w-5 h-5 text-green-600 rounded focus:ring-green-500 border-slate-300">
-                    <label for="preciser_checkbox" class="ml-3 text-sm font-bold text-slate-700">Préciser la progression (en %)</label>
-                </div>
-
-                <div id="preciser_input_group" class="hidden">
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Précisez le pourcentage</label>
-                    <div class="flex items-center">
-                        <input type="number" name="precision" id="precision_value" min="0" max="100" class="w-full p-3 border border-slate-300 rounded-l-xl focus:ring-2 focus:ring-blue-500">
-                        <span class="px-4 py-3 text-white rounded-r-xl" style="background-color: {{request.user.personnel.color_fond}};">%</span>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Date réalisation</label>
+                <div class="oc-bloc">
+                    <div class="oc-t"><em>3</em>Date et justificatif</div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2" for="ocDate">Date réalisation</label>
                     <div class="flex items-center">
                         <i class="fas fa-calendar mr-3 text-blue-600 text-lg"></i>
-                        <input type="date" name="date_realisation" class="w-full p-3 border border-slate-300 rounded-xl">
+                        <input type="date" name="date_realisation" id="ocDate" class="w-full p-3 border border-slate-300 rounded-xl">
+                    </div>
+
+                    <div style="margin-top:1rem">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Pièce jointe <span class="text-slate-400 font-normal">(optionnelle · 10 Mo maximum)</span></label>
+                        <label for="attachment" class="flex flex-col items-center justify-center w-full py-6 border-2 border-dashed border-blue-400 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-blue-500 mb-2"></i>
+                            <h6 class="font-semibold text-slate-700">Glissez-déposez votre fichier</h6>
+                            <p class="text-xs text-slate-500">ou cliquez pour le sélectionner (PDF, image, Word, Excel)</p>
+                        </label>
+                        <input type="file" id="attachment" name="file" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.csv,.zip">
+                        <div id="files-names" class="mt-3 flex flex-wrap gap-2"></div>
+                        <p class="oc-ferr" id="ocFerr" role="alert"></p>
                     </div>
                 </div>
 
-                <div class="flex justify-between pt-4">
+                <div class="oc-actions flex justify-between pt-4">
                     <a href="/alert_notifs/0/0/" class="px-6 py-3 border border-slate-300 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition">
                         Annuler
                     </a>
                     <button type="submit" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-transform hover:-translate-y-1">
-                        <i class="fas fa-paper-plane mr-2"></i> Envoyer
+                        <i class="fas fa-paper-plane mr-2"></i> <span>Envoyer</span>
                     </button>
                 </div>
             </form>
@@ -88,7 +206,7 @@
 </div>
 
 <script>
-    // Votre logique JS reste inchangée. 
+    // Votre logique JS reste inchangée.
     // Assurez-vous que les IDs (progression_select, preciser_checkbox, etc.) correspondent toujours.
     document.getElementById('attachment').addEventListener('change', function(e) {
         const filesList = document.getElementById('files-names');
@@ -120,5 +238,114 @@
             preciserInputGroup.classList.add('hidden');
         }
     });
+</script>
+
+<script>
+/* ===== OC : paliers, curseur, résumé, glisser-déposer, contrôles avant envoi (ajout) ===== */
+(function () {
+    var form = document.getElementById('ocForm'); if (!form) return;
+    var $ = function (id) { return document.getElementById(id); };
+    var sel = $('progression_select'), chk = $('preciser_checkbox'), grp = $('preciser_input_group'), num = $('precision_value'), cur = $('ocCurseur');
+    var txt = $('commentaire'), file = $('attachment'), drop = form.querySelector('label[for="attachment"]'), list = $('files-names');
+    var actuelBox = $('ocActuel'), actuel = actuelBox ? parseFloat(String(actuelBox.dataset.actuel).replace(',', '.')) || 0 : null;
+    var nf = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+    var MAX = 10 * 1024 * 1024;
+
+    if (actuelBox) actuelBox.querySelector('.oc-anc').style.width = Math.min(actuel, 100) + '%';
+
+    /* --- valeur choisie --- */
+    function valeur() {
+        if (chk.checked && num.value !== '') return parseFloat(num.value);
+        return sel.value !== '' ? parseFloat(sel.value) : null;
+    }
+    function resume() {
+        var v = valeur(), r = $('ocResume');
+        form.querySelectorAll('.oc-paliers button').forEach(function (b) { b.setAttribute('aria-checked', !chk.checked && sel.value === b.dataset.v ? 'true' : 'false'); });
+        if (actuelBox) actuelBox.querySelector('.oc-nouv').style.width = (v == null ? 0 : Math.min(Math.max(v, 0), 100)) + '%';
+        if (v == null || isNaN(v)) { r.hidden = true; return; }
+        r.hidden = false; r.innerHTML = '';
+        var b = document.createElement('b'); b.textContent = 'Nouvel avancement : ' + nf.format(v) + ' %';
+        r.appendChild(b);
+        if (actuel !== null) {
+            var d = v - actuel, s = document.createElement('span'); s.className = 'oc-delta';
+            s.textContent = d === 0 ? 'inchangé' : (d > 0 ? '+' : '−') + nf.format(Math.abs(d)) + ' point' + (Math.abs(d) >= 2 ? 's' : '');
+            r.appendChild(s);
+            r.classList.toggle('is-baisse', d < 0);
+            if (d < 0) { var w = document.createElement('span'); w.textContent = 'Attention : c’est moins que l’avancement actuel. Expliquez pourquoi dans le commentaire.'; r.appendChild(w); }
+        }
+        if (v === 100) { var ok = document.createElement('span'); ok.textContent = 'L’opération sera déclarée terminée.'; r.appendChild(ok); }
+    }
+    form.querySelectorAll('.oc-paliers button').forEach(function (b) {
+        b.addEventListener('click', function () {
+            sel.value = b.dataset.v; sel.dispatchEvent(new Event('change'));   /* votre script décoche « préciser » */
+            resume();
+        });
+    });
+    form.querySelector('.oc-paliers').addEventListener('keydown', function (e) {
+        var bs = [].slice.call(this.querySelectorAll('button')), i = bs.indexOf(document.activeElement);
+        if (i < 0 || ['ArrowLeft', 'ArrowRight'].indexOf(e.key) < 0) return;
+        e.preventDefault(); var n = bs[(i + (e.key === 'ArrowLeft' ? -1 : 1) + bs.length) % bs.length]; n.focus(); n.click();
+    });
+    chk.addEventListener('change', function () {
+        if (chk.checked) { if (num.value === '' && actuel !== null) { num.value = Math.round(actuel); } cur.value = num.value || 0; setTimeout(function () { num.focus(); }, 0); }
+        resume();
+    });
+    num.addEventListener('input', function () { var v = parseFloat(num.value); if (!isNaN(v)) cur.value = Math.min(Math.max(v, 0), 100); num.classList.remove('oc-invalide'); resume(); });
+    cur.addEventListener('input', function () { num.value = cur.value; resume(); });
+
+    /* --- commentaire --- */
+    function compte() { var n = txt.value.trim().length, c = $('ocCompte'); c.querySelector('b').textContent = n; c.classList.toggle('is-court', n > 0 && n < 15); }
+    txt.addEventListener('input', function () { compte(); txt.classList.remove('oc-invalide'); });
+    form.querySelectorAll('.oc-modeles button').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var t = b.dataset.txt, v = txt.value; txt.value = v + (v && !/\s$/.test(v) ? '\n' : '') + t;
+            txt.focus(); txt.setSelectionRange(txt.value.length, txt.value.length); compte();
+        });
+    });
+
+    /* --- pièce jointe : glisser-déposer, taille, retrait --- */
+    function taille(o) { return o < 1024 * 1024 ? nf.format(o / 1024) + ' Ko' : nf.format(o / 1048576) + ' Mo'; }
+    function decorer() {
+        var f = file.files && file.files[0], err = $('ocFerr'); err.textContent = '';
+        if (!f) return;
+        if (f.size > MAX) { err.textContent = 'Ce fichier fait ' + taille(f.size) + ' : la limite est de 10 Mo.'; }
+        var item = list.firstElementChild; if (!item) return;
+        var s = document.createElement('span'); s.className = 'oc-fsize'; s.textContent = '· ' + taille(f.size); item.appendChild(s);
+        var x = document.createElement('button'); x.type = 'button'; x.className = 'oc-fx'; x.setAttribute('aria-label', 'Retirer le fichier'); x.innerHTML = '<i class="fas fa-xmark"></i>';
+        x.addEventListener('click', function () { file.value = ''; list.innerHTML = ''; $('ocFerr').textContent = ''; });
+        item.appendChild(x);
+    }
+    file.addEventListener('change', function () { setTimeout(decorer, 0); });   /* après votre script, qui affiche le nom */
+    ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('is-survol'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('is-survol'); }); });
+    drop.addEventListener('drop', function (e) {
+        var f = e.dataTransfer && e.dataTransfer.files; if (!f || !f.length) return;
+        try { var dt = new DataTransfer(); dt.items.add(f[0]); file.files = dt.files; file.dispatchEvent(new Event('change')); } catch (x) {}
+    });
+
+    /* --- date : aujourd'hui par défaut, jamais dans le futur --- */
+    var d = $('ocDate'), t = new Date(), iso = new Date(t.getTime() - t.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    d.max = iso; if (!d.value) d.value = iso;
+
+    /* --- contrôles avant envoi + anti double envoi --- */
+    form.addEventListener('submit', function (e) {
+        var msg = [], v = valeur(), f = file.files && file.files[0];
+        if (!txt.value.trim()) { msg.push('Écrivez un commentaire.'); txt.classList.add('oc-invalide'); }
+        if (v == null || isNaN(v)) msg.push('Choisissez un niveau d’avancement.');
+        else if (v < 0 || v > 100) { msg.push('L’avancement doit être compris entre 0 et 100 %.'); num.classList.add('oc-invalide'); }
+        if (d.value && d.value > iso) msg.push('La date de réalisation ne peut pas être dans le futur.');
+        if (f && f.size > MAX) msg.push('La pièce jointe dépasse 10 Mo.');
+        var box = $('ocErreur');
+        if (msg.length) { e.preventDefault(); box.textContent = msg.join(' '); box.hidden = false; box.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+        box.hidden = true;
+        if (!chk.checked) num.value = '';   /* sinon une ancienne valeur précise primerait sur le palier choisi */
+        var btn = form.querySelector('button[type=submit]'); btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> <span>Envoi…</span>';
+    });
+
+    form.addEventListener('input', function () { $('ocErreur').hidden = true; });
+    form.addEventListener('click', function (e) { if (e.target.closest('.oc-paliers button')) $('ocErreur').hidden = true; });
+    compte(); resume();
+})();
 </script>
 {% endblock %}
