@@ -1,3 +1,4 @@
+
 {% extends "./index.html" %}
 {% block main %}
 
@@ -23,6 +24,199 @@
             <button class="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs px-3 py-1.5 rounded-xl font-medium hover:bg-emerald-500/30 transition-all">🟢 Faible ({{ count_faible }})</button>
         </div>
     </div>
+
+<style>
+/* ===================== GX : Priorisation (couche ajoutée) ===================== */
+.gx-pr-controls{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:0 0 1.25rem;min-width:0}
+.gx-pr-search{position:relative;flex:1 1 240px;min-width:0;max-width:420px}
+.gx-pr-search>i{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.75rem;pointer-events:none}
+.gx-pr-search input{width:100%;box-sizing:border-box;padding:.6rem 2.4rem .6rem 2.4rem;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#e2e8f0;font-size:.82rem;outline:none;transition:border-color .2s,box-shadow .2s}
+.gx-pr-search input::placeholder{color:#94a3b8}
+.gx-pr-search input:focus{border-color:rgba(255,255,255,.4);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+.gx-pr-search kbd{position:absolute;right:.6rem;top:50%;transform:translateY(-50%);font:600 10px/1 ui-monospace,monospace;color:#94a3b8;border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:3px 6px}
+.gx-pr-search kbd[hidden]{display:none}
+.gx-pr-sort{position:relative;display:inline-flex}
+.gx-pr-sort select{appearance:none;-webkit-appearance:none;color-scheme:dark;padding:.6rem 2rem .6rem .9rem;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#e2e8f0;font-size:.78rem;font-weight:600;cursor:pointer;outline:none}
+.gx-pr-sort select:focus{border-color:rgba(255,255,255,.4)}
+.gx-pr-sort::after{content:"\25BE";position:absolute;right:.75rem;top:50%;transform:translateY(-50%);font-size:.7rem;color:#94a3b8;pointer-events:none}
+.gx-pr-count{margin-left:auto;font-size:.72rem;font-weight:700;color:#cbd5e1;padding:.4rem .75rem;border-radius:9999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);white-space:nowrap}
+.gx-pr-reset{border:0;cursor:pointer;font-size:.72rem;font-weight:700;color:#fda4af;background:rgba(244,63,94,.12);border-radius:9999px;padding:.4rem .75rem}
+.gx-pr-reset[hidden]{display:none}
+.gx-col{display:flex;flex-direction:column;gap:.75rem;min-width:0}.gx-col>*{margin-top:0!important}
+[data-operation-id]{min-width:0;max-width:100%}
+[data-operation-id]:hover{transform:translateY(-1px);box-shadow:0 14px 30px -16px rgba(0,0,0,.7)}
+.gx-on{box-shadow:0 0 0 2px currentColor,0 10px 24px -10px currentColor!important}
+.gx-click{cursor:pointer}
+.gx-pct{font-weight:600;color:#94a3b8;margin-left:.35rem}
+#gx-pr-nores{text-align:center;padding:2.5rem 1rem;border:1px dashed rgba(255,255,255,.15);border-radius:16px;color:#94a3b8;font-size:.85rem}
+#gx-pr-nores[hidden]{display:none}
+[data-operation-id] h4{overflow-wrap:anywhere}
+.gx-mark{background:linear-gradient(transparent 52%,rgba(250,204,21,.55) 0);color:inherit;border-radius:3px}
+/* ---- Baromètres ---- */
+.gx-baro{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:.9rem;margin:0 0 1.5rem;min-width:0}
+.gx-baro[hidden]{display:none}
+.gx-bc{position:relative;min-width:0;padding:1rem 1.1rem 1.1rem;border-radius:20px;background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.12);box-shadow:0 20px 40px -24px rgba(0,0,0,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);overflow:hidden}
+.gx-bc::before{content:"";position:absolute;right:-60px;top:-60px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,var(--gx-glow,rgba(244,63,94,.22)),transparent 70%);pointer-events:none}
+.gx-bc h3{margin:0 0 .6rem;display:flex;align-items:center;gap:.5rem;font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#cbd5e1}
+.gx-bc h3 i{color:#fb7185}
+.gx-ga-wrap{position:relative;max-width:280px;margin:0 auto}
+#gx-gauge{display:block;width:100%;height:auto;overflow:visible}
+#gx-gauge .gx-zone{fill:none;stroke-width:14;transition:opacity .3s}
+#gx-needle{transform-origin:100px 100px;transition:transform 1.1s cubic-bezier(.22,1,.36,1)}
+#gx-needle line{stroke:#f8fafc;stroke-width:3;stroke-linecap:round}
+#gx-needle circle{fill:#0f172a;stroke:#f8fafc;stroke-width:3}
+#gx-thr-g{transform-origin:100px 100px;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+#gx-thr-g line{stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-dasharray:2 4}
+#gx-gauge text{fill:#94a3b8;font-size:8px;font-weight:700}
+.gx-ga-val{position:absolute;left:0;right:0;bottom:-2px;text-align:center;line-height:1}
+.gx-ga-val b{font-size:1.9rem;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.gx-ga-val small{font-size:.75rem;color:#94a3b8;font-weight:700;margin-left:.15rem}
+.gx-ga-state{margin:.55rem 0 .2rem;text-align:center;font-size:.78rem;font-weight:800;padding:.3rem .7rem;border-radius:9999px;display:table;margin-left:auto;margin-right:auto;transition:all .3s}
+.gx-ga-state[data-z=ok]{color:#6ee7b7;background:rgba(16,185,129,.14)}.gx-ga-state[data-z=warn]{color:#fcd34d;background:rgba(245,158,11,.14)}.gx-ga-state[data-z=bad]{color:#fda4af;background:rgba(244,63,94,.16)}
+.gx-thr{display:block;margin-top:.5rem;font-size:.7rem;font-weight:700;color:#94a3b8}
+.gx-thr b{color:#fff}
+.gx-thr input{width:100%;margin:.4rem 0 0;height:22px;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+.gx-thr input::-webkit-slider-runnable-track{height:6px;border-radius:9999px;background:linear-gradient(90deg,#10b981,#f59e0b,#f43f5e)}
+.gx-thr input::-moz-range-track{height:6px;border-radius:9999px;background:linear-gradient(90deg,#10b981,#f59e0b,#f43f5e)}
+.gx-thr input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-6px;border-radius:50%;background:#fff;border:3px solid #0f172a;box-shadow:0 0 0 2px #fff,0 4px 10px rgba(0,0,0,.5)}
+.gx-thr input::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #0f172a;box-shadow:0 0 0 2px #fff}
+.gx-thr input:focus-visible{outline:2px solid #fff;outline-offset:3px;border-radius:6px}
+.gx-dn{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;justify-content:center}
+.gx-dn-svg{position:relative;width:132px;height:132px;flex:none}
+.gx-dn-svg svg{width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.gx-dn-svg circle{fill:none;stroke-width:14;transition:stroke-dasharray .9s cubic-bezier(.22,1,.36,1),stroke-dashoffset .9s cubic-bezier(.22,1,.36,1),opacity .25s,stroke-width .2s;cursor:pointer}
+.gx-dn-svg circle.gx-trk{stroke:rgba(255,255,255,.08);cursor:default}
+.gx-dn-svg circle.gx-sg:hover{stroke-width:18}
+.gx-dn-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.gx-dn-c b{font-size:1.45rem;font-weight:900;color:#fff;line-height:1;font-variant-numeric:tabular-nums}
+.gx-dn-c small{font-size:.58rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-top:.2rem}
+.gx-lg{display:grid;gap:.4rem;min-width:130px;flex:1 1 130px}
+.gx-lg button{display:flex;align-items:center;gap:.5rem;width:100%;border:1px solid transparent;border-radius:10px;padding:.4rem .55rem;background:rgba(255,255,255,.05);color:#e2e8f0;font-size:.74rem;font-weight:700;cursor:pointer;transition:all .2s;text-align:left}
+.gx-lg button:hover{background:rgba(255,255,255,.1)}
+.gx-lg button[aria-pressed=true]{border-color:currentColor;background:rgba(255,255,255,.12)}
+.gx-lg i{width:9px;height:9px;border-radius:3px;flex:none}
+.gx-lg span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gx-lg em{margin-left:auto;font-style:normal;font-variant-numeric:tabular-nums;color:#fff}
+.gx-lg button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.gx-tls{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.gx-tl{min-width:0;padding:.65rem .75rem;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:.15rem;transition:transform .25s,background .25s}
+.gx-tl:hover{transform:translateY(-2px);background:rgba(255,255,255,.1)}
+.gx-tl span{font-size:.58rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8}
+.gx-tl b{font-size:1.5rem;font-weight:900;color:#fff;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em;overflow-wrap:anywhere}
+.gx-tl small{font-size:.68rem;color:#94a3b8;font-weight:600}
+.gx-tl-wide{grid-column:1/-1}
+.gx-tl.is-rose b{color:#fb7185}.gx-tl.is-emerald b{color:#34d399}
+.gx-pbar{height:7px;border-radius:9999px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:.3rem}
+.gx-pbar i{display:block;height:100%;width:0;border-radius:9999px;background:linear-gradient(90deg,#fb7185,#fbbf24);transition:width .9s cubic-bezier(.22,1,.36,1)}
+.gx-pr-tog{color:#cbd5e1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+.gx-pr-tog[aria-expanded=true]{color:#fff;background:rgba(255,255,255,.14)}
+@media (prefers-reduced-motion:reduce){#gx-needle,#gx-thr-g,.gx-dn-svg circle,.gx-pbar i{transition:none}}
+@media print{.gx-baro{break-inside:avoid}}
+/* ---- Actions ---- */
+.gx-alert{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin:0 0 1rem;padding:.75rem 1rem;border-radius:16px;background:linear-gradient(90deg,rgba(244,63,94,.24),rgba(244,63,94,.08));border:1px solid rgba(244,63,94,.45);color:#fecdd3;font-size:.8rem;min-width:0}
+.gx-alert[hidden]{display:none}.gx-alert i{color:#fb7185;font-size:1.1rem}.gx-alert>div{flex:1 1 220px;min-width:0}.gx-alert b{display:block;color:#fff}
+.gx-alert button{border:0;cursor:pointer;border-radius:10px;padding:.4rem .75rem;font-size:.74rem;font-weight:800;background:rgba(255,255,255,.14);color:#fff}.gx-alert button:hover{background:rgba(255,255,255,.24)}
+.gx-ck{display:inline-flex;align-items:center;justify-content:center;flex:none;width:20px;height:20px;margin-top:.15rem;cursor:pointer}
+.gx-ck input{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin:0;border-radius:6px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.05);cursor:pointer;display:grid;place-content:center;transition:all .15s}
+.gx-ck input:hover{border-color:#fff}.gx-ck input:checked{background:#f43f5e;border-color:#f43f5e}
+.gx-ck input:checked::after{content:"\2713";color:#fff;font-size:12px;font-weight:900;line-height:1}
+.gx-ck input:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.gx-sel{box-shadow:0 0 0 2px rgba(244,63,94,.7),0 12px 28px -14px rgba(244,63,94,.6)}
+#gx-bulk{position:fixed;left:50%;bottom:1rem;transform:translateX(-50%);z-index:1500;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;justify-content:center;max-width:calc(100vw - 16px);box-sizing:border-box;padding:.55rem .7rem;border-radius:16px;background:rgba(2,6,23,.94);border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 50px -16px rgba(0,0,0,.8);color:#e2e8f0;font-size:.78rem;font-weight:700}
+#gx-bulk[hidden]{display:none}
+#gx-bulk button{border:0;cursor:pointer;border-radius:10px;padding:.42rem .7rem;font-size:.74rem;font-weight:800;color:#e2e8f0;background:rgba(255,255,255,.08)}
+#gx-bulk button:hover{filter:brightness(1.15)}
+#gx-bulk [data-bk=HAUTE]{background:#f43f5e;color:#fff}#gx-bulk [data-bk=MOYENNE]{background:#f59e0b;color:#111}#gx-bulk [data-bk=FAIBLE]{background:#10b981;color:#fff}
+#gx-toast{position:fixed;left:50%;bottom:4.6rem;transform:translate(-50%,20px);z-index:1600;display:flex;gap:.75rem;align-items:center;max-width:calc(100vw - 16px);box-sizing:border-box;padding:.65rem .9rem;border-radius:14px;background:#020617;border:1px solid rgba(255,255,255,.16);color:#e2e8f0;font-size:.8rem;font-weight:600;box-shadow:0 24px 50px -16px rgba(0,0,0,.8);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+#gx-toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}#gx-toast.bad{border-color:rgba(244,63,94,.6)}
+#gx-toast button{border:0;background:rgba(255,255,255,.14);color:#fff;font-weight:800;border-radius:8px;padding:.3rem .6rem;cursor:pointer;flex:none}
+@media print{#gx-bulk,#gx-toast,.gx-alert{display:none!important}}
+/* Anti-défilement horizontal */
+html,body{max-width:100%;overflow-x:clip}
+#global-csrf~div{max-width:100%;overflow-x:clip}
+@media (hover:none){[data-operation-id] .opacity-60{opacity:1}}
+/* Infobulles */
+#gx-tip{position:fixed;left:0;top:0;z-index:2000;max-width:min(290px,calc(100vw - 16px));padding:.6rem .75rem;border-radius:12px;background:#020617;border:1px solid rgba(255,255,255,.14);color:#cbd5e1;font-size:.76rem;line-height:1.4;font-weight:500;text-transform:none;letter-spacing:0;text-align:left;box-shadow:0 18px 40px -12px rgba(0,0,0,.7);pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s}
+#gx-tip.on{opacity:1;transform:none}
+#gx-tip b{display:block;color:#fff;font-size:.8rem;font-weight:800;margin-bottom:.2rem}
+@media (prefers-reduced-motion:reduce){[data-operation-id]{transition:none!important}}
+@media print{.gx-pr-controls,#gx-tip{display:none!important}}
+</style>
+
+<div class="gx-pr-controls">
+  <div class="gx-pr-search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input id="gx-pr-q" type="search" placeholder="Rechercher une opération…" autocomplete="off" aria-label="Rechercher une opération">
+    <kbd id="gx-pr-kbd">/</kbd>
+  </div>
+  <label class="gx-pr-sort">
+    <select id="gx-pr-sort" aria-label="Trier les opérations">
+      <option value="default">Ordre d'origine</option>
+      <option value="prio">Priorité (Haute d'abord)</option>
+      <option value="prio-asc">Priorité (Faible d'abord)</option>
+      <option value="name">Nom (A → Z)</option>
+    </select>
+  </label>
+  <button type="button" class="gx-pr-reset" id="gx-pr-reset" hidden>✕ Réinitialiser</button>
+  <button type="button" class="gx-pr-reset gx-pr-tog" id="gx-baro-btn" aria-expanded="true" data-gx-tip="Baromètres|Afficher ou masquer la jauge, la répartition et les chiffres clés.">📊 Baromètres</button>
+  <button type="button" class="gx-pr-reset gx-pr-tog" id="gx-pr-exp" data-gx-tip="Exporter|Télécharge en CSV (ouvrable dans Excel) les opérations actuellement affichées, avec leur priorité.">⬇ Exporter</button>
+  <span class="gx-pr-count" id="gx-pr-count">…</span>
+</div>
+
+<div class="gx-alert" id="gx-alert" role="alert" hidden>
+  <i class="fa-solid fa-triangle-exclamation"></i>
+  <div><b id="gx-al-t"></b><span id="gx-al-s"></span></div>
+  <button type="button" id="gx-al-f">Voir les Hautes</button>
+  <button type="button" id="gx-al-x" aria-label="Fermer l’alerte">✕</button>
+</div>
+
+<section class="gx-baro" id="gx-baro" aria-label="Baromètres de priorisation">
+  <article class="gx-bc" style="--gx-glow:rgba(244,63,94,.25)">
+    <h3><i class="fa-solid fa-gauge-high"></i> Pression des priorités</h3>
+    <div class="gx-ga-wrap" id="gx-ga-wrap">
+      <svg id="gx-gauge" viewBox="0 0 200 112" role="img" aria-label="Indice de pression des priorités">
+        <path class="gx-zone" id="gx-z1" stroke="#10b981"></path><path class="gx-zone" id="gx-z2" stroke="#f59e0b"></path><path class="gx-zone" id="gx-z3" stroke="#f43f5e"></path>
+        <g id="gx-thr-g"><line x1="100" y1="6" x2="100" y2="30"></line></g>
+        <g id="gx-needle"><line x1="100" y1="100" x2="100" y2="36"></line><circle cx="100" cy="100" r="7"></circle></g>
+        <text x="20" y="110" text-anchor="middle">0</text><text x="100" y="12" text-anchor="middle" style="display:none">50</text><text x="180" y="110" text-anchor="middle">100</text>
+      </svg>
+      <div class="gx-ga-val"><b id="gx-ga-v">0</b><small>/ 100</small></div>
+    </div>
+    <div class="gx-ga-state" id="gx-ga-s" data-z="ok">—</div>
+    <label class="gx-thr"><span>Seuil d’alerte : <b id="gx-thr-v">60</b> / 100</span><input type="range" id="gx-thr" min="10" max="90" step="5" value="60" aria-label="Seuil d’alerte"></label>
+  </article>
+
+  <article class="gx-bc" style="--gx-glow:rgba(251,191,36,.2)">
+    <h3><i class="fa-solid fa-chart-pie"></i> Répartition</h3>
+    <div class="gx-dn">
+      <div class="gx-dn-svg">
+        <svg viewBox="0 0 120 120" role="img" aria-label="Répartition des priorités">
+          <circle class="gx-trk" cx="60" cy="60" r="44"></circle>
+          <circle class="gx-sg" id="gx-dn-H" cx="60" cy="60" r="44" stroke="#f43f5e" data-p="HAUTE" tabindex="0" role="button" aria-label="Filtrer Haute"></circle>
+          <circle class="gx-sg" id="gx-dn-M" cx="60" cy="60" r="44" stroke="#f59e0b" data-p="MOYENNE" tabindex="0" role="button" aria-label="Filtrer Moyenne"></circle>
+          <circle class="gx-sg" id="gx-dn-F" cx="60" cy="60" r="44" stroke="#10b981" data-p="FAIBLE" tabindex="0" role="button" aria-label="Filtrer Faible"></circle>
+        </svg>
+        <div class="gx-dn-c"><b id="gx-dn-t">0</b><small>opérations</small></div>
+      </div>
+      <div class="gx-lg">
+        <button type="button" data-p="HAUTE" style="color:#fb7185" aria-pressed="false"><i style="background:#f43f5e"></i><span>Haute</span><em id="gx-lg-H">0</em></button>
+        <button type="button" data-p="MOYENNE" style="color:#fbbf24" aria-pressed="false"><i style="background:#f59e0b"></i><span>Moyenne</span><em id="gx-lg-M">0</em></button>
+        <button type="button" data-p="FAIBLE" style="color:#34d399" aria-pressed="false"><i style="background:#10b981"></i><span>Faible</span><em id="gx-lg-F">0</em></button>
+      </div>
+    </div>
+  </article>
+
+  <article class="gx-bc" style="--gx-glow:rgba(52,211,153,.18)">
+    <h3><i class="fa-solid fa-list-check"></i> Chiffres clés</h3>
+    <div class="gx-tls">
+      <div class="gx-tl"><span>Total</span><b id="gx-bt-total">0</b><small>opérations suivies</small></div>
+      <div class="gx-tl is-rose"><span>Urgentes</span><b id="gx-bt-haute">0 %</b><small id="gx-bt-haute-s">&nbsp;</small></div>
+      <div class="gx-tl"><span>Affichées</span><b id="gx-bt-vis">0</b><small id="gx-bt-vis-s">&nbsp;</small></div>
+      <div class="gx-tl is-emerald"><span>Routine</span><b id="gx-bt-faible">0 %</b><small id="gx-bt-faible-s">&nbsp;</small></div>
+      <div class="gx-tl gx-tl-wide"><span>Page en cours</span><b id="gx-bt-page">—</b><div class="gx-pbar"><i id="gx-bt-pbar"></i></div></div>
+    </div>
+  </article>
+</section>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -190,6 +384,319 @@ async function updatePriority(operationId, newPriority) {
         if(card) card.style.opacity = '1';
     }
 }
+</script>
+<script>
+(function () {
+  function ready(fn) { if (document.readyState !== 'loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  ready(function () {
+    var nf = new Intl.NumberFormat('fr-FR'), PR = { HAUTE: 'Haute', MOYENNE: 'Moyenne', FAIBLE: 'Faible' };
+    var cards = [].slice.call(document.querySelectorAll('[data-operation-id]'));
+    var col = cards.length ? cards[0].parentElement : null; if (col) col.classList.add('gx-col');
+    function txt(e) { return e ? e.textContent.replace(/\s+/g, ' ').trim() : ''; }
+    function grp(el) { // groupe les milliers dans les nœuds texte
+      if (!el) return; var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null), n, a = [];
+      while ((n = w.nextNode())) a.push(n);
+      a.forEach(function (t) { t.nodeValue = t.nodeValue.replace(/\d{4,}/g, function (m) { return nf.format(parseInt(m, 10)); }); });
+    }
+    function prioOf(c) {
+      var b = txt(c.querySelector('.mb-1 span'));
+      return /Urgent/i.test(b) ? 'HAUTE' : (/Routine/i.test(b) ? 'FAIBLE' : 'MOYENNE');
+    }
+    var data = cards.map(function (c, i) {
+      var h = c.querySelector('h4');
+      return { el: c, i: i, prio: prioOf(c), name: txt(h), low: txt(h).toLowerCase(), h4: h };
+    });
+    var RANK = { HAUTE: 0, MOYENNE: 1, FAIBLE: 2 };
+
+    // En-tête : boutons de comptage => filtres
+    var hb = [].slice.call(document.querySelectorAll('.flex.items-center.gap-2.flex-wrap > button')).slice(0, 3);
+    var KEYS = ['HAUTE', 'MOYENNE', 'FAIBLE'], counts = [0, 0, 0];
+    hb.forEach(function (b, k) { var m = /\((\d+)\)/.exec(b.textContent); counts[k] = m ? parseInt(m[1], 10) : 0; grp(b); });
+    var total = counts[0] + counts[1] + counts[2];
+
+    // Panneau « Volume par classification » : vraies proportions (au lieu de 35/55/75 fixes)
+    var h3 = [].slice.call(document.querySelectorAll('h3')).filter(function (h) { return /Volume par classification/i.test(h.textContent); })[0];
+    var blocks = h3 ? [].slice.call(h3.parentElement.querySelectorAll('.space-y-4 > div')).slice(0, 3) : [];
+    blocks.forEach(function (bk, k) { bk.classList.add('gx-click'); bk.addEventListener('click', function () { toggle(KEYS[k]); }); });
+    var hbLab = hb.map(function (b) { return b.textContent.replace(/\s*\(.*$/, '').trim(); });
+    [].slice.call(document.querySelectorAll('.text-white.font-semibold')).forEach(grp);
+
+    var state = { q: '', prio: 'ALL', sort: 'default', baro: true, thr: 60 }, KEY = 'gx_prio:' + location.pathname;
+    try { var sv = JSON.parse(localStorage.getItem(KEY) || '{}'); for (var k in sv) if (k in state) state[k] = sv[k]; } catch (e) {}
+    function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+    function toggle(p) { state.prio = state.prio === p ? 'ALL' : p; apply(); save(); }
+    function hl(el, q, orig) {
+      if (!el) return; var t = orig, i = q ? t.toLowerCase().indexOf(q) : -1;
+      el.textContent = '';
+      if (i < 0) { el.textContent = t; return; }
+      el.appendChild(document.createTextNode(t.slice(0, i)));
+      var m = document.createElement('mark'); m.className = 'gx-mark'; m.textContent = t.slice(i, i + q.length); el.appendChild(m);
+      el.appendChild(document.createTextNode(t.slice(i + q.length)));
+    }
+    var qIn = document.getElementById('gx-pr-q'), sIn = document.getElementById('gx-pr-sort'), cEl = document.getElementById('gx-pr-count'), rEl = document.getElementById('gx-pr-reset'), kb = document.getElementById('gx-pr-kbd');
+    var nores = document.createElement('div'); nores.id = 'gx-pr-nores'; nores.hidden = true; nores.textContent = 'Aucune opération ne correspond à la recherche ou au filtre.';
+    if (col) col.appendChild(nores);
+    if (col) [].slice.call(col.children).forEach(function (ch) { if (!ch.hasAttribute('data-operation-id') && ch !== nores) ch.style.order = '9999'; });
+
+    // ---------- Baromètres ----------
+    var NSV = 'http://www.w3.org/2000/svg', f1 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+    function pol(r, v) { var a = (180 - v * 1.8) * Math.PI / 180; return [100 + r * Math.cos(a), 100 - r * Math.sin(a)]; }
+    function arc(a, b) { var p = pol(80, a), q = pol(80, b); return 'M' + p[0].toFixed(2) + ' ' + p[1].toFixed(2) + ' A80 80 0 0 1 ' + q[0].toFixed(2) + ' ' + q[1].toFixed(2); }
+    var Z = [[0, 33.1], [33.9, 66.1], [66.9, 100]];
+    Z.forEach(function (z, k) { var e = document.getElementById('gx-z' + (k + 1)); if (e) e.setAttribute('d', arc(z[0], z[1])); });
+    var DN = { HAUTE: 'gx-dn-H', MOYENNE: 'gx-dn-M', FAIBLE: 'gx-dn-F' }, LG = { HAUTE: 'gx-lg-H', MOYENNE: 'gx-lg-M', FAIBLE: 'gx-lg-F' };
+    var C = 2 * Math.PI * 44;
+    var pg = null; // « Opérations a à b sur N »
+    [].slice.call(document.querySelectorAll('.text-xs')).some(function (e) {
+      var m = /Opérations\s*([\d\s  ]+)\s*à\s*([\d\s  ]+)\s*sur\s*([\d\s  ]+)/.exec(e.textContent.replace(/\s+/g, ' '));
+      if (m) { pg = m.slice(1, 4).map(function (x) { return parseInt(x.replace(/[\s  ]/g, ''), 10); }); return true; } return false;
+    });
+    function baro() {
+      var g = function (id) { return document.getElementById(id); };
+      var vis = { HAUTE: 0, MOYENNE: 0, FAIBLE: 0 }, nv = 0;
+      data.forEach(function (d) { if (d.el.style.display !== 'none') { vis[d.prio]++; nv++; } });
+      var idx = total ? (counts[0] * 100 + counts[1] * 50) / total : 0, thr = state.thr;
+      g('gx-needle').style.transform = 'rotate(' + (idx * 1.8 - 90) + 'deg)';
+      g('gx-thr-g').style.transform = 'rotate(' + (thr * 1.8 - 90) + 'deg)';
+      g('gx-ga-v').textContent = f1.format(idx); g('gx-thr-v').textContent = nf.format(thr); g('gx-thr').value = thr;
+      var zone = idx < 33.3 ? 'ok' : (idx < 66.6 ? 'warn' : 'bad'), st = g('gx-ga-s'); st.setAttribute('data-z', zone);
+      st.textContent = (idx > thr ? '⚠ Au-dessus du seuil · ' : '✓ Sous le seuil · ') + (zone === 'ok' ? 'Maîtrisée' : (zone === 'warn' ? 'Sous tension' : 'Critique'));
+      var acc = 0, gap = total ? 3 : 0;
+      KEYS.forEach(function (k, i) {
+        var len = total ? counts[i] / total * C : 0, c = g(DN[k]);
+        c.style.strokeDasharray = Math.max(len - (counts[i] ? gap : 0), 0) + ' ' + (C - Math.max(len - (counts[i] ? gap : 0), 0));
+        c.style.strokeDashoffset = -acc; acc += len;
+        c.setAttribute('data-gx-tip', 'Priorité ' + PR[k] + '|' + PR[k] + ' : ' + nf.format(counts[i]) + ' opération(s), ' + f1.format(total ? counts[i] / total * 100 : 0) + ' %. Cliquez pour filtrer.');
+        c.style.opacity = state.prio === 'ALL' || state.prio === k ? 1 : .3;
+        g(LG[k]).textContent = nf.format(counts[i]) + (total ? ' · ' + f1.format(counts[i] / total * 100) + ' %' : '');
+      });
+      [].slice.call(document.querySelectorAll('.gx-lg button')).forEach(function (b) { b.setAttribute('aria-pressed', state.prio === b.getAttribute('data-p')); });
+      g('gx-dn-t').textContent = nf.format(total); alertBar(idx, thr);
+      g('gx-bt-total').textContent = nf.format(total);
+      g('gx-bt-haute').textContent = f1.format(total ? counts[0] / total * 100 : 0) + ' %'; g('gx-bt-haute-s').textContent = nf.format(counts[0]) + ' à traiter en premier';
+      g('gx-bt-faible').textContent = f1.format(total ? counts[2] / total * 100 : 0) + ' %'; g('gx-bt-faible-s').textContent = nf.format(counts[2]) + ' en routine';
+      g('gx-bt-vis').textContent = nf.format(nv); g('gx-bt-vis-s').textContent = 'sur ' + nf.format(data.length) + ' de cette page';
+      var pb = g('gx-bt-pbar'), pt = g('gx-bt-page');
+      if (pg && pg[2]) { pt.textContent = nf.format(pg[0]) + ' – ' + nf.format(pg[1]) + ' / ' + nf.format(pg[2]); pb.style.width = (pg[1] / pg[2] * 100) + '%'; }
+      else { pt.textContent = 'Toutes sur une page'; pb.style.width = '100%'; }
+    }
+    function bTog(on) {
+      state.baro = on; var bx = document.getElementById('gx-baro'), bt = document.getElementById('gx-baro-btn');
+      if (bx) bx.hidden = !on; if (bt) bt.setAttribute('aria-expanded', on);
+    }
+    document.getElementById('gx-thr').addEventListener('input', function (e) { state.thr = parseInt(e.target.value, 10) || 60; alDis = false; baro(); save(); });
+    [].slice.call(document.querySelectorAll('.gx-lg button, .gx-dn-svg .gx-sg')).forEach(function (el) {
+      el.addEventListener('click', function () { toggle(el.getAttribute('data-p')); });
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(el.getAttribute('data-p')); } });
+    });
+    document.getElementById('gx-baro-btn').addEventListener('click', function () { bTog(!state.baro); save(); });
+    function refreshPanel() {
+      var NT = ' Le filtre porte sur les opérations de la page affichée. Re-cliquez pour l’annuler.';
+      hb.forEach(function (b, k) { b.textContent = hbLab[k] + ' (' + nf.format(counts[k]) + ')'; b.setAttribute('data-gx-tip', 'Priorité ' + PR[KEYS[k]] + '|' + nf.format(counts[k]) + ' opération(s) au total. Cliquez pour ne voir que celles-ci.' + NT); });
+      blocks.forEach(function (bk, k) {
+        var pct = total ? counts[k] / total * 100 : 0, bar = bk.querySelector('.overflow-hidden > div'), cnt = bk.querySelector('.text-white.font-bold');
+        if (bar) bar.style.width = pct + '%';
+        if (cnt) { cnt.textContent = nf.format(counts[k]) + ' ' + (counts[k] > 1 ? 'tâches' : 'tâche'); var s = document.createElement('span'); s.className = 'gx-pct'; s.textContent = '· ' + f1.format(pct) + ' %'; cnt.appendChild(s); }
+        bk.setAttribute('data-gx-tip', 'Priorité ' + PR[KEYS[k]] + '|' + nf.format(counts[k]) + ' opération(s), soit ' + f1.format(pct) + ' % du total. Cliquez pour filtrer.');
+      });
+    }
+
+    // ---------- Actions : changement instantané, annulation, sélection multiple, export ----------
+    var SKIN = {
+      HAUTE: { badge: 'bg-rose-500/10 border border-rose-500/20 text-rose-400', txt: 'Urgent & Critique', bar: 'bg-gradient-to-b from-rose-500 to-orange-500', hov: 'hover:border-rose-500/30' },
+      MOYENNE: { badge: 'bg-amber-500/10 border border-amber-500/20 text-amber-400', txt: 'Important / Planifié', bar: 'bg-gradient-to-b from-amber-400 to-orange-400', hov: 'hover:border-amber-500/30' },
+      FAIBLE: { badge: 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400', txt: 'Routine / Recul', bar: 'bg-gradient-to-b from-emerald-500 to-teal-500', hov: 'hover:border-emerald-500/30' }
+    };
+    var BTN = { HAUTE: ['bg-rose-500 text-white shadow-md scale-105', 'text-rose-400 hover:bg-rose-500/20'], MOYENNE: ['bg-amber-500 text-black shadow-md scale-105', 'text-amber-400 hover:bg-amber-500/20'], FAIBLE: ['bg-emerald-500 text-white shadow-md scale-105', 'text-emerald-400 hover:bg-emerald-500/20'] };
+    var BBASE = 'w-8 h-8 rounded-lg text-xs font-bold transition-all flex items-center justify-center';
+    var alDis = false;
+    function skin(d) {
+      var p = d.prio, S = SKIN[p], c = d.el;
+      var bd = c.querySelector('.mb-1 span');
+      if (bd) { bd.className = S.badge + ' text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md'; bd.textContent = S.txt; bd.setAttribute('data-gx-tip', 'Priorité ' + PR[p] + '|' + TIPS[p]); }
+      var bar = c.querySelector('.w-1.h-12'); if (bar) { bar.className = 'w-1 h-12 rounded-full shrink-0 ' + S.bar; bar.setAttribute('data-gx-tip', 'Priorité ' + PR[p] + '|Couleur de la priorité actuelle.'); }
+      c.className = c.className.replace(/hover:border-(rose|amber|emerald)-500\/30/g, '').replace(/\s+/g, ' ').trim() + ' ' + S.hov;
+      var btns = c.querySelectorAll('button[onclick^="updatePriority"]');
+      KEYS.forEach(function (k, i) { if (btns[i]) btns[i].className = BBASE + ' ' + BTN[k][k === p ? 0 : 1]; });
+    }
+    function setPrio(d, p) {
+      var old = d.prio; if (old === p) return false;
+      counts[KEYS.indexOf(old)]--; counts[KEYS.indexOf(p)]++; d.prio = p; skin(d); return true;
+    }
+    function post(id, p) {
+      var tk = document.getElementById('global-csrf');
+      return fetch('/priorisation/update/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': tk ? tk.value : '' }, body: JSON.stringify({ id: id, priorite: p }) })
+        .then(function (r) { return r.ok; }, function () { return false; });
+    }
+    var toastEl = document.createElement('div'); toastEl.id = 'gx-toast'; toastEl.setAttribute('role', 'status'); toastEl.setAttribute('aria-live', 'polite'); document.body.appendChild(toastEl);
+    var tt = null;
+    function toast(msg, undoFn, bad) {
+      clearTimeout(tt); toastEl.textContent = ''; toastEl.className = 'on' + (bad ? ' bad' : '');
+      var s = document.createElement('span'); s.textContent = msg; toastEl.appendChild(s);
+      if (undoFn) { var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Annuler'; b.addEventListener('click', function () { clearTimeout(tt); toastEl.className = ''; undoFn(); }); toastEl.appendChild(b); }
+      tt = setTimeout(function () { toastEl.className = ''; }, 7000);
+    }
+    function refreshAll() { refreshPanel(); apply(); }
+    function clearSel() { data.forEach(function (d) { d.sel = false; if (d.ck) d.ck.checked = false; d.el.classList.remove('gx-sel'); }); bulk(); }
+    function change(list, p) {
+      var todo = list.filter(function (d) { return d.prio !== p; });
+      if (!todo.length) { toast('Déjà en priorité ' + PR[p] + '.'); return; }
+      var prev = todo.map(function (d) { return { d: d, old: d.prio }; });
+      prev.forEach(function (x) { setPrio(x.d, p); x.d.el.style.opacity = '.6'; }); refreshAll();
+      var fails = [], chain = Promise.resolve();
+      prev.forEach(function (x) {
+        chain = chain.then(function () { return post(x.d.el.dataset.operationId, p).then(function (ok) { x.d.el.style.opacity = ''; if (!ok) { fails.push(x); setPrio(x.d, x.old); } }); });
+      });
+      chain.then(function () {
+        refreshAll();
+        var good = prev.filter(function (x) { return fails.indexOf(x) < 0; });
+        if (fails.length) toast(nf.format(fails.length) + ' échec(s) : priorité rétablie.', null, true);
+        if (good.length) toast(good.length === 1 ? '« ' + good[0].d.name + ' » passe en ' + PR[p] + '.' : nf.format(good.length) + ' opérations passent en ' + PR[p] + '.', function () { undo(good); });
+      });
+    }
+    function undo(good) {
+      good.forEach(function (x) { setPrio(x.d, x.old); x.d.el.style.opacity = '.6'; }); refreshAll();
+      var chain = Promise.resolve();
+      good.forEach(function (x) { chain = chain.then(function () { return post(x.d.el.dataset.operationId, x.old).then(function () { x.d.el.style.opacity = ''; }); }); });
+      chain.then(function () { refreshAll(); toast('Modification annulée.'); });
+    }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('button[onclick^="updatePriority"]') : null; if (!b) return;
+      var m = /updatePriority\('([^']*)'\s*,\s*'([^']*)'\)/.exec(b.getAttribute('onclick') || ''); if (!m || !PR[m[2]]) return;
+      var d = data.filter(function (x) { return x.el.dataset.operationId === m[1]; })[0]; if (!d) return;
+      e.preventDefault(); e.stopPropagation(); change([d], m[2]);
+    }, true);
+
+    // Sélection multiple
+    var bb = document.createElement('div'); bb.id = 'gx-bulk'; bb.hidden = true; bb.setAttribute('role', 'toolbar'); bb.setAttribute('aria-label', 'Actions sur la sélection');
+    bb.innerHTML = '<span id="gx-bk-n"></span><button type="button" data-bk="HAUTE">H · Haute</button><button type="button" data-bk="MOYENNE">M · Moyenne</button><button type="button" data-bk="FAIBLE">F · Faible</button><button type="button" id="gx-bk-all">Tout (visibles)</button><button type="button" id="gx-bk-x" aria-label="Désélectionner">✕</button>';
+    document.body.appendChild(bb);
+    function selected() { return data.filter(function (d) { return d.sel && d.el.style.display !== 'none'; }); }
+    function bulk() { var n = selected().length; bb.hidden = n === 0; document.getElementById('gx-bk-n').textContent = nf.format(n) + ' sélectionnée' + (n > 1 ? 's' : ''); }
+    data.forEach(function (d) {
+      var row = d.el.querySelector('.flex.items-start.gap-4'); if (!row) return;
+      var l = document.createElement('label'); l.className = 'gx-ck'; l.setAttribute('data-gx-tip', 'Sélection|Cochez plusieurs opérations pour changer leur priorité en une seule fois.');
+      var i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('aria-label', 'Sélectionner ' + d.name); l.appendChild(i); row.insertBefore(l, row.firstChild);
+      i.addEventListener('change', function () { d.sel = i.checked; d.el.classList.toggle('gx-sel', i.checked); bulk(); }); d.ck = i;
+    });
+    [].slice.call(bb.querySelectorAll('[data-bk]')).forEach(function (b) { b.addEventListener('click', function () { var l = selected(); clearSel(); change(l, b.getAttribute('data-bk')); }); });
+    document.getElementById('gx-bk-x').addEventListener('click', clearSel);
+    document.getElementById('gx-bk-all').addEventListener('click', function () {
+      var vis = data.filter(function (d) { return d.el.style.display !== 'none' && d.ck; }), all = vis.every(function (d) { return d.sel; });
+      vis.forEach(function (d) { d.sel = !all; d.ck.checked = !all; d.el.classList.toggle('gx-sel', !all); }); bulk();
+    });
+
+    // Alerte visuelle
+    function alertBar(idx, thr) {
+      var a = document.getElementById('gx-alert'); if (!a) return; var over = idx > thr && total > 0;
+      a.hidden = !(over && !alDis);
+      if (over) {
+        document.getElementById('gx-al-t').textContent = 'Pression élevée : ' + f1.format(idx) + ' / 100 (seuil ' + nf.format(thr) + ')';
+        document.getElementById('gx-al-s').textContent = nf.format(counts[0]) + ' opération(s) en priorité Haute sur ' + nf.format(total) + '.';
+      }
+    }
+    document.getElementById('gx-al-f').addEventListener('click', function () { state.prio = 'HAUTE'; apply(); save(); var f = data.filter(function (d) { return d.el.style.display !== 'none'; })[0]; if (f) f.el.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+    document.getElementById('gx-al-x').addEventListener('click', function () { alDis = true; document.getElementById('gx-alert').hidden = true; });
+
+    // Export CSV
+    document.getElementById('gx-pr-exp').addEventListener('click', function () {
+      var rows = [['Opération', 'Priorité']].concat(data.filter(function (d) { return d.el.style.display !== 'none'; }).sort(function (a, b) { return (a.el.style.order | 0) - (b.el.style.order | 0); }).map(function (d) { return [d.name, PR[d.prio]]; }));
+      var csv = '﻿' + rows.map(function (r) { return r.map(function (c) { c = String(c); if (/^[=+\-@]/.test(c)) c = "'" + c; return '"' + c.replace(/"/g, '""') + '"'; }).join(';'); }).join('\r\n');
+      var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = 'priorisation_' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      toast(nf.format(rows.length - 1) + ' ligne(s) exportée(s).');
+    });
+    refreshPanel();
+    function apply() {
+      var q = state.q.trim().toLowerCase(), vis = 0;
+      data.forEach(function (d) {
+        var show = (!q || d.low.indexOf(q) > -1) && (state.prio === 'ALL' || d.prio === state.prio);
+        d.el.style.display = show ? '' : 'none'; if (show) vis++;
+        hl(d.h4, q, d.name);
+      });
+      var s = data.slice().sort(function (a, b) {
+        if (state.sort === 'prio') return RANK[a.prio] - RANK[b.prio] || a.i - b.i;
+        if (state.sort === 'prio-asc') return RANK[b.prio] - RANK[a.prio] || a.i - b.i;
+        if (state.sort === 'name') return a.name.localeCompare(b.name, 'fr');
+        return a.i - b.i;
+      });
+      s.forEach(function (d, r) { d.el.style.order = r; });
+      nores.hidden = !(data.length && !vis); nores.style.order = 5000;
+      cEl.textContent = nf.format(vis) + ' affichée' + (vis > 1 ? 's' : '') + ' sur ' + nf.format(data.length) + ' sur cette page';
+      rEl.hidden = !(q || state.prio !== 'ALL' || state.sort !== 'default');
+      hb.forEach(function (b, k) { b.classList.toggle('gx-on', state.prio === KEYS[k]); b.setAttribute('aria-pressed', state.prio === KEYS[k]); });
+      sIn.value = state.sort; kb.hidden = !!qIn.value; baro();
+    }
+    hb.forEach(function (b, k) { b.type = b.type || 'button'; b.addEventListener('click', function () { toggle(KEYS[k]); }); });
+    qIn.addEventListener('input', function () { state.q = qIn.value; apply(); save(); });
+    sIn.addEventListener('change', function () { state.sort = sIn.value; apply(); save(); });
+    rEl.addEventListener('click', function () { state.q = ''; state.prio = 'ALL'; state.sort = 'default'; qIn.value = ''; apply(); save(); });
+    document.addEventListener('keydown', function (e) {
+      var t = document.activeElement ? document.activeElement.tagName : '';
+      if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(t)) { e.preventDefault(); qIn.focus(); }
+    });
+    bTog(state.baro !== false); qIn.value = state.q; apply();
+
+    // ---------- Infobulles ----------
+    var tip = document.createElement('div'); tip.id = 'gx-tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip);
+    var cur = null, timer = null, hideT = null;
+    function set(el, t, x) { if (el && !el.hasAttribute('data-gx-tip')) el.setAttribute('data-gx-tip', t + '|' + x); }
+    var NOTE = ' Le filtre porte sur les opérations de la page affichée. Re-cliquez pour l’annuler.';
+    hb.forEach(function (b, k) { set(b, 'Priorité ' + PR[KEYS[k]], nf.format(counts[k]) + ' opération(s) au total. Cliquez pour ne voir que celles-ci.' + NOTE); });
+    blocks.forEach(function (bk, k) { set(bk, 'Priorité ' + PR[KEYS[k]], nf.format(counts[k]) + ' opération(s), soit ' + new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(total ? counts[k] / total * 100 : 0) + ' % du total. Cliquez pour filtrer.'); });
+    set(qIn, 'Recherche', 'Tapez une partie du nom d’une opération. La touche / place le curseur ici.');
+    set(sIn.parentElement, 'Tri', 'Change l’ordre d’affichage de la page sans la recharger.');
+    set(cEl, 'Compteur', 'Opérations visibles après recherche et filtre, parmi celles de la page courante.');
+    set(document.getElementById('gx-ga-wrap'), 'Pression des priorités', 'Indice de 0 à 100 : Haute compte 100, Moyenne 50, Faible 0, moyenné sur toutes les opérations. Plus l’aiguille va à droite, plus la charge urgente domine.');
+    set(document.getElementById('gx-ga-s'), 'Lecture', 'Vert : maîtrisée (moins de 33). Orange : sous tension (33 à 66). Rouge : critique (plus de 66). Le trait pointillé est votre seuil.');
+    set(document.getElementById('gx-thr').parentElement, 'Seuil d’alerte', 'Faites glisser pour fixer votre seuil. L’indicateur passe en alerte quand la pression le dépasse. Il est mémorisé.');
+    KEYS.forEach(function (k, i) {
+      var tx = PR[k] + ' : ' + nf.format(counts[i]) + ' opération(s), ' + f1.format(total ? counts[i] / total * 100 : 0) + ' %. Cliquez pour filtrer.';
+      set(document.getElementById(DN[k]), 'Priorité ' + PR[k], tx);
+    });
+    set(document.getElementById('gx-bt-total').parentElement, 'Total', 'Nombre total d’opérations toutes pages confondues (somme des trois priorités).');
+    set(document.getElementById('gx-bt-haute').parentElement, 'Urgentes', 'Part des opérations en priorité Haute dans le total.');
+    set(document.getElementById('gx-bt-faible').parentElement, 'Routine', 'Part des opérations en priorité Faible dans le total.');
+    set(document.getElementById('gx-bt-vis').parentElement, 'Affichées', 'Opérations visibles sur cette page après recherche et filtre.');
+    set(document.getElementById('gx-bt-page').parentElement, 'Page en cours', 'Position de la page courante dans l’ensemble des opérations.');
+    var TIPS = { HAUTE: 'À traiter en premier. Survolez la carte pour changer la priorité avec H, M ou F.', MOYENNE: 'Important et planifié. Survolez la carte pour changer la priorité avec H, M ou F.', FAIBLE: 'Routine, peut attendre. Survolez la carte pour changer la priorité avec H, M ou F.' };
+    data.forEach(function (d) {
+      set(d.el.querySelector('.mb-1 span'), 'Priorité ' + PR[d.prio], TIPS[d.prio]);
+      set(d.h4, d.name, 'Nom complet de l’opération.');
+      set(d.el.querySelector('.w-1.h-12'), 'Priorité ' + PR[d.prio], 'Couleur de la priorité actuelle.');
+      set(d.el.querySelector('.fa-clock') && d.el.querySelector('.fa-clock').parentElement, 'Suivi', 'Opération suivie dans le module de priorisation.');
+    });
+    [].slice.call(document.querySelectorAll('a[href^="?page="]')).forEach(function (a) { set(a, 'Page', 'Aller à cette page de résultats.'); });
+
+    function position(el) {
+      var r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      var top = r.top - h - 10; if (top < 8) top = r.bottom + 10; if (top + h > vh - 8) top = Math.max(8, vh - h - 8);
+      tip.style.left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), Math.max(8, vw - w - 8)) + 'px'; tip.style.top = top + 'px';
+    }
+    function show(el) {
+      var raw = el.getAttribute('data-gx-tip'); if (!raw) return; var i = raw.indexOf('|');
+      tip.textContent = ''; var b = document.createElement('b'); b.textContent = raw.slice(0, i); tip.appendChild(b); tip.appendChild(document.createTextNode(raw.slice(i + 1)));
+      tip.style.left = '0px'; tip.style.top = '0px'; position(el); tip.classList.add('on');
+    }
+    function hide() { clearTimeout(timer); clearTimeout(hideT); cur = null; tip.classList.remove('on'); }
+    function over(e) { var el = e.target.closest ? e.target.closest('[data-gx-tip]') : null; if (el === cur) return; hide(); if (!el) return; cur = el; timer = setTimeout(function () { show(el); }, 160); }
+    document.addEventListener('mouseover', over); document.addEventListener('focusin', over); document.addEventListener('focusout', hide);
+    document.addEventListener('mouseleave', hide); window.addEventListener('scroll', hide, { passive: true });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });
+    document.addEventListener('click', hide, true);
+    document.addEventListener('touchstart', function (e) { var el = e.target.closest ? e.target.closest('[data-gx-tip]') : null; if (!el) { hide(); return; } hide(); cur = el; show(el); hideT = setTimeout(hide, 2800); }, { passive: true });
+
+    // ---------- Garde anti-défilement horizontal ----------
+    function guard() {
+      var c = document.querySelector('[data-operation-id]'), de = document.documentElement, vw = de.clientWidth; if (!c) return;
+      for (var p = c.parentElement; p && p !== de; p = p.parentElement) if (p.scrollWidth > p.clientWidth + 1) p.style.overflowX = 'hidden';
+      [].slice.call(document.querySelectorAll('[data-operation-id], [data-operation-id] *, .gx-pr-controls *')).forEach(function (e) {
+        var r = e.getBoundingClientRect(); if (r.width > 0 && r.right > vw + 1) { e.style.maxWidth = '100%'; e.style.minWidth = '0'; }
+      });
+    }
+    guard(); setTimeout(guard, 700); window.addEventListener('resize', guard);
+  });
+})();
 </script>
 
 {% endblock %}

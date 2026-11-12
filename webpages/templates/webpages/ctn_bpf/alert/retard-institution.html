@@ -157,3 +157,159 @@
 
     document.addEventListener("DOMContentLoaded", gererCycleNeon);
 </script>
+
+<!-- ===================== CONTRÔLE CRITIQUE : gestion professionnelle (ajout) ===================== -->
+<style>
+    /* La visibilité est désormais pilotée par la classe .nw-open (le cycle 30 s/30 s d'origine ne s'impose plus) */
+    #neonWidget { display: none !important; width: min(300px, calc(100vw - 32px)); opacity: 0; transform: translateY(14px); transition: opacity .25s, transform .25s; }
+    #neonWidget.nw-open { display: block !important; opacity: 1; transform: none; }
+    #neonWidget .neon-card { position: relative; }
+    #neonWidget .neon-header { position: relative; }
+    #neonWidget .pulse-ring { flex-shrink: 0; }
+    @media (prefers-reduced-motion: no-preference) { #neonWidget .pulse-ring { animation: nw-pulse 1.8s ease-out infinite; } @keyframes nw-pulse { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.7); } 100% { box-shadow: 0 0 0 9px rgba(255,255,255,0); } } }
+    #neonWidget .n-val { font-size: 22px; font-variant-numeric: tabular-nums; display: block; text-align: center; }
+    #neonWidget .n-stat-link:focus-visible, #neonWidget .neon-btn:focus-visible, .nw-btn:focus-visible { outline: 2px solid #C42D2D; outline-offset: 2px; }
+    #neonWidget .neon-btn { cursor: pointer; margin-bottom: 8px; }
+    .nw-bar { height: 3px; background: rgba(255,255,255,.25); position: absolute; left: 0; right: 0; bottom: 0; }
+    .nw-bar > i { display: block; height: 100%; width: 0; background: #fff; }
+    .nw-tot { margin-left: auto; font-size: 11px; font-weight: 800; background: rgba(255,255,255,.2); color: #fff; padding: 2px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+    .nw-x { margin-left: 6px; background: transparent; border: 0; color: #fff; font-size: 18px; line-height: 1; cursor: pointer; padding: 0 2px; opacity: .85; }
+    .nw-x:hover { opacity: 1; }
+    .nw-foot { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 10px; }
+    .nw-btn { flex: 1 1 auto; font-size: 11px; font-weight: 700; padding: 7px 8px; border-radius: 8px; color: #334155; background: #f1f5f9; border: 1px solid #e6eaf0; cursor: pointer; white-space: nowrap; }
+    .nw-btn:hover { background: #e8edf3; }
+    .nw-meta { display: flex; justify-content: space-between; gap: 8px; padding: 0 20px 12px; font-size: 10.5px; color: #94a3b8; }
+    .nw-meta button { font-size: 10.5px; font-weight: 700; color: #64748b; text-decoration: underline; padding: 0; background: none; border: 0; cursor: pointer; }
+    /* Pastille permanente */
+    #nw-launch { position: fixed; left: 24px; bottom: 24px; z-index: 2990; width: 46px; height: 46px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; background: #C42D2D; color: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.2), 0 14px 28px -12px rgba(196,45,45,.7); transition: transform .2s; }
+    #nw-launch[hidden] { display: none; }
+    #nw-launch:hover { transform: translateY(-2px); }
+    #nw-launch:focus-visible { outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 4px #C42D2D; }
+    #nw-launch svg { width: 20px; height: 20px; }
+    #nw-launch .nw-b { position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #0f172a; color: #fff; font-size: 11px; font-weight: 800; line-height: 16px; text-align: center; border: 2px solid #fff; font-variant-numeric: tabular-nums; }
+    #nw-launch.nw-quiet { background: #64748b; box-shadow: 0 1px 2px rgba(15,23,42,.2), 0 14px 28px -12px rgba(15,23,42,.5); }
+    #nw-launch.nw-quiet .nw-b { background: #475569; }
+    @media (prefers-reduced-motion: no-preference) { #nw-launch.nw-new .nw-b { animation: nw-pop 1.6s ease-out 3; } @keyframes nw-pop { 0% { box-shadow: 0 0 0 0 rgba(196,45,45,.6); } 100% { box-shadow: 0 0 0 12px rgba(196,45,45,0); } } }
+    #neonWidget { bottom: 80px !important; }
+    @media (max-width: 480px) { #neonWidget { left: 16px !important; } #nw-launch { left: 16px; bottom: 16px; } #neonWidget { bottom: 72px !important; } }
+    @media print { #nw-launch, #neonWidget { display: none !important; } }
+</style>
+<script>
+(function () {
+    var w = document.getElementById('neonWidget'); if (!w) return;
+    var P = 'nw2_', AUTO_MS = 12000, COOLDOWN = 30 * 60 * 1000, SNOOZE = 60 * 60 * 1000;
+    var nf = new Intl.NumberFormat('fr-FR');
+    var header = w.querySelector('.neon-header'), card = w.querySelector('.neon-card'), btn = w.querySelector('.neon-btn');
+    var valEls = w.querySelectorAll('.n-val'), links = w.querySelectorAll('.n-stat-link');
+    var isOpen = false, autoMode = false, hideT = null, retryT = null, remT = null, retries = 0, bar;
+
+    function ls(k, v) { try { if (v === undefined) return localStorage.getItem(P + k); if (v === null) localStorage.removeItem(P + k); else localStorage.setItem(P + k, v); } catch (e) {} return null; }
+    function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+    function hm(ts) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+    function num(el) { return el ? (parseInt(String(el.getAttribute('data-nw') || el.textContent).replace(/\D/g, ''), 10) || 0) : 0; }
+    // Valeurs lues une fois (rendu serveur), puis affichées avec séparateur de milliers
+    var raw = []; valEls.forEach(function (el) { var v = num(el); raw.push(v); el.setAttribute('data-nw', v); el.textContent = nf.format(v); });
+    var t1 = raw[0] || 0, t2 = raw[1] || 0, total = t1 + t2;
+    function getAck() { try { var a = JSON.parse(ls('ack') || 'null'); if (a && a.day) return a; } catch (e) {} return { day: null, a: 0, b: 0 }; }
+    function setAck() { ls('ack', JSON.stringify({ day: today(), a: t1, b: t2 })); }
+    function remindAt() { return parseInt(ls('remind') || '0', 10) || 0; }
+    function muted() { return ls('mute') === '1'; }
+    function silentToday() { return ls('silent') === today(); }
+    function isUnseen() { var k = getAck(); return k.day !== today() || t1 > k.a || t2 > k.b; }
+
+    // Ancien état « fermé pour toujours » : on le lève (la pastille remplace la croix définitive)
+    try { localStorage.removeItem('neon_widget_closed'); } catch (e) {}
+
+    // Éléments ajoutés
+    var tot = document.createElement('span'); tot.className = 'nw-tot'; tot.textContent = nf.format(total);
+    var x = document.createElement('button'); x.type = 'button'; x.className = 'nw-x'; x.setAttribute('aria-label', 'Réduire en pastille'); x.innerHTML = '&times;';
+    bar = document.createElement('div'); bar.className = 'nw-bar'; bar.innerHTML = '<i></i>';
+    if (header) { header.appendChild(tot); header.appendChild(x); header.appendChild(bar); }
+    var foot = document.createElement('div'); foot.className = 'nw-foot';
+    foot.innerHTML = '<button type="button" class="nw-btn" data-nw-a="snooze">Rappel dans 1 h</button><button type="button" class="nw-btn" data-nw-a="silent">Silence aujourd’hui</button>';
+    var meta = document.createElement('div'); meta.className = 'nw-meta'; meta.innerHTML = '<span data-nw-a="time"></span><button type="button" data-nw-a="mute"></button>';
+    if (card) { card.appendChild(foot); card.appendChild(meta); }
+    // Infobulles sur les liens (attributs ajoutés, rien de modifié)
+    if (links[0]) links[0].setAttribute('title', nf.format(t1) + ' tâche(s) en retard : cliquer pour voir le détail');
+    if (links[1]) links[1].setAttribute('title', nf.format(t2) + ' transaction(s) en retard : cliquer pour voir le détail');
+    var fill = bar.firstChild;
+
+    var L = document.createElement('button'); L.id = 'nw-launch'; L.type = 'button'; L.hidden = total === 0;
+    L.setAttribute('aria-haspopup', 'true'); L.setAttribute('aria-expanded', 'false'); L.setAttribute('aria-controls', 'neonWidget');
+    L.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><span class="nw-b">' + (total > 99 ? '99+' : nf.format(total)) + '</span>';
+    document.body.appendChild(L);
+    if (total === 0) w.setAttribute('aria-hidden', 'true');
+
+    function refresh() {
+        var un = !isOpen && isUnseen() && total > 0;
+        L.classList.toggle('nw-new', un); L.classList.toggle('nw-quiet', !un);
+        var lbl = 'Contrôle critique : ' + nf.format(t1) + ' tâche(s) en retard, ' + nf.format(t2) + ' transaction(s) en retard' + (un ? ' (nouveau)' : '');
+        L.setAttribute('aria-label', lbl); L.title = lbl;
+        var r = remindAt(), tm = meta.querySelector('[data-nw-a=time]'), mu = meta.querySelector('[data-nw-a=mute]');
+        if (tm) tm.textContent = r > Date.now() ? 'Rappel à ' + hm(r) : 'Données de ' + hm(window.__nwLoad);
+        if (mu) { mu.textContent = muted() ? 'Ouverture auto : désactivée' : 'Ouverture auto : activée'; mu.setAttribute('aria-pressed', muted()); }
+    }
+    window.__nwLoad = Date.now();
+
+    function open(auto, kind) {
+        clearTimeout(hideT); isOpen = true; autoMode = !!auto;
+        w.classList.add('nw-open'); L.setAttribute('aria-expanded', 'true');
+        setAck(); if (auto) ls('last_auto', String(Date.now())); if (kind === 'remind') ls('remind', null);
+        fill.style.transition = 'none'; fill.style.width = '0%'; void fill.offsetWidth;
+        if (auto) { fill.style.transition = 'width ' + AUTO_MS + 'ms linear'; fill.style.width = '100%'; hideT = setTimeout(close, AUTO_MS); }
+        refresh();
+    }
+    function close() { clearTimeout(hideT); isOpen = false; autoMode = false; w.classList.remove('nw-open'); L.setAttribute('aria-expanded', 'false'); fill.style.transition = 'none'; fill.style.width = '0%'; refresh(); }
+    function stopAuto() { if (autoMode) { autoMode = false; clearTimeout(hideT); fill.style.transition = 'none'; fill.style.width = '0%'; } }
+
+    function busy() {
+        var a = document.activeElement;
+        if (a && a !== document.body && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable)) return true;
+        return !!document.querySelector('dialog[open], .modal.show, .swal2-popup, [role=dialog][aria-modal=true]');
+    }
+    function allowed(kind) {
+        if (kind === 'remind') return true;
+        if (muted() || silentToday() || remindAt() > Date.now()) return false;
+        return Date.now() - (parseInt(ls('last_auto') || '0', 10) || 0) >= COOLDOWN;
+    }
+    function tryOpen(kind) {
+        clearTimeout(retryT);
+        if (isOpen || total === 0 || !allowed(kind) || document.visibilityState !== 'visible') return;
+        if (busy()) { if (++retries < 24) retryT = setTimeout(function () { tryOpen(kind); }, 5000); return; }
+        retries = 0; open(true, kind);
+    }
+    function schedule() { clearTimeout(remT); var r = remindAt(), d = r - Date.now(); if (r && d > 0) remT = setTimeout(evaluate, Math.min(d + 400, 2147483000)); }
+    function evaluate() {
+        refresh(); if (total === 0) return;
+        var r = remindAt(); if (r && Date.now() >= r) { tryOpen('remind'); return; }
+        if (isUnseen()) tryOpen('auto');
+        schedule();
+    }
+
+    L.addEventListener('click', function () { if (isOpen) close(); else open(false); });
+    x.addEventListener('click', function () { setAck(); close(); });
+    if (btn) btn.addEventListener('click', function () { setAck(); }, true);    // « Vue d'ensemble » = vu (la fonction d'origine ferme le widget)
+    document.addEventListener('click', function (e) { if (isOpen && !w.contains(e.target) && !L.contains(e.target)) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isOpen) { close(); try { L.focus(); } catch (z) {} } });
+    w.addEventListener('pointerdown', stopAuto);
+    w.addEventListener('mouseenter', function () { if (isOpen && autoMode) { clearTimeout(hideT); fill.style.transition = 'none'; fill.style.width = getComputedStyle(fill).width; } });
+    w.addEventListener('mouseleave', function () { if (isOpen && autoMode) { fill.style.transition = 'width 4000ms linear'; void fill.offsetWidth; fill.style.width = '100%'; hideT = setTimeout(close, 4000); } });
+    foot.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-nw-a]'); if (!b) return; var a = b.getAttribute('data-nw-a');
+        if (a === 'snooze') { ls('remind', String(Date.now() + SNOOZE)); schedule(); close(); }
+        if (a === 'silent') { ls('silent', today()); setAck(); close(); }
+    });
+    meta.addEventListener('click', function (e) { if (e.target.closest('[data-nw-a=mute]')) { ls('mute', muted() ? null : '1'); refresh(); } });
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') evaluate(); });
+    window.addEventListener('storage', function (e) {
+        if (!e.key || e.key.indexOf(P) !== 0) return;
+        if (e.key === P + 'last_auto' && isOpen && autoMode) close();
+        refresh();
+    });
+
+    // Vos fonctions d'origine restent appelables mais ne ferment plus « pour toujours »
+    window.toggleNeon = function () { setAck(); close(); };
+    window.gererCycleNeon = function () {};
+    refresh(); schedule(); setTimeout(evaluate, 1500);
+})();
+</script>

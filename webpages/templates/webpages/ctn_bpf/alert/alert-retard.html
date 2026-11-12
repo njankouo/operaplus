@@ -324,3 +324,175 @@
     }, 5000);
 })();
 </script>
+
+<!-- ===================== CARTE D'ALERTE : gestion professionnelle (ajout) ===================== -->
+<style>
+    /* Pastille permanente (centre de notifications) */
+    #al-launch { position: fixed; right: 20px; bottom: 20px; z-index: 1070; width: 46px; height: 46px; border-radius: 50%; border: 0; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; padding: 0;
+        background: var(--nav-bg-color, #123A37); color: var(--al-ink, #fff);
+        box-shadow: 0 1px 2px rgba(15,23,42,.2), 0 14px 28px -12px rgba(15,23,42,.55); transition: transform .2s, box-shadow .2s; }
+    #al-launch[hidden] { display: none; }
+    #al-launch:hover { transform: translateY(-2px); }
+    #al-launch:focus-visible { outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 4px var(--al-danger, #E35A33); }
+    #al-launch svg { width: 20px; height: 20px; }
+    .al-bdg { position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 999px;
+        background: var(--al-danger, #E35A33); color: #fff; font-size: 11px; font-weight: 800; line-height: 16px; text-align: center; border: 2px solid #fff; font-variant-numeric: tabular-nums; }
+    #al-launch.al-quiet .al-bdg { background: #64748b; }
+    @media (prefers-reduced-motion: no-preference) {
+        #al-launch.al-new .al-bdg { animation: al-pulse 1.6s ease-out 3; }
+        @keyframes al-pulse { 0% { box-shadow: 0 0 0 0 rgba(227,90,51,.55); } 100% { box-shadow: 0 0 0 12px rgba(227,90,51,0); } }
+    }
+    /* La carte s'ouvre au-dessus de la pastille, au lieu de surgir en haut de l'écran */
+    #pending-card { top: auto !important; bottom: 78px !important; right: 20px !important; transform: translateY(14px) !important; cursor: default; }
+    #pending-card.al-open { transform: none !important; }
+    .al-foot { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-top: 1px solid #eef1f5; }
+    .al-btn { flex: 1 1 auto; font-size: 11px; font-weight: 700; padding: 7px 10px; border-radius: 9px; color: #334155 !important; background: #f1f5f9 !important; border: 1px solid #e6eaf0 !important; cursor: pointer; transition: background .15s; white-space: nowrap; }
+    .al-btn:hover { background: #e8edf3 !important; }
+    .al-btn:focus-visible { outline: 2px solid var(--al-danger, #E35A33); outline-offset: 1px; }
+    .al-meta { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 0 12px 10px; font-size: 10.5px; color: #94a3b8; }
+    .al-meta button { font-size: 10.5px; font-weight: 700; color: #64748b !important; text-decoration: underline; padding: 0; background: none !important; border: 0 !important; cursor: pointer; }
+    html.sbx-dark .al-foot { border-top-color: #262b36; }
+    html.sbx-dark .al-btn { color: #e2e8f0 !important; background: #1f2430 !important; border-color: #262b36 !important; }
+    html.sbx-dark .al-btn:hover { background: #262b36 !important; }
+    .gx-top { bottom: 4.75rem !important; }   /* évite la superposition avec le bouton « haut de page » */
+    @media (max-width: 480px) { #pending-card { left: 12px !important; right: 12px !important; bottom: 78px !important; } }
+    @media print { #al-launch { display: none !important; } }
+</style>
+<script>
+(function () {
+    var c = document.getElementById('pending-card'); if (!c) return;
+    var fillEl = document.getElementById('progressFill'), host = c.querySelector('.p-3');
+    var P = 'al2_', AUTO_MS = 8000, COOLDOWN = 30 * 60 * 1000, SNOOZE = 60 * 60 * 1000;
+    var nf = new Intl.NumberFormat('fr-FR');
+    var isOpen = false, autoMode = false, hideT = null, retryT = null, remT = null, retries = 0, ready = false, lastUpdate = 0, deb = null;
+
+    /* ---- Mémoire (localStorage, partagée entre onglets) ---- */
+    function ls(k, v) { try { if (v === undefined) return localStorage.getItem(P + k); if (v === null) localStorage.removeItem(P + k); else localStorage.setItem(P + k, v); } catch (e) {} return null; }
+    function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+    function hm(ts) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+    function n(id) { var el = document.getElementById(id); return el ? (parseInt(String(el.textContent).replace(/\D/g, ''), 10) || 0) : 0; }
+    function counts() { return { tasks: n('task-count'), trans: n('trans-count') }; }
+    function getAck() { try { var a = JSON.parse(ls('ack') || 'null'); if (a && a.day) return a; } catch (e) {} return { day: null, tasks: 0, trans: 0 }; }
+    function setAck(t) { ls('ack', JSON.stringify({ day: today(), tasks: t.tasks, trans: t.trans })); }
+    function remindAt() { return parseInt(ls('remind') || '0', 10) || 0; }
+    function muted() { return ls('mute') === '1'; }
+    function legacyDismissed() { try { return localStorage.getItem('pending_card_dismissed') === 'true' && localStorage.getItem('pending_card_dismissed_day') === new Date().toISOString().slice(0, 10); } catch (e) { return false; } }
+    function silentToday() { return ls('silent') === today() || legacyDismissed(); }
+
+    /* ---- Pastille ---- */
+    var L = document.createElement('button'); L.id = 'al-launch'; L.type = 'button'; L.hidden = true;
+    L.setAttribute('aria-haspopup', 'true'); L.setAttribute('aria-expanded', 'false'); L.setAttribute('aria-controls', 'pending-card');
+    L.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="al-bdg"></span>';
+    document.body.appendChild(L);
+    try { var cs = getComputedStyle(c); L.style.setProperty('--al-danger', cs.getPropertyValue('--al-danger').trim() || '#E35A33'); var ink = c.style.getPropertyValue('--al-ink'); if (ink) L.style.setProperty('--al-ink', ink); } catch (e) {}
+
+    /* ---- Pied de carte : rappel, silence, réglage ---- */
+    var foot = document.createElement('div'); foot.className = 'al-foot';
+    foot.innerHTML = '<button type="button" class="al-btn" data-al="snooze">Rappel dans 1 h</button><button type="button" class="al-btn" data-al="silent">Silence aujourd’hui</button>';
+    var meta = document.createElement('div'); meta.className = 'al-meta';
+    meta.innerHTML = '<span data-al="time"></span><button type="button" data-al="mute"></button>';
+    if (host) { host.appendChild(foot); host.appendChild(meta); host.addEventListener('click', function (e) { e.stopPropagation(); }); }
+    c.removeAttribute('title');
+
+    function refreshUI() {
+        var t = counts(), total = t.tasks + t.trans, ack = getAck();
+        var unseen = !isOpen && (ack.day !== today() || t.tasks > ack.tasks || t.trans > ack.trans);
+        L.hidden = total === 0;
+        L.querySelector('.al-bdg').textContent = total > 99 ? '99+' : nf.format(total);
+        L.classList.toggle('al-new', unseen); L.classList.toggle('al-quiet', !unseen);
+        var lbl = 'Alertes : ' + nf.format(t.tasks) + ' tâche(s) en retard, ' + nf.format(t.trans) + ' transaction(s) en attente' + (unseen ? ' (nouveau)' : '');
+        L.setAttribute('aria-label', lbl); L.title = lbl;
+        var rem = remindAt(), tm = meta.querySelector('[data-al=time]'), mu = meta.querySelector('[data-al=mute]');
+        if (tm) tm.textContent = rem > Date.now() ? 'Rappel à ' + hm(rem) : (lastUpdate ? 'Mis à jour à ' + hm(lastUpdate) : '');
+        if (mu) { mu.textContent = muted() ? 'Ouverture auto : désactivée' : 'Ouverture auto : activée'; mu.setAttribute('aria-pressed', muted()); }
+    }
+
+    /* ---- Ouverture / fermeture ---- */
+    function open(auto, kind) {
+        clearTimeout(hideT); isOpen = true; autoMode = !!auto;
+        c.classList.remove('opacity-0', 'translate-x-10', 'pointer-events-none'); c.classList.add('opacity-100', 'translate-x-0', 'al-open');
+        L.setAttribute('aria-expanded', 'true');
+        setAck(counts()); if (auto) ls('last_auto', String(Date.now())); if (kind === 'remind') ls('remind', null);
+        if (fillEl) { fillEl.style.transitionDuration = '0ms'; fillEl.style.width = '0%'; void fillEl.offsetWidth;
+            if (auto) { fillEl.style.transitionDuration = AUTO_MS + 'ms'; fillEl.style.width = '100%'; } }
+        if (auto) hideT = setTimeout(close, AUTO_MS); else { try { c.tabIndex = -1; c.focus({ preventScroll: true }); } catch (e) {} }
+        refreshUI();
+    }
+    function close() {
+        clearTimeout(hideT); isOpen = false; autoMode = false;
+        c.classList.remove('opacity-100', 'translate-x-0', 'al-open', 'al-hold'); c.classList.add('opacity-0', 'translate-x-10', 'pointer-events-none');
+        L.setAttribute('aria-expanded', 'false');
+        if (fillEl) { fillEl.style.transitionDuration = '0ms'; fillEl.style.width = '0%'; }
+        refreshUI();
+    }
+
+    /* ---- Politique d'ouverture automatique ---- */
+    function busy() {
+        var a = document.activeElement;
+        if (a && a !== document.body && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable)) return true;
+        return !!document.querySelector('dialog[open], .modal.show, .swal2-popup, [role=dialog][aria-modal=true]');
+    }
+    function allowed(kind) {
+        if (kind === 'remind') return true;                                   // demande explicite de l'utilisateur
+        if (muted() || silentToday()) return false;
+        if (remindAt() > Date.now()) return false;                            // en attente d'un rappel
+        return Date.now() - (parseInt(ls('last_auto') || '0', 10) || 0) >= COOLDOWN;   // pas plus d'une ouverture automatique / 30 min, tous onglets confondus
+    }
+    function tryOpen(kind) {
+        clearTimeout(retryT);
+        if (isOpen || !allowed(kind) || document.visibilityState !== 'visible') return;
+        if (busy()) { if (++retries < 24) retryT = setTimeout(function () { tryOpen(kind); }, 5000); return; }   // ne jamais interrompre une saisie
+        retries = 0; open(true, kind);
+    }
+    function schedule() { clearTimeout(remT); var r = remindAt(), d = r - Date.now(); if (r && d > 0) remT = setTimeout(evaluate, Math.min(d + 400, 2147483000)); }
+    function evaluate() {
+        var t = counts(), total = t.tasks + t.trans, ack = getAck();
+        refreshUI(); if (!ready) return;
+        if (total === 0) { if (isOpen) close(); setAck(t); return; }      // tout est à jour : on réarme pour les prochaines alertes
+        var r = remindAt(); if (r && Date.now() >= r) { tryOpen('remind'); return; }
+        if (ack.day !== today() || t.tasks > ack.tasks || t.trans > ack.trans) tryOpen('auto');   // uniquement pour du nouveau
+        schedule();
+    }
+
+    /* ---- Actions utilisateur ---- */
+    L.addEventListener('click', function () { if (isOpen) close(); else open(false); });
+    document.addEventListener('click', function (e) { if (isOpen && !c.contains(e.target) && !L.contains(e.target)) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isOpen) { close(); try { L.focus(); } catch (x) {} } });
+    c.addEventListener('pointerdown', function () { if (autoMode) { autoMode = false; clearTimeout(hideT); if (fillEl) { fillEl.style.transitionDuration = '0ms'; fillEl.style.width = '0%'; } } });
+    c.addEventListener('mouseenter', function () { if (isOpen && autoMode) { clearTimeout(hideT); if (fillEl) { fillEl.style.transitionDuration = '0ms'; fillEl.style.width = getComputedStyle(fillEl).width; } } });
+    c.addEventListener('mouseleave', function () { if (isOpen && autoMode) { if (fillEl) { fillEl.style.transitionDuration = '3000ms'; void fillEl.offsetWidth; fillEl.style.width = '100%'; } hideT = setTimeout(close, 3000); } });
+    foot.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-al]'); if (!b) return; var a = b.getAttribute('data-al');
+        if (a === 'snooze') { ls('remind', String(Date.now() + SNOOZE)); schedule(); close(); }
+        if (a === 'silent') { ls('silent', today()); setAck(counts()); close(); }
+    });
+    meta.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-al=mute]'); if (!b) return;
+        ls('mute', muted() ? null : '1'); refreshUI();
+    });
+
+    /* Vos fonctions restent appelables mais obéissent à la même politique */
+    window.showCard = function (force) { if (force === true) open(false); else evaluate(); };
+    window.hideCard = function () { close(); };
+    window.userClose = function () { close(); };     // la croix = « vu » ; l'ouverture automatique ne revient que pour du nouveau
+
+    /* ---- Données ---- */
+    ['task-count', 'trans-count'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) new MutationObserver(function () { clearTimeout(deb); deb = setTimeout(function () { lastUpdate = Date.now(); if (!ready) { ready = true; setTimeout(evaluate, 1200); } else evaluate(); }, 200); }).observe(el, { childList: true, characterData: true, subtree: true });
+    });
+    setTimeout(function () { if (!ready) { ready = true; evaluate(); } }, 7000);
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState !== 'visible') return;
+        if (lastUpdate && Date.now() - lastUpdate > 120000 && typeof window.updateDashboardData === 'function') window.updateDashboardData();
+        evaluate();
+    });
+    window.addEventListener('storage', function (e) {
+        if (!e.key || e.key.indexOf(P) !== 0) return;
+        if (e.key === P + 'last_auto' && isOpen && autoMode) close();      // déjà affichée dans un autre onglet
+        refreshUI();
+    });
+    refreshUI(); schedule();
+})();
+</script>

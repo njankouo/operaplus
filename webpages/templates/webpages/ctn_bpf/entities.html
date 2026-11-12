@@ -1,4 +1,5 @@
 {% extends './index.html' %}
+{% load l10n %}
 {% block main %}
 {%block table%}
 {% block add_title %}
@@ -39,11 +40,59 @@
 </style>
  <div id="canvas-wrapper"></div>
 
+<style>
+/* ===================== GX : couche d'amélioration (ajoutée, rien d'existant modifié) ===================== */
+:root{--gx-ease:cubic-bezier(.22,1,.36,1)}
+.gx-toolbar{box-shadow:0 1px 2px rgba(15,23,42,.04),0 14px 34px -14px rgba(15,23,42,.22)}
+.gx-toolbar input:focus{box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+#entity-counter::before{content:"";width:6px;height:6px;border-radius:9999px;background:#10b981;margin-right:.45rem;box-shadow:0 0 0 3px rgba(16,185,129,.18)}
+.gx-kbd{position:absolute;right:.6rem;top:50%;transform:translateY(-50%);font:600 11px/1 ui-monospace,SFMono-Regular,monospace;color:#64748b;background:#fff;border:1px solid #e2e8f0;border-bottom-width:2px;border-radius:6px;padding:3px 7px}
+.gx-clear{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:9999px;border:0;background:#e2e8f0;color:#475569;font-size:15px;line-height:1;cursor:pointer;transition:background .2s}
+.gx-clear:hover{background:#cbd5e1}
+.gx-clear[hidden],.gx-kbd[hidden]{display:none}
+
+/* Cartes */
+.gx-card{position:relative;box-shadow:0 1px 2px rgba(15,23,42,.05),0 10px 28px -14px rgba(15,23,42,.25);animation:gxRise .6s var(--gx-ease) backwards}
+.gx-card:hover{box-shadow:0 2px 4px rgba(15,23,42,.06),0 26px 50px -18px rgba(15,23,42,.35)}
+.gx-card::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,var(--gx-accent,#2563eb),transparent 85%);z-index:1}
+.gx-card .entity-title{font-size:1.02rem;line-height:1.35;letter-spacing:-.01em}
+.gx-card img.rounded-full{transition:transform .4s var(--gx-ease)}
+.gx-card:hover img.rounded-full{transform:scale(1.06) rotate(-2deg)}
+.gx-card .custom-scrollbar>div{backdrop-filter:blur(6px);transition:transform .25s var(--gx-ease),background-color .25s,box-shadow .25s}
+.gx-card .custom-scrollbar>div:hover{transform:translateX(3px);box-shadow:0 8px 20px -10px rgba(0,0,0,.45)}
+.gx-card a:focus-visible,.gx-card button:focus-visible,.gx-card summary:focus-visible{outline:2px solid #2563eb;outline-offset:2px;border-radius:10px}
+
+/* Jauge d'avancement (nouveau bloc) */
+.gx-gauge{padding:.7rem .85rem;border:1px solid rgba(15,23,42,.07);border-radius:14px;background:linear-gradient(180deg,#fff,#f8fafc)}
+.gx-gauge-head{display:flex;justify-content:space-between;align-items:baseline;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#64748b;margin-bottom:.45rem}
+.gx-gauge-head strong{font-size:.95rem;letter-spacing:0;color:var(--gx-accent,#0f172a)}
+.gx-gauge-track{height:8px;border-radius:9999px;background:#e2e8f0;overflow:hidden}
+.gx-gauge-fill{display:block;height:100%;max-width:100%;border-radius:9999px;background:linear-gradient(90deg,var(--gx-accent,#2563eb),#38bdf8);transform-origin:left;animation:gxFill 1.1s var(--gx-ease) .25s backwards}
+
+/* État vide */
+.gx-empty{grid-column:1/-1;text-align:center;padding:4rem 1rem;border:2px dashed #cbd5e1;border-radius:24px;background:rgba(255,255,255,.7);color:#64748b}
+.gx-empty i{font-size:2.5rem;color:#94a3b8;margin-bottom:.75rem;display:block}
+.gx-empty strong{display:block;color:#0f172a;font-size:1rem;margin-bottom:.25rem}
+
+/* Fenêtres modales */
+dialog#monModal,dialog#monModalPonderation{border-radius:20px;box-shadow:0 40px 90px -24px rgba(15,23,42,.55)}
+#monModal>div:first-child{background:linear-gradient(135deg,#f8fafc,#eef2ff)}
+#monModal input:not([type=hidden]):focus,#monModal textarea:focus,#monModal select:focus{box-shadow:0 0 0 3px rgba(37,99,235,.16);border-color:#2563eb;outline:none}
+#monModal label{letter-spacing:.06em}
+[id^="exampleModal_structure_entity"],[id^="staticBackdrop"]{backdrop-filter:blur(4px)}
+[id^="exampleModal_structure_entity"]:not(.hidden)>div,[id^="staticBackdrop"]:not(.hidden)>div{animation:gxPop .3s var(--gx-ease)}
+
+@keyframes gxRise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes gxFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes gxPop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@media (max-width:767px){.gx-toolbar{top:.5rem!important}.gx-card .entity-title{font-size:.95rem}}
+@media (prefers-reduced-motion:reduce){.gx-card,.gx-gauge-fill,[id^="staticBackdrop"]>div,[id^="exampleModal_structure_entity"]>div{animation:none!important}#canvas-wrapper{display:none}}
+</style>
 <!-- Fil d'ariane (Breadcrumb) -->
 
 
 <!-- ==================== BARRE D'OUTILS DESIGN HAUT DE GAMME (GLASSMORPHISM) ==================== -->
-<div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 p-4 bg-white/70 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 sticky top-4 z-20">
+<div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8 p-4 bg-white/70 backdrop-blur-md rounded-2xl shadow-sm border border-white/40 sticky top-4 z-20 gx-toolbar">
   
   <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
     <div class="relative w-full sm:w-80">
@@ -53,7 +102,7 @@
       <input 
         type="text" 
         id="search-entity-input" 
-        placeholder="Rechercher une entité..." 
+        placeholder="Rechercher une entité..." autocomplete="off" aria-label="Rechercher une entité" 
         class="w-full pl-10 pr-4 py-2.5 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm focus:outline-none focus:ring-2 focus:border-blue-500 focus:ring-blue-100 transition-all duration-200 placeholder-gray-400"
       >
     </div>
@@ -84,6 +133,158 @@
 </div>
 
 
+
+<style>
+/* ===================== GX-2 : Planification (version compacte) ===================== */
+.gx-toolbar{padding:.6rem .8rem!important;margin-bottom:.7rem!important;gap:.6rem!important}
+
+/* Barre de synthèse : une seule ligne */
+.gx-strip{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1.1rem;margin:0 0 .7rem;padding:.55rem .9rem;border-radius:16px;background:rgba(255,255,255,.92);border:1px solid rgba(15,23,42,.08);box-shadow:0 1px 2px rgba(15,23,42,.05),0 8px 22px -14px rgba(15,23,42,.25);border-left:4px solid var(--gx-hero,#2563eb)}
+.gx-st{display:flex;flex-direction:column;justify-content:center;min-width:0;padding:.15rem 1.1rem .15rem 0;border-right:1px solid #e2e8f0}
+.gx-st-ring{flex-direction:row;align-items:center;gap:.65rem}
+.gx-st-l{font-size:.6rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#64748b;white-space:nowrap}
+.gx-st-v{display:flex;align-items:baseline;gap:.3rem;font-size:1.4rem;font-weight:900;color:#0f172a;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gx-st-v small{font-size:.7rem;font-weight:700;color:#64748b}
+.gx-st.is-alert{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:.25rem .85rem;margin-right:.1rem}
+.gx-st.is-alert .gx-st-v{color:#dc2626}.gx-st.is-alert .gx-st-l{color:#b91c1c}
+.gx-st.is-warn .gx-st-v small{color:#b45309;font-weight:800}.gx-st.is-ok .gx-st-v small{color:#047857;font-weight:800}
+.gx-ring{position:relative;width:42px;height:42px;flex:none}
+.gx-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gx-ring-track{fill:none;stroke:#e2e8f0;stroke-width:5}
+.gx-ring-arc{fill:none;stroke:#10b981;stroke-width:5;stroke-linecap:round;transition:stroke-dashoffset 1s var(--gx-ease),stroke .4s}
+.gx-ring[data-tone=moyen] .gx-ring-arc{stroke:#f59e0b}.gx-ring[data-tone=critique] .gx-ring-arc{stroke:#ef4444}
+.gx-dist{flex:1 1 200px;min-width:180px}
+.gx-dist-legend{display:flex;gap:.9rem;margin-bottom:.3rem;font-size:.68rem;font-weight:700;color:#475569}
+.gx-dist-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.3rem}
+.gx-dist-bar{display:flex;gap:3px;height:8px;border-radius:9999px;overflow:hidden;background:#e2e8f0}
+.gx-dist-bar span{display:block;height:100%;width:0;transition:width .8s var(--gx-ease);border-radius:9999px}
+#gx-d-ex{background:#10b981}#gx-d-mo{background:#f59e0b}#gx-d-cr{background:#ef4444}
+
+/* Contrôles */
+.gx-controls{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between;margin:0 0 .8rem}
+.gx-chips{display:flex;flex-wrap:wrap;gap:.4rem;min-width:0;max-width:100%}
+.gx-chip{display:inline-flex;align-items:center;gap:.4rem;white-space:nowrap;padding:.32rem .7rem;border-radius:9999px;border:1px solid #e2e8f0;background:#fff;font-size:.74rem;font-weight:700;color:#475569;cursor:pointer;transition:all .2s}
+.gx-chip:hover{border-color:#94a3b8}
+.gx-chip i{width:7px;height:7px;border-radius:50%;background:#94a3b8}
+.gx-chip[data-gx-filter=excellent] i{background:#10b981}.gx-chip[data-gx-filter=moyen] i{background:#f59e0b}.gx-chip[data-gx-filter=critique] i{background:#ef4444}
+.gx-chip em{font-style:normal;font-size:.68rem;padding:0 .4rem;border-radius:9999px;background:#f1f5f9;color:#475569}
+.gx-chip.is-on{background:#0f172a;border-color:#0f172a;color:#fff}.gx-chip.is-on em{background:rgba(255,255,255,.2);color:#fff}
+.gx-right{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;min-width:0;max-width:100%}
+.gx-select{position:relative;display:inline-flex;align-items:center}
+.gx-select>i{position:absolute;left:.65rem;font-size:.7rem;color:#64748b;pointer-events:none}
+.gx-select select{appearance:none;-webkit-appearance:none;padding:.32rem 1.6rem .32rem 1.85rem;border-radius:10px;border:1px solid #e2e8f0;background:#fff;font-size:.74rem;font-weight:700;color:#334155;cursor:pointer;outline:none}
+.gx-select select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.gx-select::after{content:"\25BE";position:absolute;right:.6rem;font-size:.65rem;color:#64748b;pointer-events:none}
+.gx-seg{display:inline-flex;padding:2px;border-radius:10px;background:#e2e8f0}
+.gx-seg button,.gx-ghost{border:0;cursor:pointer;font-size:.74rem;font-weight:700;color:#475569;background:transparent;border-radius:8px;padding:.3rem .6rem}
+.gx-seg button.is-on{background:#fff;color:#0f172a;box-shadow:0 1px 4px rgba(15,23,42,.15)}
+.gx-ghost{border:1px solid #e2e8f0;background:#fff;border-radius:10px;padding:.32rem .65rem}.gx-ghost:hover{border-color:#94a3b8}
+.gx-chip:focus-visible,.gx-seg button:focus-visible,.gx-ghost:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* Cartes agrandies : chiffres clés en évidence */
+#entities-grid{gap:1.25rem!important}
+.gx-card::before{height:4px}
+.gx-card>.grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);min-height:420px}
+.gx-card>.grid>div:first-child{padding:1.4rem!important;gap:.95rem}
+.gx-card>.grid>div:first-child>*{margin-top:0!important}
+.gx-card>.grid>div:last-child{padding:1.1rem!important}
+.gx-card img.w-16{width:3.5rem;height:3.5rem}
+.gx-card .inline-flex.rounded-full{font-size:.8rem;padding:.3rem .85rem}
+.gx-card .entity-title{font-size:1.3rem;line-height:1.25;font-weight:800}
+.gx-card>.grid>div:first-child>.space-y-2{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
+.gx-card>.grid>div:first-child>.space-y-2>div{flex-direction:column;align-items:flex-start!important;justify-content:center;gap:.1rem;margin-top:0!important;padding:.8rem .95rem!important;border-radius:14px!important}
+.gx-card>.grid>div:first-child>.space-y-2>div>span:first-child{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;opacity:.9}
+.gx-card>.grid>div:first-child>.space-y-2>div>span:last-child{font-size:2.1rem;line-height:1.05;font-weight:900;font-variant-numeric:tabular-nums}
+.gx-card>.grid>div:first-child>.space-y-2>button{grid-column:1/-1;margin-top:0!important;padding:.6rem .9rem!important;font-size:.9rem}
+.gx-card>.grid>div:first-child>button{padding:.6rem .9rem;font-size:.88rem}
+.gx-card details summary{padding:.7rem .9rem}
+.gx-card>.grid>div:first-child>.pt-3{padding-top:.75rem}
+.gx-card>.grid>div:first-child>.pt-3 a{padding:.45rem .85rem;font-size:.82rem}
+.gx-card .custom-scrollbar{max-height:380px!important}
+.gx-card .custom-scrollbar>div{padding:.85rem .95rem!important}
+.gx-card .custom-scrollbar a{font-size:.92rem}
+.gx-gauge{padding:0;border:0;background:none;border-radius:0}.gx-gauge-head{display:none}
+.gx-gauge-track{height:9px}
+.gx-gauge[data-tone=excellent] .gx-gauge-fill{background:linear-gradient(90deg,#10b981,#6ee7b7)}
+.gx-gauge[data-tone=moyen] .gx-gauge-fill{background:linear-gradient(90deg,#f59e0b,#fde047)}
+.gx-gauge[data-tone=critique] .gx-gauge-fill{background:linear-gradient(90deg,#e11d48,#fb923c)}
+
+#entities-grid.gx-list{grid-template-columns:minmax(0,1fr)!important}
+#entities-grid.gx-list .gx-card .custom-scrollbar{max-height:320px!important;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;align-content:start}
+#entities-grid.gx-list .gx-card .custom-scrollbar>*{margin-top:0!important}
+.gx-mark{background:linear-gradient(transparent 52%,rgba(250,204,21,.6) 0);color:inherit;border-radius:3px;padding:0 1px}
+#gx-nores[hidden]{display:none}
+.gx-top{position:fixed;right:1.25rem;bottom:1.25rem;z-index:30;width:42px;height:42px;border-radius:50%;border:0;cursor:pointer;color:#fff;background:#0f172a;box-shadow:0 14px 30px -10px rgba(15,23,42,.6);opacity:0;transform:translateY(12px);pointer-events:none;transition:all .3s var(--gx-ease)}
+.gx-top.is-on{opacity:1;transform:none;pointer-events:auto}.gx-top:hover{background:#2563eb}
+.gx-pond{padding:.8rem 1rem 1rem;background:#fff;border-top:1px solid #e2e8f0}
+.gx-pond-track{height:10px;border-radius:9999px;background:#e2e8f0;overflow:hidden}
+.gx-pond-track span{display:block;height:100%;width:0;border-radius:9999px;background:linear-gradient(90deg,#f59e0b,#fbbf24);transition:width .4s var(--gx-ease),background .3s}
+.gx-pond-track span.ok{background:linear-gradient(90deg,#10b981,#34d399)}.gx-pond-track span.over{background:linear-gradient(90deg,#e11d48,#f87171)}
+.gx-pond-row{display:flex;justify-content:space-between;align-items:center;gap:.75rem;margin-top:.6rem;font-size:.78rem;font-weight:700;color:#475569}
+.gx-pond-row button{border:1px dashed #94a3b8;background:#f8fafc;color:#334155;border-radius:9999px;padding:.35rem .8rem;font-size:.72rem;font-weight:800;cursor:pointer}
+.gx-pond-row button:hover{background:#0f172a;color:#fff;border-style:solid}
+/* Anti-défilement horizontal */
+html,body{max-width:100%;overflow-x:clip}
+.gx-strip,.gx-controls,.gx-toolbar{max-width:100%;box-sizing:border-box}
+#entities-grid>*{min-width:0}.gx-card{max-width:100%;min-width:0}.gx-card *{overflow-wrap:anywhere}
+.gx-dist{min-width:0}
+
+.gx-card .custom-scrollbar,#entities-grid .overflow-y-auto,dialog .overflow-y-auto,[id^="staticBackdrop"],[id^="exampleModal_structure_entity"]{overflow-x:hidden!important}
+.gx-card .custom-scrollbar{overscroll-behavior:contain}
+.gx-unit{font-size:.52em;font-weight:800;margin-left:.12em;opacity:.85;letter-spacing:0}
+/* Infobulles */
+#gx-tip{position:fixed;left:0;top:0;z-index:2000;max-width:min(290px,calc(100vw - 16px));padding:.6rem .75rem;border-radius:12px;background:#0f172a;color:#cbd5e1;font-size:.76rem;line-height:1.4;font-weight:500;text-transform:none;letter-spacing:0;text-align:left;box-shadow:0 18px 40px -12px rgba(15,23,42,.6);pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s}
+#gx-tip.on{opacity:1;transform:none}
+#gx-tip b{display:block;color:#fff;font-size:.8rem;font-weight:800;margin-bottom:.2rem}
+#gx-tip::after{content:"";position:absolute;left:var(--ax,50%);width:10px;height:10px;background:#0f172a;transform:translateX(-50%) rotate(45deg)}
+#gx-tip[data-side=top]::after{bottom:-4px}#gx-tip[data-side=bottom]::after{top:-4px}
+
+@media (max-width:767px){.gx-card>.grid{min-height:0}.gx-st{border-right:0;padding-right:.6rem}.gx-card>.grid{grid-template-columns:minmax(0,1fr)}#entities-grid.gx-list .gx-card .custom-scrollbar{grid-template-columns:1fr}}
+@media print{.gx-toolbar,.gx-controls,.gx-top,#canvas-wrapper,dialog,[id^="staticBackdrop"],[id^="exampleModal_structure_entity"]{display:none!important}
+ .gx-strip,.gx-card,.gx-card *{-webkit-print-color-adjust:exact;print-color-adjust:exact}.gx-card{break-inside:avoid;box-shadow:none;animation:none}#entities-grid{grid-template-columns:minmax(0,1fr)!important}}
+</style>
+
+<section class="gx-strip" aria-label="Synthèse de la planification" style="--gx-hero: {{request.user.personnel.color_fond|default:'#2563eb'}};">
+  <div class="gx-st gx-st-ring">
+    <div class="gx-ring" id="gx-ring" data-tone="critique" role="img" aria-label="Avancement moyen" data-gx-tip="Exécution moyenne|Moyenne des exécutions validées des entités affichées. Anneau vert au-dessus de 80 %, orange entre 50 et 80 %, rouge en dessous."><svg viewBox="0 0 44 44" aria-hidden="true"><circle class="gx-ring-track" cx="22" cy="22" r="18"></circle><circle class="gx-ring-arc" id="gx-ring-arc" cx="22" cy="22" r="18"></circle></svg></div>
+    <div><span class="gx-st-l" id="gx-k-avg-label">Exécution validée</span><span class="gx-st-v"><span id="gx-k-avg">0</span><small>% en moyenne</small></span></div>
+  </div>
+  <div class="gx-st" data-gx-tip="Entités|Nombre d’entités affichées après recherche et filtres, sur le total de la page."><span class="gx-st-l">Entités</span><span class="gx-st-v"><span id="gx-k-count">0</span><small id="gx-k-count-sub"></small></span></div>
+  <div class="gx-st" id="gx-tile-crit" data-gx-tip="À surveiller|Entités au statut Critique (exécution de 50 % ou moins). Ce sont celles à relancer en priorité."><span class="gx-st-l">À surveiller</span><span class="gx-st-v"><span id="gx-k-crit">0</span><small>critique(s)</small></span></div>
+  <div class="gx-st" id="gx-tile-4" data-gx-tip="Somme des pondérations|Elle doit faire 100 %. Si ce n’est pas le cas, utilisez « Valider pondération » pour corriger."><span class="gx-st-l" id="gx-k4-label">Σ Pondération</span><span class="gx-st-v"><span id="gx-k4">0</span><small id="gx-k4-unit">%</small><small id="gx-k4-sub"></small></span></div>
+  <div class="gx-dist" data-gx-tip="Répartition|Part des entités Excellent (> 80 %), Moyen (50 à 80 %) et Critique (≤ 50 %).">
+    <div class="gx-dist-legend"><span><i style="background:#10b981"></i>Excellent <b id="gx-l-ex">0</b></span><span><i style="background:#f59e0b"></i>Moyen <b id="gx-l-mo">0</b></span><span><i style="background:#ef4444"></i>Critique <b id="gx-l-cr">0</b></span></div>
+    <div class="gx-dist-bar" aria-hidden="true"><span id="gx-d-ex"></span><span id="gx-d-mo"></span><span id="gx-d-cr"></span></div>
+  </div>
+</section>
+
+<div class="gx-controls">
+  <div class="gx-chips" role="group" aria-label="Filtrer par statut">
+    <button type="button" class="gx-chip is-on" data-gx-filter="all" aria-pressed="true" data-gx-tip="Toutes|Afficher toutes les entités, quel que soit leur statut.">Tous <em data-gx-count="all">0</em></button>
+    <button type="button" class="gx-chip" data-gx-filter="excellent" aria-pressed="false" data-gx-tip="Excellent|Entités dont l’exécution dépasse 80 %."><i></i>Excellent <em data-gx-count="excellent">0</em></button>
+    <button type="button" class="gx-chip" data-gx-filter="moyen" aria-pressed="false" data-gx-tip="Moyen|Entités dont l’exécution est comprise entre 50 % et 80 %."><i></i>Moyen <em data-gx-count="moyen">0</em></button>
+    <button type="button" class="gx-chip" data-gx-filter="critique" aria-pressed="false" data-gx-tip="Critique|Entités dont l’exécution est de 50 % ou moins : à relancer."><i></i>Critique <em data-gx-count="critique">0</em></button>
+  </div>
+  <div class="gx-right">
+    <label class="gx-select" data-gx-tip="Trier|Change l’ordre des cartes sans recharger la page. « Avancement ↑ » place les plus en retard en premier."><i class="fas fa-arrow-down-wide-short"></i>
+      <select id="gx-sort" aria-label="Trier les entités">
+        <option value="default">Ordre d'origine</option>
+        <option value="name">Nom (A → Z)</option>
+        <option value="val-desc">Avancement ↓</option>
+        <option value="val-asc">Avancement ↑ (critiques d'abord)</option>
+        <option value="pond-desc">Pondération ↓</option>
+      </select>
+    </label>
+    <div class="gx-seg" role="group" aria-label="Mode d'affichage">
+      <button type="button" class="is-on" id="gx-v-grid" aria-pressed="true" data-gx-tip="Vue grille|Cartes côte à côte."><i class="fas fa-table-cells-large"></i></button>
+      <button type="button" id="gx-v-list" aria-pressed="false" data-gx-tip="Vue liste|Une carte par ligne, sous-éléments sur deux colonnes."><i class="fas fa-list"></i></button>
+    </div>
+    <button type="button" class="gx-ghost" id="gx-print" data-gx-tip="Imprimer|Version imprimable, enregistrable en PDF."><i class="fas fa-print"></i></button>
+  </div>
+</div>
+<div id="gx-nores" class="gx-empty" hidden>
+  <i class="fas fa-magnifying-glass"></i><strong>Aucun résultat</strong>Modifiez la recherche ou le filtre de statut.
+</div>
 
 <dialog id="monModalPonderation" class="p-0 rounded-2xl shadow-2xl w-full max-w-2xl border-0 backdrop:bg-slate-900/50">
     <form action="/add_ponderation/" method="post">
@@ -308,6 +509,7 @@ dialog::backdrop {
 </style>
 
 <script>
+{
   const modal = document.getElementById('monModalPonderation');
 
   // Fermeture en cliquant sur le fond
@@ -327,11 +529,11 @@ dialog::backdrop {
       modal.style.transform = '';
     }, 300); // 300ms correspond à la durée de l'animation CSS
   }
-
-
+}
 </script>
 
 <script>
+{
   const modal = document.getElementById('monModal');
 
   // Fermeture en cliquant sur le fond
@@ -351,8 +553,7 @@ dialog::backdrop {
       modal.style.transform = '';
     }, 300); // 300ms correspond à la durée de l'animation CSS
   }
-
-
+}
 </script>
 <!-- Conteneur des cartes d'entités -->
 <div id="entities-grid" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -511,9 +712,16 @@ dialog::backdrop {
     </div>
 
     <!-- ==================== CARTES RE-STYLISÉES AVEC EFFET HOVER AVANCÉ ==================== -->
-    <div class="entity-card bg-white/95 rounded-2xl shadow-md hover:shadow-xl border transition-all duration-300 hover:-translate-y-1 overflow-hidden" 
+    <div class="entity-card gx-card bg-white/95 rounded-2xl shadow-md hover:shadow-xl border transition-all duration-300 hover:-translate-y-1 overflow-hidden" 
          data-name="{% if entity.m_nom %}{{ entity.m_nom|lower }}{% else %}{{ entity|lower }}{% endif %}"
-         style="border-color: {{request.user.personnel.color_fond}}15;">
+         data-status="{% if entity.resultat_niveau_execution > 80 %}excellent{% elif entity.resultat_niveau_execution > 50 %}moyen{% else %}critique{% endif %}"
+         data-exec="{{ entity.resultat_niveau_execution_valide|default:0|unlocalize }}"
+         data-tef="{{ entity.taux_financier_valide|default:0|unlocalize }}"
+         data-pond="{{ entity.ponderation|default:0|unlocalize }}"
+         data-declared="{{ entity.resultat_niveau_execution|default:0|unlocalize }}"
+         data-tefdecl="{{ entity.taux_financier|default:0|unlocalize }}"
+         data-mode="{% if request.user.personnel.is_finance and not request.user.personnel.is_process %}finance{% else %}process{% endif %}"
+         style="border-color: {{request.user.personnel.color_fond}}15; --gx-accent: {{request.user.personnel.color_fond|default:'#2563eb'}};">
       <div class="grid grid-cols-1 md:grid-cols-2 h-100">
         
         <div class="p-6 flex flex-col justify-between space-y-4">
@@ -591,6 +799,18 @@ dialog::backdrop {
               </button>
             {% endif %}
           </div>
+
+          {% if request.user.personnel.is_process %}
+          <div class="gx-gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ entity.resultat_niveau_execution_valide|default:0|stringformat:'d' }}">
+            <div class="gx-gauge-head"><span>Avancement validé</span><strong>{{ entity.resultat_niveau_execution_valide|default:0 }}%</strong></div>
+            <div class="gx-gauge-track"><span class="gx-gauge-fill" style="width: {{ entity.resultat_niveau_execution_valide|default:0|stringformat:'d' }}%;"></span></div>
+          </div>
+          {% elif request.user.personnel.is_finance %}
+          <div class="gx-gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ entity.taux_financier_valide|default:0|stringformat:'d' }}">
+            <div class="gx-gauge-head"><span>Financement validé</span><strong>{{ entity.taux_financier_valide|floatformat:'-2' }}%</strong></div>
+            <div class="gx-gauge-track"><span class="gx-gauge-fill" style="width: {{ entity.taux_financier_valide|default:0|stringformat:'d' }}%;"></span></div>
+          </div>
+          {% endif %}
 
           <div class="border border-gray-100 rounded-xl overflow-hidden shadow-sm bg-white">
             <details class="group">
@@ -744,6 +964,12 @@ dialog::backdrop {
       </div>
     </div>
 
+  {% empty %}
+    <div class="gx-empty">
+      <i class="fas fa-folder-open"></i>
+      <strong>Aucune entité pour le moment</strong>
+      Cliquez sur le bouton « Nouvelle » pour créer la première.
+    </div>
   {% endfor %}
 </div>
 {% if num_pages > 1 %}
@@ -936,6 +1162,344 @@ dialog::backdrop {
       });
     }
   });
+</script>
+<!-- GX : interactions ajoutées (raccourci /, bouton effacer, Échap, animation décalée) -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var input = document.getElementById('search-entity-input');
+  document.querySelectorAll('.entity-card').forEach(function (c, i) {
+    c.style.animationDelay = Math.min(i, 8) * 60 + 'ms';
+  });
+  if (input && input.parentElement) {
+    var wrap = input.parentElement;
+    var kbd = document.createElement('kbd'); kbd.className = 'gx-kbd'; kbd.textContent = '/';
+    var clr = document.createElement('button'); clr.type = 'button'; clr.className = 'gx-clear';
+    clr.setAttribute('aria-label', 'Effacer la recherche'); clr.innerHTML = '&times;'; clr.hidden = true;
+    wrap.appendChild(kbd); wrap.appendChild(clr);
+    input.addEventListener('input', function () { clr.hidden = !input.value; kbd.hidden = !!input.value; });
+    clr.addEventListener('click', function () {
+      input.value = ''; input.dispatchEvent(new Event('input')); input.focus();
+    });
+    document.addEventListener('keydown', function (e) {
+      var tag = document.activeElement ? document.activeElement.tagName : '';
+      if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(tag) && !document.querySelector('dialog[open]')) {
+        e.preventDefault(); input.focus();
+      }
+    });
+  }
+  var overlays = document.querySelectorAll('[id^="exampleModal_structure_entity"],[id^="staticBackdrop"]');
+  overlays.forEach(function (m) {
+    m.addEventListener('click', function (e) { if (e.target === m) m.classList.add('hidden'); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') overlays.forEach(function (m) { m.classList.add('hidden'); });
+  });
+});
+</script>
+<!-- GX-2 : logique du tableau de bord Planification -->
+<script>
+(function () {
+  function ready(fn){ if (document.readyState !== 'loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  ready(function () {
+    var grid = document.getElementById('entities-grid'); if (!grid) return;
+    var DUMMY = { style: {}, dataset: {}, classList: { toggle: function(){}, add: function(){}, remove: function(){} }, setAttribute: function(){}, getAttribute: function(){ return null; }, textContent: '', hidden: false };
+    var $ = function (id) { return document.getElementById(id) || DUMMY; };
+    var input = $('search-entity-input'), counter = $('entity-counter');
+    var cards = [].slice.call(grid.querySelectorAll('.entity-card'));
+    var mode = cards.length ? (cards[0].dataset.mode || 'process') : 'process';
+    var state = { q: '', status: 'all', sort: 'default', view: 'grid' };
+    var KEY = 'gx_plan:' + location.pathname;
+    try { var sv = JSON.parse(localStorage.getItem(KEY) || '{}'); for (var k in sv) if (k in state) state[k] = sv[k]; } catch (e) {}
+    function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+    function fmt(n, d) { var f = Math.pow(10, d || 0); return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: d || 0 }).format(Math.round(n * f) / f); }
+    function tone(v) { return v < 50 ? 'critique' : (v < 80 ? 'moyen' : 'excellent'); }
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function tween(el, to, d) {
+      if (!el) return;
+      var from = parseFloat(el.dataset.v || '0'); if (isNaN(from)) from = 0; el.dataset.v = to;
+      if (reduce) { el.textContent = fmt(to, d); return; }
+      cancelAnimationFrame(el._r); var t0 = null;
+      function step(ts) { if (!t0) t0 = ts; var p = Math.min((ts - t0) / 650, 1), e = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmt(from + (to - from) * e, d); if (p < 1) el._r = requestAnimationFrame(step); }
+      el._r = requestAnimationFrame(step);
+    }
+    function hl(el, q) {
+      if (!el) return;
+      var t = el.dataset.gxOrig; if (t === undefined) { t = el.textContent.trim(); el.dataset.gxOrig = t; }
+      var i = q ? t.toLowerCase().indexOf(q) : -1;
+      if (i < 0) { if (el.querySelector('mark')) el.textContent = t; return; }
+      el.textContent = '';
+      el.appendChild(document.createTextNode(t.slice(0, i)));
+      var m = document.createElement('mark'); m.className = 'gx-mark'; m.textContent = t.slice(i, i + q.length);
+      el.appendChild(m); el.appendChild(document.createTextNode(t.slice(i + q.length)));
+    }
+
+    var data = cards.map(function (c, i) {
+      var val = parseFloat(mode === 'finance' ? c.dataset.tef : c.dataset.exec) || 0;
+      var g = c.querySelector('.gx-gauge'); if (g) g.setAttribute('data-tone', tone(val));
+      return { el: c, i: i, name: c.dataset.name || '', status: c.dataset.status || 'critique', val: val,
+        pond: parseFloat(c.dataset.pond) || 0,
+        hay: ((c.dataset.name || '') + ' ' + (c.textContent || '')).toLowerCase().replace(/\s+/g, ' '),
+        title: c.querySelector('.entity-title a span'),
+        subs: [].slice.call(c.querySelectorAll('.custom-scrollbar a span.break-words')) };
+    });
+    var totalPond = data.reduce(function (a, d) { return a + d.pond; }, 0);
+
+    function apply() {
+      var q = (state.q || '').trim().toLowerCase(), vis = [], cnt = { all: 0, excellent: 0, moyen: 0, critique: 0 };
+      data.forEach(function (d) {
+        var okQ = !q || d.hay.indexOf(q) > -1;
+        if (okQ) { cnt.all++; cnt[d.status]++; }
+        var show = okQ && (state.status === 'all' || d.status === state.status);
+        d.el.style.display = show ? '' : 'none';
+        if (show) { d.el.style.opacity = '1'; d.el.style.transform = ''; vis.push(d); }
+        hl(d.title, q); d.subs.forEach(function (s) { hl(s, q); });
+      });
+      var sorted = data.slice();
+      sorted.sort(function (a, b) {
+        switch (state.sort) {
+          case 'name': return a.name.localeCompare(b.name, 'fr');
+          case 'val-desc': return b.val - a.val;
+          case 'val-asc': return a.val - b.val;
+          case 'pond-desc': return b.pond - a.pond;
+          default: return a.i - b.i;
+        }
+      });
+      sorted.forEach(function (d, r) { d.el.style.order = r; });
+
+      document.querySelectorAll('[data-gx-count]').forEach(function (e) { e.textContent = cnt[e.getAttribute('data-gx-count')]; });
+      document.querySelectorAll('[data-gx-filter]').forEach(function (b) {
+        var on = b.getAttribute('data-gx-filter') === state.status; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on);
+      });
+      if (counter) counter.innerHTML = !vis.length ? '<span class="text-red-500 font-bold">Aucune entité trouvée</span>' : (vis.length === 1 ? '1 entité trouvée' : vis.length + ' entités');
+      var nores = $('gx-nores'); if (nores) nores.hidden = !(data.length && !vis.length);
+
+      var n = vis.length, avg = n ? vis.reduce(function (a, d) { return a + d.val; }, 0) / n : 0;
+      var ex = vis.filter(function (d) { return d.status === 'excellent'; }).length,
+          mo = vis.filter(function (d) { return d.status === 'moyen'; }).length,
+          cr = vis.filter(function (d) { return d.status === 'critique'; }).length;
+      tween($('gx-k-count'), n, 0); tween($('gx-k-avg'), avg, 1); tween($('gx-ring-val'), avg, 0); tween($('gx-k-crit'), cr, 0);
+      $('gx-k-count-sub').textContent = '/ ' + data.length;
+      $('gx-k-avg-label').textContent = mode === 'finance' ? 'TEF validé' : 'Exécution validée';
+      $('gx-ring-lbl').textContent = mode === 'finance' ? 'TEF' : 'Exécution';
+      var ring = $('gx-ring'), arc = $('gx-ring-arc'), C = 2 * Math.PI * (parseFloat(arc.getAttribute('r')) || 52);
+      ring.setAttribute('data-tone', tone(avg)); arc.style.strokeDasharray = C; arc.style.strokeDashoffset = C * (1 - Math.min(avg, 100) / 100);
+      $('gx-tile-crit').classList.toggle('is-alert', cr > 0);
+      $('gx-k-crit-sub').textContent = cr === 0 ? 'rien à signaler' : (cr === 1 ? '1 entité à relancer' : cr + ' entités à relancer');
+      var t4 = $('gx-tile-4'); t4.classList.remove('is-ok', 'is-warn');
+      if (mode === 'finance') {
+        $('gx-k4-label').textContent = 'Excellentes'; $('gx-k4-unit').textContent = ''; tween($('gx-k4'), ex, 0); $('gx-k4-sub').textContent = 'objectif atteint (> 80 %)';
+      } else {
+        $('gx-k4-label').textContent = 'Σ Pondération'; $('gx-k4-unit').textContent = '%'; tween($('gx-k4'), totalPond, 1);
+        var diff = 100 - totalPond;
+        if (Math.abs(diff) < 0.1) { t4.classList.add('is-ok'); $('gx-k4-sub').textContent = '✓ complète'; }
+        else { t4.classList.add('is-warn'); $('gx-k4-sub').textContent = diff > 0 ? 'reste ' + fmt(diff, 1) + ' %' : 'dépasse de ' + fmt(-diff, 1) + ' %'; }
+      }
+      var tot = n || 1;
+      $('gx-d-ex').style.width = (ex / tot * 100) + '%'; $('gx-d-mo').style.width = (mo / tot * 100) + '%'; $('gx-d-cr').style.width = (cr / tot * 100) + '%';
+      $('gx-l-ex').textContent = ex; $('gx-l-mo').textContent = mo; $('gx-l-cr').textContent = cr;
+      var f = { all: 'tous les statuts', excellent: 'statut Excellent', moyen: 'statut Moyen', critique: 'statut Critique' }[state.status];
+      $('gx-sub').textContent = n + ' entité' + (n > 1 ? 's' : '') + ' affichée' + (n > 1 ? 's' : '') + ' · ' + f + (q ? ' · recherche « ' + state.q.trim() + ' »' : '');
+    }
+    function setView(v) {
+      state.view = v; grid.classList.toggle('gx-list', v === 'list');
+      $('gx-v-grid').classList.toggle('is-on', v !== 'list'); $('gx-v-list').classList.toggle('is-on', v === 'list');
+      $('gx-v-grid').setAttribute('aria-pressed', v !== 'list'); $('gx-v-list').setAttribute('aria-pressed', v === 'list');
+    }
+    if (input) input.addEventListener('input', function () { state.q = input.value; apply(); save(); });
+    document.querySelectorAll('[data-gx-filter]').forEach(function (b) {
+      b.addEventListener('click', function () { state.status = b.getAttribute('data-gx-filter'); apply(); save(); });
+    });
+    $('gx-sort').addEventListener('change', function (e) { state.sort = e.target.value; apply(); save(); });
+    $('gx-v-grid').addEventListener('click', function () { setView('grid'); save(); });
+    $('gx-v-list').addEventListener('click', function () { setView('list'); save(); });
+    $('gx-print').addEventListener('click', function () { window.print(); });
+
+    $('gx-sort').value = state.sort; setView(state.view);
+    if (input && state.q) { input.value = state.q; input.dispatchEvent(new Event('input')); } else { apply(); }
+
+    // Retour en haut
+    var top = document.createElement('button'); top.type = 'button'; top.className = 'gx-top'; top.setAttribute('aria-label', 'Retour en haut'); top.innerHTML = '<i class="fas fa-arrow-up"></i>';
+    top.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); });
+    document.body.appendChild(top);
+    window.addEventListener('scroll', function () { top.classList.toggle('is-on', window.scrollY > 500); }, { passive: true });
+
+    // Confirmation de suppression élégante (le lien /delete_entities/ est conservé)
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href^="/delete_entities/"]');
+      if (!a || typeof Swal === 'undefined') return;
+      e.preventDefault(); e.stopPropagation();
+      var c = a.closest('.entity-card'), t = c && c.querySelector('.entity-title a span'), nm = document.createElement('b');
+      nm.textContent = t ? (t.dataset.gxOrig || t.textContent.trim()) : 'cette entité';
+      var box = document.createElement('div'); box.appendChild(nm); box.appendChild(document.createElement('br')); box.appendChild(document.createTextNode('Cette action est définitive.'));
+      Swal.fire({ title: 'Supprimer cette entité ?', html: box, icon: 'warning', showCancelButton: true, reverseButtons: true, focusCancel: true,
+        confirmButtonText: 'Oui, supprimer', cancelButtonText: 'Annuler', confirmButtonColor: '#dc2626' })
+        .then(function (r) { if (r.isConfirmed) window.location.href = a.href; });
+    }, true);
+
+    // Pondération : jauge vers 100 % + répartition équitable
+    var tf = $('total-ponderation');
+    if (tf && tf.parentElement) {
+      var box = document.createElement('div'); box.className = 'gx-pond';
+      box.innerHTML = '<div class="gx-pond-track"><span id="gx-pond-fill"></span></div><div class="gx-pond-row"><span id="gx-pond-msg"></span><button type="button" id="gx-pond-eq">Répartir équitablement</button></div>';
+      tf.parentElement.insertAdjacentElement('afterend', box);
+      var ins = [].slice.call(document.querySelectorAll('.ponderation-input'));
+      var upd = function () {
+        var t = 0; ins.forEach(function (i) { t += parseFloat(i.value) || 0; });
+        var fl = $('gx-pond-fill'), ok = Math.abs(t - 100) < 0.1;
+        fl.style.width = Math.min(t, 100) + '%'; fl.className = ok ? 'ok' : (t > 100 ? 'over' : '');
+        $('gx-pond-msg').textContent = ok ? '✓ Répartition complète' : (t > 100 ? 'Dépassement de ' + fmt(t - 100, 1) + ' %' : 'Reste à répartir : ' + fmt(100 - t, 1) + ' %');
+      };
+      document.addEventListener('input', function (e) { if (e.target.classList && e.target.classList.contains('ponderation-input')) upd(); });
+      $('gx-pond-eq').addEventListener('click', function () {
+        var n = ins.length; if (!n) return;
+        var base = Math.floor(1000 / n) / 10, last = Math.round((100 - base * (n - 1)) * 10) / 10;
+        ins.forEach(function (i, idx) { i.value = (idx === n - 1 ? last : base).toFixed(1); i.dispatchEvent(new Event('input', { bubbles: true })); });
+      });
+      upd();
+    }
+  });
+})();
+</script>
+<!-- GX-3 : infobulles -->
+<script>
+(function () {
+  function ready(fn) { if (document.readyState !== 'loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  ready(function () {
+    var tip = document.createElement('div'); tip.id = 'gx-tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip);
+    var cur = null, timer = null, hideT = null;
+    function fmt(n) { n = parseFloat(n); if (isNaN(n)) return '0'; return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(Math.round(n * 10) / 10); }
+    function set(el, t, x) { if (el && !el.hasAttribute('data-gx-tip')) el.setAttribute('data-gx-tip', t + '|' + x); }
+    function txt(el) { return el ? el.textContent.replace(/\s+/g, ' ').trim() : ''; }
+    var STAT = { excellent: 'Excellent', moyen: 'Moyen', critique: 'Critique' };
+    var THR = 'Seuils : Excellent au-dessus de 80 %, Moyen entre 50 et 80 %, Critique à 50 % ou moins.';
+
+    set(document.getElementById('search-entity-input'), 'Recherche', 'Tapez un nom d’entité, de sous-élément ou de structure RACI. La touche / place le curseur ici.');
+    set(document.getElementById('entity-counter'), 'Compteur', 'Nombre d’entités affichées après recherche et filtres.');
+    set(document.querySelector('[onclick*="monModalPonderation.showModal"]'), 'Valider la pondération', 'Répartir le poids de chaque entité. Le total doit faire exactement 100 %.');
+    set(document.querySelector('[onclick*="monModal.showModal"]'), 'Créer', 'Ouvrir le formulaire de création d’un nouvel élément.');
+
+    var cards = [].slice.call(document.querySelectorAll('.entity-card'));
+    var totalPond = cards.reduce(function (a, c) { return a + (parseFloat(c.dataset.pond) || 0); }, 0);
+    cards.forEach(function (c) {
+      var d = c.dataset, mode = d.mode || 'process', name = txt(c.querySelector('.entity-title a span')) || 'cette entité';
+      var exec = parseFloat(d.exec) || 0, decl = parseFloat(d.declared) || 0, pond = parseFloat(d.pond) || 0;
+      var tefv = parseFloat(d.tef) || 0, tefd = parseFloat(d.tefdecl) || 0;
+      set(c.querySelector('.inline-flex.rounded-full'), 'Statut ' + (STAT[d.status] || ''), THR + ' Exécution déclarée : ' + fmt(decl) + ' %.');
+      var boxes = c.querySelectorAll(':scope > .grid > div:first-child > .space-y-2 > div');
+      if (mode === 'finance') {
+        set(boxes[0], 'TEF validé', 'Taux d’exécution financière validé : ' + fmt(tefv) + ' %.');
+        set(boxes[1], 'TEF déclaré', 'Taux déclaré : ' + fmt(tefd) + ' % (validé : ' + fmt(tefv) + ' %).');
+      } else {
+        var share = totalPond > 0 ? pond / totalPond * 100 : 0;
+        set(boxes[0], 'Pondération', 'Poids de « ' + name + ' » : ' + fmt(pond) + ' %' + (Math.abs(share - pond) > 0.05 ? ' (' + fmt(share) + ' % du total des cartes)' : '') + '. Elle apporte ' + fmt(pond * exec / 100) + ' point(s) à l’avancement global.');
+        var gap = decl - exec;
+        set(boxes[1], 'Exécution validée', 'Validée : ' + fmt(exec) + ' %. Déclarée : ' + fmt(decl) + ' %. ' + (gap > 0.05 ? 'Il reste ' + fmt(gap) + ' point(s) déclaré(s) à faire valider.' : 'La validation est à jour.'));
+      }
+      set(c.querySelector('.gx-gauge'), 'Avancement', 'Barre d’avancement ' + (mode === 'finance' ? 'financier' : 'validé') + ' : ' + fmt(mode === 'finance' ? tefv : exec) + ' %. Verte au-dessus de 80 %, orange de 50 à 80 %, rouge en dessous.');
+      var img = c.querySelector('img.rounded-full'); set(img && img.parentElement, 'Entité', name);
+      set(c.querySelector('.entity-title a'), 'Ouvrir', 'Ouvrir la gestion de « ' + name + ' » et voir son contenu.');
+      var rr = [].slice.call(c.querySelectorAll('details p.text-gray-800')).map(txt);
+      if (rr.length === 4) set(c.querySelector('details summary'), 'Matrice RACI', 'R : ' + rr[0] + ' · A : ' + rr[1] + ' · C : ' + rr[2] + ' · I : ' + rr[3]);
+      set(c.querySelector('[onclick*="exampleModal_structure_entity"][onclick*="remove"]'), 'Édition RACI', 'Changer les structures réalisatrice, responsable, consultée et informée.');
+      set(c.querySelector('[onclick*="staticBackdrop"][onclick*="remove"]'), 'Plus d’informations', 'Description, observation et champs complémentaires de l’entité.');
+      set(c.querySelector('a[href^="/Update-Entities/"]'), 'Modifier', 'Ouvrir le formulaire d’édition de cette entité.');
+      set(c.querySelector('a[href^="/delete_entities/"]'), 'Supprimer', 'Suppression définitive. Une confirmation vous sera demandée.');
+      [].slice.call(c.querySelectorAll('.custom-scrollbar > div')).forEach(function (it) {
+        var nm = txt(it.querySelector('.break-words')); if (!nm) return;
+        var rows = [].slice.call(it.querySelectorAll('.flex.justify-between')).map(txt).filter(Boolean);
+        set(it, nm, rows.length ? rows.join(' · ') : 'Ouvrir ce sous-élément.');
+      });
+    });
+
+    function position(el) {
+      var r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      var top = r.top - h - 10, side = 'top';
+      if (top < 8) { top = r.bottom + 10; side = 'bottom'; }
+      if (top + h > vh - 8) top = Math.max(8, vh - h - 8);
+      var left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), Math.max(8, vw - w - 8));
+      tip.style.left = left + 'px'; tip.style.top = top + 'px'; tip.setAttribute('data-side', side);
+      tip.style.setProperty('--ax', Math.min(Math.max(14, r.left + r.width / 2 - left), w - 14) + 'px');
+    }
+    function show(el) {
+      var raw = el.getAttribute('data-gx-tip'); if (!raw) return;
+      var i = raw.indexOf('|'), t = i > -1 ? raw.slice(0, i) : '', x = i > -1 ? raw.slice(i + 1) : raw;
+      tip.textContent = '';
+      if (t) { var b = document.createElement('b'); b.textContent = t; tip.appendChild(b); }
+      tip.appendChild(document.createTextNode(x));
+      tip.style.left = '0px'; tip.style.top = '0px'; position(el); tip.classList.add('on');
+    }
+    function hide() { clearTimeout(timer); clearTimeout(hideT); cur = null; tip.classList.remove('on'); }
+    function over(e) {
+      var el = e.target.closest ? e.target.closest('[data-gx-tip]') : null;
+      if (el === cur) return;
+      hide(); if (!el) return; cur = el; timer = setTimeout(function () { show(el); }, 160);
+    }
+    document.addEventListener('mouseover', over);
+    document.addEventListener('focusin', over);
+    document.addEventListener('focusout', hide);
+    document.addEventListener('mouseleave', hide);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });
+    document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('a,button,summary')) hide(); }, true);
+    window.addEventListener('scroll', hide, { passive: true });
+    document.addEventListener('touchstart', function (e) {
+      var el = e.target.closest ? e.target.closest('[data-gx-tip]') : null; if (!el) { hide(); return; }
+      hide(); cur = el; show(el); hideT = setTimeout(hide, 2800);
+    }, { passive: true });
+  });
+})();
+</script>
+<!-- GX-4 : formatage des nombres + garde anti-défilement horizontal -->
+<script>
+(function () {
+  function ready(fn) { if (document.readyState !== 'loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  ready(function () {
+    var nf1 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+    var nf2 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var P = /^(-?\d[\d\s  .,]*)\s*%$/, A = /^-?\d[\d\s  ]*[.,]\d{2}$/;
+    function parse(s) {
+      s = s.replace(/[\s  ]/g, '');
+      if (s.indexOf(',') > -1 && s.indexOf('.') > -1) s = s.replace(/\./g, '').replace(',', '.'); else s = s.replace(',', '.');
+      return parseFloat(s);
+    }
+    var NB = ' ';
+    [].slice.call(document.querySelectorAll('.entity-card')).forEach(function (card) {
+      var w = document.createTreeWalker(card, NodeFilter.SHOW_TEXT, null), nodes = [], n;
+      while ((n = w.nextNode())) nodes.push(n);
+      nodes.forEach(function (node) {
+        var t = node.nodeValue.trim(); if (!t) return;
+        var par = node.parentElement, m = P.exec(t);
+        if (m) {
+          var v = parse(m[1]); if (isNaN(v)) return;
+          var big = par && par.matches('.space-y-2 > div > span:last-child');
+          if (big) {
+            par.textContent = nf1.format(v);
+            var u = document.createElement('small'); u.className = 'gx-unit'; u.textContent = '%'; par.appendChild(u);
+          } else {
+            node.nodeValue = node.nodeValue.replace(t, nf1.format(v) + NB + '%');
+          }
+        } else if (A.test(t) && par && par.closest('.custom-scrollbar')) {
+          var a = parse(t); if (!isNaN(a)) node.nodeValue = node.nodeValue.replace(t, nf2.format(a));
+        }
+      });
+    });
+
+    // Garde : aucun défilement horizontal, même si la mise en page parente déborde
+    function guard() {
+      var grid = document.getElementById('entities-grid'); if (!grid) return;
+      var de = document.documentElement, vw = de.clientWidth;
+      for (var p = grid.parentElement; p && p !== de; p = p.parentElement) {
+        if (p.scrollWidth > p.clientWidth + 1) p.style.overflowX = 'hidden';
+      }
+      [].slice.call(document.querySelectorAll('.gx-strip *, .gx-controls *, .gx-toolbar *, #entities-grid .entity-card *')).forEach(function (e) {
+        if (e.closest('dialog,[id^="staticBackdrop"],[id^="exampleModal_structure_entity"]')) return;
+        var r = e.getBoundingClientRect();
+        if (r.width > 0 && r.right > vw + 1 && getComputedStyle(e).position !== 'fixed') { e.style.maxWidth = '100%'; e.style.minWidth = '0'; }
+      });
+    }
+    guard(); setTimeout(guard, 700); window.addEventListener('resize', guard);
+  });
+})();
 </script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.min.css">
 

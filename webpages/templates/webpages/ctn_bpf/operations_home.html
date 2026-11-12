@@ -2054,14 +2054,6 @@ window.addEventListener('DOMContentLoaded', init);
            <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"></script>
 
       <div class="erp-control-stack">
-         <div class="fab-wrapper mb-3">
-        <div class="glow-orbit"></div> 
-        <button class="fab-erp fab-analysis"  title="Analyse PTF"  data-toggle="modal" data-target="#exampleModal"
-       >
-            <i class="fa-solid fa-chart-simple"></i>
-            <span class="fab-tooltip">Process-Technic-Finance</span>
-         </button>
-    </div>
     {%if request.user.personnel.is_technic%}
   <div class="fab-wrapper mb-3">
     <div class="glow-orbit"></div> 
@@ -2187,6 +2179,119 @@ window.addEventListener('DOMContentLoaded', init);
 </style>
      </div>
         
+
+
+<!-- ===================== ORGANISATION DE LA PAGE (ajout) ===================== -->
+<style>
+    /* Sommaire collant : accès direct à chaque section, sans défilement horizontal */
+    #sx-nav { position: sticky; top: var(--sx-top, 0px); z-index: 900; margin: 0 0 16px; padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+        background: color-mix(in srgb, #fff 88%, var(--nav-bg-color, #1e293b)); backdrop-filter: blur(8px);
+        border: 1px solid color-mix(in srgb, var(--nav-bg-color, #1e293b) 14%, #e5e7eb); border-radius: 16px; box-shadow: 0 1px 2px rgba(15,23,42,.05), 0 10px 24px -16px rgba(15,23,42,.35); }
+    #sx-nav .sx-lbl { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #64748b; padding: 0 6px; }
+    #sx-nav .sx-pill { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; padding: 7px 13px; border-radius: 999px; cursor: pointer; border: 1px solid transparent;
+        color: color-mix(in srgb, var(--nav-bg-color, #1e293b) 80%, #000); background: transparent; transition: background .15s, color .15s; white-space: nowrap; }
+    #sx-nav .sx-pill:hover { background: color-mix(in srgb, var(--nav-bg-color, #1e293b) 9%, #fff); }
+    #sx-nav .sx-pill:focus-visible, #sx-nav .sx-act:focus-visible, .sx-tg:focus-visible { outline: 2px solid var(--primary-color, #4361ee); outline-offset: 2px; }
+    #sx-nav .sx-pill.is-on { background: var(--nav-bg-color, #1e293b); color: var(--nav-ink, #fff); }
+    #sx-nav .sx-pill.is-on::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--tertiary-color, #FACC15); }
+    #sx-nav .sx-sp { flex: 1 1 auto; }
+    #sx-nav .sx-act { font-size: 12px; font-weight: 700; padding: 7px 11px; border-radius: 10px; cursor: pointer; color: #334155; background: #f1f5f9; border: 1px solid #e6eaf0; }
+    #sx-nav .sx-act:hover { background: #e8edf3; }
+    #sx-nav .sx-prog { position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; border-radius: 2px; background: transparent; overflow: hidden; }
+    #sx-nav .sx-prog i { display: block; height: 100%; width: 0; background: var(--tertiary-color, #FACC15); transition: width .1s linear; }
+    [data-sx] { scroll-margin-top: calc(var(--sx-top, 0px) + 78px); }
+    /* Bouton replier / déplier */
+    .sx-tg { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 8px auto; font-size: 11.5px; font-weight: 700; padding: 5px 11px; border-radius: 999px; cursor: pointer; color: #475569; background: #fff; border: 1px solid #e2e8f0; }
+    .sx-tgrow { display: flex; justify-content: flex-end; }
+    .sx-tg i { transition: transform .2s; }
+    .sx-tg[aria-expanded="false"] i { transform: rotate(-90deg); }
+    [data-sx].sx-collapsed { display: none !important; }
+    .sx-stub { display: none; padding: 10px 14px; margin-bottom: 14px; border: 1px dashed #cbd5e1; border-radius: 12px; font-size: 12.5px; color: #64748b; }
+    .sx-stub.is-on { display: block; }
+    /* Rythme vertical homogène */
+    #main_content #sample, #main_content [data-sx="stats"] { margin-top: 22px; margin-bottom: 22px; }
+    #main_content .erp-control-stack { gap: 12px; }
+    @media (max-width: 576px) { #sx-nav { gap: 4px; padding: 6px; } #sx-nav .sx-lbl { display: none; } #sx-nav .sx-pill { font-size: 12px; padding: 6px 10px; } }
+    @media print { #sx-nav, .sx-tgrow { display: none !important; } [data-sx].sx-collapsed { display: block !important; } }
+</style>
+<script>
+(function () {
+    function ready(fn) { if (document.readyState !== 'loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+    ready(function () {
+        var main = document.getElementById('main_content'); if (!main) return;
+        var KEY = 'sx_collapsed';
+        function ls(v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(KEY) || '{}'); localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} return {}; }
+        var state = ls();
+
+        /* 1. Repérage des sections (aucun id ni classe existants modifiés : seul data-sx est ajouté) */
+        var defs = [], seen = [];
+        function add(key, label, icon, el, collapsible) { if (el && seen.indexOf(el) < 0) { seen.push(el); el.setAttribute('data-sx', key); defs.push({ key: key, label: label, icon: icon, el: el, collapsible: !!collapsible }); } }
+        add('top', 'Vue d’ensemble', 'fa-gauge-high', main.querySelector('.section_canver'));
+        var st = null; main.querySelectorAll('h5.card-title').forEach(function (h) { if (!st && /statistiques/i.test(h.textContent)) st = h.closest('.col-md-12') || h.closest('.card'); });
+        add('stats', 'Statistiques', 'fa-chart-pie', st, true);
+        var h2 = main.querySelector('h2.text-uppercase'); add('gest', 'Gestionnaire', 'fa-layer-group', h2 && (h2.closest('.d-flex') || h2.parentNode));
+        add('chain', 'Chaîne de résultats', 'fa-diagram-project', document.getElementById('sample'), true);
+        if (defs.length < 2) return;
+        defs.sort(function (a, b) { return a.el.compareDocumentPosition(b.el) & 4 ? -1 : 1; });
+
+        /* 2. Sommaire */
+        var nav = document.createElement('nav'); nav.id = 'sx-nav'; nav.setAttribute('aria-label', 'Sections de la page');
+        var html = '<span class="sx-lbl">Sections</span>';
+        defs.forEach(function (d) { html += '<button type="button" class="sx-pill" data-k="' + d.key + '"><i class="fa-solid ' + d.icon + '" aria-hidden="true"></i>' + d.label + '</button>'; });
+        html += '<span class="sx-sp"></span><button type="button" class="sx-act" data-a="fold" title="Replier ou déplier les blocs volumineux">Tout replier</button><button type="button" class="sx-act" data-a="up" title="Haut de page" aria-label="Haut de page">↑</button><div class="sx-prog"><i></i></div>';
+        nav.innerHTML = html; nav.style.position = 'sticky';
+        var first = defs[0].el; first.parentNode.insertBefore(nav, first);
+
+        /* Décalage sous un éventuel en-tête fixe du site */
+        function topOffset() {
+            var h = 0; document.querySelectorAll('header, .navbar, nav').forEach(function (n) {
+                if (n === nav || nav.contains(n)) return; var cs = getComputedStyle(n);
+                if ((cs.position === 'fixed' || cs.position === 'sticky') && n.getBoundingClientRect().top <= 1 && n.offsetHeight < 160 && n.offsetWidth > innerWidth * .6) h = Math.max(h, n.offsetHeight);
+            }); nav.style.setProperty('--sx-top', h + 'px'); document.documentElement.style.setProperty('--sx-top', h + 'px');
+        }
+        topOffset(); window.addEventListener('resize', topOffset);
+
+        /* 3. Replier / déplier (statistiques, chaîne de résultats) */
+        function setCol(d, v, silent) {
+            d.el.classList.toggle('sx-collapsed', v); d.stub.classList.toggle('is-on', v);
+            d.btn.setAttribute('aria-expanded', String(!v)); d.btn.lastChild.nodeValue = v ? ' Déplier' : ' Replier';
+            state[d.key] = v; if (!silent) ls(state); foldLbl();
+        }
+        function foldLbl() { var c = defs.filter(function (d) { return d.collapsible; }); var all = c.every(function (d) { return state[d.key]; }); nav.querySelector('[data-a=fold]').textContent = all ? 'Tout déplier' : 'Tout replier'; }
+        defs.forEach(function (d) {
+            if (!d.collapsible) return;
+            var row = document.createElement('div'); row.className = 'sx-tgrow';
+            var b = document.createElement('button'); b.type = 'button'; b.className = 'sx-tg'; b.setAttribute('aria-expanded', 'true'); b.innerHTML = '<i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Replier';
+            b.setAttribute('aria-label', 'Replier ou déplier : ' + d.label); row.appendChild(b);
+            var stub = document.createElement('div'); stub.className = 'sx-stub'; stub.textContent = d.label + ' : bloc replié.';
+            d.el.parentNode.insertBefore(row, d.el); d.el.parentNode.insertBefore(stub, d.el); d.btn = b; d.stub = stub;
+            b.addEventListener('click', function () { setCol(d, !d.el.classList.contains('sx-collapsed')); if (!d.el.classList.contains('sx-collapsed')) setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 60); });
+            if (state[d.key]) setCol(d, true, true);
+        });
+        foldLbl();
+
+        /* 4. Navigation, repérage de la section active, progression */
+        function go(d) { if (d.el.classList.contains('sx-collapsed')) setCol(d, false); d.el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); window.dispatchEvent(new Event('resize')); }
+        nav.addEventListener('click', function (e) {
+            var p = e.target.closest('.sx-pill'), a = e.target.closest('.sx-act');
+            if (p) { var d = defs.filter(function (x) { return x.key === p.getAttribute('data-k'); })[0]; if (d) go(d); }
+            if (a && a.getAttribute('data-a') === 'up') window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (a && a.getAttribute('data-a') === 'fold') { var c = defs.filter(function (d) { return d.collapsible; }), all = c.every(function (d) { return state[d.key]; }); c.forEach(function (d) { setCol(d, !all, true); }); ls(state); foldLbl(); }
+        });
+        var pills = nav.querySelectorAll('.sx-pill'), bar = nav.querySelector('.sx-prog i'), tick = false;
+        function spy() {
+            tick = false; var y = (parseFloat(getComputedStyle(nav).top) || 0) + nav.offsetHeight + 48, cur = defs[0];
+            defs.forEach(function (d) { if (!d.el.classList.contains('sx-collapsed') && d.el.getBoundingClientRect().top <= y) cur = d; });
+            if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) cur = defs[defs.length - 1];
+            pills.forEach(function (p) { var on = p.getAttribute('data-k') === cur.key; p.classList.toggle('is-on', on); if (on) p.setAttribute('aria-current', 'true'); else p.removeAttribute('aria-current'); });
+            var m = document.documentElement.scrollHeight - innerHeight; bar.style.width = (m > 0 ? Math.min(100, scrollY / m * 100) : 0) + '%';
+        }
+        window.addEventListener('scroll', function () { if (!tick) { tick = true; requestAnimationFrame(spy); } }, { passive: true });
+        window.addEventListener('resize', spy); spy();
+    });
+})();
+</script>
+<!-- ===================== FIN ORGANISATION ===================== -->
 
 <div class="offcanvas offcanvas-start border-0 shadow" tabindex="-1" id="offcanvasSettings" style="width: 400px;">
     <div class="offcanvas-header bg-dark text-white">
