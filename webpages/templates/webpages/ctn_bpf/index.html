@@ -4,6 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {%load static%}
+    <!-- ===== Style de texte (ajout) : appliqué avant l'affichage, aucun changement visible au chargement ===== -->
+    <script>
+    window.SBX_POLICES = {
+        systeme: ["system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif", ''],
+        inter:   ["'Inter',system-ui,sans-serif", 'Inter:wght@400;500;600;700;800'],
+        source:  ["'Source Sans 3',system-ui,sans-serif", 'Source+Sans+3:wght@400;500;600;700;800'],
+        nunito:  ["'Nunito Sans',system-ui,sans-serif", 'Nunito+Sans:wght@400;600;700;800'],
+        poppins: ["'Poppins',system-ui,sans-serif", 'Poppins:wght@400;500;600;700;800'],
+        lexend:  ["'Lexend',system-ui,sans-serif", 'Lexend:wght@400;500;600;700;800']
+    };
+    window.sbxTexte = function (t) {
+        var h = document.documentElement, P = window.SBX_POLICES; t = t || {};
+        if (t.font && P[t.font]) {
+            h.setAttribute('data-sbx-font', t.font); h.style.setProperty('--sbx-font', P[t.font][0]);
+            if (P[t.font][1] && !document.getElementById('sbx-font-' + t.font)) {
+                var l = document.createElement('link'); l.rel = 'stylesheet'; l.id = 'sbx-font-' + t.font;
+                l.href = 'https://fonts.googleapis.com/css2?family=' + P[t.font][1] + '&display=swap'; document.head.appendChild(l);
+            }
+        } else { h.removeAttribute('data-sbx-font'); h.style.removeProperty('--sbx-font'); }
+        ['taille', 'titres', 'interligne'].forEach(function (k) { if (t[k]) h.setAttribute('data-sbx-' + k, t[k]); else h.removeAttribute('data-sbx-' + k); });
+    };
+    try { window.sbxTexte(JSON.parse(localStorage.getItem('sbx-texte-{{ request.user.personnel.id|default:"u" }}') || 'null')); } catch (e) {}
+    </script>
+    <style>
+        html[data-sbx-font] body, html[data-sbx-font] .font-sans { font-family: var(--sbx-font) !important; }
+        html[data-sbx-font] :is(button, input, select, textarea) { font-family: inherit; }
+        html[data-sbx-taille="s"] { font-size: 14px; }
+        html[data-sbx-taille="l"] { font-size: 17px; }
+        html[data-sbx-taille="xl"] { font-size: 18px; }
+        html[data-sbx-titres="fin"] :is(h1, h2, h3, h4) { font-weight: 600 !important; letter-spacing: -.01em; }
+        html[data-sbx-titres="gras"] :is(h1, h2, h3, h4) { font-weight: 800 !important; letter-spacing: -.02em; }
+        html[data-sbx-interligne="serre"] body { line-height: 1.35; }
+        html[data-sbx-interligne="aere"] body { line-height: 1.75; }
+        html[data-sbx-interligne="aere"] :is(p, li, td) { line-height: 1.75 !important; }
+    </style>
     <!-- ===== Correctif (ajout) : aucun modal visible au chargement, même avant que Tailwind (CDN) ait généré ses styles ===== -->
     <style>
         .hidden { display: none; }
@@ -190,6 +225,41 @@ body {
                 <div class="sbx-swatches" data-target="color_tiers" aria-label="Couleurs secondaires proposées"></div>
             </div>
 
+
+            <!-- ===== Style de texte (ajout) ===== -->
+            <div class="space-y-2 sbx-texte">
+                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Style de texte</label>
+                <div class="sbx-polices" role="radiogroup" aria-label="Police de caractères">
+                    <button type="button" role="radio" data-font="systeme" style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif"><b>Aa</b><span>Système</span></button>
+                    <button type="button" role="radio" data-font="inter" style="font-family:'Inter',sans-serif"><b>Aa</b><span>Inter</span></button>
+                    <button type="button" role="radio" data-font="source" style="font-family:'Source Sans 3',sans-serif"><b>Aa</b><span>Source Sans</span></button>
+                    <button type="button" role="radio" data-font="nunito" style="font-family:'Nunito Sans',sans-serif"><b>Aa</b><span>Nunito</span></button>
+                    <button type="button" role="radio" data-font="poppins" style="font-family:'Poppins',sans-serif"><b>Aa</b><span>Poppins</span></button>
+                    <button type="button" role="radio" data-font="lexend" style="font-family:'Lexend',sans-serif"><b>Aa</b><span>Lexend</span></button>
+                </div>
+                <div class="sbx-trow"><span>Taille du texte</span>
+                    <div class="sbx-tseg" data-k="taille" role="radiogroup" aria-label="Taille du texte">
+                        <button type="button" role="radio" data-v="s" style="font-size:12px">A</button><button type="button" role="radio" data-v="m" style="font-size:14px">A</button><button type="button" role="radio" data-v="l" style="font-size:16px">A</button><button type="button" role="radio" data-v="xl" style="font-size:18px">A</button>
+                    </div>
+                </div>
+                <div class="sbx-trow"><span>Titres</span>
+                    <div class="sbx-tseg" data-k="titres" role="radiogroup" aria-label="Épaisseur des titres">
+                        <button type="button" role="radio" data-v="fin" style="font-weight:500">Fins</button><button type="button" role="radio" data-v="normal" style="font-weight:700">Normaux</button><button type="button" role="radio" data-v="gras" style="font-weight:900">Gras</button>
+                    </div>
+                </div>
+                <div class="sbx-trow"><span>Interligne</span>
+                    <div class="sbx-tseg" data-k="interligne" role="radiogroup" aria-label="Interligne">
+                        <button type="button" role="radio" data-v="serre">Serré</button><button type="button" role="radio" data-v="normal">Normal</button><button type="button" role="radio" data-v="aere">Aéré</button>
+                    </div>
+                </div>
+                <div class="sbx-tapercu" aria-live="polite"><b>Rapport trimestriel · T3 2026</b><span>12 opérations validées sur 15, dont 3 en attente de justificatifs.</span></div>
+                <input type="hidden" name="font_family" id="sbxFontField">
+                <input type="hidden" name="font_size" id="sbxSizeField">
+                <input type="hidden" name="heading_weight" id="sbxTitreField">
+                <input type="hidden" name="line_height" id="sbxInterField">
+                <button type="button" class="sbx-treset" id="sbxTexteReset">Rétablir le style par défaut</button>
+            </div>
+            <!-- ===== Fin style de texte ===== -->
 
             <div class="flex flex-col gap-2 pt-4">
                 <button type="submit" class="w-full bg-erp-primary text-white py-3 rounded-xl font-semibold hover:opacity-90 shadow-lg shadow-blue-500/20 transition-all">
@@ -543,42 +613,31 @@ body {
 
         // [nom, DOMINANTE 60 % → navigation, ACCENT 30 % → couleur accent, TOUCHE 10 % → couleur secondaire]
         var PRESETS = [
-            ['Bleu-noir · Rouge néon · Cyan', '#0A1124', '#FF2E63', '#00C2FF'],
-            ['Argent · Aubergine · Marigold', '#BFC5CE', '#4B1D3F', '#EAA221'],
-            ['Brun · Argent · Lavande pâle',  '#5A3825', '#C0C6CF', '#DCD0FF'],
-            ['Bleu royal · Blanc pur · Rouge','#2340B5', '#FFFFFF', '#E11D2E'],
-            ['Bleu · Vert · Rouge',           '#1D4ED8', '#16A34A', '#DC2626'],
-            ['Noir · Vert · Cyan électrique', '#0A0A0A', '#22C55E', '#00F0FF'],
-            ['Jaune · Noir · Violet',      '#FACC15', '#111111', '#7C3AED'],
-            ['Marron · Argent · Violet',   '#5B3A29', '#C0C6CF', '#7C3AED'],
-            ['Violet · Jaune · Noir',      '#5B21B6', '#FACC15', '#111111'],
-            ['MEAL · Sarcelle · Safran',   '#123A37', '#E48B0C', '#E35A33'],
-            ['Cameroun · Vert · Rouge',    '#007A5E', '#CE1126', '#FCD116'],
-            ['Noir · Or · Ivoire',         '#0B0B0F', '#D4A017', '#F5F5F4'],
-            ['Bleu roi · Or · Blanc',      '#1D4ED8', '#FBBF24', '#F8FAFC'],
-            ['Bordeaux · Or · Crème',      '#7F1D1D', '#E9C46A', '#FFF7E6'],
-            ['Émeraude · Noir · Or',       '#047857', '#111827', '#FBBF24'],
-            ['Orange · Noir · Blanc',      '#EA580C', '#111111', '#FFFFFF'],
-            ['Rouge · Noir · Or',          '#B91C1C', '#111111', '#FBBF24'],
-            ['Rose · Prune · Or',          '#DB2777', '#3B0A2A', '#FBBF24'],
-            ['Marine · Corail · Sable',    '#0B2545', '#FB7185', '#F4D6A0'],
-            ['Turquoise · Marine · Corail','#0E9F9A', '#0B2545', '#FF7A59'],
-            ['Ciel · Marine · Jaune',      '#0284C7', '#0B2545', '#FACC15'],
-            ['Indigo · Jaune · Blanc',     '#3730A3', '#FDE047', '#FFFFFF'],
-            ['Lavande · Prune · Menthe',   '#7C6BD9', '#2A1033', '#6EE7B7'],
-            ['Prune · Argent · Rose',      '#4A1D5C', '#CBD5E1', '#EC4899'],
-            ['Moutarde · Pétrole · Brique','#D4A017', '#0D3B4C', '#C1440E'],
-            ['Terre cuite · Crème · Vert', '#9A3412', '#FDE7C8', '#15803D'],
-            ['Olive · Ocre · Crème',       '#4D5B23', '#CA8A04', '#F5EBDD'],
-            ['Kaki · Noir · Orange',       '#6B6B3A', '#111111', '#F97316'],
-            ['Chocolat · Caramel · Turquoise','#3E2723', '#D97706', '#2DD4BF'],
-            ['Café · Crème · Cuivre',      '#4B3621', '#F3E5C8', '#B45309'],
-            ['Forêt · Or · Lin',           '#14532D', '#EAB308', '#EDE4D3'],
-            ['Sarcelle · Sable · Corail',  '#2A8A7D', '#F4A261', '#E35A33'],
-            ['Corail · Ardoise · Sable',   '#E35A33', '#1E293B', '#F4D6A0'],
-            ['Argent · Noir · Rouge',      '#9CA3AF', '#111827', '#DC2626'],
-            ['Graphite · Orange · Glacier','#1F2937', '#F97316', '#93C5FD'],
-            ['Acier · Cyan · Lime',        '#334155', '#22D3EE', '#A3E635']
+            /* Institutionnels */
+            ['Marine · Bleu · Ambre',          '#0F2742', '#2563EB', '#F59E0B'],
+            ['Ardoise · Indigo · Ciel',        '#1E293B', '#4F46E5', '#38BDF8'],
+            ['Nuit · Sarcelle · Or',           '#111827', '#0F766E', '#EAB308'],
+            ['Bleu roi · Cuivre · Blé',        '#1E3A8A', '#B45309', '#FCD34D'],
+            /* Afrique */
+            ['MEAL · Sarcelle · Safran',       '#123A37', '#C2410C', '#F2A007'],
+            ['Cameroun · Rouge · Soleil',      '#00553F', '#CE1126', '#FCD116'],
+            ['Sahel · Terre cuite · Sable',    '#3B2416', '#B4532A', '#E9C46A'],
+            ['Kente · Ocre · Vert',            '#1C1917', '#B45309', '#22C55E'],
+            /* Nature */
+            ['Forêt · Bronze · Lin',           '#14532D', '#A16207', '#D9F99D'],
+            ['Pétrole · Lagon · Corail',       '#0D3B4C', '#0E7490', '#FB7185'],
+            ['Olive · Ocre · Crème',           '#3F4A1C', '#A16207', '#F5EBDD'],
+            /* Chaleureux */
+            ['Bordeaux · Cuivre · Crème',      '#4C0519', '#B45309', '#FDE7C8'],
+            ['Prune · Framboise · Or',         '#3B0A2A', '#BE185D', '#FBBF24'],
+            ['Chocolat · Caramel · Turquoise', '#3E2723', '#B45309', '#2DD4BF'],
+            /* Sobres */
+            ['Graphite · Orange · Glacier',    '#1F2937', '#EA580C', '#93C5FD'],
+            ['Anthracite · Émeraude · Menthe', '#18181B', '#059669', '#A7F3D0'],
+            ['Acier · Bleu · Lime',            '#334155', '#2563EB', '#A3E635'],
+            /* Clairs (dominante claire) */
+            ['Perle · Marine · Corail',        '#E2E8F0', '#1E3A8A', '#F97316'],
+            ['Sable · Pétrole · Brique',       '#EFE6D8', '#0F4C5C', '#C2410C']
         ];
 
         // Couleur de texte lisible (noir ou blanc) selon la clarté d'une couleur
@@ -1041,6 +1100,7 @@ body {
     #sbxFavs .sbx-fav-star { position: absolute; bottom: 2px; right: 2px; font-size: 8px; color: var(--tertiary-color); }
 
     /* ---- Menu des modules : recherche, récents, favoris ---- */
+    .sbx-menu-tools:has(.sbx-recent:empty) { display: none; }
     .sbx-menu-tools { padding: 16px 24px 0; background: #f8fafc; display: flex; flex-direction: column; gap: 12px; }
     .sbx-menu-search { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px; border-radius: 14px; background: #fff; border: 1px solid #e2e8f0; }
     .sbx-menu-search:focus-within { border-color: var(--menu-main); box-shadow: 0 0 0 4px color-mix(in srgb, var(--menu-main) 15%, transparent); }
@@ -1057,6 +1117,32 @@ body {
     .sbx-star:hover { background: #f1f5f9; color: #94a3b8; }
     .sbx-star.is-on { color: var(--tertiary-color); }
     .sbx-noresult { grid-column: 1 / -1; text-align: center; color: #64748b; padding: 24px; font-size: 14px; }
+
+
+    /* ---- Style de texte (fenêtre Interface visuelle) ---- */
+    .sbx-polices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .sbx-polices button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px 8px; border: 2px solid #e2e8f0; border-radius: 14px; background: #fff; cursor: pointer; transition: border-color .15s; }
+    .sbx-polices button b { font-size: 22px; font-weight: 700; color: #0f172a; line-height: 1.1; }
+    .sbx-polices button span { font-size: 11.5px; font-weight: 600; color: #64748b; }
+    .sbx-polices button:hover { border-color: #94a3b8; }
+    .sbx-polices button[aria-checked="true"] { border-color: #0f172a; }
+    .sbx-polices button:focus-visible, .sbx-tseg button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+    .sbx-trow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .sbx-trow > span { font-size: 13px; font-weight: 600; color: #334155; }
+    .sbx-tseg { display: inline-flex; padding: 3px; border-radius: 12px; background: #f1f5f9; }
+    .sbx-tseg button { min-width: 44px; height: 32px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; color: #475569; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+    .sbx-tseg button[aria-checked="true"] { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(15,23,42,.15); }
+    .sbx-tapercu { padding: 12px 14px; border-radius: 14px; border: 1px dashed #cbd5e1; background: #f8fafc; display: flex; flex-direction: column; gap: 3px; }
+    .sbx-tapercu b { font-size: 15px; color: #0f172a; }
+    .sbx-tapercu span { font-size: 13px; color: #475569; }
+    .sbx-treset { align-self: flex-start; border: 0; background: none; padding: 0; font-size: 12px; font-weight: 600; color: #64748b; text-decoration: underline; cursor: pointer; }
+    .sbx-lisible { margin-top: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .sbx-lisible:empty { display: none; }
+    .sbx-lisible.is-top { color: #047857; } .sbx-lisible.is-ok { color: #0f766e; } .sbx-lisible.is-ko { color: #b91c1c; }
+    html.sbx-dark .sbx-polices button, html.sbx-dark .sbx-tapercu { background: #1b202a !important; border-color: #2a303c !important; }
+    html.sbx-dark .sbx-polices button b, html.sbx-dark .sbx-tapercu b { color: #f1f5f9; }
+    html.sbx-dark .sbx-tseg { background: #1b202a; } html.sbx-dark .sbx-tseg button[aria-checked="true"] { background: #2a303c; color: #f1f5f9; }
+    html.sbx-dark .sbx-trow > span { color: #cbd5e1; }
 
     /* ---- Thème de l'institution ---- */
     .sbx-inst { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: #f8fafc; border: 1px solid #e2e8f0; }
@@ -1100,22 +1186,14 @@ body {
 /* ===== Associations : familles, aperçu miniature, alertes de lisibilité (ajout) ===== */
 (function () {
     var FAMILY = {
-        'Bleu-noir · Rouge néon · Cyan': 'Néon', 'Noir · Vert · Cyan électrique': 'Néon', 'Acier · Cyan · Lime': 'Néon',
-        'Argent · Aubergine · Marigold': 'Royaux', 'Bleu royal · Blanc pur · Rouge': 'Royaux', 'Noir · Or · Ivoire': 'Royaux',
-        'Bleu roi · Or · Blanc': 'Royaux', 'Bordeaux · Or · Crème': 'Royaux', 'Émeraude · Noir · Or': 'Royaux',
-        'MEAL · Sarcelle · Safran': 'Afrique', 'Cameroun · Vert · Rouge': 'Afrique', 'Moutarde · Pétrole · Brique': 'Afrique',
-        'Terre cuite · Crème · Vert': 'Afrique',
-        'Jaune · Noir · Violet': 'Vifs', 'Violet · Jaune · Noir': 'Vifs', 'Orange · Noir · Blanc': 'Vifs',
-        'Rouge · Noir · Or': 'Vifs', 'Indigo · Jaune · Blanc': 'Vifs', 'Bleu · Vert · Rouge': 'Vifs',
-        'Brun · Argent · Lavande pâle': 'Terre', 'Marron · Argent · Violet': 'Terre', 'Olive · Ocre · Crème': 'Terre',
-        'Kaki · Noir · Orange': 'Terre', 'Chocolat · Caramel · Turquoise': 'Terre', 'Café · Crème · Cuivre': 'Terre',
-        'Forêt · Or · Lin': 'Nature', 'Sarcelle · Sable · Corail': 'Nature',
-        'Marine · Corail · Sable': 'Océan', 'Turquoise · Marine · Corail': 'Océan', 'Ciel · Marine · Jaune': 'Océan',
-        'Corail · Ardoise · Sable': 'Océan',
-        'Rose · Prune · Or': 'Doux', 'Lavande · Prune · Menthe': 'Doux', 'Prune · Argent · Rose': 'Doux',
-        'Argent · Noir · Rouge': 'Sobres', 'Graphite · Orange · Glacier': 'Sobres'
+        'Marine · Bleu · Ambre': 'Institutionnels', 'Ardoise · Indigo · Ciel': 'Institutionnels', 'Nuit · Sarcelle · Or': 'Institutionnels', 'Bleu roi · Cuivre · Blé': 'Institutionnels',
+        'MEAL · Sarcelle · Safran': 'Afrique', 'Cameroun · Rouge · Soleil': 'Afrique', 'Sahel · Terre cuite · Sable': 'Afrique', 'Kente · Ocre · Vert': 'Afrique',
+        'Forêt · Bronze · Lin': 'Nature', 'Pétrole · Lagon · Corail': 'Nature', 'Olive · Ocre · Crème': 'Nature',
+        'Bordeaux · Cuivre · Crème': 'Chaleureux', 'Prune · Framboise · Or': 'Chaleureux', 'Chocolat · Caramel · Turquoise': 'Chaleureux',
+        'Graphite · Orange · Glacier': 'Sobres', 'Anthracite · Émeraude · Menthe': 'Sobres', 'Acier · Bleu · Lime': 'Sobres',
+        'Perle · Marine · Corail': 'Clairs', 'Sable · Pétrole · Brique': 'Clairs'
     };
-    var ORDER = ['Toutes', 'Afrique', 'Royaux', 'Néon', 'Vifs', 'Terre', 'Nature', 'Océan', 'Doux', 'Sobres'];
+    var ORDER = ['Toutes', 'Institutionnels', 'Afrique', 'Nature', 'Chaleureux', 'Sobres', 'Clairs'];
 
     function lum(hex) {
         var h = String(hex || '#000').trim().replace('#', ''); if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
@@ -1178,16 +1256,23 @@ body {
         var warn = document.createElement('div');
         warn.className = 'sbx-warn'; warn.setAttribute('role', 'status');
         grid.parentNode.appendChild(warn);
+        var note = document.createElement('p'); note.id = 'sbxLisible'; note.className = 'sbx-lisible'; grid.parentNode.appendChild(note);
         function check() {
             var a = (form.querySelector('input[name="color"]') || {}).value,
                 f = (form.querySelector('input[name="color_fond"]') || {}).value,
                 t = (form.querySelector('input[name="color_tiers"]') || {}).value, msgs = [];
-            if (a && ratio(a, '#ffffff') < 2.2) msgs.push("L'accent est très clair : il se verra peu sur les fonds blancs.");
+            if (a && ratio(a, '#ffffff') < 3) msgs.push("L'accent est trop clair pour les boutons et les liens sur fond blanc (contraste " + ratio(a, '#ffffff').toFixed(1).replace('.', ',') + ":1, il faut au moins 3:1).");
             if (f && ratio(f, '#f8fafc') < 1.35) msgs.push('La dominante est presque blanche : la barre latérale se distinguera mal du contenu.');
             if (f && t && ratio(f, t) < 1.5) msgs.push('La touche ressemble trop à la dominante : les filets seront invisibles.');
             if (a && f && ratio(a, f) < 1.4) msgs.push("L'accent ressemble trop à la dominante : la page active se verra mal.");
             warn.innerHTML = msgs.map(function (m) { return '<p><i class="fa-solid fa-triangle-exclamation"></i> ' + m + '</p>'; }).join('');
             warn.style.display = msgs.length ? '' : 'none';
+            var note = document.getElementById('sbxLisible');
+            if (note && a) {
+                var r1 = ratio(a, '#ffffff'), ok = r1 >= 4.5 ? 'Excellente' : r1 >= 3 ? 'Bonne' : 'Insuffisante';
+                note.className = 'sbx-lisible ' + (r1 >= 4.5 ? 'is-top' : r1 >= 3 ? 'is-ok' : 'is-ko');
+                note.innerHTML = '<i class="fa-solid ' + (r1 >= 3 ? 'fa-circle-check' : 'fa-circle-exclamation') + '"></i> Lisibilité de l’accent : <b>' + ok + '</b> (' + r1.toFixed(1).replace('.', ',') + ':1 sur fond blanc)';
+            }
         }
         form.addEventListener('input', check); form.addEventListener('click', function () { setTimeout(check, 0); });
         check();
@@ -1263,33 +1348,18 @@ body {
         var tiles = [].slice.call(grid.querySelectorAll(':scope > a'));
         var tools = document.createElement('div');
         tools.className = 'sbx-menu-tools';
-        tools.innerHTML = '<label class="sbx-menu-search"><i class="fa-solid fa-magnifying-glass" style="color:#94a3b8"></i>' +
-            '<input type="search" id="sbxMenuSearch" placeholder="Rechercher un module…" aria-label="Rechercher un module" autocomplete="off"><kbd>Entrée</kbd></label>' +
-            '<div class="sbx-recent" id="sbxRecent"></div>';
+        /* recherche des modules retirée : on garde seulement les modules récents */
+        tools.innerHTML = '<div class="sbx-recent" id="sbxRecent"></div>';
         grid.parentNode.insertBefore(tools, grid);
-        var search = tools.querySelector('input'), none = document.createElement('div');
-        none.className = 'sbx-noresult'; none.textContent = 'Aucun module ne correspond.'; none.style.display = 'none'; grid.appendChild(none);
-
-        function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
         function visible() { return tiles.filter(function (t) { return t.style.display !== 'none'; }); }
-        search.addEventListener('input', function () {
-            var q = norm(search.value);
-            tiles.forEach(function (t) { t.style.display = !q || norm(t.textContent).indexOf(q) > -1 ? '' : 'none'; });
-            none.style.display = visible().length ? 'none' : '';
-        });
-        search.addEventListener('keydown', function (e) {
-            var v = visible();
-            if (e.key === 'Enter' && v[0]) { e.preventDefault(); remember(tileInfo(v[0])); v[0].click(); }
-            if (e.key === 'ArrowDown' && v[0]) { e.preventDefault(); v[0].focus(); }
-        });
         grid.addEventListener('keydown', function (e) {
             var v = visible(), i = v.indexOf(document.activeElement);
             if (i < 0) return;
             if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); (v[i + 1] || v[0]).focus(); }
-            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (i === 0) search.focus(); else v[i - 1].focus(); }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); (v[i - 1] || v[v.length - 1]).focus(); }
         });
         document.addEventListener('click', function (e) {
-            if (e.target.closest('.modalOpen')) setTimeout(function () { search.value = ''; search.dispatchEvent(new Event('input')); renderRecent(); search.focus(); }, 120);
+            if (e.target.closest('.modalOpen')) setTimeout(function () { renderRecent(); }, 120);
         });
 
         /* Favoris */
@@ -1336,6 +1406,54 @@ body {
     if (tm) new MutationObserver(function () {
         if (!tm.classList.contains('hidden')) { var f = tm.querySelector('.sbx-fam.is-on') || tm.querySelector('input'); if (f) f.focus(); }
     }).observe(tm, { attributes: true, attributeFilter: ['class'] });
+})();
+</script>
+<script>
+/* ===== Style de texte : choix, aperçu immédiat, enregistrement avec le formulaire (ajout) ===== */
+(function () {
+    var form = document.getElementById('settingsForm'), box = form && form.querySelector('.sbx-texte'); if (!box) return;
+    var uid = ((form.querySelector('input[name="personnel_id"]') || {}).value || 'u'), KEY = 'sbx-texte-' + uid;
+    var DEF = { font: '', taille: 'm', titres: 'normal', interligne: 'normal' };
+    function lire() { try { return Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || 'null') || {}); } catch (e) { return Object.assign({}, DEF); } }
+    var enreg = lire(), cur = Object.assign({}, enreg), envoye = false;
+    function appliquer(t) {
+        window.sbxTexte({ font: t.font, taille: t.taille === 'm' ? '' : t.taille, titres: t.titres === 'normal' ? '' : t.titres, interligne: t.interligne === 'normal' ? '' : t.interligne });
+        box.querySelectorAll('.sbx-polices button').forEach(function (b) { b.setAttribute('aria-checked', b.dataset.font === (t.font || 'systeme') ? 'true' : 'false'); });
+        box.querySelectorAll('.sbx-tseg').forEach(function (g) { g.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-checked', b.dataset.v === t[g.dataset.k] ? 'true' : 'false'); }); });
+        var P = window.SBX_POLICES, ap = box.querySelector('.sbx-tapercu');
+        ap.style.fontFamily = t.font && P[t.font] ? P[t.font][0] : '';
+        document.getElementById('sbxFontField').value = t.font || 'systeme';
+        document.getElementById('sbxSizeField').value = t.taille;
+        document.getElementById('sbxTitreField').value = t.titres;
+        document.getElementById('sbxInterField').value = t.interligne;
+    }
+    /* charger les polices de l'aperçu seulement quand la fenêtre s'ouvre */
+    var charge = false;
+    function chargerPolices() {
+        if (charge) return; charge = true;
+        var fam = Object.keys(window.SBX_POLICES).map(function (k) { return window.SBX_POLICES[k][1]; }).filter(Boolean).join('&family=');
+        var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + fam + '&display=swap'; document.head.appendChild(l);
+    }
+    box.addEventListener('click', function (e) {
+        var f = e.target.closest('.sbx-polices button');
+        if (f) { cur.font = f.dataset.font === 'systeme' ? '' : f.dataset.font; appliquer(cur); return; }
+        var b = e.target.closest('.sbx-tseg button');
+        if (b) { cur[b.parentNode.dataset.k] = b.dataset.v; appliquer(cur); }
+    });
+    box.addEventListener('keydown', function (e) {
+        var g = e.target.closest('[role=radiogroup]'); if (!g || ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].indexOf(e.key) < 0) return;
+        var bs = [].slice.call(g.querySelectorAll('button')), i = bs.indexOf(e.target), d = (e.key === 'ArrowLeft' || e.key === 'ArrowUp') ? -1 : 1;
+        var nx = bs[(i + d + bs.length) % bs.length]; e.preventDefault(); nx.focus(); nx.click();
+    });
+    document.getElementById('sbxTexteReset').addEventListener('click', function () { cur = Object.assign({}, DEF); appliquer(cur); });
+    form.addEventListener('submit', function () { envoye = true; try { localStorage.setItem(KEY, JSON.stringify(cur)); } catch (e) {} });
+    /* fenêtre fermée sans enregistrer : on revient au style enregistré */
+    var tm = document.getElementById('theme-modal');
+    if (tm) new MutationObserver(function () {
+        if (tm.classList.contains('hidden')) { if (!envoye) { cur = Object.assign({}, enreg); appliquer(cur); } }
+        else { chargerPolices(); enreg = lire(); cur = Object.assign({}, enreg); appliquer(cur); }
+    }).observe(tm, { attributes: true, attributeFilter: ['class'] });
+    appliquer(cur);
 })();
 </script>
 <!-- ===================== FIN EXTRAS ===================== -->
@@ -2080,6 +2198,162 @@ document.addEventListener('DOMContentLoaded', function () {
      Inchangés : changeView('day' | 'week' | 'month'), #gantt-container, son indicateur de chargement,
      toutes les classes d'origine. Ajouts : bouton actif, « Aujourd'hui », plein écran, légende,
      message si le planning ne se charge pas, couleurs OperaPlus pour les barres (Frappe Gantt). -->
+<!-- ===================== OP-LISTES : Gantt et matrice RACI par lots de 10 + finitions (styles placés AVANT les blocs) ===================== -->
+<style>
+:root{--ol-ink:#0f172a;--ol-txt:#334155;--ol-mute:#64748b;--ol-line:#e5e7eb;--ol-soft:#f8fafc}
+/* Pied « Afficher plus » commun */
+.op-plus{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.6rem;margin-top:.75rem;padding:.6rem .75rem;border:1px solid var(--ol-line);border-radius:14px;background:#fff}
+.op-plus[hidden]{display:none}
+.op-plus-txt{font-size:.8rem;font-weight:600;color:var(--ol-mute)}
+.op-plus-txt b{color:var(--ol-ink)}
+.op-plus-jauge{display:block;width:140px;height:4px;margin-top:.35rem;border-radius:9px;background:#eef2f6;overflow:hidden}
+.op-plus-jauge i{display:block;height:100%;width:0;border-radius:9px;background:var(--ol-ink);transition:width .4s cubic-bezier(.22,1,.36,1)}
+.op-plus-btns{display:flex;flex-wrap:wrap;gap:.4rem}
+.op-plus-btns button{height:34px;padding:0 .85rem;border-radius:10px;border:1px solid var(--ol-line);background:#fff;font-size:.78rem;font-weight:600;color:var(--ol-txt);cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;transition:background .15s,border-color .15s,color .15s}
+.op-plus-btns button:hover{border-color:#94a3b8;color:var(--ol-ink)}
+.op-plus-btns button.is-main{background:var(--ol-ink);border-color:var(--ol-ink);color:#fff}
+.op-plus-btns button.is-main:hover{background:#1e293b}
+.op-plus-btns button[hidden]{display:none}
+.op-plus-btns button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ---- Gantt (vis-timeline) : libellés lisibles, survol calme ---- */
+.op-gantt #gantt-container{border:1px solid var(--ol-line)!important;padding:12px!important;border-radius:16px!important}
+.op-gantt .vis-timeline{border:0!important;color:var(--ol-txt)!important;font-family:inherit}
+.op-gantt .vis-panel.vis-left,.op-gantt .vis-panel.vis-top,.op-gantt .vis-panel.vis-center,.op-gantt .vis-panel.vis-bottom{border-color:var(--ol-line)!important}
+.op-gantt .vis-labelset .vis-label{color:var(--ol-ink)!important;border-bottom-color:#f1f5f9!important;display:flex;align-items:center}
+.op-gantt .vis-labelset .vis-label:nth-child(even),.op-gantt .vis-foreground .vis-group:nth-child(even){background:#fbfcfd}
+.op-gantt .vis-foreground .vis-group{border-bottom-color:#f1f5f9!important}
+.op-gantt .vis-label .vis-inner{padding:6px 12px!important}
+.op-gantt .group-text{color:var(--ol-ink)!important;max-width:230px!important;font-size:.72rem!important;font-weight:600!important;letter-spacing:.01em;text-transform:none}
+.op-gantt .group-text:hover{transform:none!important;box-shadow:none!important;color:#2563eb!important}
+.op-gantt .vis-time-axis .vis-text{color:var(--ol-mute)!important}
+.op-gantt .vis-time-axis .vis-grid.vis-minor{border-color:#f1f5f9!important}
+.op-gantt .vis-time-axis .vis-grid.vis-major{border-color:#e2e8f0!important}
+.op-gantt .vis-item{border-radius:8px!important;min-height:26px!important;box-shadow:none}
+.op-gantt .vis-item:hover{transform:none!important;box-shadow:0 6px 16px -8px rgba(15,23,42,.45)!important;background-color:transparent!important}
+.op-gantt .vis-item.vis-selected{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ol-ink)!important}
+.op-gantt .task-wrapper{font-size:.72rem!important;padding:4px 10px!important;background:transparent!important}
+.op-gantt .vis-item.op-barre{border:0!important}
+.op-gantt .vis-item.op-barre .vis-item-content{color:#fff!important;font-weight:600;font-size:.72rem;padding:5px 10px!important}
+.op-gantt .vis-item.op-barre .task-text{color:#fff!important;max-width:none!important}
+.op-gantt .task-progress{opacity:.22!important}
+.op-gantt .op-gantt-legende .l-cours{background:var(--corp-success,#22c55e)}
+.op-gantt .op-gantt-legende .l-fini{background:var(--corp-primary,#4f46e5)}
+.op-gantt .op-gantt-legende .l-moyen{background:var(--corp-warning,#f59e0b)}
+.op-gantt .op-gantt-legende .l-retard{background:var(--corp-danger,#ef4444)}
+
+/* ---- Matrice RACI ---- */
+.op-raci{border-radius:20px!important;border-color:var(--ol-line)!important;box-shadow:0 1px 2px rgba(15,23,42,.05)!important}
+.op-raci>div:first-child h3{font-size:1rem!important;font-weight:700!important;color:var(--ol-ink)!important;text-transform:none!important;letter-spacing:-.01em!important}
+.op-raci>div:first-child p{font-size:.78rem!important;color:var(--ol-mute)!important;margin-top:.15rem}
+.op-raci>div:first-child>span{background:var(--ol-soft)!important;border-color:var(--ol-line)!important;font-size:.72rem!important;font-weight:600!important;border-radius:99px!important}
+.op-raci-outils{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:-.75rem 0 .9rem}
+.op-raci-q{position:relative;flex:1 1 260px;max-width:380px}
+.op-raci-q i{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);font-size:.75rem;color:#94a3b8}
+.op-raci-q input{width:100%;height:38px;padding:0 .8rem 0 2.2rem;border:1px solid var(--ol-line);border-radius:10px;background:var(--ol-soft);font-size:.82rem;color:var(--ol-ink);outline:none}
+.op-raci-q input:focus{background:#fff;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.op-raci .overflow-x-auto{border:1px solid var(--ol-line)!important;border-radius:14px!important}
+.op-raci thead tr{background:var(--ol-soft)!important;color:var(--ol-mute)!important}
+.op-raci thead th{font-size:.68rem!important;font-weight:700!important;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--ol-line);padding-top:.7rem!important;padding-bottom:.7rem!important}
+.op-raci thead th:nth-child(2){color:#047857}.op-raci thead th:nth-child(3){color:#7e22ce}.op-raci thead th:nth-child(4){color:#b45309}.op-raci thead th:nth-child(5){color:#1d4ed8}
+.op-raci tbody{border-color:#f1f5f9!important}
+.op-raci tbody tr:not([data-id])>td{display:table-cell!important;background:#f8fafc;padding:.55rem 1rem!important;border-top:1px solid var(--ol-line)}
+.op-raci tbody tr:not([data-id])>td>span{background:#fff!important;border:1px solid var(--ol-line);color:var(--ol-txt)!important;font-size:.68rem!important;font-weight:700;letter-spacing:.04em;border-radius:99px!important;padding:.2rem .65rem!important}
+.op-raci tbody tr[data-id]{transition:background .12s}
+.op-raci tbody tr[data-id]:hover{background:#f8fafc!important}
+.op-raci tbody tr[data-id]:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.op-raci tbody tr[data-id]>td:first-child{padding:.7rem 1rem!important}
+.op-raci tbody tr[data-id]>td:first-child>div:first-child{font-size:.84rem!important;font-weight:600!important;color:var(--ol-ink)!important}
+.op-raci tbody tr[data-id]>td:first-child>div:last-child{font-size:.7rem!important;color:var(--ol-mute)!important;margin-top:.1rem}
+.op-raci tbody tr[data-id]>td>span{display:inline-block;max-width:9.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;font-size:.7rem!important;font-weight:600!important;padding:.25rem .6rem!important}
+.op-raci tbody tr[data-id]>td:empty::after{content:"—";color:#cbd5e1;font-weight:600}
+.op-raci .op-raci-mark{background:rgba(250,204,21,.45);color:inherit;border-radius:2px}
+.op-raci tr[hidden]{display:none}
+.op-raci:not(.is-ready) tbody tr:nth-child(n+14){display:none}   /* avant le script : pas d'affichage de toute la liste */
+
+/* ---- Matrice RACI : filtres, qualité, charge, export ---- */
+.op-chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.op-chip{display:inline-flex;align-items:center;gap:.4rem;height:34px;padding:0 .75rem;border-radius:99px;border:1px solid var(--ol-line);background:#fff;font-size:.76rem;font-weight:600;color:var(--ol-txt);cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.op-chip i{font-size:.7rem;color:var(--ol-mute)}
+.op-chip em{font-style:normal;font-size:.68rem;padding:0 .42rem;border-radius:99px;background:#f1f5f9;color:var(--ol-txt)}
+.op-chip:hover{border-color:#94a3b8}
+.op-chip.is-on{background:var(--ol-ink);border-color:var(--ol-ink);color:#fff}.op-chip.is-on i{color:#fff}.op-chip.is-on em{background:rgba(255,255,255,.2);color:#fff}
+.op-chip-warn em{background:#fef3c7;color:#92400e}
+.op-chip:focus-visible,.op-roles button:focus-visible,.op-raci-exp button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.op-raci-exp{display:flex;gap:.4rem;margin-left:auto}
+.op-raci-exp button{height:34px;padding:0 .75rem;border-radius:10px;border:1px solid var(--ol-line);background:#fff;font-size:.76rem;font-weight:600;color:var(--ol-txt);cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
+.op-raci-exp button:hover{border-color:#94a3b8;color:var(--ol-ink)}
+.op-roles{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;margin:0 0 .8rem;padding:.5rem .6rem;border-radius:12px;background:#f8fafc;border:1px solid var(--ol-line)}
+.op-roles[hidden]{display:none}
+.op-roles-lbl{font-size:.76rem;font-weight:700;color:var(--ol-ink);margin-right:.25rem}
+.op-roles button{height:30px;padding:0 .65rem;border-radius:99px;border:1px solid var(--ol-line);background:#fff;font-size:.72rem;font-weight:600;color:var(--ol-txt);cursor:pointer;display:inline-flex;align-items:center;gap:.35rem}
+.op-roles button b{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;font-size:.62rem;color:#fff}
+.op-roles button[data-role=r] b{background:#10b981}.op-roles button[data-role=a] b{background:#a855f7}.op-roles button[data-role=c] b{background:#f59e0b}.op-roles button[data-role=i] b{background:#3b82f6}
+.op-roles button em{font-style:normal;font-size:.66rem;color:var(--ol-mute)}
+.op-roles button.is-on{border-color:var(--ol-ink);box-shadow:inset 0 0 0 1px var(--ol-ink)}
+.op-roles .op-roles-x{margin-left:auto;width:30px;padding:0;justify-content:center;color:var(--ol-mute)}
+.op-qualite{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .9rem;margin:0 0 .8rem;padding:.55rem .8rem;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;font-size:.78rem;color:#92400e}
+.op-qualite[hidden]{display:none}
+.op-qualite i{color:#d97706}
+.op-qualite b{color:#78350f}
+.op-qualite button{margin-left:auto;height:28px;padding:0 .7rem;border-radius:8px;border:1px solid #fcd34d;background:#fff;font-size:.72rem;font-weight:700;color:#92400e;cursor:pointer}
+.op-qualite button:hover{background:#fef3c7}
+.op-tag{display:inline-flex;align-items:center;gap:.25rem;margin-left:.45rem;padding:.05rem .45rem;border-radius:99px;background:#fef3c7;color:#92400e;font-size:.62rem;font-weight:700;vertical-align:1px;white-space:nowrap}
+.op-raci tbody tr.op-incomplet>td:first-child{box-shadow:inset 3px 0 0 #f59e0b}
+.op-charge{margin:0 0 .9rem;border:1px solid var(--ol-line);border-radius:14px;background:#fff}
+.op-charge>summary{display:flex;align-items:center;gap:.6rem;padding:.65rem .85rem;cursor:pointer;list-style:none;font-size:.8rem;font-weight:700;color:var(--ol-ink)}
+.op-charge>summary::-webkit-details-marker{display:none}
+.op-charge>summary small{font-weight:600;color:var(--ol-mute)}
+.op-charge>summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid #94a3b8;border-bottom:2px solid #94a3b8;transform:rotate(45deg);transition:transform .2s}
+.op-charge[open]>summary::after{transform:rotate(-135deg)}
+.op-charge-l{display:grid;gap:.4rem;padding:0 .85rem .8rem}
+.op-charge-r{display:grid;grid-template-columns:minmax(0,10rem) minmax(0,1fr) 2.2rem;align-items:center;gap:.7rem;padding:.25rem .35rem;border-radius:8px;border:0;background:transparent;text-align:left;cursor:pointer;font:inherit}
+.op-charge-r:hover{background:#f8fafc}.op-charge-r.is-on{background:#eef2ff}
+.op-charge-r span{font-size:.76rem;font-weight:600;color:var(--ol-txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.op-charge-r b{font-size:.76rem;text-align:right;color:var(--ol-ink);font-variant-numeric:tabular-nums}
+.op-charge-bar{display:flex;height:8px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+.op-charge-bar i{display:block;height:100%}
+.op-charge-bar .r{background:#10b981}.op-charge-bar .a{background:#a855f7}.op-charge-bar .c{background:#f59e0b}.op-charge-bar .i{background:#3b82f6}
+.op-charge-leg{display:flex;flex-wrap:wrap;gap:.8rem;padding:.2rem .35rem .1rem;font-size:.68rem;font-weight:600;color:var(--ol-mute)}
+.op-charge-leg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:.3rem}
+.op-charge-sans{font-size:.72rem;color:var(--ol-mute);padding:.2rem .35rem 0}
+.op-raci-print{display:none}
+@media print{
+  body.op-print-raci *{visibility:hidden!important}
+  body.op-print-raci .op-raci,body.op-print-raci .op-raci *{visibility:visible!important}
+  body.op-print-raci .op-raci{position:absolute;left:0;top:0;width:100%;border:0!important;box-shadow:none!important;padding:0!important}
+  body.op-print-raci .op-raci-outils,body.op-print-raci .op-roles,body.op-print-raci .op-qualite,body.op-print-raci .op-charge,body.op-print-raci #opRaciPlus{display:none!important}
+  body.op-print-raci .op-raci-print{display:block;margin:0 0 10px;font-size:11px;color:#334155}
+  body.op-print-raci .op-raci tr{break-inside:avoid}
+  body.op-print-raci .op-raci *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+
+/* ---- Gantt : filtres, retards, regroupement ---- */
+.op-gfiltres{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+.op-gsel{position:relative;display:inline-flex;align-items:center}
+.op-gsel>i{position:absolute;left:.7rem;font-size:.7rem;color:var(--ol-mute);pointer-events:none}
+.op-gsel select{appearance:none;-webkit-appearance:none;height:36px;padding:0 1.8rem 0 2rem;border-radius:10px;border:1px solid var(--ol-line);background:#fff;font-size:.78rem;font-weight:600;color:var(--ol-txt);cursor:pointer;max-width:240px}
+.op-gsel::after{content:"\25BE";position:absolute;right:.7rem;font-size:.7rem;color:var(--ol-mute);pointer-events:none}
+.op-gsel select:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.op-gchk{display:inline-flex;align-items:center;gap:.45rem;height:36px;padding:0 .8rem;border-radius:10px;border:1px solid var(--ol-line);background:#fff;font-size:.78rem;font-weight:600;color:var(--ol-txt);cursor:pointer}
+.op-gchk input{accent-color:var(--ol-ink);width:15px;height:15px}
+.op-gretard{display:inline-flex;align-items:center;gap:.4rem;height:36px;padding:0 .8rem;border-radius:10px;border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;font-size:.78rem;font-weight:700;cursor:pointer}
+.op-gretard[hidden]{display:none}
+.op-gretard:hover{background:#fee2e2}
+.op-gantt .vis-item.op-retard{box-shadow:0 0 0 2px #fff,0 0 0 4px #ef4444!important}
+.op-gantt .vis-item.op-retard .vis-item-content{font-weight:700}
+.op-gantt .vis-label.op-gtache{background:#f1f5f9!important;border-top:1px solid var(--ol-line)}
+.op-gantt .vis-label.op-gtache .vis-inner{font-size:.72rem;font-weight:700;color:var(--ol-ink);letter-spacing:.02em}
+.op-gantt .vis-foreground .vis-group.op-gtache{background:#f8fafc}
+.op-gantt .vis-label.vis-nesting-group .vis-inner{padding-left:6px!important}
+.op-gantt .vis-label.vis-nested-group .vis-inner{padding-left:24px!important}
+.op-gantt .vis-label.vis-group-level-unknown-but-gte1{border:0!important;border-bottom:1px solid #f1f5f9!important}   /* vis-timeline : bordure rouge de débogage par défaut */
+.op-gantt .vis-item.vis-background.op-tache-span{background:rgba(15,23,42,.06)!important;border-radius:6px!important}
+.op-gantt .vis-label.vis-nesting-group:before{color:var(--ol-mute)}
+.op-raci-vide{padding:2rem 1rem;text-align:center;font-size:.82rem;color:var(--ol-mute)}
+.op-raci-vide[hidden]{display:none}
+@media (max-width:640px){.op-plus{flex-direction:column;align-items:stretch}.op-plus-btns button{flex:1 1 auto;justify-content:center}}
+</style>
 <section class="bg-slate-50 rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6 py-14 op-gantt" aria-labelledby="opGanttTitre">
     <div class="max-w-3xl">
         <div class="flex items-center gap-2.5 mb-2">
@@ -2107,9 +2381,10 @@ document.addEventListener('DOMContentLoaded', function () {
             <!-- ajout : légende et actions -->
             <div class="op-gantt-droite">
                 <ul class="op-gantt-legende" aria-label="Légende">
-                    <li><i class="l-cours"></i>En cours</li>
-                    <li><i class="l-fini"></i>Terminée</li>
-                    <li><i class="l-retard"></i>En retard</li>
+                    <li><i class="l-cours"></i>Excellent</li>
+                    <li><i class="l-fini"></i>Satisfaisant</li>
+                    <li><i class="l-moyen"></i>Moyen</li>
+                    <li><i class="l-retard"></i>Critique</li>
                 </ul>
                 <button type="button" class="op-gantt-act" id="opGanttAujourdhui" title="Revenir à la date du jour">
                     <i class="fas fa-crosshairs"></i><span>Aujourd'hui</span>
@@ -2120,9 +2395,25 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
         </div>
 
+        <div class="op-gfiltres" aria-label="Filtres du planning">
+            <label class="op-gsel"><i class="fas fa-signal" aria-hidden="true"></i><select id="opGStatut" aria-label="Filtrer par statut">
+                <option value="">Tous les statuts</option><option value="Excellent">Excellent</option><option value="Satisfaisant">Satisfaisant</option><option value="Moyen">Moyen</option><option value="Critique">Critique</option><option value="retard">En retard</option>
+            </select></label>
+            <label class="op-gsel"><i class="fas fa-user" aria-hidden="true"></i><select id="opGResp" aria-label="Filtrer par responsable"><option value="">Tous les responsables</option></select></label>
+            <label class="op-gchk"><input type="checkbox" id="opGGroupe" checked> Regrouper par tâche</label>
+            <button type="button" class="op-gretard" id="opGRetard" hidden></button>
+        </div>
         <div id="gantt-container" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="flex items-center justify-center py-40">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        </div>
+        <div class="op-plus" id="opGanttPlus" hidden>
+            <div><span class="op-plus-txt" aria-live="polite"></span><span class="op-plus-jauge" aria-hidden="true"><i></i></span></div>
+            <div class="op-plus-btns">
+                <button type="button" data-op="moins" hidden><i class="fas fa-chevron-up"></i>Réduire</button>
+                <button type="button" data-op="tout"></button>
+                <button type="button" data-op="plus" class="is-main"><i class="fas fa-chevron-down"></i><span>Afficher 10 de plus</span></button>
             </div>
         </div>
     </div>
@@ -2250,7 +2541,7 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 {%if request.user.personnel.is_process%}
-    <section class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm overflow-hidden">
+    <section data-moi="{{ request.user.personnel.id|default:'' }}" class="op-raci bg-white border border-slate-200 rounded-3xl p-6 shadow-sm overflow-hidden">
     <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
             <h3 class="text-xs font-black text-slate-500 uppercase tracking-wide">Matrice d'Imputation des Responsabilités (RACI)</h3>
@@ -2261,6 +2552,36 @@ document.addEventListener('DOMContentLoaded', function () {
         </span>
     </div>
     
+    <div class="op-raci-outils">
+        <label class="op-raci-q"><i class="fas fa-search" aria-hidden="true"></i><input type="search" id="opRaciQ" placeholder="Rechercher une opération, une tâche ou une personne…" aria-label="Rechercher dans la matrice RACI" autocomplete="off"></label>
+        <div class="op-chips" role="group" aria-label="Filtrer la matrice">
+            <button type="button" class="op-chip is-on" data-f="tous" aria-pressed="true">Toutes <em data-cnt="tous"></em></button>
+            <button type="button" class="op-chip" data-f="moi" aria-pressed="false"><i class="fas fa-user"></i>Mes opérations <em data-cnt="moi"></em></button>
+            <button type="button" class="op-chip op-chip-warn" data-f="incomplet" aria-pressed="false"><i class="fas fa-triangle-exclamation"></i>À compléter <em data-cnt="incomplet"></em></button>
+        </div>
+        <div class="op-raci-exp">
+            <button type="button" data-exp="csv" title="Exporter les opérations filtrées (Excel)"><i class="fas fa-file-excel"></i>Excel</button>
+            <button type="button" data-exp="pdf" title="Imprimer ou enregistrer en PDF"><i class="fas fa-print"></i>PDF</button>
+        </div>
+    </div>
+    <div class="op-roles" id="opRaciRoles" hidden>
+        <span class="op-roles-lbl" id="opRaciRolesLbl">Mes opérations</span>
+        <button type="button" data-role="" class="is-on">Tous les rôles <em></em></button>
+        <button type="button" data-role="r"><b>R</b>Réalise <em></em></button>
+        <button type="button" data-role="a"><b>A</b>Approuve <em></em></button>
+        <button type="button" data-role="c"><b>C</b>Consulté <em></em></button>
+        <button type="button" data-role="i"><b>I</b>Informé <em></em></button>
+        <button type="button" class="op-roles-x" aria-label="Retirer le filtre"><i class="fas fa-xmark"></i></button>
+    </div>
+    <div class="op-qualite" id="opRaciQualite" hidden role="status">
+        <i class="fas fa-triangle-exclamation"></i><span id="opRaciQualiteTxt"></span>
+        <button type="button" data-f="incomplet">Voir ces opérations</button>
+    </div>
+    <details class="op-charge" id="opRaciCharge">
+        <summary>Charge par personne <small id="opRaciChargeSub"></small></summary>
+        <div class="op-charge-l" id="opRaciChargeL"></div>
+    </details>
+    <div class="op-raci-print" id="opRaciPrint"></div>
     <div class="overflow-x-auto rounded-2xl border border-slate-900">
         <table class="min-w-full border-collapse">
             <thead>
@@ -2289,24 +2610,182 @@ document.addEventListener('DOMContentLoaded', function () {
                   data-a="{{ operations.accountable.id|default:'' }}"
                   data-c="{{ operations.consulted.id|default:'' }}"
                   data-i="{{ operations.informed.id|default:'' }}"
-                  data-name="{{ operations.nom|escapejs }}"
+                  data-name="{{ operations.nom }}" tabindex="0" title="Modifier la matrice RACI de cette opération"
                   
                   >
                     <td class="p-3">
                         <div class="font-semibold text-gray-900 text-sm">{{ operations.nom }}</div>
                         <div class="text-gray-400 text-[10px]">{{ operations.date_debut|date:"d/m" }} — {{ operations.date_echeance|date:"d/m/Y" }}</div>
                     </td>
-                    <td class="p-3 text-center">{% if operations.personnel %}<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-[10px] font-bold">{{ operations.personnel.nom|truncatechars:8 }}</span>{% endif %}</td>
-                    <td class="p-3 text-center">{% if operations.accountable %}<span class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-[10px] font-bold">{{ operations.accountable.nom|truncatechars:8 }}</span>{% endif %}</td>
-                    <td class="p-3 text-center">{% if operations.consulted %}<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-[10px] font-bold">{{ operations.consulted.nom|truncatechars:8 }}</span>{% endif %}</td>
-                    <td class="p-3 text-center">{% if operations.informed %}<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] font-bold">{{ operations.informed.nom|truncatechars:8 }}</span>{% endif %}</td>
+                    <td class="p-3 text-center">{% if operations.personnel %}<span title="{{ operations.personnel.nom }} {{ operations.personnel.prenom|default:'' }}" class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-[10px] font-bold">{{ operations.personnel.nom }}</span>{% endif %}</td>
+                    <td class="p-3 text-center">{% if operations.accountable %}<span title="{{ operations.accountable.nom }} {{ operations.accountable.prenom|default:'' }}" class="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-[10px] font-bold">{{ operations.accountable.nom }}</span>{% endif %}</td>
+                    <td class="p-3 text-center">{% if operations.consulted %}<span title="{{ operations.consulted.nom }} {{ operations.consulted.prenom|default:'' }}" class="bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-[10px] font-bold">{{ operations.consulted.nom }}</span>{% endif %}</td>
+                    <td class="p-3 text-center">{% if operations.informed %}<span title="{{ operations.informed.nom }} {{ operations.informed.prenom|default:'' }}" class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] font-bold">{{ operations.informed.nom }}</span>{% endif %}</td>
                 </tr>
                 {%endif%}
                 {% endfor %}
                 {% endfor %}
             </tbody>
         </table>
+        <div class="op-raci-vide" id="opRaciVide" hidden>Aucune opération ne correspond à la recherche.</div>
     </div>
+    <div class="op-plus" id="opRaciPlus" hidden>
+        <div><span class="op-plus-txt" aria-live="polite"></span><span class="op-plus-jauge" aria-hidden="true"><i></i></span></div>
+        <div class="op-plus-btns">
+            <button type="button" data-op="moins" hidden><i class="fas fa-chevron-up"></i>Réduire</button>
+            <button type="button" data-op="tout"></button>
+            <button type="button" data-op="plus" class="is-main"><i class="fas fa-chevron-down"></i><span>Afficher 10 de plus</span></button>
+        </div>
+    </div>
+<script>
+/* Matrice RACI : lots de 10, recherche, « Mes opérations » par rôle, contrôle de qualité, charge par personne, export */
+(function () {
+    var sec = document.querySelector('.op-raci'); if (!sec) return;
+    var PAS = 10, n = PAS, q = '', mode = 'tous', pid = '', role = '';
+    var MOI = sec.getAttribute('data-moi') || '';
+    var ROLES = ['r', 'a', 'c', 'i'], NOMR = { r: 'Réalise', a: 'Approuve', c: 'Consulté', i: 'Informé' };
+    var tbody = sec.querySelector('tbody'), all = [].slice.call(tbody.children);
+    var rows = all.filter(function (r) { return r.hasAttribute('data-id'); });
+    var norm = function (t) { return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); };
+    var $ = function (id) { return document.getElementById(id); };
+
+    /* noms complets des membres (liste de la fenêtre RACI) */
+    var NOMS = {};
+    function lireNoms() { var sel = $('rSelect'); if (sel) [].forEach.call(sel.options, function (o) { if (o.value) NOMS[o.value] = o.textContent.trim(); }); }
+
+    /* groupes (tâches) */
+    var head = null, heads = [];
+    all.forEach(function (r) { if (!r.hasAttribute('data-id')) { head = { el: r, rows: [], nom: r.textContent.trim() }; heads.push(head); } else if (head) { head.rows.push(r); r._g = head; } });
+    rows.forEach(function (r) {
+        r._t = norm(r.textContent + ' ' + (r.getAttribute('data-name') || '') + ' ' + (r._g ? r._g.nom : ''));
+        r._ids = {}; ROLES.forEach(function (k) { r._ids[k] = r.getAttribute('data-' + k) || ''; });
+        r._sansR = !r._ids.r; r._sansA = !r._ids.a;
+        if (r._sansR || r._sansA) {
+            r.classList.add('op-incomplet');
+            var t = document.createElement('span'); t.className = 'op-tag';
+            t.textContent = r._sansR && r._sansA ? 'Sans R ni A' : (r._sansR ? 'Sans R' : 'Sans A');
+            var cell = r.querySelector('td div'); if (cell) cell.appendChild(t);
+        }
+    });
+
+    var foot = $('opRaciPlus'), txt = foot.querySelector('.op-plus-txt'), jauge = foot.querySelector('.op-plus-jauge i');
+    var bPlus = foot.querySelector('[data-op=plus]'), bTout = foot.querySelector('[data-op=tout]'), bMoins = foot.querySelector('[data-op=moins]');
+    var vide = $('opRaciVide'), input = $('opRaciQ'), rolesBar = $('opRaciRoles');
+
+    function aRole(r, id, k) { return id && (k ? r._ids[k] === id : ROLES.some(function (x) { return r._ids[x] === id; })); }
+    function filtre(r, sansRole) {
+        if (q && r._t.indexOf(q) < 0) return false;
+        if (mode === 'incomplet') return r._sansR || r._sansA;
+        if (mode === 'moi' || mode === 'personne') return aRole(r, pid, sansRole ? '' : role);
+        return true;
+    }
+    function apply() {
+        var match = rows.filter(function (r) { return filtre(r); });
+        var shown = match.slice(0, n), set = new Set(shown);
+        rows.forEach(function (r) { r.hidden = !set.has(r); });
+        heads.forEach(function (h) { h.el.hidden = !h.rows.some(function (r) { return set.has(r); }); });
+        var tot = match.length, vis = shown.length, reste = tot - vis;
+        foot.hidden = tot <= PAS && n === PAS;
+        txt.innerHTML = ''; var b = document.createElement('b'); b.textContent = vis;
+        txt.append(b, ' sur ' + tot + ' opération' + (tot > 1 ? 's' : ''));
+        jauge.style.width = (tot ? vis / tot * 100 : 0) + '%';
+        bPlus.hidden = reste <= 0; bPlus.querySelector('span').textContent = 'Afficher ' + Math.min(PAS, reste) + ' de plus';
+        bTout.hidden = reste <= PAS; bTout.textContent = 'Tout afficher (' + tot + ')';
+        bMoins.hidden = n <= PAS;
+        vide.hidden = tot > 0; vide.textContent = mode === 'moi' ? 'Vous n’avez aucun rôle sur les opérations affichées.' : 'Aucune opération ne correspond.';
+        /* compteurs des filtres (selon la recherche) */
+        var base = rows.filter(function (r) { return !q || r._t.indexOf(q) > -1; });
+        var cnt = { tous: base.length, moi: base.filter(function (r) { return aRole(r, MOI, ''); }).length, incomplet: base.filter(function (r) { return r._sansR || r._sansA; }).length };
+        sec.querySelectorAll('[data-cnt]').forEach(function (e) { e.textContent = cnt[e.getAttribute('data-cnt')]; });
+        sec.querySelectorAll('.op-chip').forEach(function (c) { var on = c.getAttribute('data-f') === mode || (mode === 'personne' && false); c.classList.toggle('is-on', on); c.setAttribute('aria-pressed', on); });
+        /* barre des rôles */
+        rolesBar.hidden = !(mode === 'moi' || mode === 'personne');
+        if (!rolesBar.hidden) {
+            $('opRaciRolesLbl').textContent = mode === 'moi' ? 'Mes opérations' : 'Opérations de ' + (NOMS[pid] || 'ce membre');
+            rolesBar.querySelectorAll('[data-role]').forEach(function (bt) {
+                var k = bt.getAttribute('data-role'); bt.classList.toggle('is-on', k === role);
+                bt.querySelector('em').textContent = base.filter(function (r) { return aRole(r, pid, k); }).length;
+            });
+        }
+        sec.querySelectorAll('.op-charge-r').forEach(function (c) { c.classList.toggle('is-on', mode === 'personne' && c.dataset.id === pid); });
+    }
+    function setMode(m, id) { mode = m; pid = m === 'moi' ? MOI : (id || ''); role = ''; n = PAS; apply(); }
+
+    /* Contrôle de qualité */
+    var sansA = rows.filter(function (r) { return r._sansA; }).length, sansR = rows.filter(function (r) { return r._sansR; }).length;
+    if (sansA || sansR) {
+        var parts = [];
+        if (sansA) parts.push('<b>' + sansA + '</b> opération' + (sansA > 1 ? 's' : '') + ' sans approbateur (A)');
+        if (sansR) parts.push('<b>' + sansR + '</b> sans réalisateur (R)');
+        $('opRaciQualiteTxt').innerHTML = parts.join(' · ') + '. Chaque opération devrait avoir un R et un seul A.';
+        $('opRaciQualite').hidden = false;
+    }
+    if (!MOI) { var bm = sec.querySelector('.op-chip[data-f=moi]'); if (bm) bm.hidden = true; }
+
+    /* Charge par personne (construite quand la page est chargée : la liste des membres est plus bas) */
+    function charge() {
+        var c = {}; Object.keys(NOMS).forEach(function (id) { c[id] = { r: 0, a: 0, c: 0, i: 0, t: 0 }; });
+        rows.forEach(function (r) { ROLES.forEach(function (k) { var id = r._ids[k]; if (!id) return; c[id] = c[id] || { r: 0, a: 0, c: 0, i: 0, t: 0 }; c[id][k]++; c[id].t++; }); });
+        var ids = Object.keys(c).filter(function (id) { return c[id].t; }).sort(function (x, y) { return c[y].t - c[x].t; });
+        var sans = Object.keys(c).filter(function (id) { return !c[id].t; });
+        var L = $('opRaciChargeL'), max = ids.length ? c[ids[0]].t : 1;
+        L.innerHTML = '<div class="op-charge-leg"><span><i style="background:#10b981"></i>R réalise</span><span><i style="background:#a855f7"></i>A approuve</span><span><i style="background:#f59e0b"></i>C consulté</span><span><i style="background:#3b82f6"></i>I informé</span></div>';
+        ids.forEach(function (id) {
+            var d = c[id], bt = document.createElement('button'); bt.type = 'button'; bt.className = 'op-charge-r'; bt.dataset.id = id;
+            bt.title = (NOMS[id] || 'Membre ' + id) + ' : R ' + d.r + ' · A ' + d.a + ' · C ' + d.c + ' · I ' + d.i + ' — cliquer pour filtrer';
+            var nm = document.createElement('span'); nm.textContent = NOMS[id] || 'Membre ' + id;
+            var bar = document.createElement('div'); bar.className = 'op-charge-bar';
+            ROLES.forEach(function (k) { if (d[k]) { var i = document.createElement('i'); i.className = k; i.style.width = (d[k] / max * 100) + '%'; bar.appendChild(i); } });
+            var tt = document.createElement('b'); tt.textContent = d.t;
+            bt.append(nm, bar, tt); L.appendChild(bt);
+        });
+        if (sans.length) { var p = document.createElement('p'); p.className = 'op-charge-sans'; p.textContent = 'Sans aucun rôle : ' + sans.map(function (id) { return NOMS[id]; }).join(', ') + '.'; L.appendChild(p); }
+        $('opRaciChargeSub').textContent = ids.length ? '· ' + ids.length + ' membre' + (ids.length > 1 ? 's' : '') + ' impliqué' + (ids.length > 1 ? 's' : '') + ' · le plus sollicité : ' + (NOMS[ids[0]] || '') + ' (' + max + ')' : '· aucun rôle attribué';
+        L.addEventListener('click', function (e) { var b = e.target.closest('.op-charge-r'); if (!b) return; if (mode === 'personne' && pid === b.dataset.id) setMode('tous'); else setMode('personne', b.dataset.id); });
+    }
+    function pret() { lireNoms(); charge(); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pret); else pret();
+
+    /* Export */
+    function visibles() { return rows.filter(function (r) { return filtre(r); }); }
+    function libelle() {
+        var f = { tous: 'toutes les opérations', moi: 'mes opérations', incomplet: 'opérations à compléter', personne: 'opérations de ' + (NOMS[pid] || '') }[mode];
+        return f + (role ? ' (rôle ' + role.toUpperCase() + ')' : '') + (q ? ', recherche « ' + input.value.trim() + ' »' : '');
+    }
+    function csv() {
+        var esc = function (v) { v = String(v == null ? '' : v); return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+        var lignes = [['Tâche', 'Opération', 'Période', 'R (réalise)', 'A (approuve)', 'C (consulté)', 'I (informé)', 'Contrôle']];
+        visibles().forEach(function (r) {
+            var td = r.querySelectorAll('td'), nom = r.getAttribute('data-name') || '', per = td[0] && td[0].querySelector('div:last-child') ? td[0].querySelector('div:last-child').textContent.trim() : '';
+            lignes.push([r._g ? r._g.nom : '', nom, per].concat(ROLES.map(function (k) { return NOMS[r._ids[k]] || (td[ROLES.indexOf(k) + 1] ? td[ROLES.indexOf(k) + 1].textContent.trim() : ''); }), [r._sansR || r._sansA ? (r._sansR && r._sansA ? 'Sans R ni A' : r._sansR ? 'Sans R' : 'Sans A') : 'OK']));
+        });
+        var blob = new Blob(['﻿' + lignes.map(function (l) { return l.map(esc).join(';'); }).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'matrice-raci-' + new Date().toISOString().slice(0, 10) + '.csv'; document.body.appendChild(a); a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    }
+    function pdf() {
+        var avant = n; n = rows.length; apply();
+        $('opRaciPrint').textContent = 'Matrice RACI — ' + libelle() + ' — ' + visibles().length + ' opération(s) — imprimé le ' + new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+        document.body.classList.add('op-print-raci');
+        var fin = function () { document.body.classList.remove('op-print-raci'); n = avant; apply(); window.removeEventListener('afterprint', fin); };
+        window.addEventListener('afterprint', fin); window.print(); setTimeout(function () { if (document.body.classList.contains('op-print-raci')) fin(); }, 1500);
+    }
+    sec.querySelector('[data-exp=csv]').addEventListener('click', csv);
+    sec.querySelector('[data-exp=pdf]').addEventListener('click', pdf);
+
+    /* Événements */
+    sec.querySelectorAll('[data-f]').forEach(function (b) { b.addEventListener('click', function () { var f = b.getAttribute('data-f'); setMode(mode === f && f !== 'tous' ? 'tous' : f); }); });
+    rolesBar.querySelectorAll('[data-role]').forEach(function (b) { b.addEventListener('click', function () { role = b.getAttribute('data-role'); n = PAS; apply(); }); });
+    rolesBar.querySelector('.op-roles-x').addEventListener('click', function () { setMode('tous'); });
+    bPlus.addEventListener('click', function () { var avant = n; n += PAS; apply(); var r = rows.filter(function (x) { return !x.hidden; })[avant]; if (r) r.focus({ preventScroll: true }); });
+    bTout.addEventListener('click', function () { n = rows.length; apply(); });
+    bMoins.addEventListener('click', function () { n = PAS; apply(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    if (input) input.addEventListener('input', function () { q = norm(input.value); n = PAS; apply(); });
+    tbody.addEventListener('keydown', function (e) { var r = e.target.closest && e.target.closest('tr[data-id]'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); r.click(); } });
+    apply(); sec.classList.add('is-ready');
+})();
+</script>
 
     <div class="mt-6 flex flex-wrap gap-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
         <span class="flex items-center gap-1"><span class="w-4 h-4 flex items-center justify-center bg-emerald-100 text-emerald-600 rounded">R</span> Réalise</span>
@@ -2402,7 +2881,7 @@ function openModal(row) {
   document.getElementById('idOperation').textContent = OperationName;
 
   modal_member.classList.remove("hidden");
-  overlay.classList.remove("hidden");
+  if (overlay) overlay.classList.remove("hidden");
 }
 
 const closeBtn = document.getElementById("closeModalBtn");
@@ -2804,6 +3283,111 @@ window.changeView = function(unit) {
 
     timeline.setWindow(start, end);
 };
+</script>
+<script>
+/* Gantt : lots de 10, filtres statut / responsable, retards (J+n), regroupement par tâche repliable */
+(function () {
+    var orig = window.renderGantt; if (typeof orig !== 'function') return;
+    var PAS = 10, n = PAS, brut = [], full = [], replies = {};
+    var $ = function (id) { return document.getElementById(id); };
+    var foot = $('opGanttPlus'); if (!foot) return;
+    var txt = foot.querySelector('.op-plus-txt'), jauge = foot.querySelector('.op-plus-jauge i');
+    var bPlus = foot.querySelector('[data-op=plus]'), bTout = foot.querySelector('[data-op=tout]'), bMoins = foot.querySelector('[data-op=moins]');
+    var fStatut = $('opGStatut'), fResp = $('opGResp'), fGroupe = $('opGGroupe'), bRetard = $('opGRetard');
+    function ms(d) { var x = new Date(d); return isNaN(x) ? 0 : x.getTime(); }
+    function auj() { var d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); }
+    function retard(op) { var e = ms(op.date_echeance); return e && e < auj() && (parseFloat(op.progress) || 0) < 100 ? Math.round((auj() - e) / 864e5) : 0; }
+    function esc(t) { var d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
+    function tri(data) {
+        var a = auj(), actifs = [], finis = [];
+        data.forEach(function (op) { (ms(op.date_echeance) >= a || retard(op) ? actifs : finis).push(op); });
+        actifs.sort(function (x, y) { return ms(x.date_debut) - ms(y.date_debut); });
+        finis.sort(function (x, y) { return ms(y.date_echeance) - ms(x.date_echeance); });
+        return actifs.concat(finis);
+    }
+    function filtrer() {
+        var st = fStatut.value, rp = fResp.value;
+        return brut.filter(function (op) {
+            if (st === 'retard' && !retard(op)) return false;
+            if (st && st !== 'retard' && op.suivi_evaluation !== st) return false;
+            if (rp && (op.personnel || '') !== rp) return false;
+            return true;
+        });
+    }
+    function decorer() {
+        if (typeof timeline === 'undefined' || !timeline) return;
+        var cs = getComputedStyle(document.documentElement), v = function (k, d) { return (cs.getPropertyValue(k) || '').trim() || d; };
+        var COUL = { Excellent: v('--corp-success', '#22c55e'), Satisfaisant: v('--corp-primary', '#4f46e5'), Moyen: v('--corp-warning', '#f59e0b'), Critique: v('--corp-danger', '#ef4444') };
+        var its = timeline.itemsData, gds = timeline.groupsData, liste = its.get();
+        /* couleurs, avancement, retards (vis-timeline filtre les attributs style du contenu : on passe par style / className) */
+        its.update(liste.map(function (it) {
+            var op = it.meta || {}, c = COUL[op.suivi_evaluation] || '#64748b', pr = Math.max(0, Math.min(100, parseFloat(op.progress) || 0)), j = retard(op);
+            return { id: it.id, className: 'op-barre' + (j ? ' op-retard' : ''),
+                     content: (j ? 'J+' + j + ' · ' : '') + esc(op.personnel || 'Non assigné'),
+                     title: esc((op.nom || '') + ' — ' + (op.personnel || '') + ' — avancement ' + pr + ' %' + (j ? ' — en retard de ' + j + ' jour(s)' : '')),
+                     style: 'background:linear-gradient(90deg,rgba(255,255,255,.3) ' + pr + '%,rgba(255,255,255,0) ' + pr + '%),' + c + ';' };
+        }));
+        /* regroupement par tâche (groupes imbriqués, repliables d'un clic) */
+        var nb = liste.length;
+        if (fGroupe.checked && window.vis && vis.DataSet) {
+            var parT = {}, ordre = [];
+            liste.forEach(function (it) { var t = (it.meta && it.meta.tache) || 'Sans tâche'; if (!parT[t]) { parT[t] = []; ordre.push(t); } parT[t].push(it); });
+            var G = new vis.DataSet(), fonds = [], k = 0;
+            ordre.forEach(function (t) {
+                var gid = 'tache-' + (k++), lot = parT[t], ids = lot.map(function (it) { return it.group; });
+                G.add({ id: gid, content: esc(t) + ' <small>(' + lot.length + ')</small>', nestedGroups: ids, showNested: !replies[t], className: 'op-gtache', order: k * 1000, _t: t });
+                ids.forEach(function (id, x) { var g = gds.get(id); if (g) G.add(Object.assign({}, g, { order: k * 1000 + x + 1 })); });
+                var d0 = Math.min.apply(null, lot.map(function (it) { return ms(it.start); })), d1 = Math.max.apply(null, lot.map(function (it) { return ms(it.end); }));
+                if (d0 && d1) fonds.push({ id: 'fond-' + gid, group: gid, start: new Date(d0), end: new Date(d1), type: 'background', className: 'op-tache-span' });
+            });
+            timeline.setGroups(G); its.add(fonds); nb += ordre.length;
+            G.on('update', function () {
+                var h = 0; G.get().forEach(function (g) { if (g._t) { replies[g._t] = g.showNested === false; h += 1 + (g.showNested === false ? 0 : g.nestedGroups.length); } });
+                try { timeline.setOptions({ height: h * 37 + 64 }); } catch (e) {}
+            });
+        }
+        timeline.setOptions({ height: nb * 37 + 64 });
+    }
+    function draw(garder) {
+        var fen = null; try { if (garder && typeof timeline !== 'undefined' && timeline) fen = timeline.getWindow(); } catch (e) {}
+        full = tri(filtrer());
+        if (!full.length && brut.length) {
+            document.getElementById('gantt-container').innerHTML = '<div class="op-gantt-etat"><b>Aucune activité pour ces filtres</b>Modifiez le statut ou le responsable.</div>';
+            try { if (timeline) { timeline.destroy(); timeline = null; } } catch (e) {}
+        } else {
+            orig(full.slice(0, n));
+            try { decorer(); if (fen && timeline) timeline.setWindow(fen.start, fen.end, { animation: false }); } catch (e) { console.warn(e); }
+        }
+        var tot = full.length, vis_ = Math.min(n, tot), reste = tot - vis_;
+        foot.hidden = tot <= PAS && n === PAS;
+        txt.innerHTML = ''; var b = document.createElement('b'); b.textContent = vis_;
+        txt.append(b, ' sur ' + tot + ' activité' + (tot > 1 ? 's' : '') + ' · en cours, en retard et à venir d’abord');
+        jauge.style.width = (tot ? vis_ / tot * 100 : 0) + '%';
+        bPlus.hidden = reste <= 0; bPlus.querySelector('span').textContent = 'Afficher ' + Math.min(PAS, reste) + ' de plus';
+        bTout.hidden = reste <= PAS; bTout.textContent = 'Tout afficher (' + tot + ')';
+        bMoins.hidden = n <= PAS;
+    }
+    window.renderGantt = function (data) {
+        brut = (data || []).slice(); n = PAS;
+        /* liste des responsables */
+        var noms = []; brut.forEach(function (op) { var p = op.personnel || ''; if (p && noms.indexOf(p) < 0) noms.push(p); });
+        noms.sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+        var garde = fResp.value; fResp.length = 1;
+        noms.forEach(function (p) { var o = document.createElement('option'); o.value = p; o.textContent = p; fResp.appendChild(o); });
+        fResp.value = noms.indexOf(garde) > -1 ? garde : '';
+        var nr = brut.filter(retard).length;
+        bRetard.hidden = !nr; bRetard.innerHTML = '<i class="fas fa-clock"></i>' + nr + ' en retard';
+        if (!brut.length) { orig(brut); foot.hidden = true; return; }
+        draw(false);
+    };
+    [fStatut, fResp, fGroupe].forEach(function (el) { el.addEventListener('change', function () { n = PAS; draw(true); }); });
+    bRetard.addEventListener('click', function () { fStatut.value = fStatut.value === 'retard' ? '' : 'retard'; n = PAS; draw(true); });
+    bPlus.addEventListener('click', function () { n += PAS; draw(true); });
+    bTout.addEventListener('click', function () { n = full.length; draw(true); });
+    bMoins.addEventListener('click', function () { n = PAS; draw(true); document.querySelector('.op-gantt').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    var bAuj = $('opGanttAujourdhui');
+    if (bAuj) bAuj.addEventListener('click', function () { try { if (timeline) timeline.moveTo(new Date()); } catch (e) {} });
+})();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 

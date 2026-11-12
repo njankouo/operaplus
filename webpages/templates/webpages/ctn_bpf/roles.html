@@ -22,18 +22,105 @@
     }
 </style>
 
+
+<!-- ===================== HR-2 : finitions + mini graphiques (avant le contenu : aucun affichage intermédiaire) ===================== -->
+<style>
+:root{--h2-ink:#0f172a;--h2-txt:#334155;--h2-mute:#64748b;--h2-line:#e5e7eb;--h2-soft:#f8fafc;--h2-f:#ea580c;--h2-m:#334155}
+main.max-w-7xl>div{box-shadow:0 1px 2px rgba(15,23,42,.05)!important}
+main.max-w-7xl h1 .text-orange-500{display:none}
+main.max-w-7xl>div:first-child>button[onclick="openHrModal()"]{background:var(--h2-f)!important;text-transform:none!important;letter-spacing:0!important;font-size:.82rem!important;font-weight:600!important;padding:.7rem 1.1rem!important}
+main.max-w-7xl>div:first-child>button[onclick="openHrModal()"]:hover{background:#c2410c!important}
+main.max-w-7xl .font-data{font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+/* Bloc répartition */
+.h2-charts{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:1rem}
+.h2-box{background:#fff;border:1px solid var(--h2-line);border-radius:16px;padding:1rem 1.15rem;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.h2-h{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;margin-bottom:.8rem}
+.h2-h b{font-size:.8rem;font-weight:700;color:var(--h2-ink)}
+.h2-h small{font-size:.7rem;font-weight:600;color:var(--h2-mute)}
+.h2-par{display:flex;align-items:center;gap:1rem}
+.h2-ring{position:relative;width:76px;height:76px;flex:none}
+.h2-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.h2-ring circle{fill:none;stroke-width:9}
+.h2-ring .h2-arc{stroke:var(--h2-f);stroke-linecap:round;stroke-dasharray:0 999;animation:h2Arc .9s cubic-bezier(.22,1,.36,1) .15s both}
+.h2-ring span{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:var(--h2-ink);line-height:1}
+.h2-ring span small{font-size:.55rem;font-weight:700;color:var(--h2-mute);letter-spacing:.05em;text-transform:uppercase;margin-top:.15rem}
+@keyframes h2Arc{from{stroke-dasharray:0 999}}
+.h2-split{flex:1;min-width:0}
+.h2-bar{display:flex;height:10px;border-radius:99px;overflow:hidden;background:#eef2f6;gap:2px}
+.h2-bar i{display:block;height:100%;transform-origin:left;animation:h2Grow .8s cubic-bezier(.22,1,.36,1) .1s both}
+.h2-bar i:first-child{background:var(--h2-f)}.h2-bar i:nth-child(2){background:var(--h2-m)}.h2-bar i:nth-child(3){background:#cbd5e1}
+@keyframes h2Grow{from{transform:scaleX(0)}}
+.h2-leg{display:flex;flex-wrap:wrap;gap:.35rem 1rem;margin-top:.6rem;font-size:.74rem;color:var(--h2-mute);font-weight:600}
+.h2-leg em{font-style:normal;color:var(--h2-ink);font-weight:700}
+.h2-leg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.35rem;vertical-align:0}
+.h2-note{margin-top:.55rem;font-size:.72rem;color:var(--h2-mute)}
+.h2-note b{color:var(--h2-ink)}
+.h2-nat{display:grid;gap:.45rem;min-height:92px}
+.h2-nat-r{display:grid;grid-template-columns:minmax(0,7.5rem) minmax(0,1fr) 2rem;align-items:center;gap:.6rem;font-size:.74rem;font-weight:600;color:var(--h2-txt)}
+.h2-nat-r span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h2-nat-r div{height:6px;border-radius:99px;background:#eef2f6;overflow:hidden}
+.h2-nat-r div i{display:block;height:100%;border-radius:99px;background:#0f766e;transform-origin:left;animation:h2Grow .7s cubic-bezier(.22,1,.36,1) both}
+.h2-nat-r b{text-align:right;color:var(--h2-ink);font-variant-numeric:tabular-nums}
+.h2-nat-empty{font-size:.75rem;color:var(--h2-mute)}
+
+/* Outils de la liste */
+.h2-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.6rem;margin-top:-.5rem}
+.h2-chips{display:flex;gap:.4rem;flex-wrap:wrap}
+.h2-chip{display:inline-flex;align-items:center;gap:.4rem;height:32px;padding:0 .75rem;border-radius:99px;border:1px solid var(--h2-line);background:#fff;font-size:.75rem;font-weight:600;color:var(--h2-txt);cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.h2-chip:hover{border-color:#94a3b8}
+.h2-chip em{font-style:normal;font-size:.68rem;padding:0 .4rem;border-radius:99px;background:#f1f5f9}
+.h2-chip.is-on{background:var(--h2-ink);border-color:var(--h2-ink);color:#fff}.h2-chip.is-on em{background:rgba(255,255,255,.2)}
+.h2-chip:focus-visible{outline:2px solid var(--h2-f);outline-offset:2px}
+.h2-count{font-size:.75rem;font-weight:600;color:var(--h2-mute)}
+.h2-empty{grid-column:1/-1;text-align:center;padding:2.5rem 1rem;border:1px dashed #cbd5e1;border-radius:14px;color:var(--h2-mute);font-size:.82rem}
+.h2-empty b{display:block;color:var(--h2-ink);font-size:.9rem;margin-bottom:.2rem}
+.h2-empty[hidden]{display:none}
+
+/* Cartes agents */
+#memberGrid{gap:.85rem!important}
+.member-card{border-color:var(--h2-line)!important;border-radius:14px!important;padding:1rem!important;transition:border-color .15s,box-shadow .15s!important}
+.member-card:hover{border-color:#cbd5e1!important;box-shadow:0 8px 22px -14px rgba(15,23,42,.3)!important}
+.member-card>.absolute span:first-child{background:#10b981!important}
+.member-card>.absolute span:last-child{font-family:inherit!important;font-size:.62rem!important;letter-spacing:.04em!important;color:#047857!important}
+.member-card .w-12.h-12{border-radius:12px!important}
+.member-card .font-mono.uppercase{font-family:inherit!important;letter-spacing:.02em}
+.member-card h3{font-size:.9rem!important;padding-right:3.2rem}
+.member-card h3+div p.font-mono{font-family:inherit!important;font-size:.7rem!important;color:var(--h2-mute)!important;letter-spacing:0!important}
+.member-card>div:last-child>span{font-family:inherit!important;letter-spacing:.04em!important}
+.member-card>div:last-child>a{color:var(--h2-txt)!important;height:28px;padding:0 .6rem;border-radius:8px;border:1px solid var(--h2-line)}
+.member-card>div:last-child>a:hover{color:var(--h2-f)!important;border-color:#fdba74;background:#fff7ed}
+.h2-tel{display:inline-flex;align-items:center;gap:.3rem}
+
+/* Partage : ouvrable au toucher (classe .active déjà posée par le script existant) */
+.group.active>div.absolute{opacity:1!important;visibility:visible!important}
+
+/* Pied de page clair, cohérent avec la page */
+footer.max-w-7xl>div{background:#fff!important;backdrop-filter:none!important;border:1px solid var(--h2-line)!important;color:var(--h2-mute)!important}
+footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-color:var(--h2-line)!important;color:var(--h2-mute)!important}
+
+/* Fenêtre d'ajout */
+#modalContent label{font-size:.68rem!important;letter-spacing:.04em!important}
+#modalContent input:not([type=file]):not([type=hidden]),#modalContent select{height:40px;font-size:.84rem!important;border-radius:10px!important;border-color:#d1d5db!important}
+#modalContent input:not([type=file]):focus,#modalContent select:focus{border-color:var(--h2-f)!important;box-shadow:0 0 0 3px rgba(234,88,12,.12)!important;background:#fff!important}
+#modalContent form>div:last-child button{font-size:.82rem!important;font-weight:600!important;padding:.6rem 1.1rem!important;border-radius:10px!important}
+
+@media (max-width:767px){.h2-charts{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.member-card,.h2-ring .h2-arc,.h2-bar i,.h2-nat-r div i{animation:none!important}}
+</style>
+
 <div class="fixed bottom-6 right-6 z-40 group">
-    <button class="w-12 h-12 bg-white text-slate-700 rounded-xl shadow-md border border-slate-200 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 transition-all duration-300">
+    <button type="button" aria-label="Partager la page" class="w-12 h-12 bg-white text-slate-700 rounded-xl shadow-md border border-slate-200 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 transition-all duration-300">
         <i class="fa-solid fa-share-nodes text-lg"></i>
     </button>
     <div class="absolute bottom-14 right-0 flex flex-col gap-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out">
-        <a href="https://wa.me/?text=Découvrez%20ces%20membres%20sur%20notre%20plateforme:%20{{ request.build_absolute_uri }}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-[#25D366] text-white rounded-lg shadow-sm hover:scale-105 transition-transform">
+        <a href="https://wa.me/?text=Découvrez%20ces%20membres%20sur%20notre%20plateforme:%20{{ request.build_absolute_uri|urlencode }}" target="_blank" rel="noopener noreferrer" class="w-10 h-10 flex items-center justify-center bg-[#25D366] text-white rounded-lg shadow-sm hover:scale-105 transition-transform">
             <i class="fa-brands fa-whatsapp text-lg"></i>
         </a>
-        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-[#1877F2] text-white rounded-lg shadow-sm hover:scale-105 transition-transform">
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}" target="_blank" rel="noopener noreferrer" class="w-10 h-10 flex items-center justify-center bg-[#1877F2] text-white rounded-lg shadow-sm hover:scale-105 transition-transform">
             <i class="fa-brands fa-facebook-f text-base"></i>
         </a>
-        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" target="_blank" class="w-10 h-10 flex items-center justify-center bg-[#0077B5] text-white rounded-lg shadow-sm hover:scale-105 transition-transform">
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri|urlencode }}" target="_blank" rel="noopener noreferrer" class="w-10 h-10 flex items-center justify-center bg-[#0077B5] text-white rounded-lg shadow-sm hover:scale-105 transition-transform">
             <i class="fa-brands fa-linkedin-in text-base"></i>
         </a>
     </div>
@@ -111,12 +198,37 @@
         </div>
     </div>
         
+    {% widthratio country_members_female members_count|default:1 100 as pct_f %}{% widthratio country_members_male members_count|default:1 100 as pct_m %}
+    <section class="h2-charts" aria-label="Répartition des effectifs">
+        <div class="h2-box">
+            <div class="h2-h"><b>Parité femmes / hommes</b><small>{{ members_count }} agent{{ members_count|pluralize }}</small></div>
+            <div class="h2-par">
+                <div class="h2-ring" role="img" aria-label="{{ pct_f }} % de femmes">
+                    <svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" stroke="#eef2f6"></circle><circle class="h2-arc" cx="40" cy="40" r="34" style="stroke-dasharray: {% widthratio country_members_female members_count|default:1 214 %} 999;"></circle></svg>
+                    <span>{{ pct_f }} %<small>femmes</small></span>
+                </div>
+                <div class="h2-split">
+                    <div class="h2-bar" aria-hidden="true"><i style="width: {{ pct_f }}%;"></i><i style="width: {{ pct_m }}%;"></i><i style="flex:1;"></i></div>
+                    <div class="h2-leg">
+                        <span><i style="background:var(--h2-f)"></i>Femmes <em>{{ country_members_female }}</em> · {{ pct_f }} %</span>
+                        <span><i style="background:var(--h2-m)"></i>Hommes <em>{{ country_members_male }}</em> · {{ pct_m }} %</span>
+                    </div>
+                    <p class="h2-note" id="h2Parite" data-f="{{ country_members_female|default:0 }}" data-m="{{ country_members_male|default:0 }}"></p>
+                </div>
+            </div>
+        </div>
+        <div class="h2-box">
+            <div class="h2-h"><b>Nationalités</b><small id="h2NatSub">page affichée</small></div>
+            <div class="h2-nat" id="h2Nat"></div>
+        </div>
+    </section>
+
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-6">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
             <div>
                 <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
                     <i class="fa-solid fa-address-book text-slate-400 text-sm"></i>
-                    <span>Index Général des Personnel</span>
+                    <span>Index général du personnel</span>
                 </h2>
             </div>
             <div class="relative w-full sm:w-72">
@@ -125,10 +237,18 @@
             </div>
         </div>
 
+        <div class="h2-tools">
+            <div class="h2-chips" role="group" aria-label="Filtrer par genre">
+                <button type="button" class="h2-chip is-on" data-h2-sexe="" aria-pressed="true">Tous <em data-h2-n=""></em></button>
+                <button type="button" class="h2-chip" data-h2-sexe="F" aria-pressed="false">Femmes <em data-h2-n="F"></em></button>
+                <button type="button" class="h2-chip" data-h2-sexe="M" aria-pressed="false">Hommes <em data-h2-n="M"></em></button>
+            </div>
+            <span class="h2-count" id="h2Count" aria-live="polite"></span>
+        </div>
         <div id="memberGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
            {% for members in lines %}
             <div class="member-card group relative bg-white border border-slate-200/80 hover:border-slate-300 hover:shadow-md rounded-xl p-4 transition-all duration-200 animate-fade-in-up"
-                 data-name="{{ members.nom|lower }}" style="animation-delay: calc({{ forloop.counter0 }} * 40ms);">
+                 data-name="{{ members.nom|lower }}" data-sexe="{% if members.sexe == 'F' or members.genre == 'Femme' %}F{% else %}M{% endif %}" data-nat="{{ members.nationalite|default:'' }}" style="animation-delay: min(calc({{ forloop.counter0 }} * 40ms), 480ms);">
                 <div class="absolute top-4 right-4 flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full {% if members.sexe == 'F' or members.genre == 'Femme' %}bg-orange-500{% else %}bg-emerald-500{% endif %}"></span>
                     <span class="text-[9px] font-bold font-mono uppercase text-slate-400 tracking-wider">Actif</span>
@@ -168,7 +288,7 @@
                                 {{ members.nationalite }}
                             </p>
                             <p class="text-[10px] font-mono text-slate-400 tracking-wide">
-                                Enreg. : {{ members.tel}}
+                                <span class="h2-tel"><i class="fa-solid fa-phone text-[9px]"></i>{{ members.tel|default:'—' }}</span>
                             </p>
                         </div>
                     </div>
@@ -183,6 +303,7 @@
                 </div>
             </div>
             {% endfor %}
+            <div class="h2-empty" id="h2Empty" hidden><b>Aucun agent trouvé</b>Modifiez la recherche ou le filtre.</div>
         </div>
         {% if personnel_filter.has_other_pages %}
 <div class="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6 mt-6 rounded-xl shadow-sm">
@@ -473,22 +594,68 @@
         // Attendre la fin de l'animation CSS avant de repasser en caché
         setTimeout(() => {
             modal.classList.add('hidden');
+            removePreviewImage(); // nettoie la photo à la fermeture
         }, 250);
     }
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeHrModal(); });
 </script>
 <script>
-    document.getElementById('memberSearch').addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
-        const cards = document.querySelectorAll('.member-card');
-        
-        cards.forEach(card => {
-            const name = card.getAttribute('data-name');
-            card.style.display = name.includes(searchTerm) ? 'block' : 'none';
+(function () {
+    const input = document.getElementById('memberSearch');
+    const cards = [].slice.call(document.querySelectorAll('.member-card'));
+    const norm = t => (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+    const hay = cards.map(c => norm(c.getAttribute('data-name') + ' ' + c.textContent));
+    let sexe = '';
+    function apply() {
+        const q = norm(input ? input.value : '').trim(), n = { '': 0, F: 0, M: 0 }; let vis = 0;
+        cards.forEach((c, i) => {
+            const okQ = !q || hay[i].indexOf(q) > -1;
+            if (okQ) { n['']++; n[c.dataset.sexe]++; }
+            const show = okQ && (!sexe || c.dataset.sexe === sexe);
+            c.style.display = show ? 'block' : 'none'; if (show) vis++;
         });
-    });
+        document.querySelectorAll('[data-h2-n]').forEach(e => e.textContent = n[e.getAttribute('data-h2-n')]);
+        const cnt = document.getElementById('h2Count'); if (cnt) cnt.textContent = vis + ' agent' + (vis > 1 ? 's' : '') + ' affiché' + (vis > 1 ? 's' : '') + (cards.length ? ' sur ' + cards.length : '');
+        const em = document.getElementById('h2Empty'); if (em) em.hidden = !(cards.length && !vis);
+    }
+    if (input) input.addEventListener('input', apply);
+    document.querySelectorAll('[data-h2-sexe]').forEach(b => b.addEventListener('click', function () {
+        sexe = b.getAttribute('data-h2-sexe');
+        document.querySelectorAll('[data-h2-sexe]').forEach(x => { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', on); });
+        apply();
+    }));
+    apply();
+
+    // Indice de parité (femmes / hommes)
+    const par = document.getElementById('h2Parite');
+    if (par) {
+        const f = parseInt(par.dataset.f, 10) || 0, m = parseInt(par.dataset.m, 10) || 0;
+        if (f + m) {
+            const ip = m ? f / m : null, b = document.createElement('b');
+            if (ip === null) { par.textContent = 'Effectif entièrement féminin.'; }
+            else { b.textContent = ip.toLocaleString('fr-FR', { maximumFractionDigits: 2 }); par.append('Indice de parité : ', b, ip >= 0.9 && ip <= 1.1 ? ' (équilibré)' : (ip < 0.9 ? ' (femmes sous-représentées)' : ' (hommes sous-représentés)')); }
+        } else { par.textContent = 'Aucun agent enregistré.'; }
+    }
+
+    // Nationalités les plus représentées (agents de la page affichée)
+    const nat = document.getElementById('h2Nat');
+    if (nat) {
+        const c = {}; cards.forEach(x => { const k = (x.dataset.nat || '').trim() || 'Non renseignée'; c[k] = (c[k] || 0) + 1; });
+        const rows = Object.entries(c).sort((a, b) => b[1] - a[1]); const top = rows.slice(0, 4), max = top.length ? top[0][1] : 1;
+        if (rows.length > 4) top.push(['Autres', rows.slice(4).reduce((a, r) => a + r[1], 0)]);
+        if (!top.length) { nat.innerHTML = '<p class="h2-nat-empty">Aucun agent sur cette page.</p>'; }
+        top.forEach(([k, v], i) => {
+            const r = document.createElement('div'); r.className = 'h2-nat-r';
+            r.innerHTML = '<span></span><div><i></i></div><b></b>';
+            r.querySelector('span').textContent = k; r.querySelector('span').title = k; r.querySelector('b').textContent = v;
+            const bar = r.querySelector('i'); bar.style.width = Math.max(v / Math.max(max, top[top.length - 1][1]) * 100, 4) + '%'; bar.style.animationDelay = (i * 60) + 'ms';
+            nat.appendChild(r);
+        });
+        const sub = document.getElementById('h2NatSub');
+        if (sub && cards.length) sub.textContent = cards.length + ' agent' + (cards.length > 1 ? 's' : '') + ' de la page';
+    }
+})();
 </script>
-    
-    </main>
 
     <!-- FOOTER -->
     <footer class="max-w-7xl mx-auto w-full px-4 pb-6 mt-6 relative z-10 hidden md:block">
@@ -619,7 +786,7 @@
             renderer.render(scene, camera);
         }
 
-        initGlobe();
+        if (container && typeof THREE !== 'undefined') initGlobe();
 
 
         function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('-translate-x-full'); }
@@ -636,7 +803,8 @@
         }
 
         // Ajoute ceci en bas de ta page pour gérer le clic sur mobile
-document.querySelector('.group').addEventListener('click', function() {
+document.querySelector('.group').addEventListener('click', function(e) {
+    if (e.target.closest('a')) return; // laisser les liens de partage s'ouvrir
     this.classList.toggle('active'); // Tu devras adapter le CSS pour gérer la classe .active
 });
 </script>
