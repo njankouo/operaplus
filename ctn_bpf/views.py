@@ -2434,222 +2434,168 @@ def valid_rapport(request):
 
     return redirect('/operations/')
 
+# ---------------------------------------------------------------------------------------------
+#  in_valid_rapport — version corrigée (même nom, même URL, mêmes champs POST, même redirection)
+#  Imports nécessaires en haut de views.py (s'ils n'y sont pas déjà) :
+#      from decimal import Decimal, InvalidOperation
+#      from django.db import transaction
+#      from django.contrib.auth.decorators import login_required
+# ---------------------------------------------------------------------------------------------
 
-def in_valid_rapport(request):
+def _dec(x):
+    """None, float, int, Decimal, texte → Decimal (0 si vide ou invalide). Évite les mélanges Decimal / float."""
     try:
-        # Vérification que la requête est POST
-        if request.method != 'POST':
-            raise ValueError("Méthode non autorisée")
-        
-        # 1. Récupération des données de base avec vérifications
-        opera_invalider_id = request.POST.get('opera_invalider_id')
-        if not opera_invalider_id:
-            raise ValueError("ID d'opération manquant")
-        
-        try:
-            operation = Operation.objects.get(id=int(opera_invalider_id))
-        except Operation.DoesNotExist:
-            raise ValueError(f"Opération avec ID {opera_invalider_id} non trouvée")
-        except ValueError:
-            raise ValueError("ID d'opération invalide")
-        
+        return Decimal(str(x if x not in (None, '') else 0))
+    except (InvalidOperation, ValueError, TypeError):
+        return Decimal(0)
+
+
+def _email_de(personnel):
+    """Adresse e-mail d'une fiche personnel, ou None (pas de plantage si la fiche ou le compte manque)."""
+    if personnel is None:
+        return None
+    for attr in ('bd_user', 'm_user'):
+        compte = getattr(personnel, attr, None)
+        if compte is not None and getattr(compte, 'email', ''):
+            return compte.email
+    return getattr(personnel, 'mail', None) or None
+
+
+def _recalculer_hierarchie_validee(depart, institution):
+    """Remonte la hiérarchie et recalcule les valeurs VALIDÉES de chaque parent (une fois chacun, sans boucle)."""
+    vus, a_traiter = set(), [depart]
+    while a_traiter:
+        courante = a_traiter.pop()
+        for relation in EntityHierachie.objects.filter(m_sub_entity=courante).select_related('m_sup_entity__m_type_entity'):
+            parent = relation.m_sup_entity
+            if parent is None or parent.pk in vus:
+                continue
+            vus.add(parent.pk)
+
+            enfants = [r.m_sub_entity for r in EntityHierachie.objects.filter(m_sup_entity=parent).select_related('m_sub_entity') if r.m_sub_entity]
+            som_planifiee = sum((_dec(e.montant_planifiee) for e in enfants), Decimal(0))
+            som_valide = sum((_dec(e.montant_valide) for e in enfants), Decimal(0))
+            parent.resultat_niveau_execution_valide = sum((_dec(e.resultat_niveau_execution_valide) * _dec(e.ponderation) / 100 for e in enfants), Decimal(0))
+            parent.montant_valide = som_valide
+            parent.taux_financier_valide = (som_valide / som_planifiee) if som_planifiee else Decimal(0)
+            parent.save()
+
+            type_entite = parent.m_type_entity
+            if InsitutionEntities.objects.filter(m_entity_type=type_entite, m_institution=institution, m_hierachie=0).exists():
+                # ⚠ À vérifier : ce filtre prend les entités de ce type dans TOUTES les institutions.
+                entites = list(Entity.objects.filter(m_type_entity=type_entite).distinct())
+                s_valide = sum((_dec(e.montant_valide) for e in entites), Decimal(0))
+                s_planif = sum((_dec(e.montant_planifiee) for e in entites), Decimal(0))
+                institution.process_valid = sum((_dec(e.resultat_niveau_execution_valide) * _dec(e.ponderation) / 100 for e in entites), Decimal(0))
+                institution.montant_valide = s_valide
+                institution.taux_financier_valide = (s_valide / s_planif) if s_planif else Decimal(0)
+                institution.save()
+
+            a_traiter.append(parent)
+
+
+@login_required
+def in_valid_rapport(request):
+    if request.method != 'POST':
+        messages.error(request, "Méthode non autorisée.")
+        return redirect('/accountable/')
+
+    try:
+        # ---- 1. Contrôles : rien n'est modifié tant qu'ils ne passent pas ----
+        opera_invalider_id = (request.POST.get('opera_invalider_id') or '').strip()
+        if not opera_invalider_id.isdigit():
+            raise ValueError("Opération introuvable.")
+        operation = Operation.objects.select_related('tache', 'accountable', 'personnel', 'informed').filter(id=int(opera_invalider_id)).first()
+        if operation is None:
+            raise ValueError("Opération introuvable.")
+
         context = basis(request)
         actual_institution = context.get('actual_institution')
         if not actual_institution:
-            raise ValueError("Institution actuelle non trouvée dans le contexte")
-        
-        # 2. Récupération et mise à jour sécurisée du détail du rapport
-        operation_rapport_id = request.POST.get("operation_rapport")
-        if operation_rapport_id:
-            try:
-                operation_rapport = OperationDetails.objects.get(id=int(operation_rapport_id))
-                operation_rapport.etat = 0
-                operation_rapport.save()
-            except (OperationDetails.DoesNotExist, ValueError):
-                pass
-        
-        # 3. Mise à jour de l'opération principale (Invalidation)
-        operation.etat = '0'
-        operation.statut = '0'
-        operation.niveau_execution_valide = 0
-        operation.resultat_niveau_execution_valide = 0
-        operation.montant_valide = 0
-        operation.save()
-        
-        # 4. Mise à jour des sources de financement (Remise à zéro des montants validés)
-        source_financement_ids = request.POST.getlist('source_financement', [])
-        for source_id in source_financement_ids:
-            try:
-                if not source_id:
-                    continue
-                
-                source = FinancementOperation.objects.filter(
-                    source_financement_id=int(source_id),
-                    operation=operation
-                ).first()
-                
-                if source:
-                    source.montant_valide = Decimal('0')
-                    source.save()
-                    
-            except (ValueError, FinancementOperation.DoesNotExist, InvalidOperation) as e:
-                logger.error(f"Erreur source {source_id} lors de l'invalidation: {e}")
-                continue
+            raise ValueError("Institution actuelle introuvable.")
 
-        # 5. Mise à jour de la tâche associée
+        # Seul l'approbateur (A) de l'opération, ou un superutilisateur, peut invalider
+        moi = getattr(request.user, 'personnel', None)
+        if not request.user.is_superuser and (operation.accountable_id is None or moi is None or operation.accountable_id != moi.id):
+            raise PermissionError("Seul l'approbateur de cette opération peut invalider son rapport.")
+
         tache = operation.tache
-        if not tache:
-            raise ValueError("Tâche non trouvée pour cette opération")
-            
-        operations_tache = Operation.objects.filter(tache=tache)
+        if tache is None:
+            raise ValueError("Cette opération n'est rattachée à aucune tâche.")
 
-        montant_financement_valide = sum(
-            op.montant_valide or 0 for op in operations_tache 
-        )
-        som_montant_planifie = sum(
-            op.montant_total_source_financement or 0 for op in operations_tache 
-        )
+        m_commentaire = (request.POST.get('opera_invalider_comment') or '').strip()
+        if not m_commentaire:
+            raise ValueError("Indiquez le motif de l'invalidation : l'agent en a besoin pour corriger.")
 
-        taux = (montant_financement_valide / som_montant_planifie) if som_montant_planifie else 0
+        # ---- 2. Écritures : tout ou rien ----
+        with transaction.atomic():
+            operation_rapport_id = (request.POST.get('operation_rapport') or '').strip()
+            if operation_rapport_id.isdigit():
+                OperationDetails.objects.filter(id=int(operation_rapport_id)).update(etat=0)
 
-        total_tache = sum(
-            op.resultat_niveau_execution_valide or 0
-            for op in operations_tache
-        )
+            operation.etat = '0'
+            operation.statut = '0'
+            operation.niveau_execution_valide = 0
+            operation.resultat_niveau_execution_valide = 0
+            operation.montant_valide = 0
+            operation.save()
 
-        tache.taux_financier_valide = taux
-        tache.montant_valide = montant_financement_valide
-        tache.resultat_niveau_execution_valide = total_tache
-        tache.save()
+            ids_sources = [int(x) for x in request.POST.getlist('source_financement') if str(x).strip().isdigit()]
+            if ids_sources:
+                FinancementOperation.objects.filter(operation=operation, source_financement_id__in=ids_sources).update(montant_valide=Decimal('0'))
 
-        # 6. Propagation de l'invalidation dans la hiérarchie
-        try:
-            def update_institutional_entities(entity, inst):
-                try:
-                    entite_type = entity.m_type_entity
-                    institution_entities = InsitutionEntities.objects.filter(
-                        m_entity_type=entite_type,
-                        m_institution=inst,
-                        m_hierachie=0
-                    )
+            ops = list(Operation.objects.filter(tache=tache))
+            montant_valide = sum((_dec(op.montant_valide) for op in ops), Decimal(0))
+            montant_planifie = sum((_dec(op.montant_total_source_financement) for op in ops), Decimal(0))
+            tache.taux_financier_valide = (montant_valide / montant_planifie) if montant_planifie else Decimal(0)
+            tache.montant_valide = montant_valide
+            tache.resultat_niveau_execution_valide = sum((_dec(op.resultat_niveau_execution_valide) for op in ops), Decimal(0))
+            tache.save()
 
-                    if institution_entities.exists():
-                        related_entities = Entity.objects.filter(m_type_entity=entite_type).distinct()
-                        valid_entities = [e for e in related_entities if e is not None]
-                        
-                        total_inst = sum(
-                            Decimal(str(e.resultat_niveau_execution_valide or 0)) * Decimal(str(e.ponderation or 0)) / Decimal(100)
-                            for e in valid_entities
-                        )
+            _recalculer_hierarchie_validee(tache, actual_institution)   # une erreur ici annule TOUT (plus de demi-invalidation)
 
-                        sum_montant_valide = sum(Decimal(str(e.montant_valide or 0)) for e in valid_entities)
-                        sum_montant_planifiee = sum(Decimal(str(e.montant_planifiee or 0)) for e in valid_entities)
-                        
-                        inst.process_valid = total_inst
-                        inst.montant_valide = Decimal(sum_montant_valide)
-                        inst.taux_financier_valide = (
-                            sum_montant_valide / sum_montant_planifiee
-                        ) if sum_montant_planifiee else Decimal(0)
-                        inst.save()
-                        
-                except Exception as e:
-                    logger.error(f"Erreur dans update_institutional_entities (invalidation): {e}")
+            HistoricRACI.objects.create(
+                m_commentaire=m_commentaire,
+                m_operation_id=operation.id,
+                m_role=getattr(operation.accountable, 'nom', '') or getattr(moi, 'nom', ''),
+                etat_transaction=False,
+                institution=actual_institution,
+                mail=_email_de(moi) or request.user.email,
+            )
 
-            def update_hierarchy(current_entity, institution):
-                try:
-                    parent_relations = EntityHierachie.objects.filter(m_sub_entity=current_entity)
-                    
-                    if not parent_relations.exists():
-                        return  
+            # Période : bascule '1' → '0' (comportement d'origine conservé, voir la remarque dans la réponse)
+            periode = operation.periodes() if hasattr(operation, 'periodes') else None
+            if periode is not None:
+                desc = periode.desc_split()
+                if '1' in desc:
+                    periode.m_desc_realisation = "_".join('0' if x == '1' else x for x in desc)
+                    periode.save()
 
-                    for relation in parent_relations:
-                        parent_entity = relation.m_sup_entity
-                        if not parent_entity:
-                            continue
-                        
-                        child_relations = EntityHierachie.objects.filter(m_sup_entity=parent_entity)
-                        child_entities = [rel.m_sub_entity for rel in child_relations if rel.m_sub_entity is not None]
+            # ---- 3. E-mail : envoyé seulement si tout a été enregistré ----
+            destinataires = [e for e in {_email_de(operation.personnel), _email_de(operation.informed)} if e]
+            if destinataires:
+                html = render_to_string('mails/operation_invalid.html', {'operation': operation, 'commentaire': m_commentaire})
+                sujet = "Rapport non validé - " + str(operation)
 
-                        total_parent = sum(
-                            Decimal(str(entity.resultat_niveau_execution_valide or 0)) * Decimal(str(entity.ponderation or 0)) / Decimal(100)
-                            for entity in child_entities
-                        )
+                def _envoyer():
+                    try:
+                        msg = EmailMessage(sujet, html, settings.EMAIL_HOST_USER, destinataires)
+                        msg.content_subtype = 'html'
+                        msg.send()
+                    except Exception:
+                        logger.exception("in_valid_rapport : e-mail non envoyé (opération %s)", operation.id)
 
-                        som_planifiee = sum(Decimal(str(entity.montant_planifiee or 0)) for entity in child_entities)
-                        som_valide = sum(Decimal(str(entity.montant_valide or 0)) for entity in child_entities)
+                transaction.on_commit(_envoyer)
 
-                        parent_entity.resultat_niveau_execution_valide = total_parent
-                        parent_entity.montant_valide = Decimal(som_valide)
-                        taux_financier_valide = (som_valide / som_planifiee) if som_planifiee else 0
-                        parent_entity.taux_financier_valide = Decimal(taux_financier_valide)
-                        parent_entity.save()
-
-                        update_institutional_entities(parent_entity, institution)
-                        update_hierarchy(parent_entity, institution)
-                        
-                except Exception as e:
-                    logger.error(f"Erreur dans update_hierarchy (invalidation): {e}")
-                    raise
-
-            update_hierarchy(tache, actual_institution)
-
-        except Exception as global_e:
-            logger.error(f"Erreur générale propagation invalidation : {global_e}")
-
-        # 7. Enregistrement dans l'historique RACI
-        m_commentaire = request.POST.get('opera_invalider_comment', '')
-        instance_operation = Operation.objects.get(id=int(opera_invalider_id))
-        responsable_rejet = instance_operation.accountable.nom
-        save_historic = HistoricRACI.objects.create(
-            m_commentaire=m_commentaire,
-            m_operation_id=opera_invalider_id,
-            m_role=responsable_rejet,
-            etat_transaction=False
-        )
-        save_historic.save()
-
-        # 8. Mise à jour de la période (bascule de '1' vers '0')
-        try:
-            periode = operation.periodes()
-            desc_tmp = periode.desc_split()
-            index = 0
-            for i in desc_tmp:
-                if i == '1':
-                    desc_tmp[index] = '0'
-                    request.session['validation_done'] = 1
-                index += 1
-            desc_tmp = "_".join(desc_tmp)
-            periode.m_desc_realisation = desc_tmp
-            periode.save()
-        except Exception:
-            pass
-
-        # 9. Envoi de l'e-mail de notification d'invalidation
-        subject = "Rapport non validé - " + str(operation)
-        message_context = {
-            'operation': operation,
-            'commentaire': m_commentaire
-        }
-        message = render_to_string('mails/operation_invalid.html', message_context)
-        
-        email_from = settings.EMAIL_HOST_USER
-        recipient_list = [operation.personnel.bd_user.email]
-        if operation.informed is not None:
-            recipient_list.append(operation.informed.bd_user.email)
-            
-        msg = EmailMessage(subject, message, email_from, recipient_list)
-        msg.content_subtype = 'html'
-        try:
-            msg.send()
-        except Exception:
-            pass
-
-        messages.success(request, 'Rapport invalidé avec succès')
+        messages.success(request, 'Rapport invalidé. L’agent a été prévenu.' if destinataires else 'Rapport invalidé (aucune adresse e-mail pour prévenir l’agent).')
         return redirect('/accountable/')
 
-    except Exception as e:
-        logger.error(f"Erreur dans in_valid_rapport: {str(e)}", exc_info=True)
-        messages.error(request, f"Une erreur est survenue : {str(e)}")
+    except (ValueError, PermissionError) as e:
+        messages.error(request, str(e))
+        return redirect('/accountable/')
+    except Exception:
+        logger.exception("Erreur dans in_valid_rapport")
+        messages.error(request, "L'invalidation a échoué. Rien n'a été modifié ; réessayez ou contactez l'administrateur.")
         return redirect('/accountable/')
 
 
@@ -29654,7 +29600,7 @@ def validation_transaction(request):
                 niveau_execution = Decimal(niveau_execution)
             except (ValueError, TypeError):
                 messages.error(request, "Le niveau d'exécution doit être un nombre valide")
-                return redirect('/alert_notifs/0/1/')
+                return redirect('/validation-transaction/')
 
             instance_operation = Operation.objects.get(id=operation)
             indicateur_id = IndicateurValeur.objects.get(id=int(transaction))
@@ -29662,7 +29608,7 @@ def validation_transaction(request):
             # Validation des valeurs
             if not Decimal('0') <= niveau_execution <= Decimal('100'):
                 messages.error(request, "Le niveau d'exécution doit être compris entre 0 et 100")
-                return redirect('/alert_notifs/0/1/')
+                return redirect('/validation-transaction')
 
 
 
