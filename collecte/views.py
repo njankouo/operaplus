@@ -31,7 +31,7 @@ from . import fournisseur
 from .integration import integrer
 from .models import TYPES_QUESTION, Declaration, Formulaire, PieceJointe, Soumission
 
-VERSION_APP = '1.2.0'
+VERSION_APP = '1.3.0'
 VIOLET = '#5B3FE0'
 TAILLE_MAX = lambda: int(getattr(settings, 'COLLECTE_TAILLE_MAX_MO', 15)) * 1024 * 1024
 
