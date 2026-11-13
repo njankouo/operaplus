@@ -1,0 +1,46 @@
+{% load l10n %}
+<div class="ar-tb">
+  {% if sans_fiche %}<div class="ar-flash ar-flash-info"><i class="fas fa-circle-info"></i> {{ sans_fiche }} document{{ sans_fiche|pluralize }} déposé{{ sans_fiche|pluralize }} avant l’archivage numérique n’{{ sans_fiche|pluralize:"a,ont" }} pas encore de cote ni d’empreinte.
+    {% if admin %}<button class="ar-lien" hx-post="{% url 'ar_inventorier' %}" hx-target="closest .ar-tb" hx-swap="outerHTML">Les inventorier maintenant</button>{% endif %}</div>{% endif %}
+
+  <div class="ar-tb-grid">
+    <section class="ar-tb-card ar-tb-cycle">
+      <div class="ar-sec-h"><h3>Cycle de vie des documents</h3><span>{{ total }} document{{ total|pluralize }} · {{ volume }}</span></div>
+      {% if vide %}<p class="ar-manque">Les phases apparaîtront dès le premier document archivé.</p>{% else %}
+      <div class="ar-stack">{% for c in cycle %}{% if c.n %}<button type="button" data-ar-phase="{{ c.code }}" style="flex:{{ c.n }};background:{{ c.couleur }}" title="{{ c.nom }} : {{ c.n }}"></button>{% endif %}{% endfor %}</div>
+      <div class="ar-leg">{% for c in cycle %}<button type="button" data-ar-phase="{{ c.code }}"{% if not c.n %} class="is-zero"{% endif %}><i style="background:{{ c.couleur }}"></i>{{ c.nom }} <b>{{ c.n }}</b></button>{% endfor %}</div>
+      <p class="ar-note">Actif = usage courant · Intermédiaire = gardé pour preuve · puis conservation définitive, tri ou destruction selon la règle du sous-dossier.</p>
+      {% endif %}
+      <div class="ar-qual">
+        <div class="ar-q"><span>Avec mots-clés</span><b>{{ qualite.mots_cles }} %</b><i><s style="width:{{ qualite.mots_cles|unlocalize }}%"></s></i></div>
+        <div class="ar-q"><span>Avec date du document</span><b>{{ qualite.date_doc }} %</b><i><s style="width:{{ qualite.date_doc|unlocalize }}%"></s></i></div>
+        <div class="ar-q"><span>Intégrité contrôlée (6 mois)</span><b>{{ qualite.controle }} %</b><i><s style="width:{{ qualite.controle|unlocalize }}%"></s></i></div>
+        {% if admin %}<button class="ar-btn ar-btn-s" hx-post="{% url 'ar_integrite_tout' %}" hx-target="closest .ar-tb" hx-swap="outerHTML"><i class="fas fa-shield-halved"></i> Contrôler l’intégrité</button>{% endif %}
+      </div>
+    </section>
+
+    <section class="ar-tb-card">
+      <div class="ar-sec-h"><h3>À traiter</h3></div>
+      <ul class="ar-todo">
+        <li class="{% if a_eliminer %}is-rouge{% endif %}"><b>{{ a_eliminer }}</b><span>à éliminer</span>{% if a_eliminer %}<a href="{% url 'ar_bordereau' %}" target="_blank" rel="noopener">Bordereau</a>{% endif %}</li>
+        <li class="{% if a_trier %}is-orange{% endif %}"><b>{{ a_trier }}</b><span>à trier</span>{% if a_trier %}<button type="button" class="ar-lien" data-ar-phase="a_trier">Voir</button>{% endif %}</li>
+        <li class="{% if alteres %}is-rouge{% endif %}"><b>{{ alteres }}</b><span>fichier{{ alteres|pluralize }} altéré{{ alteres|pluralize }}</span></li>
+        <li><b>{{ corbeille }}</b><span>en corbeille</span>{% if corbeille %}<button type="button" class="ar-lien" data-ar-go="corbeille">Ouvrir</button>{% endif %}</li>
+        <li><b>{{ gel }}</b><span>sous gel juridique</span></li>
+        <li><b>{{ confidentiels }}</b><span>confidentiel{{ confidentiels|pluralize }}</span></li>
+      </ul>
+    </section>
+
+    <section class="ar-tb-card">
+      <div class="ar-sec-h"><h3>Échéances (90 jours)</h3></div>
+      {% for f in proches %}<button type="button" class="ar-ech" data-ar-open-srv="{{ f.archive_id }}"><span class="ar-ech-j">{{ f.jours }} j</span><span><b>{{ f.titre }}</b><small>{{ f.cote }} · passe en « {{ f.passage }} » le {{ f.prochaine_echeance|date:"d/m/Y" }}</small></span></button>
+      {% empty %}<p class="ar-manque">Aucun changement de phase dans les 3 prochains mois.</p>{% endfor %}
+    </section>
+
+
+    <section class="ar-tb-card ar-tb-act">
+      <div class="ar-sec-h"><h3>Dernières actions</h3>{% if admin %}<button type="button" class="ar-lien" data-ar-go="journal">Journal complet</button>{% endif %}</div>
+      <ul class="ar-jlist">{% for j in activite %}<li class="ar-j-{{ j.action }}"><b>{{ j.get_action_display }}</b><span>{{ j.titre|truncatechars:48 }} · {{ j.nom_utilisateur|default:"système" }} · {{ j.date|date:"d/m H:i" }}</span></li>{% empty %}<li class="ar-manque">Rien pour l’instant.</li>{% endfor %}</ul>
+    </section>
+  </div>
+</div>

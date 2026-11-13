@@ -1,0 +1,204 @@
+{% load l10n %}
+<div class="ar-detail{% if grand %} is-grand{% endif %}" data-ar-doc-id="{{ doc.id }}" data-ar-titre="{{ doc.titre }}">
+  {% if message %}<div class="ar-flash ar-flash-{{ niveau }}" role="status"><i class="fas {% if niveau == 'erreur' %}fa-triangle-exclamation{% else %}fa-check{% endif %}"></i> {{ message }}</div>{% endif %}
+  {% if fiche.supprime_le %}
+  <div class="ar-flash ar-flash-erreur"><i class="fas fa-trash"></i> Dans la corbeille depuis le {{ fiche.supprime_le|date:"d/m/Y" }}{% if fiche.motif_suppression %} — {{ fiche.motif_suppression }}{% endif %}.
+    {% if modif %}<form hx-post="{% url 'ar_restaurer' doc.id %}" hx-target="closest .ar-detail" hx-swap="outerHTML" style="display:inline"><button class="ar-lien">Restaurer</button></form>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="ar-d-col1">
+    <div class="ar-d-head">
+      <span class="ar-ext ar-ext-{{ doc.famille }}">{{ doc.ext }}</span>
+      <div class="ar-d-tt">
+        <h3>{{ doc.titre }}</h3>
+        <p><button type="button" class="ar-cote ar-copie" data-ar-copy="{{ fiche.cote }}" title="Copier la cote">{{ fiche.cote|default:"Sans cote" }} <i class="far fa-copy"></i></button>
+          {% if doc.sous_cat %}<span class="ar-d-path">{{ doc.cat.nom|default:"" }}{% if doc.cat %} › {% endif %}{{ doc.sous_cat.nom|default:doc.sous_cat }}</span>{% endif %}</p>
+        <div class="ar-badges">
+          <span class="ar-pb ar-pb-{{ doc.phase.0 }}">{{ doc.phase.1 }}</span>
+          <span class="ar-conf ar-conf-{{ fiche.confidentialite }}">{% if fiche.confidentialite == 'confidentiel' or fiche.confidentialite == 'restreint' %}<i class="fas fa-lock"></i> {% endif %}{{ fiche.get_confidentialite_display }}</span>
+          <span class="ar-conf">v{{ fiche.version_courante }}</span>
+          {% if fiche.integrite_ok == False %}<span class="ar-conf ar-conf-alerte"><i class="fas fa-triangle-exclamation"></i> Altéré</span>{% elif fiche.integrite_verifiee_le %}<span class="ar-conf ar-conf-ok" title="Contrôlé le {{ fiche.integrite_verifiee_le|date:'d/m/Y' }}"><i class="fas fa-shield-halved"></i> Intègre</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="ar-d-prev">
+      {% if doc.fichier %}
+        {% if doc.famille == 'pdf' %}<iframe src="{% url 'ar_fichier' doc.id %}#toolbar=0&view=FitH" title="Aperçu de {{ doc.titre }}" loading="lazy"></iframe>
+        {% elif doc.famille == 'image' %}<a href="{% url 'ar_fichier' doc.id %}" target="_blank" rel="noopener"><img src="{% url 'ar_fichier' doc.id %}" alt="{{ doc.titre }}" loading="lazy"></a>
+        {% else %}<div class="ar-d-noprev"><i class="far fa-file"></i><span>Pas d’aperçu pour ce format : téléchargez-le.</span></div>{% endif %}
+      {% else %}<div class="ar-d-noprev"><i class="far fa-file-excel"></i><span>Aucun fichier attaché.</span></div>{% endif %}
+    </div>
+
+    <div class="ar-d-act">
+      {% if doc.fichier %}<a class="ar-btn ar-btn-p" href="{% url 'ar_fichier' doc.id %}?telecharger=1"><i class="fas fa-download"></i> Télécharger</a>
+      <a class="ar-btn ar-btn-s" href="{% url 'ar_fichier' doc.id %}" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> Ouvrir</a>{% endif %}
+      {% if not grand %}<button type="button" class="ar-btn ar-btn-s" data-ar-grand="{% url 'ar_detail' doc.id %}?grand=1" title="Voir en grand"><i class="fas fa-expand"></i></button>{% endif %}
+    </div>
+  </div>
+
+  <div class="ar-d-col2">
+    <div class="ar-tabs" role="tablist">
+      <button type="button" data-ar-tab="fiche" class="{% if not onglet or onglet == 'fiche' %}is-on{% endif %}">Fiche</button>
+      <button type="button" data-ar-tab="conservation" class="{% if onglet == 'conservation' %}is-on{% endif %}">Conservation</button>
+      <button type="button" data-ar-tab="versions" class="{% if onglet == 'versions' %}is-on{% endif %}">Versions <em>{{ fiche.version_courante }}</em></button>
+      <button type="button" data-ar-tab="partage" class="{% if onglet == 'partage' %}is-on{% endif %}">Partage{% if partages %} <em>{{ partages|length }}</em>{% endif %}</button>
+      <button type="button" data-ar-tab="journal" class="{% if onglet == 'journal' %}is-on{% endif %}">Journal</button>
+    </div>
+
+    {# ---------------- FICHE ---------------- #}
+    <section class="ar-pane{% if not onglet or onglet == 'fiche' %} is-on{% endif %}" data-ar-pane="fiche">
+      <dl class="ar-dl">
+        {% if doc.description %}<div class="ar-dl-w"><dt>Description</dt><dd>{{ doc.description|linebreaksbr }}</dd></div>{% endif %}
+        <div><dt>Type</dt><dd>{{ fiche.type_document|default:"—" }}</dd></div>
+        <div><dt>Date du document</dt><dd>{{ fiche.date_document|date:"d/m/Y"|default:"—" }}</dd></div>
+        <div><dt>Auteur</dt><dd>{{ doc.auteur|default:"—" }}</dd></div>
+        <div><dt>Lieu</dt><dd>{{ fiche.lieu|default:"—" }}</dd></div>
+        <div><dt>Provenance</dt><dd>{{ doc.provenance|default:"—" }}</dd></div>
+        <div><dt>Financement</dt><dd>{{ doc.source_financement|default:"—" }}</dd></div>
+        <div><dt>Langue</dt><dd>{{ fiche.langue|default:"—" }}</dd></div>
+        <div><dt>Déposé</dt><dd>{{ doc.date_ajout|date:"d/m/Y" }}{% if fiche.depose_par %} par {{ fiche.depose_par.personnel|default:fiche.depose_par.get_full_name|default:fiche.depose_par.username }}{% endif %}</dd></div>
+        <div class="ar-dl-w"><dt>Mots-clés</dt><dd>{% for m in fiche.liste_mots_cles %}<span class="ar-tag">{{ m }}</span>{% empty %}<span class="ar-manque">Aucun — ajoutez-en pour retrouver ce document facilement.</span>{% endfor %}</dd></div>
+        <div class="ar-dl-w"><dt>Fichier</dt><dd class="ar-mono">{{ doc.nom_fichier|default:"—" }} · {{ doc.taille_h }}</dd></div>
+      </dl>
+
+      {% if modif %}
+      <details class="ar-edit"{% if niveau == 'erreur' and onglet == 'fiche' %} open{% endif %}>
+        <summary><i class="fas fa-pen"></i> Modifier la fiche</summary>
+        <form hx-post="{% url 'ar_fiche' doc.id %}" hx-target="closest .ar-detail" hx-swap="outerHTML" class="ar-form">
+          <input type="hidden" name="onglet" value="fiche">{% if grand %}<input type="hidden" name="grand" value="1">{% endif %}
+          {% if 'titre' in champs_archive %}<label class="ar-f-w">Titre *<input name="titre" value="{{ doc.titre }}" required></label>{% endif %}
+          {% if 'description' in champs_archive %}<label class="ar-f-w">Description<textarea name="description" rows="3">{{ doc.description }}</textarea></label>{% endif %}
+          <label>Type de document<select name="type_document"><option value="">—</option>{% for t in types %}<option{% if t == fiche.type_document %} selected{% endif %}>{{ t }}</option>{% endfor %}{% if fiche.type_document and fiche.type_document not in types %}<option selected>{{ fiche.type_document }}</option>{% endif %}</select></label>
+          <label>Date du document<input type="date" name="date_document" value="{{ fiche.date_document|date:'Y-m-d' }}"></label>
+          {% if 'auteur' in champs_archive %}<label>Auteur<input name="auteur" value="{{ doc.auteur }}"></label>{% endif %}
+          <label>Lieu<input name="lieu" value="{{ fiche.lieu }}" placeholder="Ex : Bafoussam"></label>
+          {% if 'provenance' in champs_archive %}<label>Provenance<input name="provenance" value="{{ doc.provenance }}"></label>{% endif %}
+          {% if 'source_financement' in champs_archive %}<label>Source de financement<input name="source_financement" value="{{ doc.source_financement }}"></label>{% endif %}
+          <label>Langue<input name="langue" value="{{ fiche.langue }}"></label>
+          <label class="ar-f-w">Mots-clés <small>(séparés par des virgules)</small><input name="mots_cles" value="{{ fiche.mots_cles }}" placeholder="vaccination, T3 2026, Ouest"></label>
+          <fieldset class="ar-f-w ar-radios"><legend>Confidentialité</legend>
+            {% for v, l in confidentialites %}<label><input type="radio" name="confidentialite" value="{{ v }}"{% if v == fiche.confidentialite %} checked{% endif %}> {{ l }}</label>{% endfor %}
+            <small>Public/Interne : tout le personnel · Confidentiel : déposant + personnes choisies · Restreint : personnes choisies et administrateurs seulement.</small>
+          </fieldset>
+          <label class="ar-f-w">Personnes autorisées <small>(pour Confidentiel / Restreint — Ctrl+clic pour plusieurs)</small>
+            <input type="hidden" name="acces_envoye" value="1">
+            <select name="acces" multiple size="4">{% for u in utilisateurs %}<option value="{{ u.pk }}"{% if u.pk in acces_ids %} selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>{% endfor %}</select></label>
+          <div class="ar-f-w ar-f-act"><button class="ar-btn ar-btn-p"><i class="fas fa-check"></i> Enregistrer</button></div>
+        </form>
+      </details>
+      {% endif %}
+    </section>
+
+    {# ---------------- CONSERVATION ---------------- #}
+    <section class="ar-pane{% if onglet == 'conservation' %} is-on{% endif %}" data-ar-pane="conservation">
+      <ol class="ar-tl">
+        <li class="{% if doc.phase.0 == 'actif' %}is-on{% endif %}"><b>Actif</b><span>usage courant · jusqu’au {{ fiche.fin_active|date:"d/m/Y" }}</span></li>
+        <li class="{% if doc.phase.0 == 'intermediaire' %}is-on{% endif %}"><b>Intermédiaire</b><span>conservé pour preuve · jusqu’au {{ fiche.fin_intermediaire|date:"d/m/Y" }}</span></li>
+        <li class="{% if doc.phase.0 == 'definitif' or doc.phase.0 == 'a_eliminer' or doc.phase.0 == 'a_trier' %}is-on{% endif %}"><b>Sort final</b><span>{{ fiche.sort_final_effectif_display }}</span></li>
+      </ol>
+      <p class="ar-note">Calcul à partir du {% if fiche.date_document %}<b>{{ fiche.date_document|date:"d/m/Y" }}</b> (date du document){% else %}<b>{{ fiche.date_reference|date:"d/m/Y" }}</b> (date de dépôt){% endif %} : {{ durees.0 }} an{{ durees.0|pluralize }} actif + {{ durees.1 }} an{{ durees.1|pluralize }} intermédiaire. Règle appliquée : <b>{{ source_regle }}</b>.</p>
+      {% if fiche.gel_juridique %}<div class="ar-flash ar-flash-gel"><i class="fas fa-snowflake"></i> Gel juridique : {{ fiche.gel_motif }}. Le document ne peut être ni modifié ni éliminé.</div>{% endif %}
+
+      <div class="ar-box">
+        <h4><i class="fas fa-shield-halved"></i> Intégrité du fichier</h4>
+        <p class="ar-mono" title="{{ fiche.sha256 }}">SHA-256 : {{ fiche.sha256|truncatechars:28|default:"non calculée" }}</p>
+        <p>{% if fiche.integrite_verifiee_le %}Dernier contrôle le {{ fiche.integrite_verifiee_le|date:"d/m/Y à H:i" }} : {% if fiche.integrite_ok %}<b class="ar-ok">intact</b>{% else %}<b class="ar-ko">altéré ou manquant</b>{% endif %}{% else %}Jamais contrôlé depuis le dépôt.{% endif %}</p>
+        <form hx-post="{% url 'ar_integrite' doc.id %}" hx-target="closest .ar-detail" hx-swap="outerHTML"><input type="hidden" name="onglet" value="conservation">{% if grand %}<input type="hidden" name="grand" value="1">{% endif %}<button class="ar-btn ar-btn-s"><i class="fas fa-rotate"></i> Vérifier maintenant</button></form>
+      </div>
+
+      {% if modif %}
+      <details class="ar-edit">
+        <summary><i class="fas fa-hourglass-half"></i> Durée de conservation propre à ce document</summary>
+        <form hx-post="{% url 'ar_fiche' doc.id %}" hx-target="closest .ar-detail" hx-swap="outerHTML" class="ar-form">
+          <input type="hidden" name="onglet" value="conservation">{% if grand %}<input type="hidden" name="grand" value="1">{% endif %}
+          <label>Actif (années)<input type="number" min="0" max="99" name="dua_active" value="{{ fiche.dua_active|default_if_none:'' }}" placeholder="{{ durees.0 }}"></label>
+          <label>Intermédiaire (années)<input type="number" min="0" max="99" name="dua_intermediaire" value="{{ fiche.dua_intermediaire|default_if_none:'' }}" placeholder="{{ durees.1 }}"></label>
+          <label class="ar-f-w">Sort final<select name="sort_final"><option value="">Règle du sous-dossier</option>{% for v, l in sorts %}<option value="{{ v }}"{% if v == fiche.sort_final %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></label>
+          <p class="ar-f-w ar-note">Laissez vide pour suivre la règle du sous-dossier.</p>
+          <div class="ar-f-w ar-f-act"><button class="ar-btn ar-btn-p">Enregistrer</button></div>
+        </form>
+      </details>
+      {% endif %}
+
+      {% if admin %}
+      <form class="ar-box" hx-post="{% url 'ar_gel' doc.id %}" hx-target="closest .ar-detail" hx-swap="outerHTML">
+        <h4><i class="fas fa-snowflake"></i> Gel juridique</h4>
+        {% if grand %}<input type="hidden" name="grand" value="1">{% endif %}
+        {% if fiche.gel_juridique %}<button class="ar-btn ar-btn-s">Lever le gel</button>
+        {% else %}<p class="ar-note">À utiliser en cas d’audit, de litige ou d’enquête : bloque toute modification et élimination.</p>
+        <div class="ar-inline"><input name="motif" placeholder="Motif (ex. audit bailleur 2026)" required><button class="ar-btn ar-btn-s">Geler</button></div>{% endif %}
+      </form>
+      {% endif %}
+
+      {% if modif and not fiche.gel_juridique and not fiche.supprime_le %}
+      <form class="ar-box ar-danger" hx-post="{% url 'ar_corbeille_mettre' doc.id %}" hx-target="closest .ar-detail" hx-swap="outerHTML">
+        <h4><i class="fas fa-trash"></i> Mettre à la corbeille</h4>
+        {% if grand %}<input type="hidden" name="grand" value="1">{% endif %}
+        <div class="ar-inline"><input name="motif" placeholder="Pourquoi ? (doublon, erreur…)"><button class="ar-btn ar-btn-d">Corbeille</button></div>
+      </form>
+      {% endif %}
+      {% if admin and not fiche.gel_juridique %}
+      <form class="ar-box ar-danger" hx-post="{% url 'ar_eliminer' doc.id %}" hx-target="closest .ar-detail" hx-swap="outerHTML" hx-confirm="Éliminer définitivement ce document et toutes ses versions ? Cette action est irréversible.">
+        <h4><i class="fas fa-fire"></i> Éliminer définitivement</h4>
+        <div class="ar-inline"><input name="motif" placeholder="Motif / n° de bordereau" required><button class="ar-btn ar-btn-d">Éliminer</button></div>
+      </form>
+      {% endif %}
+    </section>
+
+    {# ---------------- VERSIONS ---------------- #}
+    <section class="ar-pane{% if onglet == 'versions' %} is-on{% endif %}" data-ar-pane="versions">
+      <ul class="ar-vlist">
+        <li class="is-cur"><span class="ar-vn">v{{ fiche.version_courante }}</span><div><b>Version courante</b><small>{{ fiche.commentaire_version|default:"—" }} · {{ doc.taille_h }}</small></div>{% if doc.fichier %}<a class="ar-ico-btn" href="{% url 'ar_fichier' doc.id %}?telecharger=1" title="Télécharger"><i class="fas fa-download"></i></a>{% endif %}</li>
+        {% for v in versions %}
+        <li><span class="ar-vn">v{{ v.numero }}</span><div><b>{{ v.cree_le|date:"d/m/Y H:i" }}</b><small>{{ v.commentaire|default:v.nom_original }} · {{ v.taille|filesizeformat }}</small></div>
+          <a class="ar-ico-btn" href="{% url 'ar_fichier' doc.id %}?version={{ v.pk }}&telecharger=1" title="Télécharger cette version"><i class="fas fa-download"></i></a>
+          {% if modif and not fiche.gel_juridique %}<form hx-post="{% url 'ar_version_restaurer' v.pk %}" hx-target="closest .ar-detail" hx-swap="outerHTML" hx-confirm="Refaire de la version {{ v.numero }} la version courante ? (la version actuelle sera conservée)"><input type="hidden" name="onglet" value="versions">{% if grand %}<input type="hidden" name="grand" value="1">{% endif %}<button class="ar-ico-btn" title="Restaurer"><i class="fas fa-clock-rotate-left"></i></button></form>{% endif %}</li>
+        {% empty %}<li class="ar-manque">Aucune version précédente.</li>{% endfor %}
+      </ul>
+      {% if modif and not fiche.gel_juridique %}
+      <form class="ar-box" hx-post="{% url 'ar_version' doc.id %}" hx-encoding="multipart/form-data" hx-target="closest .ar-detail" hx-swap="outerHTML">
+        <h4><i class="fas fa-code-branch"></i> Déposer une nouvelle version</h4>
+        {% if grand %}<input type="hidden" name="grand" value="1">{% endif %}
+        <input type="file" name="fichier" required>
+        <input name="commentaire" placeholder="Ce qui change (ex. version signée)">
+        <button class="ar-btn ar-btn-p"><i class="fas fa-upload"></i> Enregistrer la version</button>
+        <p class="ar-note">L’ancienne version n’est jamais écrasée : elle reste téléchargeable ici.</p>
+      </form>
+      {% endif %}
+    </section>
+
+    {# ---------------- PARTAGE ---------------- #}
+    <section class="ar-pane{% if onglet == 'partage' %} is-on{% endif %}" data-ar-pane="partage">
+      {% for p in partages %}
+      <div class="ar-share">
+        <div class="ar-inline"><input readonly value="{{ p.url }}" onclick="this.select()"><button type="button" class="ar-btn ar-btn-s" data-ar-copy="{{ p.url }}"><i class="far fa-copy"></i></button></div>
+        <small>{% if p.destinataire %}Pour {{ p.destinataire }} · {% endif %}expire le {{ p.expire_le|date:"d/m/Y H:i" }} · {{ p.telechargements }}{% if p.telechargements_max %}/{{ p.telechargements_max }}{% endif %} téléchargement{{ p.telechargements|pluralize }}</small>
+        <form hx-post="{% url 'ar_partage_revoquer' p.pk %}" hx-target="closest .ar-detail" hx-swap="outerHTML">{% if grand %}<input type="hidden" name="grand" value="1">{% endif %}<button class="ar-lien ar-ko">Révoquer</button></form>
+      </div>
+      {% empty %}<p class="ar-manque">Aucun lien actif.</p>{% endfor %}
+      {% if fiche.confidentialite == 'restreint' %}<p class="ar-note"><i class="fas fa-lock"></i> Document restreint : le partage par lien est désactivé.</p>
+      {% else %}
+      <form class="ar-box ar-form" hx-post="{% url 'ar_partager' doc.id %}" hx-target="closest .ar-detail" hx-swap="outerHTML">
+        <h4 class="ar-f-w"><i class="fas fa-link"></i> Créer un lien de téléchargement</h4>
+        {% if grand %}<input type="hidden" name="grand" value="1">{% endif %}
+        <label class="ar-f-w">Pour qui ?<input name="destinataire" placeholder="Ex : Auditeur Banque mondiale"></label>
+        <label>Valable<select name="jours"><option value="1">1 jour</option><option value="7" selected>7 jours</option><option value="30">30 jours</option><option value="90">90 jours</option></select></label>
+        <label>Téléchargements max<input type="number" name="max" min="1" placeholder="illimité"></label>
+        <div class="ar-f-w ar-f-act"><button class="ar-btn ar-btn-p">Créer le lien</button></div>
+        <p class="ar-f-w ar-note">La personne n’a pas besoin de compte. Chaque téléchargement est noté dans le journal.</p>
+      </form>
+      {% endif %}
+    </section>
+
+    {# ---------------- JOURNAL ---------------- #}
+    <section class="ar-pane{% if onglet == 'journal' %} is-on{% endif %}" data-ar-pane="journal">
+      <ul class="ar-jlist">
+        {% for j in journal %}<li class="ar-j-{{ j.action }}"><b>{{ j.get_action_display }}</b><span>{{ j.nom_utilisateur|default:"système" }} · {{ j.date|date:"d/m/Y H:i" }}{% if j.details.motif %} · {{ j.details.motif }}{% endif %}{% if j.details.version %} · v{{ j.details.version }}{% endif %}</span></li>
+        {% empty %}<li class="ar-manque">Aucune action enregistrée.</li>{% endfor %}
+      </ul>
+      <p class="ar-note">Le journal ne peut pas être modifié. Il est conservé même après l’élimination du document.</p>
+    </section>
+  </div>
+</div>

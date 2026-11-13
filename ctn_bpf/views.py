@@ -2528,7 +2528,7 @@ def in_valid_rapport(request):
             raise ValueError("Indiquez le motif de l'invalidation : l'agent en a besoin pour corriger.")
 
         # ---- 2. Écritures : tout ou rien ----
-        with transaction.atomic():
+        with db_transaction.atomic():
             operation_rapport_id = (request.POST.get('operation_rapport') or '').strip()
             if operation_rapport_id.isdigit():
                 OperationDetails.objects.filter(id=int(operation_rapport_id)).update(etat=0)
@@ -2563,13 +2563,7 @@ def in_valid_rapport(request):
                 mail=_email_de(moi) or request.user.email,
             )
 
-            # Période : bascule '1' → '0' (comportement d'origine conservé, voir la remarque dans la réponse)
-            periode = operation.periodes() if hasattr(operation, 'periodes') else None
-            if periode is not None:
-                desc = periode.desc_split()
-                if '1' in desc:
-                    periode.m_desc_realisation = "_".join('0' if x == '1' else x for x in desc)
-                    periode.save()
+            
 
             # ---- 3. E-mail : envoyé seulement si tout a été enregistré ----
             destinataires = [e for e in {_email_de(operation.personnel), _email_de(operation.informed)} if e]
@@ -2585,7 +2579,7 @@ def in_valid_rapport(request):
                     except Exception:
                         logger.exception("in_valid_rapport : e-mail non envoyé (opération %s)", operation.id)
 
-                transaction.on_commit(_envoyer)
+                db_transaction.on_commit(_envoyer)
 
         messages.success(request, 'Rapport invalidé. L’agent a été prévenu.' if destinataires else 'Rapport invalidé (aucune adresse e-mail pour prévenir l’agent).')
         return redirect('/accountable/')

@@ -1,0 +1,17 @@
+<div class="ar-regles">
+  {% if message %}<div class="ar-flash ar-flash-ok"><i class="fas fa-check"></i> {{ message }}</div>{% endif %}
+  <p class="ar-note">Pour chaque sous-dossier : combien d’années le document reste <b>actif</b> (utilisé au quotidien), puis <b>intermédiaire</b> (gardé pour preuve, audit, bailleur), et ce qu’il devient ensuite. Sans règle : {{ defaut.0 }} an{{ defaut.0|pluralize }} + {{ defaut.1 }} ans, puis tri.</p>
+  <form hx-post="{% url 'ar_regles' %}" hx-target="closest .ar-regles" hx-swap="outerHTML">
+    <div class="ar-rtbl"><table>
+      <thead><tr><th>Sous-dossier</th><th>Actif</th><th>Intermédiaire</th><th>Ensuite</th></tr></thead>
+      <tbody>{% for l in lignes %}{% ifchanged l.cat %}<tr class="ar-r-cat"><td colspan="4"><i class="fas fa-folder"></i> {{ l.cat.nom|default:l.cat }}</td></tr>{% endifchanged %}
+        <tr><td>{{ l.s.nom|default:l.s }}</td>
+          <td><input type="number" min="0" max="99" name="a_{{ l.s.pk }}" value="{% if l.r %}{{ l.r.dua_active }}{% else %}{{ defaut.0 }}{% endif %}"{% if not admin %} disabled{% endif %}> ans</td>
+          <td><input type="number" min="0" max="99" name="i_{{ l.s.pk }}" value="{% if l.r %}{{ l.r.dua_intermediaire }}{% else %}{{ defaut.1 }}{% endif %}"{% if not admin %} disabled{% endif %}> ans</td>
+          <td><select name="s_{{ l.s.pk }}"{% if not admin %} disabled{% endif %}>{% for v, lib in sorts %}<option value="{{ v }}"{% if l.r and l.r.sort_final == v or not l.r and defaut.2 == v %} selected{% endif %}>{{ lib }}</option>{% endfor %}</select></td></tr>
+      {% empty %}<tr><td colspan="4" class="ar-manque">Aucun sous-dossier.</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% if admin %}<div class="ar-f-act" style="margin-top:.8rem"><button class="ar-btn ar-btn-p"><i class="fas fa-check"></i> Enregistrer les règles</button></div>
+    {% else %}<p class="ar-note"><i class="fas fa-lock"></i> Seul un administrateur des archives peut modifier ces règles.</p>{% endif %}
+  </form>
+</div>

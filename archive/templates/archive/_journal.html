@@ -1,0 +1,14 @@
+<div class="ar-journal">
+  <form class="ar-inline" hx-get="{% url 'ar_journal' %}" hx-target="closest .ar-journal" hx-swap="outerHTML" hx-trigger="change, submit">
+    <select name="action"><option value="">Toutes les actions</option>{% for v, l in actions %}<option value="{{ v }}"{% if v == action %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+    <input name="q" value="{{ q }}" placeholder="Titre, cote ou personne">
+    <button class="ar-btn ar-btn-s">Filtrer</button>
+    <a class="ar-btn ar-btn-s" href="{% url 'ar_journal' %}?format=csv&action={{ action }}&q={{ q|urlencode }}"><i class="fas fa-file-csv"></i> CSV</a>
+  </form>
+  <div class="ar-rtbl"><table>
+    <thead><tr><th>Date</th><th>Action</th><th>Document</th><th>Personne</th><th>IP</th></tr></thead>
+    <tbody>{% for j in entrees %}<tr class="ar-j-{{ j.action }}"><td class="ar-mono">{{ j.date|date:"d/m/Y H:i" }}</td><td><b>{{ j.get_action_display }}</b>{% if j.details.motif %}<br><small>{{ j.details.motif }}</small>{% endif %}</td><td>{{ j.titre|truncatechars:50 }}<br><small class="ar-mono">{{ j.cote }}</small></td><td>{{ j.nom_utilisateur|default:"système" }}</td><td class="ar-mono">{{ j.ip|default:"" }}</td></tr>
+    {% empty %}<tr><td colspan="5" class="ar-manque">Aucune entrée.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p class="ar-note">200 dernières entrées affichées ; l’export CSV contient tout l’historique filtré.</p>
+</div>

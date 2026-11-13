@@ -107,6 +107,7 @@ INSTALLED_APPS = [
     "vitrine",
     "saisie_plus",
     'guardian',
+    'archive'
 ]
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',  # Backend natif (RBAC global)
@@ -181,6 +182,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  
     'allauth.account.middleware.AccountMiddleware',
+    'archive.middleware.RequeteCouranteMiddleware'
 ]
 
 #SESSION_ENGINE = "django.contrib.sessions.backends.cache"

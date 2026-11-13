@@ -136,6 +136,93 @@
         @media (max-width: 700px) { body { padding: 14px !important; padding-bottom: 120px !important; } section.bg-white { padding: 18px !important; } .ci-card dl { grid-template-columns: 1fr 1fr; } .ci-card dl div:nth-child(2) { border-right: 0; } .ci-card dl div:nth-child(-n+2) { border-bottom: 1px solid #eef1f4; }
             .ci-bar-s { display: none; } form > .flex.items-center.justify-between.mt-12 > a { display: none !important; } form > .flex.items-center.justify-between.mt-12 > div { width: 100%; } form > .flex.items-center.justify-between.mt-12 button[type=submit] { width: 100%; justify-content: center; } }
     </style>
+    <!-- ===================== CRÉATION D'INDICATEUR : version épurée (ajout, prioritaire sur le design précédent) ===================== -->
+    <style>
+        :root { --ink: #0f172a; --txt: #334155; --muted: #64748b; --line: #e5e7eb; --soft: #f8fafc; }
+        body { padding: 20px 24px 110px !important; }
+        /* en-tête : un seul titre, l'objectif en sous-titre, une seule sortie */
+        header { margin-bottom: 18px !important; align-items: flex-end !important; }
+        header nav { font-size: 12px !important; font-weight: 600 !important; color: var(--muted) !important; margin-bottom: 6px !important; }
+        header nav span { color: var(--ink) !important; }
+        header h1 { font-size: 24px !important; font-weight: 800 !important; letter-spacing: -.02em !important; color: var(--ink) !important; }
+        header h2 { font-size: 14px !important; font-weight: 600 !important; letter-spacing: 0 !important; color: var(--muted) !important; margin-top: 2px; }
+        header h2::before { content: "Objectif : "; font-weight: 500; }
+        header > .flex.gap-3 { display: none !important; }
+        /* étapes : une frise reliée */
+        .ci-steps { gap: 0 !important; margin-top: 14px !important; }
+        .ci-steps li { position: relative; height: auto !important; padding: 0 22px 0 0 !important; border: 0 !important; background: transparent !important; font-size: 12.5px !important; font-weight: 600 !important; }
+        .ci-steps li + li::before { content: ""; position: absolute; left: -16px; top: 50%; width: 10px; height: 2px; background: var(--line); }
+        .ci-steps li b { width: 24px !important; height: 24px !important; background: #fff !important; border: 1.5px solid var(--line); color: var(--muted) !important; }
+        .ci-steps li.ok b { background: var(--ok) !important; border-color: var(--ok); color: #fff !important; }
+        .ci-steps li.ok + li::before { background: var(--ok); }
+
+        /* carte des propriétés : 4 blocs numérotés, aérés */
+        section.bg-white { padding: 22px 24px 24px !important; border-radius: 16px !important; counter-reset: cisec; }
+        section.bg-white > div:first-child { display: none !important; }
+        section.bg-white > .grid { row-gap: 14px !important; column-gap: 18px !important; }
+        .ci-sec { counter-increment: cisec; margin: 10px 0 0 !important; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px !important; font-weight: 800 !important; letter-spacing: -.01em !important; text-transform: none !important; color: var(--ink) !important; gap: 10px !important; }
+        .ci-sec:first-child { margin-top: 0 !important; padding-top: 0; border-top: 0; }
+        .ci-sec::before { content: counter(cisec) !important; width: 24px !important; height: 24px !important; border-radius: 7px !important; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; background: var(--c, var(--dom)) !important; }
+        .ci-sec::after { display: none; }
+        section.bg-white label { font-size: 12.5px !important; font-weight: 600 !important; color: var(--txt) !important; margin-bottom: 5px !important; }
+        section.bg-white input, section.bg-white select, section.bg-white textarea { height: 44px; padding: 0 12px !important; border-radius: 10px !important; border-color: #d1d5db !important; font-size: 14px !important; }
+        section.bg-white textarea { height: auto; padding: 10px 12px !important; }
+        section.bg-white input[name=nature_indicateur] { font-size: 13px !important; letter-spacing: .02em; }
+        .ci-hint { font-size: 11.5px !important; color: var(--muted) !important; font-weight: 500 !important; margin-top: 4px !important; }
+        .ci-pyr-w { grid-column: 1 / -1; }
+        .ci-pyr { border-radius: 10px !important; background: #f1f5f9 !important; }
+        .ci-pyr button { padding: 10px 4px !important; font-size: 13px !important; }
+        .ci-pyr button.on { color: #fff !important; background: var(--c) !important; box-shadow: none !important; }
+        #mecanisme_verification { margin-top: -6px !important; }
+
+        /* formule : carte claire et calme */
+        section.bg-slate-900 { border-radius: 16px !important; }
+        section.bg-slate-900 > div:first-child { padding: 12px 16px !important; background: #fff !important; }
+        section.bg-slate-900 > div:first-child > div:first-child { flex-wrap: wrap; row-gap: 2px; }
+        section.bg-slate-900 > div:first-child > div:first-child span:first-child { display: none; }
+        section.bg-slate-900 > div:first-child > div:first-child span:nth-child(2) { font-size: 14px !important; font-weight: 800 !important; letter-spacing: -.01em !important; text-transform: none !important; color: var(--ink) !important; }
+        .ci-fac { width: 100%; font-size: 12px !important; font-weight: 500; color: var(--muted) !important; letter-spacing: 0 !important; text-transform: none; }
+        section.bg-slate-900 > div:first-child > div:last-child { padding: 3px !important; border-radius: 10px !important; background: #f1f5f9 !important; border: 0 !important; }
+        section.bg-slate-900 > div:first-child > div:last-child button { width: 36px !important; height: 36px !important; border-radius: 8px !important; background: #fff; color: var(--ink) !important; box-shadow: 0 1px 2px rgba(15,23,42,.08); }
+        #num_div { font-family: "JetBrains Mono", ui-monospace, monospace !important; font-size: 15px !important; min-height: 92px !important; height: 96px; resize: vertical !important; padding: 14px 16px !important; border-top: 1px solid var(--line) !important; color: var(--ink) !important; }
+        .ci-prev { padding: 12px 16px !important; background: var(--soft); }
+        .ci-prev small { font-size: 11px !important; letter-spacing: .04em !important; text-transform: none !important; font-weight: 700 !important; color: var(--muted) !important; }
+        .ci-prev div { font-size: 14px !important; line-height: 2 !important; }
+        .ci-dev { margin-top: 6px !important; font: 500 11.5px/1.5 'JetBrains Mono', ui-monospace, monospace !important; color: var(--muted) !important; }
+        .ci-dev b { color: var(--txt) !important; font-family: 'Inter', sans-serif; }
+        section.bg-slate-900 > div:last-child { padding: 10px 16px !important; background: #fff !important; }
+        section.bg-slate-900 > div:last-child p { display: none; }
+        section.bg-slate-900 > div:last-child button { font-weight: 600 !important; color: var(--muted) !important; }
+        section.bg-slate-900 > div:last-child button:hover { color: var(--danger) !important; }
+
+        /* la fiche récapitulative faisait doublon avec les étapes et la barre du bas */
+        .ci-card { display: none !important; }
+
+        /* variables disponibles */
+        aside { border-radius: 16px !important; }
+        aside > div:first-child { padding: 16px !important; }
+        aside > div:first-child h3 { font-size: 14px !important; margin-bottom: 10px !important; }
+        #filter { height: 40px; padding-top: 0 !important; padding-bottom: 0 !important; border-radius: 10px !important; background: var(--soft) !important; font-size: 13.5px !important; }
+        .ci-new { order: 9; height: 34px !important; margin-top: 10px !important; border-radius: 9px !important; font-weight: 700 !important; font-size: 12.5px !important; }
+        #variableList > * + *, #indList > * + * { margin-top: 4px !important; }
+        .var-item { padding: 9px 10px !important; border-radius: 10px !important; border-color: transparent !important; background: transparent !important; }
+        .var-item:hover { background: var(--soft) !important; border-color: var(--line) !important; }
+        .var-item > div:first-child { gap: 2px !important; min-width: 0; }
+        .var-item > div:first-child > span { font-size: 13px !important; font-weight: 600 !important; color: var(--ink) !important; }
+        .var-item > div:first-child > div > span.font-mono { padding: 0 !important; background: transparent !important; font-size: 10.5px !important; color: #94a3b8 !important; text-transform: none !important; }
+        .var-item > div:last-child { width: 28px !important; height: 28px !important; border-radius: 8px !important; background: #fff !important; border: 1px solid var(--line); color: var(--muted) !important; flex: none; }
+        .var-item:hover > div:last-child { background: var(--dom) !important; border-color: var(--dom); color: #fff !important; }
+        .var-item.used { background: color-mix(in srgb, var(--ok) 6%, #fff) !important; border-color: color-mix(in srgb, var(--ok) 25%, #fff) !important; }
+        aside > div:last-child { padding: 10px 14px !important; }
+        aside > div:last-child p { font-size: 11.5px !important; color: var(--muted) !important; }
+        .ci-tabs { margin-top: 10px !important; border-radius: 10px !important; }
+        .ci-tabs button { height: 32px !important; font-weight: 700 !important; font-size: 12px !important; }
+
+        /* barre du bas */
+        form > .flex.items-center.justify-between.mt-12 { padding-top: 10px !important; padding-bottom: 10px !important; }
+        form > .flex.items-center.justify-between.mt-12 button[type=submit] { padding: 11px 20px !important; font-size: 14px !important; border-radius: 10px !important; font-weight: 800 !important; }
+        @media (max-width: 700px) { body { padding: 14px 12px 120px !important; } section.bg-white { padding: 16px !important; } .ci-steps li { padding-right: 16px !important; font-size: 11.5px !important; } .ci-steps li + li::before { left: -12px; width: 8px; } }
+    </style>
 </head>
 <body class="p-4 md:p-8 text-slate-900">
 
@@ -143,11 +230,12 @@
     <header class="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <nav class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                <a href="#" class="hover:text-blue-600">Configuration</a>
+                <a href="/evaluer/0/0/" class="hover:text-blue-600">Indicateurs</a>
                 <i class="ri-arrow-right-s-line"></i>
                 <span class="text-slate-900">Nouvel Indicateur</span>
             </nav>
-            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Paramétrage de l'Indicateur</h1>
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Nouvel indicateur</h1>
+            <h2 class="text-3xl font-black text-slate-900 tracking-tight">{{entity.m_nom}}</h2>
             <ol class="ci-steps" id="ciSteps" aria-label="Avancement">
                 <li data-s="1"><b>1</b>Identification</li><li data-s="2"><b>2</b>Cadre logique</li><li data-s="3"><b>3</b>Données</li><li data-s="4"><b>4</b>Formule</li>
             </ol>
@@ -195,8 +283,8 @@
                         </div>
 
                         <div class="space-y-2">
-                            <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider">NiceName</label>
-                            <input type="text" name="nicename" placeholder="NiceName" 
+                            <label class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Nom court</label>
+                            <input type="text" name="nicename" placeholder="Ex : Mortalité" 
                                    class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                             <p class="ci-hint">Nom court affiché dans les tableaux de bord.</p>
                         </div>
@@ -269,7 +357,7 @@
                     <div class="bg-slate-800/50 px-8 py-5 border-b border-slate-800 flex justify-between items-center">
                         <div class="flex items-center gap-3">
                             <span class="flex h-2 w-2 rounded-full bg-blue-500"></span>
-                            <span class="text-xs font-black text-white tracking-widest uppercase">Éditeur de Calcul</span>
+                            <span class="text-xs font-black text-white tracking-widest uppercase">Formule de calcul</span><span class="ci-fac">facultatif · laissez vide pour une saisie manuelle</span>
                         </div>
                         
                         <!-- Opérateurs stylisés -->
@@ -286,7 +374,7 @@
 
                     <div class="relative">
                         <textarea id="num_div" name="numerateur" rows="5" 
-                                  placeholder="Sélectionnez des variables à droite..."
+                                  placeholder="Cliquez sur une variable à droite, puis sur un opérateur…"
                                   class="w-full bg-slate-950 border-none p-10 font-mono text-4xl text-blue-400 placeholder:text-slate-800 focus:ring-0 outline-none resize-none leading-relaxed"></textarea>
                     </div>
 
@@ -314,7 +402,7 @@
             <div class="lg:col-span-4">
                 <aside class="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col h-[740px] sticky top-8">
                     <div class="p-6 border-b border-slate-100">
-                        <h3 class="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest">Dictionnaire de données <em id="ciVarN">{{ dataelts|length }} variable{{ dataelts|length|pluralize }}</em></h3>
+                        <h3 class="text-[11px] font-black text-slate-400 uppercase mb-4 tracking-widest">Variables disponibles <em id="ciVarN">{{ dataelts|length }} variable{{ dataelts|length|pluralize }}</em></h3>
                         <div class="relative group">
                             <i class="ri-search-line absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
                             <input type="text" id="filter" placeholder="Rechercher une donnée..." 

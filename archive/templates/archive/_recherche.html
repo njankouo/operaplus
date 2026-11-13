@@ -1,0 +1,7 @@
+<div class="ar-sr-h" data-ar-total="{{ total }}">
+  <span><b>{{ total }}</b> document{{ total|pluralize }}{% if q %} pour « {{ q }} »{% endif %}{% if tronque %} — 300 premiers affichés, affinez la recherche{% endif %}</span>
+  {% if total %}<a class="ar-btn ar-btn-s" href="{% url 'ar_inventaire' %}?{{ params }}"><i class="fas fa-file-csv"></i> Exporter ces résultats</a>{% endif %}
+</div>
+{% for d in docs %}{% include "archive/_ligne.html" with avec_dossier=1 %}{% empty %}
+<div class="ar-nores"><b>Aucun document ne correspond.</b><br>Le moteur cherche dans le titre, la description, la cote, les mots-clés et le texte des PDF. Essayez un mot plus court ou retirez un filtre.</div>
+{% endfor %}

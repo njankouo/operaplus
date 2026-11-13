@@ -271,7 +271,9 @@ html,body{max-width:100%;overflow-x:clip}
 .gx-card:hover{box-shadow:0 10px 28px -16px rgba(15,23,42,.28)!important;border-color:#d1d5db!important}
 .gx-card::before{display:none!important}
 .gx-card *{overflow-wrap:break-word!important}
-.gx-card>.grid{min-height:0!important;height:100%}
+.gx-card>.grid{min-height:0!important}
+.gx-card{display:flex!important;flex-direction:column}
+.gx-card>.grid{flex:1 1 auto}
 .gx-card>.grid>div:first-child{padding:1.25rem!important;gap:.9rem!important;justify-content:flex-start!important}
 .gx-card>.grid>div:first-child>*+*{margin-top:0!important}
 
@@ -352,13 +354,225 @@ html,body{max-width:100%;overflow-x:clip}
 
 .gx-g5-subhead{display:flex;align-items:center;justify-content:space-between;margin:0 0 .5rem;font-size:.66rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--g5-mute)}
 .gx-g5-subhead b{min-width:1.6rem;text-align:center;font-size:.68rem;padding:.1rem .45rem;border-radius:999px;background:#fff;border:1px solid var(--g5-line);color:var(--g5-txt)}
-.gx-spark{position:relative;display:flex;align-items:flex-end;gap:3px;height:44px;margin:0 0 .65rem;padding:0 6px;border-radius:10px;background:#fff;border:1px solid var(--g5-line);overflow:hidden}
+/* ===== Tableau de bord des sous-éléments : verdict, répartition, classement (place réservée au chargement) ===== */
+.gx-spark,.gx-sb-wide{--ok:#10b981;--ok-s:#d1fae5;--ok-d:#047857;--mid:#f59e0b;--mid-s:#fef3c7;--mid-d:#b45309;--bad:#f43f5e;--bad-s:#ffe4e6;--bad-d:#be123c;
+}
+.gx-spark{position:relative;margin:0 0 .6rem;border-radius:18px;background:#fff;border:1px solid var(--g5-line);min-height:280px;overflow:hidden;
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 14px 34px -26px rgba(15,23,42,.45)}
 .gx-spark:has(+ .custom-scrollbar > .text-center){display:none}
-.gx-spark::before{content:"";position:absolute;left:6px;right:6px;bottom:80%;border-top:1px dashed #cbd5e1}
-.gx-spark span{flex:1 1 0;max-width:22px;min-width:3px;height:calc(var(--h,0) * 1%);border-radius:3px 3px 0 0;background:#10b981;transform-origin:bottom;transform:scaleY(0);transition:transform .6s cubic-bezier(.22,1,.36,1)}
-.gx-spark.on span{transform:scaleY(1)}
-.gx-spark span[data-t=moyen]{background:#f59e0b}.gx-spark span[data-t=critique]{background:#ef4444}
-.gx-spark span:hover{filter:brightness(.9)}
+.gx-spark[data-v=excellent]{--tone:var(--ok);--tone-s:var(--ok-s);--tone-d:var(--ok-d)}
+.gx-spark[data-v=moyen]{--tone:var(--mid);--tone-s:var(--mid-s);--tone-d:var(--mid-d)}
+.gx-spark[data-v=critique]{--tone:var(--bad);--tone-s:var(--bad-s);--tone-d:var(--bad-d)}
+
+/* verdict */
+.gx-sb-top{display:flex;align-items:center;gap:.9rem;padding:1rem 1rem .85rem;background:linear-gradient(180deg,var(--tone-s) 0%,#fff 100%)}
+.gx-sb-ring{position:relative;width:78px;height:78px;flex:none}
+.gx-sb-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gx-sb-ring circle{fill:none;stroke-width:8}
+.gx-sb-ring .trk{stroke:rgba(15,23,42,.07)}
+.gx-sb-ring .arc{stroke:var(--tone);stroke-linecap:round;stroke-dasharray:0 999;transition:stroke-dasharray 1.1s cubic-bezier(.22,1,.36,1)}
+.gx-sb-ring .obj{stroke:var(--g5-ink);stroke-width:10;stroke-dasharray:1.4 999}
+.gx-sb-ring span{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.gx-sb-ring b{font-size:1.25rem;font-weight:800;letter-spacing:-.03em;color:var(--g5-ink);font-variant-numeric:tabular-nums}
+.gx-sb-ring b small{font-size:.62rem;font-weight:700;margin-left:1px}
+.gx-sb-ring em{font-style:normal;font-size:.52rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--g5-mute);margin-top:.2rem}
+.gx-sb-verdict{min-width:0}
+.gx-sb-pill{display:inline-flex;align-items:center;gap:.35rem;padding:.18rem .55rem;border-radius:99px;background:#fff;border:1px solid color-mix(in srgb,var(--tone) 35%,#fff);color:var(--tone-d);font-size:.66rem;font-weight:800;letter-spacing:.02em}
+.gx-sb-pill i{width:6px;height:6px;border-radius:50%;background:var(--tone)}
+.gx-sb-verdict h4{margin:.4rem 0 0;font-size:.92rem;font-weight:800;line-height:1.25;color:var(--g5-ink);letter-spacing:-.01em}
+.gx-sb-verdict p{margin:.15rem 0 0;font-size:.7rem;color:var(--g5-mute);line-height:1.35}
+.gx-sb-verdict p b{color:var(--g5-ink)}
+
+/* répartition */
+.gx-sb-dist{padding:.2rem 1rem .9rem}
+.gx-sb-stack{display:flex;gap:3px;height:12px}
+.gx-sb-stack i{display:block;height:100%;border-radius:4px;flex:0 0 0;transition:flex-grow .9s cubic-bezier(.22,1,.36,1)}
+.gx-sb-stack i:first-child{border-radius:7px 4px 4px 7px}.gx-sb-stack i:last-child{border-radius:4px 7px 7px 4px}
+.gx-sb-stack .ok{background:var(--ok)}.gx-sb-stack .mid{background:var(--mid)}.gx-sb-stack .bad{background:var(--bad)}
+.gx-sb-leg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4rem;margin-top:.55rem}
+.gx-sb-leg button{display:flex;flex-direction:column;align-items:flex-start;gap:.05rem;padding:.4rem .5rem;border-radius:10px;border:1px solid transparent;background:#f8fafc;cursor:pointer;text-align:left;transition:border-color .15s,background .15s;min-width:0}
+.gx-sb-leg button:hover{border-color:#e2e8f0}
+.gx-sb-leg button.is-on{background:#fff;border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c)}
+.gx-sb-leg button b{font-size:1rem;font-weight:800;line-height:1.1;color:var(--g5-ink);font-variant-numeric:tabular-nums}
+.gx-sb-leg button span{display:flex;align-items:center;gap:.3rem;font-size:.6rem;font-weight:700;color:var(--g5-mute);white-space:nowrap}
+.gx-sb-leg button span i{width:7px;height:7px;border-radius:2px;background:var(--c);flex:none}
+.gx-sb-leg button.is-zero{opacity:.5}
+.gx-sb-leg .ok{--c:var(--ok)}.gx-sb-leg .mid{--c:var(--mid)}.gx-sb-leg .bad{--c:var(--bad)}
+
+/* classement (bullet chart) */
+.gx-sb-cls{padding:1rem 1.25rem .85rem}
+.gx-sb-cls-h b{display:inline-flex;align-items:center;gap:.45rem;font-size:.8rem!important}
+.gx-sb-cls-h b i{color:var(--gx-accent);font-size:.8rem}
+.gx-sb-cls-h b small{font-size:.68rem;font-weight:600;color:var(--g5-mute);letter-spacing:0}
+.gx-sb-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem;margin-top:.4rem}
+.gx-sb-foot .gx-sb-key{padding:0}
+.gx-sb-foot .gx-sb-plus{width:auto;margin:0;padding:.35rem .8rem}
+.gx-sb-act{margin:.1rem .85rem .9rem!important}
+
+/* ===== Avancement par entité ===== */
+.gx-st-spark{display:none!important}   /* remplacé par la section « Avancement par entité » */
+.gx-ent{--ok:#10b981;--ok-d:#047857;--mid:#f59e0b;--mid-d:#b45309;--bad:#f43f5e;--bad-d:#be123c;
+  margin:1rem 0;padding:1.15rem 1.25rem 1rem;border:1px solid var(--g5-line);border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.gx-ent[hidden]{display:none}
+.gx-ent-h{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.9rem}
+.gx-ent-h h3{display:flex;align-items:center;gap:.5rem;margin:0;font-size:1rem;font-weight:800;color:var(--g5-ink);letter-spacing:-.01em}
+.gx-ent-h h3 i{color:var(--gx-hero,#2563eb);font-size:.9rem}
+.gx-ent-h p{margin:.2rem 0 0;font-size:.78rem;color:var(--g5-mute);max-width:40rem}
+.gx-ent-tot{text-align:right;padding:.45rem .8rem;border-radius:12px;background:#f8fafc;border:1px solid var(--g5-line)}
+.gx-ent-tot span{display:block;font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--g5-mute)}
+.gx-ent-tot b{font-size:1.4rem;font-weight:800;color:var(--g5-ink);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.gx-ent-tot b small{font-size:.75rem;margin-left:1px}
+.gx-ent-contrib{margin-bottom:1rem}
+.gx-ent-stack{position:relative;display:flex;height:30px;border-radius:9px;overflow:hidden;background:repeating-linear-gradient(135deg,#f1f5f9 0 6px,#f8fafc 6px 12px);border:1px solid var(--g5-line)}
+.gx-ent-seg{position:relative;height:100%;width:0;display:flex;align-items:center;justify-content:center;overflow:hidden;border-right:2px solid #fff;font-size:.66rem;font-weight:800;color:#fff;white-space:nowrap;transition:width .9s cubic-bezier(.22,1,.36,1);text-decoration:none}
+.gx-ent-seg:hover{filter:brightness(.93)}
+.gx-ent-seg[data-t=excellent]{background:var(--ok)}.gx-ent-seg[data-t=moyen]{background:var(--mid)}.gx-ent-seg[data-t=critique]{background:var(--bad)}
+.gx-ent-seg.alt{opacity:.8}
+.gx-ent-scale{display:flex;justify-content:space-between;margin-top:.3rem;font-size:.58rem;font-weight:600;color:#a0aec0;font-variant-numeric:tabular-nums}
+.gx-ent-lecture{margin:.55rem 0 0;font-size:.8rem;line-height:1.6;color:var(--g5-txt)}
+.gx-ent-lecture b{color:var(--g5-ink)}
+.gx-ent-lecture .lev{display:inline-flex;align-items:center;gap:.35rem;margin-left:.2rem;padding:.08rem .55rem;border-radius:99px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-weight:700;font-size:.74rem;text-decoration:none}
+.gx-ent-lecture .lev:hover{background:#ffedd5}
+.gx-ent-tab{display:grid;gap:.15rem}
+.gx-ent-th,.gx-ent-r{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,2fr) 3.8rem 3.6rem minmax(0,1.1fr);align-items:center;gap:.9rem}
+.gx-ent-th{padding:0 .6rem .35rem;font-size:.62rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--g5-mute);border-bottom:1px solid #f1f5f9}
+.gx-ent-th em{font-style:normal;text-transform:none;letter-spacing:0;font-weight:500}
+.gx-ent-th span:nth-child(4),.gx-ent-th span:nth-child(5){text-align:right}
+.gx-ent-r{padding:.55rem .6rem;border-radius:11px;text-decoration:none;color:inherit;transition:background .15s}
+.gx-ent-r:hover{background:#f8fafc}
+.gx-ent-r:focus-visible{outline:2px solid var(--gx-hero,#2563eb);outline-offset:1px}
+.gx-ent-r[data-t=excellent]{--c:var(--ok);--d:var(--ok-d)}.gx-ent-r[data-t=moyen]{--c:var(--mid);--d:var(--mid-d)}.gx-ent-r[data-t=critique]{--c:var(--bad);--d:var(--bad-d)}
+.gx-ent-n{display:flex;align-items:center;gap:.55rem;min-width:0}
+.gx-ent-n i{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none}
+.gx-ent-n b{font-size:.84rem;font-weight:700;color:var(--g5-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gx-ent-r:hover .gx-ent-n b{color:var(--gx-hero,#2563eb)}
+.gx-ent-n b::after{content:" \203A";color:#94a3b8}
+.gx-ent-bar{position:relative;height:10px;border-radius:99px;background:#eef2f6}
+.gx-ent-bar .f{position:absolute;left:0;top:0;bottom:0;max-width:100%;border-radius:99px;background:var(--c)}
+.gx-ent-bar .d{position:absolute;top:0;bottom:0;border-radius:99px;background:repeating-linear-gradient(135deg,#cbd5e1 0 3px,transparent 3px 6px)}
+.gx-ent-bar .o{position:absolute;left:80%;top:-4px;bottom:-4px;width:2px;border-radius:2px;background:#0f172a;opacity:.45}
+.gx-ent-pct{font-size:.9rem;font-weight:800;color:var(--d);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gx-ent-poids{text-align:right;font-size:.8rem;font-weight:600;color:var(--g5-txt);font-variant-numeric:tabular-nums}
+.gx-ent-app{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gx-ent-app b{font-size:.86rem;font-weight:800;color:var(--g5-ink)}
+.gx-ent-app small{font-size:.7rem;color:var(--g5-mute);margin-left:.2rem}
+.gx-ent-leg{display:flex;flex-wrap:wrap;gap:.4rem 1rem;margin-top:.7rem;padding-top:.65rem;border-top:1px solid #f1f5f9;font-size:.68rem;color:var(--g5-mute);font-weight:600}
+.gx-ent-leg span{display:inline-flex;align-items:center;gap:.35rem}
+.gx-ent-leg i{width:9px;height:9px;border-radius:3px}
+.gx-ent-leg .k-d{width:16px;height:8px;border-radius:99px;background:repeating-linear-gradient(135deg,#cbd5e1 0 3px,transparent 3px 6px);border:1px solid #e2e8f0}
+@media (max-width:767px){
+  .gx-ent{padding:1rem}
+  .gx-ent-th{display:none}
+  .gx-ent-r{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n p" "b b" "w a";row-gap:.35rem;column-gap:.6rem;border:1px solid #f1f5f9}
+  .gx-ent-n{grid-area:n}.gx-ent-pct{grid-area:p}.gx-ent-bar{grid-area:b}
+  .gx-ent-poids{grid-area:w;text-align:left;font-size:.72rem}.gx-ent-poids::before{content:"Poids "}
+  .gx-ent-app{grid-area:a}
+  .gx-ent-tot{text-align:left}
+}
+@media print{.gx-ent{break-inside:avoid}}
+
+
+/* ===== Beaucoup de sous-éléments ou noms très longs : la carte garde sa taille ===== */
+/* 6 fiches visibles d'emblée (en CSS : rien ne saute au chargement), les autres sur demande */
+.gx-card .custom-scrollbar:not(.is-all)>[data-gx-v]:nth-child(n+7 of [data-gx-v]){display:none!important}
+.gx-more{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:.5rem;height:40px;margin-top:.15rem;border:1px dashed #cbd5e1;border-radius:12px;background:#fff;font-size:.8rem;font-weight:700;color:var(--g5-txt);cursor:pointer;transition:border-color .15s,color .15s}
+.gx-more:hover{border-style:solid;border-color:var(--gx-accent);color:var(--g5-ink)}
+.gx-more em{font-style:normal;font-size:.72rem;font-weight:700;padding:.05rem .5rem;border-radius:99px;background:#f1f5f9;color:var(--g5-mute)}
+.gx-more:focus-visible{outline:2px solid var(--gx-accent);outline-offset:2px}
+/* noms longs : 2 lignes maximum, nom complet au survol */
+.gx-card .custom-scrollbar>[data-gx-v]>.mb-2 a,.gx-card .custom-scrollbar>[data-gx-v]>.mb-2 a .break-words{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.gx-card .custom-scrollbar>[data-gx-v]>.mb-2 a::after{display:none}
+.gx-card .custom-scrollbar>[data-gx-v]>.mb-2::after{content:"\203A";position:absolute;right:0;top:0;color:#94a3b8;font-weight:700}
+.gx-card .custom-scrollbar>[data-gx-v]>.mb-2{padding-right:1rem}
+.gx-card .entity-title a,.gx-card .entity-title a span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.gx-sb-act .chips a,.gx-sb-act .chips span{max-width:16rem}
+/* barres alignées même quand un nom tient sur 2 lignes */
+.gx-card .custom-scrollbar>[data-gx-v]{display:flex!important;flex-direction:column;justify-content:space-between}
+
+/* ===== Mise en page de la carte quand elle a des sous-éléments : entité | diagnostic, puis tous les sous-éléments en dessous ===== */
+.gx-card>.grid:has(.custom-scrollbar > [data-gx-v]){display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"g d" "l l";grid-template-rows:auto 1fr}
+.gx-card>.grid:has(.custom-scrollbar > [data-gx-v])>div:first-child{grid-area:g}
+.gx-card>.grid:has(.custom-scrollbar > [data-gx-v])>div:last-child{display:contents!important}
+.gx-card>.grid:has(.custom-scrollbar > [data-gx-v]) .gx-g5-subhead{display:none}
+.gx-card>.grid:has(.custom-scrollbar > [data-gx-v]) .gx-spark{grid-area:d;align-self:start;margin:1.25rem 1.25rem 1.25rem 0;min-height:0}
+.gx-card>.grid:has(.custom-scrollbar > [data-gx-v]) .custom-scrollbar{grid-area:l;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:.6rem!important;max-height:none!important;overflow:visible!important;
+  margin:0!important;padding:1rem 1.25rem 1.25rem!important;border-top:1px solid var(--g5-line);background:#f8fafc!important}
+.gx-card>.grid:has(.custom-scrollbar > [data-gx-v]) .custom-scrollbar::before{content:"Sous-éléments — cliquez sur une fiche pour l’ouvrir";grid-column:1/-1;font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--g5-mute);margin-bottom:.1rem}
+.gx-card .custom-scrollbar>[data-gx-v]{cursor:pointer}
+.gx-card .custom-scrollbar>[data-gx-v]:hover{border-color:color-mix(in srgb,var(--gx-accent) 45%,#e5e7eb)!important;box-shadow:0 8px 20px -14px rgba(15,23,42,.4)!important}
+.gx-card .custom-scrollbar>[data-gx-v]>.mb-2 a{text-decoration:none}
+.gx-card .custom-scrollbar>[data-gx-v]>.mb-2 a::after{content:"\203A";margin-left:.35rem;color:#94a3b8;font-weight:700}
+.gx-card .custom-scrollbar>[data-gx-v][data-t=excellent]>.mb-2::before{background:#d1fae5;color:#047857}
+.gx-card .custom-scrollbar>[data-gx-v][data-t=moyen]>.mb-2::before{background:#fef3c7;color:#b45309}
+.gx-card .custom-scrollbar>[data-gx-v][data-t=critique]>.mb-2::before{background:#ffe4e6;color:#be123c}
+.gx-li-t{position:relative;overflow:visible!important}
+.gx-li-o{position:absolute;left:80%;top:-3px;bottom:-3px;width:2px;border-radius:2px;background:#0f172a;opacity:.45}
+.gx-li-d{position:absolute;top:0;bottom:0;border-radius:99px;background:repeating-linear-gradient(135deg,#cbd5e1 0 3px,transparent 3px 6px)}
+.gx-sb-leg>div{display:flex;flex-direction:column;align-items:flex-start;gap:.05rem;padding:.45rem .55rem;border-radius:10px;background:#f8fafc;min-width:0}
+.gx-sb-leg>div b{font-size:1.05rem;font-weight:800;line-height:1.1;color:var(--g5-ink);font-variant-numeric:tabular-nums}
+.gx-sb-leg>div span{display:flex;align-items:center;gap:.3rem;font-size:.62rem;font-weight:700;color:var(--g5-txt);white-space:nowrap}
+.gx-sb-leg>div span i{width:7px;height:7px;border-radius:2px;background:var(--c);flex:none}
+.gx-sb-leg>div small{font-size:.56rem;color:var(--g5-mute);white-space:nowrap}
+.gx-sb-leg>div.is-zero{opacity:.5}
+.gx-sb-act .chips a,.gx-sb-act .chips span{display:inline-block;max-width:100%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff!important;border-radius:99px;padding:.22rem .6rem;font-size:.64rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}
+.gx-sb-act .chips a:hover{background:rgba(255,255,255,.16)}
+.gx-sb-act .chips a::after{content:" \203A"}
+@media (max-width:767px){
+  .gx-card>.grid:has(.custom-scrollbar > [data-gx-v]){grid-template-columns:1fr;grid-template-areas:"g" "d" "l";grid-template-rows:auto auto 1fr}
+  .gx-card>.grid:has(.custom-scrollbar > [data-gx-v]) .gx-spark{margin:0 1rem 1rem}
+  .gx-card>.grid:has(.custom-scrollbar > [data-gx-v]) .custom-scrollbar{grid-template-columns:1fr}
+}
+
+/* le tableau de bord donne déjà la répartition : la carte de gauche ne garde que Déclaré / Validé, plus lisible */
+.gx-card:has(.custom-scrollbar > [data-gx-v]) .gx-mini{grid-template-columns:1fr;height:auto;padding:.7rem .85rem}
+.gx-card:has(.custom-scrollbar > [data-gx-v]) .gx-mini-donut{display:none!important}
+.gx-card:has(.custom-scrollbar > [data-gx-v]) .gx-mini-cmp{border-left:0;padding-left:0;gap:.45rem!important}
+.gx-sb-cls-h{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.45rem}
+.gx-sb-cls-h b{font-size:.7rem;font-weight:800;color:var(--g5-ink);letter-spacing:.02em}
+.gx-sb-tri{display:inline-flex;padding:2px;border-radius:9px;background:#f1f5f9}
+.gx-sb-tri button{border:0;background:none;padding:.2rem .45rem;border-radius:7px;font-size:.6rem;font-weight:700;color:var(--g5-mute);cursor:pointer}
+.gx-sb-tri button.is-on{background:#fff;color:var(--g5-ink);box-shadow:0 1px 2px rgba(15,23,42,.12)}
+.gx-sb-rows{display:grid;gap:.15rem}
+.gx-sb-r{display:grid;grid-template-columns:1.3rem minmax(0,1fr) 2.6rem;align-items:center;gap:.5rem;padding:.38rem .3rem;border:0;border-radius:9px;background:none;text-align:left;cursor:pointer;width:100%;font:inherit;transition:background .15s}
+.gx-sb-r:hover,.gx-sb-r.is-hl{background:#f8fafc}
+.gx-sb-r:focus-visible{outline:2px solid var(--gx-accent);outline-offset:1px}
+.gx-sb-r>em{font-style:normal;width:1.3rem;height:1.3rem;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;background:var(--s);color:var(--d)}
+.gx-sb-r[data-t=excellent]{--c:var(--ok);--s:var(--ok-s);--d:var(--ok-d)}.gx-sb-r[data-t=moyen]{--c:var(--mid);--s:var(--mid-s);--d:var(--mid-d)}.gx-sb-r[data-t=critique]{--c:var(--bad);--s:var(--bad-s);--d:var(--bad-d)}
+.gx-sb-r>div{min-width:0}
+.gx-sb-r>div>span{display:block;font-size:.7rem;font-weight:600;color:var(--g5-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.22rem}
+.gx-sb-t{position:relative;height:7px;border-radius:99px;background:#eef2f6}
+.gx-sb-t .f{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;background:var(--c);transition:width .9s cubic-bezier(.22,1,.36,1)}
+.gx-sb-t .d{position:absolute;top:0;bottom:0;border-radius:99px;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 45%,#fff) 0 3px,transparent 3px 6px);opacity:0;transition:opacity .4s .6s}
+.gx-spark.on .gx-sb-t .d{opacity:1}
+.gx-sb-t .o{position:absolute;top:-3px;bottom:-3px;left:80%;width:2px;border-radius:2px;background:var(--g5-ink);opacity:.55}
+.gx-sb-r>b{text-align:right;font-size:.74rem;font-weight:800;color:var(--d);font-variant-numeric:tabular-nums;line-height:1.1}
+.gx-sb-r>b small{display:block;font-size:.54rem;font-weight:700;color:var(--g5-mute)}
+.gx-sb-plus{display:block;width:100%;margin:.35rem 0 .2rem;padding:.4rem;border:1px dashed #e2e8f0;border-radius:9px;background:none;font-size:.66rem;font-weight:700;color:var(--g5-mute);cursor:pointer}
+.gx-sb-plus:hover{color:var(--g5-ink);border-color:#cbd5e1}
+.gx-sb-plus[hidden]{display:none}
+.gx-sb-key{display:flex;flex-wrap:wrap;gap:.25rem .8rem;padding:.5rem .3rem .2rem;font-size:.58rem;font-weight:600;color:var(--g5-mute)}
+.gx-sb-key span{display:inline-flex;align-items:center;gap:.3rem}
+.gx-sb-key .k-o{width:2px;height:10px;border-radius:2px;background:var(--g5-ink);opacity:.55}
+.gx-sb-key .k-d{width:14px;height:6px;border-radius:99px;background:repeating-linear-gradient(135deg,#cbd5e1 0 3px,transparent 3px 6px);border:1px solid #e2e8f0}
+
+/* à décider */
+.gx-sb-act{margin:.2rem .85rem .9rem;padding:.65rem .75rem;border-radius:12px;background:#0f172a;color:#e2e8f0}
+.gx-sb-act[hidden]{display:none}
+.gx-sb-act b{display:flex;align-items:center;gap:.4rem;font-size:.64rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fda4af}
+.gx-sb-act.is-ok b{color:#6ee7b7}
+.gx-sb-act p{margin:.3rem 0 0;font-size:.7rem;line-height:1.45;color:#cbd5e1}
+.gx-sb-act .chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.45rem}
+.gx-sb-act .chips button{max-width:100%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;border-radius:99px;padding:.18rem .55rem;font-size:.62rem;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gx-sb-act .chips button:hover{background:rgba(255,255,255,.14)}
+@media (prefers-reduced-motion:reduce){.gx-sb-ring .arc,.gx-sb-stack i,.gx-sb-t .f{transition:none}}
+
+/* numéros des sous-éléments dans la liste (CSS seul : aucun décalage au chargement) */
+.gx-card .custom-scrollbar{counter-reset:gxs}
+.gx-card .custom-scrollbar>[data-gx-v]{counter-increment:gxs;transition:border-color .15s,box-shadow .15s,background .15s}
+.gx-card .custom-scrollbar>[data-gx-v]>.mb-2{position:relative;padding-left:1.7rem}
+.gx-card .custom-scrollbar>[data-gx-v]>.mb-2::before{content:counter(gxs);position:absolute;left:0;top:.05rem;width:1.25rem;height:1.25rem;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:800;background:#f1f5f9;color:var(--g5-mute)}
+.gx-card .custom-scrollbar>[data-gx-v].is-hl{border-color:color-mix(in srgb,var(--gx-accent) 55%,#e5e7eb)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--gx-accent) 12%,transparent)!important}
+.gx-card .custom-scrollbar>[data-gx-v].is-hl>.mb-2::before{background:var(--gx-accent);color:#fff}
 .gx-st-spark{gap:.15rem}
 .gx-bars{display:flex;align-items:flex-end;gap:3px;width:120px;height:30px}
 .gx-bars span{flex:1 1 0;max-width:14px;min-width:3px;height:calc(var(--h,0) * 1%);border-radius:2px 2px 0 0;background:#10b981;transition:height .5s cubic-bezier(.22,1,.36,1)}
@@ -460,6 +674,55 @@ nav[aria-label="Pagination"] a.bg-blue-600{background:var(--g5-ink)!important}
   <div class="gx-dist" data-gx-tip="Répartition|Part des entités Excellent (> 80 %), Moyen (50 à 80 %) et Critique (≤ 50 %).">
     <div class="gx-dist-legend"><span><i style="background:#10b981"></i>Excellent <b id="gx-l-ex">0</b></span><span><i style="background:#f59e0b"></i>Moyen <b id="gx-l-mo">0</b></span><span><i style="background:#ef4444"></i>Critique <b id="gx-l-cr">0</b></span></div>
     <div class="gx-dist-bar" aria-hidden="true"><span id="gx-d-ex"></span><span id="gx-d-mo"></span><span id="gx-d-cr"></span></div>
+  </div>
+</section>
+
+<!-- ===================== Avancement par entité (ajout) : lisible, une ligne par entité, chaque nom est un lien ===================== -->
+<section class="gx-ent" id="gxEnt" aria-label="Avancement par entité">
+  <div class="gx-ent-h">
+    <div>
+      <h3><i class="fas fa-chart-simple"></i>Avancement par entité</h3>
+      <p>Chaque ligne montre où en est l’entité et ce qu’elle apporte au résultat global. Cliquez sur un nom pour l’ouvrir.</p>
+    </div>
+    <div class="gx-ent-tot" data-gx-tip="Réalisation pondérée|Résultat global en tenant compte du poids de chaque entité : une entité qui pèse 40 % compte deux fois plus qu’une entité qui pèse 20 %.">
+      <span>Réalisation pondérée</span><b id="gxEntTot">—</b>
+    </div>
+  </div>
+  <div class="gx-ent-contrib">
+    <div class="gx-ent-stack" id="gxEntStack" role="img" aria-label="Contribution de chaque entité au résultat global"></div>
+    <div class="gx-ent-scale" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100 %</span></div>
+    <p class="gx-ent-lecture" id="gxEntLecture"></p>
+  </div>
+  <div class="gx-ent-tab">
+    <div class="gx-ent-th" aria-hidden="true"><span>Entité</span><span>Avancement <em>(trait = objectif 80 %)</em></span><span></span><span>Poids</span><span>Apport au global</span></div>
+    {% if request.user.personnel.is_finance and not request.user.personnel.is_process %}
+      {% for entity in pages_o %}
+      <a class="gx-ent-r" href="/gestionnaire/{{hierachy}}/{{entity.id}}/"
+         data-v="{{ entity.taux_financier_valide|default:0|unlocalize }}" data-d="{{ entity.taux_financier|default:0|unlocalize }}" data-p="{{ entity.ponderation|default:0|unlocalize }}" data-id="{{ entity.id }}"
+         data-t="{% if entity.taux_financier_valide > 80 %}excellent{% elif entity.taux_financier_valide > 50 %}moyen{% else %}critique{% endif %}">
+        <span class="gx-ent-n"><i></i><b>{% if entity.m_nom %}{{ entity.m_nom }}{% else %}{{ entity }}{% endif %}</b></span>
+        <span class="gx-ent-bar"><i class="d"></i><i class="f" style="width: {{ entity.taux_financier_valide|default:0|unlocalize }}%"></i><i class="o"></i></span>
+        <span class="gx-ent-pct">{{ entity.taux_financier_valide|default:0|floatformat:"-1" }} %</span>
+        <span class="gx-ent-poids">{{ entity.ponderation|default:0|floatformat:"-1" }} %</span>
+        <span class="gx-ent-app"><b>—</b><small></small></span>
+      </a>
+      {% endfor %}
+    {% else %}
+      {% for entity in pages_o %}
+      <a class="gx-ent-r" href="/gestionnaire/{{hierachy}}/{{entity.id}}/"
+         data-v="{{ entity.resultat_niveau_execution_valide|default:0|unlocalize }}" data-d="{{ entity.resultat_niveau_execution|default:0|unlocalize }}" data-p="{{ entity.ponderation|default:0|unlocalize }}" data-id="{{ entity.id }}"
+         data-t="{% if entity.resultat_niveau_execution_valide > 80 %}excellent{% elif entity.resultat_niveau_execution_valide > 50 %}moyen{% else %}critique{% endif %}">
+        <span class="gx-ent-n"><i></i><b>{% if entity.m_nom %}{{ entity.m_nom }}{% else %}{{ entity }}{% endif %}</b></span>
+        <span class="gx-ent-bar"><i class="d"></i><i class="f" style="width: {{ entity.resultat_niveau_execution_valide|default:0|unlocalize }}%"></i><i class="o"></i></span>
+        <span class="gx-ent-pct">{{ entity.resultat_niveau_execution_valide|default:0|floatformat:"-1" }} %</span>
+        <span class="gx-ent-poids">{{ entity.ponderation|default:0|floatformat:"-1" }} %</span>
+        <span class="gx-ent-app"><b>—</b><small></small></span>
+      </a>
+      {% endfor %}
+    {% endif %}
+  </div>
+  <div class="gx-ent-leg" aria-hidden="true">
+    <span><i style="background:#10b981"></i>Excellent · plus de 80 %</span><span><i style="background:#f59e0b"></i>Moyen · 50 à 80 %</span><span><i style="background:#f43f5e"></i>Critique · 50 % ou moins</span><span><i class="k-d"></i>Déclaré, à valider</span>
   </div>
 </section>
 
@@ -1097,10 +1360,10 @@ dialog::backdrop {
 
         <div class="p-4 flex flex-col justify-start" style="background-color: {{request.user.personnel.color_fond}};">
           <div class="gx-g5-subhead"><span>Sous-éléments</span><b data-gx-n></b></div>
-          <div class="gx-spark" aria-hidden="true"></div>
+          <div class="gx-spark" role="img" aria-label="Avancement de chaque sous-élément"></div>
           <div class="space-y-3 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
             {% for tache in entity.sub_entities %}
-  <div class="p-4 bg-white bg-opacity-10 rounded-xl border border-white border-opacity-20 hover:bg-opacity-15 transition" data-gx-v="{% if request.user.personnel.is_finance and not request.user.personnel.is_process %}{{ tache.taux_financier_valide|default:0|unlocalize }}{% else %}{{ tache.resultat_niveau_execution_valide|default:0|unlocalize }}{% endif %}">
+  <div class="p-4 bg-white bg-opacity-10 rounded-xl border border-white border-opacity-20 hover:bg-opacity-15 transition" data-gx-v="{% if request.user.personnel.is_finance and not request.user.personnel.is_process %}{{ tache.taux_financier_valide|default:0|unlocalize }}{% else %}{{ tache.resultat_niveau_execution_valide|default:0|unlocalize }}{% endif %}" data-gx-d="{% if request.user.personnel.is_finance and not request.user.personnel.is_process %}{{ tache.taux_financier|default:0|unlocalize }}{% else %}{{ tache.resultat_niveau_execution|default:0|unlocalize }}{% endif %}">
     <div class="mb-2">
         <a href="/gestionnaire/{{next_hierachy}}/{{tache.id}}/" 
    class="text-white font-bold text-xs hover:underline tracking-wide block group flex items-center gap-2">
@@ -1765,16 +2028,93 @@ document.addEventListener('DOMContentLoaded', () => {
       // 1. Nombre de sous-éléments
       var badge = card.querySelector('[data-gx-n]'); if (badge) badge.textContent = items.length;
 
-      // 2. Mini histogramme des sous-éléments
+      // 2. Diagnostic des sous-éléments : simple à lire, rien à régler. Chaque sous-élément garde son lien.
       var spark = card.querySelector('.gx-spark');
       if (spark && items.length) {
-        items.forEach(function (it) {
-          var b = document.createElement('span'); b.style.setProperty('--h', Math.max(pct(it.v), 4)); b.setAttribute('data-t', it.t);
-          b.setAttribute('data-gx-tip', it.nom + '|' + (fin ? 'TEF validé' : 'Exécution validée') + ' : ' + nf.format(it.v) + ' %');
-          spark.appendChild(b);
+        var rows = [].slice.call(card.querySelectorAll('.custom-scrollbar > [data-gx-v]'));
+        items.forEach(function (it, k) {
+          it.k = k; it.row = rows[k]; it.d = rows[k] ? num(rows[k].getAttribute('data-gx-d')) : it.v;
+          var a = rows[k] && rows[k].querySelector('a[href]'); it.href = a ? a.getAttribute('href') : '';
         });
-        spark.setAttribute('data-gx-tip', 'Sous-éléments|Une barre par sous-élément. La ligne pointillée marque 80 %, le seuil « Excellent ».');
-        requestAnimationFrame(function () { requestAnimationFrame(function () { spark.classList.add('on'); }); });
+        var n = items.length, cnt2 = { excellent: 0, moyen: 0, critique: 0 }, somme = 0;
+        items.forEach(function (it) { cnt2[it.t]++; somme += it.v; });
+        var moy = somme / n, vt = tone(moy);
+        var VERD = { excellent: 'Sur la bonne voie', moyen: 'À surveiller', critique: 'En difficulté' };
+        var TITRE = { excellent: 'Les sous-éléments avancent comme prévu', moyen: 'Progression inégale entre sous-éléments', critique: 'La majorité des sous-éléments sont en retard' };
+        var C = 2 * Math.PI * 32;
+        spark.setAttribute('data-v', vt);
+        spark.innerHTML =
+          '<div class="gx-sb-top">' +
+            '<div class="gx-sb-ring"><svg viewBox="0 0 80 80"><circle class="trk" cx="40" cy="40" r="32"></circle><circle class="arc" cx="40" cy="40" r="32"></circle>' +
+              '<circle class="obj" cx="40" cy="40" r="32" style="stroke-dashoffset:-' + (C * 0.8).toFixed(1) + '"></circle></svg>' +
+              '<span><b>' + Math.round(moy) + '<small>%</small></b><em>moyenne</em></span></div>' +
+            '<div class="gx-sb-verdict"><span class="gx-sb-pill"><i></i>' + VERD[vt] + '</span><h4>' + TITRE[vt] + '</h4>' +
+              '<p><b>' + cnt2.excellent + ' sur ' + n + '</b> sous-élément' + (n > 1 ? 's' : '') + ' à l’objectif (80 %)</p></div>' +
+          '</div>' +
+          '<div class="gx-sb-dist"><div class="gx-sb-stack"><i class="ok"></i><i class="mid"></i><i class="bad"></i></div>' +
+            '<div class="gx-sb-leg">' +
+              '<div class="ok' + (cnt2.excellent ? '' : ' is-zero') + '"><b>' + cnt2.excellent + '</b><span><i></i>Excellent</span><small>plus de 80 %</small></div>' +
+              '<div class="mid' + (cnt2.moyen ? '' : ' is-zero') + '"><b>' + cnt2.moyen + '</b><span><i></i>Moyen</span><small>50 à 80 %</small></div>' +
+              '<div class="bad' + (cnt2.critique ? '' : ' is-zero') + '"><b>' + cnt2.critique + '</b><span><i></i>Critique</span><small>50 % ou moins</small></div>' +
+            '</div></div>' +
+          '<div class="gx-sb-act"></div>';
+
+        /* À décider : liens directs vers les sous-éléments les plus en retard */
+        var act = spark.querySelector('.gx-sb-act'), crit = items.filter(function (it) { return it.t === 'critique'; }).sort(function (a, b) { return a.v - b.v; });
+        if (crit.length) {
+          act.innerHTML = '<b><i class="fas fa-bolt"></i>À décider</b><p></p><div class="chips"></div>';
+          act.querySelector('p').textContent = crit.length + ' sous-élément' + (crit.length > 1 ? 's sont' : ' est') + ' à 50 % ou moins. ' + (crit.length > 3 ? 'Les plus en retard :' : 'À relancer :');
+          crit.slice(0, 3).forEach(function (it) {
+            var c = document.createElement(it.href ? 'a' : 'span'); if (it.href) c.href = it.href;
+            c.textContent = it.nom + ' · ' + Math.round(it.v) + ' %'; c.title = 'Ouvrir « ' + it.nom + ' »';
+            act.querySelector('.chips').appendChild(c);
+          });
+        } else {
+          act.classList.add('is-ok');
+          act.innerHTML = cnt2.excellent === n ? '<b><i class="fas fa-circle-check"></i>Objectif atteint</b><p>Tous les sous-éléments dépassent 80 %.</p>'
+            : '<b><i class="fas fa-circle-check"></i>Aucune urgence</b><p>Aucun sous-élément n’est critique. ' + cnt2.moyen + ' reste' + (cnt2.moyen > 1 ? 'nt' : '') + ' à pousser vers 80 %.</p>';
+        }
+
+        /* Fiches des sous-éléments : toute la fiche ouvre le sous-élément ; repère 80 % et déclaré dans la barre */
+        items.forEach(function (it) {
+          var row = it.row; if (!row) return;
+          row.setAttribute('data-t', it.t);
+          var trk = row.querySelector('.mt-2 > .w-full');
+          if (trk) {
+            trk.classList.add('gx-li-t');
+            var o = document.createElement('i'); o.className = 'gx-li-o'; o.title = 'Objectif 80 %'; trk.appendChild(o);
+            if (it.d - it.v > 0.5) { var h = document.createElement('i'); h.className = 'gx-li-d'; h.style.left = pct(it.v) + '%'; h.style.width = (pct(it.d) - pct(it.v)) + '%'; h.title = 'Déclaré : ' + nf.format(it.d) + ' % (reste à valider)'; trk.appendChild(h); }
+          }
+          if (it.href) {
+            row.addEventListener('click', function (e) { if (e.target.closest('a, button')) return; if (e.ctrlKey || e.metaKey) window.open(it.href); else location.href = it.href; });
+          }
+        });
+
+        /* beaucoup de sous-éléments : 6 visibles, bouton pour afficher les autres ; nom complet au survol */
+        var liste = card.querySelector('.custom-scrollbar');
+        rows.forEach(function (row, k) { var a = row.querySelector('.mb-2 a'); if (a && !a.title) a.title = items[k] ? items[k].nom : a.textContent.trim(); });
+        if (liste && n > 6 && !liste.querySelector('.gx-more')) {
+          var plus2 = document.createElement('button'); plus2.type = 'button'; plus2.className = 'gx-more';
+          var majPlus = function () {
+            var o = liste.classList.contains('is-all');
+            plus2.innerHTML = o ? '<i class="fas fa-chevron-up"></i> Réduire la liste' : '<i class="fas fa-chevron-down"></i> Afficher les ' + (n - 6) + ' autres sous-éléments <em>' + n + ' au total</em>';
+            plus2.setAttribute('aria-expanded', o);
+          };
+          plus2.addEventListener('click', function () {
+            var o = liste.classList.toggle('is-all'); majPlus();
+            if (!o) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+          liste.appendChild(plus2); majPlus();
+        }
+
+        spark.setAttribute('aria-label', n + ' sous-éléments, moyenne ' + nf.format(moy) + ' % : ' + cnt2.excellent + ' excellent(s), ' + cnt2.moyen + ' moyen(s), ' + cnt2.critique + ' critique(s).');
+        requestAnimationFrame(function () { requestAnimationFrame(function () {
+          spark.classList.add('on');
+          spark.querySelector('.gx-sb-ring .arc').style.strokeDasharray = (C * pct(moy) / 100).toFixed(1) + ' 999';
+          var st = spark.querySelectorAll('.gx-sb-stack i');
+          st[0].style.flexGrow = cnt2.excellent; st[1].style.flexGrow = cnt2.moyen; st[2].style.flexGrow = cnt2.critique;
+          [].forEach.call(st, function (i) { if (!+i.style.flexGrow) i.style.display = 'none'; });
+        }); });
       }
 
       // 3. Anneau : répartition des sous-éléments par statut
@@ -1839,6 +2179,52 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+})();
+</script>
+
+<!-- Avancement par entité : calculs (apport, réalisation pondérée, plus gros levier) -->
+<script>
+(function () {
+  var box = document.getElementById('gxEnt'); if (!box) return;
+  var rows = [].slice.call(box.querySelectorAll('.gx-ent-r')); if (!rows.length) { box.hidden = true; return; }
+  var nf = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+  function num(v) { v = parseFloat(String(v || '0').replace(',', '.')); return isNaN(v) ? 0 : v; }
+  function pct(v) { return Math.max(0, Math.min(100, v)); }
+  var data = rows.map(function (r) {
+    var v = num(r.dataset.v), d = num(r.dataset.d), p = num(r.dataset.p);
+    return { r: r, v: v, d: d, p: p, app: p * pct(v) / 100, nom: r.querySelector('.gx-ent-n b').textContent.trim(), href: r.getAttribute('href'), t: r.dataset.t };
+  });
+  var sp = data.reduce(function (a, x) { return a + x.p; }, 0), sa = data.reduce(function (a, x) { return a + x.app; }, 0);
+  var tot = sp ? sa / sp * 100 : 0;
+  document.getElementById('gxEntTot').innerHTML = nf.format(tot) + '<small>%</small>';
+  data.forEach(function (x) {
+    var r = x.r, dd = r.querySelector('.gx-ent-bar .d');
+    if (x.d - x.v > 0.5) { dd.style.left = pct(x.v) + '%'; dd.style.width = (pct(x.d) - pct(x.v)) + '%'; } else dd.remove();
+    r.querySelector('.gx-ent-app b').textContent = nf.format(x.app) + ' pt' + (x.app >= 2 ? 's' : '');
+    r.querySelector('.gx-ent-app small').textContent = 'sur ' + nf.format(x.p);
+    r.setAttribute('data-gx-tip', x.nom + '|Avancement : ' + nf.format(x.v) + ' %' + (x.d - x.v > 0.5 ? ' (déclaré ' + nf.format(x.d) + ' %)' : '') + '. Poids : ' + nf.format(x.p) + ' %. Apport au global : ' + nf.format(x.app) + ' point(s) sur ' + nf.format(x.p) + ' possibles. Cliquer pour ouvrir.');
+  });
+  var stack = document.getElementById('gxEntStack'), base = sp > 100 ? sp : 100;
+  data.forEach(function (x, i) {
+    if (x.app <= 0) return;
+    var a = document.createElement('a'); a.className = 'gx-ent-seg' + (i % 2 ? ' alt' : ''); a.href = x.href; a.setAttribute('data-t', x.t);
+    a.setAttribute('data-gx-tip', x.nom + '|Apporte ' + nf.format(x.app) + ' point(s) au résultat global (poids ' + nf.format(x.p) + ' %, avancement ' + nf.format(x.v) + ' %).');
+    a.dataset.w = x.app / base * 100;
+    if (x.app / base * 100 >= 7) a.textContent = nf.format(x.app) + ' pts';
+    stack.appendChild(a);
+  });
+  requestAnimationFrame(function () { requestAnimationFrame(function () { [].forEach.call(stack.children, function (s) { s.style.width = s.dataset.w + '%'; }); }); });
+  var lev = data.slice().sort(function (a, b) { return (b.p - b.app) - (a.p - a.app); })[0];
+  var L = document.getElementById('gxEntLecture');
+  var t = document.createElement('span');
+  t.innerHTML = 'Le résultat global atteint <b>' + nf.format(sa) + ' points sur ' + nf.format(sp) + '</b> possibles' + (Math.abs(sp - 100) > 0.5 ? ' (la somme des poids fait ' + nf.format(sp) + ' % au lieu de 100 %)' : '') + '. ';
+  L.appendChild(t);
+  if (lev && lev.p - lev.app > 0.5) {
+    L.appendChild(document.createTextNode('Plus gros levier : '));
+    var a = document.createElement('a'); a.className = 'lev'; a.href = lev.href;
+    a.innerHTML = '<i class="fas fa-bullseye"></i>'; a.appendChild(document.createTextNode(lev.nom + ' · ' + nf.format(lev.p - lev.app) + ' pts à gagner'));
+    L.appendChild(a);
+  }
 })();
 </script>
 {% endblock %}

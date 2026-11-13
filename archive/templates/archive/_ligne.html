@@ -1,0 +1,17 @@
+{% load l10n %}<div class="doc-card ar-doc" data-ar-row="{{ d.id }}">
+  <label class="ar-chk" title="Sélectionner"><input type="checkbox" class="ar-sel" value="{{ d.id }}"></label>
+  <button type="button" class="ar-doc-main" data-ar-open-srv="{{ d.id }}" data-ar-titre="{{ d.titre }}">
+    <span class="ar-ext ar-ext-{{ d.famille }}">{{ d.ext }}</span>
+    <span class="ar-doc-txt">
+      <b>{{ d.titre }}</b>
+      <small><span class="ar-cote">{{ d.fiche.cote|default:"Sans cote" }}</span>{% if d.fiche.type_document %} · {{ d.fiche.type_document }}{% endif %} · {% if d.fiche.date_document %}{{ d.fiche.date_document|date:"d/m/Y" }}{% else %}déposé le {{ d.date_ajout|date:"d/m/Y" }}{% endif %} · {{ d.taille_h }}{% if d.fiche.version_courante > 1 %} · v{{ d.fiche.version_courante }}{% endif %}{% if avec_dossier and d.sous_cat %} · {{ d.cat.nom|default:"" }}{% if d.cat %} › {% endif %}{{ d.sous_cat.nom|default:d.sous_cat }}{% endif %}</small>
+      {% if d.extrait %}<em class="ar-extrait">Trouvé dans le contenu : {{ d.extrait }}</em>{% endif %}
+    </span>
+  </button>
+  <span class="ar-badges">
+    <span class="ar-pb ar-pb-{{ d.phase.0 }}">{{ d.phase.1 }}</span>
+    {% if d.fiche.confidentialite == 'confidentiel' or d.fiche.confidentialite == 'restreint' %}<span class="ar-conf ar-conf-{{ d.fiche.confidentialite }}" title="{{ d.fiche.get_confidentialite_display }}"><i class="fas fa-lock"></i> {{ d.fiche.get_confidentialite_display }}</span>{% endif %}
+    {% if d.fiche.integrite_ok == False %}<span class="ar-conf ar-conf-alerte" title="Fichier altéré ou manquant"><i class="fas fa-triangle-exclamation"></i></span>{% endif %}
+  </span>
+  {% if d.fichier %}<a class="ar-ico-btn" href="{% url 'ar_fichier' d.id %}?telecharger=1" title="Télécharger"><i class="fas fa-download"></i></a>{% endif %}
+</div>

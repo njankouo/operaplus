@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bordereau d’élimination — OPERAPLUS</title>
+<style>
+:root{--acc:{{ request.user.personnel.color_fond|default:"#2563eb" }}}
+*{box-sizing:border-box}
+body{margin:0;background:#f6f7f9;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#1e293b;font-size:13px}
+.page{max-width:1100px;margin:1.5rem auto;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:2rem}
+.top{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;border-bottom:2px solid #0f172a;padding-bottom:1rem;margin-bottom:1rem}
+h1{margin:0;font-size:1.3rem;color:#0f172a}
+.top p{margin:.25rem 0 0;color:#64748b}
+.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem;margin:1rem 0}
+.meta div{border:1px solid #e2e8f0;border-radius:10px;padding:.6rem .8rem}
+.meta span{display:block;font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.meta b{font-size:1rem;color:#0f172a}
+table{width:100%;border-collapse:collapse;margin-top:.5rem}
+th,td{border:1px solid #e2e8f0;padding:.45rem .5rem;text-align:left;vertical-align:top}
+th{background:#f1f5f9;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#475569}
+td.m{font-family:ui-monospace,Menlo,monospace;font-size:.75rem}
+.sig{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:2rem}
+.sig div{border:1px dashed #cbd5e1;border-radius:10px;min-height:110px;padding:.7rem}
+.sig b{display:block;margin-bottom:.2rem}
+.sig small{color:#64748b}
+.bar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:.4rem;height:36px;padding:0 .9rem;border-radius:9px;border:1px solid #e2e8f0;background:#fff;font-weight:700;font-size:.8rem;color:#334155;cursor:pointer;text-decoration:none}
+.btn.p{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.d{background:#b91c1c;border-color:#b91c1c;color:#fff}
+.elim{margin-top:1.5rem;padding:1rem;border:1px solid #fecaca;background:#fef2f2;border-radius:12px}
+.elim input[type=text]{height:36px;border:1px solid #fca5a5;border-radius:9px;padding:0 .7rem;min-width:18rem}
+.vide{padding:2rem;text-align:center;color:#64748b;border:1px dashed #cbd5e1;border-radius:12px}
+.msg{padding:.6rem .9rem;border-radius:10px;background:#ecfdf5;color:#065f46;margin-bottom:1rem}
+@media print{body{background:#fff}.page{border:0;margin:0;padding:0;max-width:none}.noprint{display:none!important}th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media (max-width:700px){.meta,.sig{grid-template-columns:1fr 1fr}.page{padding:1rem;margin:0;border-radius:0}}
+</style>
+</head>
+<body>
+<div class="page">
+  {% for m in messages %}<div class="msg noprint">{{ m }}</div>{% endfor %}
+  <div class="top">
+    <div>
+      <h1>Bordereau d’élimination d’archives</h1>
+      <p>{{ institution|default:"" }} — établi le {{ date|date:"d/m/Y" }}</p>
+    </div>
+    <div class="bar noprint">
+      <a class="btn" href="?{% if not trier %}trier=1{% endif %}">{% if trier %}Masquer « À trier »{% else %}Inclure « À trier »{% endif %}</a>
+      <a class="btn" href="{% url 'ar_inventaire' %}?phase=a_eliminer">CSV</a>
+      <button class="btn p" onclick="window.print()">Imprimer</button>
+    </div>
+  </div>
+
+  <div class="meta">
+    <div><span>Documents</span><b>{{ docs|length }}</b></div>
+    <div><span>Volume</span><b>{{ volume }}</b></div>
+    <div><span>Motif</span><b>DUA échue</b></div>
+    <div><span>Mode</span><b>Suppression numérique</b></div>
+  </div>
+
+  {% if docs %}
+  <form method="post" action="{% url 'ar_lot' %}" id="fElim">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="eliminer">
+    <input type="hidden" name="retour" value="{{ request.get_full_path }}">
+    <table>
+      <thead><tr>{% if admin %}<th class="noprint"><input type="checkbox" onclick="document.querySelectorAll('.ck').forEach(c=>c.checked=this.checked)" checked></th>{% endif %}<th>Cote</th><th>Titre</th><th>Dossier</th><th>Date</th><th>DUA</th><th>Sort</th><th>Taille</th><th>Empreinte SHA-256</th></tr></thead>
+      <tbody>
+      {% for d in docs %}
+        <tr>{% if admin %}<td class="noprint"><input type="checkbox" class="ck" name="ids" value="{{ d.id }}" checked></td>{% endif %}
+          <td class="m">{{ d.fiche.cote }}</td><td>{{ d.titre }}</td><td>{{ d.cat.nom|default:"" }} › {{ d.sous_cat.nom|default:d.sous_cat }}</td>
+          <td>{{ d.fiche.date_reference|date:"d/m/Y" }}</td><td>{{ d.fiche.durees.0 }} + {{ d.fiche.durees.1 }} ans</td><td>{{ d.phase.1 }}</td><td>{{ d.taille_h }}</td>
+          <td class="m" title="{{ d.fiche.sha256 }}">{{ d.fiche.sha256|truncatechars:20 }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="sig">
+      <div><b>Le service producteur</b><small>Nom, date et signature</small></div>
+      <div><b>Le responsable des archives / S&amp;E</b><small>Nom, date et signature</small></div>
+      <div><b>Visa de la direction</b><small>Nom, date et signature</small></div>
+    </div>
+
+    {% if admin %}
+    <div class="elim noprint">
+      <b>Après signature du bordereau</b> : éliminer les documents cochés. Leurs fichiers et versions seront détruits ; la trace reste au journal.
+      <p class="bar" style="margin-top:.6rem"><input type="text" name="motif" required placeholder="Référence du bordereau signé (ex. BE-2026-04)">
+      <button class="btn d" onclick="return confirm('Éliminer définitivement les documents cochés ? Action irréversible.')">Éliminer les documents cochés</button></p>
+    </div>
+    {% endif %}
+  </form>
+  {% else %}
+  <div class="vide">Aucun document n’a atteint la fin de sa durée de conservation avec un sort « destruction ».</div>
+  {% endif %}
+</div>
+</body>
+</html>

@@ -1,18 +1,435 @@
-<!DOCTYPE html>
+{% load archivage_tags %}<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi & Évaluation Élite — OPERAPLUS</title>
-    
+    <title>Archives documentaires — OPERAPLUS</title>
+
     <style>
         :root {
             --custom-primary: {{ request.user.personnel.color_fond|default:"#2563eb" }};
         }
     </style>
 
+    <!-- ===== AR-1 : design « Archives » — placé AVANT le contenu, rien ne saute au chargement ===== -->
+    <style>
+    :root{--ar-acc:var(--custom-primary,#2563eb);--ar-ink:#0f172a;--ar-txt:#334155;--ar-mute:#64748b;--ar-line:#e2e8f0;--ar-soft:#f8fafc;--ar-acc-soft:color-mix(in srgb,var(--ar-acc) 9%,#fff);--ar-acc-line:color-mix(in srgb,var(--ar-acc) 28%,#fff)}
+    /* éléments masqués tant que Tailwind n'a pas fini : pas de modale qui clignote */
+    .hidden{display:none}
+    #modal-categorie:not(.flex),#modal-nouveau:not(.flex){display:none}
+    @media (max-width:1023px){#sidebar-left.\-translate-x-full{transform:translateX(-100%)}}
+    @media (max-width:1279px){#sidebar-right.translate-x-full{transform:translateX(100%)}}
+    body.ar{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ar-txt);background:#f6f7f9!important}
+    .ar .bg-indigo-600{background-color:var(--ar-acc)!important;box-shadow:none!important}
+    .ar .bg-indigo-600:hover{filter:brightness(.92)}
+    .ar .focus\:ring-indigo-500:focus{--tw-ring-color:var(--ar-acc-line)!important}
+    .ar .focus\:border-indigo-500:focus{border-color:var(--ar-acc)!important}
+
+    /* ---------- colonne de gauche : arborescence ---------- */
+    #sidebar-left{background:#fff}
+    .ar-brand{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.9rem}
+    .ar-brand b{display:flex;align-items:center;gap:.55rem;font-size:.95rem;font-weight:800;color:var(--ar-ink)}
+    .ar-brand b i{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--ar-acc-soft);color:var(--ar-acc);font-size:.85rem}
+    .ar-brand button{width:32px;height:32px;border-radius:9px;color:var(--ar-mute)}
+    .ar-brand button:hover{background:#f1f5f9;color:var(--ar-ink)}
+    .ar-quick a{position:relative}
+    .ar-quick a.ar-on{background:var(--ar-acc-soft)!important;color:var(--ar-ink)!important}
+    .ar-n{margin-left:auto;min-width:1.4rem;text-align:center;font-size:.68rem;font-weight:700;line-height:1.25rem;padding:0 .4rem;border-radius:99px;background:#f1f5f9;color:var(--ar-mute)}
+    .ar-n:empty{display:none}
+    .ar-tree-h{display:flex;align-items:center;justify-content:space-between;padding:0 .75rem}
+    .ar-cat>button>span:first-child,.ar-sub>button>span:first-child{min-width:0;flex:1;text-align:left}
+    .ar-cat>button>span:first-child>.ar-lbl,.ar-sub>button>span:first-child>.ar-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .ar-cat>button .ar-n,.ar-sub>button .ar-n{margin:0 .4rem 0 .35rem}
+    .ar-sub>button.ar-actif{background:var(--ar-acc-soft);color:var(--ar-ink)!important;font-weight:700}
+    .ar-sub>button.ar-actif .fa-folder-open{color:var(--ar-acc)!important}
+    .ar-sub [data-ar-doc]{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block!important}
+    .ar-sub [data-ar-doc] i{margin-right:.45rem}
+    .ar-sub [data-ar-doc].ar-actif{background:var(--ar-acc-soft);color:var(--ar-ink)!important}
+    .ar-vide{padding:.3rem .75rem;font-size:.72rem;color:#94a3b8;font-style:italic}
+    .ar-tree-nores{margin:.5rem .75rem;padding:.75rem;border:1px dashed var(--ar-line);border-radius:10px;font-size:.75rem;color:var(--ar-mute);text-align:center}
+    mark.ar-m{background:#fef3c7;color:inherit;border-radius:3px;padding:0 1px}
+
+    /* ---------- barre du haut ---------- */
+    .ar-bc span{cursor:default}
+    #arBcHome{cursor:pointer}
+    #arBcCur{max-width:22rem;overflow:hidden;text-overflow:ellipsis}
+    #arBtnFiltres.ar-on{background:var(--ar-acc-soft);color:var(--ar-ink)}
+    .ar-filtres{display:none;align-items:center;flex-wrap:wrap;gap:.6rem;padding:.65rem 1.5rem;background:#fff;border-bottom:1px solid var(--ar-line);font-size:.8rem}
+    .ar-filtres.is-open{display:flex}
+    .ar-filtres label{font-weight:600;color:var(--ar-mute)}
+    .ar-filtres select{border:1px solid var(--ar-line);border-radius:10px;padding:.4rem 2rem .4rem .7rem;font-size:.8rem;background:#fff;color:var(--ar-ink)}
+    .ar-filtres button{font-weight:600;color:var(--ar-mute);padding:.4rem .6rem;border-radius:8px}
+    .ar-filtres button:hover{background:#f1f5f9;color:var(--ar-ink)}
+
+    /* états de la zone centrale */
+    body[data-ar-mode="home"] #arToolbar,body[data-ar-mode="vue"] #arToolbar{display:none!important}
+    body[data-ar-mode="home"] #arFolderHead{display:none}
+    #arVueGrille.ar-on,#arVueListe.ar-on{color:var(--ar-acc)!important;border-color:var(--ar-acc-line)!important}
+    #arVueGrille:not(.ar-on),#arVueListe:not(.ar-on){color:#94a3b8!important}
+    body[data-ar-mode="dossier"] #main-document-list.ar-grille{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important}
+    .doc-card:hover{box-shadow:0 8px 20px -10px rgba(15,23,42,.18)!important}
+
+    /* ---------- en-tête de dossier ---------- */
+    .ar-fh{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;margin-bottom:1rem;padding:1rem 1.1rem;background:#fff;border:1px solid var(--ar-line);border-radius:14px}
+    .ar-fh-ico{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:12px;background:#fffbeb;color:#d97706;font-size:1.1rem}
+    .ar-fh-txt{flex:1;min-width:12rem}
+    .ar-fh-path{display:flex;align-items:center;flex-wrap:wrap;gap:.35rem;font-size:.75rem;color:var(--ar-mute)}
+    .ar-fh-path button{font-weight:600;color:var(--ar-mute)}
+    .ar-fh-path button:hover{color:var(--ar-acc);text-decoration:underline}
+    .ar-fh-path i{font-size:.55rem;color:#cbd5e1}
+    .ar-fh h2{margin:.15rem 0 0;font-size:1.15rem;font-weight:800;color:var(--ar-ink);line-height:1.3;overflow-wrap:anywhere}
+    .ar-fh small{font-size:.78rem;color:var(--ar-mute)}
+    .ar-fh-act{display:flex;gap:.5rem;flex-wrap:wrap}
+    .ar-btn{display:inline-flex;align-items:center;gap:.45rem;height:38px;padding:0 .95rem;border-radius:10px;font-size:.8rem;font-weight:700;white-space:nowrap;cursor:pointer;border:1px solid transparent;transition:filter .15s,background .15s}
+    .ar-btn-p{background:var(--ar-acc);color:#fff}
+    .ar-btn-p:hover{filter:brightness(.92)}
+    .ar-btn-s{background:#fff;color:var(--ar-txt);border-color:var(--ar-line)}
+    .ar-btn-s:hover{background:#f8fafc;color:var(--ar-ink)}
+
+    /* ---------- accueil des archives ---------- */
+    .ar-home{display:flex;flex-direction:column;gap:1.25rem}
+    .ar-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+    .ar-intro h2{margin:0;font-size:1.35rem;font-weight:800;color:var(--ar-ink);letter-spacing:-.01em}
+    .ar-intro p{margin:.3rem 0 0;font-size:.85rem;color:var(--ar-mute);max-width:40rem;line-height:1.5}
+    .ar-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem}
+    .ar-kpi{display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;background:#fff;border:1px solid var(--ar-line);border-radius:14px}
+    .ar-kpi i{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:10px;font-size:.95rem}
+    .ar-kpi b{display:block;font-size:1.35rem;font-weight:800;color:var(--ar-ink);line-height:1.1;font-variant-numeric:tabular-nums}
+    .ar-kpi span{font-size:.75rem;color:var(--ar-mute);font-weight:600}
+    .ar-k1 i{background:var(--ar-acc-soft);color:var(--ar-acc)}
+    .ar-k2 i{background:#fffbeb;color:#d97706}
+    .ar-k3 i{background:#f1f5f9;color:#475569}
+    .ar-k4 i{background:#ecfdf5;color:#059669}
+    .ar-sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin:0 0 .65rem}
+    .ar-sec-h h3{margin:0;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ar-mute)}
+    .ar-sec-h span{font-size:.75rem;color:#94a3b8}
+    .ar-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:.85rem}
+    .ar-cc{display:flex;flex-direction:column;background:#fff;border:1px solid var(--ar-line);border-radius:14px;overflow:hidden}
+    .ar-cc-h{display:flex;gap:.75rem;padding:1rem 1rem .75rem}
+    .ar-cc-h>i{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:10px;background:#fffbeb;color:#d97706}
+    .ar-cc-h h4{margin:0;font-size:.95rem;font-weight:800;color:var(--ar-ink);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .ar-cc-h p{margin:.15rem 0 0;font-size:.74rem;color:var(--ar-mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .ar-cc-h small{display:block;margin-top:.2rem;font-size:.72rem;color:#94a3b8;font-weight:600}
+    .ar-cc-subs{display:flex;flex-direction:column;gap:.3rem;padding:0 .75rem .75rem;flex:1}
+    .ar-cc-subs:not(.is-all)>.ar-chip:nth-child(n+6 of .ar-chip){display:none}
+    .ar-chip{display:flex;align-items:center;gap:.55rem;width:100%;padding:.5rem .6rem;border-radius:9px;border:1px solid transparent;background:var(--ar-soft);font-size:.8rem;font-weight:600;color:var(--ar-txt);text-align:left;cursor:pointer;transition:border-color .15s,background .15s}
+    .ar-chip:hover{background:#fff;border-color:var(--ar-acc-line);color:var(--ar-ink)}
+    .ar-chip i{color:#94a3b8;font-size:.75rem}
+    .ar-chip span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ar-chip em{font-style:normal;font-size:.7rem;font-weight:700;color:var(--ar-mute);background:#fff;border:1px solid var(--ar-line);border-radius:99px;padding:0 .45rem;line-height:1.15rem}
+    .ar-chip::after{content:"\203A";color:#cbd5e1;font-weight:700}
+    .ar-plus{font-size:.75rem;font-weight:700;color:var(--ar-acc);padding:.35rem .6rem;text-align:left;border-radius:8px}
+    .ar-plus:hover{background:var(--ar-acc-soft)}
+    .ar-cc-f{display:flex;justify-content:space-between;align-items:center;padding:.6rem 1rem;border-top:1px solid var(--ar-line);background:#fcfcfd}
+    .ar-cc-f button{font-size:.75rem;font-weight:700;color:var(--ar-mute)}
+    .ar-cc-f button:hover{color:var(--ar-acc)}
+    .ar-cc-none{padding:.25rem .6rem .5rem;font-size:.76rem;color:#94a3b8;font-style:italic}
+    .ar-empty{padding:2.5rem 1rem;text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:14px}
+    .ar-empty i{font-size:1.8rem;color:#cbd5e1}
+    .ar-empty h4{margin:.75rem 0 .25rem;font-weight:800;color:var(--ar-ink)}
+    .ar-empty p{margin:0 auto 1rem;font-size:.82rem;color:var(--ar-mute);max-width:26rem}
+    .ar-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}
+    .ar-step{display:flex;gap:.7rem;padding:.85rem 1rem;background:#fff;border:1px solid var(--ar-line);border-radius:14px;font-size:.78rem;color:var(--ar-mute);line-height:1.45}
+    .ar-step b{display:block;color:var(--ar-ink);font-size:.82rem;margin-bottom:.1rem}
+    .ar-step>span{width:24px;height:24px;flex:none;display:grid;place-items:center;border-radius:99px;background:var(--ar-acc-soft);color:var(--ar-acc);font-weight:800;font-size:.75rem}
+
+    /* ---------- listes (récents, favoris, recherche) ---------- */
+    .ar-res{display:flex;flex-direction:column;background:#fff;border:1px solid var(--ar-line);border-radius:14px;overflow:hidden}
+    .ar-res-i{display:flex;align-items:center;gap:.8rem;width:100%;padding:.75rem 1rem;text-align:left;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .12s}
+    .ar-res-i:last-child{border-bottom:0}
+    .ar-res-i:hover{background:var(--ar-soft)}
+    .ar-res-i>i{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:9px;background:#f1f5f9;color:#64748b}
+    .ar-res-i div{flex:1;min-width:0}
+    .ar-res-i b{display:block;font-size:.85rem;font-weight:700;color:var(--ar-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ar-res-i small{display:block;font-size:.72rem;color:var(--ar-mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ar-res-i::after{content:"\203A";color:#cbd5e1;font-weight:700;font-size:1.1rem}
+    .ar-nores{grid-column:1/-1;padding:1.5rem;text-align:center;font-size:.82rem;color:var(--ar-mute);background:#fff;border:1px dashed #cbd5e1;border-radius:12px}
+
+    /* squelette de chargement */
+    .ar-sk{display:flex;flex-direction:column;gap:.6rem}
+    .ar-sk div{height:64px;border-radius:12px;background:linear-gradient(90deg,#eef1f5 0,#f6f8fa 50%,#eef1f5 100%);background-size:200% 100%;animation:arSk 1.1s linear infinite}
+    @keyframes arSk{to{background-position:-200% 0}}
+    @media (prefers-reduced-motion:reduce){.ar-sk div{animation:none}}
+
+    /* ---------- panneau de droite ---------- */
+    .ar-fav{width:34px;height:34px;border-radius:9px;color:#94a3b8;display:grid;place-items:center}
+    .ar-fav:hover:not(:disabled){background:#fffbeb;color:#d97706}
+    .ar-fav.is-on{color:#f59e0b}
+    .ar-fav:disabled{opacity:.35;cursor:not-allowed}
+    .ar-ph{padding:2.5rem 1.5rem;text-align:center;color:var(--ar-mute)}
+    .ar-ph>i{width:56px;height:56px;display:grid;place-items:center;margin:0 auto .9rem;border-radius:16px;background:#f1f5f9;color:#94a3b8;font-size:1.3rem}
+    .ar-ph b{display:block;color:var(--ar-ink);font-size:.9rem;margin-bottom:.3rem}
+    .ar-ph p{font-size:.78rem;line-height:1.5;margin:0}
+    .ar-ph ul{margin:1rem 0 0;padding:0;list-style:none;text-align:left;font-size:.76rem}
+    .ar-ph li{display:flex;gap:.5rem;padding:.4rem 0;border-top:1px dashed var(--ar-line)}
+    .ar-ph li i{color:#94a3b8;width:1rem;text-align:center;margin-top:.15rem}
+    .ar-err{padding:1rem;margin:1rem;border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;border-radius:12px;font-size:.8rem}
+
+    /* ---------- modales ---------- */
+    .ar-step-t{display:flex;align-items:center;gap:.5rem;margin:.25rem 0 -.25rem;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ar-mute)}
+    .ar-step-t span{width:20px;height:20px;display:grid;place-items:center;border-radius:99px;background:var(--ar-acc-soft);color:var(--ar-acc);font-size:.68rem}
+    .ar-step-t:not(:first-of-type){padding-top:.9rem;border-top:1px solid #f1f5f9}
+    #imageFields{position:relative}
+    #imageUpload{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+    .ar-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;min-height:120px;padding:1rem;border:2px dashed #cbd5e1;border-radius:12px;background:var(--ar-soft);text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+    .ar-drop:hover,.ar-drop.is-over{border-color:var(--ar-acc);background:var(--ar-acc-soft)}
+    #imageUpload:focus-visible+.ar-drop{outline:2px solid var(--ar-acc);outline-offset:2px}
+    .ar-drop i{font-size:1.4rem;color:#94a3b8}
+    .ar-drop b{font-size:.82rem;color:var(--ar-ink)}
+    .ar-drop small{font-size:.72rem;color:var(--ar-mute)}
+    .ar-file{display:none;align-items:center;gap:.75rem;padding:.6rem .7rem;border:1px solid var(--ar-line);border-radius:12px;background:#fff}
+    #imageFields.has-file .ar-file{display:flex}
+    #imageFields.has-file .ar-drop{display:none}
+    .ar-file-th{width:48px;height:48px;flex:none;border-radius:9px;background:#fef2f2 center/cover no-repeat;display:grid;place-items:center;color:#dc2626;font-size:1.2rem}
+    .ar-file div{flex:1;min-width:0}
+    .ar-file b{display:block;font-size:.82rem;color:var(--ar-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ar-file small{font-size:.72rem;color:var(--ar-mute)}
+    .ar-file button{font-size:.75rem;font-weight:700;color:var(--ar-mute);padding:.35rem .55rem;border-radius:8px}
+    .ar-file button:hover{background:#fef2f2;color:#b91c1c}
+    .ar-msg{margin-top:.4rem;font-size:.74rem;color:#b91c1c;display:none}
+    .ar-msg.is-on{display:block}
+    #form [name="provenance"]{border-color:#d1d5db!important;background:#f9fafb!important}
+    #form label.text-rose-600{color:#374151!important}
+    .ar-cat-tbl{max-height:46vh;overflow:auto}
+    .ar-cat-tbl thead th{position:sticky;top:0;z-index:1;background:#f1f5f9}
+    .ar-cat-tbl td small{display:block;font-size:.7rem;color:#94a3b8;font-weight:500}
+
+    /* ===== AR-3 : archivage numérique (lignes, fiche, tableau de bord, fenêtres) ===== */
+    .ar-sr{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+    .ar-lot-lnk{display:flex;align-items:center;justify-content:center;gap:.45rem;width:100%;margin-top:.5rem;padding:.4rem;border-radius:9px;font-size:.76rem;font-weight:700;color:var(--ar-mute)}
+    .ar-lot-lnk:hover{background:#f1f5f9;color:var(--ar-ink)}
+    #sidebar-right{width:100%}
+    @media (min-width:640px){#sidebar-right{width:380px!important}}
+    /* lignes de documents */
+    .ar-doc{display:flex;align-items:center;gap:.6rem;padding:.55rem .75rem .55rem .55rem;background:#fff;border:1px solid var(--ar-line);border-radius:12px;min-width:0}
+    .ar-doc.is-sel{border-color:var(--ar-acc-line);background:var(--ar-acc-soft)}
+    .ar-doc:hover{transform:none!important}
+    .ar-chk{display:grid;place-items:center;width:28px;height:28px;flex:none;border-radius:7px;cursor:pointer}
+    .ar-chk:hover{background:#f1f5f9}
+    .ar-chk input{width:16px;height:16px;accent-color:var(--ar-acc);cursor:pointer}
+    .ar-doc-main{display:flex;align-items:center;gap:.75rem;flex:1;min-width:0;text-align:left;cursor:pointer}
+    .ar-ext{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:10px;font-size:.62rem;font-weight:800;letter-spacing:.03em;background:#f1f5f9;color:#475569}
+    .ar-ext-pdf{background:#fef2f2;color:#b91c1c}.ar-ext-image{background:#ecfeff;color:#0e7490}.ar-ext-texte{background:#eff6ff;color:#1d4ed8}.ar-ext-tableur{background:#f0fdf4;color:#15803d}
+    .ar-doc-txt{min-width:0;display:flex;flex-direction:column}
+    .ar-doc-txt b{font-size:.86rem;font-weight:700;color:var(--ar-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ar-doc-txt small{font-size:.72rem;color:var(--ar-mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ar-extrait{font-style:normal;font-size:.72rem;color:#92400e;background:#fffbeb;border-radius:6px;padding:.15rem .4rem;margin-top:.2rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .ar-cote{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.7rem;color:var(--ar-txt)}
+    .ar-badges{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center}
+    .ar-doc .ar-badges{flex:none;justify-content:flex-end;max-width:45%}
+    .ar-pb,.ar-conf{display:inline-flex;align-items:center;gap:.25rem;font-size:.66rem;font-weight:700;line-height:1;padding:.3rem .5rem;border-radius:99px;white-space:nowrap;background:#f1f5f9;color:#475569}
+    .ar-pb-actif{background:#eff6ff;color:#1d4ed8}.ar-pb-intermediaire{background:#f5f3ff;color:#6d28d9}.ar-pb-definitif{background:#f0fdfa;color:#0f766e}
+    .ar-pb-a_trier{background:#fffbeb;color:#b45309}.ar-pb-a_eliminer{background:#fef2f2;color:#b91c1c}.ar-pb-gel{background:#f1f5f9;color:#334155}.ar-pb-corbeille{background:#f1f5f9;color:#64748b}
+    .ar-conf-confidentiel{background:#fff7ed;color:#c2410c}.ar-conf-restreint{background:#fef2f2;color:#991b1b}.ar-conf-alerte{background:#dc2626;color:#fff}.ar-conf-ok{background:#ecfdf5;color:#047857}
+    .ar-ico-btn{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:8px;color:#64748b}
+    .ar-ico-btn:hover{background:#f1f5f9;color:var(--ar-ink)}
+    body[data-ar-mode="dossier"] #main-document-list.ar-grille .ar-doc{flex-wrap:wrap;align-items:flex-start;position:relative;padding:.75rem}
+    body[data-ar-mode="dossier"] #main-document-list.ar-grille .ar-doc-main{flex-direction:column;align-items:flex-start;width:100%;flex-basis:100%;order:2}
+    body[data-ar-mode="dossier"] #main-document-list.ar-grille .ar-doc-txt b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    body[data-ar-mode="dossier"] #main-document-list.ar-grille .ar-badges{order:3;max-width:none;justify-content:flex-start}
+    body[data-ar-mode="dossier"] #main-document-list.ar-grille .ar-chk{position:absolute;top:.5rem;right:2.6rem}
+    body[data-ar-mode="dossier"] #main-document-list.ar-grille .ar-ico-btn{position:absolute;top:.5rem;right:.5rem}
+    .ar-sr-h{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap;font-size:.8rem;color:var(--ar-mute);padding:0 .1rem .2rem}
+    .ar-sr-h b{color:var(--ar-ink)}
+    .ar-zone-over{outline:2px dashed var(--ar-acc);outline-offset:-10px;background:var(--ar-acc-soft)}
+    /* barre de sélection */
+    .ar-lotbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;flex-wrap:wrap;gap:.35rem;margin:-.25rem 0 .75rem;padding:.45rem .6rem;background:var(--ar-ink);color:#fff;border-radius:12px;font-size:.78rem}
+    .ar-lotbar[hidden]{display:none}
+    .ar-lotbar>b{margin:0 .4rem 0 .1rem}
+    .ar-lotbar .ar-chk:hover{background:rgba(255,255,255,.1)}
+    .ar-lotbar button{display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .6rem;border-radius:8px;font-weight:600;color:#e2e8f0}
+    .ar-lotbar button:hover{background:rgba(255,255,255,.12);color:#fff}
+    .ar-lotbar .is-d{color:#fca5a5}
+    .ar-lotbar:not(.is-corbeille) .is-r,.ar-lotbar.is-corbeille [data-ar-lot]:not(.is-r){display:none}
+    .ar-lot-form{display:inline-flex;gap:.35rem;align-items:center}
+    .ar-lot-form:empty{display:none}
+    .ar-lot-form input,.ar-lot-form select{height:30px;border-radius:7px;border:0;padding:0 .5rem;font-size:.78rem;color:var(--ar-ink);min-width:12rem;max-width:18rem}
+    .ar-lot-form .is-ok{background:var(--ar-acc)!important;color:#fff!important}
+    .ar-lot-x{margin-left:auto}
+    /* fiche du document */
+    .ar-detail{padding:1rem;display:flex;flex-direction:column;gap:.9rem;font-size:.8rem}
+    .ar-detail.is-grand{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1.25rem;padding:0}
+    .ar-detail.is-grand>.ar-flash{grid-column:1/-1}
+    .ar-d-col1,.ar-d-col2{display:flex;flex-direction:column;gap:.8rem;min-width:0}
+    .ar-d-head{display:flex;gap:.7rem;align-items:flex-start}
+    .ar-d-tt{min-width:0;flex:1}
+    .ar-d-tt h3{margin:0;font-size:.98rem;font-weight:800;color:var(--ar-ink);line-height:1.3;overflow-wrap:anywhere}
+    .ar-d-tt p{margin:.2rem 0 .4rem;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+    .ar-copie{padding:.1rem .4rem;border-radius:6px;background:#f1f5f9}
+    .ar-copie:hover{background:#e2e8f0}
+    .ar-d-path{font-size:.72rem;color:var(--ar-mute)}
+    .ar-d-prev{height:210px;border:1px solid var(--ar-line);border-radius:12px;overflow:hidden;background:#f8fafc}
+    .ar-detail.is-grand .ar-d-prev{height:62vh}
+    .ar-d-prev iframe{width:100%;height:100%;border:0}
+    .ar-d-prev img{width:100%;height:100%;object-fit:contain}
+    .ar-d-noprev{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;color:#94a3b8;text-align:center;padding:1rem}
+    .ar-d-noprev i{font-size:1.8rem}
+    .ar-d-act{display:flex;gap:.4rem;flex-wrap:wrap}
+    .ar-d-act .ar-btn{height:34px;padding:0 .75rem}
+    .ar-tabs{display:flex;gap:.15rem;border-bottom:1px solid var(--ar-line);overflow-x:auto;scrollbar-width:none}
+    .ar-tabs button{flex:1 1 auto;padding:.5rem .3rem;font-size:.74rem;font-weight:700;color:var(--ar-mute);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+    .ar-tabs button.is-on{color:var(--ar-ink);border-bottom-color:var(--ar-acc)}
+    .ar-tabs em{font-style:normal;font-size:.65rem;padding:0 .35rem;border-radius:99px;background:#f1f5f9}
+    .ar-pane{display:none;flex-direction:column;gap:.7rem}
+    .ar-pane.is-on{display:flex}
+    .ar-dl{display:grid;grid-template-columns:1fr 1fr;gap:.55rem .75rem;margin:0}
+    .ar-dl>div{min-width:0}
+    .ar-dl-w{grid-column:1/-1}
+    .ar-dl dt{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8}
+    .ar-dl dd{margin:.1rem 0 0;color:var(--ar-ink);overflow-wrap:anywhere}
+    .ar-tag{display:inline-block;margin:0 .25rem .25rem 0;padding:.15rem .5rem;border-radius:99px;background:var(--ar-acc-soft);color:var(--ar-ink);font-size:.72rem;font-weight:600}
+    .ar-manque{color:#94a3b8;font-style:italic;font-size:.76rem;list-style:none}
+    .ar-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72rem;overflow-wrap:anywhere}
+    .ar-note{font-size:.74rem;color:var(--ar-mute);line-height:1.5;margin:0}
+    .ar-edit{border:1px solid var(--ar-line);border-radius:12px;background:#fcfcfd}
+    .ar-edit>summary{cursor:pointer;padding:.6rem .8rem;font-weight:700;color:var(--ar-txt);list-style:none;display:flex;gap:.5rem;align-items:center}
+    .ar-edit>summary::-webkit-details-marker{display:none}
+    .ar-edit>summary::after{content:"\203A";margin-left:auto;transition:transform .15s;color:#94a3b8;font-size:1rem}
+    .ar-edit[open]>summary::after{transform:rotate(90deg)}
+    .ar-edit>form,.ar-edit>div{padding:0 .8rem .8rem}
+    .ar-form{display:grid;grid-template-columns:1fr 1fr;gap:.55rem .6rem}
+    .ar-f-w{grid-column:1/-1}
+    .ar-form label,.ar-lbl2{display:flex;flex-direction:column;gap:.25rem;font-size:.72rem;font-weight:700;color:var(--ar-txt);min-width:0}
+    .ar-form label small,.ar-lbl2 small{font-weight:500;color:#94a3b8}
+    .ar-detail input:not([type=checkbox]):not([type=radio]):not([type=file]),.ar-detail select,.ar-detail textarea,.ar-lbl2 input,.ar-lbl2 select,.ar-lbl2 textarea,.ar-inline input,.ar-inline select,.ar-regles input,.ar-regles select,.ar-journal input,.ar-journal select{width:100%;min-width:0;border:1px solid #d1d5db;border-radius:9px;padding:.45rem .6rem;font-size:.8rem;font-weight:500;color:var(--ar-ink);background:#fff}
+    .ar-detail input:focus,.ar-detail select:focus,.ar-detail textarea:focus,.ar-lbl2 :is(input,select,textarea):focus{outline:2px solid var(--ar-acc-line);border-color:var(--ar-acc)}
+    .ar-radios{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:.35rem .8rem}
+    .ar-radios legend{font-size:.72rem;font-weight:700;color:var(--ar-txt);margin-bottom:.25rem}
+    .ar-radios label{flex-direction:row;align-items:center;font-weight:600}
+    .ar-radios small{flex-basis:100%;font-weight:500;color:#94a3b8;font-size:.7rem}
+    .ar-f-act{display:flex;justify-content:flex-end;gap:.5rem}
+    .ar-box{border:1px solid var(--ar-line);border-radius:12px;padding:.75rem .8rem;display:flex;flex-direction:column;gap:.45rem;background:#fff}
+    .ar-box h4{margin:0;font-size:.78rem;font-weight:800;color:var(--ar-ink);display:flex;gap:.45rem;align-items:center}
+    .ar-box p{margin:0}
+    .ar-danger{border-color:#fecaca;background:#fffafa}
+    .ar-inline{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+    .ar-inline input,.ar-inline select{flex:1;width:auto;min-width:8rem}
+    .ar-btn-d{background:#b91c1c;color:#fff}
+    .ar-btn-d:hover{filter:brightness(.92)}
+    .ar-lien{font-weight:700;color:var(--ar-acc);text-decoration:underline;text-underline-offset:2px}
+    .ar-ok{color:#047857}.ar-ko{color:#b91c1c}
+    .ar-flash{display:flex;gap:.5rem;align-items:flex-start;flex-wrap:wrap;padding:.55rem .75rem;border-radius:10px;font-size:.78rem;font-weight:600;line-height:1.45}
+    .ar-flash-ok{background:#ecfdf5;color:#065f46}.ar-flash-erreur{background:#fef2f2;color:#991b1b}.ar-flash-info{background:#eff6ff;color:#1e40af}.ar-flash-gel{background:#f1f5f9;color:#334155}
+    .ar-flash i{margin-top:.15rem}
+    .ar-tl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:.35rem}
+    .ar-tl li{position:relative;padding:.55rem .6rem;border-radius:10px;background:#f8fafc;border:1px solid var(--ar-line)}
+    .ar-tl li b{display:block;font-size:.76rem;color:var(--ar-ink)}
+    .ar-tl li span{font-size:.68rem;color:var(--ar-mute);line-height:1.35;display:block}
+    .ar-tl li.is-on{background:var(--ar-acc-soft);border-color:var(--ar-acc)}
+    .ar-tl li.is-on{box-shadow:inset 0 3px 0 var(--ar-acc)}
+    .ar-vlist,.ar-jlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+    .ar-vlist li{display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:1px solid #f1f5f9}
+    .ar-vlist li>div{flex:1;min-width:0}
+    .ar-vlist b{display:block;font-size:.78rem;color:var(--ar-ink)}
+    .ar-vlist small{display:block;font-size:.7rem;color:var(--ar-mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ar-vn{width:34px;height:26px;flex:none;display:grid;place-items:center;border-radius:7px;background:#f1f5f9;font-weight:800;font-size:.7rem;color:#475569}
+    .ar-vlist li.is-cur .ar-vn{background:var(--ar-acc);color:#fff}
+    .ar-jlist li{padding:.45rem 0 .45rem .8rem;border-left:2px solid var(--ar-line);margin-left:.25rem;position:relative}
+    .ar-jlist li::before{content:"";position:absolute;left:-5px;top:.75rem;width:8px;height:8px;border-radius:99px;background:#cbd5e1}
+    .ar-jlist li b{display:block;font-size:.76rem;color:var(--ar-ink)}
+    .ar-jlist li span{font-size:.7rem;color:var(--ar-mute)}
+    .ar-jlist .ar-j-elimination::before,.ar-jlist .ar-j-corbeille::before,.ar-jlist .ar-j-suppression_externe::before{background:#dc2626}
+    .ar-jlist .ar-j-creation::before,.ar-jlist .ar-j-nouvelle_version::before{background:#16a34a}
+    .ar-jlist .ar-j-integrite::before{background:#0891b2}
+    .ar-share{display:flex;flex-direction:column;gap:.3rem;padding:.6rem;border:1px solid var(--ar-line);border-radius:10px}
+    .ar-share small{font-size:.7rem;color:var(--ar-mute)}
+    .ar-share form{align-self:flex-start}
+    /* tableau de bord */
+    .ar-sk-tb div{height:150px}
+    .ar-tb{display:flex;flex-direction:column;gap:.8rem}
+    .ar-tb-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem}
+    .ar-tb-card{background:#fff;border:1px solid var(--ar-line);border-radius:14px;padding:1rem;min-width:0;display:flex;flex-direction:column;gap:.55rem}
+    .ar-tb-cycle{grid-column:span 2}
+    .ar-tb-act{grid-column:span 2}
+    .ar-tb-cycle .ar-qual{margin-top:auto;padding-top:.8rem;border-top:1px solid #f1f5f9;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.9rem;align-items:end}
+    .ar-qual .ar-btn{grid-column:1/-1;justify-self:start}
+    .ar-sec-h .ar-lien{font-size:.75rem}
+    .ar-tb-act .ar-jlist{display:grid;grid-template-columns:1fr 1fr;column-gap:1.2rem}
+    .ar-regles td{white-space:nowrap}
+    .ar-tb-card .ar-sec-h{margin:0}
+    .ar-stack{display:flex;height:16px;border-radius:99px;overflow:hidden;gap:2px;background:#f1f5f9}
+    .ar-stack button{min-width:6px;height:100%}
+    .ar-stack button:hover{filter:brightness(1.1)}
+    .ar-leg{display:flex;flex-wrap:wrap;gap:.3rem .9rem}
+    .ar-leg button{display:inline-flex;align-items:center;gap:.4rem;font-size:.76rem;color:var(--ar-txt);font-weight:600;padding:.15rem 0}
+    .ar-leg button:hover{color:var(--ar-ink);text-decoration:underline}
+    .ar-leg button.is-zero{color:#94a3b8}
+    .ar-leg i{width:10px;height:10px;border-radius:3px}
+    .ar-leg b{color:var(--ar-ink)}
+    .ar-todo{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:.4rem}
+    .ar-todo li{display:flex;flex-direction:column;padding:.5rem .6rem;border-radius:10px;background:#f8fafc;font-size:.72rem;color:var(--ar-mute)}
+    .ar-todo li b{font-size:1.1rem;color:var(--ar-ink);line-height:1.1}
+    .ar-todo li a,.ar-todo li .ar-lien{font-size:.72rem;font-weight:700;color:var(--ar-acc);align-self:flex-start;margin-top:.1rem}
+    .ar-todo li.is-rouge{background:#fef2f2}.ar-todo li.is-rouge b{color:#b91c1c}
+    .ar-todo li.is-orange{background:#fffbeb}.ar-todo li.is-orange b{color:#b45309}
+    .ar-ech{display:flex;gap:.6rem;align-items:center;text-align:left;padding:.4rem;border-radius:9px;width:100%}
+    .ar-ech:hover{background:#f8fafc}
+    .ar-ech-j{width:44px;flex:none;text-align:center;font-weight:800;font-size:.75rem;padding:.3rem 0;border-radius:8px;background:#fffbeb;color:#b45309}
+    .ar-ech b{display:block;font-size:.78rem;color:var(--ar-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ar-ech small{font-size:.7rem;color:var(--ar-mute)}
+    .ar-ech>span:last-child{min-width:0}
+    .ar-q{display:grid;grid-template-columns:1fr auto;gap:.2rem .5rem;font-size:.76rem;color:var(--ar-txt)}
+    .ar-q b{color:var(--ar-ink)}
+    .ar-q i{grid-column:1/-1;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+    .ar-q s{display:block;height:100%;background:var(--ar-acc);border-radius:99px}
+    /* fenêtres */
+    .ar-modal{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:1rem;background:rgba(15,23,42,.5)}
+    .ar-modal[hidden]{display:none}
+    .ar-modal-box{width:100%;max-width:640px;max-height:90vh;display:flex;flex-direction:column;background:#fff;border-radius:16px;box-shadow:0 20px 50px -20px rgba(15,23,42,.4)}
+    .ar-modal.is-large .ar-modal-box{max-width:1100px}
+    .ar-modal-h{display:flex;justify-content:space-between;gap:1rem;padding:1.1rem 1.25rem;border-bottom:1px solid #f1f5f9}
+    .ar-modal-h h3{margin:0;font-size:1.05rem;font-weight:800;color:var(--ar-ink)}
+    .ar-modal-h p{margin:.15rem 0 0;font-size:.76rem;color:var(--ar-mute)}
+    .ar-modal-h button{width:32px;height:32px;border-radius:8px;color:#94a3b8;flex:none}
+    .ar-modal-h button:hover{background:#f1f5f9;color:var(--ar-ink)}
+    .ar-modal-b{padding:1.1rem 1.25rem;overflow:auto;display:flex;flex-direction:column;gap:.8rem}
+    .ar-modal-b>*{flex-shrink:0}
+    .ar-modal-f{display:flex;justify-content:flex-end;gap:.5rem;padding:.9rem 1.25rem;border-top:1px solid #f1f5f9;background:#f9fafb;border-radius:0 0 16px 16px}
+    .ar-modal-f .ar-btn:disabled{opacity:.5;cursor:not-allowed}
+    .ar-g2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem .8rem}
+    .ar-lot-files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.35rem;max-height:30vh;overflow:auto}
+    .ar-lot-files li{display:flex;align-items:center;gap:.55rem;padding:.4rem .55rem;border:1px solid var(--ar-line);border-radius:10px}
+    .ar-lot-files li.is-ko{border-color:#fecaca;background:#fef2f2}
+    .ar-lot-files li>i{color:#94a3b8;width:1rem;text-align:center}
+    .ar-lot-files input{flex:1;min-width:0;border:0;border-bottom:1px dashed #cbd5e1;padding:.2rem 0;font-size:.8rem;font-weight:600;color:var(--ar-ink);background:transparent}
+    .ar-lot-files input:focus{outline:0;border-bottom-color:var(--ar-acc)}
+    .ar-lot-files small{font-size:.7rem;color:var(--ar-mute);white-space:nowrap}
+    .ar-lot-files button{width:26px;height:26px;border-radius:7px;color:#94a3b8}
+    .ar-lot-files button:hover{background:#fef2f2;color:#b91c1c}
+    .ar-prog{display:flex;align-items:center;gap:.6rem;font-size:.76rem;font-weight:700;color:var(--ar-txt)}
+    .ar-prog[hidden]{display:none}
+    .ar-prog i{flex:1;height:8px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+    .ar-prog s{display:block;height:100%;width:0;background:var(--ar-acc);transition:width .2s}
+    .ar-rtbl{overflow:auto;border:1px solid var(--ar-line);border-radius:12px}
+    .ar-rtbl table{width:100%;border-collapse:collapse;font-size:.78rem}
+    .ar-rtbl th{position:sticky;top:0;background:#f8fafc;text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ar-mute);padding:.5rem .6rem;border-bottom:1px solid var(--ar-line)}
+    .ar-rtbl td{padding:.45rem .6rem;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+    .ar-rtbl td small{color:var(--ar-mute)}
+    .ar-regles td input{width:4.2rem!important;display:inline-block}
+    .ar-regles td select{min-width:11rem}
+    .ar-r-cat td{background:#fcfcfd;font-weight:800;color:var(--ar-ink)}
+    .ar-r-cat i{color:#d97706;margin-right:.35rem}
+    .ar-journal{display:flex;flex-direction:column;gap:.7rem}
+    .ar-journal .ar-inline select,.ar-journal .ar-inline input{flex:1}
+    /* formulaire de dépôt : étape 4 */
+    .ar-opt{margin-left:.35rem;font-size:.62rem;font-weight:700;text-transform:none;letter-spacing:0;color:#94a3b8}
+    .ar-confs{border:0;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,1fr);gap:.4rem}
+    .ar-confs legend{font-size:.72rem;font-weight:700;color:#374151;margin-bottom:.35rem}
+    .ar-confs label{display:flex;gap:.5rem;align-items:flex-start;padding:.5rem .6rem;border:1px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:.72rem;color:var(--ar-mute)}
+    .ar-confs label:has(input:checked){border-color:var(--ar-acc);background:var(--ar-acc-soft)}
+    .ar-confs input{margin-top:.15rem;accent-color:var(--ar-acc)}
+    .ar-confs b{display:block;font-size:.78rem;color:var(--ar-ink)}
+    .ar-note2{margin:0;font-size:.72rem;color:var(--ar-mute);display:flex;gap:.4rem;align-items:flex-start}
+    @media (max-width:1100px){.ar-tb-grid{grid-template-columns:1fr 1fr}.ar-tb-cycle,.ar-tb-act{grid-column:1/-1}}
+    @media (max-width:760px){.ar-detail.is-grand{grid-template-columns:1fr}.ar-detail.is-grand .ar-d-prev{height:45vh}}
+    @media (max-width:640px){.ar-tb-grid{grid-template-columns:1fr}.ar-tb-cycle .ar-qual,.ar-tb-act .ar-jlist{grid-template-columns:1fr}.ar-g2,.ar-confs{grid-template-columns:1fr}.ar-doc .ar-badges{display:none}.ar-tl{grid-template-columns:1fr}.ar-lot-x{margin-left:0}}
+    @media (max-width:1100px){.ar-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:760px){.ar-steps{grid-template-columns:1fr}}
+    @media (max-width:520px){.ar-kpi{padding:.75rem}.ar-kpi b{font-size:1.15rem}.ar-fh-act{width:100%}.ar-fh-act .ar-btn{flex:1;justify-content:center}}
+    </style>
+
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <script>
         tailwind.config = {
             theme: {
@@ -28,16 +445,16 @@
         }
     </script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
         body {
             margin: 0;
             padding: 0;
-            overflow: hidden; 
+            overflow: hidden;
             background-color: #f8fafc;
         }
 
@@ -61,7 +478,6 @@
         }
         .doc-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(var(--custom-primary), 0.1), 0 8px 10px -6px rgba(var(--custom-primary), 0.1);
         }
 
         #canvas-wrapper {
@@ -71,154 +487,200 @@
             width: 100%;
             height: 100%;
             z-index: 0;
-            opacity: 0.4; 
-            pointer-events: none; 
+            opacity: 0.4;
+            pointer-events: none;
         }
     </style>
 </head>
 
-<body class="font-sans antialiased text-slate-800 bg-slate-50 flex flex-col h-screen" id="globe-3d-container">
+<body class="ar font-sans antialiased text-slate-800 bg-slate-50 flex flex-col h-screen" id="globe-3d-container" data-ar-mode="home" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
     <div id="canvas-wrapper"></div>
-    
+
     <header id="mobile-nav" class="lg:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 shadow-sm z-40 relative transition-all duration-300 ease-in-out origin-top shrink-0">
         <div class="flex items-center gap-3">
-            <button id="btn-toggle-menu" class="text-slate-500 hover:text-custom-primary p-2 -ml-2">
+            <button id="btn-toggle-menu" class="text-slate-500 hover:text-custom-primary p-2 -ml-2" aria-label="Ouvrir les dossiers">
                 <i class="fas fa-bars text-lg"></i>
             </button>
-            <h1 class="font-bold text-custom-primary text-sm tracking-wider">OPERAPLUS</h1>
+            <h1 class="font-bold text-custom-primary text-sm tracking-wider">OPERAPLUS · Archives</h1>
         </div>
-        <button class="text-slate-500 hover:text-custom-primary">
+        <button id="arBtnInfo" class="text-slate-500 hover:text-custom-primary" aria-label="Fiche du document">
             <i class="fas fa-info-circle text-lg"></i>
         </button>
     </header>
-    
+
     <div class="flex flex-1 overflow-hidden relative z-10">
-        
+
         <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity opacity-0"></div>
 
-<aside id="sidebar-left" class="fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 flex flex-col shadow-xl lg:shadow-none lg:relative transition-all duration-300">
+<aside id="sidebar-left" class="fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 flex flex-col shadow-xl lg:shadow-none lg:relative transition-all duration-300 -translate-x-full lg:translate-x-0">
     <div class="p-4 border-b border-slate-100">
+        <div class="ar-brand">
+            <b><i class="fas fa-box-archive"></i> Archives</b>
+            <button type="button" id="btn-close-menu" class="lg:hidden" aria-label="Fermer"><i class="fas fa-times"></i></button>
+        </div>
         <div class="relative mb-4">
             <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-            <input type="text" placeholder="Rechercher un document..." 
+            <input type="text" id="arTreeSearch" placeholder="Filtrer les dossiers et documents..." autocomplete="off"
                    class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition">
         </div>
         <button onclick="toggleModal()" class="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-[0.98] transition-all font-semibold text-sm">
             <i class="fas fa-plus"></i> Nouveau document
         </button>
+        <button type="button" id="arBtnLot" class="ar-lot-lnk"><i class="fas fa-layer-group"></i> Déposer plusieurs fichiers</button>
     </div>
 
     <nav class="flex-1 overflow-y-auto p-3 space-y-6 custom-scrollbar">
-        <div class="space-y-1">
-            <a href="#" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
-                <i class="fas fa-clock text-slate-400"></i> Récents
+        <div class="space-y-1 ar-quick">
+            <a href="#" id="arLnkAccueil" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors ar-on">
+                <i class="fas fa-gauge-high text-slate-400"></i> Vue d’ensemble
             </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
-                <i class="fas fa-star text-amber-400"></i> Favoris
+            <a href="#" id="arLnkRecents" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-clock text-slate-400"></i> Récents <span class="ar-n" id="arNbRec"></span>
             </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
+            <a href="#" id="arLnkFavoris" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-star text-amber-400"></i> Favoris <span class="ar-n" id="arNbFav"></span>
+            </a>
+            <a href="#" id="arLnkCorbeille" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
                 <i class="fas fa-trash text-slate-400"></i> Corbeille
             </a>
         </div>
 
-        <div class="space-y-1">
-            <h4 class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Archives</h4>
+        <div class="space-y-1 ar-quick">
+            <h4 class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gestion des archives</h4>
+            <a href="#" id="arLnkRegles" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-hourglass-half text-slate-400"></i> Règles de conservation
+            </a>
+            <a href="{% url 'ar_bordereau' %}" target="_blank" rel="noopener" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-file-signature text-slate-400"></i> Bordereau d’élimination
+            </a>
+            <a href="{% url 'ar_inventaire' %}" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-file-csv text-slate-400"></i> Inventaire complet (CSV)
+            </a>
+            {% if request.user.is_superuser or request.user.is_staff or perms.archive.administrer_archives %}
+            <a href="#" id="arLnkJournal" class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-list-check text-slate-400"></i> Journal d’audit
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="space-y-1" id="arTree">
+            <div class="ar-tree-h">
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dossiers</h4>
+                <span class="text-[10px] font-semibold text-slate-400">{{ categorie|length }}</span>
+            </div>
             {% for category in categorie %}
-            <div class="space-y-0.5">
-                <button onclick="toggleElement('cat-{{ category.id }}', this)" 
+            <div class="space-y-0.5 ar-cat" data-ar-cat-id="{{ category.id }}">
+                <button onclick="toggleElement('cat-{{ category.id }}', this)" data-ar-catbtn="{{ category.id }}" title="{{ category.nom }}"
                         class="group w-full flex items-center justify-between px-3 py-2.5 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-all text-sm font-bold">
                     <span class="flex items-center gap-3">
-                        <i class="fas fa-folder text-amber-500 group-hover:text-amber-600"></i> {{ category.nom }}
+                        <i class="fas fa-folder text-amber-500 group-hover:text-amber-600"></i> <span class="ar-lbl">{{ category.nom }}</span>
                     </span>
+                    <span class="ar-n">{{ category.sous_categories.all|length }}</span>
                     <i class="fas fa-chevron-right text-[10px] text-slate-400 group-hover:text-indigo-600 transition-transform duration-300"></i>
                 </button>
 
                 <div id="cat-{{ category.id }}" class="hidden overflow-hidden transition-all duration-300">
                     <div class="pl-4 border-l-2 border-slate-100 ml-4 space-y-1 mt-1">
-                        {% for sous_category in category.sous_categories.all %}
-                        <div>
-                           <button hx-get="{% url 'liste_archives_par_sous_cat' sous_category.id %}" 
-                                    hx-target="#main-document-list" 
+                        {% for sous_category in category.sous_categories.all %}{% with docs=sous_category.archives.all|ar_visibles:request.user %}
+                        <div class="ar-sub">
+                           <button hx-get="{% url 'liste_archives_par_sous_cat' sous_category.id %}"
+                                    hx-target="#main-document-list"
                                     hx-swap="innerHTML"
-                                    onclick="toggleElement('sub-{{ sous_category.id }}', this)" 
+                                    onclick="toggleElement('sub-{{ sous_category.id }}', this)"
+                                    data-ar-sub-id="{{ sous_category.id }}" data-ar-cat-id="{{ category.id }}"
+                                    data-ar-cat="{{ category.nom }}" data-ar-sub="{{ sous_category.nom }}"
+                                    data-ar-n="{{ docs|length }}" title="{{ sous_category.nom }}"
                                     class="w-full flex items-center justify-between px-3 py-2 text-slate-600 hover:text-indigo-600 text-[13px] rounded-lg">
                                 <span class="flex items-center gap-2">
-                                    <i class="fas fa-folder-open text-slate-400"></i> {{ sous_category.nom }}
+                                    <i class="fas fa-folder-open text-slate-400"></i> <span class="ar-lbl">{{ sous_category.nom }}</span>
                                 </span>
+                                <span class="ar-n">{{ docs|length }}</span>
                                 <i class="fas fa-chevron-right text-[8px] opacity-50 transition-transform duration-300"></i>
                             </button>
-                            
+
                             <div id="sub-{{ sous_category.id }}" class="hidden pl-8 mt-1 space-y-1">
-                                {% for archive in sous_category.archives.all %}
-                                <a href="#" 
-                                   hx-get="{% url 'detail_archive' archive.id %}" 
+                                {% for archive in docs %}
+                                <a href="#"
+                                   hx-get="{% url 'detail_archive' archive.id %}"
                                    hx-target="#sidebar-details-content"
                                    onclick="openDetailsSidebar()"
+                                   data-ar-doc="{{ archive.id }}" data-ar-titre="{{ archive.titre }}" title="{{ archive.titre }}"
+                                   data-ar-cat="{{ category.nom }}" data-ar-sub="{{ sous_category.nom }}" data-ar-cat-id="{{ category.id }}" data-ar-sub-id="{{ sous_category.id }}"
                                    class="group flex items-center gap-2 px-3 py-1.5 text-slate-500 hover:text-indigo-600 text-[12px] font-medium rounded-md hover:bg-indigo-50 transition-colors">
                                     <i class="far fa-file-alt text-slate-400 group-hover:text-indigo-500"></i> {{ archive.titre }}
                                 </a>
+                                {% empty %}
+                                <p class="ar-vide">Aucun document</p>
                                 {% endfor %}
                             </div>
-                        </div>
+                        </div>{% endwith %}
+                        {% empty %}
+                        <p class="ar-vide">Aucun sous-dossier</p>
                         {% endfor %}
                     </div>
                 </div>
             </div>
+            {% empty %}
+            <p class="ar-vide">Aucun dossier pour l’instant.</p>
             {% endfor %}
+            <p class="ar-tree-nores hidden" id="arTreeNores">Aucun dossier ni document ne correspond.</p>
         </div>
     </nav>
 
     <div class="p-4 border-t border-slate-100 bg-slate-50">
-       <button 
+       <button
     type="button"
-    onclick="toggleCategorieModal()" 
-    class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shadow-md active:scale-95">
-    <i class="fas fa-folder-open text-base"></i>
-    <span>Explorer les dossiers</span>
+    onclick="toggleCategorieModal()"
+    class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shadow-md active:scale-95 w-full justify-center">
+    <i class="fas fa-folder-plus text-base"></i>
+    <span>Gérer les dossiers</span>
 </button>
     </div>
 </aside>
 <div id="modal-categorie" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform scale-95 transition-all duration-300 flex flex-col max-h-[85vh]">
-    
+
     <div class="flex justify-between items-center p-5 border-b border-slate-100 shrink-0">
-      <h3 class="text-lg font-bold text-slate-800">Gestion des catégories</h3>
-      <button type="button" onclick="toggleCategorieModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+      <div>
+        <h3 class="text-lg font-bold text-slate-800">Gestion des dossiers</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Un dossier (catégorie) regroupe des sous-dossiers, qui contiennent les documents.</p>
+      </div>
+      <button type="button" onclick="toggleCategorieModal()" class="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Fermer">
         <i class="fas fa-times"></i>
       </button>
     </div>
 
     <div class="p-5 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-5 gap-6">
-      
+
       <form method="POST" action="/add_categorie/" id="form-categorie" class="md:col-span-2 space-y-4 border-b md:border-b-0 md:border-r border-slate-100 pb-6 md:pb-0 md:pr-6">
         {% csrf_token %}
-        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Nouvelle catégorie</h4>
-        
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Nouveau dossier</h4>
+
         <div class="w-full">
           <label class="block text-xs font-semibold text-gray-700 mb-1.5">Code <span class="text-rose-500">*</span></label>
-          <input type="text" name="code" required placeholder="Ex: RH, FIN..." class="w-full px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+          <input type="text" name="code" required maxlength="20" placeholder="Ex : RH, FIN, SUIVI..." class="w-full px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
         </div>
 
         <div class="w-full">
           <label class="block text-xs font-semibold text-gray-700 mb-1.5">Nom <span class="text-rose-500">*</span></label>
-          <input type="text" name="nom" required placeholder="Ex: Ressources Humaines..." class="w-full px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+          <input type="text" name="nom" required placeholder="Ex : Rapports trimestriels" class="w-full px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
         </div>
 
         <div class="w-full">
           <label class="block text-xs font-semibold text-gray-700 mb-1.5">Description</label>
-          <textarea name="description" rows="2" class="block w-full px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none" placeholder="Description courte..."></textarea>
+          <textarea name="description" rows="2" class="block w-full px-3 py-1.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none" placeholder="Ce que l’on range dans ce dossier..."></textarea>
         </div>
-        
+
         <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 shadow-sm transition-colors text-center">
-          Ajouter
+          <i class="fas fa-plus mr-1"></i> Créer le dossier
         </button>
       </form>
 
       <div class="md:col-span-3 flex flex-col min-h-[250px]">
-        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Catégories existantes</h4>
-        
-        <div class="border border-slate-100 rounded-xl overflow-hidden bg-slate-50/50 flex-1">
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Dossiers existants ({{ categorie|length }})</h4>
+
+        <div class="border border-slate-100 rounded-xl overflow-hidden bg-slate-50/50 flex-1 ar-cat-tbl">
           <table class="w-full text-left text-sm">
             <thead class="bg-slate-100 text-xs text-slate-600 font-semibold uppercase">
               <tr>
@@ -230,20 +692,20 @@
             <tbody class="divide-y divide-slate-100 bg-white">
               {% for category in categorie %}
               <tr class="hover:bg-slate-50/80 transition-colors">
-                <td class="px-4 py-2.5 font-medium text-slate-700">CAT-{{ category.id }}</td>
-                <td class="px-4 py-2.5 text-slate-600 truncate max-w-[120px]">{{ category.nom }}</td>
+                <td class="px-4 py-2.5 font-medium text-slate-700 whitespace-nowrap">{% if category.code %}{{ category.code }}{% else %}CAT-{{ category.id }}{% endif %}</td>
+                <td class="px-4 py-2.5 text-slate-600 max-w-[200px]"><span class="block truncate" title="{{ category.nom }}">{{ category.nom }}</span><small>{{ category.sous_categories.all|length }} sous-dossier{{ category.sous_categories.all|length|pluralize }}</small></td>
                 <td class="px-4 py-2.5 text-right whitespace-nowrap space-x-1">
                   <a href="/edit_categorie/{{ category.id }}/" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded transition-colors" title="Modifier">
                     <i class="fas fa-edit"></i>
                   </a>
-                  <a href="/delete_categorie_archive/{{ category.id }}/" onclick="return confirm('Supprimer cette catégorie ?')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded transition-colors inline-block" title="Supprimer">
+                  <a href="/delete_categorie_archive/{{ category.id }}/" onclick="return confirm('Supprimer ce dossier et tout son contenu ? Cette action est définitive.')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded transition-colors inline-block" title="Supprimer">
                     <i class="fas fa-trash-alt"></i>
                   </a>
                 </td>
               </tr>
               {% empty %}
               <tr>
-                <td colspan="3" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aucune catégorie enregistrée</td>
+                <td colspan="3" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aucun dossier enregistré</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -269,6 +731,7 @@ function toggleCategorieModal() {
         setTimeout(() => {
             modal.firstElementChild.classList.remove('scale-95', 'opacity-0');
             modal.firstElementChild.classList.add('scale-100', 'opacity-100');
+            var champ = modal.querySelector('input[name="code"]'); if (champ) champ.focus();
         }, 20);
     } else {
         // Fermer la modal
@@ -280,6 +743,7 @@ function toggleCategorieModal() {
         }, 300);
     }
 }
+document.getElementById('modal-categorie').addEventListener('click', function (e) { if (e.target === this) toggleCategorieModal(); });
 </script>
 <script>
 function toggleElement(id, btn) {
@@ -293,29 +757,28 @@ function toggleElement(id, btn) {
     }
 }
 
+/* remplacées plus bas (même nom) ; gardées sans erreur si le reste n'est pas chargé */
 function openDetailsSidebar() {
-    document.getElementById('sidebar-right').classList.remove('translate-x-full');
-    document.getElementById('overlay').classList.remove('hidden');
+    var sr = document.getElementById('sidebar-right');
+    if (sr) sr.classList.remove('translate-x-full');
 }
 
 function closeDetailsSidebar() {
-    document.getElementById('sidebar-right').classList.add('translate-x-full');
-    document.getElementById('overlay').classList.add('hidden');
+    if (typeof closeAllSidebars === 'function') return closeAllSidebars();
+    var sr = document.getElementById('sidebar-right');
+    if (sr) sr.classList.add('translate-x-full');
 }
 </script>
 
-<style>
-/* Style personnalisé pour une barre de défilement propre */
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 20px; }
-</style>
 <div id="modal-nouveau" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300">
   <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-all duration-300 flex flex-col max-h-[90vh]">
-    
+
     <div class="flex justify-between items-center p-5 border-b border-slate-100 shrink-0">
-      <h3 class="text-lg font-bold text-slate-800">Ajouter un document</h3>
-      <button type="button" onclick="toggleModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+      <div>
+        <h3 class="text-lg font-bold text-slate-800">Ajouter un document</h3>
+        <p class="text-xs text-slate-500 mt-0.5">3 étapes : où le ranger, le fichier, puis sa fiche.</p>
+      </div>
+      <button type="button" onclick="toggleModal()" class="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Fermer">
         <i class="fas fa-times"></i>
       </button>
     </div>
@@ -323,20 +786,10 @@ function closeDetailsSidebar() {
     <form method="POST" action="/add_archive/" enctype="multipart/form-data" id="form" class="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
       {% csrf_token %}
 
+      <p class="ar-step-t"><span>1</span> Où le ranger ?</p>
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Titre <span class="text-rose-500">*</span></label>
-          <input type="text" name="titre" required class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Auteur <span class="text-rose-500">*</span></label>
-          <input type="text" name="auteur" value="{{ request.user.personnel }}" required class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Catégorie <span class="text-rose-500">*</span></label>
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Dossier <span class="text-rose-500">*</span></label>
           <select name="categorie_id" id="categorie" required class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer">
             <option value="">Sélectionnez...</option>
             {% for category in categorie %}
@@ -345,8 +798,8 @@ function closeDetailsSidebar() {
           </select>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Sous-catégorie <span class="text-rose-500">*</span></label>
-          <select name="sous_categorie" id="sous_categorie" class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer">
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Sous-dossier <span class="text-rose-500">*</span></label>
+          <select name="sous_categorie" id="sous_categorie" required class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer">
             <option value="">Sélectionnez...</option>
             {% for sub in sous_categorie %}
               <option value="{{ sub.id }}">{{ sub.nom }}</option>
@@ -355,11 +808,12 @@ function closeDetailsSidebar() {
         </div>
       </div>
 
+      <p class="ar-step-t"><span>2</span> Le fichier</p>
       <div class="w-full">
-        <label for="formatSelect" class="block text-xs font-semibold text-gray-700 mb-1.5">Format Document <span class="text-rose-500">*</span></label>
+        <label for="formatSelect" class="block text-xs font-semibold text-gray-700 mb-1.5">Format du document <span class="text-rose-500">*</span></label>
         <div class="relative">
           <select name="format" id="formatSelect" onchange="toggleFields()" required class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer">
-            <option value="" disabled selected hidden>Selectionnez Le format Du document</option>
+            <option value="" disabled selected hidden>Choisi automatiquement avec le fichier</option>
             <option value="pdf">Pdf</option>
             <option value="image">Image</option>
           </select>
@@ -373,28 +827,72 @@ function closeDetailsSidebar() {
 
       <div id="imageFields" class="w-full">
         <label class="block text-xs font-semibold text-gray-700 mb-1.5">Fichier <span class="text-rose-500">*</span></label>
-        <input type="file" name="upload_file" id="imageUpload" onchange="previewImage(event)" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 file:cursor-pointer border border-gray-300 rounded-lg p-1 bg-white shadow-sm focus:outline-none">
+        <input type="file" name="upload_file" id="imageUpload" onchange="previewImage(event)" required accept=".pdf,application/pdf,image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 file:cursor-pointer border border-gray-300 rounded-lg p-1 bg-white shadow-sm focus:outline-none">
+        <label for="imageUpload" class="ar-drop" id="arDrop">
+          <i class="fas fa-cloud-arrow-up"></i>
+          <b>Glissez le fichier ici ou cliquez pour le choisir</b>
+          <small id="arDropHint">PDF ou image (JPG, PNG) · 20 Mo maximum</small>
+        </label>
+        <div class="ar-file" id="arFile">
+          <span class="ar-file-th" id="arFileTh"><i class="fas fa-file-pdf"></i></span>
+          <div><b id="arFileNom"></b><small id="arFileInfo"></small></div>
+          <button type="button" id="arFileX"><i class="fas fa-xmark"></i> Changer</button>
+        </div>
+        <p class="ar-msg" id="arFileMsg"></p>
+      </div>
+
+      <p class="ar-step-t"><span>3</span> La fiche du document</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Titre <span class="text-rose-500">*</span></label>
+          <input type="text" name="titre" required placeholder="Ex : Rapport T3 2026" class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Auteur <span class="text-rose-500">*</span></label>
+          <input type="text" name="auteur" value="{{ request.user.personnel }}" required class="w-full px-4 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+        </div>
       </div>
 
       <div class="w-full">
         <label class="block text-xs font-semibold text-gray-700 mb-1.5">Description <span class="text-rose-500">*</span></label>
-        <textarea name="description" rows="3" class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-y" placeholder="Saisissez la description ici..."></textarea>
+        <textarea name="description" rows="3" required class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-y" placeholder="De quoi parle ce document ? Période, lieu, activité concernée..."></textarea>
       </div>
 
-      <div class="w-full">
-        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Source De Financement <span class="text-rose-500">*</span></label>
-        <input type="text" name="source_financement" class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="Ex: Banque Mondiale, Budget d'État...">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5">Source de financement <span class="text-rose-500">*</span></label>
+          <input type="text" name="source_financement" required class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="Ex : Banque mondiale, budget de l'État...">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-rose-600 mb-1.5">Provenance <span class="text-rose-500">*</span></label>
+          <input type="text" name="provenance" required value="{{ operation_rapport.operation.nom }}" placeholder="Activité ou structure d’origine" class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-gray-50 border border-rose-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium">
+        </div>
       </div>
 
-      <div class="w-full">
-        <label class="block text-xs font-semibold text-rose-600 mb-1.5">Provenance <span class="text-rose-500">*</span></label>
-        <input type="text" name="provenance" value="{{ operation_rapport.operation.nom }}" class="block w-full px-4 py-2.5 text-sm text-gray-900 bg-gray-50 border border-rose-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-rose-500 transition-all font-medium">
+      <p class="ar-step-t"><span>4</span> Classement et accès <small class="ar-opt">recommandé</small></p>
+      <div class="ar-g2">
+        <label class="ar-lbl2">Type de document
+          <select name="ap_type_document"><option value="">—</option><option>Rapport</option><option>Procès-verbal</option><option>Contrat / convention</option><option>Facture / pièce comptable</option><option>Liste de présence</option><option>Photo de terrain</option><option>Correspondance</option><option>Termes de référence</option><option>Fiche de collecte</option><option>Autre</option></select></label>
+        <label class="ar-lbl2">Date du document
+          <input type="date" name="ap_date_document"></label>
+        <label class="ar-lbl2">Lieu
+          <input type="text" name="ap_lieu" placeholder="Ex : Bafoussam"></label>
+        <label class="ar-lbl2">Mots-clés
+          <input type="text" name="ap_mots_cles" placeholder="vaccination, T3 2026"></label>
       </div>
+      <input type="hidden" name="ap_langue" value="Français">
+      <fieldset class="ar-confs"><legend>Qui peut voir ce document ?</legend>
+        <label><input type="radio" name="ap_confidentialite" value="interne" checked><span><b>Interne</b>tout le personnel</span></label>
+        <label><input type="radio" name="ap_confidentialite" value="public"><span><b>Public</b>diffusable</span></label>
+        <label><input type="radio" name="ap_confidentialite" value="confidentiel"><span><b>Confidentiel</b>vous + personnes choisies</span></label>
+        <label><input type="radio" name="ap_confidentialite" value="restreint"><span><b>Restreint</b>direction seulement</span></label>
+      </fieldset>
+      <p class="ar-note2"><i class="fas fa-shield-halved"></i> À l’enregistrement, le document reçoit une cote et une empreinte numérique qui prouve qu’il n’a pas été modifié.</p>
     </form>
 
     <div class="p-5 border-t border-slate-100 flex justify-end gap-2 shrink-0 bg-gray-50 rounded-b-2xl">
       <button type="button" onclick="toggleModal()" class="px-4 py-2 bg-white border border-gray-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">Annuler</button>
-      <button type="submit" form="form" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors">Archiver</button>
+      <button type="submit" form="form" id="arBtnArchiver" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors"><i class="fas fa-box-archive mr-1"></i> Archiver</button>
     </div>
 
   </div>
@@ -403,7 +901,7 @@ function closeDetailsSidebar() {
 function toggleModal() {
     const modal = document.getElementById('modal-nouveau');
     const content = modal.querySelector('div'); // Le div blanc intérieur
-    
+
     if (modal.classList.contains('hidden')) {
         // Ouverture
         modal.classList.remove('hidden');
@@ -425,85 +923,318 @@ function toggleModal() {
 document.getElementById('modal-nouveau').addEventListener('click', function(e) {
     if (e.target === this) toggleModal();
 });
+
+/* Format : n'accepte que le bon type de fichier */
+function toggleFields() {
+    var fmt = document.getElementById('formatSelect').value;
+    var input = document.getElementById('imageUpload');
+    var hint = document.getElementById('arDropHint');
+    input.accept = fmt === 'pdf' ? '.pdf,application/pdf' : (fmt === 'image' ? 'image/*' : '.pdf,application/pdf,image/*');
+    if (hint) hint.textContent = (fmt === 'pdf' ? 'Fichier PDF' : fmt === 'image' ? 'Image JPG, PNG ou WEBP' : 'PDF ou image (JPG, PNG)') + ' · 20 Mo maximum';
+    var f = input.files && input.files[0];
+    if (f && fmt && arTypeFichier(f) !== fmt) {
+        arViderFichier();
+        arMsgFichier(fmt === 'pdf' ? 'Le fichier choisi n’est pas un PDF : choisissez un PDF.' : 'Le fichier choisi n’est pas une image : choisissez une image.');
+    }
+}
+
+function arTypeFichier(f) {
+    if (/^image\//.test(f.type)) return 'image';
+    if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) return 'pdf';
+    return '';
+}
+function arMsgFichier(t) { var m = document.getElementById('arFileMsg'); m.textContent = t || ''; m.classList.toggle('is-on', !!t); }
+function arViderFichier() {
+    var input = document.getElementById('imageUpload');
+    input.value = '';
+    document.getElementById('imageFields').classList.remove('has-file');
+    document.getElementById('arFileTh').style.backgroundImage = '';
+}
+
+/* Aperçu du fichier + remplissage automatique du format et du titre */
+function previewImage(event) {
+    var input = event.target, f = input.files && input.files[0];
+    arMsgFichier('');
+    if (!f) { arViderFichier(); return; }
+    var type = arTypeFichier(f);
+    if (!type) { arViderFichier(); arMsgFichier('Format non accepté : seuls les PDF et les images sont archivés.'); return; }
+    if (f.size > 20 * 1024 * 1024) { arViderFichier(); arMsgFichier('Fichier trop lourd (' + (f.size / 1048576).toFixed(1) + ' Mo). Maximum : 20 Mo.'); return; }
+    var fmt = document.getElementById('formatSelect');
+    if (fmt.value !== type) { fmt.value = type; toggleFields(); }
+    var th = document.getElementById('arFileTh');
+    if (type === 'image') { th.style.backgroundImage = 'url(' + URL.createObjectURL(f) + ')'; th.innerHTML = ''; th.style.background = ''; }
+    else { th.style.backgroundImage = ''; th.innerHTML = '<i class="fas fa-file-pdf"></i>'; }
+    document.getElementById('arFileNom').textContent = f.name;
+    document.getElementById('arFileInfo').textContent = (type === 'pdf' ? 'PDF' : 'Image') + ' · ' + (f.size < 1048576 ? Math.max(1, Math.round(f.size / 1024)) + ' Ko' : (f.size / 1048576).toFixed(1) + ' Mo');
+    document.getElementById('imageFields').classList.add('has-file');
+    var titre = document.querySelector('#form [name="titre"]');
+    if (titre && !titre.value.trim()) titre.value = f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+}
+
+(function () {
+    var drop = document.getElementById('arDrop'), input = document.getElementById('imageUpload');
+    ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('is-over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('is-over'); }); });
+    drop.addEventListener('drop', function (e) {
+        if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+        try { input.files = e.dataTransfer.files; } catch (err) { return; }
+        previewImage({ target: input });
+    });
+    document.getElementById('arFileX').addEventListener('click', function () { arViderFichier(); input.click(); });
+    /* un seul envoi, même si l'on clique deux fois */
+    document.getElementById('form').addEventListener('submit', function () {
+        var b = document.getElementById('arBtnArchiver');
+        b.disabled = true; b.style.opacity = '.7'; b.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Archivage…';
+    });
+})();
 </script>
+<!-- ===== Dépôt de plusieurs fichiers ===== -->
+<div id="arModalLot" class="ar-modal" hidden>
+  <div class="ar-modal-box" role="dialog" aria-modal="true" aria-labelledby="arLotT">
+    <div class="ar-modal-h">
+      <div><h3 id="arLotT">Déposer plusieurs fichiers</h3><p>Chaque fichier devient un document avec sa propre cote et son empreinte.</p></div>
+      <button type="button" data-ar-close aria-label="Fermer"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="arLotDepot" class="ar-modal-b" novalidate>
+      <label class="ar-lbl2">Ranger dans le sous-dossier *
+        <select name="sous_categorie" id="arLotSous" required>
+          <option value="">Choisissez…</option>
+          {% for category in categorie %}<optgroup label="{{ category.nom }}">{% for sous_category in category.sous_categories.all %}<option value="{{ sous_category.id }}">{{ sous_category.nom }}</option>{% endfor %}</optgroup>{% endfor %}
+        </select></label>
+      <input type="file" id="arLotFiles" multiple class="ar-sr">
+      <label for="arLotFiles" class="ar-drop" id="arLotDrop"><i class="fas fa-cloud-arrow-up"></i><b>Glissez vos fichiers ici ou cliquez pour les choisir</b><small>PDF, images, Word, Excel · 50 Mo maximum par fichier</small></label>
+      <ul class="ar-lot-files" id="arLotListe"></ul>
+      <details class="ar-edit" open>
+        <summary><i class="fas fa-pen"></i> Informations communes à tous les fichiers</summary>
+        <div class="ar-g2" style="margin-top:.6rem">
+          <label class="ar-lbl2">Type de document<select name="ap_type_document"><option value="">—</option><option>Rapport</option><option>Procès-verbal</option><option>Contrat / convention</option><option>Facture / pièce comptable</option><option>Liste de présence</option><option>Photo de terrain</option><option>Correspondance</option><option>Termes de référence</option><option>Fiche de collecte</option><option>Autre</option></select></label>
+          <label class="ar-lbl2">Date des documents<input type="date" name="ap_date_document"></label>
+          <label class="ar-lbl2">Source de financement<input name="source_financement" placeholder="Ex : Banque mondiale"></label>
+          <label class="ar-lbl2">Provenance<input name="provenance" value="{{ operation_rapport.operation.nom }}" placeholder="Activité d’origine"></label>
+          <label class="ar-lbl2">Lieu<input name="ap_lieu" placeholder="Ex : Bafoussam"></label>
+          <label class="ar-lbl2">Mots-clés<input name="ap_mots_cles" placeholder="séparés par des virgules"></label>
+          <label class="ar-lbl2" style="grid-column:1/-1">Description<textarea name="description" rows="2" placeholder="Contexte commun (période, activité…)"></textarea></label>
+          <label class="ar-lbl2">Confidentialité<select name="ap_confidentialite"><option value="interne">Interne — tout le personnel</option><option value="public">Public</option><option value="confidentiel">Confidentiel</option><option value="restreint">Restreint</option></select></label>
+          <input type="hidden" name="ap_langue" value="Français">
+        </div>
+      </details>
+      <div class="ar-prog" id="arLotProg" hidden><i><s id="arLotBarre"></s></i><span id="arLotPct">0 %</span></div>
+      <p class="ar-msg" id="arLotMsg"></p>
+    </form>
+    <div class="ar-modal-f">
+      <button type="button" class="ar-btn ar-btn-s" data-ar-close>Annuler</button>
+      <button type="button" class="ar-btn ar-btn-p" id="arLotGo" disabled><i class="fas fa-box-archive"></i> <span>Archiver</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Fenêtre générique (règles, journal, document en grand) ===== -->
+<div id="arModalX" class="ar-modal" hidden>
+  <div class="ar-modal-box" role="dialog" aria-modal="true" aria-labelledby="arMxT">
+    <div class="ar-modal-h"><div><h3 id="arMxT"></h3><p id="arMxS"></p></div><button type="button" data-ar-close aria-label="Fermer"><i class="fas fa-times"></i></button></div>
+    <div class="ar-modal-b" id="arMxB"></div>
+  </div>
+</div>
         <main class="flex-1 flex flex-col overflow-hidden min-w-0 bg-transparent relative z-10 w-full">
             <header class="bg-white/70 backdrop-blur-md px-4 sm:px-6 py-4 border-b border-slate-200 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shrink-0 z-10">
                 <div class="flex items-center gap-4 w-full flex-1 min-w-0">
                     <div class="relative w-full max-w-full lg:max-w-md">
                         <i class="fas fa-search absolute left-3.5 top-2.5 text-slate-400 text-sm"></i>
-                        <input type="text" placeholder="Rechercher (OCR, nom)..." class="w-full pl-10 pr-4 py-2 bg-white/60 border border-slate-200 lg:border-transparent rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-custom-primary/20 focus:border-custom-primary transition-all outline-none backdrop-blur-sm">
+                        <input type="text" id="arGlobalSearch" placeholder="Rechercher dans toutes les archives..." autocomplete="off" class="w-full pl-10 pr-4 py-2 bg-white/60 border border-slate-200 lg:border-transparent rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-custom-primary/20 focus:border-custom-primary transition-all outline-none backdrop-blur-sm">
                     </div>
-                    <div class="hidden xl:flex items-center text-sm text-slate-500 whitespace-nowrap">
-                        <span class="hover:text-custom-primary cursor-pointer">Accueil</span>
+                    <div class="hidden xl:flex items-center text-sm text-slate-500 whitespace-nowrap ar-bc">
+                        <span class="hover:text-custom-primary cursor-pointer" id="arBcHome">Archives</span>
                         <i class="fas fa-chevron-right text-[10px] mx-2 text-slate-300"></i>
-                        <span class="font-medium text-slate-800">Partenariats</span>
+                        <span class="font-medium text-slate-800" id="arBcCur">Tous les dossiers</span>
                     </div>
                 </div>
 
                 <div class="flex items-center justify-between w-full lg:w-auto gap-3 shrink-0">
-                    <button class="text-sm font-medium text-slate-600 hover:text-custom-primary flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 transition">
+                    <button id="arBtnFiltres" class="text-sm font-medium text-slate-600 hover:text-custom-primary flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 transition">
                         <i class="fas fa-sliders-h"></i> Filtres
                     </button>
-                    <select class="text-sm border border-slate-200 rounded-xl text-slate-600 focus:ring-custom-primary/20 focus:border-custom-primary bg-white py-2 pl-3 pr-8 outline-none cursor-pointer">
+                    <select id="arTri" class="text-sm border border-slate-200 rounded-xl text-slate-600 focus:ring-custom-primary/20 focus:border-custom-primary bg-white py-2 pl-3 pr-8 outline-none cursor-pointer" aria-label="Trier">
                         <option>Récents</option>
                         <option>Nom (A-Z)</option>
                     </select>
                 </div>
             </header>
+            <div class="ar-filtres" id="arFiltres">
+                <label for="arFiltreCat"><i class="fas fa-folder mr-1"></i> Dossier</label>
+                <select id="arFiltreCat">
+                    <option value="">Tous les dossiers</option>
+                    {% for category in categorie %}<option value="{{ category.id }}">{{ category.nom }}</option>{% endfor %}
+                </select>
+                <select id="arFiltrePhase" aria-label="Phase"><option value="">Toutes les phases</option><option value="actif">Actif</option><option value="intermediaire">Intermédiaire</option><option value="definitif">Définitif</option><option value="a_trier">À trier</option><option value="a_eliminer">À éliminer</option><option value="gel">Gel juridique</option></select>
+                <select id="arFiltreConf" aria-label="Confidentialité"><option value="">Toute confidentialité</option><option value="public">Public</option><option value="interne">Interne</option><option value="confidentiel">Confidentiel</option><option value="restreint">Restreint</option></select>
+                <select id="arFiltreFormat" aria-label="Format"><option value="">Tous formats</option><option value="pdf">PDF</option><option value="image">Image</option><option value="texte">Texte</option><option value="tableur">Tableur</option></select>
+                <input id="arFiltreAnnee" type="number" min="1990" max="2100" placeholder="Année" aria-label="Année">
+                <select id="arFiltreTri" aria-label="Tri"><option value="">Plus récents</option><option value="titre">Titre A-Z</option><option value="cote">Cote</option><option value="echeance">Prochaine échéance</option></select>
+                <button type="button" id="arFiltreX"><i class="fas fa-rotate-left mr-1"></i> Effacer</button>
+            </div>
 
            <div class="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar relative z-10">
-    <div class="flex justify-between items-center mb-6 gap-4">
+    <div class="ar-fh" id="arFolderHead">
+        <span class="ar-fh-ico" id="arFhIco"><i class="fas fa-folder-open"></i></span>
+        <div class="ar-fh-txt">
+            <div class="ar-fh-path"><button type="button" data-ar-home>Archives</button><i class="fas fa-chevron-right"></i><span id="arFhCat"></span></div>
+            <h2 id="arFhTitre"></h2>
+            <small id="arFhInfo"></small>
+        </div>
+        <div class="ar-fh-act">
+            <button type="button" class="ar-btn ar-btn-s" data-ar-home><i class="fas fa-arrow-left"></i> Tous les dossiers</button>
+            <a class="ar-btn ar-btn-s" id="arInvIci" href="#" title="Inventaire CSV de ce sous-dossier"><i class="fas fa-file-csv"></i> Inventaire</a>
+            <button type="button" class="ar-btn ar-btn-s" id="arLotIci"><i class="fas fa-layer-group"></i> Plusieurs fichiers</button>
+            <button type="button" class="ar-btn ar-btn-p" id="arAjoutIci"><i class="fas fa-plus"></i> Ajouter ici</button>
+        </div>
+    </div>
+
+    <div class="flex justify-between items-center mb-6 gap-4" id="arToolbar">
         <div class="relative flex-1 max-w-md">
             <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-            <input type="text" 
-                   placeholder="Rechercher dans ce dossier..." 
+            <input type="text" id="arFolderSearch" autocomplete="off"
+                   placeholder="Rechercher dans ce dossier..."
                    class="w-full pl-9 pr-4 py-2 bg-white/80 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-custom-primary/20 focus:border-custom-primary transition-all outline-none">
         </div>
 
         <div class="flex gap-1 shrink-0">
-            <button class="p-2 text-slate-400 hover:text-slate-700 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 transition">
+            <button id="arVueGrille" title="Vue en grille" class="p-2 text-slate-400 hover:text-slate-700 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 transition">
                 <i class="fas fa-th-large"></i>
             </button>
-            <button class="p-2 text-custom-primary bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200">
+            <button id="arVueListe" title="Vue en liste" class="p-2 text-custom-primary bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 ar-on">
                 <i class="fas fa-list"></i>
             </button>
         </div>
     </div>
 
+    <div class="ar-lotbar" id="arLotBar" hidden>
+        <label class="ar-chk"><input type="checkbox" id="arSelTout" title="Tout sélectionner"></label>
+        <b id="arSelN">0 sélectionné</b>
+        <button type="button" data-ar-lot="deplacer"><i class="fas fa-folder-tree"></i> Déplacer</button>
+        <button type="button" data-ar-lot="mots_cles"><i class="fas fa-tags"></i> Mots-clés</button>
+        <button type="button" data-ar-lot="confidentialite"><i class="fas fa-lock"></i> Confidentialité</button>
+        <button type="button" data-ar-lot="zip"><i class="fas fa-file-zipper"></i> ZIP</button>
+        <button type="button" data-ar-lot="csv"><i class="fas fa-file-csv"></i> Inventaire</button>
+        <button type="button" data-ar-lot="corbeille" class="is-d"><i class="fas fa-trash"></i> Corbeille</button>
+        <button type="button" data-ar-lot="restaurer" class="is-r"><i class="fas fa-rotate-left"></i> Restaurer</button>
+        <span class="ar-lot-form" id="arLotForm"></span>
+        <button type="button" class="ar-lot-x" id="arSelX" title="Annuler la sélection"><i class="fas fa-xmark"></i></button>
+    </div>
+
     <div class="grid grid-cols-1 gap-3" id="main-document-list">
-        <div class="flex flex-col items-center justify-center py-24 text-center animate-in fade-in duration-700">
-            <div class="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
-                <i class="fas fa-folder-open text-3xl text-indigo-300"></i>
+        <div class="ar-home">
+            <div class="ar-intro">
+                <div>
+                    <h2>Archives documentaires</h2>
+                    <p>Rangez et retrouvez les preuves de vos projets : rapports, PV de réunion, contrats, listes de présence, photos de terrain.</p>
+                </div>
+                <button type="button" class="ar-btn ar-btn-p" onclick="toggleModal()"><i class="fas fa-plus"></i> Nouveau document</button>
             </div>
-            <h3 class="text-lg font-bold text-slate-800 mb-2">Accédez à vos documents</h3>
-            <p class="text-slate-500 text-sm max-w-xs mb-8">
-                Sélectionnez une catégorie ou une sous-catégorie dans le menu de gauche pour afficher et gérer vos archives.
-            </p>
-          <button 
-    type="button"
-    onclick="toggleCategorieModal()" 
-    class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition shadow-md active:scale-95">
-    <i class="fas fa-folder-open text-base"></i>
-    <span>Explorer les dossiers</span>
-</button>
+
+            <div class="ar-kpis">
+                <div class="ar-kpi ar-k1"><i class="fas fa-file-lines"></i><div><b id="arKDocs">0</b><span>documents</span></div></div>
+                <div class="ar-kpi ar-k2"><i class="fas fa-folder"></i><div><b>{{ categorie|length }}</b><span>dossiers</span></div></div>
+                <div class="ar-kpi ar-k3"><i class="fas fa-folder-tree"></i><div><b id="arKSubs">0</b><span>sous-dossiers</span></div></div>
+                <div class="ar-kpi ar-k4"><i class="fas fa-clock-rotate-left"></i><div><b id="arKRec">0</b><span>consultés récemment</span></div></div>
+            </div>
+
+            <section id="arTableau" hx-get="{% url 'ar_tableau' %}" hx-trigger="load" hx-swap="innerHTML">
+                <div class="ar-sk ar-sk-tb"><div></div><div></div><div></div></div>
+            </section>
+
+            <section id="arHomeRecents" class="hidden">
+                <div class="ar-sec-h"><h3>Reprendre où vous en étiez</h3><span>vos derniers documents ouverts</span></div>
+                <div class="ar-res" id="arHomeRecList"></div>
+            </section>
+
+            <section>
+                <div class="ar-sec-h"><h3>Parcourir les dossiers</h3><span>cliquez sur un sous-dossier pour voir ses documents</span></div>
+                <div class="ar-cats">
+                    {% for category in categorie %}
+                    <article class="ar-cc">
+                        <div class="ar-cc-h">
+                            <i class="fas fa-folder"></i>
+                            <div style="min-width:0">
+                                <h4 title="{{ category.nom }}">{{ category.nom }}</h4>
+                                {% if category.description %}<p>{{ category.description }}</p>{% endif %}
+                                <small>{{ category.sous_categories.all|length }} sous-dossier{{ category.sous_categories.all|length|pluralize }} · <span data-ar-nbdoc-cat="{{ category.id }}">0 document</span></small>
+                            </div>
+                        </div>
+                        <div class="ar-cc-subs">
+                            {% for sous_category in category.sous_categories.all %}{% with docs=sous_category.archives.all|ar_visibles:request.user %}
+                            <button type="button" class="ar-chip"
+                                    hx-get="{% url 'liste_archives_par_sous_cat' sous_category.id %}" hx-target="#main-document-list" hx-swap="innerHTML"
+                                    data-ar-sub-id="{{ sous_category.id }}" data-ar-cat-id="{{ category.id }}"
+                                    data-ar-cat="{{ category.nom }}" data-ar-sub="{{ sous_category.nom }}" data-ar-n="{{ docs|length }}"
+                                    title="{{ sous_category.nom }}">
+                                <i class="fas fa-folder-open"></i><span>{{ sous_category.nom }}</span><em>{{ docs|length }}</em>
+                            </button>{% endwith %}
+                            {% empty %}
+                            <p class="ar-cc-none">Aucun sous-dossier pour l’instant.</p>
+                            {% endfor %}
+                        </div>
+                        <div class="ar-cc-f">
+                            <button type="button" data-ar-add-cat="{{ category.id }}"><i class="fas fa-plus mr-1"></i> Ajouter un document</button>
+                        </div>
+                    </article>
+                    {% empty %}
+                    <div class="ar-empty" style="grid-column:1/-1">
+                        <i class="fas fa-box-open"></i>
+                        <h4>Aucun dossier pour l’instant</h4>
+                        <p>Commencez par créer un dossier (ex. « Rapports », « Contrats », « Photos de terrain »), puis ajoutez vos documents.</p>
+                        <button type="button" class="ar-btn ar-btn-p" onclick="toggleCategorieModal()"><i class="fas fa-folder-plus"></i> Créer un dossier</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section>
+                <div class="ar-sec-h"><h3>Bien archiver en 3 gestes</h3></div>
+                <div class="ar-steps">
+                    <div class="ar-step"><span>1</span><div><b>Un dossier par type de preuve</b>Rapports, PV, contrats, photos… chacun à sa place.</div></div>
+                    <div class="ar-step"><span>2</span><div><b>Un titre qui parle</b>Type + période + lieu : « PV réunion T3 2026 – Bafoussam ».</div></div>
+                    <div class="ar-step"><span>3</span><div><b>Une provenance claire</b>L’activité d’origine permet de relier la preuve au résultat.</div></div>
+                </div>
+            </section>
         </div>
     </div>
+    <script>
+    /* chiffres de l'accueil calculés tout de suite (pas de « 0 » qui change ensuite) */
+    (function () {
+        var d = document.querySelectorAll('#sidebar-left [data-ar-doc]'), per = {};
+        d.forEach(function (a) { per[a.dataset.arCatId] = (per[a.dataset.arCatId] || 0) + 1; });
+        document.getElementById('arKDocs').textContent = d.length;
+        document.getElementById('arKSubs').textContent = document.querySelectorAll('#sidebar-left button[data-ar-sub-id]').length;
+        document.querySelectorAll('[data-ar-nbdoc-cat]').forEach(function (e) { var v = per[e.dataset.arNbdocCat] || 0; e.textContent = v + ' document' + (v > 1 ? 's' : ''); });
+        try { var r = JSON.parse(localStorage.getItem('ar-recents-{{ request.user.personnel.id|default:"0" }}')) || []; document.getElementById('arKRec').textContent = r.length; } catch (e) {}
+    })();
+    </script>
 </div>
         </main>
 
         <aside id="sidebar-right" class="fixed inset-y-0 right-0 z-50 w-full sm:w-80 bg-white/95 backdrop-blur-md border-l border-slate-200 flex flex-col shadow-[-4px_0_24px_-10px_rgba(0,0,0,0.05)] transform translate-x-full xl:relative xl:translate-x-0 transition-transform duration-300 shrink-0">
-    
+
     <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Détails de l'archive</h3>
-        <button id="btn-close-details" onclick="closeDetailsSidebar()" class="text-slate-400 hover:text-slate-700 transition p-2">
-            <i class="fas fa-times text-lg"></i>
-        </button>
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Fiche du document</h3>
+        <div class="flex items-center gap-1">
+            <button type="button" id="arFav" class="ar-fav" disabled title="Ajouter aux favoris" aria-label="Ajouter aux favoris"><i class="far fa-star"></i></button>
+            <button id="btn-close-details" onclick="closeDetailsSidebar()" class="text-slate-400 hover:text-slate-700 transition p-2 xl:hidden" aria-label="Fermer">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
     </div>
 
     <div id="sidebar-details-content" class="flex-1 overflow-y-auto custom-scrollbar">
-        <div class="flex flex-col items-center justify-center h-64 text-slate-400">
-            <i class="fas fa-file-invoice text-4xl mb-3 opacity-30"></i>
-            <p class="text-xs italic">Sélectionnez un document</p>
+        <div class="ar-ph">
+            <i class="fas fa-file-invoice"></i>
+            <b>Aucun document sélectionné</b>
+            <p>Cliquez sur un document pour afficher sa fiche ici.</p>
+            <ul>
+                <li><i class="fas fa-user"></i><span>Auteur et date d’archivage</span></li>
+                <li><i class="fas fa-hand-holding-dollar"></i><span>Source de financement</span></li>
+                <li><i class="fas fa-diagram-project"></i><span>Provenance (activité d’origine)</span></li>
+                <li><i class="fas fa-eye"></i><span>Aperçu et téléchargement du fichier</span></li>
+            </ul>
         </div>
     </div>
 </aside>
@@ -519,19 +1250,21 @@ document.getElementById('modal-nouveau').addEventListener('click', function(e) {
         document.getElementById('btn-toggle-menu').addEventListener('click', () => {
             sidebarLeft.classList.remove('-translate-x-full');
             showOverlay();
-            
+
             // Rétractation de la barre de navigation pour éviter les chevauchements
             mobileNav.classList.add('-translate-y-full', 'h-0', 'opacity-0', 'border-transparent');
             mobileNav.classList.remove('p-4');
         });
 
-        document.getElementById('btn-close-menu').addEventListener('click', closeAllSidebars);
-        
+        var btnCloseMenu = document.getElementById('btn-close-menu');
+        if (btnCloseMenu) btnCloseMenu.addEventListener('click', closeAllSidebars);
+
         // Ouvrir Détails Archive
         function openDetailsSidebar() {
             sidebarRight.classList.remove('translate-x-full');
+            if (window.innerWidth >= 1280) return; // grand écran : le panneau est déjà visible, pas de voile
             showOverlay();
-            
+
             // Rétractation optionnelle de la navbar si on ouvre le panneau de droite sur mobile
             if (window.innerWidth < 1024) {
                 mobileNav.classList.add('-translate-y-full', 'h-0', 'opacity-0', 'border-transparent');
@@ -540,7 +1273,8 @@ document.getElementById('modal-nouveau').addEventListener('click', function(e) {
         }
 
         document.getElementById('btn-close-details').addEventListener('click', closeAllSidebars);
-        
+        document.getElementById('arBtnInfo').addEventListener('click', openDetailsSidebar);
+
         // Clic sur l'overlay sombre
         overlay.addEventListener('click', closeAllSidebars);
 
@@ -552,7 +1286,7 @@ document.getElementById('modal-nouveau').addEventListener('click', function(e) {
         function closeAllSidebars() {
             sidebarLeft.classList.add('-translate-x-full');
             sidebarRight.classList.add('translate-x-full');
-            
+
             overlay.classList.add('opacity-0');
             setTimeout(() => overlay.classList.add('hidden'), 300);
 
@@ -569,28 +1303,38 @@ document.getElementById('modal-nouveau').addEventListener('click', function(e) {
                 mobileNav.classList.add('p-4');
             }
         });
+
+        // Échap ferme ce qui est ouvert
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (!document.getElementById('modal-nouveau').classList.contains('hidden')) return toggleModal();
+            if (!document.getElementById('modal-categorie').classList.contains('hidden')) return toggleCategorieModal();
+            closeAllSidebars();
+        });
     </script>
 
+    <!-- Globe 3D désactivé : effet décoratif lourd, inutile pour l'archivage.
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    -->
 
     <script>
         (function() {
             function initGlobe() {
                 const wrapper = document.getElementById('canvas-wrapper');
-                if (!wrapper || typeof THREE === 'undefined') return; 
+                if (!wrapper || typeof THREE === 'undefined') return;
 
                 const rootStyle = getComputedStyle(document.documentElement);
                 const cssColorStr = rootStyle.getPropertyValue('--custom-primary').trim() || '#2563eb';
-                
+
                 const highlightColor = new THREE.Color(cssColorStr);
-                const baseLandColor = new THREE.Color('#94a3b8'); 
+                const baseLandColor = new THREE.Color('#94a3b8');
 
                 let scene, camera, renderer, globeGroup, pointsMesh;
                 let time = 0;
-                
+
                 scene = new THREE.Scene();
                 camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 1, 1000);
-                camera.position.z = 250; 
+                camera.position.z = 250;
 
                 renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
                 renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
@@ -603,11 +1347,10 @@ document.getElementById('modal-nouveau').addEventListener('click', function(e) {
                 });
 
                 globeGroup = new THREE.Group();
-                // Ajustement dynamique du globe en fonction de la taille d'écran
-                globeGroup.position.x = window.innerWidth < 1024 ? 0 : 40; 
+                globeGroup.position.x = window.innerWidth < 1024 ? 0 : 40;
                 scene.add(globeGroup);
 
-                const radius = window.innerWidth < 640 ? 55 : 75; // Globe plus petit sur mobile
+                const radius = window.innerWidth < 640 ? 55 : 75;
                 const dotCount = 3000;
                 const positions = [], colors = [], directions = [];
 
@@ -620,18 +1363,18 @@ document.getElementById('modal-nouveau').addEventListener('click', function(e) {
 
                     const lat = (phi * 180 / Math.PI) - 90;
                     const lon = (theta * 180 / Math.PI) % 360 - 180;
-                    
-                    const isLand = (lon > -22 && lon < 52 && lat > -35 && lat < 70) || 
-                                   (lon >= 52 && lon < 145 && lat > -12 && lat < 75) || 
+
+                    const isLand = (lon > -22 && lon < 52 && lat > -35 && lat < 70) ||
+                                   (lon >= 52 && lon < 145 && lat > -12 && lat < 75) ||
                                    (lon > -120 && lon < -34 && lat > -55 && lat < 18);
 
                     if (isLand) {
                         positions.push(x, y, z);
                         const norm = Math.sqrt(x*x + y*y + z*z);
                         directions.push(x/norm, y/norm, z/norm);
-                        
+
                         const isTargetZone = (lon > -12 && lon < 45 && lat > -30 && lat < 35);
-                        
+
                         if (isTargetZone) {
                             colors.push(highlightColor.r, highlightColor.g, highlightColor.b);
                         } else {
@@ -646,15 +1389,15 @@ document.getElementById('modal-nouveau').addEventListener('click', function(e) {
                 dotGeometry.setAttribute('originalPosition', new THREE.Float32BufferAttribute(positions, 3));
                 dotGeometry.setAttribute('direction', new THREE.Float32BufferAttribute(directions, 3));
 
-                pointsMesh = new THREE.Points(dotGeometry, new THREE.PointsMaterial({ 
-                    size: 1.8, vertexColors: true, transparent: true, opacity: 0.8 
+                pointsMesh = new THREE.Points(dotGeometry, new THREE.PointsMaterial({
+                    size: 1.8, vertexColors: true, transparent: true, opacity: 0.8
                 }));
                 globeGroup.add(pointsMesh);
 
                 function animate() {
                     requestAnimationFrame(animate);
                     time += 0.01;
-                    const progress = (Math.sin(time * 0.5) + 1) / 2; 
+                    const progress = (Math.sin(time * 0.5) + 1) / 2;
                     const explosionForce = progress * 60;
 
                     const pos = pointsMesh.geometry.attributes.position;
@@ -677,7 +1420,7 @@ document.getElementById('modal-nouveau').addEventListener('click', function(e) {
         })();
     </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- jQuery déjà chargé dans <head> : second chargement retiré (il effaçait les écouteurs) -->
 <script type="text/javascript">
 // custom.js
 
@@ -701,14 +1444,460 @@ $(document).ready(function() {
             text: ind.nom  // Remplacez 'champ1' par le nom du champ que vous souhaitez afficher
           }));
         });
+        if (!data.length) {
+          selectInformations.append($('<option>', { value: '', text: 'Aucun sous-dossier dans ce dossier' }));
+        }
+        selectInformations.prop('disabled', false).trigger('ar:charge');
       },
       error: function(xhr, status, error) {
         console.error('Une erreur s\'est produite lors de la requête AJAX :', status, error);
       }
     });
   });
+  /* tant qu'aucun dossier n'est choisi, le sous-dossier attend */
+  if (!$('#categorie').val()) {
+    $('#sous_categorie').prop('disabled', true).find('option:first').text('Choisissez d’abord le dossier');
+  }
 });
 
+</script>
+
+<script>
+/* ===== AR-2 : navigation, recherche, sélection, dépôt multiple, archivage numérique ===== */
+(function () {
+    var UID = '{{ request.user.personnel.id|default:"0" }}';
+    var K_REC = 'ar-recents-' + UID, K_FAV = 'ar-favoris-' + UID, K_VUE = 'ar-vue-' + UID;
+    var URL = {
+        liste: '{% url "ar_liste" 0 %}', detail: '{% url "ar_detail" 0 %}', recherche: '{% url "ar_recherche" %}',
+        corbeille: '{% url "ar_corbeille" %}', regles: '{% url "ar_regles" %}', journal: '{% url "ar_journal" %}',
+        lot: '{% url "ar_lot" %}', zip: '{% url "ar_lot_zip" %}', inventaire: '{% url "ar_inventaire" %}', deposer: '{% url "ar_deposer" %}'
+    };
+    function u(modele, id) { return modele.replace('/0/', '/' + id + '/'); }
+    function csrf() { var i = document.querySelector('[name=csrfmiddlewaretoken]'); return i ? i.value : ''; }
+    function lire(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch (e) { return []; } }
+    function ecrire(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    function norm(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+    function toast(t, niveau) {
+        if (window.Swal) Swal.fire({ toast: true, position: 'top-end', icon: niveau === 'erreur' ? 'error' : 'success', title: t, showConfirmButton: false, timer: 3500, timerProgressBar: true, background: '#1f2937', color: '#fff' });
+    }
+
+    var body = document.body;
+    var list = document.getElementById('main-document-list');
+    var HOME = list.innerHTML;
+    var tree = document.getElementById('arTree');
+    var DOCS = [].map.call(tree.querySelectorAll('[data-ar-doc]'), function (a) {
+        return { id: a.dataset.arDoc, titre: a.dataset.arTitre || a.textContent.trim(), cat: a.dataset.arCat, sub: a.dataset.arSub, catId: a.dataset.arCatId, subId: a.dataset.arSubId };
+    });
+    var PAR_ID = {}; DOCS.forEach(function (d) { PAR_ID[d.id] = d; });
+    var courant = null, dossier = null, vueCourante = null;
+    function setText(id, t) { var e = document.getElementById(id); if (e) e.textContent = t; }
+
+    /* Les liens existants (hx-get de vos vues) sont redirigés vers le module d'archivage, sans changer leurs attributs */
+    document.body.addEventListener('htmx:configRequest', function (e) {
+        var el = e.detail.elt;
+        if (!el || !el.dataset) return;
+        if (el.dataset.arSubId && !el.dataset.arDoc && e.detail.target === list) e.detail.path = u(URL.liste, el.dataset.arSubId);
+        else if (el.dataset.arDoc) e.detail.path = u(URL.detail, el.dataset.arDoc);
+    });
+
+    /* ---------- états ---------- */
+    function mode(m) { body.dataset.arMode = m; viderSelection(); }
+    function quick(id) { document.querySelectorAll('.ar-quick a').forEach(function (a) { a.classList.toggle('ar-on', a.id === id); }); }
+    function marquerArbre(subId, docId) {
+        tree.querySelectorAll('.ar-actif').forEach(function (e) { e.classList.remove('ar-actif'); });
+        if (subId) { var b = tree.querySelector('button[data-ar-sub-id="' + subId + '"]'); if (b) b.classList.add('ar-actif'); }
+        if (docId) { var a = tree.querySelector('[data-ar-doc="' + docId + '"]'); if (a) a.classList.add('ar-actif'); }
+    }
+    function deplier(subId, avecDocs) {
+        var b = tree.querySelector('button[data-ar-sub-id="' + subId + '"]'); if (!b) return;
+        var cat = document.getElementById('cat-' + b.dataset.arCatId);
+        if (cat && cat.classList.contains('hidden')) { cat.classList.remove('hidden'); var cb = tree.querySelector('[data-ar-catbtn="' + b.dataset.arCatId + '"] .fa-chevron-right'); if (cb) cb.style.transform = 'rotate(90deg)'; }
+        if (avecDocs) { var s = document.getElementById('sub-' + subId); if (s && s.classList.contains('hidden')) { s.classList.remove('hidden'); var sc = b.querySelector('.fa-chevron-right'); if (sc) sc.style.transform = 'rotate(90deg)'; } }
+        b.scrollIntoView({ block: 'nearest' });
+    }
+    function entete(cat, titre, info, ico, ajout) {
+        setText('arFhCat', cat); setText('arFhTitre', titre); setText('arFhInfo', info);
+        document.getElementById('arFhIco').innerHTML = '<i class="fas ' + ico + '"></i>';
+        ['arAjoutIci', 'arLotIci', 'arInvIci'].forEach(function (id) { document.getElementById(id).style.display = ajout ? '' : 'none'; });
+        setText('arBcCur', titre);
+    }
+    function charger(url, apres) {
+        list.innerHTML = '<div class="ar-sk"><div></div><div></div><div></div></div>';
+        htmx.ajax('GET', url, { target: '#main-document-list', swap: 'innerHTML' }).then(function () { if (apres) apres(); });
+    }
+
+    function accueil() {
+        mode('home'); quick('arLnkAccueil'); dossier = null; vueCourante = null; marquerArbre(null, courant && courant.id);
+        list.innerHTML = HOME; htmx.process(list);
+        brancherAccueil();
+        setText('arBcCur', 'Tous les dossiers');
+        document.getElementById('arGlobalSearch').value = '';
+    }
+    document.querySelectorAll('[data-ar-home]').forEach(function (b) { b.addEventListener('click', accueil); });
+    document.getElementById('arBcHome').addEventListener('click', accueil);
+    document.getElementById('arLnkAccueil').addEventListener('click', function (e) { e.preventDefault(); closeAllSidebars(); accueil(); });
+
+    /* vues côté navigateur : récents / favoris */
+    function vueLocale(titre, info, ico, docs, vide) {
+        mode('vue'); dossier = null; vueCourante = null;
+        entete(titre, titre, info, ico, false);
+        if (!docs.length) { list.innerHTML = '<div class="ar-nores">' + vide + '</div>'; return; }
+        list.innerHTML = '<div class="ar-res">' + docs.map(function (d) {
+            return '<button type="button" class="ar-res-i" data-ar-open-srv="' + esc(d.id) + '"><i class="far fa-file-lines"></i><div><b>' + esc(d.titre) + '</b><small>' + esc(d.cat) + ' › ' + esc(d.sub) + '</small></div></button>';
+        }).join('') + '</div>';
+    }
+    /* vues serveur : recherche, corbeille */
+    function vueServeur(titre, info, ico, url) {
+        mode('vue'); dossier = null; vueCourante = url;
+        entete(titre, titre, info, ico, false);
+        charger(url, function () {
+            var h = list.querySelector('[data-ar-total]');
+            if (h) setText('arFhInfo', h.dataset.arTotal + ' document' + (+h.dataset.arTotal > 1 ? 's' : '') + ' — ' + info);
+        });
+    }
+
+    function recents() { return lire(K_REC).map(function (r) { return PAR_ID[r]; }).filter(Boolean); }
+    function favoris() { return lire(K_FAV).map(function (r) { return PAR_ID[r]; }).filter(Boolean); }
+    function compteurs() { var r = recents().length, f = favoris().length; setText('arNbRec', r || ''); setText('arNbFav', f || ''); setText('arKRec', r); }
+
+    function noterOuverture(id) {
+        courant = PAR_ID[id] || { id: String(id) };
+        if (PAR_ID[id]) { var r = lire(K_REC).filter(function (x) { return x !== String(id); }); r.unshift(String(id)); ecrire(K_REC, r.slice(0, 12)); }
+        marquerArbre(dossier, id); majFav(); compteurs();
+    }
+    function ouvrir(id) {
+        noterOuverture(id);
+        htmx.ajax('GET', u(URL.detail, id), { target: '#sidebar-details-content', swap: 'innerHTML' });
+        openDetailsSidebar();
+    }
+    tree.addEventListener('click', function (e) { var a = e.target.closest('[data-ar-doc]'); if (a) { e.preventDefault(); noterOuverture(a.dataset.arDoc); } });
+
+    /* clics délégués dans toute la page */
+    document.addEventListener('click', function (e) {
+        var t;
+        if ((t = e.target.closest('[data-ar-open-srv]'))) { e.preventDefault(); ouvrir(t.dataset.arOpenSrv); return; }
+        if ((t = e.target.closest('.ar-plus'))) { var on = t.parentNode.classList.toggle('is-all'); t.textContent = on ? 'Réduire' : t.dataset.lbl; return; }
+        if ((t = e.target.closest('[data-ar-add-cat]'))) { ajouterDans(t.dataset.arAddCat, null); return; }
+        if ((t = e.target.closest('[data-ar-tab]'))) {
+            var d = t.closest('.ar-detail'), k = t.dataset.arTab;
+            d.querySelectorAll('[data-ar-tab]').forEach(function (b) { b.classList.toggle('is-on', b === t); });
+            d.querySelectorAll('[data-ar-pane]').forEach(function (p) { p.classList.toggle('is-on', p.dataset.arPane === k); });
+            return;
+        }
+        if ((t = e.target.closest('[data-ar-copy]'))) {
+            var v = t.dataset.arCopy; if (!v) return;
+            (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { toast('Copié : ' + v.slice(0, 60)); }, function () { window.prompt('Copiez :', v); });
+            return;
+        }
+        if ((t = e.target.closest('[data-ar-grand]'))) { modalX('Fiche du document', '', t.dataset.arGrand, true); return; }
+        if ((t = e.target.closest('[data-ar-phase]'))) { rechercher({ phase: t.dataset.arPhase }); return; }
+        if ((t = e.target.closest('[data-ar-go]'))) { document.getElementById(t.dataset.arGo === 'journal' ? 'arLnkJournal' : 'arLnkCorbeille').click(); return; }
+        if ((t = e.target.closest('[data-ar-close]'))) { fermerModal(t.closest('.ar-modal')); return; }
+    });
+
+    document.getElementById('arLnkRecents').addEventListener('click', function (e) {
+        e.preventDefault(); closeAllSidebars(); quick(this.id);
+        vueLocale('Récents', 'Les 12 derniers documents ouverts sur cet appareil.', 'fa-clock-rotate-left', recents(), 'Vous n’avez encore ouvert aucun document.');
+    });
+    document.getElementById('arLnkFavoris').addEventListener('click', function (e) {
+        e.preventDefault(); closeAllSidebars(); quick(this.id);
+        vueLocale('Favoris', 'Documents marqués d’une étoile.', 'fa-star', favoris(), 'Aucun favori : ouvrez un document puis cliquez sur l’étoile ☆ en haut de sa fiche.');
+    });
+    document.getElementById('arLnkCorbeille').addEventListener('click', function (e) {
+        e.preventDefault(); closeAllSidebars(); quick(this.id);
+        vueServeur('Corbeille', 'restaurables avant élimination automatique', 'fa-trash', URL.corbeille);
+    });
+    document.getElementById('arLnkRegles').addEventListener('click', function (e) {
+        e.preventDefault(); closeAllSidebars();
+        modalX('Règles de conservation', 'Durée d’utilité administrative (DUA) par sous-dossier', URL.regles, false);
+    });
+    var lj = document.getElementById('arLnkJournal');
+    if (lj) lj.addEventListener('click', function (e) { e.preventDefault(); closeAllSidebars(); modalX('Journal d’audit', 'Qui a fait quoi, quand, sur quel document', URL.journal, true); });
+
+    /* favori du document affiché */
+    var btnFav = document.getElementById('arFav');
+    function majFav() {
+        var on = !!(courant && lire(K_FAV).indexOf(courant.id) >= 0);
+        btnFav.disabled = !courant || !PAR_ID[courant.id]; btnFav.classList.toggle('is-on', on);
+        btnFav.innerHTML = '<i class="' + (on ? 'fas' : 'far') + ' fa-star"></i>';
+        btnFav.title = on ? 'Retirer des favoris' : 'Ajouter aux favoris';
+    }
+    btnFav.addEventListener('click', function () {
+        if (!courant) return;
+        var f = lire(K_FAV), i = f.indexOf(courant.id);
+        if (i >= 0) f.splice(i, 1); else f.unshift(courant.id);
+        ecrire(K_FAV, f); majFav(); compteurs();
+        if (document.getElementById('arLnkFavoris').classList.contains('ar-on')) document.getElementById('arLnkFavoris').click();
+    });
+
+    /* ---------- recherche plein texte (serveur) + filtres ---------- */
+    var gs = document.getElementById('arGlobalSearch'), tGs;
+    var F = { cat: 'arFiltreCat', phase: 'arFiltrePhase', conf: 'arFiltreConf', format: 'arFiltreFormat', annee: 'arFiltreAnnee', tri: 'arFiltreTri' };
+    function rechercher(force) {
+        var p = new URLSearchParams(), q = gs.value.trim(), filtre = false;
+        if (force) Object.keys(force).forEach(function (k) { var el = document.getElementById(F[k]); if (el) el.value = force[k]; });
+        if (q.length >= 2) p.set('q', q);
+        Object.keys(F).forEach(function (k) { var v = document.getElementById(F[k]).value; if (v) { p.set(k, v); if (k !== 'tri') filtre = true; } });
+        if (!p.has('q') && !filtre) { if (body.dataset.arMode === 'vue' && vueCourante && vueCourante.indexOf(URL.recherche) === 0) accueil(); return; }
+        if (force) { document.getElementById('arFiltres').classList.add('is-open'); document.getElementById('arBtnFiltres').classList.add('ar-on'); }
+        quick(null);
+        vueServeur(q.length >= 2 ? 'Résultats pour « ' + q + ' »' : 'Documents filtrés', q.length >= 2 ? 'titre, cote, mots-clés et contenu des PDF' : 'selon les filtres choisis',
+            q.length >= 2 ? 'fa-magnifying-glass' : 'fa-filter', URL.recherche + '?' + p.toString());
+    }
+    gs.addEventListener('input', function () { clearTimeout(tGs); tGs = setTimeout(function () { rechercher(); }, 300); });
+    gs.addEventListener('keydown', function (e) { if (e.key === 'Escape') { gs.value = ''; rechercher(); } if (e.key === 'Enter') { clearTimeout(tGs); rechercher(); } });
+    Object.keys(F).forEach(function (k) { document.getElementById(F[k]).addEventListener('change', function () { rechercher(); }); });
+    document.getElementById('arFiltreX').addEventListener('click', function () { Object.keys(F).forEach(function (k) { document.getElementById(F[k]).value = ''; }); gs.value = ''; accueil(); });
+    document.getElementById('arBtnFiltres').addEventListener('click', function () { var o = document.getElementById('arFiltres').classList.toggle('is-open'); this.classList.toggle('ar-on', o); });
+
+    /* ---------- filtre de l'arborescence ---------- */
+    var ts = document.getElementById('arTreeSearch');
+    ts.addEventListener('input', function () {
+        var q = norm(ts.value.trim()), vus = 0;
+        tree.querySelectorAll('.ar-cat').forEach(function (cat) {
+            var cb = cat.querySelector('[data-ar-catbtn]'), cOk = !q || norm(cb.textContent).indexOf(q) >= 0, cVis = cOk;
+            cat.querySelectorAll('.ar-sub').forEach(function (sub) {
+                var sb = sub.querySelector('button[data-ar-sub-id]'), sOk = cOk || norm(sb.textContent).indexOf(q) >= 0, dVis = false;
+                sub.querySelectorAll('[data-ar-doc]').forEach(function (a) { var ok = !q || sOk || norm(a.dataset.arTitre).indexOf(q) >= 0; a.style.display = ok ? '' : 'none'; if (ok && q && !sOk) dVis = true; });
+                var vis = !q || sOk || dVis; sub.style.display = vis ? '' : 'none'; if (vis) cVis = true;
+                if (q && dVis) { document.getElementById('sub-' + sb.dataset.arSubId).classList.remove('hidden'); sb.querySelector('.fa-chevron-right').style.transform = 'rotate(90deg)'; }
+            });
+            cat.style.display = cVis ? '' : 'none'; if (cVis) vus++;
+            var cbox = document.getElementById('cat-' + cat.dataset.arCatId);
+            if (q && cVis) { cbox.classList.remove('hidden'); cb.querySelector('.fa-chevron-right').style.transform = 'rotate(90deg)'; }
+            if (!q) {
+                cbox.classList.add('hidden'); cb.querySelector('.fa-chevron-right').style.transform = 'rotate(0deg)';
+                cat.querySelectorAll('.ar-sub button[data-ar-sub-id]').forEach(function (sb) { document.getElementById('sub-' + sb.dataset.arSubId).classList.add('hidden'); sb.querySelector('.fa-chevron-right').style.transform = 'rotate(0deg)'; });
+            }
+        });
+        document.getElementById('arTreeNores').classList.toggle('hidden', !q || vus > 0);
+        if (!q && dossier) deplier(dossier, true);
+    });
+
+    /* ---------- ouverture d'un sous-dossier ---------- */
+    var dossierEl = null;
+    document.body.addEventListener('htmx:beforeRequest', function (e) {
+        var el = e.detail.elt, cible = e.detail.target;
+        if (cible === list && el && el.dataset && el.dataset.arSubId && !el.dataset.arDoc) {
+            dossier = el.dataset.arSubId; dossierEl = el; mode('dossier'); quick(null); vueCourante = null;
+            var n = +el.dataset.arN || 0;
+            entete(el.dataset.arCat, el.dataset.arSub, n + ' document' + (n > 1 ? 's' : '') + ' · glissez des fichiers ici pour les archiver', 'fa-folder-open', true);
+            ['arAjoutIci', 'arLotIci'].forEach(function (id) { var b = document.getElementById(id); b.dataset.cat = el.dataset.arCatId; b.dataset.sub = el.dataset.arSubId; });
+            document.getElementById('arInvIci').href = URL.inventaire + '?sous=' + el.dataset.arSubId;
+            marquerArbre(dossier, courant && courant.id);
+            if (!tree.contains(el)) deplier(dossier, true);
+            document.getElementById('arFolderSearch').value = '';
+            list.innerHTML = '<div class="ar-sk"><div></div><div></div><div></div></div>';
+            if (window.innerWidth < 1024) closeAllSidebars();
+        }
+        if (cible && cible.id === 'sidebar-details-content' && e.detail.requestConfig && e.detail.requestConfig.verb === 'get') {
+            cible.innerHTML = '<div class="ar-sk" style="padding:1.25rem"><div style="height:160px"></div><div></div><div></div></div>';
+        }
+    });
+    document.body.addEventListener('htmx:afterSwap', function (e) {
+        if (e.detail.target === list) {
+            items().forEach(function (it, i) { it.dataset.arI = i; });
+            if (body.dataset.arMode === 'dossier') { trier(); appliquerVue(); }
+            majSelection();
+        }
+    });
+    document.body.addEventListener('htmx:responseError', function (e) {
+        var c = e.detail.target, st = e.detail.xhr.status;
+        var t = st === 403 ? 'Accès refusé : vous n’avez pas les droits sur ce document.' : 'Le chargement a échoué (erreur ' + st + '). Réessayez ou rechargez la page.';
+        if (c && (c === list || c.id === 'sidebar-details-content' || c.id === 'arMxB')) c.innerHTML = '<div class="ar-err"><i class="fas fa-triangle-exclamation mr-1"></i> ' + t + '</div>';
+        else toast(t, 'erreur');
+    });
+    document.body.addEventListener('htmx:sendError', function () { toast('Connexion impossible. Vérifiez le réseau puis réessayez.', 'erreur'); });
+
+    /* après une action (fiche, version, corbeille…) : message + listes à jour */
+    function rafraichir() {
+        if (body.dataset.arMode === 'dossier' && dossier) htmx.ajax('GET', u(URL.liste, dossier), { target: '#main-document-list', swap: 'innerHTML' });
+        else if (body.dataset.arMode === 'vue' && vueCourante) htmx.ajax('GET', vueCourante, { target: '#main-document-list', swap: 'innerHTML' });
+        else if (body.dataset.arMode === 'home') { var tb = document.getElementById('arTableau'); if (tb) htmx.ajax('GET', tb.getAttribute('hx-get'), { target: '#arTableau', swap: 'innerHTML' }); }
+    }
+    document.body.addEventListener('arMaj', function (e) {
+        var d = e.detail || {};
+        var dansPanneau = e.target && e.target.closest && (e.target.closest('.ar-detail') || e.target.closest('.ar-regles'));
+        if (d.message && !dansPanneau) toast(d.message, d.niveau);
+        if (!(e.target && e.target.closest && e.target.closest('.ar-tb'))) rafraichir();
+    });
+
+    /* ---------- documents du dossier : recherche locale, tri, grille/liste ---------- */
+    function items() { return [].slice.call(list.querySelectorAll(':scope > .doc-card')); }
+    function nomDe(it) { var h = it.querySelector('b,h3,h4'); return norm((h || it).textContent.trim()); }
+    var tri = document.getElementById('arTri');
+    function trier() {
+        var its = items(); if (!its.length) return;
+        its.sort(tri.selectedIndex === 1 ? function (a, b) { return nomDe(a).localeCompare(nomDe(b), 'fr'); } : function (a, b) { return (+a.dataset.arI || 0) - (+b.dataset.arI || 0); })
+           .forEach(function (it) { list.appendChild(it); });
+    }
+    tri.addEventListener('change', trier);
+    document.getElementById('arFolderSearch').addEventListener('input', function () {
+        var q = norm(this.value.trim()), n = 0;
+        items().forEach(function (it) { var ok = !q || norm(it.textContent).indexOf(q) >= 0; it.style.display = ok ? '' : 'none'; if (ok) n++; });
+        var m = list.querySelector('.ar-nores.ar-f');
+        if (q && !n) { if (!m) { m = document.createElement('div'); m.className = 'ar-nores ar-f'; list.appendChild(m); } m.textContent = 'Aucun document de ce dossier ne correspond à « ' + this.value.trim() + ' ». Essayez la recherche générale en haut.'; }
+        else if (m) m.remove();
+    });
+    var bG = document.getElementById('arVueGrille'), bL = document.getElementById('arVueListe');
+    function appliquerVue() {
+        var g = false; try { g = localStorage.getItem(K_VUE) === 'grille'; } catch (e) {}
+        list.classList.toggle('ar-grille', g); bG.classList.toggle('ar-on', g); bL.classList.toggle('ar-on', !g);
+    }
+    function choisirVue(v) { try { localStorage.setItem(K_VUE, v); } catch (e) {} appliquerVue(); }
+    bG.addEventListener('click', function () { choisirVue('grille'); });
+    bL.addEventListener('click', function () { choisirVue('liste'); });
+    appliquerVue();
+
+    /* ---------- sélection et actions en lot ---------- */
+    var bar = document.getElementById('arLotBar'), formLot = document.getElementById('arLotForm');
+    function selection() { return [].map.call(list.querySelectorAll('.ar-sel:checked'), function (c) { return c.value; }); }
+    function majSelection() {
+        var s = selection(), tout = list.querySelectorAll('.ar-sel');
+        bar.hidden = !s.length;
+        setText('arSelN', s.length + ' sélectionné' + (s.length > 1 ? 's' : ''));
+        document.getElementById('arSelTout').checked = tout.length > 0 && s.length === tout.length;
+        var enCorbeille = vueCourante === URL.corbeille;
+        bar.classList.toggle('is-corbeille', enCorbeille);
+        list.querySelectorAll('.ar-doc').forEach(function (r) { var c = r.querySelector('.ar-sel'); r.classList.toggle('is-sel', !!(c && c.checked)); });
+    }
+    function viderSelection() { list.querySelectorAll('.ar-sel:checked').forEach(function (c) { c.checked = false; }); formLot.innerHTML = ''; majSelection(); }
+    list.addEventListener('change', function (e) { if (e.target.classList.contains('ar-sel')) majSelection(); });
+    document.getElementById('arSelTout').addEventListener('change', function () { var v = this.checked; list.querySelectorAll('.ar-sel').forEach(function (c) { c.checked = v; }); majSelection(); });
+    document.getElementById('arSelX').addEventListener('click', viderSelection);
+
+    var SOUS = [].map.call(tree.querySelectorAll('button[data-ar-sub-id]'), function (b) { return { id: b.dataset.arSubId, nom: b.dataset.arCat + ' › ' + b.dataset.arSub }; });
+    function envoyerLot(action, extra) {
+        var fd = new FormData(); fd.append('action', action); selection().forEach(function (id) { fd.append('ids', id); });
+        Object.keys(extra || {}).forEach(function (k) { fd.append(k, extra[k]); });
+        fetch(URL.lot, { method: 'POST', body: fd, headers: { 'X-CSRFToken': csrf() }, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (j) { toast(j.message, j.ok ? 'ok' : 'erreur'); if (j.ok) { formLot.innerHTML = ''; rafraichir(); } })
+            .catch(function () { toast('L’action n’a pas pu être envoyée.', 'erreur'); });
+    }
+    function petitForm(html, action, lire) {
+        formLot.innerHTML = html + '<button type="button" class="is-ok">Valider</button>';
+        var champ = formLot.querySelector('input,select'); if (champ) champ.focus();
+        formLot.querySelector('.is-ok').onclick = function () { var v = lire(); if (v) envoyerLot(action, v); };
+    }
+    bar.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-ar-lot]'); if (!b) return;
+        var a = b.dataset.arLot, ids = selection(); if (!ids.length) return;
+        if (a === 'zip') { window.location = URL.zip + '?ids=' + ids.join(','); return; }
+        if (a === 'csv') { window.location = URL.inventaire + '?ids=' + ids.join(','); return; }
+        if (a === 'restaurer') { envoyerLot('restaurer'); return; }
+        if (a === 'deplacer') petitForm('<select><option value="">Vers le sous-dossier…</option>' + SOUS.map(function (s) { return '<option value="' + s.id + '">' + esc(s.nom) + '</option>'; }).join('') + '</select>', 'deplacer', function () { var v = formLot.querySelector('select').value; return v ? { sous_categorie: v } : null; });
+        if (a === 'mots_cles') petitForm('<input placeholder="mots-clés à ajouter, séparés par des virgules">', 'mots_cles', function () { var v = formLot.querySelector('input').value.trim(); return v ? { mots_cles: v } : null; });
+        if (a === 'confidentialite') petitForm('<select><option value="interne">Interne</option><option value="public">Public</option><option value="confidentiel">Confidentiel</option><option value="restreint">Restreint</option></select>', 'confidentialite', function () { return { valeur: formLot.querySelector('select').value }; });
+        if (a === 'corbeille') petitForm('<input placeholder="Motif (doublon, erreur…)">', 'corbeille', function () { return { motif: formLot.querySelector('input').value.trim() || 'Suppression en lot' }; });
+    });
+
+    /* ---------- fenêtres ---------- */
+    function ouvrirModal(m) { m.hidden = false; document.documentElement.style.overflow = 'hidden'; var f = m.querySelector('select,input:not([type=hidden]),button'); if (f) setTimeout(function () { f.focus(); }, 30); }
+    function fermerModal(m) { if (!m) return; m.hidden = true; document.documentElement.style.overflow = ''; if (m.id === 'arModalLot') resetLot(); }
+    function modalX(titre, sous, url, large) {
+        var m = document.getElementById('arModalX');
+        setText('arMxT', titre); setText('arMxS', sous);
+        m.classList.toggle('is-large', !!large);
+        document.getElementById('arMxB').innerHTML = '<div class="ar-sk"><div></div><div></div><div></div></div>';
+        ouvrirModal(m);
+        htmx.ajax('GET', url, { target: '#arMxB', swap: 'innerHTML' });
+    }
+    document.querySelectorAll('.ar-modal').forEach(function (m) { m.addEventListener('click', function (e) { if (e.target === m) fermerModal(m); }); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.querySelectorAll('.ar-modal:not([hidden])').forEach(fermerModal); }, true);
+
+    /* ---------- « Ajouter ici » ---------- */
+    function ajouterDans(catId, subId) {
+        toggleModal();
+        var $c = $('#categorie'), $s = $('#sous_categorie');
+        if (!catId) return;
+        $c.val(catId);
+        if (subId) $s.one('ar:charge', function () { $s.val(subId); });
+        $c.trigger('change');
+    }
+    document.getElementById('arAjoutIci').addEventListener('click', function () { ajouterDans(this.dataset.cat, this.dataset.sub); });
+
+    /* ---------- dépôt de plusieurs fichiers ---------- */
+    var mLot = document.getElementById('arModalLot'), inLot = document.getElementById('arLotFiles'), FICHIERS = [];
+    var MAX = 50 * 1024 * 1024;
+    function tailleH(n) { return n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' Ko' : (n / 1048576).toFixed(1).replace('.', ',') + ' Mo'; }
+    function dessinerLot() {
+        var ul = document.getElementById('arLotListe');
+        ul.innerHTML = FICHIERS.map(function (f, i) {
+            var trop = f.size > MAX;
+            return '<li class="' + (trop ? 'is-ko' : '') + '"><i class="far ' + (/pdf$/i.test(f.name) ? 'fa-file-pdf' : /^image\//.test(f.type) ? 'fa-file-image' : 'fa-file') + '"></i>' +
+                '<input value="' + esc(f.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim()) + '" data-i="' + i + '" aria-label="Titre">' +
+                '<small>' + tailleH(f.size) + (trop ? ' · trop lourd' : '') + '</small><button type="button" data-ar-rm="' + i + '" title="Retirer"><i class="fas fa-xmark"></i></button></li>';
+        }).join('');
+        var ok = FICHIERS.filter(function (f) { return f.size <= MAX; }).length;
+        var go = document.getElementById('arLotGo');
+        go.disabled = !ok; go.querySelector('span').textContent = ok ? 'Archiver ' + ok + ' fichier' + (ok > 1 ? 's' : '') : 'Archiver';
+    }
+    function ajouterFichiers(fl) { [].forEach.call(fl, function (f) { FICHIERS.push(f); }); dessinerLot(); }
+    function resetLot() { FICHIERS = []; inLot.value = ''; dessinerLot(); document.getElementById('arLotProg').hidden = true; var m = document.getElementById('arLotMsg'); m.textContent = ''; m.classList.remove('is-on'); }
+    function ouvrirLot(subId, fichiers) {
+        resetLot(); if (subId) document.getElementById('arLotSous').value = subId;
+        if (fichiers) ajouterFichiers(fichiers);
+        ouvrirModal(mLot);
+    }
+    document.getElementById('arBtnLot').addEventListener('click', function () { closeAllSidebars(); ouvrirLot(dossier); });
+    document.getElementById('arLotIci').addEventListener('click', function () { ouvrirLot(this.dataset.sub); });
+    inLot.addEventListener('change', function () { ajouterFichiers(inLot.files); inLot.value = ''; });
+    document.getElementById('arLotListe').addEventListener('click', function (e) { var b = e.target.closest('[data-ar-rm]'); if (b) { FICHIERS.splice(+b.dataset.arRm, 1); dessinerLot(); } });
+    var dz = document.getElementById('arLotDrop');
+    ['dragenter', 'dragover'].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add('is-over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove('is-over'); }); });
+    dz.addEventListener('drop', function (e) { if (e.dataTransfer) ajouterFichiers(e.dataTransfer.files); });
+    /* glisser des fichiers directement sur un sous-dossier ouvert */
+    var zone = list.parentNode;
+    zone.addEventListener('dragover', function (e) { if (body.dataset.arMode === 'dossier' && e.dataTransfer && [].indexOf.call(e.dataTransfer.types, 'Files') >= 0) { e.preventDefault(); zone.classList.add('ar-zone-over'); } });
+    zone.addEventListener('dragleave', function (e) { if (!zone.contains(e.relatedTarget)) zone.classList.remove('ar-zone-over'); });
+    zone.addEventListener('drop', function (e) { if (body.dataset.arMode !== 'dossier' || !e.dataTransfer || !e.dataTransfer.files.length) return; e.preventDefault(); zone.classList.remove('ar-zone-over'); ouvrirLot(dossier, e.dataTransfer.files); });
+
+    document.getElementById('arLotGo').addEventListener('click', function () {
+        var fm = document.getElementById('arLotDepot'), msg = document.getElementById('arLotMsg');
+        if (!document.getElementById('arLotSous').value) { msg.textContent = 'Choisissez le sous-dossier où ranger les fichiers.'; msg.classList.add('is-on'); return; }
+        var fd = new FormData(fm), titres = document.querySelectorAll('#arLotListe input[data-i]'), go = this;
+        FICHIERS.forEach(function (f, i) { if (f.size <= MAX) { fd.append('fichiers', f, f.name); fd.append('titres', titres[i] ? titres[i].value : ''); } });
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', URL.deposer); xhr.setRequestHeader('X-CSRFToken', csrf());
+        document.getElementById('arLotProg').hidden = false; go.disabled = true; msg.classList.remove('is-on');
+        xhr.upload.onprogress = function (e) { if (e.lengthComputable) { var p = Math.round(e.loaded * 100 / e.total); document.getElementById('arLotBarre').style.width = p + '%'; setText('arLotPct', p < 100 ? p + ' %' : 'Enregistrement…'); } };
+        xhr.onload = function () {
+            var j = {}; try { j = JSON.parse(xhr.responseText); } catch (e) {}
+            go.disabled = false;
+            if (xhr.status >= 400 || !j.resultats) { msg.textContent = j.message || 'Erreur ' + xhr.status + ' pendant l’envoi.'; msg.classList.add('is-on'); return; }
+            var ko = j.resultats.filter(function (r) { return !r.ok; });
+            toast(j.message, ko.length ? 'erreur' : 'ok');
+            if (ko.length) { msg.innerHTML = 'Non archivés : ' + ko.map(function (r) { return esc(r.nom) + ' (' + esc(r.message) + ')'; }).join(', '); msg.classList.add('is-on'); }
+            else { fermerModal(mLot); setTimeout(function () { window.location.reload(); }, 600); }
+        };
+        xhr.onerror = function () { go.disabled = false; msg.textContent = 'Connexion interrompue.'; msg.classList.add('is-on'); };
+        xhr.send(fd);
+    });
+
+    /* ---------- accueil ---------- */
+    function brancherAccueil() {
+        list.querySelectorAll('.ar-cc-subs').forEach(function (box) {
+            var n = box.querySelectorAll('.ar-chip').length;
+            if (n > 5 && !box.querySelector('.ar-plus')) {
+                var b = document.createElement('button'); b.type = 'button'; b.className = 'ar-plus';
+                b.dataset.lbl = b.textContent = '+ ' + (n - 5) + ' autre' + (n - 5 > 1 ? 's' : '') + ' sous-dossier' + (n - 5 > 1 ? 's' : '');
+                box.appendChild(b);
+            }
+        });
+        var r = recents().slice(0, 4), sec = document.getElementById('arHomeRecents');
+        if (sec) {
+            sec.classList.toggle('hidden', !r.length);
+            document.getElementById('arHomeRecList').innerHTML = r.map(function (d) {
+                return '<button type="button" class="ar-res-i" data-ar-open-srv="' + esc(d.id) + '"><i class="far fa-file-lines"></i><div><b>' + esc(d.titre) + '</b><small>' + esc(d.cat) + ' › ' + esc(d.sub) + '</small></div></button>';
+            }).join('');
+        }
+        compteurs();
+    }
+    brancherAccueil();
+})();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
 <script>
@@ -732,9 +1921,7 @@ document.addEventListener('DOMContentLoaded', () => {
             timer: 3000,
             timerProgressBar: true,
             background: "#1f2937",
-            color: "#fff",
-            showClass: { popup: 'animate__animated animate__fadeInRight' },
-            hideClass: { popup: 'animate__animated animate__fadeOutRight' }
+            color: "#fff"
         });
     });
 });

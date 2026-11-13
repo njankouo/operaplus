@@ -1,0 +1,10 @@
+<div class="ar-sr-h"><span><b>{{ docs|length }}</b> document{{ docs|length|pluralize }} dans la corbeille · éliminé{{ docs|length|pluralize }} automatiquement après {{ jours }} jours</span></div>
+{% for d in docs %}
+<div class="doc-card ar-doc">
+  <label class="ar-chk"><input type="checkbox" class="ar-sel" value="{{ d.id }}"></label>
+  <div class="ar-doc-main" style="cursor:default"><span class="ar-ext ar-ext-{{ d.famille }}">{{ d.ext }}</span>
+    <span class="ar-doc-txt"><b>{{ d.titre }}</b><small>{{ d.fiche.cote }} · supprimé le {{ d.fiche.supprime_le|date:"d/m/Y" }}{% if d.fiche.supprime_par %} par {{ d.fiche.supprime_par.get_full_name|default:d.fiche.supprime_par.username }}{% endif %}{% if d.fiche.motif_suppression %} · {{ d.fiche.motif_suppression }}{% endif %}</small></span></div>
+  <span class="ar-badges"><span class="ar-pb {% if d.jours_restants < 7 %}ar-pb-a_eliminer{% else %}ar-pb-gel{% endif %}">encore {{ d.jours_restants }} j</span></span>
+  {% if d.peut %}<form hx-post="{% url 'ar_restaurer' d.id %}" hx-target="#main-document-list" hx-swap="innerHTML"><input type="hidden" name="depuis" value="corbeille"><button class="ar-btn ar-btn-s"><i class="fas fa-rotate-left"></i> Restaurer</button></form>{% endif %}
+</div>
+{% empty %}<div class="ar-nores"><i class="fas fa-trash-can" style="font-size:1.4rem;color:#cbd5e1"></i><br><b>La corbeille est vide.</b></div>{% endfor %}
