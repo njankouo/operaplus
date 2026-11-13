@@ -31,7 +31,7 @@ from . import fournisseur
 from .integration import integrer
 from .models import TYPES_QUESTION, Declaration, Formulaire, PieceJointe, Soumission
 
-VERSION_APP = '1.1.0'
+VERSION_APP = '1.2.0'
 VIOLET = '#5B3FE0'
 TAILLE_MAX = lambda: int(getattr(settings, 'COLLECTE_TAILLE_MAX_MO', 15)) * 1024 * 1024
 
@@ -176,6 +176,9 @@ def api_paquet(request):
         'utilisateur': {'id': request.user.pk, 'nom': str(perso or '') or request.user.get_full_name() or request.user.username},
         'formulaires': formulaires,
         'taches': fournisseur.taches(request),
+        'raci': fournisseur.raci(request),
+        'liens': {'valider': getattr(settings, 'COLLECTE_URL_VALIDATION', '/valid-transaction/?operation={id}'),
+                  'operation': getattr(settings, 'COLLECTE_URL_OPERATION', '')},
         'taille_max': TAILLE_MAX(),
     })
 

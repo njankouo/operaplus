@@ -4,11 +4,11 @@
   var C = window.OP_CONF, R = C.racine, DB = OPT.DB;
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var vue = $('#tVue'), pied = $('#tPied'), couche = $('#tCouche');
-  var etat = { paquet: null, envois: [], brouillons: [], synchro: false, installer: null, decl: null, reglages: { sync_auto: true, photos_legeres: true }, filtre: 'toutes' };
+  var etat = { paquet: null, envois: [], brouillons: [], synchro: false, installer: null, decl: null, reglages: { sync_auto: true, photos_legeres: true }, filtre: 'toutes', role: 'R' };
 
   /* ---------------- utilitaires ---------------- */
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function toast(t, ms) { var b = $('#tToast'); b.innerHTML = '<div>' + esc(t) + '</div>'; clearTimeout(toast.m); toast.m = setTimeout(function () { b.innerHTML = ''; }, ms || 3500); }
+  function toast(t, ms) { var b = $('#tToast'); b.innerHTML = '<div role="status">' + esc(t) + '</div>'; clearTimeout(toast.m); toast.m = setTimeout(function () { b.innerHTML = ''; }, ms || 3500); }
   function csrf() { var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : C.csrf; }
   function aujourdhui() { var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
   function dateFr(iso) { if (!iso) return ''; var p = iso.slice(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
@@ -38,6 +38,23 @@
   /* ---------------- réglages ---------------- */
   function chargerReglages() { return DB.lire('reglages').then(function (r) { if (r) Object.assign(etat.reglages, r); }); }
   function reglage(k, v) { etat.reglages[k] = v; return DB.ecrire('reglages', etat.reglages); }
+
+  /* ---------------- thème : clair / sombre / automatique + couleur ---------------- */
+  var TEINTES = [['violet', '#5B3FE0', 'Violet'], ['indigo', '#3346A8', 'Indigo'], ['emeraude', '#0F7B6C', 'Émeraude'], ['corail', '#D9452E', 'Corail'], ['ardoise', '#334155', 'Ardoise']];
+  function lireTheme() { try { return JSON.parse(localStorage.getItem('op-terrain-theme') || '{}'); } catch (e) { return etat.reglages.theme || {}; } }
+  function appliquerTheme(t) {
+    var m = t.mode || 'auto', h = document.documentElement;
+    if (m === 'auto') m = matchMedia('(prefers-color-scheme: dark)').matches ? 'sombre' : 'clair';
+    h.dataset.mode = m; h.dataset.couleur = t.couleur || 'violet';
+    var meta = document.querySelector('meta[name=theme-color]');
+    if (meta) meta.content = getComputedStyle(h).getPropertyValue('--bg').trim() || '#F6F5FB';
+  }
+  function choisirTheme(maj) {
+    var t = Object.assign(lireTheme(), maj);
+    try { localStorage.setItem('op-terrain-theme', JSON.stringify(t)); } catch (e) {}
+    reglage('theme', t); appliquerTheme(t);
+  }
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { if ((lireTheme().mode || 'auto') === 'auto') appliquerTheme(lireTheme()); });
 
   /* ---------------- état réseau et en-tête ---------------- */
   function salut() { var h = new Date().getHours(); return (h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir') + ', ' + (C.prenom || C.nom) + ' 👋'; }
@@ -127,7 +144,7 @@
   function onglet(n) { document.querySelectorAll('#tNav [data-route]').forEach(function (b) { b.classList.toggle('on', b.dataset.route === n); }); }
   function router() {
     var p = (location.hash.slice(1) || 'accueil').split('/');
-    pied.innerHTML = ''; window.scrollTo(0, 0);
+    pied.innerHTML = ''; window.scrollTo(0, 0); document.body.dataset.ecran = p[0];
     $('#tSalut').textContent = p[0] === 'accueil' ? salut() : 'OperaPlus Terrain';
     onglet({ declarer: 'taches', remplir: 'accueil', recap: 'accueil', questionnaires: 'accueil', parametres: 'profil' }[p[0]] || p[0]);
     if (!etat.paquet && ['profil', 'parametres', 'envois'].indexOf(p[0]) < 0) return ecranSansPaquet();
@@ -157,59 +174,114 @@
     couche.querySelectorAll('[data-go]').forEach(function (b) { b.onclick = function () { couche.innerHTML = ''; aller(b.dataset.go); }; });
   });
 
+  /* ---------------- rôles RACI ---------------- */
+  var ROLES = {
+    R: { nom: 'Responsable', long: 'Responsable (R)', desc: 'Vous <b>réalisez</b> l’activité et <b>déclarez</b> son avancement.' },
+    A: { nom: 'Approbateur', long: 'Approbateur · Accountable (A)', desc: 'Vous <b>validez</b> les déclarations et répondez du résultat.' },
+    C: { nom: 'Consulté', long: 'Consulté · Consulted (C)', desc: 'On vous demande votre <b>avis</b> avant ou pendant l’activité.' },
+    I: { nom: 'Informé', long: 'Informé · Informed (I)', desc: 'Vous êtes <b>tenu au courant</b> de l’avancement, sans action à faire.' }
+  };
+  function listeRole(r) { if (!etat.paquet) return []; return r === 'R' ? (etat.paquet.taches || []) : ((etat.paquet.raci || {})[r] || []); }
+  function compteRole(r) { return listeRole(r).length; }
+  function enRetard(t) { return t.date_echeance && t.date_echeance < aujourdhui() && t.niveau_actuel < 100; }
+
   /* ---------------- ACCUEIL ---------------- */
   function envoiDeTache(t) { return etat.envois.filter(function (e) { return e.type === 'declaration' && String(e.contenu.echeance_id) === String(t.echeance_id) && e.statut !== 'rejete'; })[0]; }
   function puceTache(t) {
     var env = envoiDeTache(t);
     if (env) return env.statut === 'integre' || env.statut === 'valide' ? '<span class="t-puce ok">Envoyée</span>' : (env.statut === 'recu_serveur' ? '<span class="t-puce v">Reçue, en traitement</span>' : '<span class="t-puce or">En attente d’envoi</span>');
-    if (t.date_echeance && t.date_echeance < aujourdhui()) return '<span class="t-puce ko">En retard · ' + dateFr(t.date_echeance) + '</span>';
+    if (enRetard(t)) return '<span class="t-puce ko">En retard · ' + dateFr(t.date_echeance) + '</span>';
     if (t.niveau_actuel >= 100) return '<span class="t-puce ok">Terminée</span>';
     if (t.niveau_actuel > 0) return '<span class="t-puce or">En cours' + (t.date_echeance ? ' · ' + dateFr(t.date_echeance) : '') + '</span>';
     return '<span class="t-puce">À faire' + (t.date_echeance ? ' · ' + dateFr(t.date_echeance) : '') + '</span>';
   }
+  function barre(n) { return '<span class="t-mini"><span class="t-barre"><s style="width:' + Math.min(100, n) + '%"></s></span><em>' + Math.round(n) + ' %</em></span>'; }
   function carteTache(t) {
-    return '<button class="t-carte" data-decl="' + t.echeance_id + '" data-txt="' + esc((t.operation_nom + ' ' + t.tache_nom).toLowerCase()) + '"><span class="t-ic">' + ico('tache') + '</span><span class="t-ct"><b>' + esc(t.operation_nom) + '</b>' +
-      (t.tache_nom ? '<small>' + esc(t.tache_nom) + '</small>' : '') + '<span class="t-mini"><span class="t-barre"><s style="width:' + Math.min(100, t.niveau_actuel) + '%"></s></span><em>' + Math.round(t.niveau_actuel) + ' %</em></span>' + puceTache(t) + '</span><span class="t-chev">' + ico('chev') + '</span></button>';
+    return '<button class="t-carte" data-decl="' + t.echeance_id + '" data-txt="' + esc((t.operation_nom + ' ' + t.tache_nom).toLowerCase()) + '"><span class="t-ic r-R">R</span><span class="t-ct"><b>' + esc(t.operation_nom) + '</b>' +
+      (t.tache_nom ? '<small>' + esc(t.tache_nom) + '</small>' : '') + barre(t.niveau_actuel) + '<span class="t-lignepuces">' + puceTache(t) + '</span></span><span class="t-chev">' + ico('chev') + '</span></button>';
   }
-  function brancherTaches() { vue.querySelectorAll('[data-decl]').forEach(function (b) { b.onclick = function () { aller('declarer/' + b.dataset.decl); }; }); }
+  function carteOp(t, r) {
+    var puces = '';
+    if (enRetard(t)) puces += '<span class="t-puce ko">En retard · ' + dateFr(t.date_echeance) + '</span>';
+    else if (t.niveau_actuel >= 100) puces += '<span class="t-puce ok">Terminée</span>';
+    else if (t.date_echeance) puces += '<span class="t-puce">Échéance ' + dateFr(t.date_echeance) + '</span>';
+    if (r === 'A' && t.echeances_attente) puces += '<span class="t-puce or">' + t.echeances_attente + ' échéance' + (t.echeances_attente > 1 ? 's' : '') + ' non déclarée' + (t.echeances_attente > 1 ? 's' : '') + '</span>';
+    return '<button class="t-carte" data-op="' + t.operation_id + '" data-role="' + r + '" data-txt="' + esc((t.operation_nom + ' ' + t.tache_nom + ' ' + (t.responsable || '')).toLowerCase()) + '"><span class="t-ic r-' + r + '">' + r + '</span><span class="t-ct"><b>' + esc(t.operation_nom) + '</b>' +
+      (t.tache_nom ? '<small>' + esc(t.tache_nom) + '</small>' : '') + (t.responsable ? '<span class="t-pers"><i>' + esc(initiales(t.responsable)) + '</i>' + esc(t.responsable) + '</span>' : '') + barre(t.niveau_actuel) +
+      (puces ? '<span class="t-lignepuces">' + puces + '</span>' : '') + '</span><span class="t-chev">' + ico('chev') + '</span></button>';
+  }
+  function brancherTaches() {
+    vue.querySelectorAll('[data-decl]').forEach(function (b) { b.onclick = function () { aller('declarer/' + b.dataset.decl); }; });
+    vue.querySelectorAll('[data-op]').forEach(function (b) { b.onclick = function () { ficheOperation(b.dataset.op, b.dataset.role); }; });
+  }
   function ecranAccueil() {
-    var l = etat.paquet.taches || [], auj = aujourdhui();
+    var l = etat.paquet.taches || [];
     var moy = l.length ? Math.round(l.reduce(function (s, t) { return s + Math.min(100, t.niveau_actuel); }, 0) / l.length) : 100;
-    var retard = l.filter(function (t) { return t.date_echeance && t.date_echeance < auj && !envoiDeTache(t); }).length;
-    var circ = 2 * Math.PI * 30, nf = (etat.paquet.formulaires || []).length, br = etat.brouillons.length, att = attente();
+    var retard = l.filter(function (t) { return enRetard(t) && !envoiDeTache(t); }).length;
+    var aFaire = l.filter(function (t) { return !envoiDeTache(t); }).length;
+    var envoyees = etat.envois.filter(function (e) { return ['recu_serveur', 'integre', 'valide'].indexOf(e.statut) >= 0; }).length;
+    var circ = 2 * Math.PI * 31, nf = (etat.paquet.formulaires || []).length, br = etat.brouillons.length, att = attente();
     var html = '';
     if (etat.installer) html += '<div class="t-ban info" style="margin:0 0 1rem">' + ico('install') + '<span>Installez l’application sur ce téléphone pour l’ouvrir comme une appli. <button id="tInst1">Installer</button></span></div>';
-    html += '<div class="t-prog-carte"><div class="tx"><small>Avancement moyen de mes tâches</small><b>' + moy + ' %</b><span>' + l.length + ' échéance' + (l.length > 1 ? 's' : '') + ' à déclarer' + (retard ? ' · ' + retard + ' en retard' : '') + '</span></div>' +
-      '<div class="t-anneau"><svg viewBox="0 0 76 76"><circle cx="38" cy="38" r="30" stroke="rgba(255,255,255,.22)"/><circle cx="38" cy="38" r="30" stroke="#fff" stroke-linecap="round" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + (circ * (1 - moy / 100)).toFixed(1) + '"/></svg><em>' + moy + '%</em></div></div>';
-    html += '<div class="t-raccourcis"><button data-go="taches"><span class="ic">' + ico('tache') + '</span><b>Déclarer un avancement</b><small>' + l.length + ' à faire</small></button>' +
+    html += '<div class="t-prog-carte"><div class="haut"><div class="tx"><small>Avancement moyen · mes tâches R</small><b class="num">' + moy + ' %</b><span>' + l.length + ' échéance' + (l.length > 1 ? 's' : '') + ' dont je suis responsable</span></div>' +
+      '<div class="t-anneau"><svg viewBox="0 0 78 78"><circle cx="39" cy="39" r="31" stroke="rgba(255,255,255,.2)"/><circle cx="39" cy="39" r="31" stroke="#fff" stroke-linecap="round" stroke-dasharray="' + circ.toFixed(1) + '" stroke-dashoffset="' + (circ * (1 - moy / 100)).toFixed(1) + '"/></svg><em>' + moy + '%</em></div></div>' +
+      '<div class="bas"><div><strong class="num">' + aFaire + '</strong><em>à déclarer</em></div><div><strong class="num">' + retard + '</strong><em>en retard</em></div><div><strong class="num">' + envoyees + '</strong><em>envoyées</em></div></div></div>';
+    if (att) html += '<button class="t-carte" data-go="envois" style="background:var(--or-s);box-shadow:none"><span class="t-ic" style="background:var(--card);color:var(--or)">' + ico('up') + '</span><span class="t-ct"><b>' + att + ' saisie' + (att > 1 ? 's' : '') + ' à envoyer</b><small>Envoi automatique dès que le réseau est stable</small></span><span class="t-chev">' + ico('chev') + '</span></button>';
+    html += '<div class="t-sec"><div><h2>Mes rôles sur les opérations</h2><small>Matrice RACI : touchez un rôle pour voir ses opérations</small></div></div><div class="t-raci4">' +
+      ['R', 'A', 'C', 'I'].map(function (r) { return '<button data-role-go="' + r + '"><span class="lettre r-' + r + '">' + r + '</span><strong class="num">' + compteRole(r) + '</strong><small>' + ROLES[r].nom + '</small></button>'; }).join('') + '</div>';
+    html += '<div class="t-sec"><h2>Saisir</h2></div><div class="t-raccourcis"><button data-role-go="R"><span class="ic">' + ico('tache') + '</span><b>Déclarer un avancement</b><small>' + aFaire + ' à faire</small></button>' +
       '<button data-go="questionnaires"><span class="ic" style="background:var(--or-s);color:var(--or)">' + ico('form') + '</span><b>Remplir un questionnaire</b><small>' + (br ? br + ' à terminer' : nf + ' disponible' + (nf > 1 ? 's' : '')) + '</small></button></div>';
-    if (att) html += '<button class="t-carte" data-go="envois" style="background:var(--or-s);box-shadow:none"><span class="t-ic" style="background:#fff;color:var(--or)">' + ico('up') + '</span><span class="t-ct"><b>' + att + ' saisie' + (att > 1 ? 's' : '') + ' à envoyer</b><small>Envoi automatique dès que le réseau est stable</small></span><span class="t-chev">' + ico('chev') + '</span></button>';
-    html += '<div class="t-sec"><h2>Mes tâches</h2>' + (l.length > 3 ? '<button data-go="taches">Voir tout</button>' : '') + '</div>';
-    html += l.length ? l.slice(0, 3).map(carteTache).join('') : '<div class="t-vide"><div class="ill">' + ico('ok') + '</div><b>Aucune échéance en attente</b>Bravo ! Touchez ↻ en haut pour vérifier les nouveautés.</div>';
+    html += '<div class="t-sec"><h2>À déclarer en priorité</h2>' + (l.length > 3 ? '<button data-role-go="R">Voir tout</button>' : '') + '</div>';
+    var prio = l.filter(function (t) { return !envoiDeTache(t); }).sort(function (a, b) { return (enRetard(b) - enRetard(a)) || ((a.date_echeance || '9') < (b.date_echeance || '9') ? -1 : 1); }).slice(0, 3);
+    html += prio.length ? prio.map(carteTache).join('') : '<div class="t-vide"><div class="ill">' + ico('ok') + '</div><b>Rien à déclarer</b>Toutes vos échéances sont à jour. Touchez ↻ pour vérifier les nouveautés.</div>';
     vue.innerHTML = html;
     vue.querySelectorAll('[data-go]').forEach(function (b) { b.onclick = function () { aller(b.dataset.go); }; });
+    vue.querySelectorAll('[data-role-go]').forEach(function (b) { b.onclick = function () { etat.role = b.dataset.roleGo; etat.filtre = 'toutes'; aller('taches'); }; });
     brancherTaches(); brancherInstall();
   }
 
-  /* ---------------- MES TÂCHES ---------------- */
+  /* ---------------- MES TÂCHES, segmentées R / A / C / I ---------------- */
   function ecranTaches() {
-    var l = etat.paquet.taches || [], auj = aujourdhui();
-    var filtres = {
-      toutes: function () { return true; }, retard: function (t) { return t.date_echeance && t.date_echeance < auj && !envoiDeTache(t); },
+    var r = etat.role || 'R', l = listeRole(r);
+    var filtres = r === 'R' ? {
+      toutes: function () { return true; }, retard: function (t) { return enRetard(t) && !envoiDeTache(t); },
       cours: function (t) { return t.niveau_actuel > 0 && t.niveau_actuel < 100; }, faire: function (t) { return !t.niveau_actuel; }
-    };
-    var html = retour('Accueil', 'accueil') + '<h1>Mes tâches</h1><p class="t-sub">' + l.length + ' échéance' + (l.length > 1 ? 's' : '') + ' à déclarer · mises à jour ' + quand(Date.parse(etat.paquet.genere_le)) + '</p>';
-    if (!l.length) { vue.innerHTML = html + '<div class="t-vide"><div class="ill">' + ico('ok') + '</div><b>Aucune échéance en attente</b>Touchez ↻ en haut pour vérifier les nouveautés.</div>'; return; }
-    if (l.length > 5) html += '<input class="t-recherche" id="tFiltre" type="search" placeholder="Rechercher une opération…">';
-    html += '<div class="t-onglets">' + [['toutes', 'Toutes'], ['retard', 'En retard'], ['cours', 'En cours'], ['faire', 'À faire']].map(function (f) {
-      return '<button data-f="' + f[0] + '" class="' + (etat.filtre === f[0] ? 'on' : '') + '">' + f[1] + ' · ' + l.filter(filtres[f[0]]).length + '</button>';
-    }).join('') + '</div>';
-    var vis = l.filter(filtres[etat.filtre] || filtres.toutes);
-    html += '<div id="tListe">' + (vis.length ? vis.map(carteTache).join('') : '<div class="t-vide">Aucune tâche dans ce filtre.</div>') + '</div>';
+    } : { toutes: function () { return true; }, retard: enRetard, cours: function (t) { return t.niveau_actuel > 0 && t.niveau_actuel < 100; }, fini: function (t) { return t.niveau_actuel >= 100; } };
+    var noms = r === 'R' ? [['toutes', 'Toutes'], ['retard', 'En retard'], ['cours', 'En cours'], ['faire', 'À faire']] : [['toutes', 'Toutes'], ['retard', 'En retard'], ['cours', 'En cours'], ['fini', 'Terminées']];
+    if (!filtres[etat.filtre]) etat.filtre = 'toutes';
+    var html = '<h1>Mes tâches</h1><p class="t-sub">Choisissez votre rôle : R, A, C ou I.</p>' +
+      '<div class="t-seg" role="tablist">' + ['R', 'A', 'C', 'I'].map(function (x) {
+        return '<button role="tab" aria-selected="' + (x === r) + '" data-seg="' + x + '" class="' + (x === r ? 'on' : '') + '"><strong>' + x + '</strong><small>' + ROLES[x].nom + '</small>' + (compteRole(x) ? '<i>' + compteRole(x) + '</i>' : '') + '</button>';
+      }).join('') + '</div>' +
+      '<div class="t-role r-' + r + '"><span class="lettre" style="background:var(--card)">' + r + '</span><span><b>' + ROLES[r].long + '</b><br>' + ROLES[r].desc + '</span></div>';
+    if (!l.length) {
+      vue.innerHTML = html + '<div class="t-vide"><div class="ill">' + ico(r === 'R' ? 'ok' : 'tache') + '</div><b>' + (r === 'R' ? 'Aucune échéance à déclarer' : 'Aucune opération pour ce rôle') + '</b>' + (r === 'R' ? 'Touchez ↻ en haut pour vérifier les nouveautés.' : 'Vous n’êtes ' + ROLES[r].nom.toLowerCase() + ' sur aucune opération pour le moment.') + '</div>';
+      brancherSeg(); return;
+    }
+    if (l.length > 5) html += '<input class="t-recherche" id="tFiltre" type="search" placeholder="Rechercher une opération, une personne…">';
+    html += '<div class="t-onglets">' + noms.map(function (f) { return '<button data-f="' + f[0] + '" class="' + (etat.filtre === f[0] ? 'on' : '') + '">' + f[1] + ' · ' + l.filter(filtres[f[0]]).length + '</button>'; }).join('') + '</div>';
+    var vis = l.filter(filtres[etat.filtre]);
+    html += '<div id="tListe">' + (vis.length ? vis.map(function (t) { return r === 'R' ? carteTache(t) : carteOp(t, r); }).join('') : '<div class="t-vide">Aucune opération dans ce filtre.</div>') + '</div>';
     vue.innerHTML = html;
-    brancherTaches();
+    brancherTaches(); brancherSeg();
     vue.querySelectorAll('[data-f]').forEach(function (b) { b.onclick = function () { etat.filtre = b.dataset.f; ecranTaches(); }; });
-    var f = $('#tFiltre'); if (f) f.oninput = function () { var q = f.value.trim().toLowerCase(); vue.querySelectorAll('[data-decl]').forEach(function (b) { b.hidden = q && b.dataset.txt.indexOf(q) < 0; }); };
+    var f = $('#tFiltre'); if (f) f.oninput = function () { var q = f.value.trim().toLowerCase(); vue.querySelectorAll('#tListe .t-carte').forEach(function (b) { b.hidden = q && b.dataset.txt.indexOf(q) < 0; }); };
+  }
+  function brancherSeg() { vue.querySelectorAll('[data-seg]').forEach(function (b) { b.onclick = function () { etat.role = b.dataset.seg; etat.filtre = 'toutes'; ecranTaches(); }; }); }
+
+  /* fiche d'une opération (A, C, I) */
+  function ficheOperation(id, r) {
+    var t = listeRole(r).filter(function (x) { return String(x.operation_id) === String(id); })[0]; if (!t) return;
+    var liens = etat.paquet.liens || {}, act = '';
+    if (r === 'A') act = navigator.onLine && liens.valider ? '<a class="c-btn c-btn-p" href="' + esc(liens.valider.replace('{id}', t.operation_id)) + '">' + ico('ok') + ' Valider les déclarations</a><small style="color:var(--mute);text-align:center">S’ouvre dans OperaPlus (réseau nécessaire)</small>'
+      : '<div class="t-ban or" style="margin:0">' + ico('wifioff') + '<span>La validation se fait dans OperaPlus : reconnectez-vous au réseau pour valider.</span></div>';
+    else if (r === 'C') act = '<div class="t-ban info" style="margin:0">' + ico('aide') + '<span>Vous êtes consulté : le responsable peut vous solliciter. Donnez votre avis lors des échanges de l’opération dans OperaPlus.</span></div>';
+    else act = '<div class="t-ban info" style="margin:0">' + ico('ok') + '<span>Vous êtes informé : aucune action n’est attendue de vous. Suivez simplement l’avancement.</span></div>';
+    if (liens.operation && navigator.onLine) act += '<a class="c-btn c-btn-s" href="' + esc(liens.operation.replace('{id}', t.operation_id)) + '">Ouvrir l’opération dans OperaPlus</a>';
+    feuille('<div class="t-fiche-op"><div class="entete"><span class="lettre r-' + r + '">' + r + '</span><div><h2>' + esc(t.operation_nom) + '</h2><p class="t-sub" style="margin:.2rem 0 0">' + esc(t.tache_nom || '') + '</p></div></div>' +
+      '<dl><div><dt>Avancement</dt><dd class="num">' + Math.round(t.niveau_actuel) + ' %</dd></div><div><dt>Échéance</dt><dd style="' + (enRetard(t) ? 'color:var(--ko)' : '') + '">' + (t.date_echeance ? dateFr(t.date_echeance) : '—') + '</dd></div>' +
+      '<div class="w"><dt>Responsable (R)</dt><dd>' + esc(t.responsable || '—') + '</dd></div>' + (r === 'A' ? '<div class="w"><dt>Échéances pas encore déclarées</dt><dd class="num">' + (t.echeances_attente || 0) + '</dd></div>' : '') +
+      '<div class="w"><dt>Votre rôle</dt><dd>' + ROLES[r].long + '</dd></div></dl>' + barre(t.niveau_actuel) + '<div class="actions" style="margin-top:1rem">' + act + '<button class="c-btn c-btn-s" data-fermer>Fermer</button></div></div>');
   }
 
   /* ---------------- DÉCLARATION ---------------- */
@@ -453,7 +525,7 @@
   }
   function ecranProfil() {
     var att = attente();
-    vue.innerHTML = '<div class="t-profil"><div class="t-avatar">' + esc(initiales(C.nom)) + '</div><b>' + esc(C.nom) + '</b><small>' + esc(C.email || C.institution || 'Agent terrain') + '</small>' + (C.email && C.institution ? '<small>' + esc(C.institution) + '</small>' : '') + '</div>' +
+    vue.innerHTML = '<div class="t-profil"><div class="t-avatar">' + esc(initiales(C.nom)) + '</div><b>' + esc(C.nom) + '</b><small>' + esc(C.email || C.institution || 'Agent terrain') + '</small>' + (C.email && C.institution ? '<small>' + esc(C.institution) + '</small>' : '') + '<div class="roles">' + ['R', 'A', 'C', 'I'].map(function (r) { return '<span>' + r + ' · ' + compteRole(r) + '</span>'; }).join('') + '</div></div>' +
       '<div class="t-liste">' +
       ligne('pEnv', 'up', 'Mes envois', att ? att + ' en attente' : 'Tout est envoyé', '', false) +
       ligne('pQ', 'form', 'Questionnaires', etat.brouillons.length ? etat.brouillons.length + ' à terminer' : 'Remplir une fiche', '', false) +
@@ -482,7 +554,13 @@
   function inter(id, on) { return '<label class="t-inter"><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + '><span></span></label>'; }
   function ecranParametres() {
     var p = etat.paquet, finis = etat.envois.filter(function (e) { return OPT.FINAUX.indexOf(e.statut) >= 0; }).length;
+    var th = lireTheme(), mode = th.mode || 'auto', coul = th.couleur || 'violet';
     vue.innerHTML = retour('Profil', 'profil') + '<h1>Paramètres</h1>' +
+      '<p class="t-titre-liste">Apparence</p><div class="t-liste"><div class="t-modes">' + [['clair', 'Clair'], ['sombre', 'Sombre'], ['auto', 'Automatique']].map(function (m) {
+        return '<button data-mode="' + m[0] + '" class="' + m[0] + (mode === m[0] ? ' on' : '') + '" aria-pressed="' + (mode === m[0]) + '"><span class="mini"><i></i><i></i><i></i></span>' + m[1] + '</button>';
+      }).join('') + '</div><div class="t-teintes">' + TEINTES.map(function (c) {
+        return '<button data-teinte="' + c[0] + '" class="' + (coul === c[0] ? 'on' : '') + '" style="background:' + c[1] + ';color:' + c[1] + '" aria-label="' + c[2] + '" title="' + c[2] + '"><svg viewBox="0 0 24 24" style="stroke:#fff"><path d="M20 6L9 17l-5-5"/></svg></button>';
+      }).join('') + '<span>Couleur principale · « Automatique » suit le réglage du téléphone</span></div></div>' +
       '<p class="t-titre-liste">Synchronisation</p><div class="t-liste">' +
       '<div><span class="ic">' + ico('wifi') + '</span><span class="lb">Envoi automatique<small>Dès que le réseau est stable</small></span>' + inter('sAuto', etat.reglages.sync_auto) + '</div>' +
       ligne('sMaj', 'att', 'Mettre à jour mes tâches', 'et les questionnaires', p ? quand(Date.parse(p.genere_le)) : 'jamais', false) +
@@ -493,6 +571,8 @@
       '<div><span class="ic">' + ico('stock') + '</span><span class="lb">Espace utilisé</span><span class="val" id="sEsp">…</span></div>' +
       ligne('sVider', 'corbeille', 'Retirer les envois terminés', finis + ' envoi' + (finis > 1 ? 's' : '') + ' intégré' + (finis > 1 ? 's' : '') + ' ou refusé' + (finis > 1 ? 's' : ''), '', false) + '</div>' +
       '<div class="t-ban info" style="margin:0">' + ico('alerte') + '<span>Vos saisies restent sur ce téléphone tant qu’elles ne sont pas envoyées. Ne videz pas les données du navigateur avant que l’onglet Envois soit à jour.</span></div>';
+    vue.querySelectorAll('[data-mode]').forEach(function (b) { b.onclick = function () { choisirTheme({ mode: b.dataset.mode }); ecranParametres(); }; });
+    vue.querySelectorAll('[data-teinte]').forEach(function (b) { b.onclick = function () { choisirTheme({ couleur: b.dataset.teinte }); ecranParametres(); }; });
     $('#sAuto').onchange = function () { reglage('sync_auto', this.checked).then(function () { toast(etat.reglages.sync_auto ? 'Envoi automatique activé.' : 'Envoi automatique désactivé : utilisez le bouton ↻.'); }); };
     $('#sPhoto').onchange = function () { reglage('photos_legeres', this.checked); };
     $('#sMaj').onclick = function () { if (!navigator.onLine) return toast('Pas de réseau.'); toast('Mise à jour…'); actualiserPaquet().then(function () { toast('Tâches et questionnaires à jour.'); ecranParametres(); }); };
@@ -515,7 +595,7 @@
     var i = 0;
     function dessiner() {
       var e = ETAPES[i], der = i === ETAPES.length - 1;
-      couche.innerHTML = '<div class="t-decouv" role="dialog" aria-modal="true"><div class="haut">' + (i ? '<button class="t-retour" id="oPrec" style="margin:0" aria-label="Précédent">' + ico('retour') + '</button>' : '<span class="c-logo" style="width:40px;height:40px;border-radius:12px"><i></i></span>') +
+      couche.innerHTML = '<div class="t-decouv" role="dialog" aria-modal="true"><div class="haut">' + (i ? '<button class="t-retour" id="oPrec" style="margin:0" aria-label="Précédent">' + ico('retour') + '</button>' : '<span class="c-logo" style="width:42px;height:42px"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="116" fill="#5B3FE0"/><circle cx="240" cy="246" r="128" fill="none" stroke="#7E68F0" stroke-width="56"/><path d="M240 118A128 128 0 1 1 119.7 202.2" fill="none" stroke="#fff" stroke-width="56" stroke-linecap="round"/><circle cx="372" cy="374" r="92" fill="#5B3FE0"/><circle cx="372" cy="374" r="76" fill="#F59E0B"/><path d="M372 336V412M334 374H410" stroke="#fff" stroke-width="24" stroke-linecap="round"/></svg></span>') +
         (der ? '<span></span>' : '<button class="passer" id="oPasser">Passer</button>') + '</div><div class="corps">' +
         '<div class="t-ill" aria-hidden="true"><div class="tel"><i></i><i></i><i></i><i style="width:70%"></i></div>' + e.b.map(function (b) { return '<span class="bul ' + b[0] + '">' + ico(b[1]) + '</span>'; }).join('') + '</div>' +
         '<h1>' + e.t + '</h1><p>' + e.p + '</p><div class="t-points">' + ETAPES.map(function (_, k) { return '<i class="' + (k === i ? 'on' : '') + '"></i>'; }).join('') + '</div></div>' +
@@ -543,6 +623,8 @@
   /* ---------------- démarrage ---------------- */
   var debut = Date.now();
   Promise.all([chargerReglages(), charger(), DB.lire('decouverte_vue')]).then(function (r) {
+    if (etat.reglages.theme && !localStorage.getItem('op-terrain-theme')) { try { localStorage.setItem('op-terrain-theme', JSON.stringify(etat.reglages.theme)); } catch (e) {} }
+    appliquerTheme(lireTheme());
     setTimeout(function () {
       var s = $('#tSplash'); s.classList.add('fin'); setTimeout(function () { s.remove(); }, 400);
       router();

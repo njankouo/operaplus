@@ -9,9 +9,10 @@
 <link rel="icon" href="{% static 'collecte/icones/icone-192.png' %}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<script>(function(){try{var t=JSON.parse(localStorage.getItem('op-terrain-theme')||'{}');var m=t.mode||'auto';if(m==='auto')m=matchMedia('(prefers-color-scheme: dark)').matches?'sombre':'clair';document.documentElement.dataset.mode=m;document.documentElement.dataset.couleur=t.couleur||'violet';}catch(e){}})();</script>
 <link rel="stylesheet" href="{% static 'collecte/terrain.css' %}?v={{ version }}">
 <style>
-body{background:#fff}
+body{background:var(--card)}
 .cx{max-width:420px;margin:0 auto;padding:calc(2.2rem + env(safe-area-inset-top)) 1.5rem 2rem;min-height:100vh;display:flex;flex-direction:column}
 .cx h1{margin-top:1.6rem}
 .cx p.s{margin:0 0 1.8rem;color:var(--mute)}
@@ -29,7 +30,7 @@ body{background:#fff}
 </head>
 <body>
 <main class="cx">
-  <span class="c-logo"><i></i></span>
+  <span class="c-logo" style="width:56px;height:56px"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="116" fill="#5B3FE0"/><circle cx="240" cy="246" r="128" fill="none" stroke="#7E68F0" stroke-width="56"/><path d="M240 118A128 128 0 1 1 119.7 202.2" fill="none" stroke="#fff" stroke-width="56" stroke-linecap="round"/><circle cx="372" cy="374" r="92" fill="#5B3FE0"/><circle cx="372" cy="374" r="76" fill="#F59E0B"/><path d="M372 336V412M334 374H410" stroke="#fff" stroke-width="24" stroke-linecap="round"/></svg></span>
   <h1>Bon retour !</h1>
   <p class="s">Connectez-vous avec votre compte OperaPlus pour continuer.</p>
   {% if form.errors %}<p class="c-err">Identifiant ou mot de passe incorrect. Vérifiez les majuscules et réessayez.</p>{% endif %}
@@ -41,7 +42,7 @@ body{background:#fff}
       <div class="mdp"><input class="c-in" id="id_password" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
       <button type="button" class="oeil" aria-label="Afficher le mot de passe" onclick="var i=document.getElementById('id_password');i.type=i.type==='password'?'text':'password'"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
     {% url 'password_reset' as url_oubli %}
-    {% if url_oubli %}<a class="oubli" href="{{ url_oubli }}">Mot de passe oublié ?</a>{% else %}<span class="oubli" style="color:var(--mute);font-weight:500">Mot de passe oublié ? Contactez votre administrateur.</span>{% endif %}
+    {% if url_oubli %}<a class="oubli" href="{{ url_oubli }}">Mot de passe oublié ?</a>{% else %}<span class="oubli" style="color:var(--mute);font-weight:500;text-align:left">Mot de passe oublié ? Contactez votre administrateur.</span>{% endif %}
     <button class="c-btn c-btn-p" id="cxGo">Se connecter</button>
   </form>
   <div class="sep">bon à savoir</div>
