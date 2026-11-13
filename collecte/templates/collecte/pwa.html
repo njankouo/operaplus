@@ -1,0 +1,598 @@
+{% load static %}<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="OP Terrain">
+<title>OperaPlus Terrain</title>
+<link rel="manifest" href="{% url 'collecte_manifeste' %}">
+<link rel="icon" href="{% static 'collecte/icones/icone-192.png' %}">
+<link rel="apple-touch-icon" href="{% static 'collecte/icones/icone-192.png' %}">
+<style>
+:root{--acc:{{ couleur }};--acc-s:color-mix(in srgb,var(--acc) 10%,#fff);--acc-l:color-mix(in srgb,var(--acc) 30%,#fff);--ink:#0f172a;--txt:#334155;--mute:#64748b;--line:#e2e8f0;--bg:#f4f5f7;--ok:#047857;--ko:#b91c1c;--wa:#b45309}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--txt);background:var(--bg);overscroll-behavior-y:contain}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer;padding:0}
+svg{width:1.25em;height:1.25em;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+[hidden]{display:none!important}
+.t-top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:.6rem;padding:calc(.6rem + env(safe-area-inset-top)) 1rem .6rem;background:#fff;border-bottom:1px solid var(--line)}
+.t-logo{width:34px;height:34px;border-radius:10px;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:800;font-size:.8rem}
+.t-titre{flex:1;min-width:0}
+.t-titre b{display:block;font-size:.95rem;color:var(--ink);line-height:1.15}
+.t-titre small{display:block;font-size:.72rem;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-etat{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:700;padding:.3rem .6rem;border-radius:99px;background:#ecfdf5;color:var(--ok)}
+.t-etat i{width:8px;height:8px;border-radius:99px;background:currentColor}
+.t-etat.off{background:#f1f5f9;color:var(--mute)}
+.t-etat.sync{background:var(--acc-s);color:var(--acc)}
+.t-etat.sync i{animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.t-syncbtn{position:relative;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:var(--ink);background:#f1f5f9}
+.t-syncbtn.tourne svg{animation:tour 1s linear infinite}
+@keyframes tour{to{transform:rotate(360deg)}}
+.t-badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--wa);color:#fff;font-size:.68rem;font-weight:800;display:grid;place-items:center}
+.t-badge:empty{display:none}
+.t-ban{margin:.75rem 1rem 0;padding:.7rem .85rem;border-radius:12px;font-size:.85rem;display:flex;gap:.6rem;align-items:flex-start}
+.t-ban.ko{background:#fef2f2;color:#991b1b}.t-ban.info{background:var(--acc-s);color:var(--ink)}.t-ban.wa{background:#fffbeb;color:#92400e}
+.t-ban a,.t-ban button{font-weight:800;color:inherit;text-decoration:underline}
+main{padding:1rem 1rem calc(6rem + env(safe-area-inset-bottom));max-width:720px;margin:0 auto}
+.t-nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.t-nav button{position:relative;display:flex;flex-direction:column;align-items:center;gap:.15rem;padding:.55rem 0 .5rem;font-size:.7rem;font-weight:700;color:var(--mute)}
+.t-nav button svg{width:1.45em;height:1.45em}
+.t-nav button.on{color:var(--acc)}
+.t-nav .t-badge{top:2px;right:calc(50% - 22px)}
+h1{font-size:1.25rem;color:var(--ink);margin:.1rem 0 .2rem;line-height:1.25}
+.t-sub{margin:0 0 1rem;font-size:.85rem;color:var(--mute)}
+.t-carte{display:flex;gap:.8rem;align-items:center;width:100%;text-align:left;padding:.85rem;margin-bottom:.6rem;background:#fff;border:1px solid var(--line);border-radius:14px}
+.t-carte:active{background:#f8fafc}
+.t-carte .t-ic{width:44px;height:44px;flex:none;border-radius:12px;display:grid;place-items:center;background:var(--acc-s);color:var(--acc)}
+.t-carte .t-ct{flex:1;min-width:0}
+.t-carte b{display:block;color:var(--ink);font-size:.95rem;line-height:1.3}
+.t-carte small{display:block;font-size:.78rem;color:var(--mute);margin-top:.1rem}
+.t-carte .t-chev{color:#cbd5e1}
+.t-tag{display:inline-flex;align-items:center;gap:.25rem;margin-top:.35rem;font-size:.7rem;font-weight:800;padding:.2rem .5rem;border-radius:99px;background:#f1f5f9;color:var(--mute)}
+.t-tag.ko{background:#fef2f2;color:var(--ko)}.t-tag.ok{background:#ecfdf5;color:var(--ok)}.t-tag.wa{background:#fffbeb;color:var(--wa)}.t-tag.acc{background:var(--acc-s);color:var(--acc)}
+.t-barre{height:6px;border-radius:99px;background:#eef2f6;overflow:hidden;margin-top:.45rem}
+.t-barre s{display:block;height:100%;background:var(--acc);border-radius:99px}
+.t-vide{text-align:center;padding:2.5rem 1rem;color:var(--mute);background:#fff;border:1px dashed #cbd5e1;border-radius:14px}
+.t-vide svg{width:2.2em;height:2.2em;color:#cbd5e1}
+.t-vide b{display:block;color:var(--ink);margin:.5rem 0 .2rem}
+.t-recherche{width:100%;height:46px;padding:0 .9rem;margin-bottom:.8rem;border:1px solid var(--line);border-radius:12px;background:#fff}
+.t-sec{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:1.1rem 0 .5rem}
+.t-retour{display:inline-flex;align-items:center;gap:.3rem;font-weight:700;color:var(--mute);font-size:.85rem;margin-bottom:.6rem;padding:.3rem 0}
+.t-champ{display:block;margin-bottom:1rem}
+.t-champ>span{display:block;font-weight:700;color:var(--ink);font-size:.9rem;margin-bottom:.35rem}
+.t-champ>span em{font-style:normal;color:var(--ko)}
+.t-champ small{display:block;color:var(--mute);font-size:.78rem;margin-top:.3rem}
+.t-in{width:100%;min-height:50px;padding:.7rem .85rem;border:1.5px solid #cbd5e1;border-radius:12px;background:#fff;font-size:1rem}
+.t-in:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-l)}
+textarea.t-in{min-height:110px;resize:vertical}
+.t-niv{display:flex;align-items:baseline;gap:.3rem;justify-content:center;margin:.2rem 0 .5rem}
+.t-niv b{font-size:2.6rem;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums}
+.t-niv span{font-size:1.2rem;color:var(--mute);font-weight:700}
+input[type=range]{width:100%;accent-color:var(--acc);height:32px}
+.t-puces{display:grid;grid-template-columns:repeat(5,1fr);gap:.35rem;margin-top:.4rem}
+.t-puces button{height:42px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-weight:800;font-size:.85rem}
+.t-puces button.on{border-color:var(--acc);background:var(--acc-s);color:var(--acc)}
+.t-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:52px;padding:0 1.2rem;border-radius:14px;font-weight:800;font-size:1rem}
+.t-btn-p{background:var(--acc);color:#fff;width:100%}
+.t-btn-p:disabled{opacity:.45}
+.t-btn-s{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+.t-btn-d{background:#fff;border:1.5px solid #fecaca;color:var(--ko)}
+.t-ligne{display:flex;gap:.6rem}
+.t-ligne>*{flex:1}
+.t-pied{position:fixed;left:0;right:0;bottom:calc(3.9rem + env(safe-area-inset-bottom));z-index:15;padding:.6rem 1rem;background:linear-gradient(transparent,var(--bg) 30%)}
+.t-pied>div{max-width:720px;margin:0 auto;display:flex;gap:.6rem}
+.t-pied .t-btn{flex:1}
+.t-pj{display:flex;gap:.5rem}
+.t-pj label{flex:1;display:flex;align-items:center;justify-content:center;gap:.45rem;min-height:52px;border-radius:12px;border:1.5px dashed #cbd5e1;background:#fff;font-weight:700;font-size:.9rem;color:var(--ink);cursor:pointer}
+.t-pj input{position:absolute;width:1px;height:1px;opacity:0}
+.t-apercu{display:flex;align-items:center;gap:.7rem;padding:.55rem;border:1px solid var(--line);border-radius:12px;background:#fff;margin-top:.5rem}
+.t-apercu img{width:56px;height:56px;object-fit:cover;border-radius:9px;background:#f1f5f9}
+.t-apercu div{flex:1;min-width:0;font-size:.82rem}
+.t-apercu b{display:block;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t-apercu button{color:var(--ko);font-weight:700;font-size:.82rem;padding:.4rem}
+.t-gps{display:flex;align-items:center;gap:.5rem;padding:.6rem .75rem;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:.85rem}
+.t-gps.ok{color:var(--ok)}.t-gps.ko{color:var(--wa)}
+.t-gps button{margin-left:auto;font-weight:800;color:var(--acc)}
+.t-prog{display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;font-size:.78rem;font-weight:700;color:var(--mute)}
+.t-prog i{flex:1;height:8px;border-radius:99px;background:#e5e7eb;overflow:hidden}
+.t-prog s{display:block;height:100%;background:var(--acc);transition:width .2s}
+.t-q{background:#fff;border:1px solid var(--line);border-radius:16px;padding:1.1rem 1rem 1.2rem}
+.t-q h2{font-size:1.1rem;color:var(--ink);margin:0 0 .3rem;line-height:1.35}
+.t-q .t-aide{font-size:.85rem;color:var(--mute);margin:0 0 .9rem}
+.t-opt{display:flex;align-items:center;gap:.7rem;width:100%;min-height:54px;padding:.6rem .85rem;margin-bottom:.45rem;border:1.5px solid var(--line);border-radius:12px;background:#fff;text-align:left;font-weight:600}
+.t-opt i{width:22px;height:22px;flex:none;border:2px solid #cbd5e1;border-radius:99px;display:grid;place-items:center}
+.t-opt.multi i{border-radius:6px}
+.t-opt.on{border-color:var(--acc);background:var(--acc-s);color:var(--ink)}
+.t-opt.on i{border-color:var(--acc);background:var(--acc)}
+.t-opt.on i::after{content:"";width:8px;height:8px;border-radius:99px;background:#fff}
+.t-opt.multi.on i::after{width:10px;height:6px;border-radius:0;background:none;border:solid #fff;border-width:0 0 2.5px 2.5px;transform:rotate(-45deg) translate(1px,-1px)}
+.t-on2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.t-on2 .t-opt{justify-content:center;font-size:1.05rem;font-weight:800;min-height:64px}
+.t-on2 .t-opt i{display:none}
+.t-sign{width:100%;height:200px;border:1.5px dashed #94a3b8;border-radius:12px;background:#fff;touch-action:none;display:block}
+.t-err{color:var(--ko);font-size:.85rem;font-weight:700;margin:.6rem 0 0}
+.t-recap{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.t-recap button{display:flex;gap:.6rem;width:100%;text-align:left;padding:.75rem .9rem;border-bottom:1px solid #f1f5f9;align-items:flex-start}
+.t-recap button:last-child{border-bottom:0}
+.t-recap div{flex:1;min-width:0}
+.t-recap small{display:block;font-size:.75rem;color:var(--mute)}
+.t-recap b{display:block;color:var(--ink);font-size:.9rem;overflow-wrap:anywhere}
+.t-recap b.manque{color:var(--ko)}
+.t-recap img{width:48px;height:48px;object-fit:cover;border-radius:8px}
+.t-env{display:flex;gap:.75rem;align-items:flex-start;padding:.8rem;margin-bottom:.55rem;background:#fff;border:1px solid var(--line);border-radius:14px}
+.t-env .t-ic{width:38px;height:38px;flex:none;border-radius:10px;display:grid;place-items:center;background:#f1f5f9;color:var(--mute)}
+.t-env.ok .t-ic{background:#ecfdf5;color:var(--ok)}.t-env.ko .t-ic{background:#fef2f2;color:var(--ko)}.t-env.wa .t-ic{background:#fffbeb;color:var(--wa)}
+.t-env div{flex:1;min-width:0}
+.t-env b{display:block;color:var(--ink);font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t-env small{display:block;font-size:.76rem;color:var(--mute)}
+.t-env p{margin:.3rem 0 0;font-size:.78rem}
+.t-env .t-act{display:flex;gap:.8rem;margin-top:.4rem}
+.t-env .t-act button{font-size:.8rem;font-weight:800;color:var(--acc)}
+.t-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem}
+.t-kpi div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:.6rem;text-align:center}
+.t-kpi b{display:block;font-size:1.3rem;color:var(--ink)}
+.t-kpi small{font-size:.7rem;color:var(--mute);font-weight:700}
+.t-liste{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:1rem}
+.t-liste>*{display:flex;align-items:center;gap:.7rem;width:100%;padding:.85rem .9rem;border-bottom:1px solid #f1f5f9;text-align:left;font-size:.92rem;color:var(--ink);text-decoration:none}
+.t-liste>*:last-child{border-bottom:0}
+.t-liste small{margin-left:auto;color:var(--mute);font-size:.8rem;text-align:right}
+#tToast{position:fixed;left:1rem;right:1rem;bottom:calc(5rem + env(safe-area-inset-bottom));z-index:40;display:flex;justify-content:center;pointer-events:none}
+#tToast div{max-width:520px;padding:.75rem 1rem;border-radius:12px;background:var(--ink);color:#fff;font-size:.88rem;font-weight:600;box-shadow:0 10px 30px -12px rgba(0,0,0,.5)}
+body:has(.t-pied) #tToast{bottom:calc(9.5rem + env(safe-area-inset-bottom))}
+body:has(.t-pied) main{padding-bottom:calc(11rem + env(safe-area-inset-bottom))}
+@media (min-width:720px){main{padding-top:1.5rem}}
+</style>
+</head>
+<body>
+<header class="t-top">
+  <span class="t-logo">OP</span>
+  <span class="t-titre"><b>OperaPlus Terrain</b><small id="tQui">{{ nom }}</small></span>
+  <span class="t-etat" id="tEtat"><i></i><span>En ligne</span></span>
+  <button class="t-syncbtn" id="tSync" aria-label="Synchroniser maintenant"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 3v5h-5M3 21v-5h5"/></svg><span class="t-badge" id="tNb"></span></button>
+</header>
+<div id="tBanniere" class="t-ban" hidden></div>
+<main id="tVue" aria-live="polite"></main>
+<div id="tPied"></div>
+<nav class="t-nav" id="tNav">
+  <button data-route="taches"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Mes tâches</button>
+  <button data-route="questionnaires"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>Questionnaires</button>
+  <button data-route="envois"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>Envois<span class="t-badge" id="tNb2"></span></button>
+  <button data-route="plus"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>Plus</button>
+</nav>
+<div id="tToast" aria-live="assertive"></div>
+
+<script>
+window.OP_CONF = {
+  racine: '{% url "collecte_pwa" %}', csrf: '{{ csrf }}', nom: '{{ nom|escapejs }}', version: '{{ version }}',
+  login: '{{ login_url }}?next={% url "collecte_pwa" %}',
+  bureau: {% if gestionnaire %}'{% url "collecte_g_accueil" %}'{% else %}''{% endif %}, sw: '{% url "collecte_sw" %}'
+};
+</script>
+<script src="{% static 'collecte/sync.js' %}"></script>
+<script>
+(function () {
+  'use strict';
+  var C = window.OP_CONF, R = C.racine, DB = OPT.DB;
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var vue = $('#tVue'), pied = $('#tPied');
+  var etat = { paquet: null, envois: [], brouillons: [], synchro: false, installer: null, decl: null };
+
+  /* ---------------- utilitaires ---------------- */
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function toast(t, ms) { var b = $('#tToast'); b.innerHTML = '<div>' + esc(t) + '</div>'; clearTimeout(toast.m); toast.m = setTimeout(function () { b.innerHTML = ''; }, ms || 3500); }
+  function csrf() { var m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/); return m ? decodeURIComponent(m[1]) : C.csrf; }
+  function aujourdhui() { var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+  function dateFr(iso) { if (!iso) return ''; var p = iso.slice(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+  function quand(ms) {
+    if (!ms) return 'jamais'; var s = (Date.now() - ms) / 1000;
+    if (s < 60) return 'à l’instant'; if (s < 3600) return 'il y a ' + Math.round(s / 60) + ' min';
+    if (s < 86400) return 'il y a ' + Math.round(s / 3600) + ' h'; return 'le ' + new Date(ms).toLocaleDateString('fr-FR');
+  }
+  function taille(n) { return n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' Ko' : (n / 1048576).toFixed(1).replace('.', ',') + ' Mo'; }
+  var ICO = {
+    ok: '<path d="M20 6L9 17l-5-5"/>', ko: '<path d="M18 6L6 18M6 6l12 12"/>', att: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    up: '<path d="M12 16V4M7 9l5-5 5 5"/>', alerte: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+    form: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/>', tache: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
+    chev: '<path d="M9 18l6-6-6-6"/>', retour: '<path d="M15 18l-6-6 6-6"/>', cam: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+    fichier: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>', gps: '<path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+    brouillon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>', wifi: '<path d="M5 12.6a10 10 0 0 1 14 0M8.5 16.1a5 5 0 0 1 7 0M2 8.8a15 15 0 0 1 20 0M12 20h.01"/>'
+  };
+  function ico(n) { return '<svg viewBox="0 0 24 24">' + (ICO[n] || '') + '</svg>'; }
+
+  /* ---------------- état réseau ---------------- */
+  function majEtat() {
+    var e = $('#tEtat'), t = e.querySelector('span');
+    e.className = 't-etat' + (etat.synchro ? ' sync' : (navigator.onLine ? '' : ' off'));
+    t.textContent = etat.synchro ? 'Envoi…' : (navigator.onLine ? 'En ligne' : 'Hors ligne');
+    $('#tSync').classList.toggle('tourne', etat.synchro);
+    var n = etat.envois.filter(function (x) { return x.statut === 'en_attente' || x.statut === 'erreur' || x.statut === 'envoi'; }).length;
+    $('#tNb').textContent = n || ''; $('#tNb2').textContent = n || '';
+  }
+  function banniere(type, html) { var b = $('#tBanniere'); if (!html) { b.hidden = true; return; } b.className = 't-ban ' + type; b.innerHTML = html; b.hidden = false; }
+
+  /* ---------------- données locales ---------------- */
+  function charger() {
+    return Promise.all([DB.lire('paquet'), DB.tout('envois'), DB.tout('brouillons')]).then(function (r) {
+      etat.paquet = r[0] || null; etat.envois = (r[1] || []).sort(function (a, b) { return b.cree_le - a.cree_le; }); etat.brouillons = r[2] || [];
+      majEtat();
+    });
+  }
+  function actualiserPaquet() {
+    return OPT.appel(R + 'api/paquet/', {}, 20000).then(function (r) {
+      if (r.status === 401) { deconnecte(); return; }
+      if (!r.ok) return;
+      return r.json().then(function (j) {
+        if (!j.ok) return;
+        etat.paquet = j; C.csrf = j.csrf;
+        return Promise.all([DB.ecrire('paquet', j), DB.ecrire('csrf', j.csrf)]).then(function () { if (j.utilisateur) $('#tQui').textContent = j.utilisateur.nom; });
+      });
+    }).catch(function () {});
+  }
+  function deconnecte() {
+    banniere('ko', ico('alerte') + '<span>Votre session a expiré. Vos données sont en sécurité sur le téléphone. <a href="' + esc(C.login) + '">Se reconnecter</a> (avec du réseau) pour les envoyer.</span>');
+  }
+  function enregistrerEnvoi(e) {
+    e.statut = 'en_attente'; e.cree_le = Date.now(); e.essais = 0;
+    return DB.mettre('envois', e).then(function () {
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+      if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(function (reg) { if (reg.sync) reg.sync.register('op-envois').catch(function () {}); });
+      return charger();
+    }).then(function () { setTimeout(function () { synchroniser(false, true); }, 400); });
+  }
+
+  /* ---------------- synchronisation ---------------- */
+  function synchroniser(manuel, discret) {
+    if (etat.synchro) return Promise.resolve();
+    if (!navigator.onLine) { if (manuel) toast('Pas de réseau. Vos données restent sur le téléphone et partiront automatiquement.'); return Promise.resolve(); }
+    etat.synchro = true; majEtat();
+    return OPT.synchroniser(R, { csrf: csrf() }).then(function (b) {
+      if (b.occupe) return;
+      if (b.deconnecte) { deconnecte(); return; }
+      if (!b.stable) {
+        if (b.raison === 'deconnecte') deconnecte();
+        else if (manuel) toast('Réseau trop faible pour l’instant. Nouvel essai automatique dès qu’il se stabilise.');
+        return;
+      }
+      banniere();
+      return actualiserPaquet().then(function () {
+        if (b.envoyes && !discret) toast(b.envoyes + ' envoi' + (b.envoyes > 1 ? 's' : '') + ' synchronisé' + (b.envoyes > 1 ? 's' : '') + '.');
+        else if (b.envoyes) toast('Envoyé à OperaPlus ✓');
+        else if (b.erreurs) toast(b.erreurs + ' envoi(s) en erreur : voir l’onglet Envois.');
+        else if (manuel) toast('Tout est à jour.');
+      });
+    }).catch(function () { if (manuel) toast('La synchronisation a échoué. Nouvel essai plus tard.'); })
+      .finally(function () { etat.synchro = false; return OPT.nettoyer(30).then(charger).then(function () { if (ecranRafraichissable()) router(); }); });
+  }
+  function ecranRafraichissable() { var h = location.hash.slice(1).split('/')[0] || 'taches'; return h === 'taches' || h === 'envois' || h === 'plus' || h === 'questionnaires'; }
+
+  window.addEventListener('online', function () { majEtat(); setTimeout(function () { synchroniser(false); }, 3000); });
+  window.addEventListener('offline', majEtat);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') synchroniser(false); });
+  setInterval(function () {
+    var attente = etat.envois.some(function (x) { return x.statut === 'en_attente' || x.statut === 'erreur'; });
+    if (navigator.onLine && attente) synchroniser(false);
+  }, 90000);
+  $('#tSync').addEventListener('click', function () { synchroniser(true); });
+
+  /* ---------------- navigation ---------------- */
+  function aller(h) { if (location.hash === '#' + h) router(); else location.hash = h; }
+  window.addEventListener('hashchange', router);
+  $('#tNav').addEventListener('click', function (e) { var b = e.target.closest('[data-route]'); if (b) aller(b.dataset.route); });
+  function onglet(n) { document.querySelectorAll('#tNav [data-route]').forEach(function (b) { b.classList.toggle('on', b.dataset.route === n); }); }
+  function router() {
+    var p = (location.hash.slice(1) || 'taches').split('/');
+    pied.innerHTML = ''; window.scrollTo(0, 0);
+    if (!etat.paquet && p[0] !== 'plus' && p[0] !== 'envois') { onglet(p[0]); return ecranSansPaquet(); }
+    if (p[0] === 'declarer') { onglet('taches'); return ecranDeclaration(p[1]); }
+    if (p[0] === 'remplir') { onglet('questionnaires'); return ecranQuestion(p[1]); }
+    if (p[0] === 'recap') { onglet('questionnaires'); return ecranRecap(p[1]); }
+    onglet(p[0]);
+    ({ taches: ecranTaches, questionnaires: ecranQuestionnaires, envois: ecranEnvois, plus: ecranPlus }[p[0]] || ecranTaches)();
+  }
+  function ecranSansPaquet() {
+    vue.innerHTML = '<div class="t-vide">' + ico('wifi') + '<b>Première ouverture</b>Ouvrez l’application une fois avec du réseau pour télécharger vos tâches et questionnaires. Ensuite, elle fonctionne sans réseau.<br><br><button class="t-btn t-btn-p" id="tCharger">Télécharger maintenant</button></div>';
+    $('#tCharger').onclick = function () { toast('Téléchargement…'); actualiserPaquet().then(function () { if (!etat.paquet) toast('Impossible : vérifiez le réseau.'); router(); }); };
+  }
+
+  /* ---------------- MES TÂCHES ---------------- */
+  function envoiDeTache(t) { return etat.envois.filter(function (e) { return e.type === 'declaration' && String(e.contenu.echeance_id) === String(t.echeance_id) && e.statut !== 'rejete'; })[0]; }
+  function ecranTaches() {
+    var l = etat.paquet.taches || [], auj = aujourdhui();
+    var html = '<h1>Mes tâches</h1><p class="t-sub">' + l.length + ' échéance' + (l.length > 1 ? 's' : '') + ' à déclarer · mises à jour ' + quand(Date.parse(etat.paquet.genere_le)) + '</p>';
+    if (etat.installer) html += '<div class="t-ban info" style="margin:0 0 .8rem">' + ico('up') + '<span>Installez l’application sur ce téléphone pour l’ouvrir sans navigateur. <button id="tInst1">Installer</button></span></div>';
+    if (!l.length) { vue.innerHTML = html + '<div class="t-vide">' + ico('tache') + '<b>Aucune échéance en attente</b>Bravo ! Tirez vers le bas ou touchez ↻ pour vérifier les nouveautés.</div>'; brancherInstall(); return; }
+    if (l.length > 6) html += '<input class="t-recherche" id="tFiltre" type="search" placeholder="Rechercher une opération…">';
+    html += '<div id="tListe">' + l.map(function (t) {
+      var env = envoiDeTache(t), retard = t.date_echeance && t.date_echeance < auj, tag = '';
+      if (env) tag = env.statut === 'integre' || env.statut === 'valide' ? '<span class="t-tag ok">' + ico('ok') + ' Envoyée</span>' : (env.statut === 'recu_serveur' ? '<span class="t-tag acc">Reçue, en traitement</span>' : '<span class="t-tag wa">' + ico('att') + ' Sur le téléphone, envoi en attente</span>');
+      else if (retard) tag = '<span class="t-tag ko">En retard · échéance ' + dateFr(t.date_echeance) + '</span>';
+      else if (t.date_echeance) tag = '<span class="t-tag">Échéance ' + dateFr(t.date_echeance) + '</span>';
+      return '<button class="t-carte" data-decl="' + t.echeance_id + '" data-txt="' + esc((t.operation_nom + ' ' + t.tache_nom).toLowerCase()) + '"><span class="t-ic">' + ico('tache') + '</span><span class="t-ct"><b>' + esc(t.operation_nom) + '</b>' +
+        (t.tache_nom ? '<small>' + esc(t.tache_nom) + '</small>' : '') + '<div class="t-barre"><s style="width:' + Math.min(100, t.niveau_actuel) + '%"></s></div><small>Avancement actuel : ' + t.niveau_actuel + ' %</small>' + tag + '</span><span class="t-chev">' + ico('chev') + '</span></button>';
+    }).join('') + '</div>';
+    vue.innerHTML = html;
+    vue.querySelectorAll('[data-decl]').forEach(function (b) { b.onclick = function () { aller('declarer/' + b.dataset.decl); }; });
+    var f = $('#tFiltre'); if (f) f.oninput = function () { var q = f.value.trim().toLowerCase(); vue.querySelectorAll('[data-decl]').forEach(function (b) { b.hidden = q && b.dataset.txt.indexOf(q) < 0; }); };
+    brancherInstall();
+  }
+
+  /* ---------------- DÉCLARATION ---------------- */
+  function lireGps(cb) {
+    if (!navigator.geolocation) return cb(null, 'GPS indisponible sur cet appareil');
+    navigator.geolocation.getCurrentPosition(function (p) { cb({ lat: +p.coords.latitude.toFixed(6), lon: +p.coords.longitude.toFixed(6), precision: Math.round(p.coords.accuracy) }); },
+      function (e) { cb(null, e.code === 1 ? 'Autorisez la localisation' : 'Position introuvable'); }, { enableHighAccuracy: true, timeout: 25000, maximumAge: 120000 });
+  }
+  function htmlGps(g, err) {
+    return g ? '<div class="t-gps ok">' + ico('gps') + '<span>Position enregistrée (± ' + g.precision + ' m)</span><button type="button" data-gps>Refaire</button></div>'
+      : '<div class="t-gps ko">' + ico('gps') + '<span>' + esc(err || 'Recherche de la position…') + '</span><button type="button" data-gps>Réessayer</button></div>';
+  }
+  function compresser(fichier) {
+    if (!/^image\//.test(fichier.type) || fichier.size < 350000) return Promise.resolve(fichier);
+    return new Promise(function (ok) {
+      var img = new Image(), url = URL.createObjectURL(fichier);
+      img.onload = function () {
+        var max = 1600, r = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
+        c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        c.toBlob(function (b) { ok(b && b.size < fichier.size ? b : fichier); }, 'image/jpeg', 0.75);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); ok(fichier); };
+      img.src = url;
+    });
+  }
+  function ecranDeclaration(id) {
+    var t = (etat.paquet.taches || []).filter(function (x) { return String(x.echeance_id) === String(id); })[0];
+    if (!t) { vue.innerHTML = '<div class="t-vide"><b>Tâche introuvable</b>Elle a peut-être déjà été déclarée.</div>'; return; }
+    var d = etat.decl && etat.decl.id === id ? etat.decl : (etat.decl = { id: id, niveau: Math.round(t.niveau_actuel), commentaire: '', date: aujourdhui(), fichier: null, nom: '', gps: null, err: '' });
+    function dessiner() {
+      vue.innerHTML = '<button class="t-retour" data-r>' + ico('retour') + ' Mes tâches</button><h1>' + esc(t.operation_nom) + '</h1><p class="t-sub">' + esc(t.tache_nom || '') + (t.date_echeance ? ' · échéance ' + dateFr(t.date_echeance) : '') + '</p>' +
+        (envoiDeTache(t) ? '<div class="t-ban wa" style="margin:0 0 1rem">' + ico('alerte') + '<span>Une déclaration existe déjà pour cette échéance. Une nouvelle sera envoyée en plus.</span></div>' : '') +
+        '<div class="t-q"><div class="t-champ"><span>Niveau atteint <em>*</em></span><div class="t-niv"><b id="dNiv">' + d.niveau + '</b><span>%</span></div>' +
+        '<input type="range" min="0" max="100" step="1" value="' + d.niveau + '" id="dRange" aria-label="Niveau atteint"><div class="t-puces">' + [0, 25, 50, 75, 100].map(function (v) { return '<button type="button" data-v="' + v + '" class="' + (d.niveau === v ? 'on' : '') + '">' + v + '</button>'; }).join('') + '</div>' +
+        '<small>Avant : ' + t.niveau_actuel + ' %</small></div>' +
+        '<label class="t-champ"><span>Ce qui a été fait <em>*</em></span><textarea class="t-in" id="dCom" placeholder="Ex : 3 séances réalisées à Bafoussam, 120 participants.">' + esc(d.commentaire) + '</textarea></label>' +
+        '<label class="t-champ"><span>Date de réalisation</span><input class="t-in" type="date" id="dDate" value="' + d.date + '" max="' + aujourdhui() + '"></label>' +
+        '<div class="t-champ"><span>Preuve (photo ou document)</span><div class="t-pj"><label>' + ico('cam') + ' Photo<input type="file" accept="image/*" capture="environment" id="dCam"></label><label>' + ico('fichier') + ' Fichier<input type="file" id="dFic"></label></div>' +
+        (d.fichier ? '<div class="t-apercu">' + (/^image\//.test(d.fichier.type) ? '<img src="' + URL.createObjectURL(d.fichier) + '" alt="">' : '<span class="t-ic">' + ico('fichier') + '</span>') + '<div><b>' + esc(d.nom) + '</b>' + taille(d.fichier.size) + '</div><button type="button" id="dX">Retirer</button></div>' : '') + '</div>' +
+        '<div class="t-champ"><span>Localisation</span><div id="dGps">' + htmlGps(d.gps, d.err) + '</div></div>' +
+        '<p class="t-err" id="dErr" hidden></p></div>';
+      pied.innerHTML = '<div class="t-pied"><div><button class="t-btn t-btn-p" id="dOk">' + ico('ok') + ' Enregistrer la déclaration</button></div></div>';
+      var range = $('#dRange');
+      function niv(v) { d.niveau = +v; $('#dNiv').textContent = v; range.value = v; vue.querySelectorAll('[data-v]').forEach(function (b) { b.classList.toggle('on', +b.dataset.v === +v); }); }
+      range.oninput = function () { niv(range.value); };
+      vue.querySelectorAll('[data-v]').forEach(function (b) { b.onclick = function () { niv(b.dataset.v); }; });
+      $('#dCom').oninput = function () { d.commentaire = this.value; };
+      $('#dDate').onchange = function () { d.date = this.value; };
+      $('[data-r]').onclick = function () { history.back(); };
+      [$('#dCam'), $('#dFic')].forEach(function (inp) { inp.onchange = function () { var f = inp.files[0]; if (!f) return; compresser(f).then(function (b) { d.fichier = b; d.nom = f.name.replace(/\.(heic|png)$/i, '.jpg'); dessiner(); }); }; });
+      if ($('#dX')) $('#dX').onclick = function () { d.fichier = null; dessiner(); };
+      vue.querySelectorAll('[data-gps]').forEach(function (b) { b.onclick = gps; });
+      $('#dOk').onclick = function () {
+        var err = $('#dErr');
+        if (!d.commentaire.trim()) { err.textContent = 'Décrivez ce qui a été fait.'; err.hidden = false; $('#dCom').focus(); return; }
+        if (d.date > aujourdhui()) { err.textContent = 'La date ne peut pas être dans le futur.'; err.hidden = false; return; }
+        this.disabled = true;
+        enregistrerEnvoi({
+          uuid: OPT.uuid(), type: 'declaration', titre: t.operation_nom, sous_titre: 'Déclaration · ' + d.niveau + ' %',
+          contenu: { operation_id: t.operation_id, echeance_id: t.echeance_id, operation_nom: t.operation_nom, niveau: d.niveau, commentaire: d.commentaire.trim(),
+                     date_realisation: d.date, lat: d.gps ? d.gps.lat : '', lon: d.gps ? d.gps.lon : '', precision: d.gps ? d.gps.precision : '',
+                     cree_le: new Date().toISOString(), fichier: d.fichier, fichier_nom: d.nom }
+        }).then(function () { etat.decl = null; toast(navigator.onLine ? 'Enregistré. Envoi en cours…' : 'Enregistré sur le téléphone. Envoi automatique dès que le réseau est stable.', 4500); aller('taches'); });
+      };
+    }
+    function gps() { d.gps = null; d.err = ''; var z = $('#dGps'); if (z) z.innerHTML = htmlGps(null); lireGps(function (g, e) { d.gps = g; d.err = e; var z2 = $('#dGps'); if (z2) { z2.innerHTML = htmlGps(g, e); z2.querySelector('[data-gps]').onclick = gps; } }); }
+    dessiner();
+    if (!d.gps && !d.err) gps();
+  }
+
+  /* ---------------- QUESTIONNAIRES ---------------- */
+  function ecranQuestionnaires() {
+    var l = etat.paquet.formulaires || [], br = etat.brouillons.slice().sort(function (a, b) { return b.maj - a.maj; });
+    var html = '<h1>Questionnaires</h1><p class="t-sub">Touchez un questionnaire pour remplir une nouvelle fiche. Tout est enregistré au fur et à mesure.</p>';
+    if (br.length) html += '<div class="t-sec">À terminer (' + br.length + ')</div>' + br.map(function (b) {
+      return '<button class="t-carte" data-br="' + b.uuid + '"><span class="t-ic" style="background:#fffbeb;color:#b45309">' + ico('brouillon') + '</span><span class="t-ct"><b>' + esc(b.titre) + '</b><small>Commencé ' + quand(b.cree_le) + ' · ' + Object.keys(b.reponses).length + ' réponse(s)</small></span><span class="t-chev">' + ico('chev') + '</span></button>';
+    }).join('');
+    html += '<div class="t-sec">Disponibles</div>' + (l.length ? l.map(function (f) {
+      var n = f.questions.filter(function (q) { return q.type !== 'note'; }).length;
+      var faits = etat.envois.filter(function (e) { return e.type === 'soumission' && e.contenu.formulaire_id === f.id; }).length;
+      return '<button class="t-carte" data-f="' + f.id + '"><span class="t-ic">' + ico('form') + '</span><span class="t-ct"><b>' + esc(f.titre) + '</b><small>' + n + ' question' + (n > 1 ? 's' : '') + (faits ? ' · ' + faits + ' fiche(s) remplie(s)' : '') + '</small>' + (f.description ? '<small>' + esc(f.description) + '</small>' : '') + '</span><span class="t-chev">' + ico('chev') + '</span></button>';
+    }).join('') : '<div class="t-vide">' + ico('form') + '<b>Aucun questionnaire</b>Votre équipe S&amp;E n’a pas encore publié de questionnaire.</div>');
+    vue.innerHTML = html;
+    vue.querySelectorAll('[data-br]').forEach(function (b) { b.onclick = function () { aller('remplir/' + b.dataset.br); }; });
+    vue.querySelectorAll('[data-f]').forEach(function (b) { b.onclick = function () { nouvelleFiche(+b.dataset.f); }; });
+  }
+  function nouvelleFiche(fid) {
+    var f = (etat.paquet.formulaires || []).filter(function (x) { return x.id === fid; })[0];
+    var b = { uuid: OPT.uuid(), formulaire_id: f.id, version: f.version, titre: f.titre, reponses: {}, fichiers: {}, gps: null, page: 0, cree_le: Date.now(), maj: Date.now() };
+    DB.mettre('brouillons', b).then(charger).then(function () { aller('remplir/' + b.uuid); });
+    lireGps(function (g) { if (g) DB.un('brouillons', b.uuid).then(function (x) { if (x && !x.gps) { x.gps = g; DB.mettre('brouillons', x); } }); });
+  }
+  function formDe(b) { return (etat.paquet.formulaires || []).filter(function (x) { return x.id === b.formulaire_id; })[0]; }
+  function visibles(f, rep) {
+    return f.questions.filter(function (q) {
+      if (!q.si || !q.si.question) return true;
+      var v = rep[q.si.question];
+      return Array.isArray(v) ? v.indexOf(q.si.valeur) >= 0 : String(v == null ? '' : v) === String(q.si.valeur);
+    });
+  }
+  function vide(q, b) { if (q.type === 'photo' || q.type === 'signature') return !b.fichiers[q.id]; var v = b.reponses[q.id]; return v == null || v === '' || (Array.isArray(v) && !v.length); }
+  function controler(q, b) {
+    if (q.type === 'note') return '';
+    if (q.obligatoire && vide(q, b)) return 'Cette question est obligatoire.';
+    var v = b.reponses[q.id];
+    if ((q.type === 'entier' || q.type === 'nombre') && v !== '' && v != null) {
+      var n = +v; if (isNaN(n)) return 'Entrez un nombre.';
+      if (q.type === 'entier' && Math.round(n) !== n) return 'Entrez un nombre entier.';
+      if (q.min !== null && q.min !== '' && q.min !== undefined && n < +q.min) return 'Minimum : ' + q.min + '.';
+      if (q.max !== null && q.max !== '' && q.max !== undefined && n > +q.max) return 'Maximum : ' + q.max + '.';
+    }
+    return '';
+  }
+  function sauver(b) { b.maj = Date.now(); return DB.mettre('brouillons', b); }
+
+  function ecranQuestion(uid) {
+    DB.un('brouillons', uid).then(function (b) {
+      if (!b) { aller('questionnaires'); return; }
+      var f = formDe(b);
+      if (!f) { vue.innerHTML = '<div class="t-vide"><b>Questionnaire retiré</b>Ce questionnaire n’est plus disponible. <br><br><button class="t-btn t-btn-d" id="qSup">Supprimer ce brouillon</button></div>'; $('#qSup').onclick = function () { DB.oter('brouillons', uid).then(charger).then(function () { aller('questionnaires'); }); }; return; }
+      var vis = visibles(f, b.reponses);
+      if (b.page >= vis.length) return aller('recap/' + uid);
+      var q = vis[b.page], v = b.reponses[q.id];
+      var html = '<button class="t-retour" data-r>' + ico('retour') + ' ' + esc(f.titre) + '</button>' +
+        '<div class="t-prog"><i><s style="width:' + Math.round((b.page) * 100 / vis.length) + '%"></s></i><span>' + (b.page + 1) + ' / ' + vis.length + '</span></div>' +
+        '<div class="t-q"><h2>' + esc(q.libelle || 'Question') + (q.obligatoire ? ' <span style="color:var(--ko)">*</span>' : '') + '</h2>' + (q.aide ? '<p class="t-aide">' + esc(q.aide) + '</p>' : '<p class="t-aide"></p>');
+      if (q.type === 'texte') html += '<input class="t-in" id="qV" value="' + esc(v || '') + '" autocomplete="off">';
+      else if (q.type === 'paragraphe') html += '<textarea class="t-in" id="qV">' + esc(v || '') + '</textarea>';
+      else if (q.type === 'entier' || q.type === 'nombre') html += '<input class="t-in" id="qV" type="number" inputmode="' + (q.type === 'entier' ? 'numeric' : 'decimal') + '" step="' + (q.type === 'entier' ? '1' : 'any') + '" value="' + esc(v == null ? '' : v) + '"' + (q.min != null && q.min !== '' ? ' min="' + q.min + '"' : '') + (q.max != null && q.max !== '' ? ' max="' + q.max + '"' : '') + '>';
+      else if (q.type === 'date') html += '<input class="t-in" id="qV" type="date" value="' + esc(v || '') + '">';
+      else if (q.type === 'choix') html += (q.choix || []).map(function (c) { return '<button type="button" class="t-opt' + (v === c ? ' on' : '') + '" data-c="' + esc(c) + '"><i></i>' + esc(c) + '</button>'; }).join('');
+      else if (q.type === 'choix_multiple') html += (q.choix || []).map(function (c) { return '<button type="button" class="t-opt multi' + ((v || []).indexOf(c) >= 0 ? ' on' : '') + '" data-m="' + esc(c) + '"><i></i>' + esc(c) + '</button>'; }).join('') + '<p class="t-aide" style="margin-top:.4rem">Plusieurs réponses possibles.</p>';
+      else if (q.type === 'oui_non') html += '<div class="t-on2">' + ['Oui', 'Non'].map(function (c) { return '<button type="button" class="t-opt' + (v === c ? ' on' : '') + '" data-c="' + c + '"><i></i>' + c + '</button>'; }).join('') + '</div>';
+      else if (q.type === 'gps') html += '<div id="qGps">' + (v ? htmlGps(v) : '<button type="button" class="t-btn t-btn-s" style="width:100%" data-gps>' + ico('gps') + ' Enregistrer ma position</button>') + '</div>';
+      else if (q.type === 'photo') html += '<div class="t-pj"><label>' + ico('cam') + ' Prendre une photo<input type="file" accept="image/*" capture="environment" id="qPh"></label><label>' + ico('fichier') + ' Galerie<input type="file" accept="image/*" id="qPh2"></label></div>' + (b.fichiers[q.id] ? '<div class="t-apercu"><img src="' + URL.createObjectURL(b.fichiers[q.id].blob) + '" alt=""><div><b>Photo enregistrée</b>' + taille(b.fichiers[q.id].blob.size) + '</div><button type="button" id="qPhX">Retirer</button></div>' : '');
+      else if (q.type === 'signature') html += '<canvas class="t-sign" id="qSig"></canvas><div class="t-ligne" style="margin-top:.5rem"><button type="button" class="t-btn t-btn-s" id="qSigX">Effacer</button></div>' + (b.fichiers[q.id] ? '<p class="t-aide">Signature déjà enregistrée : signez à nouveau pour la remplacer.</p>' : '');
+      html += '<p class="t-err" id="qErr" hidden></p></div>';
+      vue.innerHTML = html;
+      pied.innerHTML = '<div class="t-pied"><div>' + (b.page > 0 ? '<button class="t-btn t-btn-s" id="qPrec">' + ico('retour') + ' Précédent</button>' : '') + '<button class="t-btn t-btn-p" id="qSuiv">' + (b.page === vis.length - 1 ? 'Vérifier' : 'Suivant') + ' ' + ico('chev') + '</button></div></div>';
+      $('[data-r]').onclick = function () { aller('questionnaires'); };
+      var inp = $('#qV');
+      if (inp) { inp.oninput = function () { b.reponses[q.id] = (q.type === 'entier' || q.type === 'nombre') ? (inp.value === '' ? '' : +inp.value) : inp.value; clearTimeout(sauver.t); sauver.t = setTimeout(function () { sauver(b); }, 400); }; if (q.type !== 'date') setTimeout(function () { inp.focus(); }, 50); }
+      vue.querySelectorAll('[data-c]').forEach(function (o) { o.onclick = function () { b.reponses[q.id] = o.dataset.c; sauver(b).then(function () { suivant(); }); }; });
+      vue.querySelectorAll('[data-m]').forEach(function (o) { o.onclick = function () { var l = b.reponses[q.id] || [], c = o.dataset.m, i = l.indexOf(c); if (i >= 0) l.splice(i, 1); else l.push(c); b.reponses[q.id] = l; o.classList.toggle('on', i < 0); sauver(b); }; });
+      var bg = vue.querySelector('[data-gps]');
+      if (bg) bg.onclick = function () { $('#qGps').innerHTML = htmlGps(null); lireGps(function (g, e) { if (g) { b.reponses[q.id] = g; sauver(b); } $('#qGps').innerHTML = htmlGps(g, e); var r2 = vue.querySelector('[data-gps]'); if (r2) r2.onclick = bg.onclick; }); };
+      ['#qPh', '#qPh2'].forEach(function (s) { var i = $(s); if (i) i.onchange = function () { var fi = i.files[0]; if (!fi) return; compresser(fi).then(function (bl) { b.fichiers[q.id] = { blob: bl, nom: q.id + '.jpg' }; b.reponses[q.id] = true; sauver(b).then(function () { ecranQuestion(uid); }); }); }; });
+      if ($('#qPhX')) $('#qPhX').onclick = function () { delete b.fichiers[q.id]; delete b.reponses[q.id]; sauver(b).then(function () { ecranQuestion(uid); }); };
+      var sig = $('#qSig'), trace = false;
+      if (sig) {
+        var ctx, r = window.devicePixelRatio || 1;
+        sig.width = sig.clientWidth * r; sig.height = sig.clientHeight * r; ctx = sig.getContext('2d'); ctx.scale(r, r); ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.strokeStyle = '#0f172a';
+        var pos = function (e) { var bb = sig.getBoundingClientRect(); return [e.clientX - bb.left, e.clientY - bb.top]; };
+        sig.onpointerdown = function (e) { sig.setPointerCapture(e.pointerId); var p = pos(e); ctx.beginPath(); ctx.moveTo(p[0], p[1]); sig.dessin = true; };
+        sig.onpointermove = function (e) { if (!sig.dessin) return; var p = pos(e); ctx.lineTo(p[0], p[1]); ctx.stroke(); trace = true; };
+        sig.onpointerup = sig.onpointercancel = function () { sig.dessin = false; };
+        $('#qSigX').onclick = function () { ctx.clearRect(0, 0, sig.width, sig.height); trace = false; delete b.fichiers[q.id]; delete b.reponses[q.id]; sauver(b); };
+      }
+      if ($('#qPrec')) $('#qPrec').onclick = function () { b.page = Math.max(0, b.page - 1); sauver(b).then(function () { ecranQuestion(uid); }); };
+      function suivant() {
+        var aller2 = function () {
+          var e = controler(q, b);
+          if (e) { var el = $('#qErr'); el.textContent = e; el.hidden = false; return; }
+          b.page = b.page + 1; sauver(b).then(function () { ecranQuestion(uid); });
+        };
+        if (sig && trace) sig.toBlob(function (bl) { b.fichiers[q.id] = { blob: bl, nom: q.id + '.png' }; b.reponses[q.id] = true; aller2(); }, 'image/png');
+        else aller2();
+      }
+      $('#qSuiv').onclick = suivant;
+      if (inp) inp.onkeydown = function (e) { if (e.key === 'Enter' && q.type !== 'paragraphe') { e.preventDefault(); suivant(); } };
+    });
+  }
+
+  function afficherValeur(q, b) {
+    if (q.type === 'photo' || q.type === 'signature') return b.fichiers[q.id] ? '<img src="' + URL.createObjectURL(b.fichiers[q.id].blob) + '" alt="">' : '';
+    var v = b.reponses[q.id];
+    if (v && typeof v === 'object' && !Array.isArray(v)) return esc(v.lat + ', ' + v.lon + ' (± ' + v.precision + ' m)');
+    if (Array.isArray(v)) return esc(v.join(', '));
+    if (q.type === 'date' && v) return dateFr(v);
+    return esc(v == null ? '' : v);
+  }
+  function ecranRecap(uid) {
+    DB.un('brouillons', uid).then(function (b) {
+      if (!b) { aller('questionnaires'); return; }
+      var f = formDe(b); if (!f) return ecranQuestion(uid);
+      var vis = visibles(f, b.reponses).filter(function (q) { return q.type !== 'note'; }), manque = vis.filter(function (q) { return controler(q, b); });
+      var gpsKo = f.gps_obligatoire && !b.gps;
+      vue.innerHTML = '<button class="t-retour" data-r>' + ico('retour') + ' Questions</button><h1>Vérifiez avant l’envoi</h1><p class="t-sub">' + esc(f.titre) + ' · touchez une réponse pour la modifier.</p>' +
+        '<div class="t-recap">' + vis.map(function (q) {
+          var i = visibles(f, b.reponses).indexOf(q), val = afficherValeur(q, b), err = controler(q, b);
+          return '<button data-p="' + i + '"><div><small>' + esc(q.libelle) + '</small><b class="' + (err ? 'manque' : '') + '">' + (err ? esc(err) : (val || '<span style="color:#94a3b8">— sans réponse</span>')) + '</b></div><span class="t-chev">' + ico('chev') + '</span></button>';
+        }).join('') + '</div>' +
+        '<div class="t-champ" style="margin-top:1rem"><span>Localisation de la fiche' + (f.gps_obligatoire ? ' <em>*</em>' : '') + '</span><div id="rGps">' + htmlGps(b.gps, b.gps ? '' : 'Position non enregistrée') + '</div></div>' +
+        '<button class="t-btn t-btn-d" id="rSup" style="width:100%;margin-top:.5rem">Abandonner cette fiche</button>';
+      pied.innerHTML = '<div class="t-pied"><div><button class="t-btn t-btn-p" id="rOk"' + (manque.length || gpsKo ? ' disabled' : '') + '>' + ico('up') + ' Terminer et envoyer</button></div></div>';
+      $('[data-r]').onclick = function () { b.page = Math.max(0, visibles(f, b.reponses).length - 1); sauver(b).then(function () { aller('remplir/' + uid); }); };
+      vue.querySelectorAll('[data-p]').forEach(function (x) { x.onclick = function () { b.page = +x.dataset.p; sauver(b).then(function () { aller('remplir/' + uid); }); }; });
+      vue.querySelector('[data-gps]').onclick = function () { $('#rGps').innerHTML = htmlGps(null); lireGps(function (g, e) { if (g) { b.gps = g; sauver(b); } ecranRecap(uid); }); };
+      $('#rSup').onclick = function () { if (confirm('Supprimer définitivement cette fiche non envoyée ?')) DB.oter('brouillons', uid).then(charger).then(function () { aller('questionnaires'); }); };
+      $('#rOk').onclick = function () {
+        this.disabled = true;
+        var donnees = {}, fichiers = [];
+        visibles(f, b.reponses).forEach(function (q) {
+          if (q.type === 'note') return;
+          if (b.fichiers[q.id]) { fichiers.push({ uuid: OPT.uuid(), question: q.id, blob: b.fichiers[q.id].blob, nom: b.fichiers[q.id].nom }); donnees[q.id] = 'fichier'; }
+          else if (b.reponses[q.id] !== undefined) donnees[q.id] = b.reponses[q.id];
+        });
+        enregistrerEnvoi({ uuid: b.uuid, type: 'soumission', titre: f.titre, sous_titre: 'Fiche · ' + Object.keys(donnees).length + ' réponses' + (fichiers.length ? ' · ' + fichiers.length + ' photo(s)' : ''),
+          contenu: { formulaire_id: f.id, version: b.version, donnees: donnees, gps: b.gps, cree_le: new Date(b.cree_le).toISOString() }, fichiers: fichiers })
+          .then(function () { return DB.oter('brouillons', uid); }).then(charger).then(function () { toast(navigator.onLine ? 'Fiche enregistrée. Envoi en cours…' : 'Fiche enregistrée sur le téléphone. Envoi automatique dès que le réseau est stable.', 4500); aller('questionnaires'); });
+      };
+    });
+  }
+
+  /* ---------------- ENVOIS ---------------- */
+  var LIB = {
+    en_attente: ['wa', 'att', 'Sur le téléphone · en attente de réseau stable'], envoi: ['wa', 'up', 'Envoi en cours…'], erreur: ['wa', 'alerte', 'Échec, nouvel essai automatique'],
+    recu_serveur: ['', 'ok', 'Reçu par OperaPlus'], integre: ['ok', 'ok', 'Intégré dans OperaPlus'], valide: ['ok', 'ok', 'Validé par le S&E'], rejete: ['ko', 'ko', 'Refusé']
+  };
+  function ecranEnvois() {
+    var l = etat.envois, att = l.filter(function (e) { return ['en_attente', 'envoi', 'erreur'].indexOf(e.statut) >= 0; }).length;
+    var html = '<h1>Envois</h1><p class="t-sub">Dernière synchronisation : <span id="eDer">…</span></p>' +
+      '<div class="t-kpi"><div><b>' + att + '</b><small>en attente</small></div><div><b>' + l.filter(function (e) { return ['recu_serveur', 'integre', 'valide'].indexOf(e.statut) >= 0; }).length + '</b><small>envoyés</small></div><div><b>' + l.filter(function (e) { return e.statut === 'rejete'; }).length + '</b><small>refusés</small></div></div>';
+    if (att) html += '<button class="t-btn t-btn-p" id="eGo" style="margin-bottom:1rem">' + ico('up') + ' Envoyer maintenant</button>';
+    html += l.length ? l.map(function (e) {
+      var lb = LIB[e.statut] || LIB.en_attente;
+      return '<div class="t-env ' + lb[0] + '"><span class="t-ic">' + ico(lb[1]) + '</span><div><b>' + esc(e.titre) + '</b><small>' + esc(e.sous_titre || '') + ' · ' + quand(e.cree_le) + '</small><p style="color:' + (lb[0] === 'ko' ? 'var(--ko)' : lb[0] === 'ok' ? 'var(--ok)' : 'var(--mute)') + '"><b style="display:inline;font-size:.78rem;color:inherit">' + lb[2] + '</b>' + (e.message ? ' — ' + esc(e.message) : '') + '</p>' +
+        (e.statut === 'erreur' || e.statut === 'rejete' ? '<div class="t-act">' + (e.statut === 'erreur' ? '<button data-re="' + e.uuid + '">Réessayer</button>' : '') + '<button data-sup="' + e.uuid + '" style="color:var(--ko)">Retirer du téléphone</button></div>' : '') + '</div></div>';
+    }).join('') : '<div class="t-vide">' + ico('up') + '<b>Aucun envoi</b>Vos déclarations et fiches apparaîtront ici, avec leur état.</div>';
+    vue.innerHTML = html;
+    DB.lire('derniere_synchro').then(function (t) { var x = $('#eDer'); if (x) x.textContent = quand(t); });
+    if ($('#eGo')) $('#eGo').onclick = function () { synchroniser(true); };
+    vue.querySelectorAll('[data-re]').forEach(function (b) { b.onclick = function () { DB.un('envois', b.dataset.re).then(function (e) { e.statut = 'en_attente'; e.prochain = 0; return DB.mettre('envois', e); }).then(charger).then(function () { synchroniser(true); }); }; });
+    vue.querySelectorAll('[data-sup]').forEach(function (b) { b.onclick = function () { if (confirm('Retirer cet envoi du téléphone ?')) DB.oter('envois', b.dataset.sup).then(charger).then(ecranEnvois); }; });
+  }
+
+  /* ---------------- PLUS ---------------- */
+  function ecranPlus() {
+    var p = etat.paquet;
+    vue.innerHTML = '<h1>Plus</h1><p class="t-sub">' + esc(C.nom) + '</p><div class="t-liste">' +
+      '<button id="pMaj">' + ico('wifi') + ' Mettre à jour mes tâches et questionnaires<small>' + (p ? quand(Date.parse(p.genere_le)) : 'jamais') + '</small></button>' +
+      (etat.installer ? '<button id="tInst2">' + ico('up') + ' Installer l’application sur ce téléphone</button>' : '') +
+      '<div>' + ico('fichier') + ' Espace utilisé<small id="pEsp">…</small></div>' +
+      '<div>' + ico('att') + ' Dernière synchronisation<small id="pSyn">…</small></div>' +
+      (C.bureau ? '<a href="' + esc(C.bureau) + '">' + ico('form') + ' Espace bureau (questionnaires, données)<small>' + ico('chev') + '</small></a>' : '') +
+      '<a href="/">' + ico('retour') + ' Retour à OperaPlus</a></div>' +
+      '<div class="t-ban info" style="margin:0">' + ico('alerte') + '<span><b>Bon à savoir</b> : vos saisies restent sur ce téléphone tant qu’elles ne sont pas envoyées. Ne videz pas les données du navigateur et ne désinstallez pas l’application avant que l’onglet Envois soit à jour.</span></div>' +
+      '<p class="t-sub" style="text-align:center;margin-top:1rem">OperaPlus Terrain v' + esc(C.version) + '</p>';
+    $('#pMaj').onclick = function () { if (!navigator.onLine) return toast('Pas de réseau.'); toast('Mise à jour…'); actualiserPaquet().then(function () { toast('Tâches et questionnaires à jour.'); ecranPlus(); }); };
+    if (navigator.storage && navigator.storage.estimate) navigator.storage.estimate().then(function (e) { var x = $('#pEsp'); if (x) x.textContent = taille(e.usage || 0); });
+    DB.lire('derniere_synchro').then(function (t) { var x = $('#pSyn'); if (x) x.textContent = quand(t); });
+    brancherInstall();
+  }
+
+  /* ---------------- installation & service worker ---------------- */
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); etat.installer = e; if (ecranRafraichissable()) router(); });
+  function brancherInstall() {
+    ['#tInst1', '#tInst2'].forEach(function (s) { var b = $(s); if (b) b.onclick = function () { etat.installer.prompt(); etat.installer.userChoice.finally(function () { etat.installer = null; router(); }); }; });
+  }
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(C.sw, { scope: R }).then(function (reg) {
+      if (reg.periodicSync) navigator.permissions && navigator.permissions.query({ name: 'periodic-background-sync' }).then(function (s) { if (s.state === 'granted') reg.periodicSync.register('op-envois', { minInterval: 3600000 }).catch(function () {}); }).catch(function () {});
+    }).catch(function () {});
+    navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.type === 'synchro') charger().then(function () { if (ecranRafraichissable()) router(); }); });
+  }
+
+  /* ---------------- démarrage ---------------- */
+  charger().then(function () {
+    router();
+    if (navigator.onLine) actualiserPaquet().then(function () { charger(); if (ecranRafraichissable()) router(); synchroniser(false); });
+  });
+})();
+</script>
+</body>
+</html>

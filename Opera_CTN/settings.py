@@ -107,7 +107,8 @@ INSTALLED_APPS = [
     "vitrine",
     "saisie_plus",
     'guardian',
-    'archive'
+    'archive',
+    'collecte'
 ]
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',  # Backend natif (RBAC global)

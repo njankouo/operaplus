@@ -1,0 +1,25 @@
+{% extends "collecte/g_base.html" %}{% block n2 %}on{% endblock %}{% block titre %}Déclarations reçues{% endblock %}
+{% block contenu %}
+<div class="g-head"><div><h1>Déclarations venues du terrain</h1><p class="g-sub">Chaque déclaration faite hors ligne est rejouée dans OperaPlus comme le formulaire habituel. En cas d’erreur technique, vous pouvez la relancer.</p></div></div>
+<div class="g-filtres">
+  <a href="?" class="{% if not statut %}on{% endif %}">Toutes</a>
+  <a href="?statut=integre" class="{% if statut == 'integre' %}on{% endif %}">Intégrées</a>
+  <a href="?statut=rejete" class="{% if statut == 'rejete' %}on{% endif %}">Refusées</a>
+  <a href="?statut=erreur" class="{% if statut == 'erreur' %}on{% endif %}">Erreur technique</a>
+</div>
+{% if declarations %}
+<div class="g-tw"><table class="g-t"><thead><tr><th>Saisie / reçue</th><th>Agent</th><th>Opération</th><th>Niveau</th><th>Commentaire</th><th>Preuve</th><th>Lieu</th><th>État</th><th></th></tr></thead><tbody>
+{% for d in declarations %}<tr>
+  <td>{{ d.cree_le_terrain|date:"d/m/Y H:i"|default:"—" }}<br><small>reçue {{ d.recu_le|date:"d/m H:i" }}</small></td>
+  <td>{{ d.agent.get_full_name|default:d.agent.username }}</td>
+  <td><b>{{ d.operation_nom|default:d.operation_id }}</b><br><small>échéance #{{ d.echeance_id|default:"—" }}</small></td>
+  <td>{{ d.niveau|floatformat:"-1" }} %</td>
+  <td style="max-width:280px">{{ d.commentaire|truncatechars:140 }}</td>
+  <td>{% if d.fichier %}<a href="{{ d.fichier.url }}" target="_blank" rel="noopener">Voir</a>{% else %}—{% endif %}</td>
+  <td>{% if d.latitude %}<a href="https://www.openstreetmap.org/?mlat={{ d.latitude|stringformat:'f' }}&mlon={{ d.longitude|stringformat:'f' }}#map=16/{{ d.latitude|stringformat:'f' }}/{{ d.longitude|stringformat:'f' }}" target="_blank" rel="noopener">Carte</a><br><small>± {{ d.precision_m|floatformat:0 }} m</small>{% else %}—{% endif %}</td>
+  <td><span class="g-tag {% if d.statut == 'integre' %}ok{% elif d.statut == 'rejete' or d.statut == 'erreur' %}ko{% endif %}">{{ d.get_statut_display }}</span>{% if d.message and d.statut != 'integre' %}<br><small>{{ d.message }}</small>{% endif %}</td>
+  <td>{% if d.statut == 'erreur' or d.statut == 'recu' %}<form method="post">{% csrf_token %}<input type="hidden" name="id" value="{{ d.pk }}"><button class="g-btn g-btn-s">Relancer</button></form>{% endif %}</td>
+</tr>{% endfor %}
+</tbody></table></div>
+{% else %}<div class="g-vide">Aucune déclaration pour ce filtre.</div>{% endif %}
+{% endblock %}

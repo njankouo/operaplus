@@ -1,0 +1,40 @@
+{% extends "collecte/g_base.html" %}{% block n1 %}on{% endblock %}
+{% block contenu %}
+<div class="g-head">
+  <div><h1>Questionnaires de terrain</h1><p class="g-sub">Créez un questionnaire, publiez-le : il arrive sur les téléphones à la prochaine synchronisation et se remplit même sans réseau.</p></div>
+  <a class="g-btn g-btn-p" href="{% url 'collecte_g_nouveau' %}">+ Nouveau questionnaire</a>
+</div>
+<div class="g-kpis">
+  <div><b>{{ formulaires|length }}</b><span>questionnaires</span></div>
+  <div><b>{{ decl_total }}</b><span>déclarations reçues du terrain</span></div>
+  <div><b style="{% if decl_erreur %}color:#b91c1c{% endif %}">{{ decl_erreur }}</b><span>déclarations refusées ou en erreur</span></div>
+  <div><b style="font-size:.85rem;word-break:break-all">{{ url_pwa }}</b><span>adresse à ouvrir sur les téléphones</span></div>
+</div>
+{% if formulaires %}
+<div class="g-grid">
+  {% for f in formulaires %}
+  <div class="g-carte">
+    <div style="display:flex;justify-content:space-between;gap:.5rem;align-items:flex-start">
+      <b style="color:var(--ink);font-size:.98rem">{{ f.titre }}</b>
+      {% if f.actif %}<span class="g-tag ok">Publié</span>{% else %}<span class="g-tag">Brouillon</span>{% endif %}
+    </div>
+    <p style="margin:.3rem 0 .6rem;color:var(--mute);font-size:.8rem">{{ f.questions|length }} question{{ f.questions|length|pluralize }} · version {{ f.version }} · modifié le {{ f.maj_le|date:"d/m/Y" }}</p>
+    <p style="margin:0 0 .8rem"><b style="color:var(--ink)">{{ f.nb }}</b> fiche{{ f.nb|pluralize }} reçue{{ f.nb|pluralize }}{% if f.nb_attente %} · <span class="g-tag wa">{{ f.nb_attente }} à valider</span>{% endif %}</p>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+      <a class="g-btn g-btn-p" href="{% url 'collecte_g_donnees' f.pk %}">Voir les données</a>
+      <a class="g-btn g-btn-s" href="{% url 'collecte_g_formulaire' f.pk %}">Modifier</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="g-vide"><b style="color:var(--ink)">Aucun questionnaire</b><br>Exemple : « Suivi des séances de sensibilisation » avec lieu, nombre de participants par sexe, photo et signature du relais.</div>
+{% endif %}
+{% if decl_recentes %}
+<h2 style="font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:1.8rem 0 .6rem">Dernières déclarations venues du terrain</h2>
+<div class="g-tw"><table class="g-t"><thead><tr><th>Reçue</th><th>Agent</th><th>Opération</th><th>Niveau</th><th>État</th></tr></thead><tbody>
+{% for d in decl_recentes %}<tr><td>{{ d.recu_le|date:"d/m H:i" }}</td><td>{{ d.agent.get_full_name|default:d.agent.username }}</td><td>{{ d.operation_nom|default:d.operation_id }}</td><td>{{ d.niveau|floatformat:"-1" }} %</td>
+<td><span class="g-tag {% if d.statut == 'integre' %}ok{% elif d.statut == 'rejete' or d.statut == 'erreur' %}ko{% endif %}">{{ d.get_statut_display }}</span></td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "collecte/g_base.html" %}{% block n1 %}on{% endblock %}{% block titre %}{{ f.titre }}{% endblock %}
+{% block contenu %}
+<div class="g-head">
+  <div><a href="{% url 'collecte_g_accueil' %}" style="text-decoration:none;font-weight:600">← Questionnaires</a><h1 style="margin-top:.3rem">{{ f.titre }}</h1><p class="g-sub">Version {{ f.version }} · {% if f.actif %}publié sur les téléphones{% else %}non publié{% endif %}</p></div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap"><a class="g-btn g-btn-s" href="{% url 'collecte_g_formulaire' f.pk %}">Modifier le questionnaire</a><a class="g-btn g-btn-p" href="?format=csv{% if statut %}&statut={{ statut }}{% endif %}">Exporter (Excel / CSV)</a></div>
+</div>
+<div class="g-kpis"><div><b>{{ stats.total }}</b><span>fiches reçues</span></div><div><b>{{ stats.recu }}</b><span>à valider</span></div><div><b>{{ stats.valide }}</b><span>validées</span></div><div><b>{{ stats.rejete }}</b><span>rejetées</span></div></div>
+<div class="g-filtres">
+  <a href="?" class="{% if not statut %}on{% endif %}">Toutes</a><a href="?statut=recu" class="{% if statut == 'recu' %}on{% endif %}">À valider</a>
+  <a href="?statut=valide" class="{% if statut == 'valide' %}on{% endif %}">Validées</a><a href="?statut=rejete" class="{% if statut == 'rejete' %}on{% endif %}">Rejetées</a>
+</div>
+{% if lignes %}
+<div class="g-tw"><table class="g-t"><thead><tr><th>N°</th><th>Agent · date</th>{% for q in questions %}<th title="{{ q.libelle }}">{{ q.libelle|truncatechars:28 }}</th>{% endfor %}<th>Lieu</th><th>Validation</th></tr></thead><tbody>
+{% for l in lignes %}<tr>
+  <td>{{ l.s.pk }}</td>
+  <td>{{ l.s.agent.get_full_name|default:l.s.agent.username }}<br><small>{% if l.s.cree_le_terrain %}{{ l.s.cree_le_terrain|date:"d/m/Y H:i" }}{% else %}{{ l.s.recu_le|date:"d/m/Y H:i" }}{% endif %}</small>{% if not l.s.complete %}<br><span class="g-tag wa">photos en cours d’envoi</span>{% endif %}</td>
+  {% for c in l.cellules %}<td>{% if c.piece %}<a href="{% url 'collecte_g_piece' c.piece.uuid %}" target="_blank" rel="noopener"><img src="{% url 'collecte_g_piece' c.piece.uuid %}" alt=""></a>{% elif c.gps %}<a href="https://www.openstreetmap.org/?mlat={{ c.gps.lat }}&mlon={{ c.gps.lon }}#map=16/{{ c.gps.lat }}/{{ c.gps.lon }}" target="_blank" rel="noopener">Carte</a>{% else %}{{ c.v|default_if_none:""|truncatechars:60 }}{% endif %}</td>{% endfor %}
+  <td>{% if l.s.latitude %}<a href="https://www.openstreetmap.org/?mlat={{ l.s.latitude|stringformat:'f' }}&mlon={{ l.s.longitude|stringformat:'f' }}#map=16/{{ l.s.latitude|stringformat:'f' }}/{{ l.s.longitude|stringformat:'f' }}" target="_blank" rel="noopener">Carte</a><br><small>± {{ l.s.precision_m|floatformat:0 }} m</small>{% else %}—{% endif %}</td>
+  <td style="min-width:190px">
+    <span class="g-tag {% if l.s.statut == 'valide' %}ok{% elif l.s.statut == 'rejete' %}ko{% else %}wa{% endif %}">{{ l.s.get_statut_display }}</span>{% if l.s.commentaire_validation %}<br><small>{{ l.s.commentaire_validation }}</small>{% endif %}
+    <form method="post" style="display:flex;gap:.3rem;margin-top:.35rem;flex-wrap:wrap">{% csrf_token %}<input type="hidden" name="id" value="{{ l.s.pk }}">
+      <input class="g-in" name="commentaire" placeholder="Motif (si rejet)" style="flex:1 1 100%;padding:.3rem .5rem">
+      <button class="g-btn g-btn-s" name="action" value="valide" style="height:30px">Valider</button><button class="g-btn g-btn-d" name="action" value="rejete" style="height:30px">Rejeter</button></form>
+  </td>
+</tr>{% endfor %}
+</tbody></table></div>
+{% if questions|length < f.questions|length %}<p class="g-sub" style="margin-top:.6rem">Seules les 8 premières questions sont affichées ici ; l’export contient tout.</p>{% endif %}
+{% else %}<div class="g-vide">Aucune fiche reçue pour l’instant.</div>{% endif %}
+{% endblock %}

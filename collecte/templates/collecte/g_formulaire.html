@@ -1,0 +1,120 @@
+{% extends "collecte/g_base.html" %}{% block n1 %}on{% endblock %}{% block titre %}{% if f %}{{ f.titre }}{% else %}Nouveau questionnaire{% endif %}{% endblock %}
+{% block style %}<style>
+.b-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:1rem;align-items:start}
+.b-q{background:#fff;border:1px solid var(--line);border-radius:14px;padding:.9rem 1rem;margin-bottom:.6rem;display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:.6rem .8rem}
+.b-n{width:28px;height:28px;border-radius:8px;background:var(--acc-s);color:var(--acc);display:grid;place-items:center;font-weight:800;font-size:.78rem}
+.b-f{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:.5rem .7rem}
+.b-f .w{grid-column:1/-1}
+.b-act{display:flex;flex-direction:column;gap:.25rem}
+.b-act button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--mute)}
+.b-act button:hover{background:#f8fafc;color:var(--ink)}
+.b-act .del:hover{background:#fef2f2;color:#b91c1c}
+.b-ck{display:flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:600}
+.b-ajout{display:flex;flex-wrap:wrap;gap:.35rem}
+.b-ajout button{padding:.4rem .7rem;border-radius:9px;border:1px dashed #cbd5e1;background:#fff;cursor:pointer;font-weight:600;font-size:.78rem}
+.b-ajout button:hover{border-color:var(--acc);background:var(--acc-s)}
+.b-side{position:sticky;top:1rem;display:flex;flex-direction:column;gap:.8rem}
+.b-cond{font-size:.75rem;color:var(--mute)}
+@media (max-width:900px){.b-grid{grid-template-columns:1fr}.b-side{position:static}}
+</style>{% endblock %}
+{% block contenu %}
+<form method="post" id="bForm">{% csrf_token %}
+<div class="g-head">
+  <div><a href="{% url 'collecte_g_accueil' %}" style="text-decoration:none;font-weight:600">← Questionnaires</a><h1 style="margin-top:.3rem">{% if f %}Modifier le questionnaire{% else %}Nouveau questionnaire{% endif %}</h1>
+  <p class="g-sub">Une question par écran sur le téléphone. Modifier les questions crée une nouvelle version ; les fiches déjà reçues restent intactes.</p></div>
+  <button class="g-btn g-btn-p">Enregistrer</button>
+</div>
+{% if ok %}<div class="g-msg ok">Questionnaire enregistré{% if f.actif %} et publié : il arrivera sur les téléphones à leur prochaine synchronisation{% endif %}.</div>{% endif %}
+{% if erreur %}<div class="g-msg ko">{{ erreur }}</div>{% endif %}
+<div class="b-grid">
+  <div>
+    <div class="g-carte" style="margin-bottom:1rem;display:grid;gap:.7rem">
+      <label class="g-l">Titre *<input class="g-in" name="titre" required value="{{ f.titre|default:'' }}" placeholder="Ex : Suivi des séances de sensibilisation"></label>
+      <label class="g-l">Consigne pour l’agent<textarea class="g-in" name="description" rows="2" placeholder="Ex : une fiche par séance, à remplir sur place.">{{ f.description|default:'' }}</textarea></label>
+    </div>
+    <div id="bListe"></div>
+    <div class="g-carte"><b style="color:var(--ink);font-size:.85rem">Ajouter une question</b><div class="b-ajout" id="bAjout" style="margin-top:.5rem">
+      {% for v, l in types %}<button type="button" data-t="{{ v }}">+ {{ l }}</button>{% endfor %}
+    </div></div>
+  </div>
+  <aside class="b-side">
+    <div class="g-carte" style="display:grid;gap:.6rem">
+      <b style="color:var(--ink)">Publication</b>
+      <label class="b-ck"><input type="checkbox" name="actif" value="1" {% if f.actif %}checked{% endif %}> Publier sur les téléphones</label>
+      <label class="b-ck"><input type="checkbox" name="gps_obligatoire" value="1" {% if f.gps_obligatoire %}checked{% endif %}> Position GPS obligatoire</label>
+      <button class="g-btn g-btn-p" style="width:100%;justify-content:center">Enregistrer</button>
+      {% if f %}<a class="g-btn g-btn-s" style="justify-content:center" href="{% url 'collecte_g_donnees' f.pk %}">Voir les données reçues</a>{% endif %}
+    </div>
+    <div class="g-carte" style="font-size:.8rem;color:var(--mute)"><b style="color:var(--ink)">Conseils</b><ul style="padding-left:1.1rem;margin:.4rem 0 0">
+      <li>Questions courtes, un seul sujet chacune.</li><li>Préférez les choix aux textes libres : plus rapides et faciles à analyser.</li>
+      <li>Utilisez « Afficher si » pour sauter les questions inutiles.</li><li>Pour les effectifs, séparez hommes / femmes : la désagrégation est demandée par les bailleurs.</li></ul></div>
+  </aside>
+</div>
+<input type="hidden" name="questions" id="bQ">
+</form>
+{{ questions_data|json_script:"bJson" }}
+<script>
+(function () {
+  var TYPES = {};
+  {% for v, l in types %}TYPES['{{ v }}'] = '{{ l|escapejs }}';
+  {% endfor %}
+  var Q = JSON.parse(document.getElementById('bJson').textContent || '[]');
+  var liste = document.getElementById('bListe');
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function nouvelId() { var n = Q.length + 1; while (Q.some(function (q) { return q.id === 'q' + n; })) n++; return 'q' + n; }
+  function dessiner() {
+    if (!Q.length) { liste.innerHTML = '<div class="g-vide" style="margin-bottom:.6rem">Ajoutez votre première question avec les boutons ci-dessous.</div>'; return; }
+    liste.innerHTML = Q.map(function (q, i) {
+      var avant = Q.slice(0, i).filter(function (p) { return ['choix', 'oui_non', 'choix_multiple'].indexOf(p.type) >= 0; });
+      var choixCond = q.si && q.si.question ? (function () { var p = Q.filter(function (x) { return x.id === q.si.question; })[0]; return p ? (p.type === 'oui_non' ? ['Oui', 'Non'] : (p.choix || [])) : []; })() : [];
+      return '<div class="b-q" data-i="' + i + '"><span class="b-n">' + (i + 1) + '</span><div class="b-f">' +
+        '<label class="g-l">' + esc(TYPES[q.type] || q.type) + ' — libellé<input class="g-in" data-k="libelle" value="' + esc(q.libelle) + '" placeholder="Ex : Nombre de femmes présentes"></label>' +
+        '<label class="g-l">Type<select class="g-in" data-k="type">' + Object.keys(TYPES).map(function (t) { return '<option value="' + t + '"' + (t === q.type ? ' selected' : '') + '>' + esc(TYPES[t]) + '</option>'; }).join('') + '</select></label>' +
+        (q.type === 'choix' || q.type === 'choix_multiple' ? '<label class="g-l w">Choix possibles (un par ligne)<textarea class="g-in" rows="3" data-k="choix">' + esc((q.choix || []).join('\n')) + '</textarea></label>' : '') +
+        (q.type === 'entier' || q.type === 'nombre' ? '<label class="g-l">Minimum<input class="g-in" type="number" step="any" data-k="min" value="' + esc(q.min == null ? '' : q.min) + '"></label><label class="g-l">Maximum<input class="g-in" type="number" step="any" data-k="max" value="' + esc(q.max == null ? '' : q.max) + '"></label>' : '') +
+        '<label class="g-l w">Aide pour l’agent (facultatif)<input class="g-in" data-k="aide" value="' + esc(q.aide) + '"></label>' +
+        '<div class="w" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center">' + (q.type !== 'note' ? '<label class="b-ck"><input type="checkbox" data-k="obligatoire"' + (q.obligatoire ? ' checked' : '') + '> Obligatoire</label>' : '') +
+        (avant.length ? '<span class="b-cond">Afficher si <select data-k="si_q"><option value="">toujours</option>' + avant.map(function (p) { return '<option value="' + esc(p.id) + '"' + (q.si && q.si.question === p.id ? ' selected' : '') + '>' + esc((p.libelle || p.id).slice(0, 40)) + '</option>'; }).join('') + '</select>' +
+          (q.si && q.si.question ? ' = <select data-k="si_v">' + choixCond.map(function (c) { return '<option' + (q.si.valeur === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select>' : '') + '</span>' : '') +
+        '<span class="b-cond" style="margin-left:auto">code : ' + esc(q.id) + '</span></div></div>' +
+        '<div class="b-act"><button type="button" data-a="haut" title="Monter">↑</button><button type="button" data-a="bas" title="Descendre">↓</button><button type="button" data-a="sup" class="del" title="Supprimer">✕</button></div></div>';
+    }).join('');
+  }
+  liste.addEventListener('input', function (e) {
+    var el = e.target, i = +el.closest('.b-q').dataset.i, q = Q[i], k = el.dataset.k; if (!k) return;
+    if (k === 'obligatoire') q.obligatoire = el.checked;
+    else if (k === 'choix') q.choix = el.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+    else if (k === 'min' || k === 'max') q[k] = el.value === '' ? null : +el.value;
+    else if (k === 'libelle' || k === 'aide') q[k] = el.value;
+  });
+  liste.addEventListener('change', function (e) {
+    var el = e.target, i = +el.closest('.b-q').dataset.i, q = Q[i], k = el.dataset.k;
+    if (k === 'type') { q.type = el.value; if ((q.type === 'choix' || q.type === 'choix_multiple') && !q.choix) q.choix = []; dessiner(); }
+    else if (k === 'si_q') { if (!el.value) q.si = null; else { var p = Q.filter(function (x) { return x.id === el.value; })[0]; q.si = { question: el.value, valeur: p.type === 'oui_non' ? 'Oui' : ((p.choix || [])[0] || '') }; } dessiner(); }
+    else if (k === 'si_v') q.si.valeur = el.value;
+  });
+  liste.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-a]'); if (!b) return;
+    var i = +b.closest('.b-q').dataset.i;
+    if (b.dataset.a === 'sup') { if (!confirm('Supprimer cette question ?')) return; var id = Q[i].id; Q.splice(i, 1); Q.forEach(function (q) { if (q.si && q.si.question === id) q.si = null; }); }
+    if (b.dataset.a === 'haut' && i > 0) Q.splice(i - 1, 0, Q.splice(i, 1)[0]);
+    if (b.dataset.a === 'bas' && i < Q.length - 1) Q.splice(i + 1, 0, Q.splice(i, 1)[0]);
+    Q.forEach(function (q, j) { if (q.si) { var pi = Q.findIndex(function (x) { return x.id === q.si.question; }); if (pi < 0 || pi >= j) q.si = null; } });
+    dessiner();
+  });
+  document.getElementById('bAjout').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-t]'); if (!b) return;
+    var q = { id: nouvelId(), libelle: '', type: b.dataset.t, obligatoire: b.dataset.t !== 'note', choix: b.dataset.t.indexOf('choix') === 0 ? ['Choix 1', 'Choix 2'] : [], min: null, max: null, aide: '', si: null };
+    Q.push(q); dessiner(); var l = liste.querySelectorAll('.b-q'); var der = l[l.length - 1]; der.scrollIntoView({ behavior: 'smooth', block: 'center' }); der.querySelector('[data-k="libelle"]').focus();
+  });
+  document.getElementById('bForm').addEventListener('submit', function (e) {
+    var vide = Q.filter(function (q) { return !String(q.libelle || '').trim(); });
+    if (vide.length) { e.preventDefault(); alert('Chaque question doit avoir un libellé (question ' + (Q.indexOf(vide[0]) + 1) + ').'); return; }
+    var sansChoix = Q.filter(function (q) { return (q.type === 'choix' || q.type === 'choix_multiple') && !(q.choix || []).length; });
+    if (sansChoix.length) { e.preventDefault(); alert('Ajoutez des choix à la question ' + (Q.indexOf(sansChoix[0]) + 1) + '.'); return; }
+    document.getElementById('bQ').value = JSON.stringify(Q);
+  });
+  dessiner();
+})();
+</script>
+{% endblock %}
