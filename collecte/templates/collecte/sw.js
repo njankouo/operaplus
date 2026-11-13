@@ -1,7 +1,7 @@
 /* OperaPlus Terrain — service worker v{{ version }} */
 var VERSION = '{{ version }}', RACINE = '{{ racine }}', CACHE = 'op-terrain-' + VERSION;
 importScripts('{{ sync_js }}');
-var COQUILLE = [RACINE, '{{ sync_js }}', RACINE + 'manifest.webmanifest'{% for i in icones %}, '{{ i }}'{% endfor %}];
+var COQUILLE = [RACINE, '{{ sync_js }}', RACINE + 'manifest.webmanifest'{% for i in icones %}, '{{ i }}'{% endfor %}{% for f in fichiers %}, '{{ f }}'{% endfor %}];
 
 self.addEventListener('install', function (e) {
     e.waitUntil(caches.open(CACHE).then(function (c) {

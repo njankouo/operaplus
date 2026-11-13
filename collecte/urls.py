@@ -5,6 +5,8 @@ from . import views as v
 
 urlpatterns = [
     path('', v.pwa, name='collecte_pwa'),
+    path('connexion/', v.connexion, name='collecte_connexion'),
+    path('deconnexion/', v.deconnexion, name='collecte_deconnexion'),
     path('manifest.webmanifest', v.manifeste, name='collecte_manifeste'),
     path('sw.js', v.service_worker, name='collecte_sw'),
     path('api/ping/', v.api_ping, name='collecte_ping'),

@@ -31,7 +31,8 @@ from . import fournisseur
 from .integration import integrer
 from .models import TYPES_QUESTION, Declaration, Formulaire, PieceJointe, Soumission
 
-VERSION_APP = '1.0.0'
+VERSION_APP = '1.1.0'
+VIOLET = '#5B3FE0'
 TAILLE_MAX = lambda: int(getattr(settings, 'COLLECTE_TAILLE_MAX_MO', 15)) * 1024 * 1024
 
 
@@ -88,18 +89,42 @@ def _flottant(v):
 
 
 # ============================================================ PWA
-@login_required
 @never_cache
 def pwa(request):
+    if not request.user.is_authenticated:
+        return redirect(reverse('collecte_connexion'))
     perso = getattr(request.user, 'personnel', None)
+    inst = getattr(perso, 'actual_institution', None) if perso is not None else None
     return render(request, 'collecte/pwa.html', {
         'version': VERSION_APP,
-        'couleur': getattr(perso, 'color_fond', '') or '#0f766e',
         'nom': str(perso or '') or request.user.get_full_name() or request.user.username,
+        'prenom': request.user.first_name or (str(perso or '') or request.user.username).split(' ')[0],
+        'email': request.user.email,
+        'institution': str(inst) if inst is not None else '',
         'csrf': get_token(request),
         'gestionnaire': _gestionnaire(request.user),
-        'login_url': resolve_url(settings.LOGIN_URL),
     })
+
+
+@never_cache
+def connexion(request):
+    """Page de connexion aux couleurs de l'appli terrain (utilise les comptes OperaPlus)."""
+    from django.contrib.auth import login
+    from django.contrib.auth.forms import AuthenticationForm
+    if request.user.is_authenticated:
+        return redirect(reverse('collecte_pwa'))
+    form = AuthenticationForm(request, data=request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        login(request, form.get_user())
+        return redirect(reverse('collecte_pwa'))
+    return render(request, 'collecte/connexion.html', {'form': form, 'version': VERSION_APP})
+
+
+@require_POST
+def deconnexion(request):
+    from django.contrib.auth import logout
+    logout(request)
+    return redirect(reverse('collecte_connexion'))
 
 
 def manifeste(request):
@@ -108,7 +133,7 @@ def manifeste(request):
         'name': 'OperaPlus Terrain', 'short_name': 'OP Terrain',
         'description': 'Déclarations d’avancement et questionnaires de terrain, même sans réseau.',
         'start_url': racine, 'scope': racine, 'display': 'standalone', 'orientation': 'portrait',
-        'background_color': '#f6f7f9', 'theme_color': '#0f766e', 'lang': 'fr',
+        'background_color': '#0E0D1A', 'theme_color': VIOLET, 'lang': 'fr',
         'icons': [
             {'src': static('collecte/icones/icone-192.png'), 'sizes': '192x192', 'type': 'image/png'},
             {'src': static('collecte/icones/icone-512.png'), 'sizes': '512x512', 'type': 'image/png'},
@@ -123,6 +148,7 @@ def service_worker(request):
     resp = render(request, 'collecte/sw.js', {
         'version': VERSION_APP, 'racine': reverse('collecte_pwa'),
         'sync_js': static('collecte/sync.js'), 'icone': static('collecte/icones/icone-192.png'),
+        'fichiers': [static('collecte/terrain.css'), static('collecte/terrain.js')],
         'icones': [static('collecte/icones/icone-192.png'), static('collecte/icones/icone-512.png')],
     }, content_type='application/javascript')
     resp['Service-Worker-Allowed'] = reverse('collecte_pwa')
