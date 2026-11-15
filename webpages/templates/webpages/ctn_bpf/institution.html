@@ -150,6 +150,91 @@
     @media (max-width: 640px) { .op-list .op-card .mt-auto { display: none; } .op-kpi { padding-right: 18px; margin-right: 18px; } }
     html.sbx-dark .op-card, html.sbx-dark .op-tabs, html.sbx-dark .op-sort, html.sbx-dark .op-view, html.sbx-dark .op-empty, html.sbx-dark .op-noresult { background: #181c25 !important; border-color: #262b36 !important; }
     html.sbx-dark .op-card h5, html.sbx-dark .op-section h3 { color: #f1f5f9 !important; }
+
+    /* ================= APPLICATION TERRAIN : installation de la PWA (ajout) ================= */
+    .op-app { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; cursor: pointer; text-align: left; width: 100%;
+              background: #fff; border: 0; color: var(--op-ink); box-shadow: 0 10px 24px -14px rgba(0,0,0,.5); transition: transform .2s, box-shadow .2s; font-family: inherit; }
+    .op-app:hover { transform: translateY(-1px); box-shadow: 0 16px 30px -16px rgba(0,0,0,.6); }
+    .op-app .op-app-ic { width: 38px; height: 38px; border-radius: 11px; overflow: hidden; flex-shrink: 0; }
+    .op-app .op-app-ic svg { width: 100%; height: 100%; display: block; }
+    .op-app small { display: block; font-size: 11px; color: var(--op-muted); font-weight: 600; }
+    .op-app strong { display: block; font-size: 13px; font-weight: 800; }
+    .op-app .op-app-dl { margin-left: auto; width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: var(--op-dom); color: #fff; font-size: 13px; flex-shrink: 0; }
+    .op-app.op-hide-app { display: none; }
+
+    .op-dl { /* la fenêtre est hors de .op-projects : mêmes couleurs */
+        --op-dom: var(--nav-bg-color, #123A37); --op-acc: var(--primary-color, #E48B0C); --op-ok: var(--sbx-ok, #2A8A7D); --op-ink: #0b1220; --op-muted: #667085; --op-line: #e4e8ee; }
+    .op-dl { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(11,18,32,.55); backdrop-filter: blur(3px);
+             opacity: 0; visibility: hidden; transition: opacity .25s, visibility .25s; font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif; }
+    .op-dl.on { opacity: 1; visibility: visible; }
+    .op-dl-box { position: relative; width: 100%; max-width: 860px; max-height: calc(100vh - 40px); overflow: auto; display: grid; grid-template-columns: 1.15fr .85fr;
+                 background: #fff; border-radius: 24px; box-shadow: 0 40px 80px -30px rgba(11,18,32,.55); transform: translateY(14px) scale(.98); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+    .op-dl.on .op-dl-box { transform: none; }
+    .op-dl-box > * { min-width: 0; }
+    .op-dl-x { position: absolute; top: 14px; right: 14px; z-index: 2; width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--op-line); background: #fff; color: #475467; cursor: pointer; font-size: 15px; }
+    .op-dl-x:hover { color: var(--op-ink); border-color: #c4cad3; }
+    .op-dl-main { padding: 32px 32px 28px; }
+    .op-dl-brand { display: flex; align-items: center; gap: 14px; }
+    .op-dl-brand .op-dl-logo { width: 60px; height: 60px; border-radius: 16px; overflow: hidden; flex-shrink: 0; box-shadow: 0 10px 20px -12px rgba(91,63,224,.7); }
+    .op-dl-brand .op-dl-logo svg { width: 100%; height: 100%; display: block; }
+    .op-dl-brand h3 { margin: 0 !important; font-size: 1.35rem !important; font-weight: 800 !important; letter-spacing: -.02em; color: var(--op-ink) !important; }
+    .op-dl-brand p { margin: 3px 0 0 !important; font-size: 13px; color: var(--op-muted); }
+    .op-dl-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 0; padding: 0; list-style: none; }
+    .op-dl-meta li { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; background: #f2f4f7; font-size: 12px; font-weight: 700; color: #344054; }
+    .op-dl-meta li i { color: var(--op-dom); font-size: 11px; }
+    .op-dl-os { display: inline-flex; gap: 4px; padding: 4px; margin: 22px 0 14px; background: #f2f4f7; border-radius: 12px; }
+    .op-dl-os button { border: 0; background: transparent; height: 34px; padding: 0 14px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--op-muted); cursor: pointer; display: inline-flex; align-items: center; gap: 7px; font-family: inherit; }
+    .op-dl-os button.on { background: #fff; color: var(--op-ink); box-shadow: 0 1px 3px rgba(16,24,40,.12); }
+    .op-dl-pane { display: none; }
+    .op-dl-pane.on { display: block; }
+    .op-dl-steps { margin: 0 0 18px; padding: 0; list-style: none; counter-reset: s; }
+    .op-dl-steps li { counter-increment: s; position: relative; padding: 0 0 12px 38px; font-size: 14px; line-height: 1.5; color: #344054; }
+    .op-dl-steps li::before { content: counter(s); position: absolute; left: 0; top: -1px; width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+                              font-size: 12px; font-weight: 800; color: var(--op-dom); background: color-mix(in srgb, var(--op-dom) 10%, #fff); }
+    .op-dl-steps b { color: var(--op-ink); }
+    .op-dl-steps .op-dl-k { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 6px; border: 1px solid var(--op-line); background: #fff; font-size: 11px; vertical-align: -4px; color: #344054; }
+    .op-dl-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 50px; padding: 0 22px; border-radius: 14px; border: 0; cursor: pointer; text-decoration: none !important;
+                 background: var(--op-dom); color: #fff !important; font-size: 15px; font-weight: 800; font-family: inherit; transition: filter .2s, transform .2s; }
+    .op-dl-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .op-dl-btn small { display: block; font-size: 10px; font-weight: 600; opacity: .75; text-align: left; line-height: 1.1; }
+    .op-dl-btn span { line-height: 1.15; text-align: left; }
+    .op-dl-btn i { font-size: 18px; }
+    .op-dl-note { margin: 12px 0 0; font-size: 12px; color: var(--op-muted); }
+    .op-dl-note i { color: var(--op-ok); }
+
+    .op-dl-side { padding: 32px 28px 28px; background: #f7f8fa; border-left: 1px solid var(--op-line); border-radius: 0 24px 24px 0; display: flex; flex-direction: column; align-items: center; text-align: center; }
+    .op-dl-side h4 { margin: 18px 0 4px !important; font-size: 15px !important; font-weight: 800 !important; color: var(--op-ink) !important; }
+    .op-dl-side > p { margin: 0 !important; font-size: 12.5px; color: var(--op-muted); max-width: 240px; }
+    .op-dl-qr { width: 196px; height: 196px; padding: 12px; border-radius: 18px; background: #fff; border: 1px solid var(--op-line); display: flex; align-items: center; justify-content: center; position: relative; margin-top: 18px; }
+    .op-dl-qr svg, .op-dl-qr img { width: 100%; height: 100%; display: block; }
+    .op-dl-qr .op-dl-qr-logo { position: absolute; width: 40px; height: 40px; border-radius: 11px; overflow: hidden; border: 3px solid #fff; left: 50%; top: 50%; transform: translate(-50%,-50%); }
+    .op-dl-qr .op-dl-qr-logo svg { width: 100%; height: 100%; }
+    .op-dl-link { display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 18px; padding: 5px 5px 5px 12px; border-radius: 12px; background: #fff; border: 1px solid var(--op-line); }
+    .op-dl-link code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 12px ui-monospace, monospace; color: #344054; background: none; padding: 0; text-align: left; }
+    .op-dl-link button { height: 32px; padding: 0 10px; border-radius: 9px; border: 0; background: var(--op-dom); color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .op-dl-share { display: flex; gap: 8px; width: 100%; margin-top: 8px; }
+    .op-dl-share a { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; border-radius: 11px; font-size: 12.5px; font-weight: 700; text-decoration: none !important; border: 1px solid var(--op-line); background: #fff; color: #344054 !important; }
+    .op-dl-share a:hover { border-color: #c4cad3; }
+    .op-dl-share a .fa-whatsapp { color: #1FA855; font-size: 15px; }
+    .op-dl-warn { display: none; margin-top: 12px; font-size: 11.5px; color: #B54708; background: #FFFAEB; border: 1px solid #FEDF89; border-radius: 10px; padding: 8px 10px; text-align: left; }
+    .op-dl-warn.on { display: block; }
+    .op-dl-done { display: none; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--op-ok) 10%, #fff); color: var(--op-ok); font-size: 13px; font-weight: 700; margin-top: 18px; }
+    .op-dl-done.on { display: flex; }
+    @media (max-width: 760px) {
+        .op-dl { align-items: flex-end; padding: 0; }
+        .op-dl-box { grid-template-columns: 1fr; border-radius: 24px 24px 0 0; max-height: 92vh; }
+        .op-dl-main { padding: 26px 20px 22px; }
+        .op-dl-side { border-left: 0; border-top: 1px solid var(--op-line); border-radius: 0; padding: 20px; }
+        .op-dl-side .op-dl-qr, .op-dl-side > h4, .op-dl-side > p { display: none; }
+        .op-dl-side .op-dl-link { margin-top: 0; }
+        .op-dl-btn { width: 100%; }
+    }
+    html.sbx-dark .op-dl-box, html.sbx-dark .op-dl-x, html.sbx-dark .op-dl-os button.on, html.sbx-dark .op-dl-link, html.sbx-dark .op-dl-share a, html.sbx-dark .op-dl-steps .op-dl-k { background: #181c25; border-color: #262b36; color: #e2e8f0 !important; }
+    html.sbx-dark .op-dl-side { background: #12151c; border-color: #262b36; }
+    html.sbx-dark .op-dl-brand h3, html.sbx-dark .op-dl-side h4, html.sbx-dark .op-dl-steps b { color: #f1f5f9 !important; }
+    html.sbx-dark .op-dl-steps li, html.sbx-dark .op-dl-link code { color: #cbd5e1; }
+    html.sbx-dark .op-dl-os, html.sbx-dark .op-dl-meta li { background: #222734; color: #cbd5e1; }
+    html.sbx-dark .op-app { background: #181c25; color: #f1f5f9; }
 </style>
 
 <div class="max-w-7xl mx-auto px-4 py-8 op-projects">
@@ -176,6 +261,13 @@
             <span class="op-kbd">/</span>
         </div>
         <a href="#" class="op-resume" id="opResume"><span class="op-mini"></span><span><small>Reprendre</small><strong></strong></span><i class="fa fa-arrow-right"></i></a>
+        <!-- ===== Application terrain : bouton d'installation de la PWA (ajout) ===== -->
+        {% url 'collecte_pwa' as url_terrain %}
+        <button type="button" class="op-app" id="opAppBtn" data-url="{{ url_terrain|default:'/terrain/' }}" aria-haspopup="dialog">
+            <span class="op-app-ic"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="116" fill="#5B3FE0"/><circle cx="240" cy="246" r="128" fill="none" stroke="#7E68F0" stroke-width="56"/><path d="M240 118A128 128 0 1 1 119.7 202.2" fill="none" stroke="#fff" stroke-width="56" stroke-linecap="round"/><circle cx="372" cy="374" r="92" fill="#5B3FE0"/><circle cx="372" cy="374" r="76" fill="#F59E0B"/><path d="M372 336V412M334 374H410" stroke="#fff" stroke-width="24" stroke-linecap="round"/></svg></span>
+            <span><small>Application terrain · gratuite</small><strong>Installer OperaPlus Terrain</strong></span>
+            <span class="op-app-dl"><i class="fa fa-download"></i></span>
+        </button>
         </div>
     </div>
 
@@ -292,6 +384,68 @@
             </div>
             {% endfor %}
             <div class="op-noresult">Aucune collaboration ne correspond à votre recherche.</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== FENÊTRE « TÉLÉCHARGER L'APPLICATION » (ajout) ===================== -->
+<div class="op-dl" id="opDl" role="dialog" aria-modal="true" aria-labelledby="opDlTitre" aria-hidden="true">
+    <div class="op-dl-box">
+        <button type="button" class="op-dl-x" data-dl-close aria-label="Fermer"><i class="fa fa-times fa-xmark"></i></button>
+        <div class="op-dl-main">
+            <div class="op-dl-brand">
+                <span class="op-dl-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="116" fill="#5B3FE0"/><circle cx="240" cy="246" r="128" fill="none" stroke="#7E68F0" stroke-width="56"/><path d="M240 118A128 128 0 1 1 119.7 202.2" fill="none" stroke="#fff" stroke-width="56" stroke-linecap="round"/><circle cx="372" cy="374" r="92" fill="#5B3FE0"/><circle cx="372" cy="374" r="76" fill="#F59E0B"/><path d="M372 336V412M334 374H410" stroke="#fff" stroke-width="24" stroke-linecap="round"/></svg></span>
+                <div><h3 id="opDlTitre">OperaPlus Terrain</h3><p>Déclarez vos tâches et collectez vos fiches sur le terrain.</p></div>
+            </div>
+            <ul class="op-dl-meta">
+                <li><i class="fa fa-wifi"></i>Fonctionne sans réseau</li>
+                <li><i class="fa fa-refresh fa-rotate"></i>Synchronisation automatique</li>
+                <li><i class="fa fa-bolt"></i>Moins de 2 Mo</li>
+            </ul>
+
+            <div class="op-dl-os" role="tablist" aria-label="Votre appareil">
+                <button type="button" role="tab" data-os="android"><i class="fa fa-android"></i>Android</button>
+                <button type="button" role="tab" data-os="ios"><i class="fa fa-apple"></i>iPhone</button>
+                <button type="button" role="tab" data-os="pc"><i class="fa fa-desktop"></i>Ordinateur</button>
+            </div>
+
+            <div class="op-dl-pane" data-pane="android">
+                <ol class="op-dl-steps">
+                    <li>Ouvrez ce lien sur le téléphone avec <b>Chrome</b> (ou scannez le QR code).</li>
+                    <li>Touchez <b>Installer maintenant</b>, puis confirmez.</li>
+                    <li>L'icône <b>OP Terrain</b> apparaît sur l'écran d'accueil, comme une application normale.</li>
+                </ol>
+                <a class="op-dl-btn" data-dl-go="android" href="#"><i class="fa fa-download"></i><span><small>Sur ce téléphone</small>Installer maintenant</span></a>
+            </div>
+            <div class="op-dl-pane" data-pane="ios">
+                <ol class="op-dl-steps">
+                    <li>Ouvrez ce lien avec <b>Safari</b> (ou scannez le QR code avec l'appareil photo).</li>
+                    <li>Touchez le bouton <b>Partager</b> <span class="op-dl-k"><i class="fa fa-share-square-o fa-arrow-up-from-bracket"></i></span> en bas de l'écran.</li>
+                    <li>Choisissez <b>Sur l'écran d'accueil</b>, puis <b>Ajouter</b>.</li>
+                </ol>
+                <a class="op-dl-btn" data-dl-go="ios" href="#"><i class="fa fa-apple"></i><span><small>Dans Safari</small>Ouvrir l'application</span></a>
+            </div>
+            <div class="op-dl-pane" data-pane="pc">
+                <ol class="op-dl-steps">
+                    <li>L'application est faite pour le téléphone : <b>scannez le QR code</b> ou envoyez-vous le lien par WhatsApp.</li>
+                    <li>Sur ordinateur, vous pouvez aussi l'installer depuis <b>Chrome</b> ou <b>Edge</b> : icône <span class="op-dl-k"><i class="fa fa-download"></i></span> dans la barre d'adresse.</li>
+                </ol>
+                <a class="op-dl-btn" data-dl-go="pc" href="#" target="_blank" rel="noopener"><i class="fa fa-external-link fa-arrow-up-right-from-square"></i><span><small>Dans un nouvel onglet</small>Ouvrir OperaPlus Terrain</span></a>
+            </div>
+            <div class="op-dl-done" id="opDlDone"><i class="fa fa-check-circle fa-circle-check"></i>L'application est déjà installée sur cet appareil.</div>
+            <p class="op-dl-note"><i class="fa fa-lock"></i> Connexion avec votre compte OperaPlus habituel. Vos saisies restent sur le téléphone jusqu'à leur envoi.</p>
+        </div>
+
+        <div class="op-dl-side">
+            <div class="op-dl-qr" id="opDlQr" aria-label="QR code vers l'application"><span class="op-dl-qr-logo"><svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="116" fill="#5B3FE0"/><circle cx="240" cy="246" r="128" fill="none" stroke="#7E68F0" stroke-width="56"/><path d="M240 118A128 128 0 1 1 119.7 202.2" fill="none" stroke="#fff" stroke-width="56" stroke-linecap="round"/><circle cx="372" cy="374" r="92" fill="#5B3FE0"/><circle cx="372" cy="374" r="76" fill="#F59E0B"/><path d="M372 336V412M334 374H410" stroke="#fff" stroke-width="24" stroke-linecap="round"/></svg></span></div>
+            <h4>Scannez avec votre téléphone</h4>
+            <p>Ouvrez l'appareil photo et visez le code : l'application s'ouvre directement.</p>
+            <div class="op-dl-link"><code id="opDlUrl"></code><button type="button" id="opDlCopy"><i class="fa fa-copy"></i> Copier</button></div>
+            <div class="op-dl-share">
+                <a id="opDlWa" href="#" target="_blank" rel="noopener"><i class="fa fa-whatsapp"></i>WhatsApp</a>
+                <a id="opDlMail" href="#"><i class="fa fa-envelope-o fa-envelope"></i>E-mail</a>
+            </div>
+            <div class="op-dl-warn" id="opDlWarn"><i class="fa fa-exclamation-triangle"></i> Adresse locale (localhost) : un téléphone ne pourra pas l'ouvrir. Utilisez l'adresse IP de l'ordinateur ou le site en ligne (HTTPS).</div>
         </div>
     </div>
 </div>
@@ -415,6 +569,58 @@
 
         /* apparition en cascade */
         document.querySelectorAll('.op-card').forEach(function (c, i) { c.style.animationDelay = Math.min(i * 40, 400) + 'ms'; });
+    })();
+</script>
+<!-- ===== Application terrain : fenêtre de téléchargement, QR code, partage (ajout) ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+    (function () {
+        var btn = document.getElementById('opAppBtn'), dl = document.getElementById('opDl'); if (!btn || !dl) return;
+        var url = new URL(btn.dataset.url || '/terrain/', location.origin).href;
+        var ua = navigator.userAgent, isIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), isAndroid = /android/i.test(ua);
+        var os = isIOS ? 'ios' : isAndroid ? 'android' : 'pc';
+        var installe = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+
+        /* lien, partage */
+        document.getElementById('opDlUrl').textContent = url.replace(/^https?:\/\//, '');
+        var msg = "Installe l'application OperaPlus Terrain pour déclarer et collecter sur le terrain, même sans réseau : " + url;
+        document.getElementById('opDlWa').href = 'https://wa.me/?text=' + encodeURIComponent(msg);
+        document.getElementById('opDlMail').href = 'mailto:?subject=' + encodeURIComponent('Application OperaPlus Terrain') + '&body=' + encodeURIComponent(msg);
+        if (/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) document.getElementById('opDlWarn').classList.add('on');
+        dl.querySelectorAll('[data-dl-go]').forEach(function (a) { a.href = a.dataset.dlGo === 'android' ? url + '?installer=1' : url; });
+        document.getElementById('opDlCopy').addEventListener('click', function () {
+            var b = this, fin = function () { b.innerHTML = '<i class="fa fa-check"></i> Copié'; setTimeout(function () { b.innerHTML = '<i class="fa fa-copy"></i> Copier'; }, 1800); };
+            if (navigator.clipboard) navigator.clipboard.writeText(url).then(fin, fin); else { var t = document.createElement('textarea'); t.value = url; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e) {} t.remove(); fin(); }
+        });
+
+        /* QR code (dessiné une seule fois) */
+        var qrFait = false;
+        function qr() {
+            if (qrFait) return; qrFait = true;
+            var box = document.getElementById('opDlQr');
+            if (typeof qrcode !== 'function') { box.style.display = 'none'; return; }
+            var q = qrcode(0, 'H'); q.addData(url); q.make();
+            var n = q.getModuleCount(), p = '';
+            for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) p += 'M' + c + ' ' + r + 'h1v1h-1z';
+            box.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 ' + n + ' ' + n + '" shape-rendering="crispEdges"><path d="' + p + '" fill="#0b1220"/></svg>');
+        }
+
+        /* onglets d'appareil */
+        function choisir(o) {
+            dl.querySelectorAll('[data-os]').forEach(function (b) { b.classList.toggle('on', b.dataset.os === o); b.setAttribute('aria-selected', b.dataset.os === o); });
+            dl.querySelectorAll('[data-pane]').forEach(function (p) { p.classList.toggle('on', p.dataset.pane === o); });
+        }
+        dl.querySelectorAll('[data-os]').forEach(function (b) { b.addEventListener('click', function () { choisir(b.dataset.os); }); });
+
+        /* ouverture / fermeture */
+        var avant = null;
+        function ouvrir() { avant = document.activeElement; qr(); choisir(os); document.getElementById('opDlDone').classList.toggle('on', !!installe);
+            dl.classList.add('on'); dl.setAttribute('aria-hidden', 'false'); document.documentElement.style.overflow = 'hidden'; setTimeout(function () { dl.querySelector('.op-dl-x').focus(); }, 50); }
+        function fermer() { dl.classList.remove('on'); dl.setAttribute('aria-hidden', 'true'); document.documentElement.style.overflow = ''; if (avant) avant.focus(); }
+        btn.addEventListener('click', ouvrir);
+        dl.addEventListener('click', function (e) { if (e.target === dl || e.target.closest('[data-dl-close]')) fermer(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && dl.classList.contains('on')) fermer(); });
+        if (/[?&]app=1/.test(location.search)) ouvrir();   /* lien direct : /mes-projets/?app=1 */
     })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

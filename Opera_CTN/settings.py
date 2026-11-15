@@ -56,10 +56,9 @@ REST_FRAMEWORK = {
 
 # Domaine public et localhost
 ALLOWED_HOSTS = [
-    'operaplus.org',  # ton domaine
-    'localhost',
-    '127.0.0.1',
-    '[::1]'
+    'operaplus.org', 
+    # 'localhost',
+    # '127.0.0.1'
 ]
 
 # Pour éviter les erreurs CSRF lors des formulaires depuis ton domaine

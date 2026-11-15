@@ -19552,6 +19552,13 @@ def gestionnaire(request, gest_val, gest_id=0, name=None, structure=None, period
         # gest_val = str(int(gest_val) + 1)
         # entity = InsitutionEntities.objects.filter(m_hierachie=gest_val,m_institution=context['actual_institution']).first().m_entity_type
         sup_entity = Entity.objects.filter(id=gest_id).first()
+        # ===== Correctif (ajout) : élément introuvable (supprimé, mauvais lien, autre institution) =====
+        # Avant : AttributeError 'NoneType' object has no attribute 'sup_hierachie' (erreur 500).
+        # Maintenant : retour propre à la liste du niveau, avec un message.
+        if sup_entity is None:
+            from django.contrib import messages
+            messages.warning(request, "Cet élément est introuvable : il a peut-être été supprimé ou déplacé.")
+            return redirect('/gestionnaire/' + str(gest_val) + '/')
         if sup_entity != None:
             lines = sup_entity.sub_entities()
         else:
@@ -19597,10 +19604,10 @@ def gestionnaire(request, gest_val, gest_id=0, name=None, structure=None, period
         actu_entity = entity
         enmPT = actu_entity.enum_fields()['result']
         """
-		test_PT = dict()
-		for e in enmPT:
-			test_PT[e['name']] = e['lines']
-		"""
+        test_PT = dict()
+        for e in enmPT:
+            test_PT[e['name']] = e['lines']
+        """
         lines = entity.lines()
         is_tache = entity.is_tache
         fields = entity.fields()
@@ -19650,7 +19657,7 @@ def gestionnaire(request, gest_val, gest_id=0, name=None, structure=None, period
 
 
 
-    if int(tmp_gest_val) > 0 and gest_id != 0:
+    if int(tmp_gest_val) > 0 and gest_id != 0 and sup_entity is not None:  # correctif (ajout) : garde-fou
         context['sup_hierachy'] = sup_entity.sup_hierachie()
 
     if (int(tmp_gest_val) - 1 > 0) and InsitutionEntities.objects.filter(m_hierachie=(int(tmp_gest_val) - 1),
@@ -19668,9 +19675,9 @@ def gestionnaire(request, gest_val, gest_id=0, name=None, structure=None, period
                                                                      'actual_institution']).select_related(
         'm_institution'))
     """
-	if is_tache or context['is_sub_tache']:
-		context['searches'].append({'label':'Structure','code':'s','values':context['structures']})
-	"""
+    if is_tache or context['is_sub_tache']:
+        context['searches'].append({'label':'Structure','code':'s','values':context['structures']})
+    """
     try:
         if context['base_val'] != None:
             taches = list()  # context['base_val'].taches()

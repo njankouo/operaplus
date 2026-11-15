@@ -647,12 +647,35 @@
       if ($('#oPrec')) $('#oPrec').onclick = function () { i--; dessiner(); };
       if ($('#oPasser')) $('#oPasser').onclick = fin;
     }
-    function fin() { couche.innerHTML = ''; DB.ecrire('decouverte_vue', true); router(); }
+    function fin() { couche.innerHTML = ''; DB.ecrire('decouverte_vue', true); router(); feuilleInstall(); }
     dessiner();
   }
 
   /* =============== installation & service worker =============== */
-  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); etat.installer = e; if (ecranRafraichissable()) router(true); });
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); etat.installer = e; if (ecranRafraichissable()) router(true); feuilleInstall(); });
+  /* lien « Installer » venu de la page Mes projets : /terrain/?installer=1 */
+  var demandeInstall = /[?&]installer=1/.test(location.search);
+  if (demandeInstall && history.replaceState) history.replaceState(null, '', location.pathname + location.hash);
+  function feuilleInstall() {
+    if (!demandeInstall || couche.innerHTML || $('#tSplash')) return;
+    if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) { demandeInstall = false; return toast('L’application est déjà installée sur ce téléphone ✓'); }
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (etat.installer) {
+      demandeInstall = false;
+      feuille('<div style="text-align:center"><span class="c-logo" style="width:72px;height:72px;margin:0 auto .8rem;display:block">' + LOGO + '</span><h2>Installer OperaPlus Terrain</h2>' +
+        '<p style="color:var(--mute);margin:.2rem 0 1.2rem">L’icône apparaîtra sur l’écran d’accueil. L’application s’ouvrira même sans réseau.</p></div>' +
+        '<button class="c-btn c-btn-p" id="tInstF" style="width:100%">' + ico('install') + ' Installer maintenant</button><button class="c-btn c-btn-s" data-fermer style="width:100%;margin-top:.5rem">Plus tard</button>');
+      $('#tInstF').onclick = function () { var ev = etat.installer; couche.innerHTML = ''; ev.prompt(); ev.userChoice.then(function (c) { if (c.outcome === 'accepted') toast('Installation en cours… ✓'); }).finally(function () { etat.installer = null; router(true); }); };
+    } else if (ios) {
+      demandeInstall = false;
+      feuille('<h2>Ajouter à l’écran d’accueil</h2><div class="t-groupe">' +
+        '<div class="t-row"><span class="ic">1</span><span class="ct"><b>Touchez le bouton Partager</b><small>En bas de l’écran de Safari</small></span></div>' +
+        '<div class="t-row"><span class="ic">2</span><span class="ct"><b>« Sur l’écran d’accueil »</b><small>Faites défiler la liste si besoin</small></span></div>' +
+        '<div class="t-row"><span class="ic">3</span><span class="ct"><b>Touchez « Ajouter »</b><small>L’icône OP Terrain apparaît</small></span></div></div>' +
+        '<button class="c-btn c-btn-p" data-fermer style="width:100%">J’ai compris</button>');
+    }
+  }
+  setTimeout(function () { if (demandeInstall && !etat.installer && !couche.innerHTML && !(matchMedia('(display-mode: standalone)').matches)) { demandeInstall = false; toast('Pour installer : menu ⋮ du navigateur, puis « Installer l’application ».', 6000); } }, 7000);
   function brancherInstall() {
     ['#tInst1', '#tInst2'].forEach(function (s) { var b = $(s); if (b) b.onclick = function () { etat.installer.prompt(); etat.installer.userChoice.finally(function () { etat.installer = null; router(); }); }; });
   }
@@ -671,7 +694,7 @@
     setTimeout(function () {
       var s = $('#tSplash'); s.classList.add('fin'); setTimeout(function () { s.remove(); }, 400);
       router();
-      if (!r[2]) decouverte(false);
+      if (!r[2]) decouverte(false); else setTimeout(feuilleInstall, 450);
     }, Math.max(0, 900 - (Date.now() - debut)));
     if (navigator.onLine) actualiserPaquet().then(charger).then(function () { if (ecranRafraichissable()) router(true); synchroniser(false); });
   });

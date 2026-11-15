@@ -1466,15 +1466,34 @@ body {
     <div class="w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-20">
             
-            <a href="/" class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-2xl overflow-hidden shadow-sm border border-slate-200">
-                    <img src="{{actual_institution.img.url}}" alt="Logo {{actual_institution.sigle}}" class="w-full h-full object-cover">
-                </div>
-                <div>
-                    <span class="text-[9px] uppercase tracking-widest  font-black block"  style="color: {{request.user.personnel.color_fond}}">WORKSPACE</span>
-                    <h1 class="font-black  text-lg tracking-tight"  style="color: {{request.user.personnel.color_fond}}">{{actual_institution.sigle}}</h1>
-                </div>
-            </a>
+          <a href="/" class="flex items-center gap-3 op-ws" title="{{ actual_institution.sigle }}">
+    <div class="w-11 h-11 rounded-2xl overflow-hidden shadow-sm border border-slate-200 op-ws-logo">
+        {% if actual_institution.img %}
+        <img src="{{actual_institution.img.url}}" alt="Logo {{actual_institution.sigle}}" class="w-full h-full object-cover">
+        {% else %}
+        <span class="op-ws-ini" style="background: {{request.user.personnel.color_fond}}">{{ actual_institution.sigle|slice:":2"|upper }}</span>
+        {% endif %}
+    </div>
+    <div class="op-ws-txt">
+        <span class="text-[9px] uppercase tracking-widest  font-black block"  style="color: {{request.user.personnel.color_fond}}">WORKSPACE</span>
+        <h1 class="font-black  text-lg tracking-tight"  style="color: {{request.user.personnel.color_fond}}">{{actual_institution.sigle}}</h1>
+    </div>
+</a>
+
+<!-- ===== En-tête workspace : affichage mobile (ajout) ===== -->
+<style>
+    .op-ws { min-width: 0; max-width: 100%; }
+    .op-ws-logo { flex-shrink: 0; background: #fff; }
+    .op-ws-ini { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 14px; background: #123A37; }
+    .op-ws-txt { min-width: 0; line-height: 1.1; }
+    .op-ws-txt h1 { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    @media (max-width: 640px) {
+        .op-ws { gap: 10px !important; max-width: calc(100vw - 130px); }   /* laisse la place au menu et aux icônes */
+        .op-ws-logo { width: 36px !important; height: 36px !important; border-radius: 11px !important; }
+        .op-ws-txt span { font-size: 8px !important; letter-spacing: .16em !important; }
+        .op-ws-txt h1 { font-size: 15px !important; }
+    }
+</style>
             
             <div class="hidden xl:flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-2xl border border-slate-100 shadow-inner">
                 <div class="px-2 border-r border-slate-200">
