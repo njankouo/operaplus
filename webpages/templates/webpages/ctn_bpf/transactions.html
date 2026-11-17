@@ -1,113 +1,508 @@
 {% extends './index.html' %}
 
 {% block main %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-    
-    <!-- En-tête de page ERP de haut niveau -->
-    <div class="flex flex-col md:flex-row md:items-end justify-between pb-6 border-b border-slate-200/80 gap-4">
+<!-- ===================== VALIDATION DES TRANSACTIONS : file d'approbation (refonte) =====================
+     À gauche, la file des transactions (recherche + filtres). À droite, le dossier de la transaction choisie :
+     valeur, opération, formulaires de collecte, parcours, et l'action « Valider » (confirmation en deux temps).
+     Clavier : ↑ / ↓ (ou J / K) pour changer de transaction, V pour valider. Mêmes variables qu'avant :
+     transaction, operation_dataset ; même lien /send-transaction/<id>/. -->
+<style>
+    .lm-ap { --ok: var(--sbx-ok, #2A8A7D); --warn: var(--sbx-warn, #E48B0C); --line: var(--lm-line, rgba(15,23,42,.08));
+             --ink: var(--lm-ink, #0b1220); --mute: var(--lm-mute, #5b6475); --dom: var(--lm-dom, #1e293b); --acc: var(--lm-acc, #4361ee); --ease: var(--lm-ease, ease); }
+    .lm-ap * { box-sizing: border-box; }
+    /* ---------- En-tête ---------- */
+    .lm-ap-tete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; }
+    .lm-ap-tete small { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+    .lm-ap-tete h1 { margin: 6px 0 4px; font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; color: var(--ink); }
+    .lm-ap-tete p { margin: 0; font-size: 13.5px; color: var(--mute); }
+    .lm-ap-tete p b { color: var(--ink); }
+    .lm-ap-bilan { display: flex; align-items: center; gap: 18px; padding: 14px 18px; background: #fff; border: 1px solid var(--line); border-radius: 20px; min-width: 320px; }
+    .lm-ap-bilan .chiffres { display: flex; gap: 18px; }
+    .lm-ap-bilan .chiffres div b { display: block; font-size: 22px; font-weight: 800; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .lm-ap-bilan .chiffres div span { font-size: 11.5px; color: var(--mute); }
+    .lm-ap-bilan .barre { flex: 1; min-width: 110px; }
+    .lm-ap-bilan .barre span { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--mute); margin-bottom: 6px; }
+    .lm-ap-bilan .barre i { display: block; height: 8px; border-radius: 8px; background: color-mix(in srgb, var(--ok) 15%, transparent); overflow: hidden; }
+    .lm-ap-bilan .barre i s { display: block; height: 100%; width: 0; background: var(--ok); border-radius: 8px; transition: width .8s var(--ease); }
+
+    /* ---------- Corps : file + dossier ---------- */
+    .lm-ap-corps { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 22px; }
+    .lm-ap-file { background: #fff; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; }
+    .lm-ap-outils { padding: 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+    .lm-ap-cherche { position: relative; }
+    .lm-ap-cherche i { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--mute); }
+    .lm-ap-cherche input { width: 100%; height: 40px; padding: 0 12px 0 36px; border-radius: 12px; border: 1px solid var(--line); background: rgba(15,23,42,.02); font-size: 13.5px; color: var(--ink); outline: none;
+                           transition: border-radius .4s var(--ease), border-color .2s; }
+    .lm-ap-cherche input:focus { border-radius: 20px; border-color: color-mix(in srgb, var(--dom) 35%, #fff); background: #fff; }
+    .lm-ap-filtres { display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: rgba(15,23,42,.04); }
+    .lm-ap-filtres button { flex: 1; height: 32px; border: 0; border-radius: 9px; background: transparent; font-size: 12.5px; font-weight: 700; color: var(--mute); cursor: pointer; }
+    .lm-ap-filtres button em { font-style: normal; margin-left: 4px; opacity: .7; }
+    .lm-ap-filtres button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(15,23,42,.1); }
+    .lm-ap-liste { max-height: 62vh; overflow-y: auto; padding: 6px; }
+    .lm-ap-item { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; text-align: left; padding: 12px 12px 12px 14px; border: 0; border-radius: 16px;
+                  background: transparent; cursor: pointer; position: relative; transition: background-color .2s, border-radius .4s var(--ease); }
+    .lm-ap-item:hover { background: rgba(15,23,42,.035); }
+    .lm-ap-item.on { background: color-mix(in srgb, var(--acc) 9%, #fff); border-radius: 20px; }
+    .lm-ap-item.on::before { content: ""; position: absolute; left: 4px; top: 14px; bottom: 14px; width: 3px; border-radius: 3px; background: var(--acc); }
+    .lm-ap-item[hidden] { display: none; }
+    #lmAp .lm-ap-item:focus-visible { outline: 2px solid color-mix(in srgb, var(--acc) 55%, transparent) !important; outline-offset: 1px !important; }
+    .lm-ap-item b { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .lm-ap-item .v { font-size: 15px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; align-self: start; }
+    .lm-ap-item small { font-size: 11.5px; color: var(--mute); display: flex; align-items: center; gap: 6px; }
+    .lm-ap-item small .pt { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+    .lm-ap-item .etat { grid-column: 2; justify-self: end; font-size: 11px; font-weight: 700; color: var(--c); }
+    .attente { --c: var(--warn); } .faite { --c: var(--ok); }
+    .lm-ap-rien { margin: 0; padding: 24px; text-align: center; font-size: 13px; color: var(--mute); }
+
+    /* ---------- Dossier ---------- */
+    .lm-ap-dossier { position: sticky; top: 84px; background: #fff; border: 1px solid var(--line); border-radius: 24px; overflow: hidden; box-shadow: var(--lm-shadow, 0 10px 30px -18px rgba(15,23,42,.22)); }
+    .lm-ap-fiche[hidden] { display: none; }
+    .lm-ap-fiche { animation: lm-ap-in .3s var(--ease); }
+    @keyframes lm-ap-in { from { opacity: 0; transform: translateY(6px); } }
+    .lm-ap-fiche header { padding: 22px 26px 18px; border-bottom: 1px solid var(--line); }
+    .lm-ap-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: var(--mute); }
+    .lm-ap-pastille { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-weight: 700; color: var(--c); background: color-mix(in srgb, var(--c) 12%, #fff); }
+    .lm-ap-pastille::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+    .lm-ap-fiche h2 { margin: 12px 0 6px; font-size: 1.4rem; font-weight: 800; letter-spacing: -.015em; line-height: 1.25; color: var(--ink); }
+    .lm-ap-fiche header p { margin: 0; font-size: 13px; color: var(--mute); }
+    .lm-ap-fiche header p b { color: var(--ink); font-weight: 600; }
+    .lm-ap-blocs { display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+    .lm-ap-valeur { padding: 24px 26px; border-right: 1px solid var(--line); background: color-mix(in srgb, var(--dom) 4%, #fff); }
+    .lm-ap-valeur span { font-size: 12px; font-weight: 700; color: var(--mute); }
+    .lm-ap-valeur strong { display: block; margin-top: 6px; font-size: 40px; font-weight: 800; letter-spacing: -.03em; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .lm-ap-valeur em { display: block; margin-top: 8px; font-style: normal; font-size: 12px; color: var(--mute); }
+    .lm-ap-sources { padding: 22px 26px; }
+    .lm-ap-sources h3, .lm-ap-parcours h3 { margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
+    .lm-ap-docs { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+    .lm-ap-doc { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; border: 1px solid var(--line); background: #fff; transition: border-color .2s, border-radius .4s var(--ease); }
+    .lm-ap-doc:hover { border-color: color-mix(in srgb, var(--dom) 30%, #fff); border-radius: 22px; }
+    .lm-ap-doc .ic { width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--dom) 10%, #fff); color: var(--dom); font-size: 15px; }
+    .lm-ap-doc b { display: block; font-size: 13px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lm-ap-doc small { font-size: 11.5px; color: var(--mute); }
+    .lm-ap-doc div { min-width: 0; }
+    .lm-ap-aucun-doc { padding: 14px; border-radius: 14px; background: color-mix(in srgb, var(--warn) 10%, #fff); color: var(--ink); font-size: 13px; display: flex; gap: 10px; align-items: center; }
+    .lm-ap-aucun-doc i { color: var(--warn); }
+    .lm-ap-parcours { padding: 0 26px 22px; }
+    .lm-ap-etapes { display: flex; gap: 0; list-style: none; margin: 0; padding: 0; }
+    .lm-ap-etapes li { flex: 1; position: relative; padding-top: 22px; font-size: 12px; color: var(--mute); }
+    .lm-ap-etapes li::before { content: ""; position: absolute; top: 4px; left: 0; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #cbd2dc; z-index: 1; }
+    .lm-ap-etapes li::after { content: ""; position: absolute; top: 9px; left: 12px; right: 0; height: 2px; background: #e3e7ed; }
+    .lm-ap-etapes li:last-child::after { display: none; }
+    .lm-ap-etapes li b { display: block; color: var(--ink); font-size: 12.5px; }
+    .lm-ap-etapes li.fait::before { background: var(--ok); border-color: var(--ok); }
+    .lm-ap-etapes li.fait::after { background: var(--ok); }
+    .lm-ap-etapes li.encours::before { border-color: var(--warn); box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 18%, transparent); }
+    .lm-ap-actions { display: flex; align-items: center; gap: 10px; padding: 14px 26px; border-top: 1px solid var(--line); background: rgba(15,23,42,.02); }
+    .lm-ap-nav { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; transition: border-radius .4s var(--ease); }
+    .lm-ap-nav:hover:not(:disabled) { border-radius: 20px; }
+    .lm-ap-nav:disabled { opacity: .35; cursor: default; }
+    .lm-ap-aide { margin-right: auto; font-size: 11.5px; color: var(--mute); }
+    .lm-ap-aide kbd { font: 600 11px/1 ui-monospace, monospace; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line); background: #fff; }
+    .lm-ap-valider { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 14px; text-decoration: none !important; white-space: nowrap;
+                     background: var(--acc); color: var(--lm-acc-ink, #fff) !important; font-size: 14px; font-weight: 700; transition: border-radius .4s var(--ease), background-color .2s; }
+    .lm-ap-valider:hover { border-radius: 22px; }
+    .lm-ap-valider.confirmer { background: var(--ok); color: #fff !important; }
+    .lm-ap-valider svg { width: 15px; height: 15px; }
+    .lm-ap-deja { font-size: 13px; font-weight: 600; color: var(--ok); display: inline-flex; gap: 8px; align-items: center; }
+    .lm-ap-vide { padding: 70px 20px; text-align: center; background: #fff; border: 1px solid var(--line); border-radius: 24px; margin-top: 22px; }
+    .lm-ap-vide .ic { width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 20px; display: grid; place-items: center; font-size: 26px; background: color-mix(in srgb, var(--ok) 12%, #fff); color: var(--ok); }
+    .lm-ap-vide b { display: block; font-size: 16px; color: var(--ink); }
+    .lm-ap-vide small { font-size: 13px; color: var(--mute); }
+
+    /* ---------- Téléphone : la file, puis le dossier en plein écran ---------- */
+    .lm-ap-retour { display: none; }
+    body.lm-ap-detail-ouvert .fixed.bottom-6.right-6, body.lm-ap-detail-ouvert div.fixed.bottom-24.right-8 { display: none !important; }   /* boutons flottants masqués sur le dossier plein écran */
+    @media (max-width: 900px) {
+        .lm-ap-corps { grid-template-columns: 1fr; }
+        .lm-ap-bilan { min-width: 0; width: 100%; }
+        .lm-ap-dossier { display: none; position: fixed; inset: 0; z-index: 9000; border-radius: 0; overflow-y: auto; }
+        .lm-ap.detail .lm-ap-dossier { display: block; }
+        .lm-ap-retour { display: inline-flex; align-items: center; gap: 8px; margin: 14px 18px 0; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 13px; font-weight: 600; color: var(--ink); }
+        .lm-ap-blocs { grid-template-columns: 1fr; }
+        .lm-ap-valeur { border-right: 0; border-bottom: 1px solid var(--line); }
+        .lm-ap-aide { display: none; }
+        .lm-ap-actions { position: sticky; bottom: 0; }
+        .lm-ap-valider { flex: 1; justify-content: center; }
+        .lm-ap-liste { max-height: none; }
+    }
+    html.sbx-dark .lm-ap-bilan, html.sbx-dark .lm-ap-file, html.sbx-dark .lm-ap-dossier, html.sbx-dark .lm-ap-doc, html.sbx-dark .lm-ap-nav, html.sbx-dark .lm-ap-vide { background: #181c25; border-color: rgba(255,255,255,.08); }
+    html.sbx-dark .lm-ap-item.on { background: color-mix(in srgb, var(--acc) 16%, #181c25); }
+    @media (prefers-reduced-motion: reduce) { .lm-ap-fiche { animation: none; } }
+    /* ---------- Ajouts ---------- */
+    html.sbx-dark .lm-ap { --ink: #e8ecf3; --mute: #9aa4b5; --line: rgba(255,255,255,.08); }
+    html.sbx-dark .lm-ap-cherche input, html.sbx-dark .lm-ap-filtres button.on { background: #11141b; }
+    html.sbx-dark .lm-ap-valeur { background: color-mix(in srgb, var(--dom) 12%, #181c25); }
+    .lm-ap-doc-etat { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700; color: var(--c, var(--mute)); background: color-mix(in srgb, var(--c, #94a3b8) 12%, transparent); }
+    .lm-ap-doc-etat.ok { --c: var(--ok); } .lm-ap-doc-etat.soumis { --c: var(--acc); } .lm-ap-doc-etat.brouillon { --c: var(--warn); }
+    .lm-ap-docs-note { margin: 0 0 10px; font-size: 12px; color: var(--mute); }
+
+    /* =====================================================================
+       COUCHE « WAOUH » — ajoutée par-dessus, rien d'existant n'est renommé
+       ===================================================================== */
+    @property --lmw-p { syntax: '<number>'; inherits: false; initial-value: 0; }
+    #lmAp { --w1: var(--nav-bg-color, #1e293b); --w2: var(--primary-color, #4361ee); --w3: var(--tertiary-color, #22c1c3);
+            --wglow: color-mix(in srgb, var(--w2) 45%, transparent); position: relative; isolation: isolate; }
+    /* fond de page : halo doux */
+    #lmAp::before { content: ""; position: absolute; inset: -40px -10vw auto; height: 520px; z-index: -1; pointer-events: none;
+        background: radial-gradient(60% 70% at 15% 0%, color-mix(in srgb, var(--w2) 14%, transparent), transparent 70%),
+                    radial-gradient(50% 60% at 90% 10%, color-mix(in srgb, var(--w3) 14%, transparent), transparent 70%); }
+
+    /* ---------- En-tête héros ---------- */
+    #lmAp .lm-ap-tete { position: relative; overflow: hidden; padding: 34px 34px 30px; border-radius: 30px; color: #fff; align-items: center;
+        background: linear-gradient(125deg, var(--w1) 0%, color-mix(in srgb, var(--w1) 55%, var(--w2)) 55%, var(--w2) 100%);
+        box-shadow: 0 30px 60px -30px color-mix(in srgb, var(--w1) 70%, transparent), inset 0 1px 0 rgba(255,255,255,.12); }
+    #lmAp .lm-ap-tete > * { position: relative; z-index: 1; }
+    .lm-ap-deco { position: absolute !important; inset: 0; z-index: 0 !important; pointer-events: none; overflow: hidden; }
+    .lm-ap-deco i { position: absolute; border-radius: 50%; filter: blur(40px); opacity: .55; animation: lmw-flotte 14s ease-in-out infinite alternate; }
+    .lm-ap-deco i:nth-child(1) { width: 320px; height: 320px; right: -60px; top: -120px; background: var(--w3); }
+    .lm-ap-deco i:nth-child(2) { width: 260px; height: 260px; left: 30%; bottom: -170px; background: var(--w2); animation-duration: 18s; }
+    .lm-ap-deco i:nth-child(3) { width: 140px; height: 140px; left: -40px; top: -50px; background: #fff; opacity: .12; animation-duration: 11s; }
+    .lm-ap-deco::after { content: ""; position: absolute; inset: 0; opacity: .14;
+        background-image: radial-gradient(rgba(255,255,255,.9) 1px, transparent 1.2px); background-size: 22px 22px;
+        -webkit-mask-image: linear-gradient(100deg, transparent 20%, #000 75%); mask-image: linear-gradient(100deg, transparent 20%, #000 75%); }
+    @keyframes lmw-flotte { to { transform: translate(-40px, 30px) scale(1.15); } }
+    #lmAp .lm-ap-tete small { color: rgba(255,255,255,.72); display: inline-flex; align-items: center; gap: 8px; }
+    #lmAp .lm-ap-tete small::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--w3); box-shadow: 0 0 0 4px color-mix(in srgb, var(--w3) 30%, transparent); animation: lmw-pouls 2s infinite; }
+    @keyframes lmw-pouls { 50% { box-shadow: 0 0 0 8px transparent; } }
+    #lmAp .lm-ap-tete h1 { color: #fff; font-size: clamp(1.8rem, 3.2vw, 2.6rem); margin: 10px 0 6px;
+        background: linear-gradient(90deg, #fff, color-mix(in srgb, #fff 70%, var(--w3))); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    #lmAp .lm-ap-tete p { color: rgba(255,255,255,.78); font-size: 14px; }
+    #lmAp .lm-ap-tete p b { color: #fff; }
+
+    /* bilan en verre + anneau animé */
+    #lmAp .lm-ap-bilan { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 24px; padding: 16px 22px 16px 16px;
+        -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+    #lmAp .lm-ap-bilan .chiffres div b { color: #fff; font-size: 26px; }
+    #lmAp .lm-ap-bilan .chiffres div span, #lmAp .lm-ap-bilan .barre span { color: rgba(255,255,255,.7); }
+    #lmAp .lm-ap-bilan .barre i { background: rgba(255,255,255,.16); }
+    #lmAp .lm-ap-bilan .barre i s { background: linear-gradient(90deg, var(--w3), #fff); box-shadow: 0 0 12px var(--w3); }
+    .lm-ap-anneau { --lmw-p: 0; width: 78px; height: 78px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; position: relative;
+        background: conic-gradient(var(--w3) calc(var(--lmw-p) * 1%), rgba(255,255,255,.16) 0); transition: --lmw-p 1.4s cubic-bezier(.2,.8,.2,1);
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px)); mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #000 calc(100% - 8px)); }
+    .lm-ap-anneau-txt { position: absolute; top: 0; left: 0; width: 78px; height: 78px; display: grid; place-items: center; font-size: 17px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+    .lm-ap-anneau-zone { position: relative; width: 78px; height: 78px; flex-shrink: 0; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--w3) 50%, transparent)); }
+
+    /* ---------- File ---------- */
+    #lmAp .lm-ap-file, #lmAp .lm-ap-dossier { border-radius: 26px; border-color: color-mix(in srgb, var(--w1) 8%, transparent);
+        box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 24px 48px -28px rgba(15,23,42,.28); }
+    #lmAp .lm-ap-outils { background: linear-gradient(180deg, color-mix(in srgb, var(--w2) 5%, #fff), #fff); }
+    #lmAp .lm-ap-cherche input:focus { box-shadow: 0 0 0 4px color-mix(in srgb, var(--w2) 14%, transparent); border-color: var(--w2); }
+    #lmAp .lm-ap-filtres button.on { color: var(--w2); box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--w2) 40%, transparent); }
+    #lmAp .lm-ap-item { margin-bottom: 2px; animation: lmw-entre .5s both cubic-bezier(.2,.8,.2,1); animation-delay: calc(var(--lmw-i, 0) * 35ms); }
+    @keyframes lmw-entre { from { opacity: 0; transform: translateX(-10px); } }
+    #lmAp .lm-ap-item:hover { background: color-mix(in srgb, var(--w2) 5%, transparent); transform: translateX(3px); }
+    #lmAp .lm-ap-item { transition: background-color .2s, transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, border-radius .4s; }
+    #lmAp .lm-ap-item.on { background: linear-gradient(110deg, color-mix(in srgb, var(--w2) 12%, #fff), color-mix(in srgb, var(--w3) 8%, #fff));
+        box-shadow: 0 10px 24px -14px var(--wglow), inset 0 0 0 1px color-mix(in srgb, var(--w2) 22%, transparent); transform: none; }
+    #lmAp .lm-ap-item.on::before { background: linear-gradient(180deg, var(--w2), var(--w3)); width: 4px; box-shadow: 0 0 10px var(--wglow); }
+    #lmAp .lm-ap-item.on .v { background: linear-gradient(90deg, var(--w1), var(--w2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    #lmAp .lm-ap-item.attente small .pt { box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 22%, transparent); animation: lmw-pouls 2.2s infinite; }
+    #lmAp .lm-ap-liste::-webkit-scrollbar { width: 8px; } #lmAp .lm-ap-liste::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--w1) 15%, transparent); border-radius: 8px; }
+
+    /* ---------- Dossier ---------- */
+    #lmAp .lm-ap-fiche { animation: lmw-fiche .45s cubic-bezier(.2,.8,.2,1); }
+    @keyframes lmw-fiche { from { opacity: 0; transform: translateY(10px) scale(.99); } }
+    #lmAp .lm-ap-fiche header { position: relative; padding: 26px 30px 22px;
+        background: radial-gradient(80% 140% at 100% 0%, color-mix(in srgb, var(--w3) 12%, transparent), transparent 60%),
+                    linear-gradient(180deg, color-mix(in srgb, var(--w2) 6%, #fff), #fff); }
+    #lmAp .lm-ap-fiche h2 { font-size: clamp(1.4rem, 2.2vw, 1.85rem); }
+    #lmAp .lm-ap-valeur { position: relative; overflow: hidden; color: #fff;
+        background: linear-gradient(150deg, var(--w1), color-mix(in srgb, var(--w1) 40%, var(--w2))); }
+    #lmAp .lm-ap-valeur::after { content: ""; position: absolute; width: 180px; height: 180px; right: -70px; bottom: -70px; border-radius: 50%;
+        background: radial-gradient(circle, color-mix(in srgb, var(--w3) 70%, transparent), transparent 70%); opacity: .55; }
+    #lmAp .lm-ap-valeur span, #lmAp .lm-ap-valeur em { color: rgba(255,255,255,.72); position: relative; z-index: 1; }
+    #lmAp .lm-ap-valeur strong { position: relative; z-index: 1; font-size: clamp(34px, 3.6vw, 48px); color: #fff;
+        background: linear-gradient(180deg, #fff 30%, color-mix(in srgb, #fff 60%, var(--w3))); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        white-space: nowrap; }
+    #lmAp .lm-ap-doc { transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, border-color .2s, border-radius .4s; }
+    #lmAp .lm-ap-doc:hover { transform: translateY(-3px); box-shadow: 0 14px 28px -16px var(--wglow); border-color: color-mix(in srgb, var(--w2) 35%, transparent); }
+    #lmAp .lm-ap-doc .ic { background: linear-gradient(135deg, var(--w2), var(--w3)); color: #fff; box-shadow: 0 8px 16px -8px var(--wglow); }
+    #lmAp .lm-ap-etapes li.fait::before { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 18%, transparent); }
+    #lmAp .lm-ap-etapes li.fait::after { background: linear-gradient(90deg, var(--ok), color-mix(in srgb, var(--ok) 60%, var(--w3))); }
+    #lmAp .lm-ap-etapes li.encours::before { animation: lmw-pouls 1.8s infinite; }
+    #lmAp .lm-ap-actions { background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--w2) 4%, #fff)); }
+    #lmAp .lm-ap-valider { position: relative; overflow: hidden; height: 48px; padding: 0 24px; border-radius: 16px;
+        background: linear-gradient(120deg, var(--w2), color-mix(in srgb, var(--w2) 50%, var(--w3))); box-shadow: 0 14px 28px -12px var(--wglow); }
+    #lmAp .lm-ap-valider::after { content: ""; position: absolute; inset: 0; transform: translateX(-120%);
+        background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.45), transparent 70%); animation: lmw-reflet 3.2s ease-in-out infinite; }
+    @keyframes lmw-reflet { 55%, 100% { transform: translateX(120%); } }
+    #lmAp .lm-ap-valider:hover { transform: translateY(-1px); box-shadow: 0 18px 34px -12px var(--wglow); }
+    #lmAp .lm-ap-valider.confirmer { background: linear-gradient(120deg, var(--ok), color-mix(in srgb, var(--ok) 55%, var(--w3)));
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 50%, transparent); animation: lmw-anneau-ok 1.2s infinite; }
+    @keyframes lmw-anneau-ok { 70% { box-shadow: 0 0 0 12px transparent; } }
+    #lmAp .lm-ap-deja { padding: 8px 14px; border-radius: 999px; background: color-mix(in srgb, var(--ok) 12%, transparent); }
+    #lmAp .lm-ap-vide { background: linear-gradient(160deg, color-mix(in srgb, var(--ok) 8%, #fff), #fff); }
+    #lmAp .lm-ap-vide .ic { background: linear-gradient(135deg, var(--ok), var(--w3)); color: #fff; box-shadow: 0 16px 32px -14px var(--ok); animation: lmw-flotte2 3s ease-in-out infinite alternate; }
+    @keyframes lmw-flotte2 { to { transform: translateY(-6px); } }
+
+    /* éclat de validation */
+    .lm-ap-eclat { position: fixed; pointer-events: none; z-index: 9999; width: 8px; height: 8px; border-radius: 2px; animation: lmw-eclat .9s cubic-bezier(.2,.8,.2,1) forwards; }
+    @keyframes lmw-eclat { to { transform: translate(var(--dx), var(--dy)) rotate(var(--r)); opacity: 0; } }
+
+    /* sombre */
+    html.sbx-dark #lmAp .lm-ap-outils, html.sbx-dark #lmAp .lm-ap-actions { background: #181c25; }
+    html.sbx-dark #lmAp .lm-ap-fiche header { background: radial-gradient(80% 140% at 100% 0%, color-mix(in srgb, var(--w3) 14%, transparent), transparent 60%), #181c25; }
+    html.sbx-dark #lmAp .lm-ap-item.on { background: linear-gradient(110deg, color-mix(in srgb, var(--w2) 22%, #181c25), color-mix(in srgb, var(--w3) 12%, #181c25)); }
+    html.sbx-dark #lmAp .lm-ap-item.on .v { background: none; -webkit-text-fill-color: #fff; color: #fff; }
+    html.sbx-dark #lmAp .lm-ap-vide { background: #181c25; }
+    @media (max-width: 900px) {
+        #lmAp .lm-ap-tete { padding: 24px 20px; border-radius: 24px; }
+        #lmAp .lm-ap-bilan { flex-wrap: wrap; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        #lmAp *, #lmAp *::before, #lmAp *::after { animation: none !important; transition: none !important; }
+    }
+
+    /* ---------- Formulaire à remplir : carte cliquable ---------- */
+    .lm-ap-doc { position: relative; cursor: pointer; }
+    .lm-ap-doc-lien { position: absolute; inset: 0; z-index: 2; border-radius: inherit; }
+    .lm-ap-doc-lien:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+    .lm-ap-doc-go { margin-left: auto; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px;
+        font-size: 12px; font-weight: 700; color: #fff; background: linear-gradient(120deg, var(--w2, var(--acc)), var(--w3, var(--acc)));
+        box-shadow: 0 6px 14px -8px var(--wglow, rgba(0,0,0,.3)); transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+    .lm-ap-doc-go i { font-size: 11px; transition: transform .25s; }
+    .lm-ap-doc:hover .lm-ap-doc-go { transform: translateX(2px); } .lm-ap-doc:hover .lm-ap-doc-go i { transform: translateX(3px); }
+    .lm-ap-doc-go.voir { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); box-shadow: none; }
+    .lm-ap-docs-invite { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; padding: 10px 14px; border-radius: 14px; font-size: 13px; color: var(--ink);
+        background: color-mix(in srgb, var(--w2, var(--acc)) 8%, transparent); border: 1px dashed color-mix(in srgb, var(--w2, var(--acc)) 35%, transparent); }
+    .lm-ap-docs-invite i { color: var(--w2, var(--acc)); font-size: 15px; animation: lmw-tape 1.8s ease-in-out infinite; }
+    @keyframes lmw-tape { 50% { transform: translateY(-2px) scale(1.08); } }
+    #lmAp .lm-ap-docs { grid-template-columns: 1fr; }
+    #lmAp .lm-ap-doc b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+    /* ---------- Bouton : un seul clic ---------- */
+    #lmAp .lm-ap-valider.lm-ap-encours { pointer-events: none; animation: none; }
+    #lmAp .lm-ap-valider.lm-ap-encours svg { animation: lmw-tourne .8s linear infinite; }
+    @keyframes lmw-tourne { to { transform: rotate(360deg); } }
+</style>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lm-ap" id="lmAp" data-nb-validees="{{ nb_validees|default_if_none:'' }}">
+
+    <!-- En-tête : opération et bilan de la file -->
+    <div class="lm-ap-tete">
+        <span class="lm-ap-deco" aria-hidden="true"><i></i><i></i><i></i></span>
         <div>
-            <div class="flex items-center space-x-2 text-xs font-mono font-bold text-indigo-600 uppercase tracking-wider mb-2">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
-                </span>
-                <span>Registre des flux & transactions</span>
-            </div>
-            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Validation des transactions</h1>
-            {% if transaction %}
-                <p class="text-xs text-slate-500 mt-1.5 font-medium">
-                    Opération concernée : <span class="font-bold text-indigo-600">{{ transaction.0.operation.nom }}</span>
-                </p>
-            {% endif %}
+            <small>Registre des flux & transactions</small>
+            <h1>Validation des transactions</h1>
+            {% if operation %}<p>Opération concernée : <b>{{ operation.nom }}</b></p>
+            {% elif transaction %}<p>Opération concernée : <b>{{ transaction.0.operation.nom }}</b></p>{% endif %}
         </div>
-        
-        <div class="flex items-center space-x-3 bg-white px-4 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
-            <div class="text-right">
-                <p class="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Statut global</p>
-                <p class="text-sm font-mono font-extrabold text-slate-800">{{ transaction|length }} Élément(s) en attente</p>
+        {% if transaction %}
+        <div class="lm-ap-bilan" aria-live="polite">
+            <div class="lm-ap-anneau-zone"><div class="lm-ap-anneau" id="lmApAnneau"></div><span class="lm-ap-anneau-txt" id="lmApAnneauTxt">0 %</span></div>
+            <div class="chiffres">
+                <div><b id="lmApNbAttente">0</b><span>en attente</span></div>
+                <div><b id="lmApNbFaites">0</b><span>validées</span></div>
             </div>
+            <div class="barre"><span><b>Avancement</b><b id="lmApPct">0 %</b></span><i><s id="lmApBarre"></s></i></div>
         </div>
+        {% endif %}
     </div>
 
-    <!-- Grille des Transactions (Design Cartes ERP Avancé) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {% for item in transaction %}
-        <div class="relative bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-xl hover:border-indigo-400/80 transition-all duration-300 flex flex-col group overflow-hidden">
-            
-            <!-- Liseré supérieur lumineux -->
-            <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500 to-amber-400 opacity-80"></div>
+    {% if transaction %}
+    <div class="lm-ap-corps">
 
-            <!-- Header de la carte -->
-            <div class="px-5 pt-4 pb-3 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
-                <span class="inline-flex items-center px-2 py-1 rounded-lg text-[10px] font-mono font-bold text-slate-500 bg-white border border-slate-200/80 shadow-2xs">
-                    <i class="far fa-calendar-alt mr-1.5 text-indigo-500"></i>{{ item.date_enregistrement|date:"d M Y" }}
-                </span>
-                <span class="text-[10px] font-mono font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">#{{ item.id }}</span>
+        <!-- File des transactions -->
+        <aside class="lm-ap-file" aria-label="File des transactions">
+            <div class="lm-ap-outils">
+                <label class="lm-ap-cherche"><i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="search" id="lmApCherche" placeholder="Nom, indicateur, formulaire ou n°…" autocomplete="off"></label>
+                <div class="lm-ap-filtres" role="tablist">
+                    <button type="button" class="on" data-filtre="tout">Toutes<em id="lmApFTout"></em></button>
+                    <button type="button" data-filtre="attente">En attente<em id="lmApFAttente"></em></button>
+                    <button type="button" data-filtre="faite">Validées<em id="lmApFFaite"></em></button>
+                </div>
             </div>
-            
-            <!-- Contenu principal -->
-            <div class="p-5 flex-grow space-y-4">
-                <!-- État de la transaction -->
-                <div>
-                    <div class="mb-1.5">
-                        {% if not item.etat %}
-                            <span class="inline-flex items-center space-x-1.5 text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/60 uppercase tracking-wide">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                <span>En attente de validation</span>
-                            </span>
+            <div class="lm-ap-liste" id="lmApListe" role="listbox" aria-label="Transactions">
+                {% for item in transaction %}
+                <button type="button" role="option" class="lm-ap-item {% if item.etat %}faite{% else %}attente{% endif %}" data-id="{{ item.id }}"
+                        data-texte="{{ item.nom|default:'transaction sans nom'|lower }} {{ item.indicateur.nom|lower }} #{{ item.id }}{% for fiche in item.datasettransaction_set.all %} {{ fiche.dataset.m_name|lower }}{% endfor %}">
+                    <b>{{ item.nom|default:"Transaction sans nom" }}</b>
+                    <span class="v">{{ item.valeur|floatformat:'-2g' }}</span>
+                    <small><span class="pt"></span>{{ item.indicateur.nom }} · {{ item.date_enregistrement|date:"d M Y" }} · #{{ item.id }}</small>
+                    <span class="etat">{% if item.etat %}Validée{% else %}En attente{% endif %}</span>
+                </button>
+                {% endfor %}
+                <p class="lm-ap-rien" id="lmApRien" hidden>Aucune transaction ne correspond.</p>
+            </div>
+        </aside>
+
+        <!-- Dossier de la transaction choisie -->
+        <section class="lm-ap-dossier" aria-live="polite">
+            <button type="button" class="lm-ap-retour" id="lmApRetour"><i class="fa-solid fa-arrow-left"></i> Retour à la liste</button>
+            {% for item in transaction %}
+            <article class="lm-ap-fiche" data-pour="{{ item.id }}" hidden>
+                <header>
+                    <div class="lm-ap-meta">
+                        <span class="lm-ap-pastille {% if item.etat %}faite{% else %}attente{% endif %}">{% if item.etat %}Transaction réalisée{% else %}En attente de validation{% endif %}</span>
+                        <span>#{{ item.id }}</span><span>·</span><span>Enregistrée le {{ item.date_enregistrement|date:"d F Y" }}</span>
+                    </div>
+                    <h2>{{ item.nom|default:"Transaction sans nom" }}</h2>
+                    <p>Indicateur : <b>{{ item.indicateur.nom }}</b> · Opération : <b>{{ item.operation.nom }}</b>{% if item.personnel %} · Saisie par <b>{{ item.personnel }}</b>{% endif %}</p>
+                </header>
+                <div class="lm-ap-blocs">
+                    <div class="lm-ap-valeur"><span>Valeur mesurée</span><strong>{{ item.valeur|floatformat:'-2g' }}</strong><em>Saisie depuis la collecte</em></div>
+                    <div class="lm-ap-sources">
+                        <h3>Formulaires de collecte</h3>
+                        {% if item.datasettransaction_set.all or operation_dataset %}<p class="lm-ap-docs-invite"><i class="fa-solid fa-hand-pointer"></i><span>Le formulaire de collecte existe : <b>cliquez dessus pour le remplir</b>.</span></p>{% endif %}
+                        {% with fiches=item.datasettransaction_set.all %}
+                        {% if fiches %}
+                        <div class="lm-ap-docs">
+                            {% for fiche in fiches %}
+                            <div class="lm-ap-doc"><a class="lm-ap-doc-lien" href="/grub_form/{{ fiche.dataset.id }}/" aria-label="{% if fiche.valide %}Voir{% else %}Remplir{% endif %} le formulaire {{ fiche.dataset.m_name }}"></a><span class="ic"><i class="fa-regular fa-file-lines"></i></span>
+                                <div><b title="{{ fiche.dataset.m_name }}">{{ fiche.dataset.m_name }}</b>
+                                    <small>{{ fiche.date_creation|date:"d/m/Y"|default:"Formulaire de collecte" }}
+                                    {% if fiche.valide %}<span class="lm-ap-doc-etat ok">Validée</span>{% elif fiche.soumis %}<span class="lm-ap-doc-etat soumis">Soumise</span>{% else %}<span class="lm-ap-doc-etat brouillon">Brouillon</span>{% endif %}</small></div>
+                                {% if fiche.valide %}<span class="lm-ap-doc-go voir">Voir <i class="fa-solid fa-arrow-right"></i></span>{% else %}<span class="lm-ap-doc-go">Remplir <i class="fa-solid fa-arrow-right"></i></span>{% endif %}</div>
+                            {% endfor %}
+                        </div>
                         {% else %}
-                            <span class="inline-flex items-center space-x-1.5 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/60 uppercase tracking-wide">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Transaction Réalisée</span>
-                            </span>
+                        {% if operation_dataset %}<p class="lm-ap-docs-note">Aucune fiche propre à cette transaction : formulaires de l'opération.</p>{% endif %}
+                        <div class="lm-ap-docs">
+                            {% for operation_datasets in operation_dataset %}{% ifchanged operation_datasets.dataset_id %}
+                            <div class="lm-ap-doc"><a class="lm-ap-doc-lien" href="/grub_form/{{ operation_datasets.dataset.id }}/" aria-label="Remplir le formulaire {{ operation_datasets.dataset.m_name }}"></a><span class="ic"><i class="fa-regular fa-file-lines"></i></span>
+                                <div><b title="{{ operation_datasets.dataset.m_name }}">{{ operation_datasets.dataset.m_name }}</b><small>Formulaire de collecte</small></div>
+                                <span class="lm-ap-doc-go">Remplir <i class="fa-solid fa-arrow-right"></i></span></div>
+                            {% endifchanged %}{% empty %}
+                            <div class="lm-ap-aucun-doc"><i class="fa-solid fa-triangle-exclamation"></i>Aucun formulaire de collecte rattaché à cette opération.</div>
+                            {% endfor %}
+                        </div>
                         {% endif %}
-                    </div>
-                    <h3 class="text-sm font-bold text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors" title="{{ item.indicateur.nom }}">
-                        {{ item.indicateur.nom }}
-                    </h3>
-                </div>
-
-                <!-- Formulaires / Datasets liés à l'opération (Pills modernes) -->
-                <div class="bg-slate-50/80 rounded-xl p-3 border border-slate-200/60 space-y-1.5">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Formulaires associés</p>
-                    <div class="flex flex-wrap gap-1">
-                        {% for operation_datasets in operation_dataset %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-white text-indigo-700 border border-indigo-200/60 shadow-2xs">
-                                {{ operation_datasets.dataset.m_name }}
-                            </span>
-                        {% empty %}
-                            <span class="text-[10px] text-slate-400 italic">Aucun formulaire</span>
-                        {% endfor %}
+                        {% endwith %}
                     </div>
                 </div>
-
-                <!-- Valeur chiffrée -->
-                <div class="pt-2">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Valeur mesurée</p>
-                    <span class="text-2xl font-black text-slate-900 font-mono tabular-nums">{{ item.valeur|floatformat:'2' }}</span>
+                <div class="lm-ap-parcours">
+                    <h3>Parcours</h3>
+                    <ol class="lm-ap-etapes">
+                        <li class="fait"><b>Saisie</b>{{ item.date_enregistrement|date:"d/m/Y" }}</li>
+                        <li class="fait"><b>Transmise</b>au validateur</li>
+                        <li class="{% if item.etat %}fait{% else %}encours{% endif %}"><b>Validation</b>{% if item.etat %}effectuée{% else %}en attente{% endif %}</li>
+                    </ol>
                 </div>
-            </div>
-
-            <!-- Footer / Action de validation -->
-            <div class="px-5 py-3.5 bg-slate-50/90 rounded-b-2xl flex items-center justify-end border-t border-slate-100">
-                <a href="/send-transaction/{{ item.id }}/" 
-                    class="group/btn inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-0.5">
-                    <svg class="w-3.5 h-3.5 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    <span>Valider</span>
-                </a>
-            </div>
-        </div>
-        {% empty %}
-        <div class="col-span-full py-20 text-center bg-white rounded-2xl border border-dashed border-slate-300 shadow-xs">
-            <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h2m4 0h2M7 20h10a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            </svg>
-            <p class="font-bold text-slate-700 text-sm">Aucune transaction en attente</p>
-            <p class="text-xs text-slate-400 mt-0.5">Toutes les opérations de ce flux ont été validées.</p>
-        </div>
-        {% endfor %}
+                <div class="lm-ap-actions">
+                    <button type="button" class="lm-ap-nav" data-pas="-1" aria-label="Transaction précédente"><i class="fa-solid fa-chevron-up"></i></button>
+                    <button type="button" class="lm-ap-nav" data-pas="1" aria-label="Transaction suivante"><i class="fa-solid fa-chevron-down"></i></button>
+                    <span class="lm-ap-aide"><kbd>↑</kbd> <kbd>↓</kbd> naviguer · <kbd>V</kbd> valider</span>
+                    {% if not item.etat %}
+                    <a href="/send-transaction/{{ item.id }}/" class="lm-ap-valider" data-lm-confirmer>
+                        <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                        <span>Saisir les Infos de transaction puis soumettre</span>
+                    </a>
+                    {% else %}
+                    <span class="lm-ap-deja"><i class="fa-solid fa-circle-check"></i>Déjà validée</span>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </section>
     </div>
+    {% else %}
+    <div class="lm-ap-vide">
+        <div class="ic"><i class="fa-solid fa-circle-check"></i></div>
+        <b>Aucune transaction en attente</b>
+        <small>Toutes les opérations de ce flux ont été validées.</small>
+    </div>
+    {% endif %}
 </div>
+
+<script>
+    /* File d'approbation : sélection, filtres, recherche, clavier et validation en deux temps */
+    (function () {
+        var racine = document.getElementById('lmAp'), liste = document.getElementById('lmApListe'); if (!liste) return;
+        var items = [].slice.call(liste.querySelectorAll('.lm-ap-item')), fiches = {}, filtre = 'tout', courant = null;
+        racine.querySelectorAll('.lm-ap-fiche').forEach(function (f) { fiches[f.dataset.pour] = f; });
+        var $ = function (id) { return document.getElementById(id); };
+        function sansAccent(t) { return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+        function visibles() { return items.filter(function (i) { return !i.hidden; }); }
+
+        /* Bilan : en attente, validées, avancement */
+        var nbA = items.filter(function (i) { return i.classList.contains('attente'); }).length, nbF = items.length - nbA;
+        var nbVue = parseInt(racine.dataset.nbValidees, 10); if (!isNaN(nbVue)) nbF = Math.max(nbF, nbVue);   /* ajout : validées hors liste */
+        var pct = (nbA + nbF) ? Math.round(nbF * 100 / (nbA + nbF)) : 0;
+        $('lmApNbAttente').textContent = nbA; $('lmApNbFaites').textContent = nbF; $('lmApPct').textContent = pct + ' %';
+        requestAnimationFrame(function () { $('lmApBarre').style.width = pct + '%'; });
+        var nbFListe = items.length - nbA;
+        $('lmApFTout').textContent = items.length; $('lmApFAttente').textContent = nbA; $('lmApFFaite').textContent = nbFListe;
+        if (!nbFListe) { var bF = racine.querySelector('[data-filtre="faite"]'); if (bF) bF.hidden = true; }   /* ajout : filtre vide masqué */
+        items.forEach(function (i) { i.setAttribute('aria-selected', 'false'); });
+
+        function choisir(item, focus) {
+            if (!item) return;
+            if (courant) { courant.classList.remove('on'); courant.setAttribute('aria-selected', 'false'); fiches[courant.dataset.id].hidden = true; }
+            courant = item; item.classList.add('on'); item.setAttribute('aria-selected', 'true');
+            var f = fiches[item.dataset.id]; f.hidden = false;
+            var v = visibles(), i = v.indexOf(item);
+            f.querySelector('[data-pas="-1"]').disabled = i <= 0; f.querySelector('[data-pas="1"]').disabled = i >= v.length - 1;
+            if (focus) item.focus({ preventScroll: true });
+            item.scrollIntoView({ block: 'nearest' });
+        }
+        function appliquer() {
+            var q = sansAccent($('lmApCherche').value.trim());
+            items.forEach(function (i) { i.hidden = !((filtre === 'tout' || i.classList.contains(filtre)) && (!q || sansAccent(i.dataset.texte).indexOf(q) > -1)); });
+            var v = visibles(); $('lmApRien').hidden = v.length > 0;
+            if (!courant || courant.hidden) choisir(v[0]);
+        }
+        function deplacer(pas) { var v = visibles(), i = v.indexOf(courant); choisir(v[Math.max(0, Math.min(v.length - 1, i + pas))], true); }
+
+        function detail(o) { racine.classList.toggle('detail', o); document.body.classList.toggle('lm-ap-detail-ouvert', o && matchMedia('(max-width: 900px)').matches); }
+        liste.addEventListener('click', function (e) { var it = e.target.closest('.lm-ap-item'); if (!it) return; choisir(it); detail(true); });
+        racine.querySelectorAll('[data-filtre]').forEach(function (b) {
+            b.addEventListener('click', function () { racine.querySelectorAll('[data-filtre]').forEach(function (x) { x.classList.toggle('on', x === b); }); filtre = b.dataset.filtre; appliquer(); });
+        });
+        $('lmApCherche').addEventListener('input', appliquer);
+        $('lmApRetour').addEventListener('click', function () { detail(false); });
+        racine.addEventListener('click', function (e) {
+            var n = e.target.closest('[data-pas]'); if (n) { deplacer(+n.dataset.pas); return; }
+            var a = e.target.closest('[data-lm-confirmer]'); if (!a) return;
+            /* un seul clic : le lien s'ouvre tout de suite, le bouton montre qu'il a réagi */
+            if (a.classList.contains('lm-ap-encours')) { e.preventDefault(); return; }   /* évite le double envoi */
+            if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+            a.classList.add('lm-ap-encours', 'confirmer'); a.setAttribute('aria-busy', 'true');
+            var t = a.querySelector('span'); if (t) t.textContent = 'Ouverture…';
+        });
+        document.addEventListener('keydown', function (e) {
+            if (/input|textarea|select/i.test(document.activeElement.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+            if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); deplacer(1); }
+            else if (e.key === 'ArrowUp' || e.key === 'k') { e.preventDefault(); deplacer(-1); }
+            else if ((e.key === 'v' || e.key === 'V') && courant) { var a = fiches[courant.dataset.id].querySelector('[data-lm-confirmer]'); if (a) a.click(); }
+        });
+
+        /* --- Ajouts « waouh » --- */
+        items.forEach(function (it, k) { it.style.setProperty('--lmw-i', Math.min(k, 20)); });
+        var anneau = $('lmApAnneau'), anTxt = $('lmApAnneauTxt'), calme = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (anneau) requestAnimationFrame(function () { anneau.style.setProperty('--lmw-p', pct); });
+        function compter(el, fin, suffixe) {
+            if (!el) return; if (calme || !fin) { el.textContent = fin + (suffixe || ''); return; }
+            var t0 = null; (function pas(t) { t0 = t0 || t; var k = Math.min(1, (t - t0) / 1200), e = 1 - Math.pow(1 - k, 3);
+                el.textContent = Math.round(fin * e) + (suffixe || ''); if (k < 1) requestAnimationFrame(pas); })(performance.now());
+        }
+        compter($('lmApNbAttente'), nbA); compter($('lmApNbFaites'), nbF); compter($('lmApPct'), pct, ' %'); compter(anTxt, pct, ' %');
+        racine.addEventListener('click', function (e) {
+            var a = e.target.closest('[data-lm-confirmer]'); if (!a || calme || a.classList.contains('lm-ap-encours') || e.ctrlKey || e.metaKey || e.shiftKey) return;
+            var r = a.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+            var cs = getComputedStyle(racine), couleurs = [cs.getPropertyValue('--ok'), cs.getPropertyValue('--w2'), cs.getPropertyValue('--w3'), '#FBC02D'];
+            for (var n = 0; n < 26; n++) {
+                var p = document.createElement('i'), ang = Math.random() * Math.PI * 2, d = 60 + Math.random() * 90;
+                p.className = 'lm-ap-eclat'; p.style.left = cx + 'px'; p.style.top = cy + 'px'; p.style.background = couleurs[n % 4];
+                p.style.setProperty('--dx', Math.cos(ang) * d + 'px'); p.style.setProperty('--dy', Math.sin(ang) * d - 30 + 'px'); p.style.setProperty('--r', (Math.random() * 540) + 'deg');
+                document.body.appendChild(p); setTimeout(function (x) { x.remove(); }.bind(null, p), 1000);
+            }
+        }, true);
+
+        /* la valeur se resserre si elle déborde de son bloc */
+        function ajuster(f) { var st = f && f.querySelector('.lm-ap-valeur strong'); if (!st) return; st.style.fontSize = '';
+            var taille = parseFloat(getComputedStyle(st).fontSize), boite = st.parentNode.clientWidth - 52;
+            while (st.scrollWidth > boite && taille > 18) { taille -= 2; st.style.fontSize = taille + 'px'; } }
+        var choisirAvant = choisir; choisir = function (item, focus) { choisirAvant(item, focus); if (item) ajuster(fiches[item.dataset.id]); };
+        addEventListener('resize', function () { if (courant) ajuster(fiches[courant.dataset.id]); });
+
+        /* retour arrière du navigateur : le bouton redevient cliquable */
+        addEventListener('pageshow', function (ev) { if (!ev.persisted) return;
+            racine.querySelectorAll('[data-lm-confirmer].lm-ap-encours').forEach(function (a) { a.classList.remove('lm-ap-encours', 'confirmer'); a.removeAttribute('aria-busy');
+                var t = a.querySelector('span'); if (t) t.textContent = 'Saisir les Infos de transaction puis soumettre'; }); });
+
+        /* Au départ : la première transaction en attente (sinon la première) */
+        choisir(items.filter(function (i) { return i.classList.contains('attente'); })[0] || items[0]);
+    })();
+</script>
 {% endblock %}

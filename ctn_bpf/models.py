@@ -3667,5 +3667,24 @@ class DataSetOperation(models.Model):
     soumis = models.BooleanField(default=False)
     valide = models.BooleanField(default=False)
     date_soumission = models.DateTimeField(null=True)
+    portee = models.CharField(                       # ← nouvelle ligne
+        max_length=12,
+        choices=[('tache', 'Tâche'), ('transaction', 'Transactions')],
+        default='tache',
+    )
      
 
+class DataSetTransaction(models.Model):
+    transaction = models.ForeignKey(IndicateurValeur, on_delete=models.CASCADE, null=True)
+    dataset = models.ForeignKey(DataSet, on_delete=models.CASCADE, null=True)
+    count_write = models.IntegerField(default=0)
+    statut = models.CharField(
+        max_length=20,
+        choices=StatutDataSet.choices,
+        default=StatutDataSet.BROUILLON,
+
+    )
+    date_creation = models.DateTimeField(null=True)
+    soumis = models.BooleanField(default=False)
+    valide = models.BooleanField(default=False)
+    date_soumission = models.DateTimeField(null=True)

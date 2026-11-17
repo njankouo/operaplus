@@ -34178,19 +34178,31 @@ def valider_abonnement(request, id):
         messages.warning(request, f"Activation faite, mais erreur d'envoi du mail : {e}")
     
     return redirect(request.META.get('HTTP_REFERER', '/'))
+from django.shortcuts import get_object_or_404, render
+
 def transactions(request, id):
     context = basis(request)
     template = 'transactions.html'
-    
-    transaction = IndicateurValeur.objects.filter(operation=int(id), etat=False)
-    operation_dataset = DataSetOperation.objects.filter(operation=int(id))
-    
-    # On met à jour le contexte existant proprement
+
+    operation = get_object_or_404(Operation, id=int(id), m_institution=context['actual_institution'])
+
+    # Transactions non validées de l'opération, avec leurs fiches chargées en une seule requête
+    transaction = (IndicateurValeur.objects
+                   .filter(operation=operation, etat=False)          # ou etat_validation=False selon ton modèle
+                   .select_related('personnel')
+                   .prefetch_related('datasettransaction_set__dataset')
+                   .order_by('-date_enregistrement', '-id'))
+
+    # Fiches liées aux transactions de cette opération (et non plus à la transaction n° id)
+    operation_dataset = (DataSetTransaction.objects
+                         .filter(transaction__operation=operation)
+                         .select_related('dataset', 'transaction')
+                         .order_by('dataset__m_name', '-date_creation'))
+
+    context['operation'] = operation
     context['transaction'] = transaction
     context['operation_dataset'] = operation_dataset
-    
     return render(request, template, context)
-
 
 def ValidTransaction(request):
     template ='validation-transaction.html'
@@ -35129,52 +35141,7 @@ def HistoriqueTask(request, id):
     return render(request, 'avis_informed.html', context)
 
 
-def AjouterFormulaire(request, id):
-    context = basis(request)
-    actual_institution = context.get('actual_institution')
-    operation = get_object_or_404(Operation, id=int(id))
-    
-    # Récupération de tous les datasets de l'institution
-    dataset = DataSet.objects.filter(m_institution=actual_institution)
-    
-    # Récupération des IDs des formulaires déjà associés à cette opération
-    # (Adaptez 'dataset_id' ou le nom du champ de liaison selon votre modèle DataSetOperation)
-    associated_dataset_ids = list(DataSetOperation.objects.filter(operation=operation).values_list('dataset_id', flat=True))
-    
-    context['operation'] = operation
-    context['dataset'] = dataset
-    context['associated_dataset_ids'] = associated_dataset_ids # On l'ajoute au contexte
-    
-    return render(request, 'dataset-operation.html', context)
-
-def SaveDataSet(request):
-    if request.method == "POST":
-        operation_id = request.POST.get('operation')
-        datasets = request.POST.getlist('datasets') # Liste des IDs sélectionnés
-        
-        # Récupération de l'opération
-        operation = get_object_or_404(Operation, id=int(operation_id))
-        
-        # 1. On supprime TOUTES les associations existantes pour cette opération 
-        # (ce qui permet de nettoyer automatiquement les éléments décochés)
-        DataSetOperation.objects.filter(operation=operation).delete()
-        
-        # 2. On recrée les nouvelles associations sélectionnées
-        if datasets:
-            for data in datasets:
-                DataSetOperation.objects.create(
-                    operation_id=operation.id, 
-                    dataset_id=int(data)
-                )
-            messages.success(request, f'Formulaires associés mis à jour avec succès pour {operation.nom}.')
-        else:
-            messages.success(request, f'Tous les formulaires ont été dissociés de {operation.nom}.')
-        
-        # Redirection vers la même page (Pattern PRG)
-        return redirect('ajouter-formulaire', id=operation.id)
-        
-    return redirect('/')
-
+from django.db.models import Q
 
 
 
@@ -35848,4 +35815,150 @@ def microplan_operations(request):
         'taille': taille,
         'aujourdhui': today.isoformat(),
     })
+
+
+
+
+
+
+
+from django.contrib import messages
+from django.db import transaction as db_transaction   # alias : évite le conflit avec la variable « transaction »
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
+# from .models import Operation, DataSet, DataSetOperation, DataSetTransaction, IndicateurValeur, StatutDataSet
+
+PORTEES = ('tache', 'transaction')
+REMPLIE = Q(count_write__gt=0) | Q(soumis=True) | Q(valide=True)
+
+
+def transactions_de(operation):
+    """Les transactions de l'opération = les IndicateurValeur qui lui sont liées."""
+    return IndicateurValeur.objects.filter(operation=operation)
+
+
+def supprimer_vierges(qs):
+    """Supprime les fiches jamais remplies ; renvoie le nombre de fiches remplies conservées."""
+    gardees = qs.filter(REMPLIE).count()
+    qs.exclude(REMPLIE).delete()
+    return gardees
+
+
+def datasets_transaction_de(operation):
+    """Formulaires « Transactions » de l'opération = ceux qui ont des fiches sur ses transactions."""
+    return set(DataSetTransaction.objects.filter(transaction__in=transactions_de(operation))
+                                         .values_list('dataset_id', flat=True))
+
+
+def rattacher_formulaires_transaction(transaction):
+    """
+    À appeler juste après la création d'une nouvelle transaction (IndicateurValeur) :
+    elle reçoit les mêmes formulaires « Transactions » que les autres transactions de son opération.
+    Exemple :  rattacher_formulaires_transaction(nouvelle_valeur)
+    """
+    for ds_id in datasets_transaction_de(transaction.operation):
+        DataSetTransaction.objects.get_or_create(
+            transaction=transaction, dataset_id=ds_id,
+            defaults={'statut': StatutDataSet.BROUILLON, 'date_creation': timezone.now()},
+        )
+
+
+def SaveDataSet(request):
+    if request.method != "POST":
+        return redirect('/')
+
+    operation = get_object_or_404(Operation, id=int(request.POST.get('operation')))
+
+    # { id_formulaire: 'tache' | 'transaction' }
+    choix = {}
+    for ds in request.POST.getlist('datasets'):
+        if ds.isdigit():
+            portee = request.POST.get(f'portee_{ds}', 'transaction')
+            choix[int(ds)] = portee if portee in PORTEES else 'transaction'
+
+    ids_tache = [i for i, p in choix.items() if p == 'tache']
+    ids_transaction = [i for i, p in choix.items() if p == 'transaction']
+    transactions = list(transactions_de(operation))
+    maintenant = timezone.now()
+    conservees = 0
+
+    with db_transaction.atomic():
+        # ---- 1. Fiches de la TÂCHE (DataSetOperation) ----
+        # on retire celles qui ne sont plus « tâche » (décochées ou passées en transactions), si vierges
+        conservees += supprimer_vierges(
+            DataSetOperation.objects.filter(operation=operation).exclude(dataset_id__in=ids_tache))
+        # on crée celles qui manquent
+        deja = set(DataSetOperation.objects.filter(operation=operation).values_list('dataset_id', flat=True))
+        DataSetOperation.objects.bulk_create([
+            DataSetOperation(operation=operation, dataset_id=ds_id, portee='tache',
+                             statut=StatutDataSet.BROUILLON, date_creation=maintenant)
+            for ds_id in ids_tache if ds_id not in deja
+        ])
+
+        # ---- 2. Fiches des TRANSACTIONS (DataSetTransaction) ----
+        # on retire celles qui ne sont plus « transactions », si vierges
+        conservees += supprimer_vierges(
+            DataSetTransaction.objects.filter(transaction__in=transactions).exclude(dataset_id__in=ids_transaction))
+        # on crée celles qui manquent : une par transaction et par formulaire
+        deja = set(DataSetTransaction.objects.filter(transaction__in=transactions)
+                                             .values_list('transaction_id', 'dataset_id'))
+        DataSetTransaction.objects.bulk_create([
+            DataSetTransaction(transaction=t, dataset_id=ds_id,
+                               statut=StatutDataSet.BROUILLON, date_creation=maintenant)
+            for t in transactions for ds_id in ids_transaction if (t.id, ds_id) not in deja
+        ])
+
+    # ---- Messages ----
+    if choix:
+        messages.success(
+            request,
+            f"{operation.nom} : {len(ids_tache)} formulaire(s) à la tâche, "
+            f"{len(ids_transaction)} aux transactions ({len(transactions)} transaction(s) concernée(s))."
+        )
+    else:
+        messages.success(request, f'Tous les formulaires ont été dissociés de {operation.nom}.')
+    if conservees:
+        messages.warning(request, f"{conservees} fiche(s) déjà remplie(s) ont été conservées pour ne pas perdre de données.")
+    if ids_transaction and not transactions:
+        messages.warning(
+            request,
+            "Cette opération n'a encore aucune transaction : les formulaires « Transactions » "
+            "n'ont pas pu être enregistrés. Déclarez d'abord une transaction, puis refaites l'association."
+        )
+
+    return redirect('ajouter-formulaire', id=operation.id)
+
+
+def AjouterFormulaire(request, id):
+    context = basis(request)
+    actual_institution = context.get('actual_institution')
+    operation = get_object_or_404(Operation, id=int(id))
+
+    # Tous les formulaires de l'institution
+    dataset = DataSet.objects.filter(m_institution=actual_institution)
+
+    transactions = transactions_de(operation)
+    fiches_tache = DataSetOperation.objects.filter(operation=operation)
+    fiches_transaction = DataSetTransaction.objects.filter(transaction__in=transactions)
+
+    ids_tache = set(fiches_tache.values_list('dataset_id', flat=True))
+    ids_transaction = set(fiches_transaction.values_list('dataset_id', flat=True))
+
+    context['operation'] = operation
+    context['dataset'] = dataset
+    # cases cochées : formulaires de la tâche + formulaires des transactions
+    context['associated_dataset_ids'] = list(ids_tache | ids_transaction)
+    # bouton « La tâche » coché pour ceux enregistrés dans DataSetOperation
+    context['datasets_tache_ids'] = list(ids_tache)
+    context['nb_transactions'] = transactions.count()
+    # badge « Déjà rempli »
+    context['datasets_verrouilles_ids'] = list(
+        set(fiches_tache.filter(REMPLIE).values_list('dataset_id', flat=True))
+        | set(fiches_transaction.filter(REMPLIE).values_list('dataset_id', flat=True))
+    )
+
+    return render(request, 'dataset-operation.html', context)
+
 

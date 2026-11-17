@@ -3,21 +3,132 @@
 {% load humanize %}
 
 {% block main %}
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+<!-- ===================== ASSOCIER DES FORMULAIRES : refonte =====================
+     Chaque formulaire coché demande « À quoi s'applique-t-il ? » : à la tâche (rempli une fois pour la tâche)
+     ou aux transactions (rempli à chaque déclaration). Champ envoyé : portee_<id du formulaire> = "tache" | "transaction".
+     Inchangés : l'action save-dataset-operation, operation, datasets, associated_dataset_ids,
+     et vos ids / classes (selection-counter, select-all-btn, deselect-all-btn, dataset-card, dataset-checkbox).
+     Facultatif côté vue : datasets_tache_ids (liste des formulaires déjà rattachés à la tâche) pour pré-cocher « Tâche »,
+     nb_transactions (nombre de transactions de l'opération), datasets_verrouilles_ids (formulaires ayant des fiches déjà remplies). -->
+<style>
+    .lm-af { --ok: var(--sbx-ok, #2A8A7D); --line: var(--lm-line, rgba(15,23,42,.08)); --ink: var(--lm-ink, #0b1220); --mute: var(--lm-mute, #5b6475);
+             --dom: var(--lm-dom, #1e293b); --acc: var(--lm-acc, #4361ee); --ease: var(--lm-ease, ease); --tache: #4F7BE8; --trans: var(--sbx-warn, #E48B0C); }
+    .lm-af-tete { border-bottom: 1px solid var(--line) !important; }
+    .lm-af-tete .lm-af-fil { color: var(--mute) !important; letter-spacing: .06em !important; }
+    .lm-af-tete .lm-af-fil b { color: var(--ink); }
+    .lm-af-tete h1 { font-size: 1.8rem !important; letter-spacing: -.02em; }
+    .lm-af-retour { border-radius: 12px !important; border-color: var(--line) !important; box-shadow: none !important; text-transform: none !important; letter-spacing: 0 !important;
+                    font-size: 13px !important; transition: border-radius .4s var(--ease) !important; }
+    .lm-af-retour:hover { border-radius: 20px !important; }
 
-    <!-- En-tête de page ERP -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between pb-6 border-b border-slate-200/80 gap-4">
+    /* Explication des deux portées */
+    .lm-af-portees { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .lm-af-portees div { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 18px; background: #fff; border: 1px solid var(--line); }
+    .lm-af-portees .ic { width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; font-size: 15px;
+                         background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); }
+    .lm-af-portees b { display: block; font-size: 13.5px; color: var(--ink); }
+    .lm-af-portees small { font-size: 12.5px; color: var(--mute); line-height: 1.45; }
+
+    /* Barre d'outils */
+    .lm-af-outils { position: sticky; top: 76px; z-index: 5; background: rgba(255,255,255,.92) !important; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+                    border-radius: 20px !important; border-color: var(--line) !important; box-shadow: var(--lm-shadow, 0 10px 30px -18px rgba(15,23,42,.22)) !important; }
+    .lm-af-outils > div:first-child > div:first-child { border-radius: 14px !important; background: color-mix(in srgb, var(--dom) 8%, #fff) !important; border: 0 !important; color: var(--dom) !important; }
+    .lm-af-cherche { position: relative; min-width: 220px; }
+    .lm-af-cherche i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--mute); }
+    .lm-af-cherche input { width: 100%; height: 36px; padding: 0 12px 0 32px; border-radius: 11px; border: 1px solid var(--line); background: #fff; font-size: 13px; outline: none;
+                           transition: border-radius .4s var(--ease), border-color .2s; }
+    .lm-af-cherche input:focus { border-radius: 18px; border-color: color-mix(in srgb, var(--dom) 35%, #fff); }
+    #select-all-btn, #deselect-all-btn { border-radius: 11px !important; border: 1px solid var(--line) !important; background: #fff !important; color: var(--ink) !important;
+                                         height: 36px; transition: border-radius .4s var(--ease) !important; }
+    #select-all-btn:hover, #deselect-all-btn:hover { border-radius: 18px !important; }
+
+    /* Liste des formulaires */
+    .lm-af-liste { display: flex !important; flex-direction: column; gap: 10px !important; }
+    .lm-af .dataset-card { display: block !important; padding: 0 !important; background: #fff !important; border: 1px solid var(--line) !important; border-radius: 20px !important;
+                           box-shadow: none !important; transition: border-color .2s, border-radius .4s var(--ease), background-color .2s !important; }
+    .lm-af .dataset-card:hover { border-color: color-mix(in srgb, var(--dom) 25%, #fff) !important; }
+    .lm-af .dataset-card[hidden] { display: none !important; }
+    .lm-af .dataset-card.lm-coche { border-color: color-mix(in srgb, var(--acc) 50%, #fff) !important; background: color-mix(in srgb, var(--acc) 4%, #fff) !important; border-radius: 24px !important; }
+    .lm-af-ligne { display: flex; align-items: center; gap: 14px; padding: 14px 18px; cursor: pointer; }
+    .lm-af-ligne input.dataset-checkbox { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .lm-af-case { width: 22px; height: 22px; border-radius: 7px; border: 2px solid #c5ccd6; flex-shrink: 0; display: grid; place-items: center; color: #fff; font-size: 11px;
+                  transition: background-color .2s, border-color .2s, border-radius .4s var(--ease); }
+    .lm-af-case i { opacity: 0; transition: opacity .15s; }
+    .lm-coche .lm-af-case { background: var(--acc); border-color: var(--acc); border-radius: 50%; }
+    .lm-coche .lm-af-case i { opacity: 1; }
+    .lm-af-ligne input:focus-visible ~ .lm-af-case { outline: 3px solid color-mix(in srgb, var(--acc) 40%, transparent); outline-offset: 2px; }
+    .lm-af-doc { width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0; display: grid; place-items: center; font-size: 16px; background: color-mix(in srgb, var(--dom) 8%, #fff); color: var(--dom); }
+    .lm-af-nom { flex: 1; min-width: 0; }
+    .lm-af-nom b { display: block; font-size: 14.5px; font-weight: 700; color: var(--ink); }
+    .lm-af-nom small { display: inline-flex; align-items: center; gap: 6px; margin-top: 3px; font-size: 12px; color: var(--mute); }
+    .lm-af-etiquette { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; color: var(--c); background: color-mix(in srgb, var(--c) 12%, #fff); white-space: nowrap; }
+    .lm-af-etiquette[hidden] { display: none; }
+    /* La question, visible quand le formulaire est coché */
+    .lm-af-question { display: none; padding: 0 18px 16px 72px; }
+    .lm-coche .lm-af-question { display: block; animation: lm-af-in .25s var(--ease); }
+    @keyframes lm-af-in { from { opacity: 0; transform: translateY(-4px); } }
+    .lm-af-question p { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--ink); }
+    .lm-af-choix { display: inline-flex; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(15,23,42,.05); }
+    .lm-af-choix label { position: relative; cursor: pointer; }
+    .lm-af-choix input { position: absolute; opacity: 0; }
+    .lm-af-choix span { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--mute);
+                        transition: background-color .2s, color .2s; }
+    .lm-af-choix input:checked + span { background: #fff; color: var(--c); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+    .lm-af-choix input:focus-visible + span { outline: 2px solid color-mix(in srgb, var(--c) 50%, transparent); }
+    .lm-af-aide { display: block; margin-top: 8px; font-size: 12px; color: var(--mute); }
+    .lm-af-verrou { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, #fff); }
+    .lm-af-aide.attention { color: var(--trans); font-weight: 600; }
+    .lm-af-retire { display: none; padding: 0 18px 14px 72px; font-size: 12px; font-weight: 600; color: var(--trans); }
+    .lm-af .dataset-card[data-verrou]:not(.lm-coche) .lm-af-retire { display: block; }
+    @media (max-width: 767px) { .lm-af-retire { padding-left: 18px; } }
+    .lm-af-rien { margin: 0; padding: 24px; text-align: center; font-size: 13px; color: var(--mute); background: #fff; border: 1px dashed var(--line); border-radius: 20px; }
+
+    /* Barre d'enregistrement collée en bas */
+    .lm-af-pied { position: sticky; bottom: 16px; z-index: 5; display: flex !important; align-items: center; gap: 12px; padding: 12px 14px 12px 18px !important; margin-top: 8px;
+                  background: rgba(255,255,255,.94); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid var(--line) !important; border-radius: 20px;
+                  box-shadow: 0 18px 40px -22px rgba(15,23,42,.45); }
+    .lm-af-resume { margin-right: auto; font-size: 13px; color: var(--mute); }
+    .lm-af-resume b { color: var(--ink); }
+    .lm-af-resume .t { color: var(--tache); font-weight: 700; } .lm-af-resume .x { color: var(--trans); font-weight: 700; }
+    .lm-af-pied a { border-radius: 13px !important; box-shadow: none !important; border-color: var(--line) !important; }
+    .lm-af-pied button[type="submit"] { background: var(--acc) !important; color: var(--lm-acc-ink, #fff) !important; border-radius: 13px !important; box-shadow: none !important;
+                                        transition: border-radius .4s var(--ease) !important; }
+    .lm-af-pied button[type="submit"]:hover { border-radius: 22px !important; }
+    @media (max-width: 767px) {
+        .lm-af-portees { grid-template-columns: 1fr; }
+        .lm-af-question { padding-left: 18px; }
+        .lm-af-ligne { flex-wrap: wrap; }
+        .lm-af-pied { flex-wrap: wrap; bottom: 12px; } .lm-af-resume { width: 100%; }
+        .lm-af-pied { display: grid !important; grid-template-columns: auto minmax(0, 1fr); justify-content: stretch !important; }
+        .lm-af-pied a, .lm-af-pied button[type="submit"] { padding-left: 14px !important; padding-right: 14px !important; font-size: 13px !important; }
+        .lm-af-pied .lm-af-resume { grid-column: 1 / -1; }
+        .lm-af-pied > * { margin: 0 !important; }
+        .lm-af-pied button[type="submit"] { justify-content: center; white-space: nowrap; }
+        .lm-af > div:first-child > div:first-child > div:first-child { flex-wrap: wrap; row-gap: 2px; }   /* fil d'Ariane sur une ligne propre */
+        .lm-af.py-10 { padding-top: 16px !important; }
+        /* Le pied d'action occupe le bas de l'écran : les boutons flottants de la page de base se retirent ici */
+        body:has(.lm-af-pied) .fixed.bottom-6.right-6, body:has(.lm-af-pied) div.fixed.bottom-24.right-8 { display: none !important; }
+        .lm-af-outils { top: 66px; }
+    }
+    html.sbx-dark .lm-af .dataset-card, html.sbx-dark .lm-af-portees div, html.sbx-dark .lm-af-cherche input, html.sbx-dark .lm-af-pied, html.sbx-dark .lm-af-outils,
+    html.sbx-dark #select-all-btn, html.sbx-dark #deselect-all-btn { background: #181c25 !important; border-color: rgba(255,255,255,.08) !important; }
+</style>
+
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 lm-af">
+
+    <!-- En-tête de page -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between pb-6 border-b border-slate-200/80 gap-4 lm-af-tete">
         <div>
-            <div class="flex items-center space-x-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+            <div class="flex items-center space-x-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 lm-af-fil">
                 <span>Gestion des Opérations</span>
                 <span>/</span>
-                <span class="text-indigo-600 font-bold">Formulaires & Datasets</span>
+                <b>Formulaires de collecte</b>
             </div>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Associer des formulaires</h1>
             <p class="text-xs text-slate-500 mt-1">Tâche concernée : <span class="font-bold text-slate-800">{{ operation.nom }}</span></p>
         </div>
         <div>
-            <a href="/taches/{{operation.tache.id}}/" class="inline-flex items-center px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-all shadow-2xs hover:shadow">
+            <a href="/taches/{{operation.tache.id}}/" class="inline-flex items-center px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-all shadow-2xs hover:shadow lm-af-retour">
                 <svg class="w-4 h-4 mr-2 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
@@ -26,26 +137,32 @@
         </div>
     </div>
 
-    <!-- Formulaire d'association multiple -->
-    <form method="POST" action="{% url 'save-dataset-operation' %}" class="space-y-6">
+    <!-- Les deux portées possibles, expliquées une fois -->
+    <div class="lm-af-portees">
+        <div style="--c: var(--tache)"><span class="ic"><i class="fa-solid fa-clipboard-list"></i></span>
+            <span><b>Appliqué à la tâche</b><small>Rempli une seule fois pour l'ensemble de la tâche (ex. rapport d'activité, PV de réunion).</small></span></div>
+        <div style="--c: var(--trans)"><span class="ic"><i class="fa-solid fa-arrow-right-arrow-left"></i></span>
+            <span><b>Appliqué aux transactions</b><small>Rempli à chaque transaction déclarée, comme source de la valeur (ex. fiche de collecte, registre).</small></span></div>
+    </div>
+
+    <form method="POST" action="{% url 'save-dataset-operation' %}" class="space-y-6" id="lmAfForm">
         {% csrf_token %}
         <input type="hidden" name="operation" value="{{ operation.id }}">
 
         <!-- Barre d'outils de sélection -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 lm-af-outils">
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
+                    <i class="fa-regular fa-file-lines"></i>
                 </div>
                 <div>
                     <h2 class="text-sm font-bold text-slate-900">Formulaires disponibles</h2>
                     <p class="text-xs text-slate-500" id="selection-counter">0 formulaire(s) sélectionné(s)</p>
                 </div>
             </div>
-            
-            <div class="flex items-center space-x-2">
+
+            <div class="flex flex-wrap items-center gap-2">
+                <label class="lm-af-cherche"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="lmAfCherche" placeholder="Rechercher un formulaire…" autocomplete="off"></label>
                 <button type="button" id="select-all-btn" class="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-100">
                     Tout sélectionner
                 </button>
@@ -55,28 +172,35 @@
             </div>
         </div>
 
-        <!-- Grille des Datasets / Formulaires -->
+        <!-- Liste des formulaires -->
         {% if dataset %}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lm-af-liste" id="lmAfListe">
                 {% for item in dataset %}
-                <label class="dataset-card relative flex items-start p-5 bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:border-indigo-300 hover:shadow-md cursor-pointer transition-all group">
-                    <div class="flex items-center h-5 mt-0.5">
-                        <input type="checkbox" name="datasets" value="{{ item.id }}" 
-                            class="dataset-checkbox w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 transition-colors"
-                            {% if item.id in associated_dataset_ids %}checked{% endif %}>
-                    </div>
-                    <div class="ml-3.5 text-sm leading-6 flex-1">
-                        <span class="font-bold text-slate-900 block group-hover:text-indigo-600 transition-colors">
-                            {{ item.m_name }}
+                <div class="dataset-card relative" data-texte="{{ item.m_name|lower }} {{ item.periodicite.m_value|default:''|lower }}"{% if item.id in datasets_verrouilles_ids %} data-verrou{% endif %}>
+                    <label class="lm-af-ligne">
+                        <input type="checkbox" name="datasets" value="{{ item.id }}" class="dataset-checkbox" {% if item.id in associated_dataset_ids %}checked{% endif %}>
+                        <span class="lm-af-case" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+                        <span class="lm-af-doc" aria-hidden="true"><i class="fa-regular fa-file-lines"></i></span>
+                        <span class="lm-af-nom">
+                            <b>{{ item.m_name }}</b>
+                            {% if item.periodicite %}<small><i class="fa-regular fa-clock"></i>{{ item.periodicite.m_value }}</small>
+                            {% else %}<small>Aucune périodicité renseignée</small>{% endif %}
                         </span>
-                        {% if item.periodicite %}
-                            <p class="text-xs text-slate-500 mt-1 line-clamp-2">{{ item.periodicite.m_value }}</p>
-                        {% else %}
-                            <p class="text-[11px] text-slate-400 mt-1 italic">Aucune periodicite renseignée.</p>
-                        {% endif %}
-                    </div>
-                </label>
+                        {% if item.id in datasets_verrouilles_ids %}<span class="lm-af-verrou" title="Des fiches de ce formulaire ont déjà été remplies"><i class="fa-solid fa-pen"></i> Déjà rempli</span>{% endif %}
+                        <span class="lm-af-etiquette" data-etiquette hidden></span>
+                    </label>
+                    <p class="lm-af-retire"><i class="fa-solid fa-circle-info"></i> Décoché : les fiches vierges seront supprimées, les fiches déjà remplies conservées.</p>
+                    <fieldset class="lm-af-question">
+                        <p>Ce formulaire s'applique à :</p>
+                        <div class="lm-af-choix">
+                            <label style="--c: var(--tache)"><input type="radio" name="portee_{{ item.id }}" value="tache" {% if item.id in datasets_tache_ids %}checked{% endif %}><span><i class="fa-solid fa-clipboard-list"></i>La tâche</span></label>
+                            <label style="--c: var(--trans)"><input type="radio" name="portee_{{ item.id }}" value="transaction" {% if not item.id in datasets_tache_ids %}checked{% endif %}><span><i class="fa-solid fa-arrow-right-arrow-left"></i>Les transactions</span></label>
+                        </div>
+                        <span class="lm-af-aide" data-aide></span>
+                    </fieldset>
+                </div>
                 {% endfor %}
+                <p class="lm-af-rien" id="lmAfRien" hidden>Aucun formulaire ne correspond à votre recherche.</p>
             </div>
         {% else %}
             <div class="text-center py-12 bg-white rounded-2xl border border-slate-200/80 shadow-sm text-slate-400 text-sm">
@@ -88,8 +212,9 @@
             </div>
         {% endif %}
 
-        <!-- Actions de soumission -->
-        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80">
+        <!-- Barre d'enregistrement -->
+        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200/80 lm-af-pied">
+            <span class="lm-af-resume" id="lmAfResume" aria-live="polite"></span>
             <a href="javascript:history.back()" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors shadow-2xs">
                 Annuler
             </a>
@@ -104,47 +229,56 @@
 
 </div>
 
-<!-- Script d'interactivité (compteur, styles dynamiques et gestion des sélections) -->
+<!-- Script d'interactivité : compteur, recherche, question « tâche ou transactions » -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const checkboxes = document.querySelectorAll('.dataset-checkbox');
-    const counterDisplay = document.getElementById('selection-counter');
-    const selectAllBtn = document.getElementById('select-all-btn');
-    const deselectAllBtn = document.getElementById('deselect-all-btn');
+document.addEventListener('DOMContentLoaded', function () {
+    var checkboxes = document.querySelectorAll('.dataset-checkbox');
+    var counterDisplay = document.getElementById('selection-counter');
+    var resume = document.getElementById('lmAfResume'), cherche = document.getElementById('lmAfCherche'), rien = document.getElementById('lmAfRien');
+    var NB_TX = parseInt('{{ nb_transactions|default:"" }}', 10);
+    var AIDE = { tache: 'Rempli une seule fois pour la tâche.',
+                 transaction: 'Rempli à chaque transaction déclarée' + (isNaN(NB_TX) ? '.' : ' : une fiche pour chacune des ' + NB_TX + ' transaction' + (NB_TX > 1 ? 's' : '') + ' existante' + (NB_TX > 1 ? 's' : '') + ', puis pour les suivantes.') };
+    var BASCULE = 'Déjà rempli : les réponses existantes sont conservées, mais ne seront plus affichées à ce niveau.';
+    var NOM = { tache: 'Tâche', transaction: 'Transactions' };
 
     function updateCounter() {
-        const checkedCount = document.querySelectorAll('.dataset-checkbox:checked').length;
-        counterDisplay.textContent = checkedCount + " formulaire(s) sélectionné(s)";
-        
-        // Style visuel dynamique des cartes sélectionnées
-        checkboxes.forEach(cb => {
-            const card = cb.closest('.dataset-card');
+        var nb = 0, nbT = 0, nbX = 0;
+        checkboxes.forEach(function (cb) {
+            var card = cb.closest('.dataset-card'), radios = card.querySelectorAll('input[type="radio"]');
+            var choix = card.querySelector('input[type="radio"]:checked'), etiq = card.querySelector('[data-etiquette]');
+            card.classList.toggle('lm-coche', cb.checked);
+            /* la question n'est envoyée (et obligatoire) que si le formulaire est coché */
+            radios.forEach(function (r) { r.disabled = !cb.checked; r.required = cb.checked; });
             if (cb.checked) {
-                card.classList.add('bg-indigo-50/40', 'border-indigo-400', 'shadow-xs');
-                card.classList.remove('bg-white', 'border-slate-200/85');
-            } else {
-                card.classList.remove('bg-indigo-50/40', 'border-indigo-400', 'shadow-xs');
-                card.classList.add('bg-white', 'border-slate-200/85');
-            }
+                nb++; var p = choix ? choix.value : '';
+                if (p === 'tache') nbT++; else if (p === 'transaction') nbX++;
+                etiq.hidden = !p; etiq.textContent = p ? NOM[p] : '';
+                etiq.style.setProperty('--c', p === 'tache' ? 'var(--tache)' : 'var(--trans)');
+                var aide = card.querySelector('[data-aide]'), initial = card.dataset.porteeInitiale, bascule = card.hasAttribute('data-verrou') && initial && p && p !== initial;
+                aide.textContent = bascule ? BASCULE : (p ? AIDE[p] : 'Choisissez une option.');
+                aide.classList.toggle('attention', !!bascule);
+            } else { etiq.hidden = true; }
         });
+        counterDisplay.textContent = nb + ' formulaire' + (nb > 1 ? 's' : '') + ' sélectionné' + (nb > 1 ? 's' : '');
+        if (resume) resume.innerHTML = nb ? '<b>' + nb + '</b> sélectionné' + (nb > 1 ? 's' : '') + ' · <span class="t">' + nbT + ' à la tâche</span> · <span class="x">' + nbX + ' aux transactions</span>' : 'Aucun formulaire sélectionné';
+    }
+    function filtrer() {
+        var q = (cherche.value || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''), vus = 0;
+        document.querySelectorAll('.dataset-card').forEach(function (c) {
+            var ok = !q || c.dataset.texte.normalize('NFD').replace(/[̀-ͯ]/g, '').indexOf(q) > -1; c.hidden = !ok; if (ok) vus++;
+        });
+        if (rien) rien.hidden = vus > 0;
     }
 
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', updateCounter);
-    });
+    document.addEventListener('change', function (e) { if (e.target.closest('.dataset-card')) updateCounter(); });
+    document.getElementById('select-all-btn').addEventListener('click', function () { checkboxes.forEach(function (cb) { if (!cb.closest('.dataset-card').hidden) cb.checked = true; }); updateCounter(); });
+    document.getElementById('deselect-all-btn').addEventListener('click', function () { checkboxes.forEach(function (cb) { cb.checked = false; }); updateCounter(); });
+    if (cherche) cherche.addEventListener('input', filtrer);
 
-    selectAllBtn.addEventListener('click', function() {
-        checkboxes.forEach(cb => cb.checked = true);
-        updateCounter();
-    });
-
-    deselectAllBtn.addEventListener('click', function() {
-        checkboxes.forEach(cb => cb.checked = false);
-        updateCounter();
-    });
-
-    // Exécuté au chargement pour initialiser l'affichage avec les éléments déjà cochés
-    updateCounter();
+    /* mémorise la portée enregistrée, pour prévenir si on bascule un formulaire déjà rempli */
+    checkboxes.forEach(function (cb) { var card = cb.closest('.dataset-card'), r = card.querySelector('input[type="radio"]:checked');
+                                       if (cb.checked && r) card.dataset.porteeInitiale = r.value; });
+    updateCounter();   /* état initial : formulaires déjà associés */
 });
 </script>
 {% endblock %}
