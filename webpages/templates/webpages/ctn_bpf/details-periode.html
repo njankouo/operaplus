@@ -152,6 +152,129 @@
     @media (prefers-reduced-motion: reduce) { .animate-slide { animation: none !important; opacity: 1 !important; } }
 </style>
 <!-- ===================== FIN CHARTE + SIDEBAR : styles ===================== -->
+
+<!-- ===================== LIQUID MORPH : styles (ajout, dans <head> pour un affichage final dès le premier instant) =====================
+     Verre dépoli, grands arrondis, formes qui se déforment au survol. Sans halo, sans dégradé décoratif.
+     Couleurs : neutre teinté par la dominante (fond), dominante (bandeau, navigation), accent (action, page active). -->
+<style>
+    :root {
+        --lm-dom: var(--nav-bg-color, #1e293b); --lm-dom-ink: var(--nav-ink, #fff);
+        --lm-acc: var(--primary-color, #4361ee); --lm-acc-ink: var(--accent-ink, #fff);
+        --lm-ink: #0b1220; --lm-mute: #5b6475; --lm-line: rgba(15, 23, 42, .08);
+        --lm-canvas: color-mix(in srgb, var(--lm-dom) 5%, #f3f4f6);
+        --lm-glass: rgba(255, 255, 255, .74); --lm-glass-strong: rgba(255, 255, 255, .9); --lm-edge: rgba(255, 255, 255, .8);
+        --lm-blur: blur(22px) saturate(180%);
+        --lm-shadow: 0 1px 1px rgba(15, 23, 42, .04), 0 10px 30px -18px rgba(15, 23, 42, .22);
+        --lm-ease: cubic-bezier(.22, 1, .36, 1);
+    }
+    html body { background: var(--lm-canvas) !important; color: var(--lm-ink); }
+
+    /* ---------- Barre latérale : rail de verre flottant (forme finale dès le chargement, avant Tailwind) ---------- */
+    @media (min-width: 768px) {
+        html body > header, html body > main { margin-left: 96px !important; }
+        #iconSidebar {
+            display: flex; position: fixed; flex-direction: column; align-items: center; z-index: 60; padding-top: 20px; padding-bottom: 20px;
+            top: 12px !important; bottom: 12px !important; left: 12px !important; width: 72px !important; border-radius: 26px;
+            background: color-mix(in srgb, var(--lm-dom) 92%, transparent) !important;
+            -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 18px 40px -22px rgba(15, 23, 42, .55) !important;
+        }
+        .sbx-skip { left: 108px; }
+    }
+    #iconSidebar nav { position: relative; }
+    #iconSidebar .sbx-item { z-index: 1; border-radius: 16px !important; box-shadow: none !important; transition: color .2s !important; }
+    #iconSidebar .sbx-item:hover i { transform: none !important; }
+    #iconSidebar.lm-avec-blob nav .sbx-item:hover, #iconSidebar.lm-avec-blob nav .sbx-item:focus-visible { background: transparent !important; }
+    #iconSidebar .sbx-item.sbx-active, #iconSidebar.lm-avec-blob nav .sbx-item.sbx-active:hover { background: var(--lm-acc) !important; color: var(--lm-acc-ink) !important; }
+    #iconSidebar .sbx-item.sbx-active::before { display: none !important; }
+    #iconSidebar > a:first-of-type { box-shadow: none !important; border-radius: 16px !important; }
+    #iconSidebar .sbx-sep { background: color-mix(in srgb, var(--lm-dom-ink) 14%, transparent) !important; }
+    .lm-blob { position: absolute; left: 50%; top: 0; z-index: 0; pointer-events: none; border-radius: 16px; opacity: 0;
+               background: color-mix(in srgb, var(--lm-dom-ink) 12%, transparent); transform: translateX(-50%); transition: opacity .2s; }
+    .lm-blob.on { opacity: 1; }
+    .sbx-tip { border-radius: 16px !important; border: 1px solid var(--lm-edge) !important; border-top: 1px solid var(--lm-edge) !important;
+               background: var(--lm-glass-strong) !important; -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur); box-shadow: var(--lm-shadow) !important; }
+    .sbx-tip::before { display: none !important; }
+
+    /* ---------- En-tête : verre clair (plus de bande colorée de 3 px) ---------- */
+    html body > header.glass-nav {
+        background: color-mix(in srgb, var(--lm-canvas) 72%, transparent) !important; color: var(--lm-ink) !important;
+        -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+        border-bottom: 1px solid var(--lm-line) !important; box-shadow: none !important;
+    }
+    html body > header.glass-nav .sbx-crumb b { color: var(--lm-ink); }
+    html body > header.glass-nav #mobileMenuBtn:hover { background: rgba(15, 23, 42, .06) !important; }
+    html body > header #userMenuBtn > div:last-child { border: 0 !important; box-shadow: none !important; border-radius: 12px !important; transition: border-radius .4s var(--lm-ease); }
+    html body > header #userMenuBtn:hover > div:last-child { border-radius: 50% !important; }
+    #userDropdown { border-radius: 18px !important; background: var(--lm-glass-strong) !important; -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+                    border: 1px solid var(--lm-edge) !important; box-shadow: var(--lm-shadow) !important; }
+    #mobileMenu { background: var(--lm-glass-strong) !important; color: var(--lm-ink) !important; -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+                  border-bottom: 1px solid var(--lm-line) !important; }
+    #mobileMenu a { border-color: var(--lm-line) !important; }
+
+    /* ---------- Bandeau du titre : une plaque arrondie à la couleur dominante, plus un aplat bord à bord ---------- */
+    html body > main > div.absolute.-z-10 {
+        top: 76px !important; height: 150px !important; left: 12px !important; right: 12px !important; width: auto !important;
+        border-radius: 28px !important; border-bottom: 0 !important; background: var(--lm-dom) !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16) !important;
+    }
+    @media (min-width: 768px) { html body > main > div.absolute.-z-10 { left: 108px !important; } }
+    main a[href="/import-periode/"] { border-radius: 14px !important; transition: border-radius .4s var(--lm-ease), filter .2s !important; }
+    main a[href="/import-periode/"]:hover { border-radius: 24px !important; }
+
+    /* ---------- Recherche : pastille de verre ---------- */
+    html body .search-container {
+        background: var(--lm-glass-strong) !important; -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+        border: 1px solid var(--lm-edge) !important; border-radius: 22px !important; box-shadow: var(--lm-shadow) !important;
+        transition: border-radius .4s var(--lm-ease), box-shadow .2s !important;
+    }
+    html body .search-container:focus-within { border-radius: 30px !important; border-color: color-mix(in srgb, var(--lm-dom) 35%, #fff) !important;
+                                               box-shadow: 0 0 0 4px color-mix(in srgb, var(--lm-dom) 10%, transparent), var(--lm-shadow) !important; }
+    .search-container button[type="submit"] { border-radius: 16px !important; transition: border-radius .4s var(--lm-ease), background-color .2s !important; }
+    .search-container button[type="submit"]:hover { border-radius: 24px !important; }
+
+    /* ---------- Groupes et tableaux : verre, rangées qui « s'arrondissent » au survol ---------- */
+    .section-group .bg-\[\#276696\] { background: var(--lm-acc) !important; border-radius: 4px !important; }
+    html body .section-group > .bg-white {
+        background: var(--lm-glass) !important; -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+        border: 1px solid var(--lm-edge) !important; border-radius: 24px !important; box-shadow: var(--lm-shadow) !important;
+    }
+    .section-group thead tr { background: transparent !important; border-color: var(--lm-line) !important; }
+    .section-group tbody, .section-group tbody > tr { border-color: var(--lm-line) !important; }
+    .section-group h3 + span, .section-group .bg-blue-100 { background: var(--lm-glass-strong) !important; border: 1px solid var(--lm-line); border-radius: 10px !important; }
+    .period-row:hover { background: color-mix(in srgb, var(--lm-dom) 4%, transparent) !important; }
+    .period-row td:first-child .rounded-2xl { border-radius: 14px !important; box-shadow: none !important; transition: border-radius .4s var(--lm-ease), background-color .25s, color .25s !important; }
+    .period-row:hover td:first-child .rounded-2xl { border-radius: 50% !important; }
+    .period-row code { border-radius: 10px !important; }
+    .period-row td:last-child a { border-radius: 12px !important; box-shadow: none !important; transition: border-radius .4s var(--lm-ease), background-color .2s, color .2s !important; }
+    .period-row td:last-child a:hover { border-radius: 50% !important; }
+    .animate-slide { animation-duration: .3s !important; }
+
+    /* ---------- Pagination ---------- */
+    main .h-12.rounded-2xl { border-radius: 16px !important; box-shadow: none !important; transition: border-radius .4s var(--lm-ease), border-color .2s, color .2s !important; }
+    main a.h-12.rounded-2xl { background: var(--lm-glass) !important; border-color: var(--lm-edge) !important; }
+    main a.h-12.rounded-2xl:hover { border-radius: 24px !important; }
+
+    /* ---------- État vide ---------- */
+    main .rounded-\[3rem\] { border-radius: 28px !important; background: var(--lm-glass) !important; border: 1px solid var(--lm-edge) !important; box-shadow: var(--lm-shadow) !important; }
+
+    /* ---------- Lisibilité : dominante claire (jaune, argent…) ---------- */
+    html.sbx-light-dom body > main > div.absolute.-z-10 { box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .08) !important; }
+    html.sbx-light-dom .period-row .group-hover\:text-blue-500, html.sbx-light-dom .period-row:hover .text-slate-300,
+    html.sbx-light-dom .period-row td:first-child .rounded-2xl { color: var(--lm-ink) !important; }   /* une couleur claire n'est jamais utilisée comme texte */
+
+    /* ---------- Sombre ---------- */
+    html.sbx-dark { --lm-canvas: color-mix(in srgb, var(--lm-dom) 10%, #0d1017); --lm-glass: rgba(24, 28, 37, .74); --lm-glass-strong: rgba(24, 28, 37, .92);
+                    --lm-edge: rgba(255, 255, 255, .07); --lm-line: rgba(255, 255, 255, .07); --lm-ink: #f1f5f9; --lm-mute: #94a3b8; }
+    html.sbx-dark body > header.glass-nav .sbx-crumb b, html.sbx-dark body > header.glass-nav h1 { color: #f1f5f9 !important; }
+    html.sbx-dark .period-row .text-slate-300 { color: #64748b !important; }
+    html.sbx-dark .section-group h3 + span, html.sbx-dark .section-group .bg-blue-100 { color: #e2e8f0 !important; }
+    html.sbx-dark .period-row td:last-child a, html.sbx-dark .period-row code { background: rgba(255, 255, 255, .05) !important; border-color: rgba(255, 255, 255, .07) !important; }
+
+    @media (prefers-reduced-motion: reduce) { .lm-blob, .period-row *, .search-container, main a { transition: none !important; } }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { :root { --lm-glass: #fff; --lm-glass-strong: #fff; } }
+</style>
+<!-- ===================== FIN LIQUID MORPH : styles ===================== -->
 </head>
 
 <body class="h-screen flex flex-col overflow-hidden">
@@ -422,7 +545,7 @@
 </script>
     <main class="flex-1 overflow-y-auto dhis-scroll">
         
-        <div class=" h-32 w-full absolute top-14 left-0 -z-10" style="background: {{request.user.personnel.color_fond}};"></div>
+        <div class="h-32 w-full absolute top-14 left-0 -z-10" style="background: {{request.user.personnel.color_fond}};"></div>
 
         <div class="max-w-6xl mx-auto px-6 pt-8 pb-20">
             {%block design%}
@@ -431,7 +554,7 @@
                     <h2 class="text-3xl font-extrabold tracking-tight">Référentiel Temporel</h2>
                     <p class="text-blue-100/70 text-sm font-medium mt-1">Gérez les cycles de collecte et les périodes d'analyse</p>
                 </div>
-                <a href="/import-periode/" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-3 active:scale-95">
+                <a href="/import-periode/" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center gap-3 active:scale-95">
                     <i class="fa fa-plus-circle text-lg"></i>
                     <span>IMPORT PÉRIODE</span>
                 </a>
@@ -516,9 +639,9 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-right">
-                                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform group-hover:scale-100 scale-95">
-                                            <a href="/editer-periode/{{item.id}}/" class="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-200 transition-all"><i class="fa fa-pen text-xs"></i></a>
-                                            <a href="/delete_periodes/{{item.id}}/" class="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white hover:shadow-lg hover:shadow-rose-200 transition-all"><i class="fa fa-trash text-xs"></i></a>
+                                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform scale-95">
+                                            <a href="/editer-periode/{{item.id}}/" class="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white hover:shadow-lg transition-all"><i class="fa fa-pen text-xs"></i></a>
+                                            <a href="/delete_periodes/{{item.id}}/" class="h-9 w-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white hover:shadow-lg transition-all"><i class="fa fa-trash text-xs"></i></a>
                                         </div>
                                     </td>
                                 </tr>
@@ -549,7 +672,7 @@
                             </a>
                         {% endif %}
 
-                        <div class="flex h-12 items-center px-4 bg-blue-600 rounded-2xl text-xs font-black text-white shadow-lg shadow-blue-200">
+                        <div class="flex h-12 items-center px-4 bg-blue-600 rounded-2xl text-xs font-black text-white shadow-lg">
                             {{ periodes.number }}
                         </div>
 
@@ -637,5 +760,35 @@
 })();
 </script>
 <!-- ===================== FIN CHARTE + SIDEBAR : script ===================== -->
+<!-- ===================== LIQUID MORPH : mouvement (ajout) ===================== -->
+<script>
+    /* Indicateur liquide de la barre latérale : au survol, il coule d'une icône à l'autre (s'étire puis se resserre) */
+    (function () {
+        var side = document.getElementById('iconSidebar'), nav = side && side.querySelector('nav');
+        if (!nav || nav.querySelector('.lm-blob')) return;
+        var doux = matchMedia('(prefers-reduced-motion: reduce)').matches, EASE = 'cubic-bezier(.22, 1, .36, 1)';
+        var blob = document.createElement('span'); blob.className = 'lm-blob'; nav.prepend(blob); side.classList.add('lm-avec-blob');
+        var pos = null;
+        function aller(el) {
+            if (!el) { blob.classList.remove('on'); pos = null; return; }
+            var c = { top: el.offsetTop, h: el.offsetHeight, w: el.offsetWidth };
+            blob.style.width = c.w + 'px'; blob.style.height = c.h + 'px'; blob.classList.add('on');
+            if (pos && !doux && blob.animate) {
+                var haut = Math.min(pos.top, c.top), bas = Math.max(pos.top + pos.h, c.top + c.h);
+                blob.animate([
+                    { transform: 'translate(-50%,' + pos.top + 'px)', height: pos.h + 'px', borderRadius: '16px' },
+                    { transform: 'translate(-50%,' + haut + 'px)', height: (bas - haut) + 'px', borderRadius: '22px', offset: .45 },
+                    { transform: 'translate(-50%,' + c.top + 'px)', height: c.h + 'px', borderRadius: '16px' }
+                ], { duration: 420, easing: EASE });
+            }
+            blob.style.transform = 'translate(-50%,' + c.top + 'px)'; pos = c;
+        }
+        nav.addEventListener('mouseover', function (e) { var it = e.target.closest('.sbx-item'); if (it && nav.contains(it)) aller(it); });
+        nav.addEventListener('focusin', function (e) { var it = e.target.closest('.sbx-item'); if (it) aller(it); });
+        nav.addEventListener('mouseleave', function () { aller(null); });
+        nav.addEventListener('focusout', function (e) { if (!nav.contains(e.relatedTarget)) aller(null); });
+    })();
+</script>
+<!-- ===================== FIN LIQUID MORPH : mouvement ===================== -->
 </body>
 </html>

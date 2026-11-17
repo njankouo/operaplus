@@ -61,37 +61,81 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 
+    <!-- ===== LIQUID MORPH : styles critiques chargés dans <head> (ajout) =====
+         Sans ce bloc, la barre latérale s'affichait d'abord avec l'ancien style, puis changeait
+         quand le navigateur atteignait le bloc complet en fin de page. Ici, elle a sa forme dès le premier affichage. -->
+    <style>
+        :root {                                            /* variables du design, définies une seule fois */
+            --lm-dom: var(--nav-bg-color, #1e293b); --lm-dom-ink: var(--nav-ink, #fff);
+            --lm-acc: var(--primary-color, #4361ee); --lm-acc-ink: var(--accent-ink, #fff);
+            --lm-ink: #0b1220; --lm-mute: #5b6475; --lm-line: rgba(15, 23, 42, .08);
+            --lm-canvas: color-mix(in srgb, var(--lm-dom) 5%, #f3f4f6);
+            --lm-glass: rgba(255, 255, 255, .72); --lm-glass-strong: rgba(255, 255, 255, .86); --lm-edge: rgba(255, 255, 255, .75);
+            --lm-blur: blur(22px) saturate(180%);
+            --lm-shadow: 0 1px 1px rgba(15, 23, 42, .04), 0 10px 30px -18px rgba(15, 23, 42, .22);
+            --lm-r: 24px; --lm-ease: cubic-bezier(.22, 1, .36, 1);
+        }
+        /* « html body » : plus prioritaire que les anciennes règles placées plus bas (bande orange, autre fond) */
+        html body, html body #page-content { background: var(--lm-canvas) !important; }
+        html body #page-content > nav {
+            background: color-mix(in srgb, var(--lm-canvas) 70%, transparent) !important;
+            -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+            border-bottom: 1px solid var(--lm-line) !important; box-shadow: none !important;
+        }
+        @media (min-width: 768px) {
+            #page-content { padding-left: 96px !important; }
+            #iconSidebar {
+                display: flex; position: fixed; flex-direction: column; align-items: center; z-index: 60;   /* forme finale avant même que Tailwind (CDN) ait généré ses classes */
+                padding-top: 20px; padding-bottom: 20px;
+                top: 12px !important; bottom: 12px !important; left: 12px !important; width: 72px !important; border-radius: 26px;
+                background: color-mix(in srgb, var(--lm-dom) 92%, transparent) !important;
+                -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 18px 40px -22px rgba(15, 23, 42, .55) !important;
+            }
+        }
+        #iconSidebar .sbx-item { border-radius: 16px !important; box-shadow: none !important; }
+        #iconSidebar .sbx-item.sbx-active { background: var(--lm-acc) !important; color: var(--lm-acc-ink) !important; box-shadow: none !important; }
+        #iconSidebar .sbx-item.sbx-active::before { display: none !important; }
+        #iconSidebar > a:first-of-type { box-shadow: none !important; border-radius: 16px !important; }
+    </style>
+    <!-- ===== Écran d'attente : styles (ajout) ===== -->
+    <style>
+        .lm-chargement {
+            position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; background: var(--lm-canvas, #f3f4f6);
+            transition: opacity .45s ease, visibility .45s; animation: lm-ch-secours .4s ease 15s forwards;   /* secours sans JavaScript */
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        }
+        .lm-chargement.fin { opacity: 0; visibility: hidden; }
+        .lm-chargement.fin .lm-ch-forme { transform: scale(1.08); border-radius: 50%; }
+        @keyframes lm-ch-secours { to { opacity: 0; visibility: hidden; } }
+        .lm-ch-centre { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 240px; text-align: center; }
+        /* Forme liquide : ses coins se déforment lentement, sans halo ni dégradé */
+        .lm-ch-forme {
+            width: 84px; height: 84px; display: grid; place-items: center; background: var(--lm-dom, #1e293b); color: var(--lm-dom-ink, #fff);
+            border-radius: 42% 58% 55% 45% / 48% 42% 58% 52%; animation: lm-ch-morph 3.2s ease-in-out infinite alternate;
+            transition: transform .45s cubic-bezier(.22, 1, .36, 1), border-radius .45s; margin-bottom: 4px;
+        }
+        .lm-ch-forme span { font-weight: 800; font-size: 26px; letter-spacing: -.02em; }
+        @keyframes lm-ch-morph {
+            0%   { border-radius: 42% 58% 55% 45% / 48% 42% 58% 52%; transform: rotate(0deg); }
+            50%  { border-radius: 58% 42% 40% 60% / 55% 60% 40% 45%; }
+            100% { border-radius: 48% 52% 62% 38% / 40% 52% 48% 60%; transform: rotate(8deg); }
+        }
+        .lm-ch-forme span { animation: lm-ch-contre 3.2s ease-in-out infinite alternate; }   /* les initiales restent droites */
+        @keyframes lm-ch-contre { from { transform: rotate(0deg); } to { transform: rotate(-8deg); } }
+        .lm-ch-nom { margin: 0; font-size: 15px; font-weight: 700; color: var(--lm-ink, #0b1220); letter-spacing: -.01em; }
+        .lm-ch-piste { width: 100%; height: 4px; border-radius: 4px; overflow: hidden; background: color-mix(in srgb, var(--lm-dom, #1e293b) 12%, transparent); }
+        .lm-ch-piste i { display: block; height: 100%; background: var(--lm-acc, #4361ee); border-radius: 4px; transform-origin: left; transform: scaleX(0); transition: transform .25s linear; }
+        .lm-ch-etape { margin: 0; min-height: 18px; font-size: 12.5px; color: var(--lm-mute, #5b6475); }
+        @media (prefers-reduced-motion: reduce) { .lm-ch-forme, .lm-ch-forme span { animation: none; } }
+        html.sbx-dark .lm-chargement { background: #0d1017; } html.sbx-dark .lm-ch-nom { color: #f1f5f9; }
+    </style>
 </head>
 
  <style>
-    /* Gradient animé pour le header */
-    .bg-pro-gradient { 
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
-    }
-    
-    /* Effet "Glassmorphism" au survol */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .glass-card:hover {
-        transform: scale(1.03);
-        box-shadow: 0 20px 30px -10px rgba(0,0,0,0.2);
-    }
 
 </style>
 <style>
-    /* Animation de pulsation */
-    @keyframes pulse-ring {
-        0% { transform: scale(0.8); opacity: 0.5; }
-        50% { transform: scale(1.2); opacity: 0; }
-        100% { transform: scale(0.8); opacity: 0; }
-    }
-    .loader-pulse {
-        animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
 
   #canvas-wrapper {
     position: fixed;
@@ -155,9 +199,47 @@ body {
 </style>
 
 <body class="bg-slate-200 font-sans antialiased text-slate-800" id="globe-3d-container">
+<!-- ===== Écran d'attente (ajout) : remplace la page blanche pendant le chargement =====
+     Une forme « liquide » à la couleur de l'institution, ses initiales, une barre de progression et l'étape en cours.
+     Commun à toutes les pages qui héritent de ce gabarit. Retiré quand la page est prête.
+     Sécurités : retrait forcé après 15 s, disparition par CSS si JavaScript est désactivé, rien au retour « Précédent ». -->
+<div id="lmChargement" class="lm-chargement" role="status" aria-live="polite">
+    <div class="lm-ch-centre">
+        <div class="lm-ch-forme" aria-hidden="true"><span>{{ actual_institution.sigle|default:"O+"|slice:":2"|upper }}</span></div>
+        <p class="lm-ch-nom">{{ actual_institution.sigle|default:"OperaPlus" }}</p>
+        <div class="lm-ch-piste" aria-hidden="true"><i id="lmChargementBarre"></i></div>
+        <p class="lm-ch-etape" id="lmChargementTexte">Connexion sécurisée…</p>
+    </div>
+</div>
+<script>
+    (function () {
+        var ecran = document.getElementById('lmChargement'), barre = document.getElementById('lmChargementBarre'), texte = document.getElementById('lmChargementTexte');
+        var fini = false;   /* le temps est compté depuis le début de la navigation (performance.now) */
+        var ETAPES = [[0, 'Connexion sécurisée…'], [900, 'Chargement des données…'], [2200, 'Préparation de l’affichage…'], [6000, 'Connexion lente : encore un instant…']];
+        /* Progression : avance vite puis ralentit sans jamais atteindre 100 % tant que la page n'est pas prête */
+        (function avancer() {
+            if (fini) return;
+            var t = performance.now();
+            barre.style.transform = 'scaleX(' + (0.9 * (1 - Math.exp(-t / 2200))).toFixed(3) + ')';
+            for (var i = ETAPES.length - 1; i >= 0; i--) if (t >= ETAPES[i][0]) { if (texte.textContent !== ETAPES[i][1]) texte.textContent = ETAPES[i][1]; break; }
+            requestAnimationFrame(avancer);
+        })();
+        function retirer() {
+            if (fini || !ecran) return; fini = true;
+            barre.style.transform = 'scaleX(1)'; texte.textContent = 'Prêt';
+            setTimeout(function () { ecran.classList.add('fin'); }, 180);
+            setTimeout(function () { if (ecran.parentNode) ecran.parentNode.removeChild(ecran); }, 700);
+        }
+        if (document.readyState !== 'loading') retirer();
+        else document.addEventListener('DOMContentLoaded', function () { requestAnimationFrame(retirer); });
+        setTimeout(retirer, 15000);
+        window.addEventListener('pageshow', function (e) { if (e.persisted) retirer(); });
+    })();
+</script>
+
 <div class="fixed bottom-24 right-8 z-50">
     <button onclick="document.getElementById('theme-modal').classList.remove('hidden')"
-            class="w-14 h-14 bg-white border-2 border-slate-200 text-slate-600 rounded-full shadow-2xl flex items-center justify-center hover:bg-slate-800 hover:text-white transition-all duration-300 hover:scale-105 active:scale-95">
+            class="w-14 h-14 bg-white border-2 border-slate-200 text-slate-600 rounded-full shadow-2xl flex items-center justify-center hover:bg-slate-800 hover:text-white transition-all duration-300 active:scale-95">
         <i class="fas fa-palette text-xl"></i>
     </button>
 </div>
@@ -262,7 +344,7 @@ body {
             <!-- ===== Fin style de texte ===== -->
 
             <div class="flex flex-col gap-2 pt-4">
-                <button type="submit" class="w-full bg-erp-primary text-white py-3 rounded-xl font-semibold hover:opacity-90 shadow-lg shadow-blue-500/20 transition-all">
+                <button type="submit" class="w-full bg-erp-primary text-white py-3 rounded-xl font-semibold hover:opacity-90 shadow-lg transition-all">
                     Enregistrer les modifications
                 </button>
                 <button type="button" onclick="closeModal('theme-modal')" class="w-full text-slate-400 py-2 text-sm hover:text-slate-600">
@@ -304,7 +386,7 @@ body {
         }
     });
 </script>
-    <div id="canvas-wrapper"></div>
+    
 
 <!-- ===================== SIDEBAR À ICÔNES (ajout) ===================== -->
 <style>
@@ -1475,8 +1557,8 @@ body {
         {% endif %}
     </div>
     <div class="op-ws-txt">
-        <span class="text-[9px] uppercase tracking-widest  font-black block"  style="color: {{request.user.personnel.color_fond}}">WORKSPACE</span>
-        <h1 class="font-black  text-lg tracking-tight"  style="color: {{request.user.personnel.color_fond}}">{{actual_institution.sigle}}</h1>
+        <span class="text-[9px] uppercase tracking-widest font-black block"  style="color: {{request.user.personnel.color_fond}}">WORKSPACE</span>
+        <h1 class="font-black text-lg tracking-tight"  style="color: {{request.user.personnel.color_fond}}">{{actual_institution.sigle}}</h1>
     </div>
 </a>
 
@@ -1502,7 +1584,7 @@ body {
                 </div>
 
                 <a href="/alert_notifs/0/0/" title="Responsable de l'exécution" class="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-white hover:shadow-sm transition-all group cursor-pointer">
-                    <span class="w-6 h-6 flex items-center justify-center bg-amber-500 text-white rounded-md font-black text-[10px] group-hover:scale-110 transition-transform shadow-sm">R</span>
+                    <span class="w-6 h-6 flex items-center justify-center bg-amber-500 text-white rounded-md font-black text-[10px] transition-transform shadow-sm">R</span>
                     <div class="flex flex-col">
                         <span class="text-[9px] font-black text-slate-900 uppercase">Responsable.</span>
                         <span class="text-[9px] font-bold text-amber-600 count_to_done2">0</span>
@@ -1510,33 +1592,54 @@ body {
                 </a>
 
                 <a href="/accountable/" title="Responsable de la validation" class="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-white hover:shadow-sm transition-all group cursor-pointer">
-                    <span class="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded-md font-black text-[10px] group-hover:scale-110 transition-transform shadow-sm">A</span>
+                    <span class="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded-md font-black text-[10px] transition-transform shadow-sm">A</span>
                     <div class="flex flex-col">
                         <span class="text-[9px] font-black text-slate-900 uppercase">Valid&eacute;.</span>
-                        <span class="text-[9px] font-bold text-blue-600 " id="accountable_operation">0</span>
+                        <span class="text-[9px] font-bold text-blue-600" id="accountable_operation">0</span>
                     </div>
                 </a>
 
                 <a href="/tache_consulted/" title="Responsable de la consultation" class="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-white hover:shadow-sm transition-all group cursor-pointer">
-                    <span class="w-6 h-6 flex items-center justify-center bg-emerald-600 text-white rounded-md font-black text-[10px] group-hover:scale-110 transition-transform shadow-sm">C</span>
+                    <span class="w-6 h-6 flex items-center justify-center bg-emerald-600 text-white rounded-md font-black text-[10px] transition-transform shadow-sm">C</span>
                     <div class="flex flex-col">
                         <span class="text-[9px] font-black text-slate-900 uppercase">Consult&eacute;.</span>
-                        <span class="text-[9px] font-bold text-emerald-600 " id="regroup_consulted">0</span>
+                        <span class="text-[9px] font-bold text-emerald-600" id="regroup_consulted">0</span>
                     </div>
                 </a>
 
                 <a href="/tache-informed/" title="Responsable de l'information" class="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-white hover:shadow-sm transition-all group cursor-pointer">
-                    <span class="w-6 h-6 flex items-center justify-center bg-slate-500 text-white rounded-md font-black text-[10px] group-hover:scale-110 transition-transform shadow-sm">I</span>
+                    <span class="w-6 h-6 flex items-center justify-center bg-slate-500 text-white rounded-md font-black text-[10px] transition-transform shadow-sm">I</span>
                     <div class="flex flex-col">
                         <span class="text-[9px] font-black text-slate-900 uppercase">Inform&eacute;.</span>
-                        <span class="text-[9px] font-bold text-slate-600 " id="count_informed">0</span>
+                        <span class="text-[9px] font-bold text-slate-600" id="count_informed">0</span>
                     </div>
                 </a>
             </div>
 
             <div class="flex items-center gap-4 border-l border-slate-200 pl-6">
+<!-- ===== Centre de notifications (ajout) : cloche + panneau =====
+     Aucune nouvelle requête : les chiffres sont lus dans les compteurs que la page remplit déjà (R, A, C, I),
+     plus les tâches en retard fournies par la vue. Une ligne = un include de partials/notif_ligne.html. -->
+<div class="lm-notif" id="lmNotif">
+    <button type="button" class="lm-notif-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="lmNotifPanneau" aria-label="Notifications">
+        <i class="fa-solid fa-bell"></i><span class="lm-notif-pastille" hidden>0</span>
+    </button>
+    <div class="lm-notif-panneau" id="lmNotifPanneau" role="dialog" aria-label="Notifications" hidden>
+        <header><b>Notifications</b><span id="lmNotifTotal">Rien en attente</span></header>
+        <div class="lm-notif-liste">
+            {% include './partials/notif_ligne.html' with lien="/tache-retards/" valeur=urgent titre="En retard" detail="Tâches dont l'échéance est dépassée" icone="fa-triangle-exclamation" teinte="var(--sbx-danger, #E35A33)" %}
+            {% include './partials/notif_ligne.html' with lien="/alert_notifs/0/0/" source=".count_to_done2" titre="À exécuter" detail="Vos tâches en tant que Responsable (R)" icone="fa-list-check" teinte="var(--sbx-warn, #E48B0C)" %}
+            {% include './partials/notif_ligne.html' with lien="/accountable/" source="#accountable_operation" titre="À valider" detail="Déclarations à approuver (A)" icone="fa-circle-check" teinte="#4F7BE8" %}
+            {% include './partials/notif_ligne.html' with lien="/tache_consulted/" source="#regroup_consulted" titre="Avis attendus" detail="Opérations où vous êtes consulté (C)" icone="fa-comments" teinte="var(--sbx-ok, #2A8A7D)" %}
+            {% include './partials/notif_ligne.html' with lien="/tache-informed/" source="#count_informed" titre="Pour information" detail="Opérations dont vous êtes informé (I)" icone="fa-circle-info" teinte="#64748b" hors_total=True %}
+        </div>
+        <p class="lm-notif-vide"><i class="fa-solid fa-circle-check"></i>Tout est à jour : aucune action en attente.</p>
+        <footer><a href="/alert_notifs/0/0/">Voir toutes mes tâches <i class="fa-solid fa-arrow-right"></i></a></footer>
+    </div>
+</div>
+
                 
-                <button class="w-11 h-11 flex items-center justify-center  hover:bg-amber-600 text-white rounded-xl shadow-lg shadow-amber-600/20 transition-all modalOpen" style="background: {{request.user.personnel.color_fond}};">
+                <button class="w-11 h-11 flex items-center justify-center hover:bg-amber-600 text-white rounded-xl shadow-lg transition-all modalOpen" style="background: {{request.user.personnel.color_fond}};">
                     <i class="fa-solid fa-layer-group"></i>
                 </button>
 
@@ -1695,7 +1798,7 @@ body {
     <div class="w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-8 flex-1">
             {%block main%}
  {% if request.user.personnel.is_process %}        
- <header class=" top-4 z-20 bg-white border border-slate-200 rounded-[2rem] p-4 shadow-xl shadow-slate-200/50 select-none  relative">
+ <header class="top-4 z-20 bg-white border border-slate-200 rounded-[2rem] p-4 shadow-xl shadow-slate-200/50 select-none relative">
     
     <svg class="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-[0.08]" viewBox="0 0 100 100" preserveAspectRatio="none">
         <g stroke="#64748b" stroke-width="0.3" fill="none">
@@ -1717,7 +1820,6 @@ body {
             <div>
                 <h2 class="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
                     <span class="flex h-2 w-2 relative">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
                     </span>
                     Indicateurs de Performance Opérationnelle
@@ -1737,7 +1839,7 @@ body {
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <a href="/tache-archive/" class="inline-flex items-center border-2 border-violet-200 rounded-full p-1 pe-6 shadow-[0_0_10px_rgba(139,92,246,0.1)] bg-white transition-all duration-300 hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:border-violet-500 group">
+            <a href="/tache-archive/" class="inline-flex items-center border-2 border-violet-200 rounded-full p-1 pe-6 bg-white transition-all duration-300 hover:border-violet-500 group">
                 <div class="rounded-full w-12 h-12 flex items-center justify-center bg-violet-100 text-violet-600 me-3 shrink-0">
                     <i class="fa-solid fa-clipboard-list text-lg"></i>
                 </div>
@@ -1747,7 +1849,7 @@ body {
                 </div>
             </a>
 
-            <a href="/tache-effectuee/" class="inline-flex items-center border-2 border-blue-400 rounded-full p-1 pe-6 shadow-[0_0_10px_rgba(96,165,250,0.2)] bg-white transition-all duration-300 hover:shadow-[0_0_20px_rgba(96,165,250,0.5)] hover:border-blue-600 group">
+            <a href="/tache-effectuee/" class="inline-flex items-center border-2 border-blue-400 rounded-full p-1 pe-6 bg-white transition-all duration-300 hover:border-blue-600 group">
                 <div class="rounded-full w-12 h-12 flex items-center justify-center bg-blue-100 text-blue-600 me-3 shrink-0">
                     <i class="fa-solid fa-calendar-days text-lg"></i>
                 </div>
@@ -1757,7 +1859,7 @@ body {
                 </div>
             </a>
 
-            <a href="/tache-Attente/" class="inline-flex items-center border-2 border-orange-400 rounded-full p-1 pe-6 shadow-[0_0_10px_rgba(251,146,60,0.2)] bg-white transition-all duration-300 hover:shadow-[0_0_20px_rgba(251,146,60,0.5)] hover:border-orange-600 group">
+            <a href="/tache-Attente/" class="inline-flex items-center border-2 border-orange-400 rounded-full p-1 pe-6 bg-white transition-all duration-300 hover:border-orange-600 group">
                 <div class="rounded-full w-12 h-12 flex items-center justify-center bg-orange-100 text-orange-600 me-3 shrink-0">
                     <i class="fa-solid fa-spinner text-lg animate-spin"></i>
                 </div>
@@ -1767,7 +1869,7 @@ body {
                 </div>
             </a>
 
-            <a href="/tache-valide/" class="inline-flex items-center border-2 border-emerald-400 rounded-full p-1 pe-6 shadow-[0_0_10px_rgba(52,211,153,0.2)] bg-white transition-all duration-300 hover:shadow-[0_0_20px_rgba(52,211,153,0.5)] hover:border-emerald-600 group">
+            <a href="/tache-valide/" class="inline-flex items-center border-2 border-emerald-400 rounded-full p-1 pe-6 bg-white transition-all duration-300 hover:border-emerald-600 group">
                 <div class="rounded-full w-12 h-12 flex items-center justify-center bg-emerald-100 text-emerald-600 me-3 shrink-0">
                     <i class="fa-solid fa-circle-check text-lg"></i>
                 </div>
@@ -1777,8 +1879,8 @@ body {
                 </div>
             </a>
 
-            <a href="/tache-retards/" class="inline-flex items-center border-2 border-slate-900 rounded-full p-1 pe-6 shadow-[0_0_10px_rgba(15,23,42,0.2)] bg-slate-50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(15,23,42,0.4)] hover:bg-slate-100 group">
-                <div class="rounded-full w-12 h-12 flex items-center justify-center bg-slate-900 text-white me-3 shrink-0 animate-pulse">
+            <a href="/tache-retards/" class="inline-flex items-center border-2 border-slate-900 rounded-full p-1 pe-6 bg-slate-50 transition-all duration-300 hover:bg-slate-100 group">
+                <div class="rounded-full w-12 h-12 flex items-center justify-center bg-slate-900 text-white me-3 shrink-0">
                     <i class="fa-solid fa-triangle-exclamation text-lg"></i>
                 </div>
                 <div class="flex flex-col">
@@ -1794,14 +1896,11 @@ body {
     
    <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.1)] flex flex-col justify-between relative overflow-hidden group">
     
-    <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl pointer-events-none"></div>
         
     {% if request.user.personnel.is_finance %}
         
         <div class="relative flex items-center gap-2.5 pb-2 border-b border-slate-200 w-full">
             <span class="relative flex h-1.5 w-1.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" 
-                      style="background-color: {{ request.user.personnel.color_fond|default:'#6366f1' }};"></span>
                 <span class="relative inline-flex rounded-full h-1.5 w-1.5" 
                       style="background-color: {{ request.user.personnel.color_fond|default:'#6366f1' }};"></span>
             </span>
@@ -1815,7 +1914,7 @@ body {
             </div>
         </div>
             
-        <div id="chart_finance_declare" class="my-auto mx-auto w-full max-w-[390px] h-[250px] flex items-center justify-center relative mt-4">
+        <div id="chart_finance_declare" data-lm-jauge="declare_financier" data-valeur="{{ actual_institution.taux_financier_declare|default:'0' }}" data-echelle="100" data-repere-source="/api/taux_valid/" data-repere-echelle="100" data-repere-libelle="Validé" class="my-auto mx-auto w-full max-w-[390px] h-[250px] flex items-center justify-center relative mt-4">
            
         </div>
         
@@ -1823,8 +1922,6 @@ body {
         
         <div class="relative flex items-center gap-2.5 pb-2 border-b border-slate-200 w-full">
             <span class="relative flex h-1.5 w-1.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" 
-                      style="background-color: {{ request.user.personnel.color_fond|default:'#10b981' }};"></span>
                 <span class="relative inline-flex rounded-full h-1.5 w-1.5" 
                       style="background-color: {{ request.user.personnel.color_fond|default:'#10b981' }};"></span>
             </span>
@@ -1838,7 +1935,7 @@ body {
             </div>
         </div>
         
-        <div id="chartdivs" class="my-auto mx-auto w-full max-w-[390px] h-[250px] flex items-center justify-center relative mt-4">
+        <div id="chartdivs" data-lm-jauge="declare_physique" data-source="/api/count_process/" data-repere-source="/api/process_valid/" data-repere-libelle="Validé" class="my-auto mx-auto w-full max-w-[390px] h-[250px] flex items-center justify-center relative mt-4">
            
         </div>
 
@@ -1847,17 +1944,17 @@ body {
     <div class="mt-4 pt-3 border-t border-slate-100/80 flex items-center justify-center gap-4 sm:gap-6 w-full">
         
         <div class="flex items-center gap-1.5 group/label">
-            <span class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)] transition-transform group-hover/label:scale-125"></span>
+            <span class="w-2 h-2 rounded-full bg-rose-500 transition-transform"></span>
             <span class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider">Critique</span>
         </div>
         
         <div class="flex items-center gap-1.5 group/label">
-            <span class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)] transition-transform group-hover/label:scale-125"></span>
+            <span class="w-2 h-2 rounded-full bg-amber-400 transition-transform"></span>
             <span class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider">Moyen</span>
         </div>
         
         <div class="flex items-center gap-1.5 group/label">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)] transition-transform group-hover/label:scale-125"></span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500 transition-transform"></span>
             <span class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider">Optimal</span>
         </div>
         
@@ -1866,12 +1963,8 @@ body {
 </div>
 
 <div class="relative w-full lg:col-span-2 pt-6"> 
-    <div class="absolute -bottom-6 left-6 right-6 h-full  rounded-3xl border border-white/5 shadow-2xl -z-20" style="background: {{request.user.personnel.color_fond}};"></div>
-    <div class="absolute -bottom-3 left-3 right-3 h-full  rounded-3xl border border-white/20 shadow-xl -z-10" style="background: {{request.user.personnel.color_fond}};"></div>
 
-    <div class="relative  backdrop-blur-xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-3xl p-8 flex flex-col justify-between overflow-hidden min-h-[400px]" style="background: {{request.user.personnel.color_fond}};">
-        <div class="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none rounded-3xl"></div>
-        <div class="absolute -top-24 -right-24 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
+    <div class="relative backdrop-blur-xl border border-white/20 rounded-3xl p-8 flex flex-col justify-between overflow-hidden min-h-[400px]" style="background: {{request.user.personnel.color_fond}};">
 
        
 
@@ -1885,33 +1978,31 @@ body {
         
         <div class="flex items-center gap-2.5">
             <span class="relative flex h-1.5 w-1.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)]"></span>
+                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
             </span>
             
-            <h3 class="text-[11px] font-black text-white uppercase tracking-widest drop-shadow-md">
+            <h3 class="text-[11px] font-black text-white uppercase tracking-widest">
                 Taux d'exécution financier validé
             </h3>
         </div>
 
-        <div class="relative flex items-center justify-center w-7 h-7 rounded-lg border border-white/20 shadow-sm transition-all duration-300 group-hover:scale-110 overflow-hidden bg-white/10 backdrop-blur-md">
+        <div class="relative flex items-center justify-center w-7 h-7 rounded-lg border border-white/20 shadow-sm transition-all duration-300 overflow-hidden bg-white/10 backdrop-blur-md">
             <i class="fa-solid fa-chart-pie text-[10px] text-white"></i>
         </div>
 
-        <div class="absolute bottom-[-1px] left-0 h-[2px] w-12 rounded-t-full bg-white transition-all duration-300 shadow-[0_0_8px_rgba(255,255,255,0.6)] group-hover:w-16">
+        <div class="absolute bottom-[-1px] left-0 h-[2px] w-12 rounded-t-full bg-white transition-all duration-300 group-hover:w-16">
         </div>
         
     </header>
 
     <div class="relative w-full rounded-2xl bg-white/5 border border-white/10 p-2 sm:p-3 shadow-inner backdrop-blur-sm overflow-hidden transition-all duration-500 hover:bg-white/10 hover:border-white/20 group/chart">
         
-        <div class="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent pointer-events-none opacity-50 group-hover/chart:opacity-100 transition-opacity duration-500"></div>
         
-        <div id="chart_finance" class="relative z-10 w-full h-[250px]"></div>
+        <div id="chart_finance" data-lm-jauge="valide_financier" data-lm-style="cadran" data-source="/api/taux_valid/" data-echelle="100" data-rafraichir="5000" data-fonce data-repere-valeur="{{ actual_institution.taux_financier_declare|default:'0' }}" data-repere-echelle="100" data-repere-libelle="Déclaré" class="relative z-10 w-full h-[250px]"></div>
         
     </div>
 
-</div>>
+</div>
              {%else%}
             <div class="relative flex flex-col w-full">
     
@@ -1919,31 +2010,30 @@ body {
         
         <div class="flex items-center gap-2.5">
             <span class="relative flex h-1.5 w-1.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-white shadow-[0_0_5px_rgba(255,255,255,0.8)]"></span>
+                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
             </span>
             
-            <h3 class="text-[11px] font-black text-white uppercase tracking-widest drop-shadow-md">
+            <h3 class="text-[11px] font-black text-white uppercase tracking-widest">
                 Taux d'exécution physique validé
             </h3>
         </div>
 
         <!-- Bouton interactif -->
-       <button type="button" onclick="window.location.href='/advance-dashboard/'" class="relative inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/20 shadow-sm transition-all duration-300 hover:scale-105 bg-white/10 backdrop-blur-md cursor-pointer text-white text-xs font-semibold">
+       <button type="button" onclick="window.location.href='/advance-dashboard/'" class="relative inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/20 shadow-sm transition-all duration-300 bg-white/10 backdrop-blur-md cursor-pointer text-white text-xs font-semibold">
     <i class="fa-solid fa-chart-pie text-xs"></i>
     <span>Tableau de bord avancé</span>
 </button>
 
-        <div class="absolute bottom-[-1px] left-0 h-[2px] w-12 rounded-t-full bg-white transition-all duration-300 shadow-[0_0_8px_rgba(255,255,255,0.6)] group-hover:w-16">
+        <div class="absolute bottom-[-1px] left-0 h-[2px] w-12 rounded-t-full bg-white transition-all duration-300 group-hover:w-16">
         </div>
         
     </header>
 
     <div class="relative w-full rounded-2xl bg-white/5 border border-white/10 p-2 sm:p-3 shadow-inner backdrop-blur-sm overflow-hidden transition-all duration-500 hover:bg-white/10 hover:border-white/20 group/chart">
         
-        <div class="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent pointer-events-none opacity-50 group-hover/chart:opacity-100 transition-opacity duration-500"></div>
         
-        <div id="chartdiv" class="relative z-10 w-full h-[250px]"></div>
+        <div id="chartdiv" data-lm-jauge="valide_physique" data-lm-style="cadran" data-source="/api/process_valid/" data-fonce data-repere-source="/api/count_process/" data-repere-libelle="Déclaré" class="relative z-10 w-full h-[250px]"></div>
+        {% include './partials/actions_suivi.html' %}
         
     </div>
 
@@ -1955,19 +2045,19 @@ body {
      <footer class="pt-6 mt-2 border-t border-white/10 relative z-10">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div class="flex items-center gap-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
             <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Critique</span>
         </div>
         <div class="flex items-center gap-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
             <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Alerte</span>
         </div>
         <div class="flex items-center gap-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
             <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Cible</span>
         </div>
         <div class="flex items-center gap-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-indigo-500"></div>
             <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Objectif</span>
         </div>
     </div>
@@ -2069,7 +2159,7 @@ body {
     <div class="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" style="background-color: {{request.user.personnel.color_fond}};">
         <div>
             <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                 <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-100">
                     Suivi Budgétaire & Exécution Financière
                 </h3>
@@ -3408,94 +3498,7 @@ window.changeView = function(unit) {
     if (bAuj) bAuj.addEventListener('click', function () { try { if (timeline) timeline.moveTo(new Date()); } catch (e) {} });
 })();
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-<!-- SCRIPT DU GLOBE THREE.JS -->
-<script>
-    (function() {
-        function initGlobe() {
-            const wrapper = document.getElementById('canvas-wrapper');
-            if (!wrapper) return; 
-
-            if (typeof THREE === 'undefined') {
-                console.warn("Three.js n'est pas chargé sur cette page.");
-                return;
-            }
-
-            let scene, camera, renderer, globeGroup, pointsMesh;
-            let time = 0;
-            
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 1, 1000);
-            camera.position.z = 250; 
-
-            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
-            wrapper.appendChild(renderer.domElement);
-
-            globeGroup = new THREE.Group();
-            scene.add(globeGroup);
-
-            const radius = 75;
-            const dotCount = 3000;
-            const positions = [], colors = [], directions = [];
-
-            for (let i = 0; i < dotCount; i++) {
-                const phi = Math.acos(-1 + (2 * i) / dotCount);
-                const theta = Math.sqrt(dotCount * Math.PI) * phi;
-                const x = radius * Math.sin(phi) * Math.cos(theta);
-                const y = radius * Math.sin(phi) * Math.sin(theta);
-                const z = radius * Math.cos(phi);
-
-                const lat = (phi * 180 / Math.PI) - 90;
-                const lon = (theta * 180 / Math.PI) % 360 - 180;
-                const isLand = (lon > -22 && lon < 52 && lat > -35 && lat < 70) || (lon >= 52 && lon < 145 && lat > -12 && lat < 75) || (lon > -120 && lon < -34 && lat > -55 && lat < 18);
-
-                if (isLand) {
-                    positions.push(x, y, z);
-                    const norm = Math.sqrt(x*x + y*y + z*z);
-                    directions.push(x/norm, y/norm, z/norm);
-                    const isAmber = (lon > -12 && lon < 45 && lat > -30 && lat < 35);
-                    colors.push(isAmber ? 0.96 : 0.06, isAmber ? 0.62 : 0.72, isAmber ? 0.04 : 0.50);
-                }
-            }
-
-            const dotGeometry = new THREE.BufferGeometry();
-            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            dotGeometry.setAttribute('originalPosition', new THREE.Float32BufferAttribute(positions, 3));
-            dotGeometry.setAttribute('direction', new THREE.Float32BufferAttribute(directions, 3));
-
-            pointsMesh = new THREE.Points(dotGeometry, new THREE.PointsMaterial({ 
-                size: 1.8, vertexColors: true, transparent: true, opacity: 0.8 
-            }));
-            globeGroup.add(pointsMesh);
-
-            function animate() {
-                requestAnimationFrame(animate);
-                time += 0.01;
-                const progress = (Math.sin(time * 0.5) + 1) / 2; 
-                const explosionForce = progress * 60;
-
-                const pos = pointsMesh.geometry.attributes.position;
-                const orig = pointsMesh.geometry.attributes.originalPosition;
-                const dir = pointsMesh.geometry.attributes.direction;
-
-                for (let i = 0; i < pos.count; i++) {
-                    pos.setX(i, orig.getX(i) + dir.getX(i) * explosionForce);
-                    pos.setY(i, orig.getY(i) + dir.getY(i) * explosionForce);
-                    pos.setZ(i, orig.getZ(i) + dir.getZ(i) * explosionForce);
-                }
-                pos.needsUpdate = true;
-                globeGroup.rotation.y += 0.005;
-                renderer.render(scene, camera);
-            }
-            animate();
-        }
-
-        window.addEventListener("DOMContentLoaded", initGlobe);
-    })();
-</script>
+<!-- (retiré) globe 3D décoratif et AOS inutilisé : allège la page -->
 
 
 </section>
@@ -3510,7 +3513,7 @@ window.changeView = function(unit) {
     </div>
 
     <div class="bg-white border border-gray-900 rounded-xl shadow-sm overflow-hidden">
-        <div class="px-6 py-4  border-b border-slate-700"   style="background-color: {{request.user.personnel.color_fond}};">
+        <div class="px-6 py-4 border-b border-slate-700"   style="background-color: {{request.user.personnel.color_fond}};">
             <h4 class="text-white font-semibold text-lg m-0">Chaine De Resultats</h4>
         </div>
 
@@ -3558,63 +3561,38 @@ window.changeView = function(unit) {
 {%block modal%}
  <!-- Bouton flottant -->
 <div class="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
-  <button id="openModalBtn" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center shadow-2xl border border-indigo-500/20 transition-all duration-300 hover:scale-110 active:scale-95">
+  <button id="openModalBtn" title="Configuration du suivi" aria-label="Configuration du suivi" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center shadow-2xl border border-indigo-500/20 transition-all duration-300 active:scale-95">
     <i class="fa-solid fa-list-check text-xl"></i>
   </button>
 </div>
 
-<!-- Modal Overlay -->
-<div id="modalOverlay" class="hidden fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-  <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-    
-    <!-- Header -->
-    <div class="px-8 pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
-      <h2 class="text-lg font-semibold text-gray-900">Configuration du suivi</h2>
-      <button id="closeModalBtn" class="text-gray-400 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-colors">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-    </div>
+<!-- Modal Overlay : Configuration du suivi (refonte : options générées par un seul gabarit, partials/option_suivi.html) -->
+<div id="modalOverlay" class="hidden fixed inset-0 flex items-center justify-center z-[100] p-4" role="dialog" aria-modal="true" aria-labelledby="lmSuiviTitre">
+  <div class="lm-suivi">
+    <header class="lm-suivi-tete">
+      <span class="lm-suivi-ic"><i class="fa-solid fa-sliders"></i></span>
+      <div class="lm-suivi-titres">
+        <h2 id="lmSuiviTitre">Configuration du suivi</h2>
+        <p>Choisissez le périmètre de données affiché sur votre tableau de bord.</p>
+      </div>
+      <button type="button" id="closeModalBtn" class="lm-suivi-x" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
+    </header>
 
     <form method="POST" action="/gest_dashboard_data/">
       {% csrf_token %}
-      <div class="p-8">
-        <p class="text-sm text-gray-500 mb-6">Sélectionnez le périmètre de données à afficher sur votre tableau de bord.</p>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <!-- Option Processus -->
-          <label class="cursor-pointer relative flex flex-col items-center p-5 border-2 border-gray-200 rounded-2xl transition-all duration-200 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/50 hover:border-blue-300">
-            <input type="radio" name="selector" value="process" class="sr-only" {% if request.user.personnel.is_process %}checked{% endif %}>
-            <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gray-50 text-blue-600 mb-3">
-              <i class="fa-solid fa-gear"></i>
-            </div>
-            <span class="text-sm font-bold text-gray-700">Processus</span>
-          </label>
+      <fieldset class="lm-scopes">
+        <legend class="lm-sr">Périmètre de données</legend>
+        <span class="lm-scope-glide" aria-hidden="true"></span>
+        {% include './partials/option_suivi.html' with valeur="process" titre="Processus" detail="Avancement des processus, étapes et délais" icone="fa-diagram-project" teinte="var(--lm-dom)" coche=request.user.personnel.is_process %}
+        {% include './partials/option_suivi.html' with valeur="technics" titre="Technique" detail="Exécution physique, indicateurs et cibles" icone="fa-microchip" teinte="#0F766E" coche=request.user.personnel.technic %}
+        {% include './partials/option_suivi.html' with valeur="financial" titre="Finance" detail="Exécution budgétaire et décaissements" icone="fa-wallet" teinte="#B45309" coche=request.user.personnel.is_finance %}
+      </fieldset>
 
-          <!-- Option Technique -->
-          <label class="cursor-pointer relative flex flex-col items-center p-5 border-2 border-gray-200 rounded-2xl transition-all duration-200 has-[:checked]:border-yellow-500 has-[:checked]:bg-yellow-50/50 hover:border-yellow-300">
-            <input type="radio" name="selector" value="technics" class="sr-only" {% if request.user.personnel.technic %}checked{% endif %}>
-            <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gray-50 text-yellow-600 mb-3">
-              <i class="fa-solid fa-microchip"></i>
-            </div>
-            <span class="text-sm font-bold text-gray-700">Technique</span>
-          </label>
-
-          <!-- Option Finance -->
-          <label class="cursor-pointer relative flex flex-col items-center p-5 border-2 border-gray-200 rounded-2xl transition-all duration-200 has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50/50 hover:border-orange-300">
-            <input type="radio" name="selector" value="financial" class="sr-only" {% if request.user.personnel.is_finance %}checked{% endif %}>
-            <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gray-50 text-orange-500 mb-3">
-              <i class="fa-solid fa-wallet"></i>
-            </div>
-            <span class="text-sm font-bold text-gray-700">Finance</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div class="px-8 py-4 bg-gray-50 flex justify-end gap-3">
-        <button type="button" id="cancelBtn" class="px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900">Annuler</button>
-        <button type="submit" class="px-6 py-2.5 text-sm font-bold bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all active:scale-95">Appliquer</button>
-      </div>
+      <footer class="lm-suivi-pied">
+        <span class="lm-suivi-note"><i class="fa-solid fa-user-lock"></i> S'applique à votre compte uniquement</span>
+        <button type="button" id="cancelBtn" class="lm-btn lm-btn-s">Annuler</button>
+        <button type="submit" class="lm-btn lm-btn-p">Appliquer</button>
+      </footer>
     </form>
   </div>
 </div>
@@ -3639,7 +3617,7 @@ window.changeView = function(unit) {
 
 
 <div id="modalMenu" class="fixed inset-0 z-[9999] flex items-center justify-center w-screen h-screen bg-slate-150/80 backdrop-blur-xl hidden">
-    <div class="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto  rounded-2xl border border-white/10 shadow-2xl" style="background-color: {{request.user.personnel.color}};">
+    <div class="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl" style="background-color: {{request.user.personnel.color}};">
    
         
         <!-- Header Minimaliste -->
@@ -3746,7 +3724,7 @@ window.changeView = function(unit) {
 
 
 <a href="/archive_doc/" class="group flex items-center gap-4 p-4 rounded-2xl border border-slate-800 bg_fond hover:bg-slate/[0.08] hover:border-slate-700 transition-all duration-300 shadow-sm hover:shadow-md">
-    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-500 flex items-center justify-center text-white shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-300">
+    <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-500 flex items-center justify-center text-white shrink-0 shadow-inner transition-transform duration-300">
         <i class="fa-solid fa-gear text-lg"></i>
     </div>
     
@@ -3768,7 +3746,7 @@ window.changeView = function(unit) {
 <div class="col-span-2 mx-2 mb-6 bg-white/5 border border-white/10 rounded-xl p-2 grid grid-cols-3 gap-2 backdrop-blur-md">
     
     <a href="https://metabase.operaplus.org" class="group flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all duration-200">
-        <div class="w-8 h-8 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shrink-0 shadow-md group-hover:scale-105 transition-transform">
+        <div class="w-8 h-8 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shrink-0 shadow-md transition-transform">
             <i class="fa-solid fa-chart-pie text-xs"></i>
         </div>
         <div class="overflow-hidden">
@@ -3778,7 +3756,7 @@ window.changeView = function(unit) {
     </a>
 
     <a href="/planification/" class="group flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all duration-200">
-        <div class="w-8 h-8 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shrink-0 shadow-md group-hover:scale-105 transition-transform">
+        <div class="w-8 h-8 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shrink-0 shadow-md transition-transform">
             <i class="fa-solid fa-location-crosshairs text-xs"></i>
         </div>
         <div class="overflow-hidden">
@@ -3788,7 +3766,7 @@ window.changeView = function(unit) {
     </a>
 
     <a href="/priorisation/" class="group flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all duration-200">
-        <div class="w-8 h-8 rounded-md bg-gradient-to-br from-rose-500 to-orange-600 flex items-center justify-center text-white shrink-0 shadow-md group-hover:scale-105 transition-transform">
+        <div class="w-8 h-8 rounded-md bg-gradient-to-br from-rose-500 to-orange-600 flex items-center justify-center text-white shrink-0 shadow-md transition-transform">
             <i class="fa-solid fa-arrow-down-short-wide text-xs"></i>
         </div>
         <div class="overflow-hidden">
@@ -3811,27 +3789,7 @@ window.changeView = function(unit) {
     display: flex !important; /* Force le maintien dans le DOM pour animer */
 }
 
-/* L'élément interne (la boîte de dialogue) */
-#modalMenu .modal-content {
-    /* Origine de l'animation au centre */
-    transform-origin: center center;
-    /* Transition ultra-dynamique avec effet rebond/ressort */
-    transition: 
-        transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), 
-        opacity 0.4s ease-out;
-}
 
-/* ÉTAT FERMÉ : Réduit, décalé vers le bas et légèrement incliné */
-#modalMenu.hidden .modal-content {
-    opacity: 0;
-    transform: scale(0.4) translateY(100px) rotateX(-15deg) rotate(-3deg);
-}
-
-/* ÉTAT OUVERT : Retour à la normale (géré automatiquement quand .hidden est retiré) */
-#modalMenu:not(.hidden) .modal-content {
-    opacity: 1;
-    transform: scale(1) translateY(0) rotateX(0deg) rotate(0deg);
-}
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -3889,6 +3847,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     <script>
+try { /* portée locale (correctif) : évite le conflit avec « const modal » déclaré ailleurs */
         // Options globales partagées pour les jauges sombres
         const darkGaugeTrack = {
             background: '#1e293b',
@@ -3991,109 +3950,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.body.classList.remove('overflow-hidden');
             }
         });
-    </script>
+    } catch (e) { /* jauges absentes de cette page */ }
+</script>
     
 
 
 
 
 <!-- Resources -->
-<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Configuration augmentée pour une jauge imposante et lisible
-        var options = {
-            chart: {
-                height: 400,
-                type: "radialBar",
-                animations: { 
-                    enabled: true, 
-                    easing: 'easeinout', 
-                    speed: 1200 
-                }
-            },
-            series: [0], 
-            colors: ["#64748b"], // Couleur par défaut (Slate-500)
-            plotOptions: {
-                radialBar: {
-                    hollow: { 
-                        size: "60%", // Anneau plus large pour plus d'impact visuel
-                        background: "transparent" 
-                    },
-                    track: {
-                        background: "#f1f5f9", // Slate-100
-                        strokeWidth: "95%",
-                        margin: 5
-                    },
-                    dataLabels: {
-                        name: {
-                            show: true,
-                            color: "#64748b",
-                            fontSize: "12px",
-                            fontWeight: "600",
-                            offsetY: -20
-                        },
-                        value: {
-                            show: true,
-                            color: "#0f172a", // Slate-900 (Noir profond)
-                            fontSize: "48px", // Chiffre massif pour la lisibilité
-                            fontWeight: "900",
-                            offsetY: 15,
-                            formatter: (val) => val + '%'
-                        }
-                    }
-                }
-            },
-            stroke: { 
-                lineCap: "round",
-                width: 5 
-            },
-            labels: ["TAUX D'EXÉCUTION"]
-        };
 
-        var chart = new ApexCharts(document.querySelector("#chartdivs"), options);
-        chart.render();
 
-        // Fonction de mise à jour dynamique avec logique MEAL
-        async function updateDashboardData() {
-            try {
-                const response = await fetch('/api/count_process/');
-                if (!response.ok) throw new Error('Erreur de réseau');
-                
-                const data = await response.json();
-                const value = data.data || data.value || data.count || 0;
-                
-                // Logique de couleur "Augmentée" :
-                // < 50% = Critique (Rouge), < 85% = Alerte (Orange), >= 85% = Validé (Vert)
-                let color = "#ef4444"; // Rouge par défaut
-                if (value >= 85) {
-                    color = "#10b981"; // Vert
-                } else if (value >= 50) {
-                    color = "#f59e0b"; // Orange
-                }
+<!-- (remplacé) jauge dessinée par le module Liquid Morph : voir data-lm-jauge -->
 
-                // Application des changements
-                chart.updateOptions({
-                    colors: [color]
-                });
-                chart.updateSeries([value]);
-
-            } catch (error) {
-                console.error("Erreur chargement:", error);
-            }
-        }
-
-        updateDashboardData();
-    });
-</script>
-
-<script src="https://cdn.amcharts.com/lib/4/core.js"></script>
-<script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
-<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
 <style>
     #chartdiv {
       width: 100%;
@@ -4155,90 +4023,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('load', initCharts);
 })();
 </script>
-<script>
-    am4core.ready(function() {
-        am4core.useTheme(am4themes_animated);
-
-        var chart = am4core.create("chartdiv", am4charts.GaugeChart);
-        chart.innerRadius = am4core.percent(85);
-        chart.startAngle = -180;
-        chart.endAngle = 0;
-
-        // Fond transparent
-        chart.background.fillOpacity = 0;
-        chart.background.strokeOpacity = 0;
-
-        var axis = chart.xAxes.push(new am4charts.ValueAxis());
-        axis.min = 0;
-        axis.max = 100;
-        axis.renderer.innerRadius = am4core.percent(70); 
-
-        // Labels et ticks en blanc
-        axis.renderer.labels.template.fill = am4core.color("#ffffff");
-        axis.renderer.labels.template.fontSize = 10;
-        axis.renderer.ticks.template.stroke = am4core.color("#ffffff");
-        axis.renderer.ticks.template.strokeOpacity = 0.5;
-        axis.renderer.ticks.template.length = 6;
-        axis.renderer.grid.template.disabled = true;
-        axis.renderer.line.strokeOpacity = 0;
-
-        var ranges = [
-            { start: 0,   end: 50,  color: "#f43f5e" }, 
-            { start: 50,  end: 60,  color: "#fbbf24" }, 
-            { start: 60,  end: 70,  color: "#22c55e" }, 
-            { start: 70,  end: 100, color: "#38bdf8" }
-        ];
-
-        ranges.forEach(r => {
-            var range = axis.axisRanges.create();
-            range.value = r.start;
-            range.endValue = r.end;
-            range.axisFill.fill = am4core.color(r.color);
-            range.axisFill.fillOpacity = 0.8; // Augmenté pour meilleure visibilité
-            
-            // Séparateurs blancs entre les segments
-            range.axisFill.stroke = am4core.color("#ffffff");
-            range.axisFill.strokeWidth = 3;
-            range.axisFill.strokeOpacity = 1;
-        });
-
-        // Aiguille (Blanche)
-        var hand = chart.hands.push(new am4charts.ClockHand());
-        hand.radius = am4core.percent(90);
-        hand.startWidth = 10;
-        hand.endWidth = 0;
-        hand.fill = am4core.color("#ffffff");
-        hand.stroke = am4core.color("#ffffff");
-        hand.strokeOpacity = 0.5;
-
-        hand.pin.disabled = false;
-        hand.pin.radius = 12;
-        hand.pin.fill = am4core.color("#ffffff");
-        hand.pin.stroke = am4core.color("#ffffff");
-        hand.pin.strokeWidth = 2;
-
-        // Label central (Blanc)
-        var label = chart.radarContainer.createChild(am4core.Label);
-        label.horizontalCenter = "middle";
-        label.verticalCenter = "middle";
-        label.fontSize = 42;
-        label.fontWeight = "300";
-        label.fill = am4core.color("#ffffff"); // Forcé en blanc
-        label.dy = -15;
-
-        function updateChart(value) {
-            var val = Math.min(100, Math.max(0, value));
-            hand.showValue(val, 2000, am4core.ease.cubicOut);
-            label.text = val.toString();
-            label.fill = am4core.color("#ffffff"); // Re-force blanc
-        }
-
-        fetch("/api/process_valid/")
-            .then(r => r.json())
-            .then(d => updateChart(d.data || 0))
-            .catch(e => console.error("Data fetch error:", e));
-    });
-</script>
+<!-- (remplacé) jauge dessinée par le module Liquid Morph : voir data-lm-jauge -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -4337,102 +4122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </script>
 
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-    
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-   <script>
-    (function() {
-        // On ne définit pas wrapper en global ici pour éviter les erreurs si l'ID est absent
-        
-        function initGlobe() {
-            const wrapper = document.getElementById('canvas-wrapper');
-            
-            // Si l'élément n'existe pas sur la page actuelle, on quitte silencieusement
-            if (!wrapper) return; 
-
-            // Vérification de sécurité pour Three.js
-            if (typeof THREE === 'undefined') {
-                console.warn("Three.js n'est pas chargé sur cette page.");
-                return;
-            }
-
-            let scene, camera, renderer, globeGroup, pointsMesh;
-            let time = 0;
-            
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 1, 1000);
-            camera.position.z = 250; 
-
-            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
-            wrapper.appendChild(renderer.domElement);
-
-            globeGroup = new THREE.Group();
-            scene.add(globeGroup);
-
-            // ... (votre logique de création de points reste identique) ...
-            const radius = 75;
-            const dotCount = 3000;
-            const positions = [], colors = [], directions = [];
-
-            for (let i = 0; i < dotCount; i++) {
-                const phi = Math.acos(-1 + (2 * i) / dotCount);
-                const theta = Math.sqrt(dotCount * Math.PI) * phi;
-                const x = radius * Math.sin(phi) * Math.cos(theta);
-                const y = radius * Math.sin(phi) * Math.sin(theta);
-                const z = radius * Math.cos(phi);
-
-                const lat = (phi * 180 / Math.PI) - 90;
-                const lon = (theta * 180 / Math.PI) % 360 - 180;
-                const isLand = (lon > -22 && lon < 52 && lat > -35 && lat < 70) || (lon >= 52 && lon < 145 && lat > -12 && lat < 75) || (lon > -120 && lon < -34 && lat > -55 && lat < 18);
-
-                if (isLand) {
-                    positions.push(x, y, z);
-                    const norm = Math.sqrt(x*x + y*y + z*z);
-                    directions.push(x/norm, y/norm, z/norm);
-                    const isAmber = (lon > -12 && lon < 45 && lat > -30 && lat < 35);
-                    colors.push(isAmber ? 0.96 : 0.06, isAmber ? 0.62 : 0.72, isAmber ? 0.04 : 0.50);
-                }
-            }
-
-            const dotGeometry = new THREE.BufferGeometry();
-            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            dotGeometry.setAttribute('originalPosition', new THREE.Float32BufferAttribute(positions, 3));
-            dotGeometry.setAttribute('direction', new THREE.Float32BufferAttribute(directions, 3));
-
-            pointsMesh = new THREE.Points(dotGeometry, new THREE.PointsMaterial({ 
-                size: 1.8, vertexColors: true, transparent: true, opacity: 0.8 
-            }));
-            globeGroup.add(pointsMesh);
-
-            function animate() {
-                requestAnimationFrame(animate);
-                time += 0.01;
-                const progress = (Math.sin(time * 0.5) + 1) / 2; 
-                const explosionForce = progress * 60;
-
-                const pos = pointsMesh.geometry.attributes.position;
-                const orig = pointsMesh.geometry.attributes.originalPosition;
-                const dir = pointsMesh.geometry.attributes.direction;
-
-                for (let i = 0; i < pos.count; i++) {
-                    pos.setX(i, orig.getX(i) + dir.getX(i) * explosionForce);
-                    pos.setY(i, orig.getY(i) + dir.getY(i) * explosionForce);
-                    pos.setZ(i, orig.getZ(i) + dir.getZ(i) * explosionForce);
-                }
-                pos.needsUpdate = true;
-                globeGroup.rotation.y += 0.005;
-                renderer.render(scene, camera);
-            }
-            animate();
-        }
-
-        // On déclenche l'initialisation quand le DOM est prêt
-        window.addEventListener("DOMContentLoaded", initGlobe);
-    })();
-</script>
+  <!-- (retiré) globe 3D décoratif et AOS inutilisé : allège la page -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 {% if messages %}
     {% for message in messages %}
@@ -4446,7 +4136,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="text-slate-600 text-sm mb-6">Bienvenue dans votre environnement de travail <strong>{{ request.user.personnel.nom }}</strong>.</p>
                             <div class="space-y-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
                                     <span class="text-xs text-slate-500 font-semibold uppercase tracking-wider">Système MEAL prêt</span>
                                 </div>
                                 <div class="flex items-center gap-3">
@@ -4659,127 +4349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 
-<script src="https://cdn.amcharts.com/lib/4/core.js"></script>
-<script src="https://cdn.amcharts.com/lib/4/charts.js"></script>
-<script src="https://cdn.amcharts.com/lib/4/themes/animated.js"></script>
-<script>
-    am4core.ready(function() {
-        am4core.useTheme(am4themes_animated);
-
-        var chart = am4core.create("chart_finance", am4charts.GaugeChart);
-        chart.hiddenState.properties.opacity = 0;
-        chart.innerRadius = am4core.percent(70);
-        chart.padding(15, 15, 15, 15);
-
-        chart.background.fillOpacity = 0;
-        chart.background.strokeOpacity = 0;
-
-        var axis = chart.xAxes.push(new am4charts.ValueAxis());
-        axis.min = 0;
-        axis.max = 100;
-        axis.strictMinMax = true;
-        
-        axis.renderer.labels.template.disabled = false;
-        axis.renderer.labels.template.fill = am4core.color("#ffffff");
-        axis.renderer.labels.template.fontSize = 12;
-        axis.renderer.labels.template.padding(5, 5, 5, 5);
-        
-        axis.renderer.line.strokeOpacity = 0;
-        axis.renderer.ticks.template.disabled = true;
-        axis.renderer.grid.template.disabled = true;
-
-        var colors = {
-            critique: "#ff4d4d",
-            faible: "#ffdd57",
-            moyen: "#2ecc71",
-            acceptable: "#3498db"
-        };
-
-        function createRange(axis, start, end, color) {
-            var range = axis.axisRanges.create();
-            range.value = start;
-            range.endValue = end;
-            range.axisFill.fillOpacity = 0.8;
-            range.axisFill.fill = am4core.color(color);
-            range.axisFill.stroke = am4core.color("#ffffff");
-            range.axisFill.strokeWidth = 3;
-            range.axisFill.strokeOpacity = 1;
-            range.axisFill.zIndex = -1;
-            return range;
-        }
-
-        createRange(axis, 0, 20, colors.critique);
-        createRange(axis, 20, 40, colors.faible);
-        createRange(axis, 40, 80, colors.moyen);
-        createRange(axis, 80, 100, colors.acceptable);
-
-        var hand = chart.hands.push(new am4charts.ClockHand());
-        hand.radius = am4core.percent(85);
-        hand.startWidth = 5;
-        hand.fill = am4core.color("#ffffff");
-        hand.stroke = am4core.color("#ffffff");
-
-        var label = chart.radarContainer.createChild(am4core.Label);
-        label.horizontalCenter = "middle";
-        label.verticalCenter = "middle";
-        label.fontSize = 28;
-        label.fontWeight = "800";
-        label.dy = 10;
-        label.fill = am4core.color("#ffffff");
-
-        var statusLabel = chart.radarContainer.createChild(am4core.Label);
-        statusLabel.horizontalCenter = "middle";
-        statusLabel.verticalCenter = "middle";
-        statusLabel.fontSize = 12;
-        statusLabel.fontWeight = "bold";
-        statusLabel.dy = 40;
-        statusLabel.fill = am4core.color("#ffffff");
-
-        function updateChart(value) {
-            hand.showValue(value, 1000, am4core.ease.cubicOut); // Animation fluide de 1s lors du rafraîchissement
-            label.text = value.toFixed(1) + "%";
-            
-            let statusText = "";
-            if (value < 20) statusText = "CRITIQUE";
-            else if (value < 40) statusText = "FAIBLE";
-            else if (value < 80) statusText = "MOYEN";
-            else statusText = "EXCELLENT";
-            
-            statusLabel.text = statusText;
-        }
-
-        // --- FONCTION DE RAFRAÎCHISSEMENT SÉCURISÉE ---
-        function refreshGauge() {
-            fetch("/api/taux_valid/")
-                .then(r => {
-                    if (!r.ok) throw new Error("Erreur réseau");
-                    return r.json();
-                })
-                .then(d => {
-                    let rawValue = d.data;
-                    // Vérification stricte du type pour éviter le bug des 100%
-                    if (rawValue !== undefined && rawValue !== null && !isNaN(rawValue) && rawValue !== "") {
-                        let cleanValue = parseFloat(rawValue);
-                        updateChart(cleanValue * 100);
-                    } else {
-                        updateChart(0);
-                    }
-                })
-                .catch((error) => {
-                    console.error("Alerte connexion :", error);
-                    updateChart(0); // Reste à 0 si la connexion lâche
-                });
-        }
-
-        // 1. Premier appel immédiat au chargement de la page
-        refreshGauge();
-
-        // 2. Lancement de la boucle de rafraîchissement (Ex: toutes les 5 secondes)
-        setInterval(refreshGauge, 5000); 
-
-        chart.appear(1500, 100);
-    });
-</script>
+<!-- (remplacé) jauge dessinée par le module Liquid Morph : voir data-lm-jauge -->
      
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -4923,147 +4493,7 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(error => console.error('Erreur Fetch Multi-Charts:', error));
 });
 </script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const chartContainer = document.querySelector("#chart_finance_declare");
-    if (!chartContainer) return;
-
-    // 1. Récupération, sécurisation et MULTIPLICATION systématique par 100
-    const rawValue = "{{ actual_institution.taux_financier_declare|default:'0' }}".replace(',', '.');
-    let tauxFinancier = (parseFloat(rawValue) || 0) * 100;
-    
-    console.log("Données financières Jauge (x100):", tauxFinancier);
-
-    // 2. Sécurisation pour la jauge physique (ApexCharts nécessite une valeur entre 0 et 100)
-    let chartValue = Math.min(Math.max(tauxFinancier, 0), 100);
-
-    // 3. Logique des couleurs conditionnelles ERP (Base et Dégradé)
-    let colorBase = '';
-    let colorGradient = '';
-    let trackBackground = '#f1f5f9'; // Fond gris neutre par défaut pour le reste de la jauge
-
-    if (tauxFinancier < 50) {
-        // PERFORMANCE CRITIQUE : ROUGE
-        colorBase = '#ef4444';     // Red-500
-        colorGradient = '#b91c1c'; // Red-700
-        trackBackground = '#fee2e2'; // Fond rouge très léger pour accentuer l'alerte
-    } else if (tauxFinancier < 80) {
-        // PERFORMANCE MOYENNE : AMBRE / ORANGE
-        colorBase = '#f59e0b';     // Amber-500
-        colorGradient = '#b45309'; // Amber-700
-    } else {
-        // PERFORMANCE OPTIMALE : VERT
-        colorBase = '#10b981';     // Emerald-500
-        colorGradient = '#047857'; // Emerald-700
-    }
-
-    // 4. Configuration de la Jauge Radiale Style ERP
-    const options = {
-        series: [Number(chartValue.toFixed(2))],
-        chart: {
-            height: 380,
-            type: 'radialBar',
-            offsetY: 0,
-            background: 'transparent',
-            fontFamily: 'ui-sans-serif, system-ui, -apple-system, sans-serif',
-        },
-        plotOptions: {
-            radialBar: {
-                startAngle: -135,
-                endAngle: 135,
-                hollow: {
-                    margin: 0,
-                    size: '72%',
-                    background: '#ffffff',
-                    dropShadow: {
-                        enabled: true,
-                        top: 4,
-                        left: 0,
-                        blur: 10,
-                        opacity: 0.04
-                    }
-                },
-                track: {
-                    show: true,
-                    background: trackBackground,
-                    strokeWidth: '98%',
-                    margin: 0,
-                },
-                dataLabels: {
-                    showOn: 'always',
-                    name: {
-                        show: true,
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        color: '#64748b',
-                        offsetY: 25,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                    },
-                    value: {
-                        show: true,
-                        fontSize: '42px',
-                        fontWeight: '800',
-                        color: colorGradient, // S'aligne dynamiquement sur la couleur du résultat
-                        offsetY: -15,
-                        formatter: function () {
-                            // On affiche la valeur réelle multipliée par 100
-                            return tauxFinancier.toFixed(1) + "%";
-                        }
-                    }
-                }
-            }
-        },
-        fill: {
-            type: 'gradient',
-            gradient: {
-                shade: 'dark',
-                type: 'horizontal',
-                shadeIntensity: 0.4,
-                gradientToColors: [colorGradient], // Couleur d'arrivée dynamique
-                inverseColors: false,
-                opacityFrom: 1,
-                opacityTo: 1,
-                stops: [0, 100]
-            },
-            colors: [colorBase] // Couleur de départ dynamique
-        },
-        stroke: {
-            lineCap: 'round'
-        },
-        labels: ['Taux Financier'],
-        tooltip: {
-            enabled: true,
-            y: {
-                formatter: function () {
-                    return tauxFinancier.toFixed(2) + "%";
-                }
-            }
-        },
-        responsive: [{
-            breakpoint: 480,
-            options: {
-                chart: { height: 320 },
-                plotOptions: {
-                    radialBar: {
-                        dataLabels: {
-                            value: { fontSize: '32px' },
-                            name: { fontSize: '11px' }
-                        }
-                    }
-                }
-            }
-        }]
-    };
-    
-    // --- SÉCURITÉ ANTI-DUPLICATION ---
-    chartContainer.innerHTML = ''; 
-    // ---------------------------------
-
-    const chart = new ApexCharts(chartContainer, options);
-    chart.render();
-});
-</script>
+<!-- (remplacé) jauge dessinée par le module Liquid Morph : voir data-lm-jauge -->
 <script>
 async function getData() {
     const url = "/count_accountable_operation/";
@@ -5112,5 +4542,719 @@ document.addEventListener("DOMContentLoaded", getData);
         }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
     })();
 </script>
+
+<!-- ===================== LIQUID MORPH : verre liquide + transitions qui se déforment (ajout, placé en dernier) =====================
+     Principe : surfaces translucides (verre dépoli), formes très arrondies, et des éléments qui « coulent »
+     d'un endroit à l'autre (indicateur de la barre latérale, ouverture du menu des modules depuis son bouton).
+     Couleurs : 60 % neutre teinté par la dominante, 30 % dominante (navigation), 10 % accent (actions, page active).
+     Les couleurs de statut (vert / orange / rouge) ne dépendent jamais du thème. -->
+<style>
+    /* Les variables (--lm-*), le fond, la barre du haut et la forme de la barre latérale sont dans le bloc
+       « styles critiques » du <head> : ils ne sont pas répétés ici. */
+    #page-content > nav::after, #page-content > nav::before { display: none !important; }
+    #scroll-progress { background: var(--lm-acc) !important; height: 2px !important; }
+    #page-content > nav .modalOpen {                    /* bouton « modules » : pastille pleine, sans halo */
+        border-radius: 14px !important; box-shadow: none !important; transition: border-radius .35s var(--lm-ease), transform .2s !important;
+    }
+    #page-content > nav .modalOpen:hover { border-radius: 22px !important; }
+    #page-content > nav .shadow-inner { box-shadow: none !important; background: rgba(255, 255, 255, .55) !important; border-color: var(--lm-line) !important; }
+    @media (min-width: 768px) { #navProgressBar, #scroll-progress { left: 96px !important; } }
+
+    /* ---------- Barre latérale : indicateur liquide ---------- */
+    #iconSidebar nav { position: relative; }
+    #iconSidebar .sbx-item { z-index: 1; transition: color .2s !important; }
+    #iconSidebar .sbx-item:hover i { transform: none !important; }
+    #iconSidebar.lm-avec-blob nav .sbx-item:hover, #iconSidebar.lm-avec-blob nav .sbx-item:focus-visible { background: transparent !important; }
+    #iconSidebar.lm-avec-blob nav .sbx-item.sbx-active:hover { background: var(--lm-acc) !important; }
+    .lm-blob {
+        position: absolute; left: 50%; top: 0; z-index: 0; pointer-events: none; border-radius: 16px;
+        background: color-mix(in srgb, var(--lm-dom-ink) 12%, transparent); transform: translateX(-50%); opacity: 0;
+        transition: opacity .2s;
+    }
+    .lm-blob.on { opacity: 1; }
+    .sbx-tip { border-radius: 16px !important; background: var(--lm-glass-strong) !important; -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+               border: 1px solid var(--lm-edge) !important; box-shadow: var(--lm-shadow) !important; }
+    .sbx-tip::before { display: none !important; }
+
+    /* ---------- Cartes : surface claire, grands rayons, ombre neutre ----------
+       Pas de flou sur les cartes : sur un fond uni il n'apporte rien, et il créait un « calque » qui faisait passer
+       les menus déroulants SOUS la carte suivante. Les menus (éléments .absolute / .fixed) sont exclus. */
+    #page-content .bg-white.rounded-3xl:not(.absolute):not(.fixed), #page-content .bg-white.rounded-2xl:not(.absolute):not(.fixed),
+    #page-content .bg-white.rounded-\[2rem\]:not(.absolute):not(.fixed):not(header) {
+        background: rgba(255, 255, 255, .88) !important;
+        border: 1px solid var(--lm-edge) !important; border-radius: var(--lm-r) !important; box-shadow: var(--lm-shadow) !important;
+    }
+    html.sbx-dark #page-content .bg-white.rounded-3xl:not(.absolute):not(.fixed), html.sbx-dark #page-content .bg-white.rounded-2xl:not(.absolute):not(.fixed),
+    html.sbx-dark #page-content .bg-white.rounded-\[2rem\]:not(.absolute):not(.fixed):not(header) { background: rgba(24, 28, 37, .9) !important; }
+    /* ---------- Menus déroulants : toujours opaques et au-dessus de tout (plus de lettres mélangées) ---------- */
+    #profileMenu, #page-content .absolute.bg-white, #page-content nav .absolute, #userDropdown {
+        background: #ffffff !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+        border: 1px solid rgba(15, 23, 42, .08) !important; border-radius: 16px !important;
+        box-shadow: 0 18px 40px -16px rgba(15, 23, 42, .35), 0 2px 6px rgba(15, 23, 42, .06) !important; z-index: 1000 !important;
+    }
+    html.sbx-dark #profileMenu, html.sbx-dark #page-content .absolute.bg-white, html.sbx-dark #page-content nav .absolute {
+        background: #181c25 !important; border-color: rgba(255, 255, 255, .08) !important; }
+    /* Grandes cartes à la couleur dominante : aplat net, reflet d'arête discret, sans halo */
+    #page-content .rounded-3xl[style*="background"] {
+        border: 0 !important; border-radius: var(--lm-r) !important; -webkit-backdrop-filter: none; backdrop-filter: none;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), var(--lm-shadow) !important;
+    }
+    /* Ombres lourdes héritées : remplacées par l'élévation neutre */
+    #page-content .shadow-2xl, #page-content .shadow-xl { box-shadow: var(--lm-shadow) !important; }
+
+    /* ---------- Boutons flottants : verre, couleur du thème (plus d'indigo isolé) ---------- */
+    #openModalBtn, button[onclick*="theme-modal"].fixed, .fixed > button[onclick*="theme-modal"] {
+        background: var(--lm-glass-strong) !important; color: var(--lm-dom) !important; border: 1px solid var(--lm-edge) !important;
+        -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur); box-shadow: var(--lm-shadow) !important;
+        transition: border-radius .35s var(--lm-ease), transform .2s !important;
+    }
+    #openModalBtn:hover, button[onclick*="theme-modal"]:hover { border-radius: 20px !important; }
+    /* Pile de boutons flottants alignée : même colonne, même taille, sans chevauchement */
+    body > div.fixed.bottom-24.right-8 { right: 24px !important; bottom: 148px !important; }
+    #openModalBtn { position: relative; }
+    .fixed.bottom-6.right-6:has(> #openModalBtn) { bottom: 80px !important; right: 24px !important; }   /* un peu plus haut : ne colle plus au bord */
+    body > div.fixed.bottom-24.right-8 > button, #openModalBtn { width: 52px !important; height: 52px !important; }
+    #openModalBtn { margin: 0 !important; }
+    #openModalBtn:active, body > div.fixed.bottom-24.right-8 > button:active { transform: scale(.96); }
+    /* Sur ordinateur, « Couleurs » est déjà dans la barre latérale : le bouton flottant en double est masqué */
+    @media (min-width: 768px) { body > div.fixed.bottom-24.right-8 { display: none !important; } }
+
+    /* ---------- Fenêtres (modales) : verre plus dense ---------- */
+    #theme-modal > div, #modalTaches > div, #modalProcessus > div {
+        background: var(--lm-glass-strong) !important; -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+        border: 1px solid var(--lm-edge) !important; border-radius: 28px !important; box-shadow: 0 30px 80px -30px rgba(15, 23, 42, .45) !important;
+    }
+    #modalOverlay, #theme-modal { background: rgba(15, 23, 42, .28) !important; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+
+    /* =================== CONFIGURATION DU SUIVI (style ERP) =================== */
+    .lm-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .lm-suivi { width: 100%; max-width: 560px; background: #fff; border-radius: 28px; border: 1px solid var(--lm-edge);
+                box-shadow: 0 40px 90px -40px rgba(15, 23, 42, .55); overflow: hidden; }
+    .lm-suivi-tete { display: flex; align-items: flex-start; gap: 14px; padding: 24px 24px 8px; }
+    .lm-suivi-ic { width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+                   background: color-mix(in srgb, var(--lm-dom) 10%, #fff); color: var(--lm-dom); font-size: 16px; }
+    .lm-suivi-titres { flex: 1; min-width: 0; }
+    .lm-suivi-titres h2 { margin: 0; font-size: 1.15rem; font-weight: 800; letter-spacing: -.01em; color: var(--lm-ink); }
+    .lm-suivi-titres p { margin: 3px 0 0; font-size: 13px; line-height: 1.45; color: var(--lm-mute); }
+    .lm-suivi-x { width: 38px; height: 38px; border-radius: 50%; border: 0; background: rgba(15, 23, 42, .05); color: var(--lm-mute); cursor: pointer;
+                  transition: border-radius .4s var(--lm-ease), background-color .2s; }
+    .lm-suivi-x:hover { border-radius: 12px; background: rgba(15, 23, 42, .09); color: var(--lm-ink); }
+    .lm-scopes { position: relative; margin: 0; padding: 12px 16px 16px; border: 0; display: flex; flex-direction: column; gap: 4px; }
+    .lm-scope { position: relative; z-index: 1; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px; cursor: pointer;
+                transition: background-color .2s; }
+    .lm-scope:hover { background: rgba(15, 23, 42, .035); }
+    .lm-scope-glide { position: absolute; left: 16px; right: 16px; top: 0; z-index: 0; border-radius: 18px; pointer-events: none; opacity: 0;
+                      background: color-mix(in srgb, var(--lm-acc) 8%, #fff); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--lm-acc) 45%, #fff);
+                      transition: opacity .2s; }
+    .lm-scope-glide.on { opacity: 1; }
+    .lm-scope-ic { width: 44px; height: 44px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px;
+                   background: color-mix(in srgb, var(--t) 12%, #fff); color: var(--t); transition: border-radius .4s var(--lm-ease); }
+    .lm-scope:hover .lm-scope-ic, .lm-scope:has(input:checked) .lm-scope-ic { border-radius: 50%; }
+    .lm-scope-txt { flex: 1; min-width: 0; }
+    .lm-scope-txt b { display: block; font-size: 14.5px; font-weight: 700; color: var(--lm-ink); }
+    .lm-scope-txt small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--lm-mute); }
+    .lm-scope-actuel { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: rgba(15, 23, 42, .06); color: var(--lm-mute); }
+    .lm-scope-radio { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; border: 2px solid #cbd2dc; transition: border .2s, background-color .2s; }
+    .lm-scope input:checked ~ .lm-scope-radio { border: 6px solid var(--lm-acc); background: #fff; }
+    .lm-scope:has(input:focus-visible) { outline: 3px solid color-mix(in srgb, var(--lm-acc) 45%, transparent); outline-offset: 2px; }
+    .lm-suivi-pied { display: flex; align-items: center; gap: 10px; padding: 14px 24px; border-top: 1px solid var(--lm-line); background: rgba(15, 23, 42, .02); }
+    .lm-suivi-note { margin-right: auto; font-size: 12px; color: var(--lm-mute); display: inline-flex; align-items: center; gap: 6px; }
+    .lm-btn { height: 42px; padding: 0 18px; border-radius: 13px; border: 0; font-size: 13.5px; font-weight: 700; cursor: pointer;
+              transition: border-radius .4s var(--lm-ease), filter .2s, background-color .2s; }
+    .lm-btn:hover { border-radius: 21px; }
+    .lm-btn-s { background: transparent; color: var(--lm-mute); }
+    .lm-btn-s:hover { background: rgba(15, 23, 42, .05); color: var(--lm-ink); }
+    .lm-btn-p { background: var(--lm-acc); color: var(--lm-acc-ink); }
+    .lm-btn-p:hover { filter: brightness(1.06); }
+    @media (max-width: 640px) {
+        #modalOverlay { align-items: flex-end !important; padding: 0 !important; }
+        .lm-suivi { max-width: none; border-radius: 26px 26px 0 0; }
+        .lm-suivi-note { display: none; }
+        .lm-suivi-pied .lm-btn { flex: 1; }
+    }
+    html.sbx-dark .lm-suivi { background: #181c25; border-color: rgba(255, 255, 255, .07); }
+    html.sbx-dark .lm-scope-glide { background: color-mix(in srgb, var(--lm-acc) 14%, #181c25); }
+    html.sbx-dark .lm-scope-ic { background: color-mix(in srgb, var(--t) 22%, #181c25); }
+    html.sbx-dark .lm-suivi-ic { background: rgba(255, 255, 255, .06); color: #e2e8f0; }
+    html.sbx-dark .lm-scope-radio { border-color: #475569; }
+    html.sbx-dark .lm-scope[style*="--lm-dom"] .lm-scope-ic { color: #e2e8f0; }
+    html.sbx-dark .lm-scope input:checked ~ .lm-scope-radio { background: #181c25; }
+    html.lm-dom-clair .lm-scope[style*="--lm-dom"] .lm-scope-ic, html.lm-dom-clair .lm-suivi-ic { color: var(--lm-ink); }
+
+    /* =================== MENU DES MODULES =================== */
+    #modalMenu { background: rgba(15, 23, 42, .26) !important; -webkit-backdrop-filter: blur(14px) saturate(160%); backdrop-filter: blur(14px) saturate(160%); }
+    #modalMenu.hidden > div, #modalMenu:not(.hidden) > div { transform: none; }      /* la forme est animée par le script */
+    #modalMenu > div:not(.sbx-scroller) {
+        /* pas de flou sur la fenêtre elle-même (elle défile : Chrome dessinerait un liseré) ; le flou est porté par le voile derrière */
+        background: rgba(255, 255, 255, .93) !important;
+        border: 1px solid var(--lm-edge) !important; border-radius: 30px !important;
+        box-shadow: 0 40px 90px -40px rgba(15, 23, 42, .55) !important; transition: opacity .2s ease !important;
+    }
+    /* En-tête : intégré au verre, plus de bandeau sombre ni de ruban */
+    #modalMenu > div:not(.sbx-scroller) > div:first-child { background: transparent !important; padding: 26px 30px 10px !important; }
+    #modalMenu > div:not(.sbx-scroller) > div:first-child::before, #modalMenu > div:not(.sbx-scroller) > div:first-child::after { display: none !important; }
+    #modalMenu > div:not(.sbx-scroller) > div:first-child h3 { color: var(--lm-ink) !important; font-size: 1.5rem !important; }
+    #modalMenu > div:not(.sbx-scroller) > div:first-child p { color: var(--lm-mute) !important; opacity: 1 !important; letter-spacing: .08em !important; }
+    #modalMenu .sbx-menu-count { background: rgba(15, 23, 42, .06) !important; color: var(--lm-ink) !important; }
+    #modalMenu > div:not(.sbx-scroller) > div:first-child .modalClose {
+        background: rgba(15, 23, 42, .06) !important; color: var(--lm-ink) !important; border-radius: 50% !important;
+        transition: background .2s, border-radius .35s var(--lm-ease) !important;
+    }
+    #modalMenu > div:not(.sbx-scroller) > div:first-child .modalClose:hover { transform: none !important; background: rgba(15, 23, 42, .1) !important; border-radius: 14px !important; }
+    /* Grille et tuiles */
+    #modalMenu .grid { background: transparent !important; padding: 6px 30px 24px !important; gap: 12px !important; }
+    #modalMenu .sbx-group-title { color: var(--lm-mute) !important; letter-spacing: .06em !important; }
+    #modalMenu .sbx-group-title::after { background: var(--lm-line) !important; }
+    #modalMenu .grid > a {
+        opacity: 1 !important; transform: none !important;             /* plus d'apparition en cascade rebondissante */
+        background: rgba(255, 255, 255, .78) !important; border: 1px solid rgba(15, 23, 42, .06) !important; border-radius: 20px !important;
+        box-shadow: 0 1px 1px rgba(15, 23, 42, .04) !important; min-height: 84px !important; padding: 16px !important;
+        transition: background-color .25s, border-radius .4s var(--lm-ease), border-color .25s !important;
+    }
+    #modalMenu .grid > a:hover, #modalMenu .grid > a:focus-visible {
+        background: color-mix(in srgb, var(--t, var(--lm-dom)) 9%, #fff) !important; border-color: color-mix(in srgb, var(--t, var(--lm-dom)) 22%, #fff) !important;
+        border-radius: 28px !important; box-shadow: 0 1px 1px rgba(15, 23, 42, .04) !important; transform: none !important;
+    }
+    #modalMenu .grid > a > div:first-child {
+        background: color-mix(in srgb, var(--t, var(--lm-dom)) 13%, #fff) !important; background-image: none !important; color: var(--t, var(--lm-dom)) !important;
+        border: 0 !important; box-shadow: none !important; border-radius: 15px !important; transition: border-radius .4s var(--lm-ease) !important;
+    }
+    #modalMenu .grid > a:hover > div:first-child { transform: none !important; border-radius: 50% !important; }
+    #modalMenu .grid > a h4 { color: var(--lm-ink) !important; }
+    #modalMenu .grid > a p { color: var(--lm-mute) !important; font-weight: 600 !important; }
+    #modalMenu .sbx-wm, #modalMenu .sbx-go { display: none !important; }
+    /* Options avancées */
+    #modalMenu > div:not(.sbx-scroller) > div:nth-child(3) .text-slate-400 { color: var(--lm-mute) !important; }
+    #modalMenu .col-span-2.mx-2 { background: rgba(15, 23, 42, .035) !important; border: 0 !important; box-shadow: none !important; }
+    #modalMenu .col-span-2.mx-2 a { background: rgba(255, 255, 255, .7) !important; border: 1px solid var(--lm-edge) !important; box-shadow: none !important;
+                                     transition: border-radius .4s var(--lm-ease), background-color .2s !important; }
+    #modalMenu .col-span-2.mx-2 a:hover { transform: none !important; box-shadow: none !important; border-radius: 22px !important; background: #fff !important; }
+    #modalMenu .sbx-scroller.down::before { background: linear-gradient(to top, var(--lm-glass-strong) 35%, transparent) !important; }
+
+    /* ---------- Menu des modules sur téléphone : feuille qui monte du bas ---------- */
+    @media (max-width: 640px) {
+        #modalMenu { align-items: flex-end !important; padding: 0 !important; }
+        #modalMenu > div:not(.sbx-scroller) { max-width: 100% !important; width: 100% !important; max-height: 90vh !important; border-radius: 28px 28px 0 0 !important; border-bottom: 0 !important; }
+        #modalMenu > div:not(.sbx-scroller) > div:first-child { padding: 12px 20px 6px !important; }
+        #modalMenu > div:not(.sbx-scroller) > div:first-child::before {                /* poignée */
+            display: block !important; content: ""; position: absolute; left: 50%; top: 8px; width: 40px; height: 5px; margin-left: -20px;
+            border-radius: 3px; background: rgba(15, 23, 42, .18); transform: none; opacity: 1; right: auto; }
+        #modalMenu > div:not(.sbx-scroller) > div:first-child h3 { font-size: 1.25rem !important; margin-top: 10px !important; }
+        #modalMenu .grid { grid-template-columns: 1fr 1fr !important; padding: 4px 16px 18px !important; gap: 10px !important; }
+        #modalMenu .grid:not(.col-span-2) > a {                      /* tuile verticale : le nom entier reste lisible */
+            flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; min-height: 0 !important; padding: 14px !important; }
+        #modalMenu .grid:not(.col-span-2) > a > div:first-child { width: 42px !important; height: 42px !important; border-radius: 13px !important; }
+        #modalMenu .grid:not(.col-span-2) > a > div:last-of-type, #modalMenu .grid:not(.col-span-2) > a .overflow-hidden { width: 100%; min-width: 0; }
+        #modalMenu .grid:not(.col-span-2) > a h4 { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; font-size: .95rem !important; line-height: 1.2 !important; padding-right: 22px; }
+        #modalMenu .grid:not(.col-span-2) > a p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; letter-spacing: .04em !important; }
+        #modalMenu .grid > a .sbx-star { top: 10px !important; right: 10px !important; }
+        #modalMenu .sbx-group-title { margin: 10px 2px 0 !important; font-size: 11px !important; }
+        #modalMenu > div:not(.sbx-scroller) > div:nth-child(3) { margin: 0 16px !important; }
+        #modalMenu .col-span-2.mx-2 { grid-template-columns: 1fr !important; margin: 0 16px 20px !important; gap: 6px !important; }
+        #modalMenu .col-span-2.mx-2 > a { min-height: 0 !important; padding: 10px 12px !important; }
+        #modalMenu .col-span-2.mx-2 h4 { white-space: normal !important; }
+        #modalMenu .col-span-2.mx-2 p { display: block !important; }
+    }
+
+
+    /* =================== DENSITÉ : moins d'espace perdu sur le tableau de bord =================== */
+    #page-content > nav .h-20 { height: 64px !important; }
+    #page-content > div.space-y-8 { padding-top: 14px !important; }
+    #page-content > div.space-y-8 > :not([hidden]) ~ :not([hidden]) { margin-top: 18px !important; }
+    #page-content .relative.w-full.lg\:col-span-2.pt-6 { padding-top: 0 !important; }        /* décalage hérité des fausses cartes empilées */
+    #page-content .min-h-\[400px\] { min-height: 340px !important; padding: 24px !important; }
+    /* « Tableau de bord des Gestionnaires » : un titre de section, pas une carte vide */
+    #page-content section.rounded-\[2rem\].bg-slate-50 { padding: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; }
+    #page-content section.rounded-\[2rem\].bg-slate-50 > .mb-8 { margin-bottom: 12px !important; }
+    #page-content section.rounded-\[2rem\].bg-slate-50 h2 { font-size: 1.15rem !important; color: var(--lm-ink) !important; }   /* était blanc sur blanc (text-slate-100) */
+    #page-content section.rounded-\[2rem\].bg-slate-50 .grid.gap-6 { gap: 14px !important; }
+    /* Gantt : marges intérieures normales (avant : 56 px en haut et en bas) */
+    #page-content section.op-gantt { padding: 22px !important; }
+    #page-content section.op-gantt > * + * { margin-top: 16px !important; }
+    /* Chaîne de résultats : cadre fin, même style que les autres cartes */
+    #page-content div.border-gray-900.rounded-xl { border-color: var(--lm-line) !important; border-radius: var(--lm-r) !important; box-shadow: var(--lm-shadow) !important; }
+    #page-content div.border-gray-900.rounded-xl > div:first-child { padding: 14px 20px !important; }
+    #page-content div.border-gray-900.rounded-xl > .p-6 { padding: 14px !important; }
+    #localDiagram, #myDiagramDiv { border-width: 1px !important; border-radius: 16px !important; border-color: var(--lm-line) !important; }
+    #localDiagram { height: 440px !important; margin-top: 0 !important; }
+
+    /* =================== INDICATEURS DE PERFORMANCE OPÉRATIONNELLE =================== */
+    /* Bandeau à la couleur dominante, tuiles de verre, une teinte de statut par indicateur */
+    #page-content header.rounded-\[2rem\] {
+        background: var(--lm-dom) !important; color: var(--lm-dom-ink) !important;
+        border: 0 !important; border-radius: var(--lm-r) !important; padding: 20px 22px !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), var(--lm-shadow) !important;
+    }
+    #page-content header.rounded-\[2rem\] { top: 0 !important; }   /* « top-4 » le décalait de 16 px vers le bas, sur le bloc suivant */
+    #page-content header.rounded-\[2rem\] > svg { display: none !important; }                 /* réseau décoratif retiré */
+    #page-content header.rounded-\[2rem\] :is(h2, p, span) { color: inherit !important; }
+    #page-content header.rounded-\[2rem\] h2 { font-size: 1.05rem !important; }
+    #page-content header.rounded-\[2rem\] h2 > span:first-child { display: none !important; }
+    #page-content header.rounded-\[2rem\] h2 + p { opacity: .68; }
+    #page-content header.rounded-\[2rem\] .mb-6 { margin-bottom: 16px !important; }
+    /* Avancement */
+    #page-content header.rounded-\[2rem\] .sm\:w-48 span:first-child { opacity: .6; }
+    #page-content header.rounded-\[2rem\] .sm\:w-48 span:last-child { color: var(--lm-dom-ink) !important; font-size: 13px !important; }
+    #page-content header.rounded-\[2rem\] .sm\:w-48 .h-2 { height: 8px !important; border: 0 !important; background: color-mix(in srgb, var(--lm-dom-ink) 16%, transparent) !important; }
+    #page-content header.rounded-\[2rem\] .sm\:w-48 .h-2 > div { background: var(--lm-acc) !important; background-image: none !important; box-shadow: none !important; }
+    /* Tuiles */
+    #page-content header.rounded-\[2rem\] .grid { gap: 10px !important; }
+    #page-content header.rounded-\[2rem\] .grid > a {
+        --k: color-mix(in srgb, var(--lm-dom-ink) 18%, transparent);
+        display: flex !important; border: 1px solid color-mix(in srgb, var(--lm-dom-ink) 12%, transparent) !important;
+        background: color-mix(in srgb, var(--lm-dom-ink) 7%, transparent) !important; border-radius: 18px !important;
+        padding: 10px 12px !important; box-shadow: none !important; transition: background-color .25s, border-radius .4s var(--lm-ease) !important;
+    }
+    #page-content header.rounded-\[2rem\] .grid > a:hover { background: color-mix(in srgb, var(--lm-dom-ink) 13%, transparent) !important; border-radius: 26px !important; }
+    #page-content header.rounded-\[2rem\] .grid > a > div:first-child {
+        width: 40px !important; height: 40px !important; border-radius: 13px !important; background: var(--k) !important; color: #fff !important;
+        transition: border-radius .4s var(--lm-ease) !important;
+    }
+    #page-content header.rounded-\[2rem\] .grid > a:hover > div:first-child { border-radius: 50% !important; }
+    #page-content header.rounded-\[2rem\] .grid > a span:first-child { font-size: 13.5px !important; }
+    #page-content header.rounded-\[2rem\] .grid > a span:last-child { opacity: .62; letter-spacing: .04em !important; }
+    #page-content header.rounded-\[2rem\] a[href="/tache-effectuee/"] { --k: #4F7BE8; }   /* statuts : teintes fixes, indépendantes du thème */
+    #page-content header.rounded-\[2rem\] a[href="/tache-Attente/"]   { --k: var(--sbx-warn, #E48B0C); }
+    #page-content header.rounded-\[2rem\] a[href="/tache-valide/"]    { --k: var(--sbx-ok, #2A8A7D); }
+    #page-content header.rounded-\[2rem\] a[href="/tache-retards/"]   { --k: var(--sbx-danger, #E35A33); }
+    #page-content header.rounded-\[2rem\] a[href="/tache-archive/"] > div:first-child { color: var(--lm-dom-ink) !important; }
+    #page-content header.rounded-\[2rem\] a[href="/tache-Attente/"] .animate-spin { animation: none !important; }   /* plus d'icône qui tourne en permanence */
+    @media (max-width: 767px) {
+        #page-content header.rounded-\[2rem\] { padding: 16px !important; }
+        #page-content header.rounded-\[2rem\] .grid { grid-template-columns: 1fr 1fr !important; }
+        #page-content header.rounded-\[2rem\] .grid > a:last-child { grid-column: 1 / -1; }
+    }
+    html.sbx-dark #page-content header.rounded-\[2rem\] { background: color-mix(in srgb, var(--lm-dom) 70%, #0d1017) !important; }
+
+
+    /* =================== BAROMÈTRE « TAUX D'EXÉCUTION DÉCLARÉ » =================== */
+    #page-content > div.space-y-8 > header.rounded-\[2rem\] + .grid { margin-top: 32px !important; }   /* plus d'air sous le bandeau des indicateurs */
+    .lm-jauge { width: 100%; max-width: 360px; margin: 0 auto; position: relative; font-variant-numeric: tabular-nums; }
+    /* Carte étroite (baromètre « déclaré ») : la jauge occupe toute la largeur et la hauteur disponibles */
+    #page-content .grid.lg\:grid-cols-3 > div:has([data-lm-jauge]:not([data-lm-style])) { display: flex !important; flex-direction: column !important; }
+    [data-lm-jauge]:not([data-lm-style]) { flex: 1 1 auto; max-width: none !important; margin-top: 8px !important; }
+    .lm-jauge svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .lm-jauge .zone { fill: none; stroke-width: 12; stroke-opacity: .16; }
+    .lm-jauge .val { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dasharray .9s var(--lm-ease), stroke .3s; }
+    .lm-jauge .tic { stroke: var(--lm-ink); stroke-opacity: .35; stroke-width: 1.5; }
+    .lm-jauge .tic-l { fill: var(--lm-mute); font-size: 9px; font-weight: 600; }
+    .lm-jauge-centre { position: absolute; left: 0; right: 0; top: 40%; text-align: center; }
+    .lm-jauge-centre b { display: block; font-size: 48px; font-weight: 800; letter-spacing: -.03em; line-height: 1; color: var(--lm-ink); }
+    .lm-jauge-centre b small { font-size: 18px; font-weight: 700; margin-left: 2px; color: var(--lm-mute); }
+    .lm-jauge-etat { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700;
+                     color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); }
+    .lm-jauge-etat::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
+    .lm-jauge-titre { display: block; margin-top: 6px; font-size: 11.5px; color: var(--lm-mute); }
+    /* Style « cadran » : demi-cercle à segments pleins, graduations, aiguille effilée, moyeu étoilé */
+    .lm-jauge.cadran { max-width: 480px; }
+    .lm-jauge-dessin { position: relative; }
+    .lm-jauge.cadran .seg { fill: none; stroke-width: 30; }
+    .lm-jauge.cadran .graduation { stroke: currentColor; stroke-opacity: .35; stroke-width: 1.5; stroke-linecap: round; }
+    .lm-jauge .pivot { transform-box: view-box; transform-origin: 120px 118px; transform: rotate(0deg); transition: transform 1.1s var(--lm-ease); }
+    .lm-jauge.cadran .pivot { transform-origin: 130px 128px; }
+    .lm-jauge.cadran .aiguille { fill: currentColor; }
+    .lm-jauge .repere line { stroke: currentColor; stroke-width: 3; stroke-linecap: round; }
+    .lm-jauge .repere path { fill: currentColor; }
+    .lm-jauge:not(.cadran) .repere { color: var(--lm-ink); }
+    .lm-jauge.cadran .moyeu { fill: var(--lm-ink); stroke: var(--lm-canvas); stroke-width: 3; transition: fill .4s; }
+    .lm-fonce .lm-jauge.cadran .moyeu { stroke: var(--lm-dom); }
+    .lm-jauge.cadran .etoile { fill: #fff; }
+    .lm-jauge.cadran .lm-jauge-centre { position: static; margin-top: 8px; }
+    .lm-jauge.cadran .lm-jauge-centre b { font-size: 44px; }
+    .lm-jauge.cadran .lm-jauge-etat { font-size: 13px; padding: 4px 12px; }
+    .lm-jauge.cadran .lm-jauge-leg li { font-size: 12px; }
+    [data-lm-style="cadran"] { min-height: 320px !important; }
+    @media (prefers-reduced-motion: reduce) { .lm-jauge.cadran .aiguille { transition: none; } }
+    /* Colonne d'informations : légende + repère, écart, heure de mise à jour */
+    .lm-jauge-cote { display: flex; flex-direction: column; gap: 14px; }
+    .lm-jauge-infos { margin: 4px 0 0; display: grid; gap: 8px; }
+    .lm-jauge-infos > div { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; font-size: 12.5px; }
+    .lm-jauge-infos > div[hidden] { display: none; }
+    .lm-jauge-infos dt { opacity: .7; display: inline-flex; align-items: center; gap: 7px; }
+    .lm-jauge-infos dd { margin: 0; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .lm-jauge-infos .e.alerte dd { color: var(--sbx-warn, #E48B0C); }
+    .lm-tri { width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 8px solid currentColor; }
+    .lm-jauge .lm-jauge-infos { color: var(--lm-ink); }
+    .lm-fonce .lm-jauge .lm-jauge-infos { color: currentColor; }
+    .lm-jauge-infos:has(> div:not([hidden])) { padding-top: 12px; border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+    /* Raccourcis d'action sous le baromètre (partials/actions_suivi.html) */
+    .lm-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+    .lm-actions a { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 16px; text-decoration: none !important; color: inherit !important;
+                    background: color-mix(in srgb, currentColor 7%, transparent); border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+                    transition: background-color .25s, border-radius .4s var(--lm-ease); }
+    .lm-actions a:hover { background: color-mix(in srgb, currentColor 13%, transparent); border-radius: 24px; }
+    .lm-actions b { font-size: 22px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; }
+    .lm-actions b::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+    .lm-actions span { font-size: 12px; opacity: .7; }
+    #page-content .rounded-3xl[style*="background"] .lm-actions { color: var(--lm-dom-ink); }
+    /* Légende générée par la jauge elle-même (toujours juste) ; les anciennes légendes fixes sont masquées */
+    .lm-jauge-leg { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin: 6px 0 0; padding: 0; list-style: none; }
+    .lm-jauge-leg li { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--lm-mute); }
+    .lm-jauge-leg li::before { content: ""; width: 8px; height: 8px; border-radius: 3px; background: var(--c); }
+    .lm-jauge-leg em { font-style: normal; font-weight: 500; opacity: .75; }
+    .lm-fonce .lm-jauge-leg li { color: currentColor; opacity: .8; }
+    .lm-jauge-leg li.actif { opacity: 1; font-weight: 800; color: var(--lm-ink); }
+    .lm-fonce .lm-jauge-leg li.actif { color: currentColor; }
+    /* Légende juste à côté du baromètre dès que la carte est assez large (sinon, en dessous) */
+    [data-lm-jauge] { container-type: inline-size; }
+    @container (min-width: 520px) {
+        .lm-jauge { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 28px; align-items: center; max-width: 520px; }
+        .lm-jauge.cadran { max-width: 780px; grid-template-columns: minmax(0, 480px) auto; justify-content: center; }
+        .lm-jauge > .lm-jauge-dessin { grid-column: 1; grid-row: 1; }
+        .lm-jauge > .lm-jauge-centre { grid-column: 1; grid-row: 2; }
+        .lm-jauge > .lm-jauge-cote { grid-column: 2; grid-row: 1 / span 2; min-width: 200px; padding-left: 22px; border-left: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+        .lm-jauge-cote .lm-jauge-leg { flex-direction: column; align-items: flex-start; gap: 12px; margin: 0; }
+        .lm-jauge-leg li { font-size: 13px !important; }
+        .lm-jauge-leg em { display: block; margin-left: auto; padding-left: 10px; }
+        .lm-jauge-leg li { width: 100%; }
+    }
+    #page-content .grid.lg\:grid-cols-3 div.mt-4.pt-3.border-t, #page-content .grid.lg\:grid-cols-3 footer.pt-6.border-t { display: none !important; }
+    [data-lm-jauge] { height: auto !important; min-height: 230px; display: flex; align-items: center; justify-content: center; }
+    /* Sur une carte à la couleur dominante : texte à la couleur lisible sur la dominante */
+    .lm-fonce .lm-jauge { color: var(--lm-dom-ink); }
+    .lm-fonce .lm-jauge .zone { stroke-opacity: .32; }
+    .lm-fonce .lm-jauge .tic { stroke: currentColor; stroke-opacity: .5; }
+    .lm-fonce .lm-jauge .tic-l, .lm-fonce .lm-jauge-titre { fill: currentColor; color: currentColor; opacity: .7; }
+    .lm-fonce .lm-jauge-centre b, .lm-fonce .lm-jauge-centre b small { color: currentColor; }
+    .lm-fonce .lm-jauge-etat { color: currentColor; background: color-mix(in srgb, currentColor 12%, transparent); }
+    /* Conteneur de la grande carte : plus de cadre « verre » dans le verre */
+    #page-content .rounded-3xl[style*="background"] .rounded-2xl.bg-white\/5 { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+    @media (prefers-reduced-motion: reduce) { .lm-jauge .val { transition: none; } }
+
+    /* =================== CENTRE DE NOTIFICATIONS =================== */
+    .lm-notif { position: relative; }
+    .lm-notif-btn { position: relative; width: 44px; height: 44px; border-radius: 14px; border: 1px solid var(--lm-line); background: rgba(255, 255, 255, .7);
+                    color: var(--lm-ink); display: grid; place-items: center; cursor: pointer; font-size: 16px;
+                    transition: border-radius .4s var(--lm-ease), background-color .2s; }
+    .lm-notif-btn:hover, .lm-notif-btn[aria-expanded="true"] { border-radius: 22px; background: #fff; }
+    .lm-notif-pastille { position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px;
+                         background: var(--sbx-danger, #E35A33); color: #fff; font-size: 11px; font-weight: 800; line-height: 20px; text-align: center;
+                         box-shadow: 0 0 0 2px var(--lm-canvas); }
+    .lm-notif-pastille[hidden] { display: none; }
+    .lm-notif-panneau { position: absolute; right: 0; top: calc(100% + 10px); width: 360px; z-index: 1000; background: #fff; color: var(--lm-ink);
+                        border: 1px solid rgba(15, 23, 42, .08); border-radius: 20px; box-shadow: 0 24px 50px -20px rgba(15, 23, 42, .4), 0 2px 6px rgba(15, 23, 42, .06);
+                        overflow: hidden; transform-origin: top right; animation: lm-notif-in .22s var(--lm-ease); }
+    .lm-notif-panneau[hidden] { display: none; }
+    @keyframes lm-notif-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
+    .lm-notif-panneau header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 16px 18px 10px; }
+    .lm-notif-panneau header b { font-size: 15px; font-weight: 800; }
+    .lm-notif-panneau header span { font-size: 12px; color: var(--lm-mute); }
+    .lm-notif-liste { padding: 0 8px; display: flex; flex-direction: column; gap: 2px; }
+    .lm-notif-ligne { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 14px; text-decoration: none !important; color: inherit !important;
+                      transition: background-color .2s; }
+    .lm-notif-ligne[hidden] { display: none; }
+    .lm-notif-ligne:hover, .lm-notif-ligne:focus-visible { background: rgba(15, 23, 42, .04); }
+    .lm-notif-ligne .ic { width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; font-size: 14px;
+                          background: color-mix(in srgb, var(--t) 13%, #fff); color: var(--t); transition: border-radius .4s var(--lm-ease); }
+    .lm-notif-ligne:hover .ic { border-radius: 50%; }
+    .lm-notif-ligne .tx { flex: 1; min-width: 0; }
+    .lm-notif-ligne b { display: block; font-size: 13.5px; font-weight: 700; }
+    .lm-notif-ligne small { display: block; font-size: 12px; color: var(--lm-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lm-notif-ligne .nb { min-width: 28px; height: 24px; padding: 0 8px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 800;
+                          background: color-mix(in srgb, var(--t) 13%, #fff); color: var(--t); font-variant-numeric: tabular-nums; }
+    .lm-notif-vide { display: none; margin: 4px 18px 14px; padding: 14px; border-radius: 14px; background: rgba(15, 23, 42, .03); font-size: 13px; color: var(--lm-mute);
+                     align-items: center; gap: 10px; }
+    .lm-notif-vide i { color: var(--sbx-ok, #2A8A7D); }
+    .lm-notif.vide .lm-notif-vide { display: flex; }
+    .lm-notif-panneau footer { margin-top: 8px; padding: 12px 18px; border-top: 1px solid var(--lm-line); }
+    .lm-notif-panneau footer a { font-size: 13px; font-weight: 700; color: var(--lm-ink) !important; text-decoration: none !important; display: inline-flex; gap: 8px; align-items: center; }
+    @media (max-width: 640px) {
+        .lm-notif-panneau { position: fixed; left: 12px; right: 12px; top: 76px; width: auto; }
+    }
+    html.sbx-dark .lm-notif-btn { background: rgba(255, 255, 255, .06); color: #e2e8f0; }
+    html.sbx-dark .lm-notif-panneau { background: #181c25; border-color: rgba(255, 255, 255, .08); color: #e2e8f0; }
+    html.sbx-dark .lm-notif-ligne .ic, html.sbx-dark .lm-notif-ligne .nb { background: color-mix(in srgb, var(--t) 22%, #181c25); }
+    html.sbx-dark .lm-notif-panneau footer a { color: #e2e8f0 !important; }
+
+    /* ---------- Agencement des couleurs : la couleur de l'utilisateur n'est utilisée comme texte que si elle reste lisible ---------- */
+    html.sbx-light-dom .op-ws-txt span, html.sbx-light-dom .op-ws-txt h1, html.lm-dom-clair .op-ws-txt span, html.lm-dom-clair .op-ws-txt h1 { color: var(--lm-ink) !important; }
+    html.lm-dom-clair #openModalBtn, html.lm-dom-clair button[onclick*="theme-modal"] { color: var(--lm-ink) !important; }
+    html.lm-dom-clair .op-ws-ini { color: var(--lm-ink) !important; }
+
+    /* ---------- Sombre ---------- */
+    html.sbx-dark {
+        --lm-canvas: color-mix(in srgb, var(--lm-dom) 10%, #0d1017); --lm-glass: rgba(24, 28, 37, .72); --lm-glass-strong: rgba(24, 28, 37, .88);
+        --lm-edge: rgba(255, 255, 255, .07); --lm-line: rgba(255, 255, 255, .07); --lm-ink: #f1f5f9; --lm-mute: #94a3b8;
+    }
+    html.sbx-dark #modalMenu > div:not(.sbx-scroller) { background-color: rgba(24, 28, 37, .95) !important; }
+    html.sbx-dark #modalMenu .grid:not(.col-span-2) { background: transparent !important; }
+    html.sbx-dark #modalMenu .col-span-2.mx-2 { background: rgba(255, 255, 255, .03) !important; }
+    html.sbx-dark #openModalBtn, html.sbx-dark button[onclick*="theme-modal"] { color: #e2e8f0 !important; }
+    html.sbx-dark .op-ws-txt span, html.sbx-dark .op-ws-txt h1 { color: #f1f5f9 !important; }
+    html.sbx-dark #modalMenu .grid > a, html.sbx-dark #modalMenu .col-span-2.mx-2 a { background: rgba(255, 255, 255, .04) !important; border-color: rgba(255, 255, 255, .06) !important; }
+    html.sbx-dark #modalMenu .grid > a:hover { background: color-mix(in srgb, var(--t, var(--lm-dom)) 18%, #181c25) !important; }
+    html.sbx-dark #modalMenu > div:not(.sbx-scroller) > div:first-child .modalClose, html.sbx-dark #modalMenu .sbx-menu-count { background: rgba(255, 255, 255, .08) !important; }
+
+    /* ---------- Mouvement réduit, impression, navigateurs sans flou ---------- */
+    @media (prefers-reduced-motion: reduce) { .lm-blob, #modalMenu .grid > a, #modalMenu .grid > a > div:first-child { transition: none !important; } }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        :root { --lm-glass: #fff; --lm-glass-strong: #fff; }
+    }
+    @media print { #page-content > nav, #page-content .bg-white.rounded-3xl, #page-content .bg-white.rounded-2xl { -webkit-backdrop-filter: none; backdrop-filter: none; background: #fff !important; } }
+</style>
+<script>
+    /* ===== Liquid Morph : mouvements (ajout) ===== */
+    (function () {
+        var doux = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var EASE = 'cubic-bezier(.22, 1, .36, 1)';
+
+        /* Mouvement liquide commun : l'élément s'étire pour couvrir l'ancienne et la nouvelle position, puis se resserre */
+        function couler(el, de, vers, x) {
+            var T = function (y) { return 'translate(' + x + ',' + y + 'px)'; };
+            if (de && !doux && el.animate) {
+                var haut = Math.min(de.top, vers.top), bas = Math.max(de.top + de.h, vers.top + vers.h);
+                el.animate([{ transform: T(de.top), height: de.h + 'px' },
+                            { transform: T(haut), height: (bas - haut) + 'px', offset: .45 },
+                            { transform: T(vers.top), height: vers.h + 'px' }], { duration: 420, easing: EASE });
+            }
+            el.style.transform = T(vers.top); el.style.height = vers.h + 'px';
+        }
+        function cadre(el) { return { top: el.offsetTop, h: el.offsetHeight, w: el.offsetWidth }; }
+
+        /* 1. Indicateur liquide de la barre latérale : au survol, il coule d'une icône à l'autre */
+        function brancherBlob() {
+            var side = document.getElementById('iconSidebar'), nav = side && side.querySelector('nav');
+            if (!nav || nav.querySelector('.lm-blob')) return;
+            var blob = document.createElement('span'); blob.className = 'lm-blob'; nav.prepend(blob);
+            side.classList.add('lm-avec-blob'); var pos = null;
+            function aller(el) {
+                if (!el) { blob.classList.remove('on'); pos = null; return; }
+                var c = cadre(el); blob.style.width = c.w + 'px'; blob.classList.add('on');
+                couler(blob, pos, c, '-50%'); pos = c;
+            }
+            nav.addEventListener('mouseover', function (e) { var it = e.target.closest('.sbx-item'); if (it && nav.contains(it)) aller(it); });
+            nav.addEventListener('focusin', function (e) { var it = e.target.closest('.sbx-item'); if (it) aller(it); });
+            nav.addEventListener('mouseleave', function () { aller(null); });
+            nav.addEventListener('focusout', function (e) { if (!nav.contains(e.relatedTarget)) aller(null); });
+        }
+
+        /* 4. Configuration du suivi : la sélection coule d'une option à l'autre */
+        function brancherSuivi() {
+            var m = document.getElementById('modalOverlay'), liste = m && m.querySelector('.lm-scopes'), glide = liste && liste.querySelector('.lm-scope-glide');
+            if (!glide) return;
+            var pos = null;
+            function placer(anime) {
+                var r = liste.querySelector('input:checked'); if (!r) { glide.classList.remove('on'); pos = null; return; }
+                var c = cadre(r.closest('.lm-scope')); glide.classList.add('on');
+                couler(glide, anime ? pos : null, c, '0'); pos = c;
+            }
+            liste.addEventListener('change', function () { placer(true); });
+            new MutationObserver(function () { if (!m.classList.contains('hidden')) requestAnimationFrame(function () { placer(false); }); })
+                .observe(m, { attributes: true, attributeFilter: ['class'] });
+            window.addEventListener('resize', function () { if (!m.classList.contains('hidden')) placer(false); });
+        }
+
+        /* 2. Menu des modules : la fenêtre « naît » du bouton cliqué et y retourne à la fermeture */
+        function brancherMenu() {
+            var m = document.getElementById('modalMenu'), box = m && m.querySelector(':scope > div:not(.sbx-scroller)');
+            if (!box || !box.animate) return;
+            var source = null;
+            document.addEventListener('click', function (e) { var b = e.target.closest('.modalOpen'); if (b) source = b.getBoundingClientRect(); }, true);
+            function forme(r) {                                  /* rectangle du bouton exprimé dans le repère de la fenêtre */
+                var f = box.getBoundingClientRect();
+                if (!r || !f.width) return 'inset(45% 45% 45% 45% round 30px)';
+                var t = Math.max(0, r.top - f.top), l = Math.max(0, r.left - f.left), b = Math.max(0, f.bottom - r.bottom), d = Math.max(0, f.right - r.right);
+                return 'inset(' + t + 'px ' + d + 'px ' + b + 'px ' + l + 'px round 16px)';
+            }
+            var ouvert = !m.classList.contains('hidden');
+            new MutationObserver(function () {
+                var maintenant = !m.classList.contains('hidden');
+                if (maintenant === ouvert) return; ouvert = maintenant;
+                if (doux) return;
+                if (maintenant) {
+                    requestAnimationFrame(function () {
+                        box.animate([{ clipPath: forme(source), opacity: .4 }, { clipPath: 'inset(0px 0px 0px 0px round 30px)', opacity: 1 }],
+                                    { duration: 520, easing: EASE });
+                    });
+                } else {
+                    box.animate([{ clipPath: 'inset(0px 0px 0px 0px round 30px)', opacity: 1 }, { clipPath: forme(source), opacity: 0 }],
+                                { duration: 260, easing: 'cubic-bezier(.4, 0, 1, 1)' });
+                }
+            }).observe(m, { attributes: true, attributeFilter: ['class'] });
+        }
+
+        /* 3. Lisibilité : si la couleur de navigation est claire (jaune, argent…), elle n'est plus utilisée comme couleur de texte */
+        function verifierContraste() {
+            var c = getComputedStyle(document.documentElement).getPropertyValue('--nav-bg-color').trim();
+            var m = c.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i); if (!m) return;
+            var h = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1];
+            var l = [0, 2, 4].map(function (i) { var v = parseInt(h.substr(i, 2), 16) / 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+            document.documentElement.classList.toggle('lm-dom-clair', .2126 * l[0] + .7152 * l[1] + .0722 * l[2] > .45);
+        }
+
+
+        /* 5. Baromètres (SVG, sans bibliothèque) ----------------------------------------------------------
+           Chaque jauge est décrite dans le HTML par des attributs ; aucun script n'est à écrire par jauge :
+             data-lm-jauge="valide_physique"   profil (zones et libellés, voir PROFILS ci-dessous)
+             data-source="/api/…/"             adresse JSON qui renvoie { data: valeur } (facultatif)
+             data-valeur="0,42"                valeur fixe fournie par le gabarit (facultatif)
+             data-echelle="100"                multiplicateur (ex. 0,42 -> 42 %)
+             data-rafraichir="5000"            relecture de la source toutes les N ms (facultatif)
+             data-fonce                        jauge posée sur une carte à la couleur dominante
+             data-titre="…"                    libellé sous la valeur (sinon celui du profil)
+             data-lm-style="cadran"            style « cadran » (segments, graduations, aiguille) au lieu de l'arc
+             data-repere-source / -valeur / -echelle / -libelle   valeur de comparaison (ex. taux déclaré) : repère sur le cadran + écart
+           Pour une nouvelle jauge : ajouter ces attributs sur un <div>. Pour d'autres seuils : ajouter un profil. */
+        var C = { danger: 'var(--sbx-danger, #E35A33)', warn: 'var(--sbx-warn, #E48B0C)', ok: 'var(--sbx-ok, #2A8A7D)', info: '#4F7BE8', moyen: '#C9A227' };
+        var PROFILS = {   /* [limite haute de la zone, nom, couleur] — reprend les seuils de vos anciens graphiques */
+            declare_physique:  { titre: 'Exécution physique déclarée',  zones: [[50, 'Critique', C.danger], [85, 'Moyen', C.warn], [100, 'Optimal', C.ok]] },
+            declare_financier: { titre: 'Exécution financière déclarée', zones: [[50, 'Critique', C.danger], [80, 'Moyen', C.warn], [100, 'Optimal', C.ok]] },
+            valide_physique:   { titre: 'Exécution physique validée',   zones: [[50, 'Critique', C.danger], [60, 'Alerte', C.warn], [70, 'Cible', C.ok], [100, 'Objectif', C.info]] },
+            valide_financier:  { titre: 'Exécution financière validée', zones: [[20, 'Critique', C.danger], [40, 'Faible', C.warn], [80, 'Moyen', C.moyen], [100, 'Excellent', C.ok]] }
+        };
+        /* Deux styles partagent tout (zones, valeur, état, légende, accessibilité) ; seul le dessin change :
+             « arc »    : arc de 240° qui se remplit (par défaut)
+             « cadran » : demi-cercle à segments pleins, graduations et aiguille (data-lm-style="cadran") */
+        function jauge(el, profil, titre, style, repereNom) {
+            var Z = profil.zones, cadran = style === 'cadran';
+            var G = cadran ? { cx: 130, cy: 128, r: 92, ep: 30, deb: 180, et: 180, vb: '0 0 260 146' }
+                           : { cx: 120, cy: 118, r: 92, ep: 12, deb: 150, et: 240, vb: '0 0 240 200' };
+            function pt(p, r) { var a = (G.deb + G.et * p / 100) * Math.PI / 180; return [+(G.cx + r * Math.cos(a)).toFixed(2), +(G.cy + r * Math.sin(a)).toFixed(2)]; }
+            function arc(p0, p1, r) { r = r || G.r; return 'M' + pt(p0, r) + 'A' + r + ' ' + r + ' 0 ' + ((p1 - p0) * G.et / 100 > 180 ? 1 : 0) + ' 1 ' + pt(p1, r); }
+            function trait(p, r1, r2, cls) { var a = pt(p, r1), b = pt(p, r2); return '<line class="' + cls + '" x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '"/>'; }
+            function tourner(g, p) { g.style.transform = 'rotate(' + (G.et * Math.min(p, 100) / 100).toFixed(1) + 'deg)'; }   /* les éléments sont dessinés à 0 % */
+            var svg = '', debut = 0, ext = G.r + G.ep / 2;
+            Z.forEach(function (z, i) {
+                if (cadran) {
+                    svg += '<path class="seg" d="' + arc(debut + (i ? .8 : 0), z[0] - (i < Z.length - 1 ? .8 : 0)) + '" stroke="' + z[2] + '"/>';
+                } else {
+                    svg += '<path class="zone" d="' + arc(debut, z[0]) + '" stroke="' + z[2] + '"/>';
+                    if (i < Z.length - 1) { var l = pt(z[0], G.r + 21);
+                        svg += trait(z[0], G.r + 10, G.r - 10, 'tic') + '<text class="tic-l" x="' + l[0] + '" y="' + l[1] + '" text-anchor="middle" dominant-baseline="middle">' + z[0] + '</text>'; }
+                }
+                debut = z[0];
+            });
+            if (cadran) {
+                for (var t = 0; t <= 100; t += 10) svg += trait(t, G.r - G.ep / 2 - 6, G.r - G.ep / 2 - (t % 50 ? 12 : 18), 'graduation');
+                /* aiguille effilée, dessinée pointant vers 0 % (à gauche) puis tournée */
+                svg += '<g class="pivot aiguille"><path d="M' + G.cx + ' ' + (G.cy - 6) + 'L' + (G.cx - G.r + 6) + ' ' + G.cy + 'L' + G.cx + ' ' + (G.cy + 6) + 'Z"/></g>';
+            } else {
+                svg += '<path class="val" d="' + arc(0, 100) + '" pathLength="100" stroke-dasharray="0 100"/>';
+            }
+            /* repère de comparaison (ex. taux déclaré) : trait en travers de la bande + petit triangle à l'extérieur */
+            var a0 = pt(0, ext + 3), b0 = pt(0, G.r - G.ep / 2 - 2);
+            svg += '<g class="pivot repere" hidden><line x1="' + a0[0] + '" y1="' + a0[1] + '" x2="' + b0[0] + '" y2="' + b0[1] + '"/>' +
+                   '<path d="M' + (G.cx - ext - 4) + ' ' + G.cy + 'l-9 -6v12z"/></g>';
+            if (cadran) svg += '<circle class="moyeu" cx="' + G.cx + '" cy="' + G.cy + '" r="15"/>' +
+                               '<path class="etoile" transform="translate(' + G.cx + ' ' + G.cy + ')" d="M0-8l2.35 4.76 5.26.77-3.8 3.7.9 5.24L0 4l-4.7 2.47.9-5.24-3.8-3.7 5.26-.77z"/>';
+            el.innerHTML = '<div class="lm-jauge' + (cadran ? ' cadran' : '') + '" role="img"><div class="lm-jauge-dessin"><svg viewBox="' + G.vb + '" aria-hidden="true">' + svg + '</svg></div>' +
+                '<div class="lm-jauge-centre"><b>0<small>%</small></b><span class="lm-jauge-etat"></span><span class="lm-jauge-titre"></span></div>' +
+                '<div class="lm-jauge-cote"><ul class="lm-jauge-leg">' + Z.map(function (z, i) { return '<li style="--c:' + z[2] + '">' + z[1] + ' <em>' + (i ? Z[i - 1][0] + '–' : '< ') + z[0] + ' %</em></li>'; }).join('') + '</ul>' +
+                '<dl class="lm-jauge-infos"><div class="r" hidden><dt><i class="lm-tri"></i>' + (repereNom || 'Repère') + '</dt><dd></dd></div><div class="e" hidden><dt>Écart</dt><dd></dd></div>' +
+                '<div class="h" hidden><dt>Mise à jour</dt><dd></dd></div></dl></div></div>';
+            var B = el.firstChild, $$ = function (q) { return B.querySelector(q); };
+            var num = $$('b').firstChild, etat = $$('.lm-jauge-etat'), leg = B.querySelectorAll('.lm-jauge-leg li'), val = $$('.val'), aig = $$('.aiguille'), moyeu = $$('.moyeu'), rep = $$('.repere');
+            $$('.lm-jauge-titre').textContent = titre;
+            var courant = null, compare = null, fr = function (v) { return v.toLocaleString('fr-FR', { maximumFractionDigits: 1 }); };
+            function ecart() {
+                if (courant === null || compare === null) return;
+                var e = courant - compare, ligne = $$('.lm-jauge-infos .e');
+                ligne.hidden = false; ligne.classList.toggle('alerte', Math.abs(e) >= 10);
+                ligne.querySelector('dd').textContent = (e > 0 ? '+' : e < 0 ? '−' : '') + fr(Math.abs(e)) + ' pt' + (Math.abs(e) >= 2 ? 's' : '');
+            }
+            return {
+                valeur: function (v) {
+                    v = Math.max(0, Number(v) || 0); courant = v;
+                    var iz = Z.findIndex(function (x) { return v < x[0]; }); if (iz < 0) iz = Z.length - 1;
+                    var z = Z[iz];
+                    etat.style.setProperty('--c', z[2]); etat.textContent = z[1];
+                    requestAnimationFrame(function () {
+                        if (val) { val.style.stroke = z[2]; val.setAttribute('stroke-dasharray', Math.min(v, 100).toFixed(2) + ' 100'); }
+                        if (aig) { tourner(aig, v); moyeu.style.fill = z[2]; }
+                        leg.forEach(function (li, i) { li.classList.toggle('actif', i === iz); });
+                    });
+                    num.nodeValue = fr(v);
+                    B.setAttribute('aria-label', titre + ' : ' + fr(v) + ' %, niveau ' + z[1].toLowerCase());
+                    ecart();
+                },
+                repere: function (v) {
+                    v = Math.max(0, Number(v) || 0); compare = v;
+                    rep.removeAttribute('hidden'); requestAnimationFrame(function () { tourner(rep, v); });
+                    var l = $$('.lm-jauge-infos .r'); l.hidden = false; l.querySelector('dd').textContent = fr(v) + ' %';
+                    ecart();
+                },
+                horodater: function () {
+                    var l = $$('.lm-jauge-infos .h'); l.hidden = false;
+                    l.querySelector('dd').textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                }
+            };
+        }
+        function nombre(x) { return parseFloat(String(x == null ? '' : x).replace(',', '.')); }
+        function lireJSON(url) {
+            return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(function (j) { return j.data !== undefined ? j.data : (j.value !== undefined ? j.value : j.count); });
+        }
+        /* Une valeur vient soit d'une source JSON (data-…source), soit du gabarit (data-…valeur), avec une échelle facultative */
+        function alimenter(d, prefixe, appliquer, rafraichir) {
+            var k = nombre(d[prefixe + 'Echelle']) || 1, src = d[prefixe + 'Source'], fixe = d[prefixe + 'Valeur'];
+            var montrer = function (x) { var n = nombre(x); appliquer(isNaN(n) ? 0 : n * k); return true; };
+            if (fixe !== undefined) montrer(fixe);
+            if (!src) return null;
+            var lire = function () { return lireJSON(src).then(montrer).catch(function (e) { console.warn('Jauge : données indisponibles (' + src + ')', e); }); };
+            lire(); if (rafraichir > 0) setInterval(lire, rafraichir);
+            return lire;
+        }
+        function brancherJauges() {
+            document.querySelectorAll('[data-lm-jauge]').forEach(function (el) {
+                var d = el.dataset, profil = PROFILS[d.lmJauge]; if (!profil) return;
+                if (d.fonce !== undefined) el.classList.add('lm-fonce');
+                var j = jauge(el, profil, d.titre || profil.titre, d.lmStyle, d.repereLibelle);
+                j.valeur(0);
+                /* valeur principale : data-source / data-valeur / data-echelle ; horodatée à chaque lecture réussie */
+                var k = nombre(d.echelle) || 1, montrer = function (x) { var n = nombre(x); j.valeur(isNaN(n) ? 0 : n * k); j.horodater(); };
+                if (d.valeur !== undefined) montrer(d.valeur);
+                if (d.source) {
+                    var lire = function () { lireJSON(d.source).then(montrer).catch(function (e) { console.warn('Jauge ' + d.lmJauge + ' : données indisponibles', e); }); };
+                    lire(); if (nombre(d.rafraichir) > 0) setInterval(lire, nombre(d.rafraichir));
+                }
+                /* repère de comparaison facultatif : data-repere-source / data-repere-valeur / data-repere-echelle / data-repere-libelle */
+                if (d.repereSource || d.repereValeur !== undefined) alimenter(d, 'repere', j.repere, 0);
+            });
+        }
+
+
+        /* 6. Centre de notifications : relit les compteurs existants (R, A, C, I…) et met à jour la cloche */
+        function brancherNotifs() {
+            var boite = document.getElementById('lmNotif'); if (!boite) return;
+            var btn = boite.querySelector('.lm-notif-btn'), pan = boite.querySelector('.lm-notif-panneau'), pastille = boite.querySelector('.lm-notif-pastille');
+            var total = document.getElementById('lmNotifTotal'), lignes = [].slice.call(boite.querySelectorAll('.lm-notif-ligne'));
+            function entier(t) { var n = parseInt(String(t || '').replace(/\D/g, ''), 10); return isNaN(n) ? 0 : n; }
+            function calculer() {
+                var somme = 0, visibles = 0;
+                lignes.forEach(function (l) {
+                    var src = l.dataset.lmSource ? document.querySelector(l.dataset.lmSource) : null;
+                    var n = src ? entier(src.textContent) : entier(l.dataset.lmValeur);
+                    l.querySelector('.nb').textContent = n; l.hidden = n === 0;
+                    if (n) visibles++; if (n && !l.hasAttribute('data-lm-hors-total')) somme += n;
+                });
+                pastille.hidden = somme === 0; pastille.textContent = somme > 99 ? '99+' : somme;
+                btn.setAttribute('aria-label', somme ? 'Notifications : ' + somme + ' en attente' : 'Notifications');
+                total.textContent = somme ? somme + ' action' + (somme > 1 ? 's' : '') + ' en attente' : 'Rien en attente';
+                boite.classList.toggle('vide', visibles === 0);
+            }
+            /* les compteurs sont remplis par vos appels AJAX : on observe leurs changements */
+            var obs = new MutationObserver(calculer);
+            lignes.forEach(function (l) { var src = l.dataset.lmSource && document.querySelector(l.dataset.lmSource); if (src) obs.observe(src, { childList: true, characterData: true, subtree: true }); });
+            calculer();
+            function ouvrir(o) { pan.hidden = !o; btn.setAttribute('aria-expanded', o); if (o) calculer(); }
+            btn.addEventListener('click', function (e) { e.stopPropagation(); ouvrir(pan.hidden); });
+            document.addEventListener('click', function (e) { if (!pan.hidden && !boite.contains(e.target)) ouvrir(false); });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !pan.hidden) { ouvrir(false); btn.focus(); } });
+        }
+
+        function demarrer() {
+            try { verifierContraste(); } catch (e) {}
+            try { brancherBlob(); } catch (e) { var s = document.getElementById('iconSidebar'); if (s) s.classList.remove('lm-avec-blob'); }
+            try { brancherMenu(); } catch (e) {}
+            try { brancherSuivi(); } catch (e) {}
+            try { brancherJauges(); } catch (e) {}
+            try { brancherNotifs(); } catch (e) {}
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
+    })();
+</script>
+<!-- ===================== FIN LIQUID MORPH ===================== -->
+
 </body>
 </html>

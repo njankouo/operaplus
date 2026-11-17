@@ -1,0 +1,12 @@
+{% comment %}
+Une ligne du centre de notifications.
+Paramètres : lien, titre, detail, icone (classe Font Awesome), teinte (couleur CSS),
+  source  = sélecteur CSS d'un compteur déjà présent dans la page (ex. "#accountable_operation"), relu en continu,
+  valeur  = ou bien une valeur fournie par la vue (ex. urgent),
+  hors_total = vrai pour ne pas compter cette ligne dans la pastille de la cloche.
+{% endcomment %}
+<a class="lm-notif-ligne" href="{{ lien }}" style="--t: {{ teinte }}"{% if source %} data-lm-source="{{ source }}"{% endif %}{% if valeur %} data-lm-valeur="{{ valeur }}"{% endif %}{% if hors_total %} data-lm-hors-total{% endif %} hidden>
+    <span class="ic"><i class="fa-solid {{ icone }}"></i></span>
+    <span class="tx"><b>{{ titre }}</b><small>{{ detail }}</small></span>
+    <span class="nb">0</span>
+</a>

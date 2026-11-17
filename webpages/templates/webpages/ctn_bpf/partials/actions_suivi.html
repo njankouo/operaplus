@@ -1,0 +1,9 @@
+{% comment %}
+Raccourcis d'action sous le baromètre « validé » : chaque chiffre mène à la liste correspondante.
+Variables déjà fournies par la vue du tableau de bord : valited, declared, urgent.
+{% endcomment %}
+<nav class="lm-actions" aria-label="Accès rapides">
+    <a href="/tache-valide/" style="--c: var(--sbx-ok, #2A8A7D)"><b>{{ valited|default:0 }}</b><span>Validées</span></a>
+    <a href="/tache-Attente/" style="--c: var(--sbx-warn, #E48B0C)"><b>{{ declared|default:0 }}</b><span>En cours</span></a>
+    <a href="/tache-retards/" style="--c: var(--sbx-danger, #E35A33)"><b>{{ urgent|default:0 }}</b><span>En retard</span></a>
+</nav>

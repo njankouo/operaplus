@@ -1901,8 +1901,7 @@ class DataSet(models.Model):
     m_formulaire = models.TextField(blank=True,null=True)
     #m_periodes
     m_start_date = models.DateTimeField(db_index=True,blank=True,null=True,auto_now_add=True)
-    # double_check = models.BooleanField(default=False)
-    # files = models.FileField(null=True)
+   
 
     def join_structures(self):
         structures = self.m_structures.filter()
@@ -3669,3 +3668,4 @@ class DataSetOperation(models.Model):
     valide = models.BooleanField(default=False)
     date_soumission = models.DateTimeField(null=True)
      
+

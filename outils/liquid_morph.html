@@ -1,0 +1,280 @@
+
+<!-- ===================== LIQUID MORPH : verre liquide + transitions qui se déforment (ajout, placé en dernier) =====================
+     Principe : surfaces translucides (verre dépoli), formes très arrondies, et des éléments qui « coulent »
+     d'un endroit à l'autre (indicateur de la barre latérale, ouverture du menu des modules depuis son bouton).
+     Couleurs : 60 % neutre teinté par la dominante, 30 % dominante (navigation), 10 % accent (actions, page active).
+     Les couleurs de statut (vert / orange / rouge) ne dépendent jamais du thème. -->
+<style>
+    :root {
+        --lm-dom: var(--nav-bg-color, #1e293b);
+        --lm-dom-ink: var(--nav-ink, #fff);
+        --lm-acc: var(--primary-color, #4361ee);
+        --lm-acc-ink: var(--accent-ink, #fff);
+        --lm-ink: #0b1220;
+        --lm-mute: #5b6475;
+        --lm-line: rgba(15, 23, 42, .08);
+        --lm-canvas: color-mix(in srgb, var(--lm-dom) 5%, #f3f4f6);
+        --lm-glass: rgba(255, 255, 255, .72);
+        --lm-glass-strong: rgba(255, 255, 255, .86);
+        --lm-edge: rgba(255, 255, 255, .75);
+        --lm-blur: blur(22px) saturate(180%);
+        --lm-shadow: 0 1px 1px rgba(15, 23, 42, .04), 0 10px 30px -18px rgba(15, 23, 42, .22);
+        --lm-r: 24px;
+        --lm-ease: cubic-bezier(.22, 1, .36, 1);          /* fluide, sans rebond */
+    }
+
+    /* ---------- Fond : neutre, légèrement teinté par la dominante ---------- */
+    body, #page-content { background: var(--lm-canvas) !important; }
+
+    /* ---------- Barre du haut : verre ---------- */
+    #page-content > nav {
+        background: color-mix(in srgb, var(--lm-canvas) 70%, transparent) !important;
+        -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+        border-bottom: 1px solid var(--lm-line) !important; box-shadow: none !important;
+    }
+    #page-content > nav::after, #page-content > nav::before { display: none !important; }
+    #scroll-progress { background: var(--lm-acc) !important; height: 2px !important; }
+    #page-content > nav .modalOpen {                    /* bouton « modules » : pastille pleine, sans halo */
+        border-radius: 14px !important; box-shadow: none !important; transition: border-radius .35s var(--lm-ease), transform .2s !important;
+    }
+    #page-content > nav .modalOpen:hover { border-radius: 22px !important; }
+    #page-content > nav .shadow-inner { box-shadow: none !important; background: rgba(255, 255, 255, .55) !important; border-color: var(--lm-line) !important; }
+
+    /* ---------- Barre latérale : rail de verre flottant + indicateur liquide ---------- */
+    @media (min-width: 768px) {
+        #page-content { padding-left: 96px !important; }
+        #iconSidebar {
+            top: 12px !important; bottom: 12px !important; left: 12px !important; width: 72px !important; border-radius: 26px;
+            background: color-mix(in srgb, var(--lm-dom) 92%, transparent) !important;
+            -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 18px 40px -22px rgba(15, 23, 42, .55) !important;
+        }
+        #navProgressBar, #scroll-progress { left: 96px !important; }
+    }
+    #iconSidebar nav { position: relative; }
+    #iconSidebar .sbx-item { z-index: 1; border-radius: 16px !important; box-shadow: none !important; transition: color .2s !important; }
+    #iconSidebar .sbx-item:hover i { transform: none !important; }
+    #iconSidebar.lm-avec-blob nav .sbx-item:hover, #iconSidebar.lm-avec-blob nav .sbx-item:focus-visible { background: transparent !important; }
+    #iconSidebar .sbx-item.sbx-active, #iconSidebar.lm-avec-blob nav .sbx-item.sbx-active:hover { background: var(--lm-acc) !important; color: var(--lm-acc-ink) !important; }
+    #iconSidebar .sbx-item.sbx-active::before { display: none !important; }
+    .lm-blob {
+        position: absolute; left: 50%; top: 0; z-index: 0; pointer-events: none; border-radius: 16px;
+        background: color-mix(in srgb, var(--lm-dom-ink) 12%, transparent); transform: translateX(-50%); opacity: 0;
+        transition: opacity .2s;
+    }
+    .lm-blob.on { opacity: 1; }
+    #iconSidebar > a:first-of-type { box-shadow: none !important; border-radius: 16px !important; }
+    .sbx-tip { border-radius: 16px !important; background: var(--lm-glass-strong) !important; -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+               border: 1px solid var(--lm-edge) !important; box-shadow: var(--lm-shadow) !important; }
+    .sbx-tip::before { display: none !important; }
+
+    /* ---------- Cartes : verre clair, grands rayons, ombre neutre ---------- */
+    #page-content .bg-white.rounded-3xl, #page-content .bg-white.rounded-2xl, #page-content .bg-white.rounded-\[2rem\],
+    #page-content header.rounded-\[2rem\] {
+        background: var(--lm-glass) !important; -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+        border: 1px solid var(--lm-edge) !important; border-radius: var(--lm-r) !important; box-shadow: var(--lm-shadow) !important;
+    }
+    /* Grandes cartes à la couleur dominante : aplat net, reflet d'arête discret, sans halo */
+    #page-content .rounded-3xl[style*="background"] {
+        border: 0 !important; border-radius: var(--lm-r) !important; -webkit-backdrop-filter: none; backdrop-filter: none;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), var(--lm-shadow) !important;
+    }
+    /* Ombres lourdes héritées : remplacées par l'élévation neutre */
+    #page-content .shadow-2xl, #page-content .shadow-xl { box-shadow: var(--lm-shadow) !important; }
+
+    /* ---------- Boutons flottants : verre, couleur du thème (plus d'indigo isolé) ---------- */
+    #openModalBtn, button[onclick*="theme-modal"].fixed, .fixed > button[onclick*="theme-modal"] {
+        background: var(--lm-glass-strong) !important; color: var(--lm-dom) !important; border: 1px solid var(--lm-edge) !important;
+        -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur); box-shadow: var(--lm-shadow) !important;
+        transition: border-radius .35s var(--lm-ease), transform .2s !important;
+    }
+    #openModalBtn:hover, button[onclick*="theme-modal"]:hover { border-radius: 20px !important; }
+
+    /* ---------- Fenêtres (modales) : verre plus dense ---------- */
+    #modalOverlay > div, #theme-modal > div, #modalTaches > div, #modalProcessus > div {
+        background: var(--lm-glass-strong) !important; -webkit-backdrop-filter: var(--lm-blur); backdrop-filter: var(--lm-blur);
+        border: 1px solid var(--lm-edge) !important; border-radius: 28px !important; box-shadow: 0 30px 80px -30px rgba(15, 23, 42, .45) !important;
+    }
+    #modalOverlay, #theme-modal { background: rgba(15, 23, 42, .28) !important; }
+
+    /* =================== MENU DES MODULES =================== */
+    #modalMenu { background: rgba(15, 23, 42, .26) !important; -webkit-backdrop-filter: blur(14px) saturate(160%); backdrop-filter: blur(14px) saturate(160%); }
+    #modalMenu.hidden > div, #modalMenu:not(.hidden) > div { transform: none; }      /* la forme est animée par le script */
+    #modalMenu > div:not(.sbx-scroller) {
+        /* pas de flou sur la fenêtre elle-même (elle défile : Chrome dessinerait un liseré) ; le flou est porté par le voile derrière */
+        background: rgba(255, 255, 255, .93) !important;
+        border: 1px solid var(--lm-edge) !important; border-radius: 30px !important;
+        box-shadow: 0 40px 90px -40px rgba(15, 23, 42, .55) !important; transition: opacity .2s ease !important;
+    }
+    /* En-tête : intégré au verre, plus de bandeau sombre ni de ruban */
+    #modalMenu > div:not(.sbx-scroller) > div:first-child { background: transparent !important; padding: 26px 30px 10px !important; }
+    #modalMenu > div:not(.sbx-scroller) > div:first-child::before, #modalMenu > div:not(.sbx-scroller) > div:first-child::after { display: none !important; }
+    #modalMenu > div:not(.sbx-scroller) > div:first-child h3 { color: var(--lm-ink) !important; font-size: 1.5rem !important; }
+    #modalMenu > div:not(.sbx-scroller) > div:first-child p { color: var(--lm-mute) !important; opacity: 1 !important; letter-spacing: .08em !important; }
+    #modalMenu .sbx-menu-count { background: rgba(15, 23, 42, .06) !important; color: var(--lm-ink) !important; }
+    #modalMenu > div:not(.sbx-scroller) > div:first-child .modalClose {
+        background: rgba(15, 23, 42, .06) !important; color: var(--lm-ink) !important; border-radius: 50% !important;
+        transition: background .2s, border-radius .35s var(--lm-ease) !important;
+    }
+    #modalMenu > div:not(.sbx-scroller) > div:first-child .modalClose:hover { transform: none !important; background: rgba(15, 23, 42, .1) !important; border-radius: 14px !important; }
+    /* Grille et tuiles */
+    #modalMenu .grid { background: transparent !important; padding: 6px 30px 24px !important; gap: 12px !important; }
+    #modalMenu .sbx-group-title { color: var(--lm-mute) !important; letter-spacing: .06em !important; }
+    #modalMenu .sbx-group-title::after { background: var(--lm-line) !important; }
+    #modalMenu .grid > a {
+        opacity: 1 !important; transform: none !important;             /* plus d'apparition en cascade rebondissante */
+        background: rgba(255, 255, 255, .78) !important; border: 1px solid rgba(15, 23, 42, .06) !important; border-radius: 20px !important;
+        box-shadow: 0 1px 1px rgba(15, 23, 42, .04) !important; min-height: 84px !important; padding: 16px !important;
+        transition: background-color .25s, border-radius .4s var(--lm-ease), border-color .25s !important;
+    }
+    #modalMenu .grid > a:hover, #modalMenu .grid > a:focus-visible {
+        background: color-mix(in srgb, var(--t, var(--lm-dom)) 9%, #fff) !important; border-color: color-mix(in srgb, var(--t, var(--lm-dom)) 22%, #fff) !important;
+        border-radius: 28px !important; box-shadow: 0 1px 1px rgba(15, 23, 42, .04) !important; transform: none !important;
+    }
+    #modalMenu .grid > a > div:first-child {
+        background: color-mix(in srgb, var(--t, var(--lm-dom)) 13%, #fff) !important; background-image: none !important; color: var(--t, var(--lm-dom)) !important;
+        border: 0 !important; box-shadow: none !important; border-radius: 15px !important; transition: border-radius .4s var(--lm-ease) !important;
+    }
+    #modalMenu .grid > a:hover > div:first-child { transform: none !important; border-radius: 50% !important; }
+    #modalMenu .grid > a h4 { color: var(--lm-ink) !important; }
+    #modalMenu .grid > a p { color: var(--lm-mute) !important; font-weight: 600 !important; }
+    #modalMenu .sbx-wm, #modalMenu .sbx-go { display: none !important; }
+    /* Options avancées */
+    #modalMenu > div:not(.sbx-scroller) > div:nth-child(3) .text-slate-400 { color: var(--lm-mute) !important; }
+    #modalMenu .col-span-2.mx-2 { background: rgba(15, 23, 42, .035) !important; border: 0 !important; box-shadow: none !important; }
+    #modalMenu .col-span-2.mx-2 a { background: rgba(255, 255, 255, .7) !important; border: 1px solid var(--lm-edge) !important; box-shadow: none !important;
+                                     transition: border-radius .4s var(--lm-ease), background-color .2s !important; }
+    #modalMenu .col-span-2.mx-2 a:hover { transform: none !important; box-shadow: none !important; border-radius: 22px !important; background: #fff !important; }
+    #modalMenu .sbx-scroller.down::before { background: linear-gradient(to top, var(--lm-glass-strong) 35%, transparent) !important; }
+
+    /* ---------- Menu des modules sur téléphone : feuille qui monte du bas ---------- */
+    @media (max-width: 640px) {
+        #modalMenu { align-items: flex-end !important; padding: 0 !important; }
+        #modalMenu > div:not(.sbx-scroller) { max-width: 100% !important; width: 100% !important; max-height: 90vh !important; border-radius: 28px 28px 0 0 !important; border-bottom: 0 !important; }
+        #modalMenu > div:not(.sbx-scroller) > div:first-child { padding: 12px 20px 6px !important; }
+        #modalMenu > div:not(.sbx-scroller) > div:first-child::before {                /* poignée */
+            display: block !important; content: ""; position: absolute; left: 50%; top: 8px; width: 40px; height: 5px; margin-left: -20px;
+            border-radius: 3px; background: rgba(15, 23, 42, .18); transform: none; opacity: 1; right: auto; }
+        #modalMenu > div:not(.sbx-scroller) > div:first-child h3 { font-size: 1.25rem !important; margin-top: 10px !important; }
+        #modalMenu .grid { grid-template-columns: 1fr 1fr !important; padding: 4px 16px 18px !important; gap: 10px !important; }
+        #modalMenu .grid:not(.col-span-2) > a {                      /* tuile verticale : le nom entier reste lisible */
+            flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; min-height: 0 !important; padding: 14px !important; }
+        #modalMenu .grid:not(.col-span-2) > a > div:first-child { width: 42px !important; height: 42px !important; border-radius: 13px !important; }
+        #modalMenu .grid:not(.col-span-2) > a > div:last-of-type, #modalMenu .grid:not(.col-span-2) > a .overflow-hidden { width: 100%; min-width: 0; }
+        #modalMenu .grid:not(.col-span-2) > a h4 { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; font-size: .95rem !important; line-height: 1.2 !important; padding-right: 22px; }
+        #modalMenu .grid:not(.col-span-2) > a p { white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; letter-spacing: .04em !important; }
+        #modalMenu .grid > a .sbx-star { top: 10px !important; right: 10px !important; }
+        #modalMenu .sbx-group-title { margin: 10px 2px 0 !important; font-size: 11px !important; }
+        #modalMenu > div:not(.sbx-scroller) > div:nth-child(3) { margin: 0 16px !important; }
+        #modalMenu .col-span-2.mx-2 { grid-template-columns: 1fr !important; margin: 0 16px 20px !important; gap: 6px !important; }
+        #modalMenu .col-span-2.mx-2 > a { min-height: 0 !important; padding: 10px 12px !important; }
+        #modalMenu .col-span-2.mx-2 h4 { white-space: normal !important; }
+        #modalMenu .col-span-2.mx-2 p { display: block !important; }
+    }
+
+    /* ---------- Agencement des couleurs : la couleur de l'utilisateur n'est utilisée comme texte que si elle reste lisible ---------- */
+    html.sbx-light-dom .op-ws-txt span, html.sbx-light-dom .op-ws-txt h1, html.lm-dom-clair .op-ws-txt span, html.lm-dom-clair .op-ws-txt h1 { color: var(--lm-ink) !important; }
+    html.lm-dom-clair #openModalBtn, html.lm-dom-clair button[onclick*="theme-modal"] { color: var(--lm-ink) !important; }
+    html.lm-dom-clair .op-ws-ini { color: var(--lm-ink) !important; }
+
+    /* ---------- Sombre ---------- */
+    html.sbx-dark {
+        --lm-canvas: color-mix(in srgb, var(--lm-dom) 10%, #0d1017); --lm-glass: rgba(24, 28, 37, .72); --lm-glass-strong: rgba(24, 28, 37, .88);
+        --lm-edge: rgba(255, 255, 255, .07); --lm-line: rgba(255, 255, 255, .07); --lm-ink: #f1f5f9; --lm-mute: #94a3b8;
+    }
+    html.sbx-dark #modalMenu > div:not(.sbx-scroller) { background-color: rgba(24, 28, 37, .95) !important; }
+    html.sbx-dark #modalMenu .grid:not(.col-span-2) { background: transparent !important; }
+    html.sbx-dark #modalMenu .col-span-2.mx-2 { background: rgba(255, 255, 255, .03) !important; }
+    html.sbx-dark #openModalBtn, html.sbx-dark button[onclick*="theme-modal"] { color: #e2e8f0 !important; }
+    html.sbx-dark .op-ws-txt span, html.sbx-dark .op-ws-txt h1 { color: #f1f5f9 !important; }
+    html.sbx-dark #modalMenu .grid > a, html.sbx-dark #modalMenu .col-span-2.mx-2 a { background: rgba(255, 255, 255, .04) !important; border-color: rgba(255, 255, 255, .06) !important; }
+    html.sbx-dark #modalMenu .grid > a:hover { background: color-mix(in srgb, var(--t, var(--lm-dom)) 18%, #181c25) !important; }
+    html.sbx-dark #modalMenu > div:not(.sbx-scroller) > div:first-child .modalClose, html.sbx-dark #modalMenu .sbx-menu-count { background: rgba(255, 255, 255, .08) !important; }
+
+    /* ---------- Mouvement réduit, impression, navigateurs sans flou ---------- */
+    @media (prefers-reduced-motion: reduce) { .lm-blob, #modalMenu .grid > a, #modalMenu .grid > a > div:first-child { transition: none !important; } }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        :root { --lm-glass: #fff; --lm-glass-strong: #fff; }
+    }
+    @media print { #page-content > nav, #page-content .bg-white.rounded-3xl, #page-content .bg-white.rounded-2xl { -webkit-backdrop-filter: none; backdrop-filter: none; background: #fff !important; } }
+</style>
+<script>
+    /* ===== Liquid Morph : mouvements (ajout) ===== */
+    (function () {
+        var doux = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var EASE = 'cubic-bezier(.22, 1, .36, 1)';
+
+        /* 1. Indicateur liquide de la barre latérale : au survol, il coule d'une icône à l'autre (s'étire puis se resserre) */
+        function brancherBlob() {
+            var side = document.getElementById('iconSidebar'), nav = side && side.querySelector('nav');
+            if (!nav || nav.querySelector('.lm-blob')) return;
+            var blob = document.createElement('span'); blob.className = 'lm-blob'; nav.prepend(blob);
+            side.classList.add('lm-avec-blob'); var pos = null;
+            function cadre(el) { return { top: el.offsetTop, h: el.offsetHeight, w: el.offsetWidth }; }
+            function aller(el) {
+                if (!el) { blob.classList.remove('on'); pos = null; return; }
+                var c = cadre(el);
+                blob.style.width = c.w + 'px'; blob.style.height = c.h + 'px';
+                blob.classList.add('on');
+                if (!pos || doux || !blob.animate) { blob.style.transform = 'translate(-50%,' + c.top + 'px)'; pos = c; return; }
+                var haut = Math.min(pos.top, c.top), bas = Math.max(pos.top + pos.h, c.top + c.h);
+                blob.animate([                                   /* départ -> étirement couvrant les deux icônes -> arrivée */
+                    { transform: 'translate(-50%,' + pos.top + 'px)', height: pos.h + 'px', borderRadius: '16px' },
+                    { transform: 'translate(-50%,' + haut + 'px)', height: (bas - haut) + 'px', borderRadius: '22px', offset: .45 },
+                    { transform: 'translate(-50%,' + c.top + 'px)', height: c.h + 'px', borderRadius: '16px' }
+                ], { duration: 420, easing: EASE });
+                blob.style.transform = 'translate(-50%,' + c.top + 'px)'; pos = c;
+            }
+            nav.addEventListener('mouseover', function (e) { var it = e.target.closest('.sbx-item'); if (it && nav.contains(it)) aller(it); });
+            nav.addEventListener('focusin', function (e) { var it = e.target.closest('.sbx-item'); if (it) aller(it); });
+            nav.addEventListener('mouseleave', function () { aller(null); });
+            nav.addEventListener('focusout', function (e) { if (!nav.contains(e.relatedTarget)) aller(null); });
+        }
+
+        /* 2. Menu des modules : la fenêtre « naît » du bouton cliqué et y retourne à la fermeture */
+        function brancherMenu() {
+            var m = document.getElementById('modalMenu'), box = m && m.querySelector(':scope > div:not(.sbx-scroller)');
+            if (!box || !box.animate) return;
+            var source = null;
+            document.addEventListener('click', function (e) { var b = e.target.closest('.modalOpen'); if (b) source = b.getBoundingClientRect(); }, true);
+            function forme(r) {                                  /* rectangle du bouton exprimé dans le repère de la fenêtre */
+                var f = box.getBoundingClientRect();
+                if (!r || !f.width) return 'inset(45% 45% 45% 45% round 30px)';
+                var t = Math.max(0, r.top - f.top), l = Math.max(0, r.left - f.left), b = Math.max(0, f.bottom - r.bottom), d = Math.max(0, f.right - r.right);
+                return 'inset(' + t + 'px ' + d + 'px ' + b + 'px ' + l + 'px round 16px)';
+            }
+            var ouvert = !m.classList.contains('hidden');
+            new MutationObserver(function () {
+                var maintenant = !m.classList.contains('hidden');
+                if (maintenant === ouvert) return; ouvert = maintenant;
+                if (doux) return;
+                if (maintenant) {
+                    requestAnimationFrame(function () {
+                        box.animate([{ clipPath: forme(source), opacity: .4 }, { clipPath: 'inset(0px 0px 0px 0px round 30px)', opacity: 1 }],
+                                    { duration: 520, easing: EASE });
+                    });
+                } else {
+                    box.animate([{ clipPath: 'inset(0px 0px 0px 0px round 30px)', opacity: 1 }, { clipPath: forme(source), opacity: 0 }],
+                                { duration: 260, easing: 'cubic-bezier(.4, 0, 1, 1)' });
+                }
+            }).observe(m, { attributes: true, attributeFilter: ['class'] });
+        }
+
+        /* 3. Lisibilité : si la couleur de navigation est claire (jaune, argent…), elle n'est plus utilisée comme couleur de texte */
+        function verifierContraste() {
+            var c = getComputedStyle(document.documentElement).getPropertyValue('--nav-bg-color').trim();
+            var m = c.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i); if (!m) return;
+            var h = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1];
+            var l = [0, 2, 4].map(function (i) { var v = parseInt(h.substr(i, 2), 16) / 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+            document.documentElement.classList.toggle('lm-dom-clair', .2126 * l[0] + .7152 * l[1] + .0722 * l[2] > .45);
+        }
+
+        function demarrer() {
+            try { verifierContraste(); } catch (e) {}
+            try { brancherBlob(); } catch (e) { var s = document.getElementById('iconSidebar'); if (s) s.classList.remove('lm-avec-blob'); }
+            try { brancherMenu(); } catch (e) {}
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
+    })();
+</script>
+<!-- ===================== FIN LIQUID MORPH ===================== -->

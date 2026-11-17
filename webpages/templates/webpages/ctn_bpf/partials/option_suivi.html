@@ -1,0 +1,11 @@
+{% comment %}
+Une option du périmètre de suivi (modal « Configuration du suivi »).
+Paramètres : valeur, titre, detail, icone (classe Font Awesome), teinte (couleur CSS), coche (vrai si c'est le choix actuel).
+{% endcomment %}
+<label class="lm-scope" style="--t: {{ teinte }}">
+    <input type="radio" name="selector" value="{{ valeur }}" class="lm-sr" {% if coche %}checked{% endif %}>
+    <span class="lm-scope-ic"><i class="fa-solid {{ icone }}"></i></span>
+    <span class="lm-scope-txt"><b>{{ titre }}</b><small>{{ detail }}</small></span>
+    {% if coche %}<span class="lm-scope-actuel">Actuel</span>{% endif %}
+    <span class="lm-scope-radio" aria-hidden="true"></span>
+</label>
