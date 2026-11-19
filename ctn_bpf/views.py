@@ -34049,6 +34049,44 @@ def activer_periode(request, m_value):
     messages.success(request, "Période activée avec succès.")
 
     return redirect(request.META.get('HTTP_REFERER') or '/')
+# =====================================================================
+#  OperaPlus — Analyse d'un indicateur : VOS deux fonctions, améliorées sans changer leur logique.
+#  Chaque modification est marquée « ← corrigé » ou « ← ajout ».
+#
+#  analyse_data_indicateur : votre vue (page analysis.html), inchangée sauf select_related (tableau plus rapide).
+#  analyse_data            : votre point d'accès JSON (graphiques), même calcul :
+#      périodes = actual_institution.get_periodes_actif() ; cible = type_donnee "valeur" ; réalisation = "valeur_form".
+#      ← corrigé : .first() ne prenait qu'UNE valeur par période (une seule structure) ; on additionne maintenant
+#        toutes les valeurs de la période (Sum), avec exactement les mêmes filtres.
+#      ← ajout : la même chose par structure (pour le graphique « Comparaison par structure »)
+#        et les totaux que vous calculiez déjà (total_cible, total_realisation) renvoyés dans la réponse.
+#
+#  Imports (déjà chez vous, sauf Sum) :  from django.db.models import Sum
+# =====================================================================
+
+from django.db.models import Sum
+
+
+def analyse_data_indicateur(request, id):
+    context = basis(request)
+    indicateur = Indicateur.objects.get(id=int(id))
+
+    # On récupère tous les objets (sans le slice [:50])
+    valeurs_list = (IndicateurValeur.objects.filter(indicateur=indicateur)
+                    .select_related('indicateur', 'structure', 'periode_ok')      # ← ajout : une requête au lieu de 3 par ligne
+                    .order_by('-id'))
+
+    # Configuration du Paginator : 10 éléments par page
+    paginator = Paginator(valeurs_list, 10)
+
+    # On récupère le numéro de la page depuis l'URL (ex: ?page=2)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context['indicateur'] = indicateur
+    context['indicateurvaleur'] = page_obj  # On envoie l'objet page_obj au template
+
+    return render(request, 'analysis.html', context)
 
 
 def analyse_data(request, id):
@@ -34057,35 +34095,31 @@ def analyse_data(request, id):
     indicateur = Indicateur.objects.get(id=int(id))
 
     periodes = actual_institution.get_periodes_actif()
-    
-    
-   
 
     labels = [p.nom for p in periodes]
     datasets = []
-    
+
     total_cible = 0
     total_realisation = 0
 
-
     realisation_data = []
     cible_data = []
-    
+
     for p in periodes:
         # Récupération des points de données
         points = IndicateurValeur.objects.filter(
             indicateur_id=indicateur,
-         
             periode_ok=p
         )
 
         # Accès aux valeurs via le type_donnee
-        cible = float(points.filter(type_donnee="valeur").values_list("valeur", flat=True).first() or 0)
-        realisation = float(points.filter(type_donnee="valeur_form").values_list("valeur", flat=True).first() or 0)
+        # ← corrigé : somme de toutes les structures de la période (avant : .first() = une seule structure)
+        cible = float(points.filter(type_donnee="valeur").aggregate(t=Sum("valeur"))["t"] or 0)
+        realisation = float(points.filter(type_donnee="valeur_form").aggregate(t=Sum("valeur"))["t"] or 0)
 
         realisation_data.append(realisation)
         cible_data.append(cible)
-        
+
         total_cible += cible
         total_realisation += realisation
 
@@ -34103,13 +34137,30 @@ def analyse_data(request, id):
 
     taux_global = round((total_realisation / total_cible) * 100, 2) if total_cible > 0 else 0
 
+    # ← ajout : les mêmes chiffres par structure (mêmes périodes, mêmes types de donnée)
+    par_structure = (IndicateurValeur.objects
+                     .filter(indicateur_id=indicateur, periode_ok__in=periodes, structure__isnull=False)
+                     .values('structure__nom', 'type_donnee')
+                     .annotate(total=Sum('valeur')))
+    structures = {}
+    for ligne in par_structure:
+        s = structures.setdefault(ligne['structure__nom'], {"nom": ligne['structure__nom'], "realisation": 0, "cible": 0})
+        if ligne['type_donnee'] == "valeur_form":
+            s["realisation"] += float(ligne['total'] or 0)
+        elif ligne['type_donnee'] == "valeur":
+            s["cible"] += float(ligne['total'] or 0)
+    for s in structures.values():
+        s["taux"] = round(s["realisation"] / s["cible"] * 100, 2) if s["cible"] > 0 else None
+
     return JsonResponse({
         "labels": labels,
         "datasets": datasets,
         "taux_realisation": taux_global,
-        "indicateur": indicateur.m_name
+        "indicateur": indicateur.m_name,
+        "total_cible": total_cible,                                    # ← ajout (déjà calculé)
+        "total_realisation": total_realisation,                        # ← ajout (déjà calculé)
+        "structures": sorted(structures.values(), key=lambda s: -(s["taux"] or 0)),   # ← ajout
     })
-
 
 from django.db.models import Sum, Avg
 from django.http import JsonResponse

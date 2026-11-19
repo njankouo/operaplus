@@ -1,395 +1,285 @@
 {% extends "./evaluer.html" %}
+
+{% block design %}
+{# En-tête propre à l'analyse, posé sur le bandeau #}
+<div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-8 entete-page">
+    <div class="text-white">
+        <h2 class="text-3xl font-extrabold tracking-tight">{{ indicateur.nicename|default:indicateur.m_name }}</h2>
+        <p class="text-blue-100/70 text-sm font-medium mt-1">Analyse de l'indicateur{% if indicateur.nicename %} · {{ indicateur.m_name }}{% endif %}</p>
+    </div>
+    <a href="/evaluer/0/" class="entete-retour"><i class="bx bx-arrow-back"></i> Registre des indicateurs</a>
+</div>
+<style>
+    .entete-page { align-items: center !important; margin-bottom: 44px !important; }
+    .entete-retour { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: 12px; font-size: 14px; font-weight: 700;
+                     background: rgba(255,255,255,.14); color: var(--nav-ink, #fff) !important; text-decoration: none; white-space: nowrap; }
+    .entete-retour:hover { background: rgba(255,255,255,.24); }
+    html.sbx-light-dom .entete-retour { background: rgba(15,23,42,.08); color: #111 !important; }
+    @media (max-width: 767px) { .entete-retour { display: none; } .entete-page { margin-bottom: 36px !important; } }
+</style>
+{% endblock %}
+
 {% block content %}
+{% comment %}
+    ANALYSE D'UN INDICATEUR
+    Inchangés : indicateur, indicateurvaleur (page du tableau), ?page=, le lien /ia-analyse/<id>/, les ids tableSearch, indicateurTable,
+    analyticsChart, refreshChart, miniGaugePath.
+    Données des graphiques et des chiffres clés : votre vue analyse_data (/indicateur/analyse_data/<id>/).
+    Deux graphiques DIFFÉRENTS : l'évolution dans le temps (courbe) et la comparaison des structures (bandes horizontales).
+{% endcomment %}
+<style>
+    .an { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: #047857; --warn: #b45309; --bad: #b91c1c;
+          --ink: #0f172a; --txt: #334155; --muted: #64748b; --line: #e5e7eb; --soft: #f8fafc; padding: 0 0 48px; color: var(--txt); }
+    .an * { box-sizing: border-box; }
+    .an-carte { background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+    .an-carte-tete { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 18px 20px 6px; }
+    .an-carte-tete h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--ink); }
+    .an-carte-tete p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
 
-<!-- Fond de page clair pour contraste -->
-<div class="min-h-screen bg-[#f1f5f9] text-slate-900 p-6 space-y-6 max-w-full">
+    /* Chiffres clés */
+    .an-kpis { display: grid; grid-template-columns: 1.25fr repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
+    .an-kpi { padding: 16px 18px; }
+    .an-kpi small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
+    .an-kpi b { display: block; margin-top: 4px; font-size: 24px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.15; }
+    .an-kpi span { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+    .an-taux { display: flex; align-items: center; gap: 16px; }
+    .an-anneau { position: relative; width: 76px; height: 76px; flex-shrink: 0; }
+    .an-anneau svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .an-anneau circle { fill: none; stroke-width: 7; }
+    .an-anneau .fond { stroke: #eef1f5; }
+    .an-anneau #miniGaugePath { stroke: var(--dom); stroke-linecap: round; transition: stroke-dashoffset 1s cubic-bezier(.22,1,.36,1); }
+    .an-anneau.ok #miniGaugePath { stroke: var(--ok); } .an-anneau.retard #miniGaugePath { stroke: var(--warn); }
+    .an-anneau em { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 17px; font-weight: 800; color: var(--ink); }
+    .an-statut { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 2px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 700; background: #f1f5f9; color: var(--txt); }
+    .an-statut.ok { background: #ecfdf5; color: var(--ok); } .an-statut.retard { background: #fffbeb; color: var(--warn); } .an-statut.critique { background: #fef2f2; color: var(--bad); }
 
-    <!-- HEADER -->
-  <div class="flex items-center justify-between bg-white border border-slate-200 p-3 rounded-2xl shadow-sm max-w-full">
-    <div class="flex items-center gap-4">
-        <!-- Mini Pendule / Gauge Discrète -->
-        <div class="relative flex items-center justify-center w-12 h-12">
-            <!-- Cercle de fond -->
-            <svg class="w-full h-full transform -rotate-90">
-                <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" fill="transparent" class="text-slate-100" />
-                <!-- Cercle de progression (ID pour mise à jour JS) -->
-                <circle id="miniGaugePath" cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" fill="transparent" 
-                    stroke-dasharray="125.6" 
-                    stroke-dashoffset="125.6" 
-                    class="text-blue-500 transition-all duration-1000 ease-out" 
-                    stroke-linecap="round" />
-            </svg>
-           
-        </div>
+    /* Graphiques */
+    .an-graphes { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+    .an-graphe { min-height: 360px; padding: 0 8px 8px; }
+    .an-vide { display: grid; place-items: center; min-height: 300px; padding: 20px; text-align: center; color: var(--muted); font-size: 13.5px; }
+    .an-vide b { display: block; color: var(--ink); font-size: 14.5px; margin-bottom: 4px; }
+    .an-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff;
+              font: inherit; font-size: 12.5px; font-weight: 700; color: var(--txt); cursor: pointer; text-decoration: none; }
+    .an-btn:hover { border-color: var(--dom); color: var(--dom); }
+    .an-seg { display: inline-flex; padding: 3px; border-radius: 10px; background: #f1f5f9; }
+    .an-seg button { height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; }
+    .an-seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(15,23,42,.12); }
 
-        <div class="space-y-0.5">
-            <div class="flex items-center gap-2">
-                <h1 class="text-base font-bold text-slate-800 leading-tight">
-                    {{ indicateur.m_name }}
-                </h1>
-                <!-- Point d'activité encore plus petit -->
-                <span class="flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                </span>
+    /* Tableau */
+    .an-outils { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+    .an-outils h3 { margin: 0 auto 0 0; font-size: 15px; font-weight: 800; color: var(--ink); }
+    #tableSearch { width: 260px; max-width: 100%; height: 36px; padding: 0 12px; border: 1px solid #d5dde5; border-radius: 10px; font: inherit; font-size: 13px; }
+    #tableSearch:focus { outline: none; border-color: var(--dom); }
+    .an-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .an-table th { padding: 10px 20px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--soft); border-bottom: 1px solid var(--line); }
+    .an-table td { padding: 12px 20px; border-bottom: 1px solid #f1f5f9; color: var(--txt); }
+    .an-table tr:hover td { background: #fbfcfd; }
+    .an-table .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 800; color: var(--ink); }
+    .an-pastille { display: inline-flex; padding: 2px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 700; }
+    .an-pastille.cible { background: #eff6ff; color: #1d4ed8; } .an-pastille.real { background: #ecfdf5; color: var(--ok); }
+    .an-pages { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 20px; font-size: 13px; color: var(--muted); }
+    .an-pages a, .an-pages span.off { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--txt); text-decoration: none; font-weight: 700; }
+    .an-pages a:hover { border-color: var(--dom); color: var(--dom); } .an-pages span.off { opacity: .45; }
+    .an-pages b { color: var(--ink); }
+
+    @media (max-width: 1100px) { .an-kpis { grid-template-columns: 1fr 1fr; } .an-graphes { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) {
+        .an-kpis { grid-template-columns: 1fr 1fr; gap: 10px; } .an-kpi { padding: 12px 14px; } .an-kpi b { font-size: 19px; }
+        .an-kpi.an-taux { grid-column: 1 / -1; } .an-kpis > :last-child { grid-column: 1 / -1; }
+        .an-table th:nth-child(1), .an-table td:nth-child(1) { display: none; }
+        .an-table th, .an-table td { padding: 10px 12px; }
+        #tableSearch { width: 100%; }
+    }
+</style>
+
+<main class="an" id="an">
+    <!-- Chiffres clés (remplis avec la réponse de votre vue analyse_data) -->
+    <section class="an-kpis" aria-label="Chiffres clés">
+        <div class="an-carte an-kpi an-taux">
+            <div class="an-anneau" id="anAnneau" aria-hidden="true">
+                <svg viewBox="0 0 80 80"><circle class="fond" cx="40" cy="40" r="34"></circle><circle id="miniGaugePath" cx="40" cy="40" r="34" stroke-dasharray="213.6" stroke-dashoffset="213.6"></circle></svg>
+                <em id="anTaux">…</em>
             </div>
-            <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
-                Analyse de performance
-            </p>
-        </div>
-    </div>
-
-    <!-- Badge Statut minimaliste -->
-    <div class="flex flex-col items-end gap-1">
-        <span class="px-2 py-0.5 bg-slate-50 text-[9px] font-bold text-slate-500 border border-slate-200 rounded-md uppercase">
-            Live Data
-        </span>
-        <span class="text-[9px] text-slate-300 font-medium">Mis à jour à l'instant</span>
-    </div>
-</div>
-
-    <!-- GRILLE DES GRAPHIQUES (DARK CARDS) -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- PROGRESSION -->
-        <div class="bg-[#111a2e] border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center">
-            <h2 class="text-sm font-bold text-slate-400 uppercase mb-4 tracking-wider">Progression Globale {{indicateur.type_aggregation}}</h2>
-         
-               <!-- Conteneur du graphique -->
-                <div id="radialChart" class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl"></div>
-         
-        </div>
-
-        <!-- LINE CHART -->
-        <div class="bg-[#111a2e] border border-slate-800 rounded-2xl p-6 shadow-xl lg:col-span-2">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-lg font-bold text-white">Évolution par Structure</h2>
-                <button id="refreshChart" class="text-sm text-blue-400 font-semibold hover:text-blue-300 transition-colors">
-                    <i class="fas fa-sync-alt mr-1"></i> Actualiser
-                </button>
-            </div>
-            <div class="h-[340px]">
-                <div id="analyticsChart"></div>
-            </div>
-        </div>
-    </div>
-  
-    <!-- TABLEAU AVEC FILTRE INTÉGRÉ (DARK CARD) -->
-    <div class="bg-[#111a2e] border border-slate-800 rounded-2xl shadow-xl overflow-hidden">
-        
-        <!-- HEADER DU TABLEAU AVEC RECHERCHE -->
-        <div class="p-4 border-b border-slate-800 bg-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 class="text-white font-bold flex items-center gap-2">
-                <i class="fas fa-list-ul text-blue-400"></i> Détails des Indicateurs
-            </h2>
-              <a href="/ia-analyse/{{indicateur.id}}/" class="text-sm text-blue-400 font-semibold hover:text-blue-300 transition-colors">
-                   Rapports
-                </a>
-            <!-- CHAMP DE RECHERCHE SUR LE TABLEAU -->
-            <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <i class="fas fa-search text-slate-500 text-xs"></i>
-                </span>
-                <input type="text" id="tableSearch" 
-                       class="block w-full md:w-72 pl-9 pr-3 py-1.5 border border-slate-700 rounded-lg bg-[#0f172a] text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
-                       placeholder="Filtrer les indicateurs ou unités...">
+            <div>
+                <small>Taux de réalisation</small>
+                <b><span id="anReal" style="display:inline;margin:0;font-size:inherit;color:inherit">…</span><span style="display:inline;font-size:14px;font-weight:600;color:var(--muted)"> / <span id="anCible" style="display:inline;margin:0;font-size:inherit;color:inherit">…</span></span></b>
+                <span class="an-statut" id="anStatut">Chargement…</span>
             </div>
         </div>
+        <div class="an-carte an-kpi"><small>Structures qui déclarent</small><b id="anNbStruct">…</b><span>avec au moins une réalisation</span></div>
+        <div class="an-carte an-kpi"><small>Valeurs enregistrées</small><b>{{ indicateurvaleur.paginator.count }}</b><span>réalisations et cibles</span></div>
+        <div class="an-carte an-kpi"><small>Dernière période renseignée</small><b id="anDerniere" style="font-size:18px">…</b><span>périodes actives de l'institution</span></div>
+    </section>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left" id="indicateurTable">
-    <thead class="bg-black/20 text-slate-400 border-b border-slate-800">
-        <tr>
-            <th class="p-4 font-semibold uppercase tracking-wider">Indicateur</th>
-            <th class="p-4 font-semibold uppercase tracking-wider">Unité d'organisation</th>
-            <th class="p-4 font-semibold uppercase tracking-wider">Période</th>
-            <th class="p-4 font-semibold uppercase tracking-wider text-right">Valeur</th>
-            <th class="p-4 font-semibold uppercase tracking-wider text-right">Nature</th>
-        </tr>
-    </thead>
-    <tbody class="divide-y divide-slate-800">
-        {% for indicateur_val in indicateurvaleur %}
-        <tr class="hover:bg-white/5 transition-colors duration-150 border-slate-800/50">
-            <td class="p-4 text-slate-200 font-medium">{{ indicateur_val.indicateur.m_name }}</td>
-            <td class="p-4 text-slate-400">{{ indicateur_val.structure.nom }}</td>
-            <td class="p-4 text-slate-400">{{ indicateur_val.periode_ok.nom }}</td>
-            <td class="p-4 text-right font-mono font-bold text-blue-400">
-                {{ indicateur_val.valeur|floatformat:"0" }}
-            </td>
-            <td class="p-4 text-right">
-                {% if indicateur_val.type_donnee == 'valeur' %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900/30 text-blue-300 border border-blue-800">
-                        Cible
-                    </span>
-                {% else %}
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-900/30 text-emerald-300 border border-emerald-800">
-                        Réalisation
-                    </span>
-                {% endif %}
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="5" class="p-10 text-center text-slate-500 italic">
-                <div class="flex flex-col items-center gap-2">
-                    <svg class="w-8 h-8 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Aucune donnée disponible
+    <!-- Les deux graphiques -->
+    <section class="an-graphes">
+        <div class="an-carte">
+            <div class="an-carte-tete">
+                <div><h3>Évolution dans le temps</h3><p>Réalisé et cible par période active.</p></div>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <div class="an-seg" role="group" aria-label="Affichage"><button type="button" class="on" data-vue="periode">Par période</button><button type="button" data-vue="cumul">Cumulé</button></div>
+                    <button type="button" id="refreshChart" class="an-btn" title="Actualiser"><i class="fas fa-rotate-right"></i></button>
                 </div>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
+            </div>
+            <div class="an-graphe"><div id="analyticsChart"></div></div>
         </div>
-
-    </div>
-    
-</div>
-<div class="flex items-center justify-center py-10 lg:px-0 px-4">
-    <div class="flex items-center justify-between border-t border-gray-200 w-full max-w-2xl pt-4">
-        
-        <!-- Bouton Précédent -->
-        <div class="flex items-center pt-3 text-gray-600 hover:text-indigo-700 cursor-pointer">
-            {% if indicateurvaleur.has_previous %}
-                <a href="?page={{ indicateurvaleur.previous_page_number }}" class="flex items-center">
-                    <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1.1665 4H12.8332" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M1.1665 4L4.49984 7.33333" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M1.1665 4L4.49984 0.666667" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <p class="text-sm ml-3 font-medium leading-none">Précédent</p>
-                </a>
-            {% else %}
-                <div class="flex items-center text-gray-300 cursor-not-allowed">
-                    <p class="text-sm font-medium leading-none">Précédent</p>
-                </div>
-            {% endif %}
+        <div class="an-carte">
+            <div class="an-carte-tete">
+                <div><h3>Comparaison par structure</h3><p>Réalisé (bande) et cible (repère) de chaque structure, de la plus avancée à la moins avancée.</p></div>
+            </div>
+            <div class="an-graphe"><div id="structuresChart"></div></div>
         </div>
+    </section>
 
-        <!-- Indicateur de page (Centre) -->
-        <div class="sm:flex hidden">
-            <p class="text-sm font-medium leading-none pt-3 text-gray-600">
-                Page <span class="text-indigo-700 font-bold">{{ indicateurvaleur.number }}</span> sur {{ indicateurvaleur.paginator.num_pages }}
-            </p>
+    <!-- Tableau des valeurs -->
+    <section class="an-carte">
+        <div class="an-outils">
+            <h3>Valeurs enregistrées</h3>
+            <div class="an-seg" role="group" aria-label="Nature"><button type="button" class="on" data-nature="">Toutes</button><button type="button" data-nature="real">Réalisations</button><button type="button" data-nature="cible">Cibles</button></div>
+            <input type="search" id="tableSearch" placeholder="Filtrer : structure, période…" aria-label="Filtrer le tableau" autocomplete="off">
+            <a href="/ia-analyse/{{ indicateur.id }}/" class="an-btn"><i class="fas fa-file-lines"></i> Rapports</a>
         </div>
-
-        <!-- Bouton Suivant -->
-        <div class="flex items-center pt-3 text-gray-600 hover:text-indigo-700 cursor-pointer">
-            {% if indicateurvaleur.has_next %}
-                <a href="?page={{ indicateurvaleur.next_page_number }}" class="flex items-center">
-                    <p class="text-sm font-medium leading-none mr-3">Suivant</p>
-                    <svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1.1665 4H12.8332" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M12.8332 4L9.49984 7.33333" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M12.8332 4L9.49984 0.666667" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </a>
-            {% else %}
-                <div class="flex items-center text-gray-300 cursor-not-allowed">
-                    <p class="text-sm font-medium leading-none">Suivant</p>
-                </div>
-            {% endif %}
+        <div style="overflow-x:auto">
+            <table class="an-table" id="indicateurTable">
+                <thead><tr><th>Indicateur</th><th>Structure</th><th>Période</th><th style="text-align:right">Valeur</th><th style="text-align:right">Nature</th></tr></thead>
+                <tbody>
+                    {% for indicateur_val in indicateurvaleur %}
+                    <tr data-nature="{% if indicateur_val.type_donnee == 'valeur' %}cible{% elif indicateur_val.type_donnee == 'valeur_form' %}real{% else %}autre{% endif %}">
+                        <td>{{ indicateur_val.indicateur.nicename|default:indicateur_val.indicateur.m_name }}</td>
+                        <td>{{ indicateur_val.structure.nom|default:"—" }}</td>
+                        <td>{{ indicateur_val.periode_ok.nom|default:"—" }}</td>
+                        <td class="num">{{ indicateur_val.valeur|floatformat:"-2" }}</td>
+                        <td style="text-align:right">{% if indicateur_val.type_donnee == 'valeur' %}<span class="an-pastille cible">Cible</span>{% elif indicateur_val.type_donnee == 'valeur_form' %}<span class="an-pastille real">Réalisation</span>{% else %}<span class="an-pastille" style="background:#f1f5f9;color:#475569">{{ indicateur_val.type_donnee|default:"Autre" }}</span>{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" style="padding:36px;text-align:center;color:var(--muted)">Aucune valeur enregistrée pour cet indicateur.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        
-    </div>
-</div>
-<!-- SCRIPTS -->
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+        {% if indicateurvaleur.has_other_pages %}
+        <nav class="an-pages" aria-label="Pages du tableau">
+            {% if indicateurvaleur.has_previous %}<a href="?page={{ indicateurvaleur.previous_page_number }}"><i class="fas fa-arrow-left"></i> Précédent</a>{% else %}<span class="off">Précédent</span>{% endif %}
+            <span>Page <b>{{ indicateurvaleur.number }}</b> sur {{ indicateurvaleur.paginator.num_pages }} · {{ indicateurvaleur.paginator.count }} valeurs</span>
+            {% if indicateurvaleur.has_next %}<a href="?page={{ indicateurvaleur.next_page_number }}">Suivant <i class="fas fa-arrow-right"></i></a>{% else %}<span class="off">Suivant</span>{% endif %}
+        </nav>
+        {% endif %}
+    </section>
+</main>
 
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
 <script>
-let lineChart = null;
-let pieChart = null;
+(function () {
+    var root = document.getElementById('an'); if (!root) return;
+    var URL_DONNEES = "/indicateur/analyse_data/{{ indicateur.id }}/";      /* votre vue analyse_data */
+    var css = getComputedStyle(root), DOM = css.getPropertyValue('--dom').trim() || '#123A37', ACC = css.getPropertyValue('--acc').trim() || '#E48B0C';
+    var fmt = function (v) { return v == null ? '–' : Number(v).toLocaleString('fr-FR', { maximumFractionDigits: 2 }); };
+    var $ = function (id) { return document.getElementById(id); };
+    var D = null, vue = 'periode', courbe = null, bandes = null;
 
-/**
- * Logique de recherche/filtrage du tableau
- */
-document.getElementById('tableSearch').addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    const tableRows = document.querySelectorAll('#indicateurTable tbody tr');
+    function vide(el, titre, texte) { el.innerHTML = '<div class="an-vide"><div><b>' + titre + '</b>' + texte + '</div></div>'; }
+    function serie(nom) { var ds = (D.datasets || []).filter(function (d) { return nom === 'cible' ? d.is_target : !d.is_target; })[0]; return ds ? ds.data : []; }
+    function cumuler(t) { var s = 0; return t.map(function (v) { s += +v || 0; return Math.round(s * 100) / 100; }); }
 
-    tableRows.forEach(row => {
-        // On récupère tout le texte de la ligne pour une recherche globale
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-});
-
-/**
- * Chargement des graphiques ApexCharts
- */
-async function loadAnalytics() {
-    const indicateurId = "{{ indicateur.id }}";
-    const url = `/indicateur/analyse_data/${indicateurId}/`;
-
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
-
-        const options = {
-            series: data.datasets.map(ds => ({
-                name: ds.label,
-                // Si c'est une cible (target), on peut forcer l'affichage en ligne, 
-                // et le reste en colonnes pour un look "DHIS2"
-                type: ds.is_target ? 'line' : 'column',
-                data: ds.data
-            })),
-            chart: {
-                height: 400,
-                type: 'line', // Type de base pour permettre le combo line/column
-                stacked: false,
-                background: 'transparent',
-                foreColor: '#94a3b8',
-                toolbar: { show: true }
-            },
-            stroke: {
-                // Largeur : 4px pour les lignes, 0 pour les colonnes
-                width: data.datasets.map(ds => ds.is_target ? 4 : 0),
-                curve: 'smooth',
-                dashArray: data.datasets.map(ds => ds.is_target ? 5 : 0),
-            },
-            plotOptions: {
-                bar: {
-                    columnWidth: '50%',
-                    borderRadius: 4
-                }
-            },
-            colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'], // Palette moderne
-            xaxis: {
-                categories: data.labels, // Ici s'afficheront "Année 2026", "Année 2027"
-                axisBorder: { color: '#1e293b' },
-            },
-            yaxis: {
-                title: { text: "Valeurs Cumulées" },
-                labels: { style: { colors: '#94a3b8' } }
-            },
-            grid: {
-                borderColor: '#1e293b',
-                strokeDashArray: 4
-            },
-            tooltip: {
-                theme: 'dark',
-                shared: true,
-                intersect: false
-            },
-            legend: {
-                position: 'top',
-                horizontalAlign: 'center'
-            }
-        };
-
-        // Gestion du rendu unique
-        if (window.mainChart) window.mainChart.destroy();
-        window.mainChart = new ApexCharts(document.querySelector("#analyticsChart"), options);
-        window.mainChart.render();
-
-    } catch (error) {
-        console.error("Erreur lors du chargement des graphiques :", error);
+    /* Chiffres clés : taux_realisation, total_realisation, total_cible, structures (réponse de analyse_data) */
+    function chiffres() {
+        var taux = +D.taux_realisation || 0, aCible = (D.total_cible || 0) > 0;
+        $('anReal').textContent = fmt(D.total_realisation); $('anCible').textContent = aCible ? fmt(D.total_cible) : '–';
+        $('anTaux').textContent = aCible ? Math.round(taux) + ' %' : '–';
+        var st = $('anStatut'), an = $('anAnneau');
+        st.className = 'an-statut'; an.classList.remove('ok', 'retard');
+        if (!aCible) st.textContent = 'Aucune cible saisie';
+        else if (taux >= 100) { st.textContent = 'Cible atteinte'; st.classList.add('ok'); an.classList.add('ok'); }
+        else if (taux >= 75) st.textContent = 'En bonne voie';
+        else if (taux >= 50) { st.textContent = 'À surveiller'; st.classList.add('retard'); an.classList.add('retard'); }
+        else { st.textContent = 'En retard'; st.classList.add('critique'); an.classList.add('retard'); }
+        requestAnimationFrame(function () { $('miniGaugePath').style.strokeDashoffset = 213.6 * (1 - Math.min(aCible ? taux : 0, 100) / 100); });
+        var S = D.structures || [];
+        $('anNbStruct').innerHTML = S.filter(function (s) { return s.realisation > 0; }).length + (S.length ? ' <span style="display:inline;font-size:14px;color:var(--muted)">/ ' + S.length + '</span>' : '');
+        var r = serie('real'), der = null; (D.labels || []).forEach(function (l, i) { if ((+r[i] || 0) > 0) der = l; });
+        $('anDerniere').textContent = der || '—';
     }
-}
-function calculateGlobalProgress(datasets) {
-    if (!datasets || datasets.length === 0) return 0;
-    let sum = 0;
-    datasets.forEach(ds => {
-        const lastVal = ds.data[ds.data.length - 1] || 0;
-        const targetVal = ds.data[0] ? ds.data[0] * 2 : 100;
-        sum += (lastVal / targetVal) * 100;
-    });
-    return Math.min(Math.round(sum / datasets.length), 100);
-}
 
-document.getElementById('refreshChart').addEventListener('click', loadAnalytics);
-document.addEventListener('DOMContentLoaded', loadAnalytics);
+    /* 1. Évolution dans le temps : courbe du réalisé + cible en pointillés */
+    function dessinerCourbe() {
+        var el = $('analyticsChart');
+        if (!window.ApexCharts) { vide(el, 'Graphique indisponible', 'La bibliothèque de graphiques n’a pas pu se charger.'); return; }
+        if (!D.labels || !D.labels.length) { vide(el, 'Aucune période active', 'Activez des périodes dans les paramètres pour voir l’évolution.'); return; }
+        var real = serie('real'), cible = serie('cible');
+        if (vue === 'cumul') { real = cumuler(real); cible = cumuler(cible); }
+        var series = [{ name: vue === 'cumul' ? 'Réalisé cumulé' : 'Réalisé', type: 'area', data: real }];
+        if (cible.some(function (v) { return +v > 0; })) series.push({ name: vue === 'cumul' ? 'Cible cumulée' : 'Cible', type: 'line', data: cible });
+        if (courbe) courbe.destroy(); el.innerHTML = '';
+        courbe = new ApexCharts(el, {
+            series: series,
+            chart: { height: 340, type: 'line', fontFamily: 'inherit', foreColor: '#64748b', toolbar: { show: true, tools: { download: true, selection: false, zoom: false, zoomin: false, zoomout: false, pan: false, reset: false } }, animations: { speed: 500 } },
+            colors: [DOM, ACC], stroke: { width: [3, 2], curve: 'smooth', dashArray: [0, 6] },
+            fill: { type: ['gradient', 'solid'], gradient: { opacityFrom: .28, opacityTo: 0 } },
+            markers: { size: [4, 4], strokeWidth: 0 }, dataLabels: { enabled: false },
+            xaxis: { categories: D.labels, axisBorder: { color: '#e5e7eb' }, axisTicks: { color: '#e5e7eb' } },
+            yaxis: { labels: { formatter: fmt } }, grid: { borderColor: '#eef1f5', strokeDashArray: 4 },
+            legend: { position: 'top', horizontalAlign: 'left' }, tooltip: { shared: true, intersect: false, y: { formatter: fmt } }
+        });
+        courbe.render();
+    }
 
+    /* 2. Comparaison par structure : bandes horizontales + repère de cible */
+    function dessinerBandes() {
+        var el = $('structuresChart'), S = D.structures || [];
+        if (!window.ApexCharts) { vide(el, 'Graphique indisponible', 'La bibliothèque de graphiques n’a pas pu se charger.'); return; }
+        if (!S.length) { vide(el, 'Aucune structure', 'Aucune structure n’a encore de valeur sur les périodes actives.'); return; }
+        var couleur = function (s) { return s.taux == null ? '#94a3b8' : s.taux >= 100 ? '#047857' : s.taux >= 50 ? DOM : '#b45309'; };
+        if (bandes) bandes.destroy(); el.innerHTML = '';
+        bandes = new ApexCharts(el, {
+            series: [{ name: 'Réalisé', data: S.map(function (s) {
+                var p = { x: s.nom, y: s.realisation || 0, fillColor: couleur(s) };
+                if (s.cible > 0) p.goals = [{ name: 'Cible', value: s.cible, strokeWidth: 3, strokeHeight: 18, strokeColor: ACC }];
+                return p; }) }],
+            chart: { type: 'bar', height: Math.max(260, S.length * 44 + 70), fontFamily: 'inherit', foreColor: '#64748b', toolbar: { show: false }, animations: { speed: 500 } },
+            plotOptions: { bar: { horizontal: true, barHeight: '58%', borderRadius: 5, borderRadiusApplication: 'end', dataLabels: { position: 'top' } } },
+            dataLabels: { enabled: true, offsetX: 26, style: { fontSize: '11.5px', fontWeight: 700, colors: ['#334155'] },
+                          formatter: function (v, o) { var s = S[o.dataPointIndex]; return s.taux != null ? Math.round(s.taux) + ' %' : fmt(v); } },
+            xaxis: { labels: { formatter: fmt } }, yaxis: { labels: { maxWidth: 160, style: { fontSize: '12px' } } },
+            grid: { borderColor: '#eef1f5', strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+            legend: { show: true, showForSingleSeries: true, position: 'top', horizontalAlign: 'left', customLegendItems: ['Réalisé', 'Cible'], markers: { fillColors: [DOM, ACC] } },
+            tooltip: { custom: function (o) { var s = S[o.dataPointIndex];
+                return '<div style="padding:8px 10px;font-size:12.5px"><b>' + s.nom + '</b><br>Réalisé : ' + fmt(s.realisation) + '<br>Cible : ' + fmt(s.cible) + (s.taux != null ? '<br>Taux : <b>' + Math.round(s.taux) + ' %</b>' : '') + '</div>'; } }
+        });
+        bandes.render();
+    }
 
-
-
-// L'ID est injecté par le template Django
-const INDICATOR_ID = "{{ indicateur.id }}"; 
-
-async function renderRadialChart() {
-    try {
-        // 1. Récupération des données JSON
-        const response = await fetch(`/aggregation_indicator/${INDICATOR_ID}/`);
-        const data = await response.json();
-
-        if (data.status === "success") {
-            // ALIGNEMENT : On utilise les clés envoyées par la vue Python
-            const valeur = data.value; 
-            const nomIndicateur = data.indicator_name;
-            
-            // 2. Configuration d'ApexCharts
-            const options = {
-                // ApexCharts attend un tableau pour 'series'
-                series: [valeur], 
-                chart: {
-                    height: 350,
-                    type: 'radialBar',
-                    toolbar: { show: false }
-                },
-                plotOptions: {
-                    radialBar: {
-                        startAngle: -135,
-                        endAngle: 135,
-                        hollow: {
-                            margin: 0,
-                            size: '70%',
-                            background: '#0f172a', 
-                        },
-                        track: {
-                            background: '#1e293b',
-                            strokeWidth: '67%',
-                        },
-                        dataLabels: {
-                            show: true,
-                            name: {
-                                offsetY: -10,
-                                show: true,
-                                color: '#64748b',
-                                fontSize: '14px'
-                            },
-                            value: {
-                                // Affiche la valeur brute (ex: 1100)
-                                formatter: function(val) {
-                                    return parseFloat(val).toLocaleString(); 
-                                },
-                                color: '#3b82f6',
-                                fontSize: '36px',
-                                show: true,
-                            }
-                        }
-                    }
-                },
-                fill: {
-                    type: 'gradient',
-                    gradient: {
-                        shade: 'dark',
-                        type: 'horizontal',
-                        gradientToColors: ['#10b981'],
-                        stops: [0, 100]
-                    }
-                },
-                stroke: {
-                    lineCap: 'round'
-                },
-                // ALIGNEMENT : Utilisation du nom d'indicateur dynamique
-                labels: [nomIndicateur], 
-            };
-
-            // 3. Initialisation et rendu
-            // Assurez-vous d'avoir <div id="radialChart"></div> dans votre HTML
-            const chart = new ApexCharts(document.querySelector("#radialChart"), options);
-            chart.render();
-            
-        } else {
-            console.error("Erreur API:", data.message);
+    async function charger() {
+        try {
+            var r = await fetch(URL_DONNEES, { headers: { 'Accept': 'application/json' } });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            D = await r.json();
+            chiffres(); dessinerCourbe(); dessinerBandes();
+        } catch (e) {
+            console.error('Analyse : chargement impossible', e);
+            $('anStatut').textContent = 'Données indisponibles';
+            vide($('analyticsChart'), 'Données indisponibles', 'Le serveur n’a pas répondu. Cliquez sur « Actualiser ».');
+            vide($('structuresChart'), 'Données indisponibles', '');
         }
-    } catch (error) {
-        console.error("Erreur réseau ou script:", error);
     }
-}
 
-// Lancement
-document.addEventListener("DOMContentLoaded", renderRadialChart);
+    root.querySelectorAll('[data-vue]').forEach(function (b) {
+        b.addEventListener('click', function () { vue = b.dataset.vue; root.querySelectorAll('[data-vue]').forEach(function (x) { x.classList.toggle('on', x === b); }); if (D) dessinerCourbe(); });
+    });
+    $('refreshChart').addEventListener('click', charger);
+    charger();
+
+    /* Tableau : recherche + nature */
+    var nature = '', champ = $('tableSearch');
+    function filtrer() {
+        var q = champ.value.trim().toLowerCase();
+        document.querySelectorAll('#indicateurTable tbody tr[data-nature]').forEach(function (r) {
+            r.style.display = (!q || r.textContent.toLowerCase().indexOf(q) > -1) && (!nature || r.dataset.nature === nature) ? '' : 'none';
+        });
+    }
+    champ.addEventListener('input', filtrer);
+    root.querySelectorAll('button[data-nature]').forEach(function (b) {
+        b.addEventListener('click', function () { nature = b.dataset.nature; root.querySelectorAll('button[data-nature]').forEach(function (x) { x.classList.toggle('on', x === b); }); filtrer(); });
+    });
+})();
 </script>
 {% endblock %}
