@@ -1,8 +1,17 @@
 {% extends './index.html' %}
 {% block main %}
-<div class="cc-ui">
+{% comment %}
+  Complétude de la collecte.
+  Lecture en 4 temps, sans rien avoir à interpréter :
+    1. le baromètre + une phrase de synthèse ;
+    2. les périodes, une ligne chacune : « 20 sur 30 structures ont saisi · 10 manquantes » ; clic = noms ;
+    3. le tableau structures × périodes ;
+    4. le classement et la liste des structures à relancer.
+  Ids, classes, variables Django et JS d'origine conservés ; ajouts marqués « ajout ».
+{% endcomment %}
+<div class="cc-ui{% if periodes|length > 8 %} is-dense{% endif %}">
 
-{# ================= EN-TÊTE + BAROMÈTRE ================= #}
+{# ================= EN-TÊTE ================= #}
 <section class="cc-hero">
     <div class="cc-hero-txt">
         <a href="javascript:history.back()" class="cc-back">
@@ -13,16 +22,58 @@
         <div class="cc-meta">
             {% if dataset.periodicite %}<span class="cc-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>{{ dataset.periodicite }}</span>{% endif %}
             <span class="cc-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>{{ total_structures }} structure{% if total_structures > 1 %}s{% endif %} déclarée{% if total_structures > 1 %}s{% endif %}</span>
-            {% if annees %}
-            <form method="get" class="cc-year-f">
+            <span class="cc-pill">{{ periodes|length }} période{% if periodes|length > 1 %}s{% endif %}{% if annee %} en {{ annee }}{% endif %}</span>
+        </div>
+    </div>
+    <div class="cc-actions">{# ajout #}
+        {% if annees %}
+        <form method="get" class="cc-year-f">
+            <label class="cc-year-l">Année
                 <select name="annee" onchange="this.form.submit()" aria-label="Année" class="cc-year">
                     {% for a in annees %}<option value="{{ a }}" {% if a|stringformat:'s' == annee %}selected{% endif %}>{{ a }}</option>{% endfor %}
                 </select>
-            </form>
-            {% endif %}
-        </div>
+            </label>
+        </form>
+        {% endif %}
+        <button type="button" class="cc-btn" id="ccExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Exporter (Excel)</button>
+        <button type="button" class="cc-btn" onclick="window.print()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M6 14h12v7H6z"/></svg>Imprimer</button>
+    </div>
+</section>
 
-        {# Répartition des structures #}
+{# ================= BAROMÈTRE + SYNTHÈSE ================= #}
+<section class="cc-kpis">
+    <div class="cc-kpi-main">
+        <div class="cc-gauge {% if not cases_dues %}g-none{% endif %}">
+            <svg viewBox="0 0 200 118" aria-hidden="true">
+                <defs>
+                    <linearGradient id="ccG" x1="0" x2="1"><stop offset="0" stop-color="#d4697a"/><stop offset=".5" stop-color="#e3a23a"/><stop offset="1" stop-color="#43a074"/></linearGradient>
+                </defs>
+                <path d="M22 104 A78 78 0 0 1 178 104" class="cc-g-bg" pathLength="100"/>
+                <path d="M22 104 A78 78 0 0 1 178 104" class="cc-g-val" pathLength="100" style="--t: {{ taux }}"/>
+                <g class="cc-g-needle" style="--t: {{ taux }}"><line x1="100" y1="104" x2="100" y2="40"/><circle cx="100" cy="104" r="6"/></g>
+            </svg>
+            <div class="cc-g-scale" aria-hidden="true"><span>0 %</span><span>100 %</span></div>{# ajout #}
+            {% if cases_dues %}
+            <div class="cc-g-num"><b>{{ taux }}<small>%</small></b><span>de complétude</span></div>
+            {% else %}{# aucune période clôturée : pas de « 0 % » trompeur #}
+            <div class="cc-g-num"><b>—</b><span>rien d'exigible pour l'instant</span></div>
+            {% endif %}
+            <p class="cc-g-cap">{{ cases_ok }} saisie{% if cases_ok > 1 %}s{% endif %} sur {{ cases_dues }} attendue{% if cases_dues > 1 %}s{% endif %}<br><small>{{ total_structures }} structures × {{ nb_periodes }} période{% if nb_periodes > 1 %}s{% endif %} exigible{% if nb_periodes > 1 %}s{% endif %}</small></p>
+        </div>
+    </div>
+
+    <div class="cc-synth">{# ajout : la page dit en clair ce qu'il faut retenir #}
+        <h2 class="cc-synth-t">En résumé</h2>
+        <p class="cc-resume">
+            {% if cases_dues %}
+            <b>{{ cases_ok }}</b> saisie{% if cases_ok > 1 %}s{% endif %} reçue{% if cases_ok > 1 %}s{% endif %} sur <b>{{ cases_dues }}</b> attendue{% if cases_dues > 1 %}s{% endif %}
+            pour {% if nb_periodes > 1 %}les <b>{{ nb_periodes }}</b> périodes déjà clôturées{% else %}la période déjà clôturée{% endif %}.
+            {% if nb_retard or nb_jamais %}Il reste des structures à relancer.{% else %}Toutes les structures sont à jour.{% endif %}
+            {% else %}
+            Aucune période n'est encore clôturée{% if annee %} en {{ annee }}{% endif %} : rien n'est exigible pour l'instant.
+            {% endif %}
+        </p>
+
         <div class="cc-split">
             <div class="cc-split-bar" role="img" aria-label="{{ nb_ajour }} à jour, {{ nb_retard }} en retard, {{ nb_jamais }} sans saisie">
                 {% if nb_ajour %}<span class="s-ok" style="flex: {{ nb_ajour }}" title="{{ nb_ajour }} à jour"></span>{% endif %}
@@ -30,55 +81,52 @@
                 {% if nb_jamais %}<span class="s-no" style="flex: {{ nb_jamais }}" title="{{ nb_jamais }} sans saisie"></span>{% endif %}
             </div>
             <div class="cc-split-leg">
-                <span><i class="s-ok"></i><b>{{ nb_ajour }}</b> à jour</span>
-                <span><i class="s-warn"></i><b>{{ nb_retard }}</b> en retard</span>
-                <span><i class="s-no"></i><b>{{ nb_jamais }}</b> rien saisi</span>
+                <span class="cc-stat"><i class="s-ok"></i><b>{{ nb_ajour }}</b><em>à jour</em><small>tout saisi</small></span>
+                <span class="cc-stat"><i class="s-warn"></i><b>{{ nb_retard }}</b><em>en retard</em><small>il manque des périodes</small></span>
+                <span class="cc-stat"><i class="s-no"></i><b>{{ nb_jamais }}</b><em>rien saisi</em><small>aucune saisie cette année</small></span>
             </div>
         </div>
-    </div>
-
-    <div class="cc-gauge">
-        <svg viewBox="0 0 200 118" aria-hidden="true">
-            <defs>
-                <linearGradient id="ccG" x1="0" x2="1"><stop offset="0" stop-color="#d4697a"/><stop offset=".5" stop-color="#e3a23a"/><stop offset="1" stop-color="#43a074"/></linearGradient>
-            </defs>
-            <path d="M22 104 A78 78 0 0 1 178 104" class="cc-g-bg" pathLength="100"/>
-            <path d="M22 104 A78 78 0 0 1 178 104" class="cc-g-val" pathLength="100" style="--t: {{ taux }}"/>
-            <g class="cc-g-needle" style="--t: {{ taux }}"><line x1="100" y1="104" x2="100" y2="40"/><circle cx="100" cy="104" r="6"/></g>
-        </svg>
-        <div class="cc-g-num"><b>{{ taux }}<small>%</small></b><span>de complétude</span></div>
-        <p class="cc-g-cap">{{ cases_ok }} saisie{% if cases_ok > 1 %}s{% endif %} sur {{ cases_dues }} attendue{% if cases_dues > 1 %}s{% endif %}<br><small>{{ total_structures }} structures × {{ nb_periodes }} période{% if nb_periodes > 1 %}s{% endif %} exigible{% if nb_periodes > 1 %}s{% endif %}</small></p>
     </div>
 </section>
 
 {% if periodes %}
 {# ================= PAR PÉRIODE ================= #}
-<section class="cc-sec">
+<section class="cc-sec cc-card cc-per-sec">
     <div class="cc-sec-head">
-        <h2>Par période</h2>
-        <span class="cc-hint">Cliquez sur une période pour voir qui a saisi</span>
+        <div>
+            <h2>Par période</h2>
+            <span class="cc-hint">Combien de structures ont saisi, période par période. Cliquez sur une période pour voir les noms.</span>
+        </div>
     </div>
-    <div class="cc-strip" role="tablist">
-        {% for p in periodes %}
-        <button type="button" role="tab" class="cc-per-card st-{{ p.statut }}{% if p.periode.id == periode_courante.periode.id %} is-on{% endif %}" data-p="{{ p.periode.id }}" style="--i: {{ forloop.counter0 }}">
-            <span class="cc-per-top">
-                <span class="cc-per-name">{{ p.label }}</span>
-                <span class="cc-st">{% if p.statut == 'a_venir' %}À venir{% elif p.statut == 'en_cours' %}En cours{% else %}Clôturée{% endif %}</span>
-            </span>
-            <span class="cc-per-mid">
-                <span class="cc-ring" style="--p: {{ p.pct }}"><em>{{ p.pct }}%</em></span>
-                <span class="cc-per-nums">
-                    <span class="n-ok"><b>{{ p.nb_saisies }}</b> saisie{% if p.nb_saisies > 1 %}s{% endif %}</span>
-                    <span class="n-no{% if not p.nb_non_saisies or not p.du %} is-zero{% endif %}"><b>{{ p.nb_non_saisies }}</b> {% if p.du %}manquante{% if p.nb_non_saisies > 1 %}s{% endif %}{% else %}à saisir{% endif %}</span>
+
+    <div class="cc-strip-wrap">
+        <div class="cc-strip" role="tablist">
+            {% for p in periodes %}
+            <button type="button" role="tab" class="cc-per-card st-{{ p.statut }} {% if p.pct >= 80 %}lvl-ok{% elif p.pct >= 50 %}lvl-warn{% else %}lvl-no{% endif %}{% if p.periode.id == periode_courante.periode.id %} is-on{% endif %}" data-p="{{ p.periode.id }}" style="--i: {{ forloop.counter0 }}">
+                <span class="cc-per-top">
+                    <span class="cc-per-name">{{ p.label }}</span>
+                    <span class="cc-st">{% if p.statut == 'a_venir' %}À venir{% elif p.statut == 'en_cours' %}En cours{% else %}Clôturée{% endif %}</span>
                 </span>
-            </span>
-            {% if p.periode.date_debut or p.periode.date_fin %}<span class="cc-per-dates">{{ p.periode.date_debut|date:"d/m" }} → {{ p.periode.date_fin|date:"d/m/Y" }}</span>{% endif %}
-        </button>
-        {% endfor %}
+                <span class="cc-row-bar"><span style="--w: {{ p.pct }}%"></span></span>{# ajout : barre horizontale #}
+                <span class="cc-per-mid">
+                    <span class="cc-ring" style="--p: {{ p.pct }}"><em>{{ p.pct }}%</em></span>
+                    <span class="cc-per-nums">
+                        <span class="n-ok"><b>{{ p.nb_saisies }}</b> sur {{ total_structures }} ont saisi</span>
+                        <span class="n-no{% if not p.nb_non_saisies or not p.du %} is-zero{% endif %}">{% if p.statut == 'a_venir' %}pas encore ouverte{% elif p.du %}<b>{{ p.nb_non_saisies }}</b> manquante{% if p.nb_non_saisies > 1 %}s{% endif %}{% else %}<b>{{ p.nb_non_saisies }}</b> à saisir{% endif %}</span>
+                    </span>
+                </span>
+                {% if p.periode.date_debut or p.periode.date_fin %}<span class="cc-per-dates">{{ p.periode.date_debut|date:"d/m" }} → {{ p.periode.date_fin|date:"d/m/Y" }}</span>{% endif %}
+            </button>
+            {% endfor %}
+        </div>
     </div>
 
     {% for p in periodes %}
     <div class="cc-panel" id="ccP-{{ p.periode.id }}" {% if p.periode.id != periode_courante.periode.id %}hidden{% endif %}>
+        <div class="cc-panel-title">{# ajout #}
+            <b>{{ p.label }}</b>
+            <span>{% if p.statut == 'a_venir' %}Période pas encore ouverte{% else %}{{ p.nb_saisies }} structure{% if p.nb_saisies > 1 %}s{% endif %} sur {{ total_structures }} ont saisi ({{ p.pct }} %){% endif %}</span>
+        </div>
         <div class="cc-panel-col">
             <h3 class="h-no"><span></span>Pas encore saisi · {{ p.nb_non_saisies }}</h3>
             <ul>{% for s in p.non_saisies %}<li class="li-no">{{ s.nom|default:s }}</li>{% empty %}<li class="li-none">Toutes les structures ont saisi.</li>{% endfor %}</ul>
@@ -93,9 +141,12 @@
 {% endif %}
 
 {# ================= 1. STRUCTURES DÉCLARÉES ================= #}
-<section class="cc-sec">
+<section class="cc-sec cc-card">
     <div class="cc-sec-head">
-        <h2><span class="cc-step">1</span>Structures déclarées</h2>
+        <div>
+            <h2><span class="cc-step">1</span>Structures déclarées</h2>
+            <span class="cc-hint">Une ligne par structure, une colonne par période : ✓ saisi, – manquant.</span>
+        </div>
         <div class="cc-tools">
             <div class="cc-tabs">
                 <button type="button" class="is-on" data-f="all">Toutes <i>{{ total_structures }}</i></button>
@@ -105,26 +156,30 @@
             </div>
             <label class="cc-find">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                <input type="search" id="ccFind" placeholder="Rechercher…">
+                <input type="search" id="ccFind" placeholder="Rechercher une structure…">
             </label>
         </div>
     </div>
 
-    <div class="cc-card cc-table-wrap">
+    <div class="cc-table-wrap">
         <table class="cc-table" id="ccDecl">
             <thead>
                 <tr>
                     <th class="th-name">Structure</th>
                     <th>Statut</th>
-                    {% for p in periodes %}<th class="th-per st-{{ p.statut }}" title="{{ p.label }}">{{ p.label }}</th>{% endfor %}
-                    <th class="th-tot">Progression</th>
+                    <th class="th-tot">Périodes saisies</th>{# ajout : placée avant les périodes, toujours visible #}
+                    {% for p in periodes %}<th class="th-per st-{{ p.statut }}" title="{{ p.label }}" data-p="{{ p.periode.id }}"><span class="th-lbl">{{ p.label }}</span></th>{% endfor %}
                 </tr>
             </thead>
             <tbody>
                 {% for s in structures_info %}
                 <tr data-etat="{{ s.etat }}" data-nom="{{ s.nom|lower }}">
-                    <td class="td-name">{{ s.nom }}</td>
+                    <td class="td-name" title="{{ s.nom }}">{{ s.nom }}</td>
                     <td><span class="cc-badge b-{{ s.etat }}">{% if s.etat == 'ajour' %}À jour{% elif s.etat == 'retard' %}En retard{% else %}Rien saisi{% endif %}</span></td>
+                    <td class="td-tot">
+                        <span class="cc-mini"><span class="{% if s.pct >= 80 %}r-ok{% elif s.pct >= 50 %}r-warn{% else %}r-no{% endif %}" style="--w: {{ s.pct }}%"></span></span>
+                        <b>{{ s.nb_periodes }}</b><small>/{{ nb_periodes }}</small>
+                    </td>
                     {% for c in s.cases %}
                     <td class="td-cell">
                         <span class="cc-cell {% if c.ok %}c-ok{% elif c.du %}c-no{% elif c.statut == 'en_cours' %}c-cours{% else %}c-wait{% endif %}"
@@ -133,10 +188,6 @@
                         </span>
                     </td>
                     {% endfor %}
-                    <td class="td-tot">
-                        <span class="cc-mini"><span style="--w: {{ s.pct }}%"></span></span>
-                        <b>{{ s.nb_periodes }}</b><small>/{{ nb_periodes }}</small>
-                    </td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="99" class="li-none cc-pad">Aucune structure n'est rattachée à ce jeu de données.</td></tr>
@@ -154,15 +205,18 @@
 </section>
 
 {# ================= 2. STRUCTURES AYANT DÉJÀ SAISI ================= #}
-<section class="cc-sec">
-    <div class="cc-sec-head">
-        <h2><span class="cc-step">2</span>Structures ayant déjà saisi</h2>
-        <span class="cc-count">{{ nb_ont_saisi }} sur {{ total_structures }}</span>
-    </div>
-
+<section class="cc-sec cc-sec-plain">
     <div class="cc-two">
         <div class="cc-card cc-rank">
+            <div class="cc-sec-head">
+                <div>
+                    <h2><span class="cc-step">2</span>Structures ayant déjà saisi</h2>
+                    <span class="cc-hint">Classées de la plus régulière à la moins régulière</span>
+                </div>
+                <span class="cc-count">{{ nb_ont_saisi }} sur {{ total_structures }}</span>
+            </div>
             <h3 class="cc-card-t">Périodes couvertes par structure</h3>
+            <div class="cc-rank-body">
             {% for s in structures_saisies %}
             <div class="cc-rank-row" style="--i: {{ forloop.counter0 }}">
                 <span class="cc-rank-pos">{{ forloop.counter }}</span>
@@ -171,24 +225,33 @@
                         <span class="cc-rank-name" title="{{ s.nom }}">{{ s.nom }}</span>
                         <span class="cc-rank-val">{{ s.pct }}%</span>
                     </div>
-                    <span class="cc-rank-bar"><span class="{% if s.pct >= 100 %}r-ok{% elif s.pct >= 50 %}r-warn{% else %}r-no{% endif %}" style="--w: {{ s.pct }}%"></span></span>
+                    <span class="cc-rank-bar"><span class="{% if s.pct >= 80 %}r-ok{% elif s.pct >= 50 %}r-warn{% else %}r-no{% endif %}" style="--w: {{ s.pct }}%"></span></span>
                     <div class="cc-rank-sub">
+                        <span class="cc-rank-info">{{ s.nb_periodes }} période{% if s.nb_periodes > 1 %}s{% endif %} sur {{ nb_periodes }} · {{ s.nb_valeurs }} valeur{% if s.nb_valeurs > 1 %}s{% endif %}{% if s.derniere %} · dernière le {{ s.derniere|date:"d/m/Y" }}{% endif %}</span>
                         <span class="cc-dots">{% for c in s.cases %}<i class="{% if c.ok %}d-ok{% elif c.du %}d-no{% elif c.statut == 'en_cours' %}d-cours{% else %}d-wait{% endif %}" title="{{ c.label }}"></i>{% endfor %}</span>
-                        <span>{{ s.nb_valeurs }} valeur{% if s.nb_valeurs > 1 %}s{% endif %}{% if s.derniere %} · dernière le {{ s.derniere|date:"d/m/Y" }}{% endif %}</span>
                     </div>
                 </div>
             </div>
             {% empty %}
             <p class="cc-empty">Aucune structure n'a encore saisi{% if annee %} en {{ annee }}{% endif %}.</p>
             {% endfor %}
+            </div>
         </div>
 
         <div class="cc-card cc-relance">
+            <div class="cc-sec-head">
+                <div>
+                    <h2><span class="cc-step">3</span>À relancer</h2>
+                    <span class="cc-hint">Périodes clôturées sans saisie</span>
+                </div>
+                <span class="cc-count">{{ nb_retard|add:nb_jamais }}</span>
+            </div>
             <h3 class="cc-card-t">Manque encore</h3>
+            <div class="cc-rel-body">
             {% for s in structures_info %}{% if s.manquantes %}
             <div class="cc-rel-row">
-                <div class="cc-rel-name"><span class="cc-badge b-{{ s.etat }} b-dot"></span>{{ s.nom }}</div>
-                <div class="cc-rel-pers">{% for m in s.manquantes %}<span>{{ m }}</span>{% endfor %}</div>
+                <div class="cc-rel-name"><span class="cc-badge b-{{ s.etat }} b-dot"></span><span class="cc-rel-txt" title="{{ s.nom }}">{{ s.nom }}</span><em class="cc-rel-n">{{ s.manquantes|length }} manquante{% if s.manquantes|length > 1 %}s{% endif %}</em></div>
+                <div class="cc-rel-pers">{% for m in s.manquantes|slice:":6" %}<span>{{ m }}</span>{% endfor %}{% if s.manquantes|length > 6 %}<span class="cc-rel-plus" title="{{ s.manquantes|join:', ' }}">+{{ s.manquantes|length|add:"-6" }} autres</span>{% endif %}</div>
             </div>
             {% endif %}{% endfor %}
             {% if nb_retard == 0 and nb_jamais == 0 %}
@@ -197,6 +260,7 @@
                 Toutes les structures sont à jour.
             </div>
             {% endif %}
+            </div>
         </div>
     </div>
 </section>
@@ -205,176 +269,234 @@
 <style>
 @property --p { syntax: '<number>'; inherits: false; initial-value: 0; }
 @property --t { syntax: '<number>'; inherits: false; initial-value: 0; }
-.cc-ui { --ink:#1e293b; --ink-2:#64748b; --ink-3:#94a3b8; --line:#e8ebf1; --ok:#43a074; --warn:#e3a23a; --no:#d4697a; --wait:#cbd5e1;
-         --navy:#1e1b4b; color: var(--ink); max-width: 76rem; font-size: 14px; }
+
+/* ---------- Socle ---------- */
+.cc-ui { --ink:#1f2933; --ink-2:#52606d; --ink-3:#8795a1; --line:#dde3ea; --line-2:#eef1f5; --soft:#f7f9fb;
+         --brand:#1d5d90; --brand-2:#e8f1f8;
+         --ok:#2e7d32; --ok-bg:#e6f4ea; --ok-ink:#1b5e20;
+         --warn:#e09b00; --warn-bg:#fff4d6; --warn-ink:#8a5a00;
+         --no:#c62828; --no-bg:#fdecec; --no-ink:#a31d1d;
+         --wait:#cfd8e1; --navy:#1e1b4b;
+         color: var(--ink); font-size: 13.5px; line-height: 1.45;
+         width: 100%; max-width: 84rem; min-width: 0; margin: 0 auto; contain: inline-size; }
 .cc-ui *, .cc-ui *::before, .cc-ui *::after { box-sizing: border-box; }
 .cc-ui h1, .cc-ui h2, .cc-ui h3, .cc-ui p, .cc-ui ul { margin: 0; }
 .cc-ui button { font: inherit; }
 .cc-ui [hidden] { display: none !important; }
-.cc-ui .cc-card { background: #fff; border: 1px solid var(--line); border-radius: 1rem; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.cc-ui .cc-sec, .cc-ui .cc-hero, .cc-ui .cc-two > * { min-width: 0; }
+.cc-ui .cc-card { background: #fff; border: 1px solid var(--line); border-radius: 6px; }
 
-/* ---------- Hero ---------- */
-.cc-ui .cc-hero { position: relative; display: grid; grid-template-columns: 1fr 19rem; gap: 2rem; align-items: center; padding: 1.6rem 1.8rem;
-    border-radius: 1.3rem; background: radial-gradient(120% 140% at 100% 0%, #eef2ff 0%, #fff 55%); border: 1px solid var(--line); overflow: hidden;
-    animation: ccIn .45s ease both; }
-.cc-ui .cc-hero::after { content: ""; position: absolute; right: -4rem; bottom: -6rem; width: 18rem; height: 18rem; border-radius: 50%; background: radial-gradient(#e7f5ee, transparent 70%); pointer-events: none; }
-@media (max-width: 820px) { .cc-ui .cc-hero { grid-template-columns: 1fr; } }
-.cc-ui .cc-back { display: inline-flex; align-items: center; gap: .2rem; font-size: .78rem; font-weight: 600; color: #6366f1; text-decoration: none; }
-.cc-ui .cc-back svg { width: 1rem; height: 1rem; }
-.cc-ui h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; color: var(--navy); margin-top: .35rem; }
-.cc-ui .cc-sub { font-size: .95rem; margin-top: .3rem; }
-.cc-ui .cc-ds { font-weight: 600; text-decoration: underline; text-decoration-color: var(--warn); text-decoration-thickness: 2px; text-underline-offset: 5px; }
-.cc-ui .cc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .9rem; }
-.cc-ui .cc-pill { display: inline-flex; align-items: center; gap: .35rem; height: 2rem; padding: 0 .75rem; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: .78rem; font-weight: 600; color: #475569; }
-.cc-ui .cc-pill svg { width: .95rem; height: .95rem; color: #6366f1; }
-.cc-ui .cc-year { height: 2rem; border: 1px solid #c7d2fe; border-radius: 999px; background: #eef2ff; color: #3730a3; padding: 0 1.8rem 0 .8rem; font-size: .8rem; font-weight: 700; cursor: pointer; }
-.cc-ui .cc-split { margin-top: 1.3rem; max-width: 34rem; }
-.cc-ui .cc-split-bar { display: flex; gap: 3px; height: .7rem; border-radius: .4rem; overflow: hidden; background: #f1f4f8; }
-.cc-ui .cc-split-bar span { animation: ccGrowX .9s ease both .2s; transform-origin: left; }
-.cc-ui .cc-split-leg { display: flex; flex-wrap: wrap; gap: 1.1rem; margin-top: .55rem; font-size: .8rem; color: var(--ink-2); }
-.cc-ui .cc-split-leg span { display: inline-flex; align-items: center; gap: .4rem; }
-.cc-ui .cc-split-leg b { color: var(--ink); font-size: .95rem; }
-.cc-ui .cc-split-leg i { width: .65rem; height: .65rem; border-radius: .2rem; }
-.cc-ui .s-ok { background: var(--ok); } .cc-ui .s-warn { background: var(--warn); } .cc-ui .s-no { background: var(--no); }
+/* ---------- En-tête ---------- */
+.cc-ui .cc-hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem 2rem; flex-wrap: wrap; padding: 0 0 1.1rem; border-bottom: 1px solid var(--line); }
+.cc-ui .cc-hero-txt { min-width: 0; }
+.cc-ui .cc-back { display: inline-flex; align-items: center; gap: .2rem; font-size: .76rem; font-weight: 600; color: var(--brand); text-decoration: none; }
+.cc-ui .cc-back:hover { text-decoration: underline; }
+.cc-ui .cc-back svg { width: .95rem; height: .95rem; }
+.cc-ui h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.01em; margin-top: .35rem; }
+.cc-ui .cc-sub { font-size: .92rem; margin-top: .1rem; color: var(--ink-2); }
+.cc-ui .cc-ds { font-weight: 600; }
+.cc-ui .cc-meta { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .7rem; }
+.cc-ui .cc-pill { display: inline-flex; align-items: center; gap: .35rem; height: 1.6rem; padding: 0 .55rem; border-radius: 4px; background: var(--soft); border: 1px solid var(--line); font-size: .74rem; font-weight: 600; color: var(--ink-2); }
+.cc-ui .cc-pill svg { width: .85rem; height: .85rem; color: var(--ink-3); }
+.cc-ui .cc-actions { display: flex; align-items: flex-end; gap: .5rem; flex-wrap: wrap; }
+.cc-ui .cc-year-f { margin: 0; }
+.cc-ui .cc-year-l { display: flex; flex-direction: column; gap: .2rem; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
+.cc-ui .cc-year, .cc-ui .cc-btn { height: 2.15rem; border: 1px solid var(--line); border-radius: 4px; background: #fff; color: var(--ink); font-size: .8rem; font-weight: 600; }
+.cc-ui .cc-year { padding: 0 1.8rem 0 .65rem; cursor: pointer; min-width: 6.5rem; }
+.cc-ui .cc-btn { display: inline-flex; align-items: center; gap: .4rem; padding: 0 .8rem; cursor: pointer; }
+.cc-ui .cc-btn:hover, .cc-ui .cc-year:hover { border-color: #b8c4d0; background: var(--soft); }
+.cc-ui .cc-btn svg { width: 1rem; height: 1rem; color: var(--ink-2); }
+.cc-ui .cc-year:focus-visible, .cc-ui .cc-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
 
-.cc-ui .cc-gauge { position: relative; z-index: 1; text-align: center; }
-.cc-ui .cc-gauge svg { width: 100%; max-width: 16rem; display: block; margin: 0 auto; overflow: visible; }
+/* ---------- Baromètre + synthèse ---------- */
+.cc-ui .cc-kpis { display: grid; grid-template-columns: 19rem minmax(0, 1fr); margin-top: 1.25rem; background: #fff; border: 1px solid var(--line); border-radius: 6px; }
+@media (max-width: 820px) { .cc-ui .cc-kpis { grid-template-columns: minmax(0, 1fr); } }
+.cc-ui .cc-kpi-main { padding: 1.3rem 1.4rem 1.2rem; border-right: 1px solid var(--line-2); }
+@media (max-width: 820px) { .cc-ui .cc-kpi-main { border-right: 0; border-bottom: 1px solid var(--line-2); } }
+
+/* Le baromètre d'origine (arc dégradé + aiguille) */
+.cc-ui .cc-gauge { position: relative; text-align: center; }
+.cc-ui .cc-gauge svg { width: 100%; max-width: 15rem; display: block; margin: 0 auto; overflow: visible; }
 .cc-ui .cc-g-bg { fill: none; stroke: #edf0f5; stroke-width: 15; stroke-linecap: round; }
-.cc-ui .cc-g-val { fill: none; stroke: url(#ccG); stroke-width: 15; stroke-linecap: round; stroke-dasharray: var(--t) 100; animation: ccArc 1.4s cubic-bezier(.2,.8,.3,1) both .2s; }
-.cc-ui .cc-g-needle { transform-origin: 100px 104px; transform: rotate(calc(var(--t) * 1.8deg - 90deg)); animation: ccNeedle 1.4s cubic-bezier(.2,.8,.3,1) both .2s; }
+.cc-ui .cc-g-val { fill: none; stroke: url(#ccG); stroke-width: 15; stroke-linecap: round; stroke-dasharray: var(--t) 100; animation: ccArc 1.2s cubic-bezier(.2,.8,.3,1) both .15s; }
+.cc-ui .cc-g-needle { transform-origin: 100px 104px; transform: rotate(calc(var(--t) * 1.8deg - 90deg)); animation: ccNeedle 1.2s cubic-bezier(.2,.8,.3,1) both .15s; }
 .cc-ui .cc-g-needle line { stroke: var(--navy); stroke-width: 3; stroke-linecap: round; }
 .cc-ui .cc-g-needle circle { fill: var(--navy); stroke: #fff; stroke-width: 3; }
+.cc-ui .g-none .cc-g-val, .cc-ui .g-none .cc-g-needle { opacity: .25; }
 @keyframes ccArc { from { --t: 0; } }
 @keyframes ccNeedle { from { --t: 0; } }
-.cc-ui .cc-g-num { margin-top: -.3rem; }
+.cc-ui .cc-g-scale { display: flex; justify-content: space-between; max-width: 15rem; margin: .1rem auto 0; padding: 0 .2rem; font-size: .66rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.cc-ui .cc-g-num { margin-top: .2rem; }
 .cc-ui .cc-g-num b { display: block; font-size: 2.3rem; font-weight: 800; line-height: 1; color: var(--navy); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .cc-ui .cc-g-num b small { font-size: 1.1rem; color: var(--ink-2); margin-left: .1rem; }
-.cc-ui .cc-g-num span { font-size: .78rem; color: var(--ink-2); font-weight: 600; }
-.cc-ui .cc-g-cap { margin-top: .6rem; font-size: .78rem; color: var(--ink-2); line-height: 1.4; }
+.cc-ui .cc-g-num span { display: block; margin-top: .25rem; font-size: .78rem; color: var(--ink-2); font-weight: 600; }
+.cc-ui .cc-g-cap { margin-top: .7rem; font-size: .78rem; color: var(--ink-2); line-height: 1.45; }
 .cc-ui .cc-g-cap small { color: var(--ink-3); }
 
+.cc-ui .cc-synth { display: flex; flex-direction: column; justify-content: center; gap: 1rem; padding: 1.3rem 1.6rem; min-width: 0; }
+.cc-ui .cc-synth-t { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); }
+.cc-ui .cc-resume { font-size: 1rem; line-height: 1.55; color: var(--ink); max-width: 46rem; }
+.cc-ui .cc-resume b { font-variant-numeric: tabular-nums; }
+.cc-ui .cc-split-bar { display: flex; gap: 2px; height: .6rem; border-radius: 3px; overflow: hidden; background: var(--line-2); }
+.cc-ui .cc-split-leg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin-top: .8rem; }
+@media (max-width: 560px) { .cc-ui .cc-split-leg { grid-template-columns: minmax(0, 1fr); } }
+.cc-ui .cc-stat { display: grid; grid-template-columns: auto 1fr; column-gap: .5rem; align-items: baseline; padding: .6rem .75rem; border: 1px solid var(--line-2); border-radius: 4px; }
+.cc-ui .cc-stat i { grid-row: span 3; align-self: start; margin-top: .45rem; width: .6rem; height: .6rem; border-radius: 2px; }
+.cc-ui .cc-stat b { font-size: 1.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cc-ui .cc-stat em { font-style: normal; font-weight: 700; font-size: .82rem; }
+.cc-ui .cc-stat small { font-size: .72rem; color: var(--ink-3); }
+.cc-ui .s-ok { background: var(--ok); } .cc-ui .s-warn { background: var(--warn); } .cc-ui .s-no { background: var(--no); }
+
 /* ---------- Sections ---------- */
-.cc-ui .cc-sec { margin-top: 2rem; }
-.cc-ui .cc-sec-head { display: flex; justify-content: space-between; align-items: center; gap: .8rem; flex-wrap: wrap; margin-bottom: .85rem; }
-.cc-ui .cc-sec-head h2 { display: flex; align-items: center; gap: .55rem; font-size: 1.1rem; font-weight: 700; color: var(--navy); }
-.cc-ui .cc-step { width: 1.6rem; height: 1.6rem; border-radius: .5rem; background: var(--navy); color: #fff; font-size: .78rem; display: grid; place-items: center; }
-.cc-ui .cc-hint, .cc-ui .cc-count { font-size: .78rem; color: var(--ink-3); }
-.cc-ui .cc-count { font-weight: 700; color: #475569; background: #f1f4f8; padding: .3rem .75rem; border-radius: 999px; }
+.cc-ui .cc-sec { margin-top: 1.25rem; }
+.cc-ui .cc-sec-head { display: flex; justify-content: space-between; align-items: center; gap: .8rem 1rem; flex-wrap: wrap; padding: .9rem 1.2rem; border-bottom: 1px solid var(--line-2); }
+.cc-ui .cc-sec-head h2 { display: flex; align-items: center; gap: .5rem; font-size: .98rem; font-weight: 700; }
+.cc-ui .cc-step { width: 1.35rem; height: 1.35rem; border-radius: 3px; background: var(--brand-2); color: var(--brand); font-size: .7rem; font-weight: 700; display: grid; place-items: center; }
+.cc-ui .cc-hint { display: block; font-size: .78rem; color: var(--ink-2); margin-top: .15rem; }
+.cc-ui .cc-count { font-size: .74rem; font-weight: 700; color: var(--ink-2); background: var(--soft); border: 1px solid var(--line); padding: .15rem .55rem; border-radius: 3px; font-variant-numeric: tabular-nums; }
 
-/* ---------- Bande des périodes ---------- */
-.cc-ui .cc-strip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(12.5rem, 1fr); gap: .75rem; overflow-x: auto; padding: .2rem .1rem .6rem; scroll-snap-type: x mandatory; }
-.cc-ui .cc-per-card { scroll-snap-align: start; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: .75rem; padding: .95rem 1rem;
-    background: #fff; border: 1.5px solid var(--line); border-radius: 1rem; transition: border-color .2s, box-shadow .2s, transform .2s; animation: ccIn .4s ease both; animation-delay: calc(var(--i) * 60ms); }
-.cc-ui .cc-per-card:hover { transform: translateY(-2px); box-shadow: 0 14px 26px -18px rgba(30,27,75,.45); }
-.cc-ui .cc-per-card.is-on { border-color: #818cf8; box-shadow: 0 0 0 4px #eef2ff, 0 14px 26px -18px rgba(79,70,229,.55); }
-.cc-ui .cc-per-top { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
-.cc-ui .cc-per-name { font-weight: 700; font-size: .95rem; color: var(--navy); }
-.cc-ui .cc-st { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: .2rem .5rem; border-radius: .4rem; background: #f1f4f8; color: #64748b; }
-.cc-ui .st-en_cours .cc-st { background: #eef2ff; color: #4f46e5; }
-.cc-ui .st-a_venir .cc-st { background: #f8fafc; color: var(--ink-3); }
-.cc-ui .st-a_venir.cc-per-card { background: repeating-linear-gradient(135deg, #fff 0 10px, #fafbfc 10px 20px); }
-.cc-ui .cc-per-mid { display: flex; align-items: center; gap: .8rem; }
-.cc-ui .cc-ring { --p: 0; flex: none; width: 3.3rem; height: 3.3rem; border-radius: 50%; display: grid; place-items: center;
-    background: radial-gradient(closest-side, #fff 74%, transparent 76%), conic-gradient(var(--ok) calc(var(--p) * 1%), #f6d5db 0);
-    animation: ccRing 1.1s ease both .25s; }
-.cc-ui .st-en_cours .cc-ring, .cc-ui .st-a_venir .cc-ring { background: radial-gradient(closest-side, #fff 74%, transparent 76%), conic-gradient(var(--ok) calc(var(--p) * 1%), #e8ecf1 0); }
-.cc-ui .cc-ring em { font-style: normal; font-size: .72rem; font-weight: 800; color: #2f8a60; }
-@keyframes ccRing { from { --p: 0; } }
-.cc-ui .cc-per-nums { display: flex; flex-direction: column; gap: .15rem; font-size: .78rem; color: var(--ink-2); }
-.cc-ui .cc-per-nums b { font-size: 1.05rem; margin-right: .15rem; font-variant-numeric: tabular-nums; }
-.cc-ui .n-ok b { color: #2f8a60; } .cc-ui .n-no b { color: #c0566a; } .cc-ui .n-no.is-zero b { color: var(--ink-3); }
-.cc-ui .cc-per-dates { font-size: .7rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+/* ---------- Par période : liste à gauche, noms à droite ---------- */
+.cc-ui .cc-per-sec { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+.cc-ui .cc-per-sec > .cc-sec-head { grid-column: 1 / -1; }
+@media (max-width: 960px) { .cc-ui .cc-per-sec { grid-template-columns: minmax(0, 1fr); } }
+.cc-ui .cc-strip-wrap { min-width: 0; border-right: 1px solid var(--line-2); }
+@media (max-width: 960px) { .cc-ui .cc-strip-wrap { border-right: 0; border-bottom: 1px solid var(--line-2); } }
+.cc-ui .cc-strip { display: flex; flex-direction: column; max-height: 26rem; overflow-y: auto; overscroll-behavior: contain; }
+.cc-ui .cc-per-card { display: grid; grid-template-columns: minmax(8rem, 13rem) minmax(4rem, 1fr) auto; grid-template-areas: "nom barre chiffres" "dates barre chiffres";
+    align-items: center; column-gap: 1rem; row-gap: .05rem; padding: .6rem 1.2rem; text-align: left; border: 0; border-bottom: 1px solid var(--line-2);
+    background: #fff; color: inherit; cursor: pointer; border-left: 3px solid transparent; }
+.cc-ui .cc-per-card:hover { background: var(--soft); }
+.cc-ui .cc-per-card.is-on { background: var(--brand-2); border-left-color: var(--brand); }
+.cc-ui .cc-per-card:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.cc-ui .cc-per-top { grid-area: nom; display: flex; align-items: center; gap: .45rem; min-width: 0; }
+.cc-ui .cc-per-name { font-weight: 700; font-size: .84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-ui .cc-st { flex: none; font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: .08rem .35rem; border-radius: 3px; background: #e9edf2; color: var(--ink-2); }
+.cc-ui .st-cloturee .cc-st { display: none; }
+.cc-ui .st-en_cours .cc-st { background: var(--brand); color: #fff; }
+.cc-ui .st-a_venir .cc-st { background: transparent; color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line); }
+.cc-ui .cc-per-dates { grid-area: dates; font-size: .7rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.cc-ui .cc-row-bar { grid-area: barre; display: block; height: .65rem; border-radius: 2px; background: var(--line-2); overflow: hidden; }
+.cc-ui .cc-row-bar span { display: block; height: 100%; width: var(--w); background: var(--wait); }
+.cc-ui .lvl-ok .cc-row-bar span { background: var(--ok); } .cc-ui .lvl-warn .cc-row-bar span { background: var(--warn); } .cc-ui .lvl-no .cc-row-bar span { background: var(--no); }
+.cc-ui .st-en_cours .cc-row-bar span { background: #7ea6c8; }
+.cc-ui .st-a_venir .cc-row-bar { background: repeating-linear-gradient(135deg, #f1f4f8 0 4px, #fff 4px 8px); box-shadow: inset 0 0 0 1px var(--line-2); }
+.cc-ui .cc-per-mid { grid-area: chiffres; display: flex; align-items: center; }
+.cc-ui .cc-ring { display: none; }
+.cc-ui .cc-per-nums { display: flex; flex-direction: column; align-items: flex-end; font-size: .76rem; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cc-ui .cc-per-nums b { font-size: .9rem; color: var(--ink); }
+.cc-ui .n-no b { color: var(--no); } .cc-ui .n-no.is-zero, .cc-ui .n-no.is-zero b { color: var(--ink-3); }
+@media (max-width: 560px) {
+    .cc-ui .cc-per-card { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nom chiffres" "barre barre" "dates dates"; row-gap: .35rem; padding: .7rem .9rem; }
+}
 
-.cc-ui .cc-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: .4rem; padding: 1.1rem 1.2rem; background: #fff; border: 1px solid var(--line); border-radius: 1rem; animation: ccIn .3s ease both; }
-@media (max-width: 680px) { .cc-ui .cc-panel { grid-template-columns: 1fr; } }
-.cc-ui .cc-panel h3 { display: flex; align-items: center; gap: .45rem; font-size: .8rem; font-weight: 700; margin-bottom: .6rem; }
-.cc-ui .cc-panel h3 span { width: .55rem; height: .55rem; border-radius: 50%; }
-.cc-ui .h-no { color: #b04a5e; } .cc-ui .h-no span { background: var(--no); }
-.cc-ui .h-ok { color: #2f7a57; } .cc-ui .h-ok span { background: var(--ok); }
-.cc-ui .cc-panel ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .35rem; }
-.cc-ui .cc-panel li { font-size: .78rem; padding: .28rem .7rem; border-radius: 999px; }
-.cc-ui .li-no { background: #fcecef; color: #8a3a4a; }
-.cc-ui .li-ok { background: #e9f6ef; color: #2f7a57; }
+/* Noms de la période choisie */
+.cc-ui .cc-panel { padding: 1rem 1.2rem; min-width: 0; align-self: start; }
+.cc-ui .cc-panel-title { display: flex; flex-direction: column; gap: .1rem; padding-bottom: .8rem; margin-bottom: .9rem; border-bottom: 1px solid var(--line-2); }
+.cc-ui .cc-panel-title b { font-size: .95rem; }
+.cc-ui .cc-panel-title span { font-size: .8rem; color: var(--ink-2); }
+.cc-ui .cc-panel-col + .cc-panel-col { margin-top: 1rem; }
+.cc-ui .cc-panel h3 { display: flex; align-items: center; gap: .4rem; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .5rem; }
+.cc-ui .cc-panel h3 span { width: .5rem; height: .5rem; border-radius: 1px; }
+.cc-ui .h-no { color: var(--no-ink); } .cc-ui .h-no span { background: var(--no); }
+.cc-ui .h-ok { color: var(--ok-ink); } .cc-ui .h-ok span { background: var(--ok); }
+.cc-ui .cc-panel ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem; max-height: 9.5rem; overflow-y: auto; }
+.cc-ui .cc-panel li { font-size: .75rem; padding: .2rem .5rem; border-radius: 3px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cc-ui .li-no { background: var(--no-bg); color: var(--no-ink); }
+.cc-ui .li-ok { background: var(--ok-bg); color: var(--ok-ink); }
 .cc-ui .li-none { color: var(--ink-3); font-size: .8rem; }
+.cc-ui .cc-panel .li-none { background: none; padding-left: 0; }
 
-/* ---------- Tableau des structures ---------- */
+/* ---------- Tableau ---------- */
 .cc-ui .cc-tools { display: flex; gap: .5rem; flex-wrap: wrap; }
-.cc-ui .cc-tabs { display: inline-flex; background: #f1f4f8; border-radius: .75rem; padding: .22rem; }
-.cc-ui .cc-tabs button { border: 0; background: none; font-size: .78rem; font-weight: 600; color: var(--ink-2); padding: .38rem .75rem; border-radius: .58rem; cursor: pointer; }
-.cc-ui .cc-tabs button i { font-style: normal; font-size: .7rem; color: var(--ink-3); margin-left: .15rem; }
-.cc-ui .cc-tabs button.is-on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(15,23,42,.14); }
-.cc-ui .cc-find { display: flex; align-items: center; gap: .4rem; height: 2.25rem; padding: 0 .75rem; background: #fff; border: 1px solid var(--line); border-radius: .7rem; color: var(--ink-3); }
-.cc-ui .cc-find:focus-within { border-color: #a5b4fc; box-shadow: 0 0 0 3px #eef2ff; }
-.cc-ui .cc-find svg { width: 1rem; height: 1rem; }
-.cc-ui .cc-find input { border: 0; outline: 0; font-size: .8rem; width: 10rem; background: transparent; color: var(--ink); }
+.cc-ui .cc-tabs { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.cc-ui .cc-tabs button { border: 0; border-left: 1px solid var(--line); background: #fff; font-size: .76rem; font-weight: 600; color: var(--ink-2); padding: 0 .75rem; height: 2.05rem; cursor: pointer; }
+.cc-ui .cc-tabs button:first-child { border-left: 0; }
+.cc-ui .cc-tabs button i { font-style: normal; font-size: .7rem; color: var(--ink-3); margin-left: .2rem; font-variant-numeric: tabular-nums; }
+.cc-ui .cc-tabs button:hover { background: var(--soft); }
+.cc-ui .cc-tabs button.is-on { background: var(--brand); color: #fff; }
+.cc-ui .cc-tabs button.is-on i { color: rgba(255,255,255,.75); }
+.cc-ui .cc-find { display: flex; align-items: center; gap: .4rem; height: 2.15rem; padding: 0 .65rem; background: #fff; border: 1px solid var(--line); border-radius: 4px; color: var(--ink-3); }
+.cc-ui .cc-find:focus-within { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-2); }
+.cc-ui .cc-find svg { width: .95rem; height: .95rem; }
+.cc-ui .cc-find input { border: 0; outline: 0; font-size: .8rem; width: 12rem; background: transparent; color: var(--ink); }
 
-.cc-ui .cc-table-wrap { overflow: auto; max-height: 32rem; }
-.cc-ui .cc-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
-.cc-ui .cc-table th { position: sticky; top: 0; z-index: 1; background: #f8fafc; color: var(--ink-2); font-weight: 600; font-size: .72rem; padding: .7rem .7rem; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.cc-ui .cc-table-wrap { overflow: auto; max-height: 36rem; contain: inline-size; min-width: 0; }
+.cc-ui .cc-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .8rem; }
+.cc-ui .cc-table th { position: sticky; top: 0; z-index: 1; background: var(--soft); color: var(--ink-2); font-weight: 700; font-size: .72rem; padding: .55rem .5rem; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: bottom; }
+.cc-ui .cc-table th.th-per { font-weight: 600; }
+.cc-ui .cc-table th.th-per.st-en_cours { color: var(--brand); box-shadow: inset 0 -2px 0 var(--brand); }
 .cc-ui .cc-table th.th-per.st-a_venir { color: var(--ink-3); font-weight: 500; }
-.cc-ui .cc-table .th-name { text-align: left; left: 0; z-index: 2; min-width: 13rem; }
-.cc-ui .cc-table td { padding: .55rem .7rem; border-bottom: 1px solid #f2f4f7; text-align: center; }
-.cc-ui .cc-table tbody tr:last-child td { border-bottom: 0; }
-.cc-ui .cc-table tbody tr:hover td { background: #fafaff; }
-.cc-ui .td-name { text-align: left !important; position: sticky; left: 0; background: #fff; font-weight: 600; white-space: nowrap; }
+.cc-ui .cc-table .th-name { text-align: left; left: 0; z-index: 3; min-width: 13rem; box-shadow: 1px 0 0 var(--line); }
+.cc-ui .cc-table td { padding: .4rem .5rem; border-bottom: 1px solid var(--line-2); text-align: center; }
+.cc-ui .cc-table tbody tr:hover td { background: #f3f7fb; }
+.cc-ui .td-name { text-align: left !important; position: sticky; left: 0; z-index: 1; background: #fff; font-weight: 600; white-space: nowrap; max-width: 17rem; overflow: hidden; text-overflow: ellipsis; box-shadow: 1px 0 0 var(--line); }
 .cc-ui .cc-pad { padding: 2rem !important; }
-.cc-ui .cc-badge { display: inline-block; font-size: .68rem; font-weight: 700; padding: .22rem .55rem; border-radius: 999px; white-space: nowrap; }
-.cc-ui .b-ajour { background: #e4f4eb; color: #2f7a57; }
-.cc-ui .b-retard { background: #fdf1dc; color: #9a6410; }
-.cc-ui .b-jamais { background: #fbe6ea; color: #a8475a; }
-.cc-ui .cc-cell { width: 1.55rem; height: 1.55rem; border-radius: .45rem; display: inline-grid; place-items: center; vertical-align: middle; }
-.cc-ui .cc-cell svg { width: .85rem; height: .85rem; }
+.cc-ui .cc-badge { display: inline-block; font-size: .68rem; font-weight: 700; padding: .12rem .45rem; border-radius: 3px; white-space: nowrap; }
+.cc-ui .b-ajour { background: var(--ok-bg); color: var(--ok-ink); }
+.cc-ui .b-retard { background: var(--warn-bg); color: var(--warn-ink); }
+.cc-ui .b-jamais { background: var(--no-bg); color: var(--no-ink); }
+.cc-ui .cc-cell { width: 1.35rem; height: 1.35rem; border-radius: 2px; display: inline-grid; place-items: center; vertical-align: middle; }
+.cc-ui .cc-cell svg { width: .75rem; height: .75rem; }
 .cc-ui .c-ok { background: var(--ok); color: #fff; }
-.cc-ui .c-no { background: #fcecef; color: #d4697a; box-shadow: inset 0 0 0 1px #f2c4cc; }
-.cc-ui .c-cours { background: #fff8ec; box-shadow: inset 0 0 0 1.5px #f0cf94; }
-.cc-ui .c-wait { background: repeating-linear-gradient(135deg, #f1f4f8 0 3px, #fff 3px 6px); box-shadow: inset 0 0 0 1px #e5e9ef; }
-.cc-ui .td-tot { white-space: nowrap; color: var(--ink-3); }
+.cc-ui .c-no { background: var(--no-bg); color: var(--no); box-shadow: inset 0 0 0 1px #f3c2c2; }
+.cc-ui .c-cours { background: #fff; box-shadow: inset 0 0 0 1.5px #7ea6c8; }
+.cc-ui .c-wait { background: repeating-linear-gradient(135deg, #eef1f5 0 3px, #fff 3px 6px); box-shadow: inset 0 0 0 1px var(--line); }
+.cc-ui .td-tot { white-space: nowrap; color: var(--ink-3); font-variant-numeric: tabular-nums; text-align: left !important; }
 .cc-ui .td-tot b { color: var(--ink); }
-.cc-ui .cc-mini { display: inline-block; width: 4rem; height: .42rem; border-radius: .25rem; background: #f6d5db; overflow: hidden; vertical-align: middle; margin-right: .45rem; }
-.cc-ui .cc-mini span { display: block; height: 100%; width: var(--w); background: var(--ok); animation: ccGrow .9s ease both .2s; }
+.cc-ui .cc-mini { display: inline-block; width: 3.2rem; height: .35rem; border-radius: 1px; background: var(--line-2); overflow: hidden; vertical-align: middle; margin-right: .4rem; }
+.cc-ui .cc-mini span { display: block; height: 100%; width: var(--w); background: var(--ok); }
 .cc-ui .cc-nomatch { padding: 1.6rem; text-align: center; color: var(--ink-3); font-size: .82rem; }
-.cc-ui .cc-keys { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: .6rem; font-size: .74rem; color: var(--ink-2); }
+.cc-ui .cc-keys { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; padding: .7rem 1.2rem; border-top: 1px solid var(--line-2); font-size: .72rem; color: var(--ink-2); }
 .cc-ui .cc-keys span { display: inline-flex; align-items: center; gap: .4rem; }
-.cc-ui .cc-keys .cc-cell { width: .9rem; height: .9rem; border-radius: .25rem; }
+.cc-ui .cc-keys .cc-cell { width: .8rem; height: .8rem; }
+/* Beaucoup de périodes : libellés de colonnes verticaux, cases réduites */
+.cc-ui.is-dense .cc-table th.th-per { padding: .5rem .15rem; height: 8.5rem; }
+.cc-ui.is-dense .th-lbl { display: inline-block; writing-mode: vertical-rl; transform: rotate(180deg); max-height: 7.8rem; overflow: hidden; text-overflow: ellipsis; }
+.cc-ui.is-dense .cc-table td.td-cell { padding: .35rem .12rem; }
+.cc-ui.is-dense .cc-cell { width: 1.1rem; height: 1.1rem; }
+.cc-ui.is-dense .cc-cell svg { width: .6rem; height: .6rem; }
 
 /* ---------- Classement + relance ---------- */
-.cc-ui .cc-two { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
-@media (max-width: 900px) { .cc-ui .cc-two { grid-template-columns: 1fr; } }
-.cc-ui .cc-card-t { font-size: .82rem; font-weight: 700; color: var(--ink-2); padding: 1rem 1.1rem .4rem; }
-.cc-ui .cc-rank { padding-bottom: .6rem; }
-.cc-ui .cc-rank-row { display: flex; gap: .8rem; padding: .7rem 1.1rem; animation: ccIn .35s ease both; animation-delay: calc(var(--i) * 40ms); }
-.cc-ui .cc-rank-row + .cc-rank-row { border-top: 1px solid #f2f4f7; }
-.cc-ui .cc-rank-pos { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #f1f4f8; color: var(--ink-2); font-size: .72rem; font-weight: 700; display: grid; place-items: center; }
-.cc-ui .cc-rank-row:nth-child(2) .cc-rank-pos { background: var(--navy); color: #fff; }
+.cc-ui .cc-sec-plain { background: none; border: 0; }
+.cc-ui .cc-two { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+@media (max-width: 960px) { .cc-ui .cc-two { grid-template-columns: minmax(0, 1fr); } }
+.cc-ui .cc-card-t { display: none; }
+.cc-ui .cc-rank-body, .cc-ui .cc-rel-body { max-height: 30rem; overflow-y: auto; }
+.cc-ui .cc-rank-row { display: flex; gap: .8rem; padding: .65rem 1.2rem; border-bottom: 1px solid var(--line-2); }
+.cc-ui .cc-rank-pos { flex: none; width: 1.6rem; font-size: .76rem; font-weight: 700; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .cc-ui .cc-rank-main { flex: 1; min-width: 0; }
-.cc-ui .cc-rank-line { display: flex; justify-content: space-between; gap: .6rem; margin-bottom: .35rem; }
-.cc-ui .cc-rank-name { font-weight: 600; font-size: .86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cc-ui .cc-rank-val { font-weight: 800; font-size: .86rem; font-variant-numeric: tabular-nums; }
-.cc-ui .cc-rank-bar { display: block; height: .55rem; border-radius: .3rem; background: #f1f4f8; overflow: hidden; }
-.cc-ui .cc-rank-bar span { display: block; height: 100%; width: var(--w); border-radius: inherit; animation: ccGrow 1s cubic-bezier(.2,.8,.3,1) both .25s; }
-.cc-ui .r-ok { background: linear-gradient(90deg, #6cc59a, var(--ok)); }
-.cc-ui .r-warn { background: linear-gradient(90deg, #efc06b, var(--warn)); }
-.cc-ui .r-no { background: linear-gradient(90deg, #e797a4, var(--no)); }
-.cc-ui .cc-rank-sub { display: flex; justify-content: space-between; align-items: center; gap: .6rem; margin-top: .4rem; font-size: .72rem; color: var(--ink-3); }
-.cc-ui .cc-dots { display: inline-flex; gap: 3px; }
-.cc-ui .cc-dots i { width: .7rem; height: .7rem; border-radius: .2rem; }
-.cc-ui .d-ok { background: var(--ok); } .cc-ui .d-no { background: #f2c4cc; } .cc-ui .d-wait { background: #e8ecf1; } .cc-ui .d-cours { background: #f6dfb4; }
-
-.cc-ui .cc-relance { padding-bottom: .5rem; }
-.cc-ui .cc-rel-row { padding: .65rem 1.1rem; }
-.cc-ui .cc-rel-row + .cc-rel-row { border-top: 1px solid #f2f4f7; }
-.cc-ui .cc-rel-name { display: flex; align-items: center; gap: .5rem; font-weight: 600; font-size: .84rem; }
-.cc-ui .b-dot { width: .55rem; height: .55rem; padding: 0; }
+.cc-ui .cc-rank-line { display: flex; justify-content: space-between; gap: .6rem; margin-bottom: .3rem; }
+.cc-ui .cc-rank-name { font-weight: 600; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-ui .cc-rank-val { font-weight: 700; font-size: .82rem; font-variant-numeric: tabular-nums; }
+.cc-ui .cc-rank-bar { display: block; height: .35rem; border-radius: 1px; background: var(--line-2); overflow: hidden; }
+.cc-ui .cc-rank-bar span { display: block; height: 100%; width: var(--w); }
+.cc-ui .r-ok { background: var(--ok); } .cc-ui .r-warn { background: var(--warn); } .cc-ui .r-no { background: var(--no); }
+.cc-ui .cc-rank-sub { display: flex; flex-direction: column; gap: .3rem; margin-top: .4rem; font-size: .72rem; color: var(--ink-2); }
+.cc-ui .cc-dots { display: inline-flex; flex-wrap: wrap; gap: 2px; min-width: 0; max-width: 100%; }
+.cc-ui .cc-dots i { width: .55rem; height: .55rem; border-radius: 1px; }
+.cc-ui .d-ok { background: var(--ok); } .cc-ui .d-no { background: #f3c2c2; } .cc-ui .d-wait { background: var(--line-2); } .cc-ui .d-cours { background: #a9c6df; }
+.cc-ui .cc-rel-row { padding: .6rem 1.2rem; border-bottom: 1px solid var(--line-2); }
+.cc-ui .cc-rel-name { display: flex; align-items: center; gap: .5rem; font-weight: 600; font-size: .82rem; min-width: 0; }
+.cc-ui .cc-rel-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cc-ui .cc-rel-n { margin-left: auto; flex: none; font-style: normal; font-size: .7rem; font-weight: 700; color: var(--no-ink); font-variant-numeric: tabular-nums; }
+.cc-ui .b-dot { flex: none; width: .5rem; height: .5rem; padding: 0; border-radius: 1px; }
 .cc-ui .b-dot.b-retard { background: var(--warn); } .cc-ui .b-dot.b-jamais { background: var(--no); }
-.cc-ui .cc-rel-pers { display: flex; flex-wrap: wrap; gap: .25rem; margin: .4rem 0 0 1.05rem; }
-.cc-ui .cc-rel-pers span { font-size: .7rem; padding: .15rem .5rem; border-radius: 999px; background: #fcecef; color: #8a3a4a; }
-.cc-ui .cc-allgood { display: flex; align-items: center; gap: .5rem; margin: .4rem 1.1rem .8rem; padding: .8rem 1rem; border-radius: .8rem; background: #e9f6ef; color: #2f7a57; font-size: .82rem; font-weight: 600; }
-.cc-ui .cc-allgood svg { width: 1.2rem; height: 1.2rem; }
-.cc-ui .cc-empty { text-align: center; padding: 2rem 1rem; color: var(--ink-3); font-size: .85rem; }
+.cc-ui .cc-rel-pers { display: flex; flex-wrap: wrap; gap: .25rem; margin: .35rem 0 0 1rem; }
+.cc-ui .cc-rel-pers span { font-size: .7rem; padding: .08rem .4rem; border-radius: 2px; background: var(--soft); border: 1px solid var(--line); color: var(--ink-2); }
+.cc-ui .cc-rel-pers .cc-rel-plus { background: #fff; color: var(--ink); font-weight: 700; cursor: help; }
+.cc-ui .cc-allgood { display: flex; align-items: center; gap: .5rem; margin: 1rem 1.2rem; padding: .7rem .9rem; border-radius: 4px; background: var(--ok-bg); color: var(--ok-ink); font-size: .8rem; font-weight: 600; }
+.cc-ui .cc-allgood svg { width: 1.1rem; height: 1.1rem; }
+.cc-ui .cc-empty { text-align: center; padding: 2rem 1rem; color: var(--ink-3); font-size: .82rem; }
 
-@keyframes ccIn { from { opacity: 0; transform: translateY(8px); } }
-@keyframes ccGrow { from { width: 0; } }
-@keyframes ccGrowX { from { transform: scaleX(0); } }
+/* ---------- Impression ---------- */
+@media print {
+    .cc-ui { max-width: none; contain: none; font-size: 11px; }
+    .cc-ui .cc-actions, .cc-ui .cc-back, .cc-ui .cc-tools, .cc-ui .cc-panel { display: none !important; }
+    .cc-ui .cc-per-sec { grid-template-columns: 1fr; }
+    .cc-ui .cc-table-wrap, .cc-ui .cc-rank-body, .cc-ui .cc-rel-body, .cc-ui .cc-strip { max-height: none; overflow: visible; contain: none; }
+    .cc-ui .cc-table th, .cc-ui .td-name { position: static; }
+    .cc-ui * { -webkit-print-color-adjust: exact; print-color-adjust: exact; animation: none !important; }
+}
 @media (prefers-reduced-motion: reduce) { .cc-ui * { animation: none !important; transition: none !important; } }
 </style>
 
@@ -389,11 +511,15 @@
         });
     });
     var actif = document.querySelector('.cc-per-card.is-on');
-    if (actif && actif.scrollIntoView) actif.parentNode.scrollLeft = actif.offsetLeft - 20;
+    /* ← corrigé : la liste est verticale, on fait défiler jusqu'à la période affichée */
+    if (actif) actif.parentNode.scrollTop = actif.offsetTop - actif.parentNode.offsetTop - 60;
 
     /* Filtres du tableau */
     var tbl = document.getElementById('ccDecl');
     if (!tbl) return;
+    /* ajout : le tableau s'ouvre sur la période affichée */
+    var colActive = actif && tbl.querySelector('th[data-p="' + actif.dataset.p + '"]');
+    if (colActive) tbl.parentNode.scrollLeft = Math.max(0, colActive.offsetLeft - tbl.querySelector('.th-name').offsetWidth - 160);
     var rows = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr[data-etat]'));
     var find = document.getElementById('ccFind'), filtre = 'all';
     function appliquer() {
@@ -411,6 +537,26 @@
         });
     });
     find.addEventListener('input', appliquer);
+
+    /* ajout : export du tableau pour Excel (lignes visibles, séparateur « ; ») */
+    var btnExport = document.getElementById('ccExport');
+    if (btnExport) btnExport.addEventListener('click', function () {
+        function cel(t) { t = (t || '').replace(/\s+/g, ' ').trim(); return '"' + t.replace(/"/g, '""') + '"'; }
+        var lignes = [Array.prototype.map.call(tbl.querySelectorAll('thead th'), function (th) { return cel(th.title || th.textContent); }).join(';')];
+        rows.forEach(function (r) {
+            if (r.hidden) return;
+            lignes.push(Array.prototype.map.call(r.cells, function (td) {
+                var c = td.querySelector('.cc-cell');
+                if (c) return cel(c.classList.contains('c-ok') ? 'Saisi' : c.classList.contains('c-no') ? 'Manquant' : c.classList.contains('c-cours') ? 'En cours' : 'À venir');
+                return cel(td.textContent);
+            }).join(';'));
+        });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob(['﻿' + lignes.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+        a.download = 'completude-{{ dataset.id|default:"jeu" }}{% if annee %}-{{ annee }}{% endif %}.csv';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    });
 })();
 </script>
 {% endblock %}

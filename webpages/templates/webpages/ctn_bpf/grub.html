@@ -1670,7 +1670,7 @@
 
                         <div class="flex items-center flex-1">
                             <input type="checkbox" name="org_units" value="{{ structures.id }}" id="check-{{ structures.id }}"
-                                   class="custom-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 dark:bg-slate-800 dark:border-slate-600" onchange="updateSelect(this, '{{ structures.nom }}', '{{ structures.id }}')">
+                                   class="custom-checkbox w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20 dark:bg-slate-800 dark:border-slate-600" onchange="updateSelect(this, '{{ structures.nom|escapejs }}', '{{ structures.id }}')">
                             <label for="check-{{ structures.id }}" class="ml-2.5 text-[13px] font-semibold text-slate-700 dark:text-slate-300 cursor-pointer group-hover:text-blue-600 transition-colors">
                                 {{ structures.nom }}
                             </label>
@@ -1687,7 +1687,7 @@
                                     </svg>
                                 </button>
                                 <input type="checkbox" name="org_units" value="{{ sub_line.id }}" id="check-{{ sub_line.id }}"
-                                       class="custom-checkbox w-3.5 h-3.5 rounded border-slate-300 text-blue-600 dark:bg-slate-800 dark:border-slate-600" onchange="updateSelect(this, '{{ sub_line.nom }}', '{{ sub_line.id }}')">
+                                       class="custom-checkbox w-3.5 h-3.5 rounded border-slate-300 text-blue-600 dark:bg-slate-800 dark:border-slate-600" onchange="updateSelect(this, '{{ sub_line.nom|escapejs }}', '{{ sub_line.id }}')">
                                 <label for="check-{{ sub_line.id }}" class="ml-2.5 text-[12px] font-medium text-slate-600 dark:text-slate-400 cursor-pointer group-hover:text-blue-600">{{ sub_line.nom }}</label>
                             </div>
 
@@ -1710,6 +1710,23 @@
                 </li>
                 {% endfor %}
             </ul>
+            <script>
+            /* ← ajout : une structure déjà affichée sous son parent n'est plus répétée au premier niveau.
+               (Le jeu de données contient le parent ET ses enfants : l'enfant apparaissait 2 fois,
+               avec 2 cases « check-<id> » identiques — d'où les doublons dans la liste et les puces.) */
+            (function () {
+                var arbre = document.getElementById('orgUnitTree');
+                if (!arbre) return;
+                Array.prototype.slice.call(arbre.children).forEach(function (li) {
+                    var cb = li.querySelector('input[name="org_units"]');
+                    if (!cb) return;
+                    var memes = arbre.querySelectorAll('input[name="org_units"][value="' + cb.value + '"]');
+                    for (var i = 0; i < memes.length; i++) {
+                        if (memes[i] !== cb && !li.contains(memes[i])) { li.remove(); return; }
+                    }
+                });
+            })();
+            </script>
         </div>
 
       <div class="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2.5">
@@ -2333,7 +2350,9 @@ function filterTree() {
     function updateSelect(checkbox, name, id) {
         const select = document.getElementById("structureSelect");
 
+        const existe = Array.from(select.options).some(option => option.value === id);   // ← ajout
         if (checkbox.checked) {
+            if (existe) return;                      // ← corrigé : jamais deux fois la même unité dans la liste
             // Créer une nouvelle option
             const newOption = document.createElement("option");
             newOption.value = id; // ID de la structure

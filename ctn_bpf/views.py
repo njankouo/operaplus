@@ -36026,6 +36026,7 @@ def planification_by_lot(request):
 
 
 from django.db.models import Count, Max, Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
@@ -36060,11 +36061,17 @@ def _periodes_du_dataset(dataset):
     return qs
 
 
+def _en_date(d):
+    """datetime → date ; date ou None inchangés."""
+    return d.date() if d and hasattr(d, 'date') else d
+
+
 def _statut(p, today):
-    debut = p.date_debut.date() if p.date_debut and hasattr(p.date_debut, 'date') else p.date_debut
+    debut = _en_date(p.date_debut)
+    fin = _en_date(p.date_fin)                     # ← corrigé : date_fin aussi (un datetime comparé à une date plantait)
     if debut and debut > today:
         return 'a_venir'
-    if p.date_fin and p.date_fin >= today:
+    if fin and fin >= today:
         return 'en_cours'
     return 'cloturee'
 
@@ -36079,6 +36086,10 @@ def completude_collecte(request, id):
     """
     dataset = get_object_or_404(DataSet, id=int(id))
     context = basis(request)
+    # ← ajout : un jeu de données d'une autre institution n'est pas consultable
+    inst = context.get('actual_institution')
+    if getattr(dataset, 'm_institution_id', None) and inst and dataset.m_institution_id != inst.id:
+        raise Http404
     today = timezone.localdate() if timezone.is_aware(timezone.now()) else timezone.now().date()
 
     indicateurs = list(dataset.m_indicateurs.all())
@@ -36091,6 +36102,8 @@ def completude_collecte(request, id):
         indicateur_id__in=[i.id for i in indicateurs],
         structure_id__in=[s.id for s in structures],
         valeur__isnull=False, reference_cible=False, periode_ok__isnull=False,
+        type_donnee="valeur_form",      # ← corrigé : seulement les RÉALISATIONS (comme dans votre analyse_data) ;
+                                        #   les cibles (type_donnee "valeur") étaient comptées comme des saisies
     )
     periodes_ds = _periodes_du_dataset(dataset)
 
@@ -36099,6 +36112,8 @@ def completude_collecte(request, id):
     annees |= {a for a in periodes_ds.values_list('annee', flat=True) if a}
     annees = sorted(annees, reverse=True)
     annee = request.GET.get('annee') or (str(today.year) if today.year in annees else (str(annees[0]) if annees else ''))
+    if annee and annee not in {str(a) for a in annees}:          # ← corrigé : ?annee=abc faisait planter la requête
+        annee = str(annees[0]) if annees else ''
     if annee:
         valeurs = valeurs.filter(periode_ok__annee=annee)
         periodes_ds = periodes_ds.filter(annee=annee)
@@ -36144,6 +36159,8 @@ def completude_collecte(request, id):
         faites_dues = faites & ids_dues
         nb_ok = len(faites_dues)
         etat = 'jamais' if not faites else ('ajour' if nb_ok == nb_dues else 'retard')
+        # ← corrigé : rien d'exigible (aucune période clôturée) → à jour = 100 %, plus une barre rouge à 0 %
+        pct_s = round(100 * nb_ok / nb_dues) if nb_dues else (100 if faites else 0)
         st = stats.get(s.id, {})
         structures_info.append({
             'structure': s,
@@ -36153,7 +36170,7 @@ def completude_collecte(request, id):
                        'ok': x['periode'].id in faites, 'du': x['du']} for x in periodes],
             'manquantes': [x['label'] for x in dues if x['periode'].id not in faites],
             'nb_periodes': nb_ok,
-            'pct': round(100 * nb_ok / nb_dues) if nb_dues else 0,
+            'pct': pct_s,
             'nb_valeurs': st.get('nb', 0),
             'derniere': st.get('derniere'),
         })
@@ -36166,7 +36183,10 @@ def completude_collecte(request, id):
     nb_ajour = sum(1 for x in structures_info if x['etat'] == 'ajour')
     nb_retard = sum(1 for x in structures_info if x['etat'] == 'retard')
     nb_jamais = sum(1 for x in structures_info if x['etat'] == 'jamais')
-    courante = next((x for x in reversed(dues)), periodes[0] if periodes else None)
+    # ← corrigé : sans période clôturée, on ouvre la période EN COURS (avant : la première de l'année)
+    courante = (next((x for x in reversed(dues)), None)
+                or next((x for x in periodes if x['statut'] == 'en_cours'), None)
+                or (periodes[0] if periodes else None))
 
     context.update({
         'dataset': dataset,
