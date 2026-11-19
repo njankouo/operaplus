@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Hors connexion · OperaPlus</title>
+{% comment %}
+    PAGE HORS CONNEXION — mise en cache par le service worker (sw.js) et affichée à la place de la page
+    « Vous n'êtes pas connecté » du navigateur. Entièrement autonome : aucun fichier externe (polices, icônes, CSS),
+    sinon elle ne pourrait pas s'afficher sans réseau. Aucune donnée personnelle : la même page sert à tout le monde.
+    Couleurs : celles de l'utilisateur si elles ont été mémorisées par index.html, sinon les couleurs OperaPlus.
+{% endcomment %}
+<style>
+    :root { --dom: #123A37; --acc: #E48B0C; --ink: #0f172a; --txt: #334155; --muted: #64748b; --line: #e5e7eb; --bg: #f3f5f8; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg); color: var(--txt);
+           font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    .carte { width: min(520px, 100%); background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 32px 28px 26px; text-align: center;
+             box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 24px 48px -28px rgba(15,23,42,.35); }
+    .marque { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 22px; font-size: 13px; font-weight: 800; letter-spacing: .04em; color: var(--dom); }
+    .marque i { width: 26px; height: 26px; border-radius: 8px; background: var(--dom); display: inline-grid; place-items: center; color: #fff; font-style: normal; font-size: 13px; }
+    .illus { display: block; width: 132px; height: 132px; margin: 0 auto 18px; }
+    .illus .onde { fill: none; stroke: #cbd5e1; stroke-width: 6; stroke-linecap: round; }
+    .illus .onde.a { animation: clignote 2.4s ease-in-out infinite; }
+    .illus .onde.b { animation: clignote 2.4s ease-in-out .4s infinite; }
+    .illus .point { fill: var(--dom); }
+    .illus .barre { stroke: var(--acc); stroke-width: 7; stroke-linecap: round; }
+    @keyframes clignote { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+    h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; letter-spacing: -.01em; color: var(--ink); }
+    .sous { margin: 0 auto 20px; max-width: 40ch; font-size: 15px; line-height: 1.55; color: var(--muted); }
+    .etat { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; padding: 6px 12px; border-radius: 99px; background: #fff7ed; color: #9a3412; font-size: 13px; font-weight: 700; }
+    .etat::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--acc); }
+    .etat.ok { background: #ecfdf5; color: #047857; } .etat.ok::before { background: #10b981; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; border: 0; border-radius: 14px; background: var(--dom); color: #fff;
+           font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .btn:hover { filter: brightness(1.08); } .btn:disabled { opacity: .7; cursor: default; }
+    .btn:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; }
+    .roue { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.45); border-top-color: #fff; border-radius: 50%; display: none; animation: tourne .8s linear infinite; }
+    .btn.charge .roue { display: inline-block; }
+    @keyframes tourne { to { transform: rotate(360deg); } }
+    .auto { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+    .conseils { margin: 24px 0 0; padding: 16px 18px; border-radius: 16px; background: var(--bg); text-align: left; }
+    .conseils b { display: block; margin-bottom: 8px; font-size: 13px; color: var(--ink); }
+    .conseils ul { margin: 0; padding: 0 0 0 18px; font-size: 13.5px; line-height: 1.7; }
+    .note { margin: 16px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+    @media (prefers-reduced-motion: reduce) { .illus .onde, .roue { animation: none !important; } }
+    @media (prefers-color-scheme: dark) {
+        :root { --ink: #f1f5f9; --txt: #cbd5e1; --muted: #94a3b8; --line: rgba(255,255,255,.08); --bg: #0f1218; }
+        .carte { background: #171b23; } .conseils { background: #11151c; } .etat { background: rgba(228,139,12,.12); color: #fdba74; }
+        .illus .onde { stroke: #334155; }
+    }
+</style>
+</head>
+<body>
+<main class="carte" role="main" aria-labelledby="titre">
+    <div class="marque"><i>O+</i>OperaPlus</div>
+
+    <svg class="illus" viewBox="0 0 120 120" aria-hidden="true">
+        <path class="onde b" d="M18 50 a60 60 0 0 1 84 0"/>
+        <path class="onde a" d="M33 65 a38 38 0 0 1 54 0"/>
+        <path class="onde" d="M47 79 a17 17 0 0 1 26 0"/>
+        <circle class="point" cx="60" cy="92" r="7"/>
+        <line class="barre" x1="24" y1="22" x2="96" y2="104"/>
+    </svg>
+
+    <h1 id="titre">Pas de connexion internet</h1>
+    <p class="sous">La page n'a pas pu se charger. Vérifiez votre connexion : OperaPlus reprendra là où vous en étiez dès que le réseau revient.</p>
+
+    <div class="etat" id="etat" role="status" aria-live="polite">Hors connexion</div>
+
+    <button type="button" class="btn" id="reessayer"><span class="roue" aria-hidden="true"></span><span id="libelle">Réessayer</span></button>
+    <p class="auto" id="auto">Nouvel essai automatique dans <span id="compte">15</span> s</p>
+
+    <div class="conseils">
+        <b>Que vérifier ?</b>
+        <ul>
+            <li>Le Wi-Fi ou les données mobiles sont activés</li>
+            <li>Le mode avion est désactivé</li>
+            <li>Votre forfait internet n'est pas épuisé</li>
+            <li>Les autres sites s'ouvrent (sinon, le problème vient du réseau)</li>
+        </ul>
+    </div>
+    <p class="note">Si vous remplissiez un formulaire, revenez en arrière avec le bouton « Précédent » du navigateur une fois connecté : vos saisies y sont souvent encore présentes.</p>
+</main>
+
+<script>
+(function () {
+    /* Couleurs de l'utilisateur, mémorisées par index.html (même site) */
+    try {
+        var c = JSON.parse(localStorage.getItem('op-couleurs') || 'null');
+        if (c && /^#[0-9a-f]{3,8}$/i.test(c.dom || '')) document.documentElement.style.setProperty('--dom', c.dom);
+        if (c && /^#[0-9a-f]{3,8}$/i.test(c.acc || '')) document.documentElement.style.setProperty('--acc', c.acc);
+    } catch (e) {}
+
+    var btn = document.getElementById('reessayer'), libelle = document.getElementById('libelle'), etat = document.getElementById('etat');
+    var compte = document.getElementById('compte'), auto = document.getElementById('auto'), reste = 15, minuteur = null;
+
+    function recharger() { location.reload(); }
+
+    /* On vérifie vraiment que le serveur répond avant de recharger (navigator.onLine peut mentir) */
+    function essayer() {
+        btn.disabled = true; btn.classList.add('charge'); libelle.textContent = 'Vérification…';
+        fetch(location.href, { method: 'HEAD', cache: 'no-store' })
+            .then(function (r) { if (r.ok || r.status < 500) { etat.textContent = 'Connexion rétablie'; etat.classList.add('ok'); recharger(); } else throw 0; })
+            .catch(function () { btn.disabled = false; btn.classList.remove('charge'); libelle.textContent = 'Réessayer'; etat.textContent = 'Toujours hors connexion'; reste = 15; });
+    }
+    btn.addEventListener('click', essayer);
+    window.addEventListener('online', function () { etat.textContent = 'Réseau détecté…'; essayer(); });
+
+    minuteur = setInterval(function () {
+        if (document.hidden) return;
+        reste -= 1; compte.textContent = reste;
+        if (reste <= 0) { reste = 15; essayer(); }
+    }, 1000);
+    if (!('fetch' in window)) auto.hidden = true;
+})();
+</script>
+</body>
+</html>

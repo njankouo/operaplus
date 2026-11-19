@@ -5256,5 +5256,49 @@ document.addEventListener("DOMContentLoaded", getData);
 </script>
 <!-- ===================== FIN LIQUID MORPH ===================== -->
 
+<!-- ===================== HORS CONNEXION (ajout, juste avant </body> de index.html) =====================
+     1. Installe le service worker : sans réseau, la page /hors-ligne/ remplace l'écran du navigateur.
+     2. Si la connexion tombe pendant qu'on travaille sur une page déjà ouverte : bandeau discret en haut.
+     3. Mémorise les couleurs de l'utilisateur pour que la page hors connexion les reprenne. -->
+<div id="opReseau" role="status" aria-live="polite" hidden>
+    <span class="op-reseau-point" aria-hidden="true"></span>
+    <span id="opReseauTexte">Connexion perdue. Vos actions seront possibles dès le retour du réseau.</span>
+</div>
+<style>
+    #opReseau { position: fixed; top: 12px; left: 50%; z-index: 100000; transform: translateX(-50%); display: flex; align-items: center; gap: 10px;
+                max-width: calc(100% - 24px); padding: 10px 16px; border-radius: 14px; background: #0f172a; color: #fff; font-size: 13.5px; font-weight: 600;
+                box-shadow: 0 16px 40px -18px rgba(15,23,42,.6); }
+    #opReseau[hidden] { display: none; }
+    #opReseau.ok { background: #047857; }
+    .op-reseau-point { width: 9px; height: 9px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; }
+    #opReseau.ok .op-reseau-point { background: #a7f3d0; }
+</style>
+<script>
+(function () {
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+        window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function (e) { console.warn('Hors connexion : service worker non installé', e); });
+        });
+    }
+    try {
+        var cs = getComputedStyle(document.documentElement);
+        localStorage.setItem('op-couleurs', JSON.stringify({ dom: cs.getPropertyValue('--nav-bg-color').trim(), acc: cs.getPropertyValue('--primary-color').trim() }));
+    } catch (e) {}
+
+    var b = document.getElementById('opReseau'), t = document.getElementById('opReseauTexte'), minuteur = null;
+    function afficher(enLigne) {
+        clearTimeout(minuteur);
+        b.classList.toggle('ok', enLigne);
+        t.textContent = enLigne ? 'Connexion rétablie.' : 'Connexion perdue. Vos actions seront possibles dès le retour du réseau.';
+        b.hidden = false;
+        if (enLigne) minuteur = setTimeout(function () { b.hidden = true; }, 3000);
+    }
+    window.addEventListener('offline', function () { afficher(false); });
+    window.addEventListener('online', function () { afficher(true); });
+    if (navigator.onLine === false) afficher(false);
+})();
+</script>
+<!-- ===================== FIN HORS CONNEXION ===================== -->
+
 </body>
 </html>

@@ -276,6 +276,10 @@ urlpatterns = [
    path('indicateurs/atelier/creer/',     views.creer_indicateurs_rapide, name='creer-indicateurs-rapide'),
    path('indicateurs/atelier/attribuer/', views.attribuer_indicateurs,   name='attribuer-indicateurs'),
 
+   path('sw.js', views.service_worker, name='service-worker'),
+
+   path('hors-ligne/', views.hors_ligne, name='hors-ligne'),
+
 
 
 

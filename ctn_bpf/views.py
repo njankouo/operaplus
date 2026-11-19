@@ -36945,3 +36945,23 @@ def attribuer_indicateurs(request):
     n = choisis.update(m_enti_id=entite_id)
     messages.success(request, f'{n} indicateur{"s" if n > 1 else ""} rattaché{"s" if n > 1 else ""}.')
     return redirect('atelier-indicateurs')
+
+
+
+
+
+from django.views.decorators.cache import cache_control, never_cache
+
+
+
+@never_cache                       # toujours la dernière version : sinon une mise à jour du service worker peut tarder des jours
+def service_worker(request):
+    reponse = render(request, 'sw.js', content_type='application/javascript')
+    reponse['Service-Worker-Allowed'] = '/'
+    return reponse
+
+
+@cache_control(public=True, max_age=86400)
+def hors_ligne(request):
+    # Page publique et identique pour tous (pas de @login_required) : elle est gardée en mémoire par le navigateur
+    return render(request, 'hors_ligne.html')
