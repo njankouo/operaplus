@@ -36727,10 +36727,28 @@ def save_indicateur(request):
 #  Champs dynamiques : les 3 éléments ci-dessous vont ENSEMBLE
 #  (vous aviez collé enregistrer_champs_dynamiques seule : elle a besoin de _lire_une_valeur et des constantes)
 # =====================================================================
+# =====================================================================
+#  Bloc « champs dynamiques des indicateurs » à coller dans views.py (remplace l'ancien bloc).
+#  Imports nécessaires en haut de views.py (à ne pas dupliquer s'ils y sont déjà) :
+#      import json
+#      from decimal import Decimal, InvalidOperation
+# =====================================================================
 
 MAX_CHAMPS = 50
 TAILLE_MAX_FICHIER = 5 * 1024 * 1024
 TYPES_FICHIER = ('image/jpeg', 'image/png', 'image/webp', 'application/pdf')
+
+
+def _date_iso(texte):
+    """'2026-03-01' → date ; ValueError si invalide. Import local : aucun conflit avec vos imports de datetime."""
+    from datetime import date as _date
+    return _date.fromisoformat(texte)
+
+
+def _nombre_saisi(texte):
+    """'1 500', '1 500' (espace insécable, Excel/Windows), '12,5' → Decimal ; InvalidOperation si ce n'est pas un nombre."""
+    propre = texte.replace(' ', '').replace(' ', '').replace(' ', '').replace(',', '.')
+    return Decimal(propre)
 
 
 def _lire_une_valeur(champ, request):
@@ -36752,12 +36770,12 @@ def _lire_une_valeur(champ, request):
         return vide, ''
     if champ.type == 'number':
         try:
-            return {**vide, 'nombre': Decimal(brut.replace(' ', '').replace(' ', '').replace(',', '.'))}, ''
+            return {**vide, 'nombre': _nombre_saisi(brut)}, ''
         except InvalidOperation:
             return None, f'« {champ.libelle} » : écrivez un nombre (ex. 24 ou 12,5).'
     if champ.type == 'date':
         try:
-            return {**vide, 'date': datetime.strptime(brut, '%Y-%m-%d').date()}, ''
+            return {**vide, 'date': _date_iso(brut)}, ''
         except ValueError:
             return None, f'« {champ.libelle} » : date invalide.'
     if champ.type == 'list' and brut not in (champ.choix or []):
