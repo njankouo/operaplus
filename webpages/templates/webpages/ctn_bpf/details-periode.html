@@ -275,6 +275,15 @@
     @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { :root { --lm-glass: #fff; --lm-glass-strong: #fff; } }
 </style>
 <!-- ===================== FIN LIQUID MORPH : styles ===================== -->
+<!-- ===================== CONTENU SANS « CARTE » (ajout) =====================
+     Le contenu des pages se pose directement sur le fond : plus de boîte grise sans signification autour.
+     Il profite aussi de toute la largeur utile (avant : limité à 1152 px, même sur grand écran). -->
+<style>
+    @media (min-width: 768px) { html body > main > .max-w-6xl { max-width: 1400px !important; } }
+    /* Pages enfants qui enveloppent leur contenu dans un grand bloc coloré (min-h-screen + fond + marge intérieure) */
+    html body > main > .max-w-6xl > .min-h-screen { min-height: 0 !important; background: transparent !important; padding-left: 0 !important; padding-right: 0 !important; padding-top: 0 !important; }
+</style>
+<!-- ===================== FIN CONTENU SANS « CARTE » ===================== -->
 </head>
 
 <body class="h-screen flex flex-col overflow-hidden">

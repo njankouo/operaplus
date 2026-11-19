@@ -1,0 +1,209 @@
+{% comment %}
+    CHAMPS DYNAMIQUES D'UN INDICATEUR — bloc à inclure DANS le <form> de création / modification :
+        {% include './partials/champs_indicateur_valeurs.html' %}
+    Le <form> doit avoir enctype="multipart/form-data" (champs « photo / fichier »).
+
+    Contexte attendu (voir la vue) :
+        champs_dynamiques : champs actifs de la bibliothèque  [{id, libelle, type, unite, choix}, …]
+        champs_valeurs    : (modification) valeurs déjà renseignées [{champ_id, valeur, fichier_url, fichier_nom}, …]
+    Envoie : champs_json = [ids choisis, dans l'ordre]  +  cd_<id> = valeur de chaque champ
+    Serveur : enregistrer_champs_dynamiques(request, indicateur, institution)
+{% endcomment %}
+<style>
+    .cdv { --v-dom: var(--dom, #123A37); --v-ink: #0f172a; --v-txt: #334155; --v-mute: #64748b; --v-line: #e5e7eb; --v-soft: #f8fafc;
+           background: #fff; border: 1px solid var(--v-line); border-radius: 16px; overflow: hidden; }
+    .cdv * { box-sizing: border-box; }
+    .cdv .t-number { --t: #2F5BC9; } .cdv .t-text { --t: #475164; } .cdv .t-date { --t: #7A4BC2; } .cdv .t-list { --t: #9A5800; } .cdv .t-boolean { --t: #1F6F64; } .cdv .t-file { --t: #A3300F; }
+    .cdv-tete { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 18px 22px 14px; border-bottom: 1px solid var(--v-line); }
+    .cdv-tete h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--v-ink); display: flex; align-items: center; gap: 8px; }
+    .cdv-tete h3 em { font-style: normal; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 99px; background: #f1f5f9; color: var(--v-mute); }
+    .cdv-tete p { margin: 3px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--v-mute); max-width: 540px; }
+    .cdv-lien { display: inline-flex; align-items: center; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--v-line); font-size: 12.5px; font-weight: 700; color: var(--v-txt); text-decoration: none; white-space: nowrap; }
+    .cdv-lien:hover { border-color: var(--v-dom); color: var(--v-dom); }
+    .cdv-corps { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+    .cdv-zone { padding: 16px 22px 18px; min-width: 0; }
+    .cdv-zone + .cdv-zone { border-left: 1px solid var(--v-line); background: var(--v-soft); }
+    .cdv-zone h4 { margin: 0 0 10px; font-size: 12px; font-weight: 700; color: var(--v-mute); }
+
+    /* champs choisis, avec leur zone de saisie */
+    .cdv-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .cdv-champ { padding: 12px 12px 14px; border: 1px solid var(--v-line); border-radius: 12px; background: #fff; }
+    .cdv-champ-tete { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .cdv-ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: var(--t); background: color-mix(in srgb, var(--t) 10%, #fff); }
+    .cdv-champ-tete label, .cdv-champ-tete span.lab { font-size: 13.5px; font-weight: 700; color: var(--v-ink); line-height: 1.3; }
+    .cdv-retirer { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--v-line); background: #fff; color: var(--v-mute); cursor: pointer; font-size: 15px; line-height: 1; }
+    .cdv-retirer:hover { border-color: #E35A33; color: #E35A33; }
+    .cdv-saisie { position: relative; }
+    .cdv input[type="text"], .cdv input[type="date"], .cdv select, .cdv textarea {
+        width: 100%; height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid #d1d5db; background: #fff; font: inherit; font-size: 14px; color: var(--v-ink); outline: none; }
+    .cdv textarea { height: auto; min-height: 64px; padding: 10px 12px; resize: vertical; }
+    .cdv input:focus, .cdv select:focus, .cdv textarea:focus { border-color: var(--v-dom); box-shadow: 0 0 0 3px color-mix(in srgb, var(--v-dom) 12%, transparent); }
+    .cdv .avec-unite input { padding-right: 90px; }
+    .cdv .unite { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 12.5px; font-weight: 600; color: var(--v-mute); pointer-events: none; }
+    .cdv-on { display: inline-flex; gap: 4px; padding: 3px; border-radius: 10px; background: #f1f5f9; }
+    .cdv-on label { position: relative; cursor: pointer; }
+    .cdv-on input { position: absolute; opacity: 0; }
+    .cdv-on span { display: inline-flex; align-items: center; height: 34px; padding: 0 18px; border-radius: 8px; font-size: 13px; font-weight: 700; color: var(--v-mute); }
+    .cdv-on input:checked + span { background: #fff; color: var(--v-ink); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+    .cdv-on input:focus-visible + span { outline: 2px solid var(--v-dom); }
+    .cdv-fichier { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: var(--v-mute); }
+    .cdv-fichier a { color: var(--v-dom); font-weight: 700; }
+    .cdv-vide { margin: 0; padding: 18px 14px; border: 1.5px dashed #d5dbe3; border-radius: 12px; text-align: center; font-size: 12.5px; line-height: 1.5; color: var(--v-mute); }
+
+    /* champs disponibles */
+    .cdv-cherche { position: relative; margin-bottom: 10px; }
+    .cdv-cherche input { padding-left: 32px !important; height: 38px !important; font-size: 13px !important; }
+    .cdv-cherche svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); }
+    .cdv-dispo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
+    .cdv-dispo button { width: 100%; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid transparent; border-radius: 10px; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+    .cdv-dispo button:hover { background: #fff; border-color: var(--v-line); }
+    .cdv-dispo b { display: block; font-size: 13px; font-weight: 600; color: var(--v-ink); overflow-wrap: anywhere; }
+    .cdv-dispo small { display: block; font-size: 11.5px; color: var(--v-mute); }
+    .cdv-dispo .plus { font-size: 12px; font-weight: 700; color: var(--v-dom); white-space: nowrap; }
+    .cdv-rien { margin: 0; padding: 14px 6px; font-size: 12.5px; color: var(--v-mute); text-align: center; }
+    .cdv-rien a { color: var(--v-dom); font-weight: 700; }
+    @media (max-width: 860px) {
+        .cdv-corps { grid-template-columns: 1fr; }
+        .cdv-zone + .cdv-zone { border-left: 0; border-top: 1px solid var(--v-line); }
+    }
+</style>
+
+<section class="cdv" id="cdv" aria-labelledby="cdvTitre">
+    <div class="cdv-tete">
+        <div>
+            <h3 id="cdvTitre">Informations complémentaires <em id="cdvNb">0</em></h3>
+            <p>Ajoutez les champs utiles à cet indicateur (bailleur, désagrégation, unité…) et renseignez leur valeur. Facultatif.</p>
+        </div>
+        <a class="cdv-lien" href="/champs-dynamiques/" target="_blank" rel="noopener">Gérer les champs ↗</a>
+    </div>
+    <div class="cdv-corps">
+        <div class="cdv-zone">
+            <h4>Champs de cet indicateur</h4>
+            <ol class="cdv-liste" id="cdvListe"></ol>
+            <p class="cdv-vide" id="cdvVide">Aucun champ pour l'instant.<br>Ajoutez-en depuis la liste à droite.</p>
+        </div>
+        <div class="cdv-zone">
+            <h4>Ajouter un champ</h4>
+            <label class="cdv-cherche">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+                <input type="text" id="cdvCherche" placeholder="Chercher un champ…" autocomplete="off" aria-label="Chercher un champ">
+            </label>
+            <ul class="cdv-dispo" id="cdvDispo"></ul>
+            <p class="cdv-rien" id="cdvRien" hidden></p>
+        </div>
+    </div>
+    <input type="hidden" name="champs_json" id="champs_json" value="[]">
+</section>
+
+{{ champs_dynamiques|json_script:"cdvDonnees" }}
+{{ champs_valeurs|json_script:"cdvValeurs" }}
+<script>
+(function () {
+    var racine = document.getElementById('cdv'); if (!racine) return;
+    var $ = function (id) { return document.getElementById(id); };
+    function lire(id) { try { var v = JSON.parse(($(id) || {}).textContent || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+    var form = racine.closest('form');
+    if (form && !form.getAttribute('enctype')) form.setAttribute('enctype', 'multipart/form-data');   /* nécessaire pour les fichiers */
+
+    var champs = lire('cdvDonnees'), parId = {};
+    champs.forEach(function (c) { parId[c.id] = c; });
+    var existants = {};
+    var choisis = lire('cdvValeurs').filter(function (v) { return parId[v.champ_id]; }).map(function (v) { existants[v.champ_id] = v; return v.champ_id; });
+
+    var LETTRE = { number: '123', text: 'Aa', date: 'JJ', boolean: 'O/N', file: 'IMG', list: '≡' };
+    function forme(c) {
+        if (c.type === 'number') return 'Nombre' + (c.unite ? ' (' + c.unite + ')' : '');
+        if (c.type === 'list') return 'Choix parmi ' + (c.choix || []).length;
+        return { text: 'Texte', date: 'Date', boolean: 'Oui / Non', file: 'Photo ou document' }[c.type] || '';
+    }
+    function el(tag, cls, texte) { var e = document.createElement(tag); if (cls) e.className = cls; if (texte != null) e.textContent = texte; return e; }
+
+    /* zone de saisie adaptée au type ; les valeurs déjà saisies sont gardées quand la liste est redessinée */
+    var saisies = {};
+    function zoneSaisie(c) {
+        var nom = 'cd_' + c.id, deja = saisies[c.id] !== undefined ? saisies[c.id] : (existants[c.id] || {}).valeur || '', z = el('div', 'cdv-saisie');
+        if (c.type === 'number') {
+            z.classList.add('avec-unite');
+            var i = el('input'); i.type = 'text'; i.name = nom; i.id = nom; i.inputMode = 'decimal'; i.placeholder = 'Ex. 24'; i.value = deja; z.appendChild(i);
+            if (c.unite) z.appendChild(el('span', 'unite', c.unite));
+        } else if (c.type === 'list') {
+            var s = el('select'); s.name = nom; s.id = nom; s.appendChild(new Option('Choisir…', ''));
+            (c.choix || []).forEach(function (x) { var o = new Option(x, x); o.selected = x === deja; s.appendChild(o); });
+            z.appendChild(s);
+        } else if (c.type === 'date') {
+            var d = el('input'); d.type = 'date'; d.name = nom; d.id = nom; d.value = deja; z.appendChild(d);
+        } else if (c.type === 'boolean') {
+            var g = el('div', 'cdv-on'); g.setAttribute('role', 'radiogroup');
+            [['oui', 'Oui'], ['non', 'Non']].forEach(function (p) {
+                var l = el('label'), r = el('input'); r.type = 'radio'; r.name = nom; r.value = p[0]; r.checked = deja === p[0];
+                l.appendChild(r); l.appendChild(el('span', '', p[1])); g.appendChild(l);
+            });
+            z.appendChild(g);
+        } else if (c.type === 'file') {
+            var f = el('div', 'cdv-fichier'), e = existants[c.id] || {};
+            var inp = el('input'); inp.type = 'file'; inp.name = nom; inp.id = nom; inp.accept = 'image/jpeg,image/png,image/webp,application/pdf';
+            f.appendChild(inp);
+            if (e.fichier_url) { f.appendChild(document.createTextNode('Fichier actuel : ')); var a = el('a', '', e.fichier_nom || 'voir'); a.href = e.fichier_url; a.target = '_blank'; a.rel = 'noopener'; f.appendChild(a); f.appendChild(document.createTextNode(' (gardé si vous n’en choisissez pas d’autre)')); }
+            z.appendChild(f);
+        } else {
+            var t = el('textarea'); t.name = nom; t.id = nom; t.rows = 2; t.maxLength = 2000; t.value = deja; z.appendChild(t);
+        }
+        return z;
+    }
+    function memoriser() {   /* garde les valeurs tapées avant de redessiner */
+        choisis.forEach(function (id) {
+            var c = parId[id]; if (c.type === 'file') return;
+            var champ = form.querySelector(c.type === 'boolean' ? 'input[name="cd_' + id + '"]:checked' : '[name="cd_' + id + '"]');
+            if (champ || c.type === 'boolean') saisies[id] = champ ? champ.value : '';
+        });
+    }
+
+    function dessiner() {
+        var ol = $('cdvListe'); ol.textContent = '';
+        choisis.forEach(function (id) {
+            var c = parId[id], li = el('li', 'cdv-champ t-' + c.type), tete = el('div', 'cdv-champ-tete');
+            var ic = el('span', 'cdv-ic', LETTRE[c.type] || '?'); ic.setAttribute('aria-hidden', 'true');
+            var titre = el(c.type === 'boolean' ? 'span' : 'label', c.type === 'boolean' ? 'lab' : ''); titre.textContent = c.libelle;
+            if (c.type !== 'boolean') titre.htmlFor = 'cd_' + c.id;
+            var x = el('button', 'cdv-retirer', '×'); x.type = 'button'; x.dataset.retirer = c.id; x.setAttribute('aria-label', 'Retirer « ' + c.libelle + ' »');
+            tete.appendChild(ic); tete.appendChild(titre); tete.appendChild(x);
+            li.appendChild(tete); li.appendChild(zoneSaisie(c)); ol.appendChild(li);
+        });
+        $('cdvVide').hidden = choisis.length > 0;
+        $('cdvNb').textContent = choisis.length;
+        $('champs_json').value = JSON.stringify(choisis);
+        dessinerDispo();
+    }
+
+    function norm(t) { return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+    function dessinerDispo() {
+        var ul = $('cdvDispo'), q = norm($('cdvCherche').value.trim()), vus = 0; ul.textContent = '';
+        champs.forEach(function (c) {
+            if (choisis.indexOf(c.id) > -1 || (q && norm(c.libelle).indexOf(q) < 0)) return;
+            var li = el('li'), b = el('button', 't-' + c.type); b.type = 'button'; b.dataset.ajout = c.id;
+            var ic = el('span', 'cdv-ic', LETTRE[c.type] || '?'); ic.setAttribute('aria-hidden', 'true');
+            var nom = el('span'); nom.style.minWidth = '0'; nom.appendChild(el('b', '', c.libelle)); nom.appendChild(el('small', '', forme(c)));
+            b.appendChild(ic); b.appendChild(nom); b.appendChild(el('span', 'plus', '+ Ajouter'));
+            li.appendChild(b); ul.appendChild(li); vus++;
+        });
+        var rien = $('cdvRien'); rien.hidden = vus > 0; rien.textContent = '';
+        if (!vus) {
+            if (!champs.length) { rien.appendChild(document.createTextNode('La bibliothèque est vide. ')); var a = el('a', '', 'Créer un champ ↗'); a.href = '/champs-dynamiques/'; a.target = '_blank'; a.rel = 'noopener'; rien.appendChild(a); }
+            else rien.textContent = q ? 'Aucun champ ne correspond.' : 'Tous les champs sont déjà ajoutés.';
+        }
+    }
+
+    $('cdvDispo').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-ajout]'); if (!b) return;
+        memoriser(); choisis.push(+b.dataset.ajout); dessiner();
+        var nouveau = form.querySelector('[name="cd_' + b.dataset.ajout + '"]'); if (nouveau) nouveau.focus();
+    });
+    $('cdvListe').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-retirer]'); if (!b) return;
+        memoriser(); choisis = choisis.filter(function (id) { return String(id) !== b.dataset.retirer; }); delete saisies[b.dataset.retirer]; dessiner();
+    });
+    $('cdvCherche').addEventListener('input', dessinerDispo);
+    $('cdvCherche').addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
+    dessiner();
+})();
+</script>

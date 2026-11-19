@@ -105,6 +105,43 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
 #modalContent input:not([type=file]):focus,#modalContent select:focus{border-color:var(--h2-f)!important;box-shadow:0 0 0 3px rgba(234,88,12,.12)!important;background:#fff!important}
 #modalContent form>div:last-child button{font-size:.82rem!important;font-weight:600!important;padding:.6rem 1.1rem!important;border-radius:10px!important}
 
+/* Ajouts : résultat de recherche, poste, message d'enregistrement */
+.h2-resultat{margin:-.75rem 0 0;font-size:.8rem;color:var(--h2-mute)}.h2-resultat b{color:var(--h2-ink)}.h2-resultat a{color:var(--h2-f);font-weight:700}
+.h2-poste{margin:.15rem 0 0;font-size:.72rem;color:var(--h2-txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.h2-poste b{font-weight:700;color:var(--h2-ink)}
+.h2-ok{position:fixed;left:50%;bottom:24px;z-index:60;transform:translateX(-50%);display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;border-radius:12px;background:var(--h2-ink);color:#fff;font-size:.82rem;font-weight:600;box-shadow:0 18px 36px -18px rgba(15,23,42,.6);animation:fadeInUp .35s cubic-bezier(.16,1,.3,1) both}
+.h2-ok i{color:#34d399}.h2-ok button{margin-left:.4rem;border:0;background:transparent;color:#cbd5e1;font-size:1rem;cursor:pointer}
+/* Fenêtre « fiche de l'agent » après enregistrement */
+.h2-fiche{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;animation:h2In .2s ease-out both}
+.h2-fiche.ferme{opacity:0;transition:opacity .2s}
+@keyframes h2In{from{opacity:0}}
+.h2-fiche-voile{position:absolute;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(3px)}
+.h2-fiche-boite{position:relative;width:min(480px,100%);max-height:calc(100vh - 32px);overflow-y:auto;background:#fff;border-radius:20px;padding:22px 22px 18px;box-shadow:0 30px 60px -25px rgba(15,23,42,.55);animation:fadeInUp .3s cubic-bezier(.16,1,.3,1) both}
+.h2-fiche-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border:1px solid var(--h2-line);border-radius:10px;background:#fff;font-size:1.1rem;line-height:1;color:var(--h2-mute);cursor:pointer}
+.h2-fiche-x:hover{color:var(--h2-ink);border-color:#cbd5e1}
+.h2-fiche-statut{display:inline-flex;align-items:center;gap:.45rem;padding:.3rem .7rem;border-radius:99px;font-size:.74rem;font-weight:700;background:#ecfdf5;color:#047857;margin-right:40px}
+.h2-st-deja .h2-fiche-statut{background:#fffbeb;color:#b45309}
+.h2-st-rattache .h2-fiche-statut,.h2-st-lie .h2-fiche-statut{background:#eff6ff;color:#1d4ed8}
+.h2-st-modifie .h2-fiche-statut{background:#f1f5f9;color:var(--h2-txt)}
+.h2-fiche-id{display:flex;align-items:center;gap:14px;margin:16px 0 12px}
+.h2-fiche-photo{width:72px;height:72px;border-radius:18px;object-fit:cover;flex:none;border:1px solid var(--h2-line);background:var(--h2-soft)}
+.h2-fiche-logo{object-fit:contain;padding:8px;background:#fff}
+.h2-logo-inst img{padding:4px}
+.h2-fiche-init{display:grid;place-items:center;font-size:1.4rem;font-weight:800;text-transform:uppercase;color:var(--h2-f);background:#fff7ed;border-color:#fed7aa}
+.h2-fiche-id h2{margin:0;font-size:1.15rem;font-weight:800;color:var(--h2-ink);line-height:1.25}
+.h2-fiche-poste{margin:.2rem 0 0;font-size:.82rem;color:var(--h2-txt)}.h2-fiche-poste b{color:var(--h2-ink)}
+.h2-fiche-inst{margin:.15rem 0 0;font-size:.74rem;color:var(--h2-mute)}
+.h2-fiche-msg{margin:0 0 14px;padding:12px 14px;border-radius:12px;background:var(--h2-soft);font-size:.84rem;line-height:1.55;color:var(--h2-txt)}
+.h2-st-deja .h2-fiche-msg{background:#fffbeb;color:#78350f}
+.h2-fiche-infos{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:0 0 18px}
+.h2-fiche-infos dt{font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--h2-mute)}
+.h2-fiche-infos dd{margin:.1rem 0 0;font-size:.84rem;font-weight:600;color:var(--h2-ink);overflow-wrap:anywhere}
+.h2-fiche-actions{display:flex;flex-wrap:wrap;gap:8px;padding-top:14px;border-top:1px solid var(--h2-line)}
+.h2-fiche-btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 14px;border-radius:11px;border:1px solid var(--h2-line);background:#fff;font-size:.82rem;font-weight:700;color:var(--h2-txt);cursor:pointer;text-decoration:none}
+.h2-fiche-btn:hover{border-color:#94a3b8;color:var(--h2-ink)}
+.h2-fiche-btn.principal{background:var(--h2-f);border-color:var(--h2-f);color:#fff}.h2-fiche-btn.principal:hover{background:#c2410c;color:#fff}
+.h2-fiche-btn.discret{border-color:transparent;margin-left:auto;color:var(--h2-mute)}
+@media (max-width:480px){.h2-fiche-infos{grid-template-columns:1fr}.h2-fiche-btn{flex:1 1 100%}.h2-fiche-btn.discret{margin-left:0}}
+@media (prefers-reduced-motion:reduce){.h2-fiche,.h2-fiche-boite{animation:none!important}}
 @media (max-width:767px){.h2-charts{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.member-card,.h2-ring .h2-arc,.h2-bar i,.h2-nat-r div i{animation:none!important}}
 </style>
@@ -146,6 +183,89 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
         </div>
     </div>
 </div>
+
+{# ===== Fiche de l'agent après enregistrement (nouveau, déjà inscrit ailleurs, déjà dans l'équipe, modifié) ===== #}
+{% if perso_saved and perso_get %}
+{% with p=perso_get st=perso_statut %}
+<div class="h2-fiche" id="h2Fiche" role="dialog" aria-modal="true" aria-labelledby="h2FicheTitre" aria-describedby="h2FicheMsg">
+    <div class="h2-fiche-voile" data-h2-fermer></div>
+    <div class="h2-fiche-boite h2-st-{{ st }}">
+        <button type="button" class="h2-fiche-x" data-h2-fermer aria-label="Fermer">×</button>
+
+        <div class="h2-fiche-statut">
+            {% if st == 'deja' %}<i class="fa-solid fa-circle-info"></i> Déjà dans votre équipe
+            {% elif st == 'rattache' %}<i class="fa-solid fa-link"></i> Compte existant · ajouté{% if perso_f %}e{% endif %} à l'équipe
+            {% elif st == 'lie' %}<i class="fa-solid fa-link"></i> Fiche créée · compte existant relié
+            {% elif st == 'modifie' %}<i class="fa-solid fa-pen"></i> Fiche mise à jour
+            {% else %}<i class="fa-solid fa-circle-check"></i> Nouveau compte créé{% endif %}
+        </div>
+
+        <div class="h2-fiche-id">
+            {% if perso_photo %}<img src="{{ perso_photo.url }}" alt="Photo de {{ p.prenom|default:'' }} {{ p.nom }}" class="h2-fiche-photo">
+            {% elif actual_institution.img %}<img src="{{ actual_institution.img.url }}" alt="" title="Pas de photo : logo de {{ actual_institution.nom }}" class="h2-fiche-photo h2-fiche-logo">
+            {% else %}<span class="h2-fiche-photo h2-fiche-init" aria-hidden="true">{% if p.prenom %}{{ p.prenom|slice:":1" }}{{ p.nom|slice:":1" }}{% else %}{{ p.nom|slice:":2" }}{% endif %}</span>{% endif %}
+            <div>
+                <h2 id="h2FicheTitre">{% if p.prenom %}{{ p.prenom }} {% endif %}{{ p.nom }}</h2>
+                {% if perso_fonction or perso_structure %}<p class="h2-fiche-poste">{% if perso_fonction %}<b>{{ perso_fonction }}</b>{% endif %}{% if perso_fonction and perso_structure %} · {% endif %}{{ perso_structure|default:'' }}</p>{% endif %}
+                <p class="h2-fiche-inst">{{ actual_institution.nom }}</p>
+            </div>
+        </div>
+
+        <p class="h2-fiche-msg" id="h2FicheMsg">
+            {% if st == 'deja' %}
+                {% if p.prenom %}{{ p.prenom }}{% else %}{{ p.nom }}{% endif %} fait déjà partie de votre équipe : aucune nouvelle fiche n'a été créée et aucune information n'a été modifiée.
+                Pour changer sa fonction, sa structure ou ses coordonnées, ouvrez sa fiche.
+            {% elif st == 'rattache' %}
+                {% if p.prenom %}{{ p.prenom }}{% else %}{{ p.nom }}{% endif %} disposait déjà d'un compte OPERA+. {% if perso_f %}Elle a été ajoutée{% else %}Il a été ajouté{% endif %} à votre équipe ;
+                ses informations personnelles et son mot de passe restent inchangés. Un e-mail l'informe de cet ajout.
+            {% elif st == 'lie' %}
+                Un compte utilisateur existait déjà pour cette adresse : la fiche a été créée et reliée à ce compte.
+                Aucun nouveau mot de passe n'a été envoyé ; {% if perso_f %}elle{% else %}il{% endif %} se connecte avec ses identifiants habituels.
+            {% elif st == 'modifie' %}
+                Les modifications ont été enregistrées.
+            {% else %}
+                Bienvenue dans l'équipe. Les identifiants de connexion ont été envoyés à l'adresse ci-dessous ;
+                {% if perso_f %}elle{% else %}il{% endif %} pourra se connecter dès réception.
+            {% endif %}
+        </p>
+
+        <dl class="h2-fiche-infos">
+            <div><dt>E-mail</dt><dd>{{ p.mail|default:'—' }}</dd></div>
+            <div><dt>Téléphone</dt><dd>{{ p.tel|default:'—' }}</dd></div>
+            <div><dt>Genre</dt><dd>{% if perso_f %}Femme{% elif p.sexe %}Homme{% else %}Non renseigné{% endif %}</dd></div>
+            {% if p.nationalite %}<div><dt>Nationalité</dt><dd>{{ p.nationalite }}</dd></div>{% endif %}
+        </dl>
+
+        <div class="h2-fiche-actions">
+            <a href="/detail-personnel/{{ p.mail }}/" class="h2-fiche-btn principal">{% if st == 'deja' %}Ouvrir sa fiche{% else %}Voir la fiche complète{% endif %}</a>
+            <button type="button" class="h2-fiche-btn" data-h2-autre>Ajouter un autre agent</button>
+            <button type="button" class="h2-fiche-btn discret" data-h2-fermer>Fermer</button>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var f = document.getElementById('h2Fiche'); if (!f) return;
+    var avant = document.activeElement;
+    function fermer() { f.classList.add('ferme'); setTimeout(function () { f.remove(); if (avant && avant.focus) avant.focus(); }, 200); document.removeEventListener('keydown', clavier); }
+    function clavier(e) {
+        if (e.key === 'Escape') fermer();
+        if (e.key === 'Tab') {                                        /* le clavier reste dans la fenêtre */
+            var el = [].slice.call(f.querySelectorAll('a[href], button')); if (!el.length) return;
+            if (e.shiftKey && document.activeElement === el[0]) { e.preventDefault(); el[el.length - 1].focus(); }
+            else if (!e.shiftKey && document.activeElement === el[el.length - 1]) { e.preventDefault(); el[0].focus(); }
+        }
+    }
+    f.addEventListener('click', function (e) {
+        if (e.target.closest('[data-h2-fermer]')) fermer();
+        if (e.target.closest('[data-h2-autre]')) { fermer(); setTimeout(function () { if (window.openHrModal) openHrModal(); }, 220); }
+    });
+    document.addEventListener('keydown', clavier);
+    setTimeout(function () { var b = f.querySelector('.h2-fiche-btn.principal'); if (b) b.focus(); }, 60);
+})();
+</script>
+{% endwith %}
+{% endif %}
 
 <main class="max-w-7xl mx-auto px-4 py-6 md:py-8 w-full flex-1 space-y-6 relative z-10">
     
@@ -212,6 +332,7 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
                     <div class="h2-leg">
                         <span><i style="background:var(--h2-f)"></i>Femmes <em>{{ country_members_female }}</em> · {{ pct_f }} %</span>
                         <span><i style="background:var(--h2-m)"></i>Hommes <em>{{ country_members_male }}</em> · {{ pct_m }} %</span>
+                        {% if country_members_non_renseigne %}<span><i style="background:#cbd5e1"></i>Non renseigné <em>{{ country_members_non_renseigne }}</em></span>{% endif %}
                     </div>
                     <p class="h2-note" id="h2Parite" data-f="{{ country_members_female|default:0 }}" data-m="{{ country_members_male|default:0 }}"></p>
                 </div>
@@ -223,6 +344,8 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
         </div>
     </section>
 
+    {{ nationalites|json_script:"h2NatTous" }}
+
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-6">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
             <div>
@@ -231,24 +354,30 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
                     <span>Index général du personnel</span>
                 </h2>
             </div>
-            <div class="relative w-full sm:w-72">
+            <form method="get" action="" class="relative w-full sm:w-72" role="search">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                <input type="text" id="memberSearch" placeholder="Rechercher par nom, matricule..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-400 focus:bg-white transition-all placeholder:text-slate-400">
-            </div>
+                {% if sexe %}<input type="hidden" name="sexe" value="{{ sexe }}">{% endif %}
+                <input type="text" id="memberSearch" name="q" value="{{ q|default:'' }}" autocomplete="off" title="Tapez pour filtrer la page ; Entrée pour chercher dans tout le registre" placeholder="Nom, prénom, e-mail, téléphone…" class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-800 focus:outline-none focus:border-slate-400 focus:bg-white transition-all placeholder:text-slate-400">
+            </form>
         </div>
+        {% if q %}
+        <p class="h2-resultat">{{ personnel_filter.paginator.count }} agent{{ personnel_filter.paginator.count|pluralize }} trouvé{{ personnel_filter.paginator.count|pluralize }} pour « <b>{{ q }}</b> » dans tout le registre · <a href="?">Effacer la recherche</a></p>
+        {% endif %}
 
         <div class="h2-tools">
             <div class="h2-chips" role="group" aria-label="Filtrer par genre">
-                <button type="button" class="h2-chip is-on" data-h2-sexe="" aria-pressed="true">Tous <em data-h2-n=""></em></button>
-                <button type="button" class="h2-chip" data-h2-sexe="F" aria-pressed="false">Femmes <em data-h2-n="F"></em></button>
-                <button type="button" class="h2-chip" data-h2-sexe="M" aria-pressed="false">Hommes <em data-h2-n="M"></em></button>
+                {# Chiffres calculés par la vue sur TOUT le registre (avec la recherche en cours) : ils correspondent aux chiffres du haut #}
+                <button type="button" class="h2-chip{% if not sexe %} is-on{% endif %}" data-h2-sexe="" aria-pressed="{% if not sexe %}true{% else %}false{% endif %}">Tous <em data-h2-n="">{{ compte_liste.total }}</em></button>
+                <button type="button" class="h2-chip{% if sexe == 'F' %} is-on{% endif %}" data-h2-sexe="F" aria-pressed="{% if sexe == 'F' %}true{% else %}false{% endif %}">Femmes <em data-h2-n="F">{{ compte_liste.F }}</em></button>
+                <button type="button" class="h2-chip{% if sexe == 'M' %} is-on{% endif %}" data-h2-sexe="M" aria-pressed="{% if sexe == 'M' %}true{% else %}false{% endif %}">Hommes <em data-h2-n="M">{{ compte_liste.M }}</em></button>
+                {% if compte_liste.N %}<button type="button" class="h2-chip{% if sexe == 'N' %} is-on{% endif %}" data-h2-sexe="N" aria-pressed="{% if sexe == 'N' %}true{% else %}false{% endif %}">Genre non renseigné <em data-h2-n="N">{{ compte_liste.N }}</em></button>{% endif %}
             </div>
             <span class="h2-count" id="h2Count" aria-live="polite"></span>
         </div>
         <div id="memberGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
            {% for members in lines %}
             <div class="member-card group relative bg-white border border-slate-200/80 hover:border-slate-300 hover:shadow-md rounded-xl p-4 transition-all duration-200 animate-fade-in-up"
-                 data-name="{{ members.nom|lower }}" data-sexe="{% if members.sexe == 'F' or members.genre == 'Femme' %}F{% else %}M{% endif %}" data-nat="{{ members.nationalite|default:'' }}" style="animation-delay: min(calc({{ forloop.counter0 }} * 40ms), 480ms);">
+                 data-name="{{ members.prenom|default:''|lower }} {{ members.nom|lower }}" data-sexe="{% if members.sexe == 'F' %}F{% elif members.sexe == 'M' %}M{% else %}N{% endif %}" data-nat="{{ members.nationalite|default:'' }}" style="animation-delay: min(calc({{ forloop.counter0 }} * 40ms), 480ms);">
                 <div class="absolute top-4 right-4 flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full {% if members.sexe == 'F' or members.genre == 'Femme' %}bg-orange-500{% else %}bg-emerald-500{% endif %}"></span>
                     <span class="text-[9px] font-bold font-mono uppercase text-slate-400 tracking-wider">Actif</span>
@@ -259,14 +388,19 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
                             <div class="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
                                 <img src="{{ members.photo.url }}" alt="{{ members.nom }}" class="w-full h-full object-cover">
                             </div>
+                        {% elif actual_institution.img %}
+                            {# Pas de photo : logo de l'institution #}
+                            <div class="w-12 h-12 rounded-xl overflow-hidden border border-slate-200 bg-white h2-logo-inst">
+                                <img src="{{ actual_institution.img.url }}" alt="" title="Pas de photo : logo de {{ actual_institution.nom }}" class="w-full h-full object-contain">
+                            </div>
                         {% else %}
                             {% if members.sexe == 'F' or members.genre == 'Femme' %}
                                 <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 font-bold text-sm border border-orange-100 uppercase font-mono">
-                                    {{ members.nom|slice:":2" }}
+                                    {% if members.prenom %}{{ members.prenom|slice:":1" }}{{ members.nom|slice:":1" }}{% else %}{{ members.nom|slice:":2" }}{% endif %}
                                 </div>
                             {% else %}
                                 <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm border border-slate-200 uppercase font-mono">
-                                    {{ members.nom|slice:":2" }}
+                                    {% if members.prenom %}{{ members.prenom|slice:":1" }}{{ members.nom|slice:":1" }}{% else %}{{ members.nom|slice:":2" }}{% endif %}
                                 </div>
                             {% endif %}
                         {% endif %}
@@ -279,9 +413,12 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
                         </span>
                     </div>
                     <div class="min-w-0 flex-1">
-                        <h3 class="font-bold text-sm text-slate-900 truncate">
-                            {{ members.nom }}
+                        <h3 class="font-bold text-sm text-slate-900 truncate" title="{{ members.prenom|default:'' }} {{ members.nom }}">
+                            {% if members.prenom %}{{ members.prenom }} {% endif %}{{ members.nom }}
                         </h3>
+                        {% if members.get_function or members.get_structure %}
+                        <p class="h2-poste">{% if members.get_function %}<b>{{ members.get_function }}</b>{% endif %}{% if members.get_function and members.get_structure %} · {% endif %}{{ members.get_structure|default:'' }}</p>
+                        {% endif %}
                         <div class="space-y-0.5 mt-1">
                             <p class="text-[11px] text-slate-500 flex items-center gap-1 font-medium truncate">
                                 <i class="fa-solid fa-earth-africa text-[10px] text-slate-400"></i>
@@ -311,13 +448,13 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
     <!-- Version Mobile (Précédent / Suivant simples) -->
     <div class="flex flex-1 justify-between sm:hidden">
         {% if personnel_filter.has_previous %}
-            <a href="?page={{ personnel_filter.previous_page_number }}" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Précédent</a>
+            <a href="?page={{ personnel_filter.previous_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if sexe %}&amp;sexe={{ sexe }}{% endif %}" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Précédent</a>
         {% else %}
             <span class="relative inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">Précédent</span>
         {% endif %}
         
         {% if personnel_filter.has_next %}
-            <a href="?page={{ personnel_filter.next_page_number }}" class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Suivant</a>
+            <a href="?page={{ personnel_filter.next_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if sexe %}&amp;sexe={{ sexe }}{% endif %}" class="relative ml-3 inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Suivant</a>
         {% else %}
             <span class="relative ml-3 inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">Suivant</span>
         {% endif %}
@@ -334,7 +471,7 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
             <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                 <!-- Bouton Précédent -->
                 {% if personnel_filter.has_previous %}
-                    <a href="?page={{ personnel_filter.previous_page_number }}" class="relative inline-flex items-center rounded-l-md px-2.5 py-2 text-slate-500 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0">
+                    <a href="?page={{ personnel_filter.previous_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if sexe %}&amp;sexe={{ sexe }}{% endif %}" class="relative inline-flex items-center rounded-l-md px-2.5 py-2 text-slate-500 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0">
                         <span class="sr-only">Précédent</span>
                         <i class="fa-solid fa-chevron-left text-xs"></i>
                     </a>
@@ -346,16 +483,18 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
 
                 <!-- Numéros de pages -->
                 {% for i in page_range %}
-                    {% if personnel_filter.number == i %}
+                    {% if i == "…" %}
+                        <span class="relative inline-flex items-center px-3 py-2 text-sm text-slate-400 ring-1 ring-inset ring-slate-200">…</span>
+                    {% elif personnel_filter.number == i %}
                         <span aria-current="page" class="relative z-10 inline-flex items-center bg-orange-500 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600">{{ i }}</span>
                     {% else %}
-                        <a href="?page={{ i }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0">{{ i }}</a>
+                        <a href="?page={{ i }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if sexe %}&amp;sexe={{ sexe }}{% endif %}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0">{{ i }}</a>
                     {% endif %}
                 {% endfor %}
 
                 <!-- Bouton Suivant -->
                 {% if personnel_filter.has_next %}
-                    <a href="?page={{ personnel_filter.next_page_number }}" class="relative inline-flex items-center rounded-r-md px-2.5 py-2 text-slate-500 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0">
+                    <a href="?page={{ personnel_filter.next_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}{% if sexe %}&amp;sexe={{ sexe }}{% endif %}" class="relative inline-flex items-center rounded-r-md px-2.5 py-2 text-slate-500 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0">
                         <span class="sr-only">Suivant</span>
                         <i class="fa-solid fa-chevron-right text-xs"></i>
                     </a>
@@ -598,6 +737,14 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
         }, 250);
     }
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeHrModal(); });
+    /* Ajout : un seul envoi par clic (un double clic créait des fonctions en double) */
+    (function () {
+        var f = document.querySelector('form[action="/save_personnel_institution/"]'); if (!f) return;
+        f.addEventListener('submit', function () {
+            var b = f.querySelector('button[type="submit"]');
+            if (b) { b.disabled = true; b.textContent = 'Enregistrement…'; }
+        });
+    })();
 </script>
 <script>
 (function () {
@@ -605,24 +752,23 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
     const cards = [].slice.call(document.querySelectorAll('.member-card'));
     const norm = t => (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
     const hay = cards.map(c => norm(c.getAttribute('data-name') + ' ' + c.textContent));
-    let sexe = '';
     function apply() {
-        const q = norm(input ? input.value : '').trim(), n = { '': 0, F: 0, M: 0 }; let vis = 0;
+        const q = norm(input ? input.value : '').trim(); let vis = 0;
         cards.forEach((c, i) => {
-            const okQ = !q || hay[i].indexOf(q) > -1;
-            if (okQ) { n['']++; n[c.dataset.sexe]++; }
-            const show = okQ && (!sexe || c.dataset.sexe === sexe);
+            const show = !q || hay[i].indexOf(q) > -1;          /* filtre rapide de la page pendant la frappe */
             c.style.display = show ? 'block' : 'none'; if (show) vis++;
         });
-        document.querySelectorAll('[data-h2-n]').forEach(e => e.textContent = n[e.getAttribute('data-h2-n')]);
-        const cnt = document.getElementById('h2Count'); if (cnt) cnt.textContent = vis + ' agent' + (vis > 1 ? 's' : '') + ' affiché' + (vis > 1 ? 's' : '') + (cards.length ? ' sur ' + cards.length : '');
+        const cnt = document.getElementById('h2Count');
+        if (cnt) cnt.textContent = q ? vis + ' sur cette page · Entrée pour chercher partout' : 'Page {{ personnel_filter.number }} sur {{ num_pages }} · {{ personnel_filter.paginator.count }} agent{{ personnel_filter.paginator.count|pluralize }}';
         const em = document.getElementById('h2Empty'); if (em) em.hidden = !(cards.length && !vis);
     }
     if (input) input.addEventListener('input', apply);
+    /* Filtre de genre : sur tout le registre (la page se recharge, la recherche est gardée) */
     document.querySelectorAll('[data-h2-sexe]').forEach(b => b.addEventListener('click', function () {
-        sexe = b.getAttribute('data-h2-sexe');
-        document.querySelectorAll('[data-h2-sexe]').forEach(x => { const on = x === b; x.classList.toggle('is-on', on); x.setAttribute('aria-pressed', on); });
-        apply();
+        const url = new URL(location.href);
+        url.searchParams.delete('page');
+        if (b.getAttribute('data-h2-sexe')) url.searchParams.set('sexe', b.getAttribute('data-h2-sexe')); else url.searchParams.delete('sexe');
+        location.href = url.pathname + url.search;
     }));
     apply();
 
@@ -634,25 +780,34 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
             const ip = m ? f / m : null, b = document.createElement('b');
             if (ip === null) { par.textContent = 'Effectif entièrement féminin.'; }
             else { b.textContent = ip.toLocaleString('fr-FR', { maximumFractionDigits: 2 }); par.append('Indice de parité : ', b, ip >= 0.9 && ip <= 1.1 ? ' (équilibré)' : (ip < 0.9 ? ' (femmes sous-représentées)' : ' (hommes sous-représentés)')); }
+            const nr = {{ country_members_non_renseigne|default:0 }};
+            if (nr) par.append(' · ' + nr + ' agent' + (nr > 1 ? 's' : '') + ' sans genre renseigné : à compléter dans leur fiche.');
         } else { par.textContent = 'Aucun agent enregistré.'; }
     }
 
     // Nationalités les plus représentées (agents de la page affichée)
     const nat = document.getElementById('h2Nat');
     if (nat) {
-        const c = {}; cards.forEach(x => { const k = (x.dataset.nat || '').trim() || 'Non renseignée'; c[k] = (c[k] || 0) + 1; });
-        const rows = Object.entries(c).sort((a, b) => b[1] - a[1]); const top = rows.slice(0, 4), max = top.length ? top[0][1] : 1;
-        if (rows.length > 4) top.push(['Autres', rows.slice(4).reduce((a, r) => a + r[1], 0)]);
+        /* Tout l'effectif (calculé par la vue) ; à défaut, les agents de la page */
+        let tous = null; try { tous = JSON.parse((document.getElementById('h2NatTous') || {}).textContent || 'null'); } catch (e) {}
+        let top;
+        if (Array.isArray(tous)) { top = tous; }
+        else {
+            const c = {}; cards.forEach(x => { const k = (x.dataset.nat || '').trim() || 'Non renseignée'; c[k] = (c[k] || 0) + 1; });
+            const rows = Object.entries(c).sort((a, b) => b[1] - a[1]); top = rows.slice(0, 4);
+            if (rows.length > 4) top.push(['Autres', rows.slice(4).reduce((a, r) => a + r[1], 0)]);
+        }
+        const max = top.length ? Math.max.apply(null, top.map(r => r[1])) : 1;
         if (!top.length) { nat.innerHTML = '<p class="h2-nat-empty">Aucun agent sur cette page.</p>'; }
         top.forEach(([k, v], i) => {
             const r = document.createElement('div'); r.className = 'h2-nat-r';
             r.innerHTML = '<span></span><div><i></i></div><b></b>';
             r.querySelector('span').textContent = k; r.querySelector('span').title = k; r.querySelector('b').textContent = v;
-            const bar = r.querySelector('i'); bar.style.width = Math.max(v / Math.max(max, top[top.length - 1][1]) * 100, 4) + '%'; bar.style.animationDelay = (i * 60) + 'ms';
+            const bar = r.querySelector('i'); bar.style.width = Math.max(v / max * 100, 4) + '%'; bar.style.animationDelay = (i * 60) + 'ms';
             nat.appendChild(r);
         });
         const sub = document.getElementById('h2NatSub');
-        if (sub && cards.length) sub.textContent = cards.length + ' agent' + (cards.length > 1 ? 's' : '') + ' de la page';
+        if (sub) sub.textContent = Array.isArray(tous) ? 'tout l’effectif' : (cards.length ? cards.length + ' agent' + (cards.length > 1 ? 's' : '') + ' de la page' : '');
     }
 })();
 </script>
@@ -668,144 +823,15 @@ footer.max-w-7xl>div>span:last-child{background:var(--h2-soft)!important;border-
 
     <!-- CODE SCRIPT -->
     <script>
-        let scene, camera, renderer, globeGroup, animationFrameId;
-        let mouseX = 0, mouseY = 0;
-        let targetX = 0, targetY = 0;
-        let currentBasePriceInXAF = 199000; 
-        let activeCurrency = 'XAF';
-
-        const container = document.getElementById('globe-3d-container');
-
-        // AJOUT 2 : INTERACTION DE SUIVI DE SOURIS POUR LE HALO GLOW DES CARTES SÉAL
-        document.querySelectorAll('.premium-card').forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                card.style.setProperty('--mouse-x', `${x}px`);
-                card.style.setProperty('--mouse-y', `${y}px`);
-            });
-        });
-
-        // GEOMÉTRIE ET RENDU DE GLOBE PASSIF
-        function initGlobe() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
-            camera.position.z = 170;
-
-            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
-
-            globeGroup = new THREE.Group();
-            scene.add(globeGroup);
-
-            const radius = 85;
-
-            const wireframeGeo = new THREE.SphereGeometry(radius, 18, 18);
-            const wireframeMat = new THREE.MeshBasicMaterial({
-                color: 0x0ea5e9, wireframe: true, transparent: true, opacity: 0.03
-            });
-            const baseSphere = new THREE.Mesh(wireframeGeo, wireframeMat);
-            globeGroup.add(baseSphere);
-
-            const dotCount = 1400;
-            const dotGeometry = new THREE.BufferGeometry();
-            const positions = [];
-            const colors = [];
-            
-            const colorCyan = new THREE.Color(0x06b6d4);
-            const colorAmber = new THREE.Color(0xf59e0b);
-
-            for (let i = 0; i < dotCount; i++) {
-                const phi = Math.acos(-1 + (2 * i) / dotCount);
-                const theta = Math.sqrt(dotCount * Math.PI) * phi;
-                const lat = (phi * 180) / Math.PI - 90;
-                const lon = ((theta * 180) / Math.PI) % 360 - 180;
-
-                let isLand = false;
-                if (lon > -22 && lon < 52 && lat > -35 && lat < 70) {
-                    if (!(lat > 32 && lat < 45 && lon > -5 && lon < 40)) isLand = true; 
-                }
-                else if (lon >= 52 && lon < 145 && lat > -12 && lat < 75) isLand = true; 
-                else if (lon > -120 && lon < -34 && lat > -55 && lat < 18) isLand = true; 
-                else if (lon > -160 && lon < -60 && lat >= 18 && lat < 72) isLand = true; 
-
-                if (isLand) {
-                    const x = radius * Math.sin(phi) * Math.sin(theta);
-                    const y = radius * Math.cos(phi);
-                    const z = radius * Math.sin(phi) * Math.cos(theta);
-                    positions.push(x, y, z);
-
-                    if (lon > -18 && lon < 50 && lat > -35 && lat < 36) {
-                        colors.push(colorAmber.r, colorAmber.g, colorAmber.b);
-                    } else {
-                        colors.push(colorCyan.r, colorCyan.g, colorCyan.b);
-                    }
-                }
-            }
-
-            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            dotGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-            const dotMaterial = new THREE.PointsMaterial({ size: 2.3, vertexColors: true, transparent: true, opacity: 0.75 });
-            const pointsMesh = new THREE.Points(dotGeometry, dotMaterial);
-            globeGroup.add(pointsMesh);
-            
-            globeGroup.rotation.z = 0.4;
-            globeGroup.rotation.x = 0.2;
-
-            window.addEventListener('resize', onWindowResize);
-            container.addEventListener('mousemove', onMouseMove);
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => { if (entry.isIntersecting) animate(); else cancelAnimationFrame(animationFrameId); });
-            }, { threshold: 0.05 });
-            observer.observe(container);
-        }
-
-        function onMouseMove(event) {
-            mouseX = (event.clientX - window.innerWidth / 2) * 0.015;
-            mouseY = (event.clientY - window.innerHeight / 2) * 0.015;
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate() {
-            animationFrameId = requestAnimationFrame(animate);
-            globeGroup.rotation.y += 0.0012; 
-            targetX += (mouseX - targetX) * 0.04;
-            targetY += (mouseY - targetY) * 0.04;
-            globeGroup.rotation.y += targetX * 0.0015;
-            globeGroup.rotation.x += targetY * 0.0015;
-            renderer.render(scene, camera);
-        }
-
-        if (container && typeof THREE !== 'undefined') initGlobe();
-
-
         function toggleMobileMenu() { document.getElementById('mobileMenu').classList.toggle('-translate-x-full'); }
-        
-     
-      
-      
-        
-      
 
-        window.onclick = function(e) { 
-            if (e.target.matches('#upgradeModal')) closeUpgradeModal();
-            if (e.target.matches('#mobileMenu')) toggleMobileMenu();
-        }
+        /* Clic sur le fond du menu mobile : le ferme (sans écraser window.onclick du reste du site) */
+        window.addEventListener('click', function (e) { if (e.target.matches && e.target.matches('#mobileMenu')) toggleMobileMenu(); });
 
-        // Ajoute ceci en bas de ta page pour gérer le clic sur mobile
-document.querySelector('.group').addEventListener('click', function(e) {
-    if (e.target.closest('a')) return; // laisser les liens de partage s'ouvrir
-    this.classList.toggle('active'); // Tu devras adapter le CSS pour gérer la classe .active
-});
-</script>
+        /* Bouton de partage : ouverture au toucher. On vise CE bouton (avant : le premier « .group » de la page, souvent dans le menu) */
+        (function () {
+            var partage = document.querySelector('.fixed.bottom-6.right-6.group');
+            if (partage) partage.addEventListener('click', function (e) { if (e.target.closest('a')) return; this.classList.toggle('active'); });
+        })();
+    </script>
 {%endblock%}

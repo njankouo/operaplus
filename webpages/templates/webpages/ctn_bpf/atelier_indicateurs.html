@@ -1,0 +1,294 @@
+{% extends './details-periode.html' %}
+{% load l10n %}
+{% block content %}
+{% comment %}
+    ATELIER DES INDICATEURS
+    1. Créer vite (un indicateur, ou plusieurs : un nom par ligne).
+    2. Cocher un groupe d'indicateurs → les rattacher à un élément du cadre logique.
+    Contexte : indicateurs, nb_non_rattaches, entites_groupes, nouveaux, niveaux, frequences, agregations, messages.
+    Vues : backend/atelier_indicateurs.py
+{% endcomment %}
+<style>
+    .at, .at-barre { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: #047857; --warn: #b45309;
+          --ink: #0f172a; --txt: #334155; --muted: #64748b; --line: #e5e7eb; --soft: #f8fafc;
+          }
+    .at { background: #f5f7fa; padding: 22px 24px 120px; min-height: 100vh; color: var(--txt); }
+    .at *, .at-barre * { box-sizing: border-box; }
+
+    /* En-tête */
+    .at-tete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .at-tete h1 { margin: 0; font-size: 24px; font-weight: 800; color: var(--ink); letter-spacing: -.01em; }
+    .at-tete p { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+    .at-retour { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 13px; font-weight: 700; color: var(--txt); text-decoration: none; }
+    .at-retour:hover { border-color: var(--dom); color: var(--dom); }
+
+    .at-msg { margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 600; background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
+    .at-msg.error { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+    .at-msg.warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .at-msg.success { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+
+    .at-cadre { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 16px; align-items: start; }
+    .at-carte { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+    .at-carte-tete { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+    .at-carte-tete .n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: #fff; background: var(--dom); flex-shrink: 0; }
+    .at-carte-tete h2 { margin: 0; font-size: 15px; font-weight: 800; color: var(--ink); }
+    .at-carte-tete small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+
+    /* 1. Créer */
+    .at-creer { position: sticky; top: 12px; }
+    .at-modes { display: flex; gap: 2px; margin: 14px 18px 0; padding: 3px; border-radius: 11px; background: #f1f5f9; }
+    .at-modes button { flex: 1; height: 34px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; }
+    .at-modes button[aria-selected="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(15,23,42,.12); }
+    .at-form { padding: 14px 18px 18px; display: grid; gap: 12px; }
+    .at-form[hidden] { display: none; }
+    .at-champ label { display: block; margin-bottom: 5px; font-size: 12.5px; font-weight: 700; color: var(--txt); }
+    .at-champ label em { font-style: normal; font-weight: 500; color: var(--muted); }
+    .at-champ input, .at-champ select, .at-champ textarea { width: 100%; height: 40px; padding: 0 12px; border: 1px solid #d5dde5; border-radius: 10px; background: #fff; font: inherit; font-size: 14px; color: var(--ink); }
+    .at-champ textarea { height: auto; min-height: 150px; padding: 10px 12px; line-height: 1.6; resize: vertical; }
+    .at-champ input:focus, .at-champ select:focus, .at-champ textarea:focus { outline: none; border-color: var(--dom); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dom) 15%, transparent); }
+    .at-deux { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .at-aide { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .at-compte { font-size: 12.5px; font-weight: 700; color: var(--dom); }
+    .at-plus summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--dom); list-style: none; }
+    .at-plus summary::-webkit-details-marker { display: none; }
+    .at-plus summary::before { content: "+ "; }
+    .at-plus[open] summary::before { content: "− "; }
+    .at-plus > div { display: grid; gap: 12px; margin-top: 12px; }
+    .at-btn { height: 42px; border: 0; border-radius: 11px; background: var(--dom); color: #fff; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+    .at-btn:hover { filter: brightness(1.08); }
+    .at-btn:disabled { opacity: .45; cursor: default; filter: none; }
+
+    /* 2. Liste */
+    .at-outils { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .at-cherche { flex: 1 1 220px; height: 38px; padding: 0 12px; border: 1px solid #d5dde5; border-radius: 10px; font: inherit; font-size: 13.5px; }
+    .at-cherche:focus { outline: none; border-color: var(--dom); }
+    .at-filtres { display: inline-flex; gap: 2px; padding: 3px; border-radius: 11px; background: #f1f5f9; }
+    .at-filtres button { height: 32px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; }
+    .at-filtres button em { font-style: normal; margin-left: 4px; padding: 0 6px; border-radius: 99px; background: #e2e8f0; font-size: 11px; }
+    .at-filtres button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(15,23,42,.12); }
+    .at-filtres .attente em { background: #fef3c7; color: var(--warn); }
+    .at-entetes, .at-ligne { display: grid; grid-template-columns: 40px minmax(0, 1fr) 240px 90px; gap: 12px; align-items: center; padding: 0 16px; }
+    .at-entetes { height: 38px; background: var(--soft); border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+    .at-ligne { min-height: 56px; padding-top: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+    .at-ligne:hover { background: var(--soft); }
+    .at-ligne[hidden] { display: none; }
+    .at-ligne.coche { background: color-mix(in srgb, var(--dom) 6%, #fff); }
+    .at-ligne.nouveau { box-shadow: inset 3px 0 0 var(--acc); }
+    .at-ligne.nouveau .at-nom b::after { content: "Nouveau"; margin-left: 8px; padding: 1px 7px; border-radius: 99px; background: color-mix(in srgb, var(--acc) 15%, #fff); color: #9a3412; font-size: 10.5px; font-weight: 800; vertical-align: 1px; }
+    .at-case { width: 18px; height: 18px; accent-color: var(--dom); cursor: pointer; }
+    .at-nom { min-width: 0; }
+    .at-nom b { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.35; overflow-wrap: anywhere; }
+    .at-nom small { display: block; font-size: 12px; color: var(--muted); }
+    .at-rat { font-size: 12.5px; color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .at-rat.vide { color: var(--warn); font-weight: 700; }
+    .at-niv { font-size: 12px; color: var(--muted); }
+    .at-vide { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+    .at-vide b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+
+    /* Barre d'action (apparaît dès qu'un indicateur est coché) */
+    .at-barre { position: fixed; left: 50%; bottom: 18px; z-index: 60; width: min(860px, calc(100% - 24px)); transform: translate(-50%, 140%);
+                display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px 10px 18px; border-radius: 16px;
+                background: var(--ink); color: #fff; box-shadow: 0 20px 40px -18px rgba(15,23,42,.6); transition: transform .25s cubic-bezier(.22,1,.36,1); }
+    .at-barre.on { transform: translate(-50%, 0); }
+    .at-barre b { font-size: 14px; white-space: nowrap; }
+    .at-barre select { flex: 1 1 240px; min-width: 0; height: 40px; padding: 0 10px; border-radius: 10px; border: 0; font: inherit; font-size: 13.5px; color: var(--ink); }
+    .at-barre .at-btn { background: var(--acc); padding: 0 18px; height: 40px; }
+    .at-barre .annuler { height: 40px; padding: 0 12px; border: 0; background: transparent; color: #cbd5e1; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .at-barre .annuler:hover { color: #fff; }
+    body:has(.at-barre.on) .fixed.bottom-6.right-6, body:has(.at-barre.on) div.fixed.bottom-24.right-8 { display: none !important; }
+
+    @media (max-width: 1100px) { .at-cadre { grid-template-columns: 1fr; } .at-creer { position: static; } }
+    @media (max-width: 760px) {
+        .at { padding: 16px 12px 150px; }
+        .at-entetes { grid-template-columns: 32px minmax(0, 1fr); }
+        .at-entetes span:nth-of-type(n+2) { display: none; }
+        .at-ligne { grid-template-columns: 32px minmax(0, 1fr); row-gap: 2px; }
+        .at-rat, .at-niv { grid-column: 2; }
+        .at-filtres { width: 100%; } .at-filtres button { flex: 1; }
+        .at-barre b { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) { .at-barre { transition: none; } }
+</style>
+
+<main class="at" id="at">
+    <header class="at-tete">
+        <div>
+            <h1>Atelier des indicateurs</h1>
+            <p>Créez vos indicateurs en quelques secondes, puis rattachez-les par groupe au cadre logique.</p>
+        </div>
+        <a href="/evaluer/0/" class="at-retour"><i class="bx bx-arrow-back"></i> Registre des indicateurs</a>
+    </header>
+
+    {% for message in messages %}<p class="at-msg {{ message.tags }}">{{ message }}</p>{% endfor %}
+
+    <div class="at-cadre">
+
+        <!-- ===== 1. Créer ===== -->
+        <section class="at-carte at-creer" aria-labelledby="atTitre1">
+            <div class="at-carte-tete"><span class="n">1</span><div><h2 id="atTitre1">Créer</h2><small>Le reste de la fiche pourra être complété plus tard.</small></div></div>
+            <div class="at-modes" role="tablist" aria-label="Mode de création">
+                <button type="button" role="tab" aria-selected="true" data-mode="un">Un indicateur</button>
+                <button type="button" role="tab" aria-selected="false" data-mode="serie">Plusieurs d'un coup</button>
+            </div>
+
+            <!-- Un indicateur -->
+            <form class="at-form" method="post" action="{% url 'creer-indicateurs-rapide' %}" data-panneau="un">
+                {% csrf_token %}
+                <input type="hidden" name="mode" value="un">
+                <div class="at-champ">
+                    <label for="atNom">Nom de l'indicateur</label>
+                    <input id="atNom" name="nature_indicateur" required maxlength="255" autocomplete="off" placeholder="Ex. Nombre de ménages sensibilisés" autofocus>
+                </div>
+                <div class="at-deux">
+                    <div class="at-champ"><label for="atCible">Cible <em>(facultatif)</em></label><input id="atCible" name="cible" inputmode="decimal" placeholder="Ex. 500"></div>
+                    <div class="at-champ"><label for="atNiv">Niveau</label>
+                        <select id="atNiv" name="niveau_pyramide"><option value="">Plus tard</option>{% for n in niveaux %}<option>{{ n }}</option>{% endfor %}</select></div>
+                </div>
+                <details class="at-plus">
+                    <summary>Plus d'options</summary>
+                    <div>
+                        <div class="at-champ"><label for="atCourt">Nom court <em>(affiché dans les tableaux)</em></label><input id="atCourt" name="nicename" maxlength="255" placeholder="Ex. Ménages sensibilisés"></div>
+                        <div class="at-deux">
+                            <div class="at-champ"><label for="atFreq">Fréquence</label><select id="atFreq" name="frequence"><option value="">Plus tard</option>{% for f in frequences %}<option>{{ f }}</option>{% endfor %}</select></div>
+                            <div class="at-champ"><label for="atAgr">Agrégation</label><select id="atAgr" name="aggregation_type">{% for a in agregations %}<option>{{ a }}</option>{% endfor %}</select></div>
+                        </div>
+                        <div class="at-champ"><label for="atEnt1">Rattacher tout de suite à</label>
+                            <select id="atEnt1" name="entity_id"><option value="">Plus tard</option>{% for g in entites_groupes %}<optgroup label="{{ g.niveau }}">{% for e in g.entites %}<option value="{{ e.id }}">{{ e.nom }}</option>{% endfor %}</optgroup>{% endfor %}</select></div>
+                    </div>
+                </details>
+                <button class="at-btn" type="submit">Créer l'indicateur</button>
+                <p class="at-aide">Après l'enregistrement, le curseur revient dans « Nom » : enchaînez.</p>
+            </form>
+
+            <!-- Plusieurs d'un coup -->
+            <form class="at-form" method="post" action="{% url 'creer-indicateurs-rapide' %}" data-panneau="serie" hidden>
+                {% csrf_token %}
+                <input type="hidden" name="mode" value="serie">
+                <div class="at-champ">
+                    <label for="atNoms">Un indicateur par ligne</label>
+                    <textarea id="atNoms" name="noms" required placeholder="Nombre de ménages sensibilisés&#10;Taux de points d'eau fonctionnels&#10;Nombre de comités formés"></textarea>
+                    <p class="at-aide">Vous pouvez coller une liste depuis Excel ou Word. <span class="at-compte" id="atCompte"></span></p>
+                </div>
+                <div class="at-deux">
+                    <div class="at-champ"><label for="atNiv2">Niveau <em>(pour tous)</em></label><select id="atNiv2" name="niveau_pyramide"><option value="">Plus tard</option>{% for n in niveaux %}<option>{{ n }}</option>{% endfor %}</select></div>
+                    <div class="at-champ"><label for="atFreq2">Fréquence</label><select id="atFreq2" name="frequence"><option value="">Plus tard</option>{% for f in frequences %}<option>{{ f }}</option>{% endfor %}</select></div>
+                </div>
+                <div class="at-champ"><label for="atEnt2">Rattacher tout de suite à</label>
+                    <select id="atEnt2" name="entity_id"><option value="">Plus tard</option>{% for g in entites_groupes %}<optgroup label="{{ g.niveau }}">{% for e in g.entites %}<option value="{{ e.id }}">{{ e.nom }}</option>{% endfor %}</optgroup>{% endfor %}</select></div>
+                <input type="hidden" name="aggregation_type" value="Somme">
+                <button class="at-btn" type="submit" id="atCreerSerie">Créer les indicateurs</button>
+            </form>
+        </section>
+
+        <!-- ===== 2. Rattacher ===== -->
+        <form class="at-carte" method="post" action="{% url 'attribuer-indicateurs' %}" id="atListe" aria-labelledby="atTitre2">
+            {% csrf_token %}
+            <div class="at-carte-tete"><span class="n">2</span><div><h2 id="atTitre2">Rattacher au cadre logique</h2><small>Cochez les indicateurs, puis choisissez l'élément en bas de l'écran.</small></div></div>
+            <div class="at-outils">
+                <input type="search" class="at-cherche" id="atCherche" placeholder="Rechercher un indicateur…" aria-label="Rechercher un indicateur" autocomplete="off">
+                <div class="at-filtres" role="group" aria-label="Filtrer">
+                    <button type="button" data-f="attente" class="attente {% if nb_non_rattaches %}on{% endif %}">Non rattachés <em>{{ nb_non_rattaches }}</em></button>
+                    <button type="button" data-f="" class="{% if not nb_non_rattaches %}on{% endif %}">Tous <em>{{ indicateurs|length }}</em></button>
+                </div>
+            </div>
+            <div class="at-entetes"><input type="checkbox" class="at-case" id="atTout" aria-label="Tout cocher (indicateurs affichés)"><span>Indicateur</span><span>Rattaché à</span><span>Niveau</span></div>
+
+            {% for ind in indicateurs %}
+            <label class="at-ligne{% if ind.id in nouveaux %} nouveau{% endif %}" data-libre="{% if ind.m_enti_id %}0{% else %}1{% endif %}" data-q="{{ ind.m_name }} {{ ind.nicename|default:'' }} {{ ind.m_enti.m_nom|default:'' }}">
+                <input type="checkbox" class="at-case" name="indicateurs" value="{{ ind.id }}" {% if ind.id in nouveaux %}checked{% endif %}>
+                <span class="at-nom"><b>{{ ind.nicename|default:ind.m_name }}</b>{% if ind.nicename %}<small>{{ ind.m_name }}</small>{% endif %}</span>
+                {% if ind.m_enti_id %}<span class="at-rat" title="{{ ind.m_enti.m_nom|default:ind.m_enti }}">{{ ind.m_enti.m_nom|default:ind.m_enti }}</span>
+                {% else %}<span class="at-rat vide">Non rattaché</span>{% endif %}
+                <span class="at-niv">{{ ind.niveau_pyramide|default:"—" }}</span>
+            </label>
+            {% empty %}
+            <div class="at-vide"><b>Aucun indicateur pour l'instant</b>Créez le premier à gauche.</div>
+            {% endfor %}
+            <div class="at-vide" id="atAucun" hidden><b>Rien à afficher</b>Tous vos indicateurs sont rattachés, ou la recherche ne trouve rien.</div>
+
+            <!-- Barre d'action -->
+            <div class="at-barre" id="atBarre" role="region" aria-label="Action sur la sélection">
+                <b id="atNb">0 sélectionné</b>
+                <select name="entity_id" id="atCible2" form="atListe" aria-label="Rattacher à" required>
+                    <option value="">Rattacher à…</option>
+                    {% for g in entites_groupes %}<optgroup label="{{ g.niveau }}">{% for e in g.entites %}<option value="{{ e.id }}">{{ e.nom }}</option>{% endfor %}</optgroup>{% endfor %}
+                    <optgroup label="Autre"><option value="aucun">Retirer du cadre logique</option></optgroup>
+                </select>
+                <button type="submit" class="at-btn" form="atListe">Rattacher</button>
+                <button type="button" class="annuler" id="atAnnuler">Annuler</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+(function () {
+    var root = document.getElementById('at'); if (!root) return;
+    var $ = function (id) { return document.getElementById(id); };
+    var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+
+    /* --- 1. Mode de création --- */
+    root.querySelectorAll('[data-mode]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            root.querySelectorAll('[data-mode]').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+            root.querySelectorAll('.at-form').forEach(function (f) { f.hidden = f.dataset.panneau !== b.dataset.mode; });
+            (b.dataset.mode === 'serie' ? $('atNoms') : $('atNom')).focus();
+        });
+    });
+    var noms = $('atNoms');
+    function compter() {
+        var vus = {}, n = 0;
+        noms.value.split('\n').forEach(function (l) { l = l.replace(/^[\s\-•*]+/, '').trim().toUpperCase(); if (l && !vus[l]) { vus[l] = 1; n++; } });
+        $('atCompte').textContent = n ? '→ ' + n + ' indicateur' + (n > 1 ? 's' : '') + ' seront créés' + (n > 100 ? ' (100 au plus !)' : '') : '';
+        $('atCreerSerie').textContent = n ? 'Créer les ' + n + ' indicateurs' : 'Créer les indicateurs';
+        $('atCreerSerie').disabled = n > 100;
+    }
+    noms.addEventListener('input', compter);
+
+    /* --- 2. Liste : recherche, filtre, sélection --- */
+    /* La barre d'action est placée à la fin de <body> (sinon un parent animé de la page la coupe) ; ses champs restent liés au formulaire via form="atListe" */
+    document.body.appendChild($('atBarre'));
+    var lignes = [].slice.call(root.querySelectorAll('.at-ligne'));
+    var filtreBtn = root.querySelector('.at-filtres .on'), filtre = filtreBtn ? filtreBtn.dataset.f : '';
+    if (root.querySelector('.at-ligne.nouveau')) filtre = '';             /* après une création : on montre tout, nouveaux cochés */
+    root.querySelectorAll('.at-filtres button').forEach(function (x) { x.classList.toggle('on', x.dataset.f === filtre); });
+
+    function appliquer() {
+        var q = norm($('atCherche').value.trim()), vus = 0;
+        lignes.forEach(function (l) {
+            var ok = (!filtre || l.dataset.libre === '1') && (!q || norm(l.dataset.q).indexOf(q) > -1);
+            l.hidden = !ok; if (ok) vus++;
+        });
+        $('atAucun').hidden = vus > 0 || !lignes.length;
+        majSelection();
+    }
+    function majSelection() {
+        var cases = lignes.map(function (l) { return l.querySelector('input'); });
+        var n = cases.filter(function (c) { return c.checked; }).length;
+        lignes.forEach(function (l) { l.classList.toggle('coche', l.querySelector('input').checked); });
+        $('atNb').textContent = n + ' indicateur' + (n > 1 ? 's' : '') + ' sélectionné' + (n > 1 ? 's' : '');
+        $('atBarre').classList.toggle('on', n > 0);
+        var visibles = lignes.filter(function (l) { return !l.hidden; }).map(function (l) { return l.querySelector('input'); });
+        var cochees = visibles.filter(function (c) { return c.checked; }).length;
+        $('atTout').checked = visibles.length > 0 && cochees === visibles.length;
+        $('atTout').indeterminate = cochees > 0 && cochees < visibles.length;
+    }
+    $('atCherche').addEventListener('input', appliquer);
+    root.querySelectorAll('.at-filtres button').forEach(function (b) {
+        b.addEventListener('click', function () { filtre = b.dataset.f; root.querySelectorAll('.at-filtres button').forEach(function (x) { x.classList.toggle('on', x === b); }); appliquer(); });
+    });
+    $('atListe').addEventListener('change', function (e) { if (e.target.name === 'indicateurs') majSelection(); });
+    $('atTout').addEventListener('change', function () {
+        var etat = this.checked;
+        lignes.forEach(function (l) { if (!l.hidden) l.querySelector('input').checked = etat; });   /* seulement les lignes affichées */
+        majSelection();
+    });
+    $('atAnnuler').addEventListener('click', function () { lignes.forEach(function (l) { l.querySelector('input').checked = false; }); majSelection(); });
+    /* Les cases masquées par le filtre ne partent pas */
+    $('atListe').addEventListener('submit', function () { lignes.forEach(function (l) { if (l.hidden) l.querySelector('input').checked = false; }); });
+
+    appliquer();
+    var premier = root.querySelector('.at-ligne.nouveau'); if (premier) $('atNom').focus();
+})();
+</script>
+{% endblock %}

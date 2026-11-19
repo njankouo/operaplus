@@ -1,96 +1,249 @@
 {% extends "./index.html" %}
 
 {% block main %}
-<div class="container mx-auto py-8 px-4">
-    <div class="flex items-center justify-between mb-8 animate-in fade-in duration-700">
+{% comment %}
+    MODIFIER UN ÉLÉMENT DU CADRE LOGIQUE (Liquid Morph)
+    Inchangés : l'URL Update-Entity, les champs envoyés (nom, objectif, observation, champ_<id>, parent_id),
+    les variables entity, champ_values, niveau_parent, parents_possibles, parent_actuel, nb_sous_elements, messages.
+{% endcomment %}
+<style>
+    .ee { --dom: {{ request.user.personnel.color_fond|default:'#123A37' }}; --acc: {{ request.user.personnel.color|default:'#E48B0C' }};
+          --ink: #0f172a; --txt: #334155; --muted: #64748b; --line: #e5e7eb; --soft: #f8fafc; --ok: #047857; --warn: #b45309;
+          max-width: 1180px; margin: 0 auto; padding: 24px clamp(12px, 3vw, 28px) 110px; color: var(--txt); }
+    .ee * { box-sizing: border-box; }
+
+    /* En-tête */
+    .ee-tete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 20px; }
+    .ee-fil { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+    .ee-fil a { color: var(--muted); text-decoration: none; } .ee-fil a:hover { color: var(--dom); }
+    .ee-tete h1 { margin: 6px 0 0; font-size: 26px; font-weight: 800; line-height: 1.2; letter-spacing: -.015em; color: var(--ink); }
+    .ee-type { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 99px; font-size: 12px; font-weight: 700;
+               background: color-mix(in srgb, var(--dom) 9%, #fff); color: var(--dom); }
+
+    /* Messages */
+    .ee-msg { margin: 0 0 10px; padding: 11px 14px; border-radius: 12px; font-size: 13.5px; font-weight: 600; background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
+    .ee-msg.error { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+    .ee-msg.warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .ee-msg.success { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+
+    /* Grille */
+    .ee-grille { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+    .ee-col { display: grid; gap: 18px; }
+    .ee-carte { background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+    .ee-carte-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+    .ee-carte-tete h2 { margin: 0; font-size: 15px; font-weight: 800; color: var(--ink); }
+    .ee-carte-tete p { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
+    .ee-carte-corps { padding: 18px 20px 20px; display: grid; gap: 16px; }
+
+    /* Champs */
+    .ee-champ label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 700; color: var(--txt); }
+    .ee-champ label em { font-style: normal; font-weight: 500; color: var(--muted); }
+    .ee-champ label .req { color: #dc2626; }
+    .ee-champ input:not([type=checkbox]), .ee-champ select, .ee-champ textarea {
+        width: 100%; height: 44px; padding: 0 14px; border: 1px solid #d5dde5; border-radius: 12px; background: #fff;
+        font: inherit; font-size: 14.5px; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+    .ee-champ textarea { height: auto; min-height: 140px; padding: 12px 14px; line-height: 1.55; resize: vertical; }
+    .ee-champ input:focus, .ee-champ select:focus, .ee-champ textarea:focus { outline: none; border-color: var(--dom); box-shadow: 0 0 0 4px color-mix(in srgb, var(--dom) 13%, transparent); }
+    .ee-aide { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+    .ee-compte { float: right; font-weight: 600; color: var(--muted); font-size: 12px; }
+
+    /* Rattachement */
+    .ee-actuel { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--soft); border: 1px solid var(--line); }
+    .ee-actuel i { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; background: color-mix(in srgb, var(--dom) 10%, #fff); color: var(--dom); font-size: 15px; }
+    .ee-actuel small { display: block; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+    .ee-actuel b { display: block; font-size: 14px; color: var(--ink); line-height: 1.3; }
+    .ee-avert { margin: 0; padding: 11px 14px; border-radius: 12px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 13px; font-weight: 600; line-height: 1.5; }
+    .ee-avert[hidden] { display: none; }
+
+    /* Attributs dynamiques */
+    .ee-attr { display: grid; gap: 14px; max-height: 620px; overflow-y: auto; }
+    .ee-attr .ee-champ label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .ee-badge { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: #f1f5f9; color: var(--muted); text-transform: none; }
+    .ee-bascule { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #d5dde5; border-radius: 12px; cursor: pointer; }
+    .ee-bascule span { font-size: 14px; font-weight: 600; color: var(--ink); }
+    .ee-bascule input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .ee-bascule i { position: relative; width: 44px; height: 26px; flex-shrink: 0; border-radius: 99px; background: #cbd5e1; transition: background-color .2s; }
+    .ee-bascule i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .2s; }
+    .ee-bascule input:checked + i { background: var(--dom); }
+    .ee-bascule input:checked + i::after { transform: translateX(18px); }
+    .ee-bascule input:focus-visible + i { outline: 2px solid var(--dom); outline-offset: 2px; }
+    .ee-vide { padding: 28px 16px; text-align: center; color: var(--muted); font-size: 13.5px; border: 1px dashed #cbd5e1; border-radius: 14px; }
+    .ee-vide b { display: block; color: var(--ink); font-size: 14px; margin-bottom: 4px; }
+
+    /* Barre d'action */
+    .ee-barre { position: fixed; left: 50%; bottom: 18px; z-index: 40; width: min(1140px, calc(100% - 24px)); transform: translateX(-50%);
+                display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 18px; border-radius: 16px;
+                background: rgba(255,255,255,.92); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+                border: 1px solid var(--line); box-shadow: 0 18px 40px -20px rgba(15,23,42,.45); }
+    .ee-etat { flex: 1; font-size: 13px; font-weight: 600; color: var(--muted); }
+    .ee-etat.sale { color: var(--warn); }
+    .ee-etat.sale::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--acc); vertical-align: 1px; }
+    .ee-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid var(--line);
+              background: #fff; font: inherit; font-size: 14px; font-weight: 700; color: var(--txt); cursor: pointer; text-decoration: none; }
+    .ee-btn:hover { border-color: #94a3b8; color: var(--ink); }
+    .ee-btn.principal { background: var(--dom); border-color: var(--dom); color: #fff; }
+    .ee-btn.principal:hover { filter: brightness(1.08); color: #fff; }
+    .ee-btn:disabled { opacity: .6; cursor: default; }
+
+    @media (max-width: 960px) { .ee-grille { grid-template-columns: 1fr; } .ee-attr { max-height: none; } }
+    @media (max-width: 560px) {
+        .ee-tete h1 { font-size: 21px; }
+        .ee-barre { left: 0; right: 0; bottom: 0; width: 100%; transform: none; border-radius: 16px 16px 0 0; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
+        .ee-etat { display: none; } .ee-btn { flex: 1; }
+    }
+    body:has(.ee-barre) .fixed.bottom-6.right-6, body:has(.ee-barre) div.fixed.bottom-24.right-8 { bottom: 96px !important; }
+    @media (prefers-reduced-motion: reduce) { .ee * { transition: none !important; } }
+</style>
+
+<div class="ee">
+    <header class="ee-tete">
         <div>
-            <h2 class="text-2xl font-black  flex items-center" style="color:{{request.user.personnel.color_fond}}">
-                <i class="fas fa-terminal  mr-3" style="color:{{request.user.personnel.color_fond}}"></i>{{ entity.m_nom }}
-            </h2>
+            <nav class="ee-fil" aria-label="Fil d'Ariane">
+                <a href="/configurations/">Cadre logique</a><span aria-hidden="true">/</span>
+                {% if parent_actuel %}<span>{{ parent_actuel.m_nom|default:parent_actuel }}</span><span aria-hidden="true">/</span>{% endif %}
+                <span>Modifier</span>
+            </nav>
+            <h1>{{ entity.m_nom }}</h1>
         </div>
-    </div>
+        <span class="ee-type"><i class="fas fa-diagram-project"></i>{{ entity.m_type_entity }}</span>
+    </header>
 
-    <form method="POST" action="{% url 'Update-Entity' entity.id %}" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    {% for message in messages %}<p class="ee-msg {{ message.tags }}">{{ message }}</p>{% endfor %}
+
+    <form method="POST" action="{% url 'Update-Entity' entity.id %}" id="eeForm">
         {% csrf_token %}
+        <div class="ee-grille">
 
-        <div class="lg:col-span-7">
-            <div class="bg-white border border-slate-200 rounded-lg shadow-sm h-full">
-                <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 text-blue-600 font-black text-[10px] tracking-[0.2em]">
-                    <i class="fas fa-cog mr-2"></i>PARAMÈTRES_SYSTÈME
-                </div>
-                
-                <div class="p-6 space-y-6">
-                    <div>
-                        <label class="block text-[10px] font-black text-slate-400 mb-2 tracking-widest">NOM_ENTITÉ <span class="text-red-500">*</span></label>
-                        <input type="text" name="nom" value="{{ entity.m_nom }}" class="w-full p-3 border border-slate-200 rounded text-sm font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition" required>
+            <!-- Colonne principale -->
+            <div class="ee-col">
+                <section class="ee-carte" aria-labelledby="eeT1">
+                    <div class="ee-carte-tete"><div><h2 id="eeT1">Informations</h2><p>Ce que les équipes verront dans le cadre logique et les rapports.</p></div></div>
+                    <div class="ee-carte-corps">
+                        <div class="ee-champ">
+                            <label for="eeNom">Nom <span class="req">*</span></label>
+                            <input type="text" id="eeNom" name="nom" value="{{ entity.m_nom }}" required maxlength="255" autocomplete="off">
+                        </div>
+                        <div class="ee-champ">
+                            <label for="eeObj">Objectif <em>(facultatif)</em></label>
+                            <input type="text" id="eeObj" name="objectif" value="{{ entity.objectif|default_if_none:'' }}" placeholder="Ex. Réduire de 30 % la distance moyenne au point d'eau d'ici 2027">
+                        </div>
+                        <div class="ee-champ">
+                            <label for="eeObs">Observations <em>(facultatif)</em> <span class="ee-compte" id="eeObsN"></span></label>
+                            <textarea id="eeObs" name="observation" rows="6" placeholder="Hypothèses, risques, précisions pour l'équipe…">{{ entity.observation|default_if_none:'' }}</textarea>
+                        </div>
                     </div>
+                </section>
 
-                    <div>
-                        <label class="block text-[10px] font-black text-slate-400 mb-2 tracking-widest">OBJECTIFS_STRATÉGIQUES</label>
-                        <input type="text" name="objectif" value="{{ entity.objectif }}" class="w-full p-3 border border-slate-200 rounded text-sm font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                {% if niveau_parent %}
+                <section class="ee-carte" aria-labelledby="eeT2" id="eeRattachement">
+                    <div class="ee-carte-tete"><div><h2 id="eeT2">Rattachement</h2><p>{{ niveau_parent }} auquel cet élément appartient.</p></div></div>
+                    <div class="ee-carte-corps">
+                        <div class="ee-actuel">
+                            <i class="fas fa-sitemap" aria-hidden="true"></i>
+                            <div><small>Actuellement</small><b>{% if parent_actuel %}{{ parent_actuel.m_nom|default:parent_actuel }}{% else %}Aucun {{ niveau_parent|lower }}{% endif %}</b></div>
+                        </div>
+                        <div class="ee-champ">
+                            <label for="eeParent">Déplacer vers</label>
+                            {% if parents_possibles|length > 8 %}
+                            <input type="search" id="eeParentFiltre" autocomplete="off" placeholder="Filtrer la liste…" style="margin-bottom:8px">
+                            {% endif %}
+                            <select name="parent_id" id="eeParent">
+                                {% if not parent_actuel %}<option value="" selected>— Choisir —</option>{% endif %}
+                                {% for p in parents_possibles %}
+                                <option value="{{ p.id }}" {% if parent_actuel and p.id == parent_actuel.id %}selected{% endif %}>{{ p.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <p class="ee-avert" id="eeAvert" hidden>
+                            « {{ entity.m_nom }} » sera déplacé sous cet élément{% if nb_sous_elements %}, avec ses {{ nb_sous_elements }} sous-élément{{ nb_sous_elements|pluralize }}{% endif %}.
+                            Ses indicateurs le suivent ; les pondérations seront réparties à parts égales chez l'ancien et le nouveau parent.
+                        </p>
                     </div>
-
-                    <div>
-                        <label class="block text-[10px] font-black text-slate-400 mb-2 tracking-widest">OBSERVATIONS_LOG</label>
-                        <textarea name="observation" rows="6" class="w-full p-3 border border-slate-200 rounded text-sm font-semibold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">{{ entity.observation }}</textarea>
-                    </div>
-                </div>
+                </section>
+                {% endif %}
             </div>
+
+            <!-- Colonne latérale : attributs de planification -->
+            <section class="ee-carte" aria-labelledby="eeT3">
+                <div class="ee-carte-tete"><div><h2 id="eeT3">Planification</h2><p>Attributs propres à ce type d'élément.</p></div></div>
+                <div class="ee-carte-corps ee-attr">
+                    {% for champ_value in champ_values %}
+                    {% with c=champ_value.champ %}
+                    <div class="ee-champ">
+                        {% if c.type == 'boolean' %}
+                        <label class="ee-bascule" for="eeC{{ c.id }}">
+                            <span>{{ c.name }}</span>
+                            <input type="checkbox" id="eeC{{ c.id }}" name="champ_{{ c.id }}" {% if champ_value.value == 'True' or champ_value.value == True or champ_value.value == 'on' %}checked{% endif %}>
+                            <i aria-hidden="true"></i>
+                        </label>
+                        {% else %}
+                        <label for="eeC{{ c.id }}">{{ c.name }}
+                            <span class="ee-badge">{% if c.type == 'number' %}Nombre{% elif c.type == 'date' %}Date{% elif c.type == 'textarea' %}Texte long{% else %}Texte{% endif %}</span>
+                        </label>
+                        {% if c.type == 'number' %}
+                            <input type="number" step="any" inputmode="decimal" id="eeC{{ c.id }}" name="champ_{{ c.id }}" value="{{ champ_value.value|default:'' }}">
+                        {% elif c.type == 'date' %}
+                            <input type="date" id="eeC{{ c.id }}" name="champ_{{ c.id }}" value="{{ champ_value.value|date:'Y-m-d'|default:champ_value.value|default:'' }}">
+                        {% elif c.type == 'textarea' %}
+                            <textarea id="eeC{{ c.id }}" name="champ_{{ c.id }}" rows="4">{{ champ_value.value|default:'' }}</textarea>
+                        {% else %}
+                            <input type="text" id="eeC{{ c.id }}" name="champ_{{ c.id }}" value="{{ champ_value.value|default:'' }}">
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    {% endwith %}
+                    {% empty %}
+                    <div class="ee-vide"><b>Aucun attribut</b>Ce type d'élément n'a pas d'attribut de planification.</div>
+                    {% endfor %}
+                </div>
+            </section>
         </div>
 
-        <div class="lg:col-span-5">
-            <div class="bg-white border border-slate-200 rounded-lg shadow-sm h-full">
-                <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 text-blue-600 font-black text-[10px] tracking-[0.2em]">
-                    <i class="fas fa-layer-group mr-2"></i>INFORMATIONS DE PLANIFICATIONS
-                </div>
-                
-                <div class="p-6 overflow-y-auto custom-scrollbar" style="max-height: 550px;">
-                    {% if champ_values %}
-                        {% for champ_value in champ_values %}
-                        <div class="bg-slate-50 border border-slate-100 p-4 rounded-md mb-4">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="font-bold text-slate-700 text-sm">{{ champ_value.champ.name }}</span>
-                                <span class="text-[9px] font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{{ champ_value.champ.type|upper }}</span>
-                            </div>
-
-                            <div class="space-y-2">
-                                {% if champ_value.champ.type == 'text' or champ_value.champ.type == 'textarea' %}
-                                    <input type="text" name="champ_{{ champ_value.champ.id }}" value="{{ champ_value.value|default:'' }}" class="w-full p-2.5 border border-slate-200 rounded text-sm font-medium focus:border-blue-500 outline-none">
-                                {% elif champ_value.champ.type == 'number' %}
-                                    <input type="number" name="champ_{{ champ_value.champ.id }}" value="{{ champ_value.value|default:'' }}" class="w-full p-2.5 border border-slate-200 rounded text-sm font-medium focus:border-blue-500 outline-none">
-                                {% elif champ_value.champ.type == 'date' %}
-                                    <input type="date" name="champ_{{ champ_value.champ.id }}" value="{{ champ_value.value|date:'Y-m-d' }}" class="w-full p-2.5 border border-slate-200 rounded text-sm font-medium focus:border-blue-500 outline-none">
-                                {% elif champ_value.champ.type == 'boolean' %}
-                                    <label class="inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" name="champ_{{ champ_value.champ.id }}" class="sr-only peer" {% if champ_value.value == 'True' or champ_value.value == True %}checked{% endif %}>
-                                        <div class="relative w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                                        <span class="ml-3 text-xs text-slate-500">Activer le flag</span>
-                                    </label>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center py-12 text-slate-400">
-                            <i class="fas fa-inbox text-4xl mb-3"></i>
-                            <p class="text-xs">Aucun attribut dynamique.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <div class="col-span-12 mt-2">
-            <div class="flex justify-end gap-4 p-6 border-t border-slate-200 bg-white rounded-lg">
-                <a href="javascript:history.back()" class="px-8 py-3 border border-slate-300 text-slate-600 font-bold text-xs rounded hover:bg-slate-50 transition">
-                    RETOUR
-                </a>
-                <button type="submit" class="px-8 py-3 bg-blue-600 text-white font-bold text-xs rounded shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition transform hover:-translate-y-0.5" 
-                        style="clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);">
-                    <i class="fas fa-save mr-2"></i>SAUVEGARDER_CHANGEMENTS
-                </button>
-            </div>
+        <!-- Barre d'action -->
+        <div class="ee-barre">
+            <span class="ee-etat" id="eeEtat" aria-live="polite">Aucune modification</span>
+            <a href="/configurations/" class="ee-btn" id="eeAnnuler">Annuler</a>
+            <button type="submit" class="ee-btn principal" id="eeEnregistrer"><i class="fas fa-check"></i> Enregistrer</button>
         </div>
     </form>
 </div>
+
+<script>
+(function () {
+    var form = document.getElementById('eeForm'); if (!form) return;
+    var etat = document.getElementById('eeEtat'), modifie = false, envoi = false;
+
+    /* Retour : page précédente si elle existe, sinon le cadre logique */
+    document.getElementById('eeAnnuler').addEventListener('click', function (e) {
+        if (history.length > 1 && document.referrer) { e.preventDefault(); history.back(); }
+    });
+
+    /* Modifications non enregistrées */
+    form.addEventListener('input', function () { modifie = true; etat.textContent = 'Modifications non enregistrées'; etat.classList.add('sale'); });
+    form.addEventListener('change', function () { modifie = true; etat.textContent = 'Modifications non enregistrées'; etat.classList.add('sale'); });
+    window.addEventListener('beforeunload', function (e) { if (modifie && !envoi) { e.preventDefault(); e.returnValue = ''; } });
+    form.addEventListener('submit', function () {
+        envoi = true; var b = document.getElementById('eeEnregistrer'); b.disabled = true; b.textContent = 'Enregistrement…';
+    });
+    /* Ctrl+S / Cmd+S : enregistrer */
+    document.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); if (form.reportValidity()) form.requestSubmit(); } });
+
+    /* Compteur des observations */
+    var obs = document.getElementById('eeObs'), n = document.getElementById('eeObsN');
+    function compter() { var l = obs.value.trim().length; n.textContent = l ? l + ' caractère' + (l > 1 ? 's' : '') : ''; }
+    obs.addEventListener('input', compter); compter();
+
+    /* Rattachement : avertissement et filtre */
+    var sel = document.getElementById('eeParent');
+    if (sel) {
+        var initial = sel.value, avert = document.getElementById('eeAvert'), filtre = document.getElementById('eeParentFiltre');
+        var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+        sel.addEventListener('change', function () { avert.hidden = !sel.value || sel.value === initial; });
+        if (filtre) filtre.addEventListener('input', function () {
+            var q = norm(filtre.value.trim());
+            [].forEach.call(sel.options, function (o) { o.hidden = !!q && !o.selected && norm(o.textContent).indexOf(q) < 0; });
+        });
+    }
+})();
+</script>
 {% endblock %}

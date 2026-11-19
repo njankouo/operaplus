@@ -1,4 +1,5 @@
 {% extends './evaluer.html' %}
+{% load l10n %}
 
 {% block content %}
 <div class="min-h-screen bg-[#f3f6f8] p-6">
@@ -18,14 +19,48 @@
             </a>
         </div>
 
-        <form action="/editions_indicator/{{indicator.id}}/" method="post">
+        <form action="/editions_indicator/{{indicator.id}}/" method="post" enctype="multipart/form-data">
             {% csrf_token %}
+
+            {# ===== Ajout : messages (erreurs de saisie renvoyées par le serveur) ===== #}
+            {% if messages %}
+            <div class="ei-messages">
+                {% for message in messages %}<p class="ei-msg {{ message.tags }}">{{ message }}</p>{% endfor %}
+            </div>
+            {% endif %}
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 <!-- Colonne de gauche : Configuration -->
                 <div class="lg:col-span-2 space-y-6">
                     
+                    <!-- ===== Ajout : rattachement de l'indicateur (objectif / entité) ===== -->
+                    <div class="bg-white border border-[#d5dde5] rounded shadow-sm" id="eiRattachement">
+                        <div class="p-4 border-b border-[#d5dde5] bg-[#fbfcfd] flex items-center justify-between gap-3">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600">Rattachement</h3>
+                            <span class="text-xs text-slate-500">Actuellement : <b class="text-slate-700">{{ indicator.m_enti.m_nom|default:indicator.m_enti }}</b></span>
+                        </div>
+                        <div class="p-6 space-y-3">
+                            <label for="eiEntite" class="block text-sm font-bold text-slate-700">À quel élément du cadre logique cet indicateur appartient-il ?</label>
+                            {% if entites_groupes %}
+                            <input type="search" id="eiEntiteFiltre" class="w-full px-3 py-2 border border-[#d5dde5] rounded text-sm outline-none focus:border-dhis2-blue" placeholder="Filtrer la liste (ex. eau, gouvernance…)" autocomplete="off">
+                            <select name="entity_id" id="eiEntite" required class="w-full px-3 py-2 border border-[#d5dde5] rounded bg-white text-sm outline-none focus:ring-1 focus:ring-dhis2-blue">
+                                {% for g in entites_groupes %}
+                                <optgroup label="{{ g.niveau }}">
+                                    {% for e in g.entites %}
+                                    <option value="{{ e.id }}" {% if e.id == indicator.m_enti_id %}selected{% endif %}>{{ e.nom }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% endfor %}
+                            </select>
+                            <p class="ei-aide" id="eiEntiteAvert" hidden>L'indicateur apparaîtra désormais sous cet élément dans le registre. Ses valeurs déjà saisies lui restent liées.</p>
+                            {% else %}
+                            <input type="hidden" name="entity_id" value="{{ indicator.m_enti_id }}">
+                            <p class="ei-aide">Aucun autre élément disponible dans le cadre logique.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
                     <!-- Détails de base -->
                     <div class="bg-white border border-[#d5dde5] rounded shadow-sm">
                         <div class="p-4 border-b border-[#d5dde5] bg-[#fbfcfd]">
@@ -35,14 +70,14 @@
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-1">Nom de l'indicateur</label>
                                 <input type="text" required class="w-full px-3 py-2 border border-[#d5dde5] rounded focus:ring-1 focus:ring-dhis2-blue outline-none text-sm" 
-                                       name="nature_indicateur" value="{{indicator.m_name}}">
+                                       name="nature_indicateur" value="{{indicator.m_name|default_if_none:''}}">
                             </div>
                             
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-1">Nice Name (Alias)</label>
                                     <input type="text" name="nicename" class="w-full px-3 py-2 border border-[#d5dde5] rounded focus:ring-1 focus:ring-dhis2-blue outline-none text-sm" 
-                                           value="{{indicator.nicename}}" placeholder="Ex: % Couverture">
+                                           value="{{indicator.nicename|default_if_none:''}}" placeholder="Ex: % Couverture">
                                 </div>
 
 <div>
@@ -72,6 +107,7 @@
                                     <option value="Produit" >Produit</option>
                                      
                                 {%else%}
+                                    <option value="" selected>— Non précisé —</option>
                                     <option value="Impact" >Impact</option>
                                     <option value="Effet" >Effet</option>
                                     <option value="Produit" >Produit</option>
@@ -82,12 +118,13 @@
 
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Cible contractuelle</label>
-                            <input type="number" class="w-full border border-slate-200 rounded-lg p-3 text-sm" placeholder="Ex: 100" name="cible" value="{{indicator.cible_contractuelle}}">
+                            <input type="number" class="w-full border border-slate-200 rounded-lg p-3 text-sm" placeholder="Ex: 100" name="cible" step="any" value="{{indicator.cible_contractuelle|default_if_none:''|unlocalize}}">
                         </div>
 
                         <div>
                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Fréquence de collecte</label>
 <select name="frequence" class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500">
+    <option value="" {% if not indicator.frequence_collecte %}selected{% endif %}>— Non définie —</option>
     <option value="Journalière" {% if indicator.frequence_collecte == "Journalière" %}selected{% endif %}>Journalière</option>
     <option value="Hebdomadaire" {% if indicator.frequence_collecte == "Hebdomadaire" %}selected{% endif %}>Hebdomadaire</option>
     <option value="Mensuelle" {% if indicator.frequence_collecte == "Mensuelle" %}selected{% endif %}>Mensuelle</option>
@@ -99,8 +136,9 @@
 
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Source de données</label>
-                            <input type="text" class="w-full border border-slate-200 rounded-lg p-3 text-sm" placeholder="Ex: Base de données interne" name="source" value="{{indicator.source_donnees}}">
+                            <input type="text" class="w-full border border-slate-200 rounded-lg p-3 text-sm" placeholder="Ex: Base de données interne" name="source" value="{{indicator.source_donnees|default_if_none:''}}">
                         </div>
+                        <div class="ei-large">
                         <label for="mecanisme_verification" class="block text-xs font-bold text-slate-400 uppercase mb-2">
                             Mécanisme de vérification
                         </label>
@@ -109,7 +147,8 @@
                             id="mecanisme_verification"
                             class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500" 
                             rows="3" 
-                            placeholder="Décrivez comment l'indicateur sera vérifié...">{{indicator.mecanisme_verification}}</textarea>
+                            placeholder="Décrivez comment l'indicateur sera vérifié...">{{indicator.mecanisme_verification|default_if_none:''}}</textarea>
+                        </div>
 
 
                                 <div>
@@ -168,6 +207,9 @@
                         </div>
                     </div>
 
+                    <!-- ===== Ajout : informations complémentaires (champs dynamiques) ===== -->
+                    {% include './partials/champs_indicateur_valeurs.html' %}
+
                     <!-- Actions -->
                     <div class="flex justify-end gap-3">
                         <button type="reset" class="px-6 py-2 border border-[#d5dde5] rounded text-sm font-bold text-slate-600 hover:bg-slate-50">Réinitialiser</button>
@@ -220,6 +262,17 @@
 </div>
 
 <style>
+    /* ===== Ajouts ===== */
+    .ei-large { grid-column: 1 / -1; }
+    .ei-aide { font-size: 12.5px; color: #64748b; }
+    #eiEntiteAvert { color: #b45309; font-weight: 600; }
+    .ei-messages { margin-bottom: 16px; display: grid; gap: 8px; }
+    .ei-msg { padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
+    .ei-msg.error { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+    .ei-msg.warning { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .ei-msg.success { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+    @media (max-width: 640px) { form .grid.grid-cols-2 { grid-template-columns: 1fr; } }
+
     .dhis2-blue { color: #1d5288; }
     .bg-dhis2-blue { background-color: #1d5288; }
     
@@ -260,6 +313,19 @@
 </style>
 
 <script>
+    // ===== Ajout : filtre de la liste des éléments + avertissement si l'indicateur change de rattachement =====
+    (function () {
+        var sel = document.getElementById('eiEntite'); if (!sel) return;
+        var initial = sel.value, filtre = document.getElementById('eiEntiteFiltre'), avert = document.getElementById('eiEntiteAvert');
+        var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+        sel.addEventListener('change', function () { avert.hidden = sel.value === initial; });
+        filtre.addEventListener('input', function () {
+            var q = norm(filtre.value.trim());
+            sel.querySelectorAll('option').forEach(function (o) { o.hidden = !!q && norm(o.textContent).indexOf(q) < 0 && !o.selected; });
+            sel.querySelectorAll('optgroup').forEach(function (g) { g.hidden = ![].some.call(g.children, function (o) { return !o.hidden; }); });
+        });
+    })();
+
     // Filtrage temps réel des variables
     document.getElementById('filter').addEventListener('input', function(e) {
         const term = e.target.value.toLowerCase();

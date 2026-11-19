@@ -1,0 +1,34 @@
+{% comment %}
+    Une ligne de la bibliothèque de champs (ChampDynamique annoté de nb_utilisations et nb_indicateurs).
+    Incluse dans la boucle de bibliotheque_champs.html : la ligne n'existe qu'à un seul endroit.
+{% endcomment %}
+<li class="lm-bc-item t-{{ c.type }}{% if not c.actif %} archive{% endif %}"
+    data-id="{{ c.id }}" data-libelle="{{ c.libelle }}" data-code="{{ c.code }}" data-type="{{ c.type }}"
+    data-unite="{{ c.unite }}" data-choix="{{ c.choix|join:'|' }}" data-utilise="{{ c.nb_utilisations|default:0 }}">
+    <span class="lm-bc-ic" aria-hidden="true">
+        {% if c.type == 'number' %}<i class="fa-solid fa-hashtag"></i>{% elif c.type == 'list' %}<i class="fa-solid fa-list-ul"></i>
+        {% elif c.type == 'date' %}<i class="fa-regular fa-calendar"></i>{% elif c.type == 'boolean' %}<i class="fa-solid fa-toggle-on"></i>
+        {% elif c.type == 'file' %}<i class="fa-solid fa-camera"></i>{% else %}<i class="fa-solid fa-font"></i>{% endif %}
+    </span>
+    <div style="min-width:0">
+        <b>{{ c.libelle }}</b>
+        <span class="lm-bc-rep">Valeur :
+            <strong>{% if c.type == 'number' %}un nombre{% if c.unite %} de {{ c.unite }}{% endif %}{% elif c.type == 'list' %}un choix parmi {{ c.choix|length }}{% elif c.type == 'date' %}une date{% elif c.type == 'boolean' %}oui ou non{% elif c.type == 'file' %}une photo ou un document{% else %}un texte libre{% endif %}</strong>
+            {% if c.type == 'list' and c.choix %}<span title="{{ c.choix|join:', ' }}"> ({{ c.choix|slice:':3'|join:', ' }}{% if c.choix|length > 3 %}…{% endif %})</span>{% endif %}
+        </span>
+        {% if not c.actif %}<span class="lm-bc-usage">Archivé : plus proposé</span>
+        {% else %}
+            <span class="lm-bc-usage{% if c.nb_indicateurs %} oui{% endif %}">{% if c.nb_indicateurs %}<i class="fa-solid fa-link"></i> Utilisé dans {{ c.nb_indicateurs }} indicateur{{ c.nb_indicateurs|pluralize }}{% else %}Pas encore ajouté à un indicateur{% endif %}</span>
+            {% if c.nb_utilisations %}<span class="lm-bc-usage oui"><i class="fa-solid fa-check"></i> {{ c.nb_utilisations }} valeur{{ c.nb_utilisations|pluralize }} renseignée{{ c.nb_utilisations|pluralize }}</span>{% endif %}
+        {% endif %}
+    </div>
+    <div class="lm-bc-actions">
+        <button type="button" class="lm-bc-petit" data-modifier aria-label="Modifier {{ c.libelle }}"><i class="fa-solid fa-pen"></i> Modifier</button>
+        {% if c.actif %}
+        <form method="post" action="{% url 'archiver-champ' c.id %}" data-archiver>
+            {% csrf_token %}
+            <button type="submit" class="lm-bc-petit" aria-label="Archiver {{ c.libelle }}" title="Ne plus proposer ce champ"><i class="fa-solid fa-box-archive"></i> Archiver</button>
+        </form>
+        {% endif %}
+    </div>
+</li>

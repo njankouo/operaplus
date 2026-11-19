@@ -266,7 +266,16 @@ urlpatterns = [
 
    path('delete-dataset/<int:pk>/', DeleteDataset.as_view(), name='delete-dataset'),
 
-   path('saisie-formulaire/<int:op_id>/<int:dataset_id>/',  SaisieFormulaireOp.as_view(), name='saisie-formulaire')
+   path('saisie-formulaire/<int:op_id>/<int:dataset_id>/',  SaisieFormulaireOp.as_view(), name='saisie-formulaire'),
+
+   path('champs-dynamiques/', views.bibliotheque_champs, name='bibliotheque-champs'),
+   path('champs-dynamiques/enregistrer/', views.enregistrer_champ, name='enregistrer-champ'),
+   path('champs-dynamiques/<int:id>/archiver/', views.archiver_champ, name='archiver-champ'),
+
+   path('indicateurs/atelier/',           views.atelier_indicateurs,     name='atelier-indicateurs'),
+   path('indicateurs/atelier/creer/',     views.creer_indicateurs_rapide, name='creer-indicateurs-rapide'),
+   path('indicateurs/atelier/attribuer/', views.attribuer_indicateurs,   name='attribuer-indicateurs'),
+
 
 
 

@@ -1,0 +1,205 @@
+{% comment %}
+    QUESTIONS DE COLLECTE D'UN INDICATEUR — bloc à inclure DANS le <form> de création / modification :
+        {% include './partials/questions_indicateur.html' %}
+
+    Contexte attendu (voir la vue) :
+        champs_dynamiques   : liste des questions actives de l'institution  [{id, libelle, type, unite, choix}, …]
+        champs_selectionnes : (modification seulement) questions déjà posées [{champ_id, obligatoire}, …] dans l'ordre
+    Envoie un seul champ : champs_json = [{"id": 3, "obligatoire": true}, {"id": 7, "obligatoire": false}]  (dans l'ordre)
+    Côté serveur : enregistrer_liens_champs(indicateur, request.POST.get('champs_json'), institution)
+{% endcomment %}
+<style>
+    .cq { --cq-dom: var(--dom, #123A37); --cq-ok: var(--ok, #2A8A7D); --cq-ink: #0f172a; --cq-txt: #334155; --cq-mute: #64748b; --cq-line: #e5e7eb; --cq-soft: #f8fafc;
+          background: #fff; border: 1px solid var(--cq-line); border-radius: 16px; overflow: hidden; }
+    .cq * { box-sizing: border-box; }
+    .t-number { --t: #2F5BC9; } .t-text { --t: #475164; } .t-date { --t: #7A4BC2; } .t-list { --t: #9A5800; } .t-boolean { --t: #1F6F64; } .t-file { --t: #A3300F; }
+    .cq-tete { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 18px 22px 14px; border-bottom: 1px solid var(--cq-line); }
+    .cq-tete h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--cq-ink); display: flex; align-items: center; gap: 8px; }
+    .cq-tete h3 em { font-style: normal; font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 99px; background: #f1f5f9; color: var(--cq-mute); }
+    .cq-tete p { margin: 3px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--cq-mute); max-width: 520px; }
+    .cq-lien { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--cq-line); font-size: 12.5px; font-weight: 700; color: var(--cq-txt); text-decoration: none; white-space: nowrap; }
+    .cq-lien:hover { border-color: var(--cq-dom); color: var(--cq-dom); }
+    .cq-corps { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }
+    .cq-zone { padding: 16px 22px 18px; min-width: 0; }
+    .cq-zone + .cq-zone { border-left: 1px solid var(--cq-line); background: var(--cq-soft); }
+    .cq-zone h4 { margin: 0 0 10px; font-size: 12px; font-weight: 700; color: var(--cq-mute); }
+
+    /* questions choisies */
+    .cq-choisies { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .cq-choisie { display: grid; grid-template-columns: 22px 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--cq-line); border-radius: 12px; background: #fff; }
+    .cq-choisie.glisse { opacity: .45; }
+    .cq-poignee { cursor: grab; color: #94a3b8; text-align: center; font-size: 13px; user-select: none; letter-spacing: -2px; }
+    .cq-ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: var(--t); background: color-mix(in srgb, var(--t) 10%, #fff); }
+    .cq-choisie b { display: block; font-size: 13.5px; font-weight: 700; line-height: 1.3; color: var(--cq-ink); overflow-wrap: anywhere; }
+    .cq-choisie small { display: block; font-size: 11.5px; color: var(--cq-mute); }
+    .cq-outils { display: flex; align-items: center; gap: 4px; }
+    .cq-oblig { display: inline-flex; align-items: center; gap: 6px; margin-right: 4px; font-size: 12px; font-weight: 600; color: var(--cq-txt); cursor: pointer; white-space: nowrap; }
+    .cq-oblig input { appearance: none; -webkit-appearance: none; width: 32px; height: 18px; margin: 0; border-radius: 99px; background: #cfd5de; position: relative; cursor: pointer; transition: background-color .2s; }
+    .cq-oblig input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .2s; }
+    .cq-oblig input:checked { background: var(--cq-ok); }
+    .cq-oblig input:checked::after { transform: translateX(14px); }
+    .cq-mini { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--cq-line); background: #fff; color: var(--cq-mute); cursor: pointer; font-size: 13px; line-height: 1; display: inline-grid; place-items: center; }
+    .cq-mini:hover:not(:disabled) { border-color: var(--cq-dom); color: var(--cq-dom); }
+    .cq-mini:disabled { opacity: .35; cursor: default; }
+    .cq-mini.suppr:hover { border-color: #E35A33; color: #E35A33; }
+    .cq-vide { margin: 0; padding: 18px 14px; border: 1.5px dashed #d5dbe3; border-radius: 12px; text-align: center; font-size: 12.5px; line-height: 1.5; color: var(--cq-mute); }
+
+    /* questions disponibles */
+    .cq-cherche { position: relative; margin-bottom: 10px; }
+    .cq-cherche input { width: 100%; height: 38px; padding: 0 10px 0 32px; border-radius: 10px; border: 1px solid var(--cq-line); background: #fff; font: inherit; font-size: 13px; color: var(--cq-ink); outline: none; }
+    .cq-cherche input:focus { border-color: var(--cq-dom); }
+    .cq-cherche svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); }
+    .cq-dispo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+    .cq-dispo button { width: 100%; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid transparent; border-radius: 10px; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+    .cq-dispo button:hover { background: #fff; border-color: var(--cq-line); }
+    .cq-dispo button .cq-ic { width: 30px; height: 30px; font-size: 12px; }
+    .cq-dispo b { display: block; font-size: 13px; font-weight: 600; color: var(--cq-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cq-dispo small { display: block; font-size: 11.5px; color: var(--cq-mute); }
+    .cq-dispo .plus { font-size: 12px; font-weight: 700; color: var(--cq-dom); }
+    .cq-dispo li[hidden] { display: none; }
+    .cq-rien { margin: 0; padding: 14px 6px; font-size: 12.5px; color: var(--cq-mute); text-align: center; }
+    .cq-rien a { color: var(--cq-dom); font-weight: 700; }
+
+    @media (max-width: 860px) {
+        .cq-corps { grid-template-columns: 1fr; }
+        .cq-zone + .cq-zone { border-left: 0; border-top: 1px solid var(--cq-line); }
+        .cq-choisie { grid-template-columns: 34px minmax(0, 1fr); }
+        .cq-poignee { display: none; }
+        .cq-outils { grid-column: 1 / -1; justify-content: flex-end; }
+    }
+</style>
+
+<section class="cq" id="cq" aria-labelledby="cqTitre">
+    <div class="cq-tete">
+        <div>
+            <h3 id="cqTitre">Questions posées à l'agent <em id="cqNb">0</em></h3>
+            <p>À chaque déclaration de cet indicateur, l'agent répondra à ces questions sur son téléphone. Facultatif : sans question, il saisit seulement la valeur.</p>
+        </div>
+        <a class="cq-lien" href="/champs-dynamiques/" target="_blank" rel="noopener">Gérer les questions ↗</a>
+    </div>
+    <div class="cq-corps">
+        <div class="cq-zone">
+            <h4>Questions choisies, dans l'ordre où l'agent les verra</h4>
+            <ol class="cq-choisies" id="cqChoisies"></ol>
+            <p class="cq-vide" id="cqVide">Aucune question pour l'instant.<br>Choisissez-en dans la liste à droite.</p>
+        </div>
+        <div class="cq-zone">
+            <h4>Ajouter une question</h4>
+            <label class="cq-cherche">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+                <input type="search" id="cqCherche" placeholder="Chercher une question…" autocomplete="off" aria-label="Chercher une question">
+            </label>
+            <ul class="cq-dispo" id="cqDispo"></ul>
+            <p class="cq-rien" id="cqRien" hidden></p>
+        </div>
+    </div>
+    <input type="hidden" name="champs_json" id="champs_json" value="[]">
+</section>
+
+{{ champs_dynamiques|json_script:"cqDonnees" }}
+{{ champs_selectionnes|json_script:"cqDejaChoisis" }}
+<script>
+(function () {
+    var racine = document.getElementById('cq'); if (!racine) return;
+    var $ = function (id) { return document.getElementById(id); };
+    function lire(id) { try { var v = JSON.parse(($(id) || {}).textContent || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+
+    var champs = lire('cqDonnees'), parId = {};
+    champs.forEach(function (c) { parId[c.id] = c; });
+    /* questions déjà posées (modification) ; on ignore celles qui ne sont plus actives */
+    var choisies = lire('cqDejaChoisis').filter(function (s) { return parId[s.champ_id]; })
+                                         .map(function (s) { return { id: s.champ_id, obligatoire: !!s.obligatoire }; });
+
+    var LETTRE = { number: '123', text: 'Aa', date: 'JJ', boolean: 'O/N', file: 'IMG', list: '≡' };
+    function reponse(c) {
+        if (c.type === 'number') return 'Un nombre' + (c.unite ? ' de ' + c.unite : '');
+        if (c.type === 'list') return 'Un choix parmi ' + (c.choix || []).length;
+        return { text: 'Un texte libre', date: 'Une date', boolean: 'Oui ou non', file: 'Une photo ou un document' }[c.type] || '';
+    }
+    function el(tag, cls, texte) { var e = document.createElement(tag); if (cls) e.className = cls; if (texte != null) e.textContent = texte; return e; }
+    function icone(c) { var s = el('span', 'cq-ic', LETTRE[c.type] || '?'); s.setAttribute('aria-hidden', 'true'); return s; }
+    function bouton(cls, texte, label, action, desactive) {
+        var b = el('button', 'cq-mini ' + cls, texte); b.type = 'button'; b.setAttribute('aria-label', label); b.dataset.action = action; b.disabled = !!desactive; return b;
+    }
+
+    /* Liste des questions choisies (construite avec textContent : aucun risque d'injection) */
+    function dessinerChoisies() {
+        var ol = $('cqChoisies'); ol.textContent = '';
+        choisies.forEach(function (s, i) {
+            var c = parId[s.id], li = el('li', 'cq-choisie t-' + c.type); li.dataset.id = c.id; li.draggable = true;
+            var poignee = el('span', 'cq-poignee', '⋮⋮'); poignee.setAttribute('aria-hidden', 'true'); poignee.title = 'Glisser pour changer l’ordre';
+            var nom = el('div'); nom.style.minWidth = '0'; nom.appendChild(el('b', '', (i + 1) + '. ' + c.libelle)); nom.appendChild(el('small', '', reponse(c)));
+            var outils = el('div', 'cq-outils');
+            var oblig = el('label', 'cq-oblig'), cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = s.obligatoire; cb.dataset.action = 'obligatoire';
+            oblig.appendChild(cb); oblig.appendChild(document.createTextNode('Obligatoire'));
+            outils.appendChild(oblig);
+            outils.appendChild(bouton('', '↑', 'Monter « ' + c.libelle + ' »', 'monter', i === 0));
+            outils.appendChild(bouton('', '↓', 'Descendre « ' + c.libelle + ' »', 'descendre', i === choisies.length - 1));
+            outils.appendChild(bouton('suppr', '×', 'Retirer « ' + c.libelle + ' »', 'retirer'));
+            li.appendChild(poignee); li.appendChild(icone(c)); li.appendChild(nom); li.appendChild(outils);
+            ol.appendChild(li);
+        });
+        $('cqVide').hidden = choisies.length > 0;
+        $('cqNb').textContent = choisies.length;
+        $('champs_json').value = JSON.stringify(choisies.map(function (s) { return { id: s.id, obligatoire: s.obligatoire }; }));
+        dessinerDispo();
+    }
+
+    /* Liste des questions disponibles (celles déjà choisies n'y figurent plus) */
+    function norm(t) { return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+    function dessinerDispo() {
+        var ul = $('cqDispo'), q = norm($('cqCherche').value.trim()), pris = {}, vus = 0; ul.textContent = '';
+        choisies.forEach(function (s) { pris[s.id] = 1; });
+        champs.forEach(function (c) {
+            if (pris[c.id] || (q && norm(c.libelle).indexOf(q) < 0)) return;
+            var li = el('li'), b = el('button', 't-' + c.type); b.type = 'button'; b.dataset.ajout = c.id;
+            var nom = el('span'); nom.style.minWidth = '0'; nom.appendChild(el('b', '', c.libelle)); nom.appendChild(el('small', '', reponse(c)));
+            b.appendChild(icone(c)); b.appendChild(nom); b.appendChild(el('span', 'plus', '+ Ajouter'));
+            li.appendChild(b); ul.appendChild(li); vus++;
+        });
+        var rien = $('cqRien'); rien.hidden = vus > 0; rien.textContent = '';
+        if (!vus) {
+            if (!champs.length) { rien.appendChild(document.createTextNode('Aucune question dans la bibliothèque. ')); var a = el('a', '', 'En créer une ↗'); a.href = '/champs-dynamiques/'; a.target = '_blank'; a.rel = 'noopener'; rien.appendChild(a); }
+            else rien.textContent = q ? 'Aucune question ne correspond.' : 'Toutes les questions sont déjà choisies.';
+        }
+    }
+
+    /* Actions */
+    $('cqDispo').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-ajout]'); if (!b) return;
+        choisies.push({ id: +b.dataset.ajout, obligatoire: false }); dessinerChoisies();
+    });
+    $('cqChoisies').addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-action]'); if (!b) return;
+        var i = choisies.findIndex(function (s) { return String(s.id) === b.closest('li').dataset.id; });
+        if (b.dataset.action === 'retirer') choisies.splice(i, 1);
+        else if (b.dataset.action === 'monter' && i > 0) choisies.splice(i - 1, 0, choisies.splice(i, 1)[0]);
+        else if (b.dataset.action === 'descendre' && i < choisies.length - 1) choisies.splice(i + 1, 0, choisies.splice(i, 1)[0]);
+        dessinerChoisies();
+    });
+    $('cqChoisies').addEventListener('change', function (e) {
+        if (e.target.dataset.action !== 'obligatoire') return;
+        var id = e.target.closest('li').dataset.id;
+        choisies.forEach(function (s) { if (String(s.id) === id) s.obligatoire = e.target.checked; });
+        $('champs_json').value = JSON.stringify(choisies.map(function (s) { return { id: s.id, obligatoire: s.obligatoire }; }));
+    });
+    $('cqCherche').addEventListener('input', dessinerDispo);
+    $('cqCherche').addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });   /* Entrée n'envoie pas le formulaire */
+
+    /* Glisser-déposer pour réordonner */
+    var tenu = null;
+    $('cqChoisies').addEventListener('dragstart', function (e) { tenu = e.target.closest('.cq-choisie'); if (tenu) tenu.classList.add('glisse'); });
+    $('cqChoisies').addEventListener('dragover', function (e) {
+        e.preventDefault(); var cible = e.target.closest('.cq-choisie'); if (!tenu || !cible || cible === tenu) return;
+        var r = cible.getBoundingClientRect(); cible.parentNode.insertBefore(tenu, (e.clientY - r.top) > r.height / 2 ? cible.nextSibling : cible);
+    });
+    $('cqChoisies').addEventListener('dragend', function () {
+        if (!tenu) return; tenu.classList.remove('glisse'); tenu = null;
+        var ordre = [].map.call($('cqChoisies').children, function (li) { return li.dataset.id; });
+        choisies.sort(function (a, b) { return ordre.indexOf(String(a.id)) - ordre.indexOf(String(b.id)); });
+        dessinerChoisies();
+    });
+
+    dessinerChoisies();
+})();
+</script>

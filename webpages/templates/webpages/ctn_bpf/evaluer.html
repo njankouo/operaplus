@@ -7,7 +7,7 @@
                     <h2 class="text-3xl font-extrabold tracking-tight">Indicateurs <span class="ix-inst">· {{actual_institution.nom}}</span></h2>
                     <p class="text-blue-100/70 text-sm font-medium mt-1">Registre des indicateurs MEAL : définition, cible, source et moyen de vérification.</p>
                 </div>
-               
+
             </div>
 
             <div class="search-container bg-white rounded-2xl p-2 shadow-xl mb-12 transition-all duration-300">
@@ -15,7 +15,7 @@
                     <div class="relative flex-1">
                         <i class="fa fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                         <input type="text" name="q" id="searchInput" value="{{ search_query }}"
-                               placeholder="Rechercher par libellé, code technique ou année..." 
+                               placeholder="Rechercher un indicateur, un code, une source…"
                                class="w-full pl-12 pr-4 py-3 bg-transparent outline-none text-sm font-medium text-slate-700">
                     </div>
                     <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-3 rounded-xl font-bold text-xs transition-all">
@@ -25,537 +25,559 @@
             </div>
 {%endblock%}
 {%block content%}
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'dhis2-blue': '#1d5288',
-                        'dhis2-blue-dark': '#184370',
-                        'dhis2-bg': '#f3f6f8',
-                        'dhis2-border': '#d5dde5',
-                        'dhis2-text': '#212934',
-                        'dhis2-gray-light': '#fbfcfd'
-                    }
-                }
-            }
-        }
-    </script>
-
-    <style>
-        body {
-            background-color: #f3f6f8;
-            color: #212934;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-
-        /* Barre de défilement discrète */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #bccad5; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #1d5288; }
-
-        /* Style DHIS2 pour les détails */
-        details summary::-webkit-details-marker { display: none; }
-        
-        .dhis2-card {
-            background: white;
-            border: 1px solid #d5dde5;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-
-        .dhis2-button-primary {
-            background-color: #1d5288;
-            color: white;
-            transition: background 0.2s;
-        }
-        .dhis2-button-primary:hover { background-color: #184370; }
-
-        .dhis2-nav-item {
-            height: 48px;
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            color: white;
-            opacity: 0.85;
-            transition: all 0.2s;
-        }
-        .dhis2-nav-item:hover, .dhis2-nav-item.active {
-            opacity: 1;
-            background-color: rgba(255,255,255,0.1);
-            border-bottom: 3px solid #ffffff;
-        }
-    </style>
-
+{% comment %}
+    REGISTRE DES INDICATEURS — disposition « liste + détail » (inspirée de DHIS2, Salesforce, Linear).
+    À gauche : les objectifs (navigation). Au centre : la liste des indicateurs. Clic sur une ligne : la fiche
+    s'ouvre dans un panneau latéral.
+    Inchangés : pages_o, element.get_indicateurs, gest_val_1, somme_valeurs, search_query, messages, ind.valeurs_champs,
+    les ids searchInput, ixQ, ixN, ixNC, ixNM, ixT0…ixT3, ixNone et toutes les URLs.
+{% endcomment %}
 <style>
-    :root {
-        /* Palette ERP Professionnelle */
-        --erp-header-bg: #1a1f2e; /* Bleu nuit profond */
-        --erp-sidebar-bg: #ffffff;
-        --erp-accent: #2563eb;
-        --erp-border: #e2e8f0;
-        --erp-text-main: #1e293b;
-        --erp-text-muted: #64748b;
-    }
-
-    /* Header Compact Style ERP */
-    .erp-header {
-        height: 48px; /* Plus fin pour maximiser l'espace de travail */
-        background: var(--erp-header-bg);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 1rem;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
-
-    /* Navigation par onglets ERP */
-    .erp-nav {
-        display: flex;
-        height: 100%;
-        margin-left: 2rem;
-    }
-
-    .erp-nav-item {
-        display: flex;
-        align-items: center;
-        padding: 0 1.25rem;
-        color: #cbd5e1;
-        font-size: 13px;
-        font-weight: 500;
-        text-decoration: none;
-        transition: all 0.2s;
-        border-bottom: 3px solid transparent;
-    }
-
-    .erp-nav-item:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: #fff;
-    }
-
-    .erp-nav-item.active {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.1);
-        border-bottom-color: var(--erp-accent);
-    }
-
-    /* Barre de titre / Fil d'Ariane */
-    .erp-breadcrumb-bar {
-        background: #fff;
-        border-bottom: 1px solid var(--erp-border);
-        padding: 0.75rem 1.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .erp-search-input {
-        background: #f1f5f9;
-        border: 1px solid var(--erp-border);
-        border-radius: 4px;
-        padding: 0.4rem 0.75rem;
-        font-size: 13px;
-        width: 300px;
-        transition: all 0.2s;
-    }
-
-    .erp-search-input:focus {
-        outline: none;
-        background: #fff;
-        border-color: var(--erp-accent);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    }
-
-    .btn-erp-primary {
-        background: var(--erp-accent);
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-</style>
-
-
-
-<!-- ===================== INDICATEURS : registre MEAL, design épuré (remplace le design précédent) ===================== -->
-<style>
-    .ix { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: #047857; --warn: #b45309; --danger: #dc2626;
-          --ink: #0f172a; --txt: #334155; --muted: #64748b; --line: #e5e7eb; --soft: #f8fafc;
-          background: #f5f7fa !important; padding: 20px 24px 40px !important; counter-reset: ixobj; }
+    .ix, .ix-tiroir { --dom: var(--nav-bg-color, #123A37); --acc: var(--primary-color, #E48B0C); --ok: #047857; --warn: #b45309; --danger: #dc2626;
+          --ink: #0f172a; --txt: #334155; --muted: #64748b; --line: #e5e7eb; --soft: #f8fafc; --ease: cubic-bezier(.22, 1, .36, 1);
+          }
+    .ix { background: transparent; padding: 0 0 40px; }   /* posé sur le fond de la page, sans boîte */
+    .ix *, .ix-tiroir * { box-sizing: border-box; }
     .ix-inst { font-weight: 600; opacity: .75; }
-    /* le titre est déjà dans l'en-tête : on garde seulement les chiffres et les actions */
-    .ix > div:first-child { display: flex !important; align-items: center !important; justify-content: space-between !important; flex-wrap: wrap; gap: 12px; margin-bottom: 14px !important; }
-    .ix > div:first-child > div:first-child > h1, .ix > div:first-child > div:first-child > p { display: none; }
-    .ix > div:first-child > div:last-child { display: none; }
-    .ix-kpis { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 !important; }
-    .ix-kpis div { display: flex; align-items: baseline; gap: 6px; padding: 7px 12px; border-radius: 10px; background: #fff; border: 1px solid var(--line); }
-    .ix-kpis b { font-size: 17px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
-    .ix-kpis span { font-size: 12px; font-weight: 600; color: var(--muted); }
-    .ix-kpis .ix-k-todo b { color: var(--warn); }
-    .ix-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .ix-btn { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 14px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; border: 1px solid var(--line); background: #fff; color: var(--txt); transition: border-color .15s, color .15s; white-space: nowrap; }
-    .ix-btn:hover { border-color: var(--dom); color: var(--dom); }
-    .ix-btn i { font-size: 16px; }
+    .search-container { box-shadow: 0 10px 30px -18px rgba(15,23,42,.5) !important; margin-bottom: 20px !important; }
 
-    /* barre d'outils : filtres seulement (la recherche est celle de l'en-tête) */
-    .ix-tools { position: sticky; top: 0; z-index: 5; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 8px; margin-bottom: 16px; border-radius: 14px; background: #fff; border: 1px solid var(--line); }
-    .ix-tools .ix-q { display: none; }
-    .ix-tabs { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 10px; background: #f1f5f9; }
-    .ix-tabs button { border: 0; background: transparent; height: 32px; padding: 0 12px; border-radius: 8px; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+    /* ---------- Bandeau : chiffres + liens ---------- */
+    .ix-bandeau { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .ix-chiffres { display: flex; flex-wrap: wrap; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+    .ix-chiffres > div { padding: 10px 18px; }
+    .ix-chiffres > div + div { border-left: 1px solid var(--line); }
+    .ix-chiffres b { display: block; font-size: 20px; font-weight: 800; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .ix-chiffres span { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .ix-chiffres .complet b { color: var(--ok); }
+    .ix-liens { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ix-lien { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 13px; font-weight: 700; color: var(--txt); text-decoration: none; }
+    .ix-lien:hover { border-color: var(--dom); color: var(--dom); }
+    .ix-lien i { font-size: 16px; }
+
+    /* ---------- Cadre : objectifs | liste ---------- */
+    .ix-cadre { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; align-items: start; }
+
+    /* objectifs */
+    .ix-rail { position: sticky; top: 12px; background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+    .ix-rail h2 { margin: 0; padding: 14px 16px 10px; font-size: 12px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+    .ix-objs { list-style: none; margin: 0; padding: 0 8px 8px; max-height: calc(100vh - 220px); overflow-y: auto; }
+    .ix-obj-btn { width: 100%; display: block; text-align: left; padding: 10px 10px 11px; border: 0; border-radius: 11px; background: transparent; font: inherit; cursor: pointer; transition: background-color .15s; }
+    .ix-obj-btn:hover { background: var(--soft); }
+    .ix-obj-btn[aria-current="true"] { background: color-mix(in srgb, var(--dom) 8%, #fff); }
+    .ix-obj-btn .nom { display: block; font-size: 13.5px; font-weight: 700; line-height: 1.35; color: var(--ink); }
+    .ix-obj-btn[aria-current="true"] .nom { color: var(--dom); }
+    .ix-obj-btn .meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; font-size: 11.5px; color: var(--muted); }
+    .ix-obj-btn .ix-jauge { margin-top: 6px; height: 4px; }
+    .ix-rail .ix-pages { display: flex; justify-content: center; gap: 4px; padding: 10px; border-top: 1px solid var(--line); }
+    .ix-pages a, .ix-pages span { min-width: 32px; height: 32px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 12.5px; font-weight: 700; text-decoration: none; border: 1px solid var(--line); background: #fff; color: var(--txt); }
+    .ix-pages a:hover { border-color: var(--dom); color: var(--dom); }
+    .ix-pages span.on { background: var(--dom); border-color: var(--dom); color: #fff; }
+
+    /* liste */
+    .ix-liste { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; min-width: 0; }
+    .ix-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .ix-q { display: none; }
+    .ix-tabs { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 11px; background: #f1f5f9; }
+    .ix-tabs button { border: 0; background: transparent; height: 32px; padding: 0 12px; border-radius: 9px; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
     .ix-tabs button em { font-style: normal; font-size: 11px; padding: 0 6px; border-radius: 99px; background: #e2e8f0; color: #475569; }
     .ix-tabs button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(15,23,42,.12); }
     .ix-tabs .ix-tab-todo em { background: #fef3c7; color: var(--warn); }
-    .ix-tog { border: 1px solid var(--line); background: #fff; height: 36px; padding: 0 12px; border-radius: 9px; font-size: 12.5px; font-weight: 600; color: var(--txt); cursor: pointer; }
-    .ix-tog:hover { border-color: var(--dom); color: var(--dom); }
-
-    /* objectifs */
-    .ix > div.space-y-8 > * + * { margin-top: 14px !important; }
-    .ix section { counter-increment: ixobj; border-radius: 16px !important; border: 1px solid var(--line) !important; box-shadow: 0 1px 2px rgba(15,23,42,.04) !important; background: #fff; }
-    .ix section > div:first-child { background: #fff !important; padding: 16px 20px !important; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line) !important; }
-    .ix section > div:first-child .w-10 { display: none !important; }
-    .ix section > div:first-child > div > div::before { content: "Objectif " counter(ixobj); display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--dom); margin-bottom: 2px; }
-    .ix section h2 { font-size: 16px !important; font-weight: 800 !important; color: var(--ink) !important; letter-spacing: -.01em; line-height: 1.3; }
-    .ix section h2 a:hover { color: var(--dom) !important; }
-    .ix section h2 + p { font-size: 13px !important; color: var(--muted) !important; margin-top: 3px !important; }
-    .ix-cnt { display: inline-flex; align-items: center; margin-left: 8px; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; vertical-align: 2px; }
-    .ix section > div:first-child > a { background: #fff !important; color: var(--dom) !important; border: 1px dashed color-mix(in srgb, var(--dom) 45%, #fff) !important; box-shadow: none !important; border-radius: 10px !important; font-size: 12.5px !important; font-weight: 700 !important; padding: 8px 12px !important; }
-    .ix section > div:first-child > a:hover { border-style: solid !important; background: color-mix(in srgb, var(--dom) 6%, #fff) !important; }
-
-    /* ligne d'indicateur : nom, type, fréquence, cible */
-    .ix .divide-y > * + * { border-color: #f1f5f9 !important; }
-    .ix details[hidden] { display: none; }
-    .ix details > summary { padding: 13px 20px !important; gap: 14px; transition: background .15s; }
-    .ix details > summary:hover { background: var(--soft) !important; }
-    .ix details > summary > div { min-width: 0; flex: 1; display: grid !important; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px !important; row-gap: 1px; align-items: center; }
-    .ix details > summary > div > i { grid-row: 1 / span 2; font-size: 18px !important; color: #94a3b8 !important; }
-    .ix details > summary > div > span:first-of-type { font-size: 14px !important; font-weight: 700 !important; color: var(--ink) !important; line-height: 1.35; }
-    .ix details > summary > div > span.font-mono { display: none; }
-    .ix-sub { grid-column: 2; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ix details[open] > summary { background: var(--soft) !important; }
-    .ix details[open] > summary > div > span:first-of-type { color: var(--dom) !important; }
-    .ix-meta { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-    .ix-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: #f1f5f9; color: #475569; white-space: nowrap; }
-    .ix-tag.calc, .ix-tag.man { background: transparent; padding-left: 0; padding-right: 0; }
-    .ix-tag.calc::before, .ix-tag.man::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--dom); }
-    .ix-tag.man::before { background: var(--acc); }
-    .ix-tag.cib { min-width: 84px; justify-content: flex-end; background: transparent; padding-right: 0; color: var(--muted); }
-    .ix-tag.cib b { font-size: 14px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
-    .ix-tag.todo { background: #fffbeb; color: var(--warn); border: 1px solid #fde68a; }
-    .ix-go { width: 32px; height: 32px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; color: #94a3b8; text-decoration: none; transition: background .15s, color .15s; }
-    .ix-go:hover { background: var(--dom); color: #fff; }
-
-    /* fiche dépliée : la fiche de référence de l'indicateur */
-    .ix details > div { padding: 0 20px 18px 48px !important; background: var(--soft) !important; }
-    .ix-fiche-t { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-    .ix details > div > .grid { background: #fff !important; border: 1px solid var(--line) !important; border-radius: 0 !important; padding: 14px 16px !important; margin: 0 !important; gap: 14px 18px !important; }
-    .ix details > div > .grid:first-of-type { border-radius: 12px 12px 0 0 !important; border-bottom: 0 !important; grid-template-columns: 1fr 1.6fr !important; }
-    .ix details > div > .grid:first-of-type > div { grid-column: auto !important; }
-    .ix details > div > .grid:nth-of-type(2) { border-radius: 0 0 12px 12px !important; border-top: 1px dashed var(--line) !important; margin-bottom: 14px !important; }
-    .ix details label { text-transform: none !important; letter-spacing: 0 !important; font-size: 11.5px !important; font-weight: 600 !important; color: var(--muted) !important; margin-bottom: 3px !important; }
-    .ix details > div > .grid > div > div { font-size: 13.5px !important; font-weight: 600 !important; color: var(--ink) !important; font-style: normal !important; }
-    .ix details > div > .grid:first-of-type .font-mono { font-size: 12.5px !important; font-weight: 500 !important; color: var(--dom) !important; background: var(--soft) !important; border: 1px solid var(--line) !important; padding: 8px 10px !important; border-radius: 9px !important; white-space: pre-wrap; word-break: break-word; }
-    .ix details > div > .grid:nth-of-type(2) > div:last-child { padding-top: 12px !important; border-top: 1px solid #f1f5f9 !important; }
-    .ix details > div > .grid:nth-of-type(2) > div:last-child > div { background: transparent !important; padding: 0 !important; font-weight: 500 !important; color: var(--txt) !important; }
-    .ix-manque { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: -4px 0 14px; padding: 8px 12px; border-radius: 10px; background: #fffbeb; border: 1px solid #fde68a; font-size: 12.5px; color: #92400e; }
-    .ix-manque b { font-weight: 700; }
-    .ix details > div > .flex:last-child { gap: 8px !important; flex-wrap: wrap; }
-    .ix details > div > .flex:last-child > a { height: 36px; display: inline-flex !important; align-items: center; gap: 6px; padding: 0 14px !important; border-radius: 9px !important; font-size: 12.5px !important; font-weight: 700 !important; text-transform: none !important; letter-spacing: 0 !important; border: 1px solid var(--line) !important; background: #fff !important; color: var(--txt) !important; }
-    .ix details > div > .flex:last-child > a:hover { border-color: var(--dom) !important; color: var(--dom) !important; }
-    .ix details > div > .flex:last-child > a[href^="/analyse_data_indicateur/"] { background: var(--dom) !important; border-color: var(--dom) !important; color: #fff !important; }
-    .ix details > div > .flex:last-child > a[href^="/analyse_data_indicateur/"]:hover { filter: brightness(1.08); color: #fff !important; }
-    .ix details > div > .flex:last-child > a[href^="/dynamic-cible/"] i { color: var(--acc) !important; }
-    .ix details > div > .flex:last-child > a[href^="/delete_indicateur/"].text-slate-300 { display: none !important; }
-    .ix details > div > .flex:last-child > a[href^="/delete_indicateur/"] { border-color: transparent !important; background: transparent !important; color: #94a3b8 !important; }
-    .ix details > div > .flex:last-child > a[href^="/delete_indicateur/"]:hover { color: var(--danger) !important; background: #fef2f2 !important; }
-    .ix-none { display: none; padding: 32px 16px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed #cbd5e1; border-radius: 16px; background: #fff; }
-    .ix-none.on { display: block; } .ix-none b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
-    .ix section .p-6.text-center { font-style: normal !important; font-size: 13px !important; color: var(--muted) !important; padding: 20px !important; }
+    .ix-ajout { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; background: var(--dom); color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; }
+    .ix-ajout:hover { filter: brightness(1.08); color: #fff; }
+    .ix-ajout[hidden] { display: none; }
+    .ix-entetes, .ix-ligne { display: grid; grid-template-columns: minmax(0, 1fr) 130px 110px 200px 20px; gap: 16px; align-items: center; padding: 0 18px; }
+    .ix-entetes { height: 38px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--soft); border-bottom: 1px solid var(--line); }
+    .ix-groupe { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 14px 18px 8px; border-bottom: 1px solid var(--line); background: #fff; }
+    .ix-groupe[hidden] { display: none; }
+    .ix-groupe small { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--dom); }
+    .ix-groupe h3 { margin: 0; font-size: 14.5px; font-weight: 800; color: var(--ink); }
+    .ix-groupe h3 a { color: inherit; text-decoration: none; }
+    .ix-groupe h3 a:hover { color: var(--dom); }
+    .ix-groupe .vide { width: 100%; font-size: 12.5px; color: var(--muted); padding-bottom: 6px; }
+    .ix-groupe .vide a { color: var(--dom); font-weight: 700; }
+    .ix-ligne { width: 100%; min-height: 62px; padding-top: 10px; padding-bottom: 10px; border: 0; border-bottom: 1px solid #f1f5f9; background: #fff; font: inherit; text-align: left; cursor: pointer; transition: background-color .12s; }
+    .ix-ligne:hover { background: var(--soft); }
+    .ix-ligne:focus-visible { outline: 2px solid color-mix(in srgb, var(--dom) 55%, transparent); outline-offset: -2px; }
+    .ix-ligne.on { background: color-mix(in srgb, var(--dom) 6%, #fff); box-shadow: inset 3px 0 0 var(--dom); }
+    .ix-ligne[hidden] { display: none; }
+    .ix-nom { min-width: 0; }
+    .ix-nom > span:first-child { display: block; font-size: 14px; font-weight: 700; line-height: 1.35; color: var(--ink); }
+    .ix-sub { display: block; margin-top: 1px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ix-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+    .ix-todo { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 99px; background: #fffbeb; color: var(--warn); border: 1px solid #fde68a; }
+    .ix-etiq { font-size: 11px; padding: 1px 8px; border-radius: 99px; background: color-mix(in srgb, var(--dom) 7%, #fff); color: var(--txt); white-space: nowrap; }
+    .ix-etiq b { font-weight: 700; color: var(--ink); }
+    .ix-type { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--txt); }
+    .ix-type::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dom); flex-shrink: 0; }
+    .ix-type.man::before { background: var(--acc); }
+    .ix-freq { font-size: 12.5px; color: var(--txt); }
+    .ix-freq.vide { color: #94a3b8; }
+    .ix-av { display: flex; flex-direction: column; gap: 5px; }
+    .ix-av .chiffres { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .ix-av .chiffres b { font-size: 14px; font-weight: 800; color: var(--ink); }
+    .ix-chev { font-size: 18px; color: #94a3b8; }
+    .ix-jauge { height: 6px; border-radius: 6px; background: #eef1f5; overflow: hidden; }
+    .ix-jauge i { display: block; height: 100%; width: 0; border-radius: 6px; background: var(--dom); transition: width .8s var(--ease); }
+    .ix-jauge.ok i { background: var(--ok); }
     mark.ix-hl { background: color-mix(in srgb, var(--acc) 28%, #fff); color: inherit; border-radius: 3px; padding: 0 1px; }
-    .search-container { box-shadow: 0 10px 30px -18px rgba(15,23,42,.5) !important; margin-bottom: 24px !important; }
-    @media (max-width: 860px) {
-        .ix { padding: 14px 12px 90px !important; }
-        .ix-kpis { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
-        .ix-actions { width: 100%; } .ix-actions .ix-btn { flex: 1; justify-content: center; }
-        .ix-tabs { width: 100%; } .ix-tabs button { flex: 1 1 auto; justify-content: center; } .ix-tog { width: 100%; }
-        .ix details > summary { flex-wrap: wrap; padding: 12px 14px !important; }
-        .ix-meta { width: 100%; padding-left: 28px; flex-wrap: wrap; } .ix-tag.cib { margin-left: auto; min-width: 0; }
-        .ix details > div { padding: 0 14px 16px !important; }
-        .ix details > div > .grid { grid-template-columns: 1fr 1fr !important; }
-        .ix details > div > .grid:first-of-type { grid-template-columns: 1fr !important; }
-        .ix details > div > .grid > div { grid-column: auto !important; }
-        .ix details > div > .grid:nth-of-type(2) > div:last-child { grid-column: 1 / -1 !important; }
+    .ix-none { display: none; padding: 40px 16px; text-align: center; color: var(--muted); font-size: 14px; }
+    .ix-none.on { display: block; } .ix-none b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+    .ix-fiche-src { display: none; }
+
+    /* ---------- Panneau latéral (fiche) ---------- */
+    .ix-voile { position: fixed; inset: 0; z-index: 10990; background: rgba(15,23,42,.32); opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .ix-tiroir { position: fixed; top: 0; right: 0; bottom: 0; z-index: 11000; width: min(640px, 100%); background: #fff; box-shadow: -20px 0 50px -25px rgba(15,23,42,.45);
+                 display: flex; flex-direction: column; transform: translateX(102%); transition: transform .3s var(--ease); }
+    .ix-voile.ouvert { opacity: 1; pointer-events: auto; }
+    .ix-tiroir.ouvert { transform: none; }
+    .ix-tiroir-tete { display: flex; align-items: flex-start; gap: 12px; padding: 18px 20px 14px; border-bottom: 1px solid var(--line); }
+    .ix-tiroir-tete > div { flex: 1; min-width: 0; }
+    .ix-tiroir-tete small { display: block; font-size: 11.5px; font-weight: 700; color: var(--dom); }
+    .ix-tiroir-tete h2 { margin: 3px 0 0; font-size: 18px; font-weight: 800; line-height: 1.3; color: var(--ink); }
+    .ix-tiroir-tete code { display: inline-block; margin-top: 6px; font: 600 11.5px/1 ui-monospace, monospace; color: var(--muted); padding: 4px 7px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line); }
+    .ix-fermer, .ix-nav-fiche { width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--txt); cursor: pointer; font-size: 18px; line-height: 1; display: inline-grid; place-items: center; }
+    .ix-fermer:hover, .ix-nav-fiche:hover:not(:disabled) { border-color: var(--dom); color: var(--dom); }
+    .ix-nav-fiche:disabled { opacity: .35; cursor: default; }
+    .ix-tiroir-corps { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+    body.ix-tiroir-actif { overflow: hidden; }
+    body .swal2-container { z-index: 11100 !important; }   /* la confirmation de suppression passe au-dessus du panneau */
+    /* ---------- Fiche (dans le panneau latéral) : l'essentiel d'abord, le détail dans des onglets ---------- */
+    .fx { background: #fff; }
+    /* 4 chiffres clés */
+    .fx-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+    .fx-kpi { padding: 16px 18px; min-width: 0; }
+    .fx-kpi + .fx-kpi { border-left: 1px solid var(--line); }
+    .fx-kpi small { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
+    .fx-kpi b { display: block; margin-top: 4px; font-size: 22px; font-weight: 800; line-height: 1.15; letter-spacing: -.01em; color: var(--ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .fx-kpi b.petit { font-size: 16px; }
+    .fx-kpi span { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+    .fx-kpi .ix-jauge { margin-top: 8px; height: 6px; }
+    .fx-kpi.ok b { color: var(--ok); }
+    .fx-kpi.a-faire b { color: var(--warn); }
+    /* ce qui manque : une seule ligne */
+    .fx-alerte { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 10px 18px; background: #fffbeb; border-bottom: 1px solid #fde68a; font-size: 13px; color: #92400e; }
+    .fx-alerte .liste span + span::before { content: ", "; }
+    .fx-alerte b { font-weight: 700; }
+    .fx-alerte a { margin-left: auto; font-weight: 700; color: #92400e; text-decoration: underline; }
+    /* onglets */
+    .fx-onglets { display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+    .fx-onglets::-webkit-scrollbar { display: none; }
+    .fx-onglets button { flex-shrink: 0; height: 44px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; }
+    .fx-onglets button:hover { color: var(--ink); }
+    .fx-onglets button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--dom); }
+    .fx-onglets button em { font-style: normal; margin-left: 4px; padding: 0 6px; border-radius: 99px; font-size: 11px; background: #eef1f5; color: var(--txt); }
+    .fx-panneau { padding: 18px; }
+    .fx-panneau[hidden] { display: none; }
+    /* valeurs : libellé au-dessus, valeur en dessous, sur 2 colonnes */
+    .fx-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; margin: 0; }
+    .fx-grille > div.large { grid-column: 1 / -1; }
+    .fx-grille dt { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 3px; }
+    .fx-grille dd { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
+    .fx-grille dd.vide { font-weight: 500; color: #94a3b8; }
+    .fx-grille dd.texte { font-weight: 500; color: var(--txt); }
+    .fx-grille dd small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+    .fx-grille dd code { display: block; font: 12.5px/1.6 ui-monospace, "JetBrains Mono", monospace; color: var(--dom); background: var(--soft); border: 1px solid var(--line); padding: 8px 10px; border-radius: 8px; white-space: pre-wrap; }
+    .fx-unite { font-weight: 500; color: var(--muted); }
+    .fx-lien { color: var(--dom); font-weight: 700; text-decoration: none; }
+    .fx-lien:hover { text-decoration: underline; }
+    .fx-aucun { margin: 0; font-size: 13.5px; color: var(--muted); }
+    .fx-aucun a { color: var(--dom); font-weight: 700; }
+    /* actions */
+    .fx-pied { padding: 12px 18px; border-top: 1px solid var(--line); }
+    .ix-fiche-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .ix-fiche-actions a { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none;
+                          border: 1px solid var(--line); background: #fff; color: var(--txt); transition: border-color .15s, color .15s, border-radius .4s var(--ease); }
+    .ix-fiche-actions a:hover { border-color: var(--dom); color: var(--dom); border-radius: 19px; }
+    .ix-fiche-actions a.principal { background: var(--dom); border-color: var(--dom); color: #fff; }
+    .ix-fiche-actions a.principal:hover { color: #fff; filter: brightness(1.08); }
+    .ix-fiche-actions a.suppr { margin-left: auto; border-color: transparent; background: transparent; color: var(--muted); }
+    .ix-fiche-actions a.suppr:hover { color: var(--danger); background: #fef2f2; }
+
+    .fx-pied { position: sticky; bottom: 0; background: #fff; }
+
+    /* ---------- Navigation basse (téléphone) ---------- */
+    .ix-nav-bas { display: none; }
+
+    @media (max-width: 1180px) {
+        .ix-entetes { display: none; }
+        .ix-ligne { grid-template-columns: auto minmax(0, 1fr) 20px; column-gap: 10px; row-gap: 8px; }
+        .ix-ligne .ix-nom { grid-column: 1 / 3; }
+        .ix-ligne .ix-chev { grid-row: 1; grid-column: 3; }
+        .ix-ligne .ix-type { grid-row: 2; grid-column: 1; }
+        .ix-ligne .ix-freq { grid-row: 2; grid-column: 2; }
+        .ix-ligne .ix-freq::before { content: "· "; color: #94a3b8; }
+        .ix-ligne .ix-av { grid-row: 3; grid-column: 1 / 3; }
     }
+    @media (max-width: 900px) {
+        .ix-cadre { grid-template-columns: 1fr; }
+        .ix-rail { position: static; }
+        .ix-objs { display: flex; gap: 6px; overflow-x: auto; max-height: none; padding-bottom: 10px; }
+        .ix-objs li { flex: 0 0 220px; }
+        .ix-obj-btn { border: 1px solid var(--line); }
+    }
+    @media (max-width: 760px) {
+        .ix { padding: 0 0 90px; }
+        .ix-chiffres { width: 100%; } .ix-chiffres > div { flex: 1 1 33%; padding: 8px 12px; }
+        .ix-liens { width: 100%; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; } .ix-lien { flex: 0 0 auto; }
+        .ix-tabs { width: 100%; } .ix-tabs button { flex: 1 1 auto; justify-content: center; }
+        .fx-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .fx-kpi:nth-child(3) { border-left: 0; } .fx-kpi:nth-child(n+3) { border-top: 1px solid var(--line); }
+        .fx-grille { grid-template-columns: 1fr; }
+        .ix-nav-bas { display: flex; justify-content: space-around; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; padding: 6px 0 10px; background: #fff; border-top: 1px solid var(--line); }
+        .ix-nav-bas a { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 64px; padding: 4px 0; font-size: 11px; font-weight: 700; color: var(--muted); text-decoration: none; }
+        .ix-nav-bas a i { font-size: 21px; }
+    }
+    body.ix-tiroir-actif .fixed.bottom-6.right-6, body.ix-tiroir-actif div.fixed.bottom-24.right-8, body.ix-tiroir-actif .ix-nav-bas { display: none !important; }
+    @media (prefers-reduced-motion: reduce) { .ix *, .ix-tiroir, .ix-voile { transition: none !important; } }
 </style>
-<!-- Barre de contexte (Breadcrumb & Search) -->
-<main class="p-8 bg-slate-50 min-h-screen ix">
-    <div class="mb-10 flex justify-between items-end">
-        <div>
-            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">Tableau de Bord : Indicateurs</h1>
-            <p class="text-slate-500 text-sm mt-1">Gouvernance et suivi des objectifs stratégiques.</p>
-            <div class="ix-kpis" aria-live="polite">
-                <div><b>{{ pages_o|length }}</b><span>Objectif{{ pages_o|length|pluralize }}</span></div>
-                <div><b id="ixN">0</b><span>Indicateurs</span></div>
-                <div><b id="ixNC">0</b><span>Calculés</span></div>
-                <div><b id="ixNM">0</b><span>Saisie manuelle</span></div>
-            </div>
+
+<main class="ix" id="ix">
+
+    <!-- Bandeau : les chiffres et les liens de paramétrage -->
+    <div class="ix-bandeau">
+        <div class="ix-chiffres" aria-live="polite">
+            <div><b>{{ pages_o.paginator.count }}</b><span>Objectif{{ pages_o.paginator.count|pluralize }}</span></div>
+            <div><b id="ixN">0</b><span>Indicateurs</span></div>
+            <div><b id="ixNC">0</b><span>Calculés</span></div>
+            <div><b id="ixNM">0</b><span>Saisie manuelle</span></div>
+            <div class="complet"><b id="ixPct">0 %</b><span>Fiches complètes</span></div>
         </div>
-        <div class="ix-actions">
-            <a href="/dataelts/" class="ix-btn pri"><i class="bx bx-data"></i>Data element / variables</a>
-            <a href="/forms/" class="ix-btn sec"><i class="bx bx-spreadsheet"></i>Formulaires</a>
-        </div>
-        <div class="px-4 py-2 bg-white border border-slate-200 rounded-lg shadow-sm text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-            {{ pages_o|length }} Objectifs actifs
+        <div class="ix-liens">
+            <a href="/indicateurs/atelier/" class="ix-lien"><i class="bx bx-bolt-circle"></i>Création rapide</a>
+            <a href="/dataelts/" class="ix-lien"><i class="bx bx-data"></i>Éléments de données</a>
+            <a href="/forms/" class="ix-lien"><i class="bx bx-spreadsheet"></i>Formulaires</a>
+            <a href="/champs-dynamiques/" class="ix-lien"><i class="bx bx-list-check"></i>Champs dynamiques</a>
         </div>
     </div>
 
-    <div class="ix-tools">
-        <label class="ix-q"><i class="bx bx-search"></i><input type="search" id="ixQ" placeholder="Rechercher un indicateur, un code, une source…" autocomplete="off" aria-label="Rechercher un indicateur"></label>
-        <div class="ix-tabs" role="group" aria-label="Type d'indicateur">
-            <button type="button" data-f="" class="on">Tous <em id="ixT0">0</em></button>
-            <button type="button" data-f="calc">Calculés <em id="ixT1">0</em></button>
-            <button type="button" data-f="man">Saisie manuelle <em id="ixT2">0</em></button>
-            <button type="button" data-f="todo" class="ix-tab-todo">À compléter <em id="ixT3">0</em></button>
-        </div>
-        <button type="button" class="ix-tog" id="ixTog">Tout déplier</button>
-    </div>
-    <div class="ix-none" id="ixNone"><b>Aucun indicateur ne correspond</b>Modifiez la recherche ou le filtre.</div>
-    <div class="space-y-8">
-        {% for element in pages_o %}
-        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            
-            <div class="px-6 py-5 bg-slate-50/50 border-b border-slate-200 flex justify-between items-center">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center">
-                        <i class="bx bx-collection text-xl"></i>
+    <div class="ix-cadre">
+
+        <!-- Objectifs -->
+        <aside class="ix-rail" aria-label="Objectifs">
+            <h2>Objectifs</h2>
+            <ul class="ix-objs">
+                <li><button type="button" class="ix-obj-btn" data-obj="" aria-current="true">
+                    <span class="nom">Tous les objectifs</span>
+                    <span class="meta"><span><b data-tous-nb>0</b> indicateurs</span></span>
+                </button></li>
+                {% for element in pages_o %}
+                <li><button type="button" class="ix-obj-btn" data-obj="{{ element.id }}" data-ajout="/elementEntity/{{ element.id }}/" aria-current="false">
+                    <span class="nom">{{ element.m_nom|default:element }}</span>
+                    <span class="meta"><span>{{ element.get_indicateurs|length }} indicateur{{ element.get_indicateurs|length|pluralize }}</span><span data-obj-complet></span></span>
+                    <div class="ix-jauge" aria-hidden="true"><i></i></div>
+                </button></li>
+                {% endfor %}
+            </ul>
+            {% if pages_o.has_other_pages %}
+            <nav class="ix-pages" aria-label="Pages des objectifs">
+                {% if pages_o.has_previous %}<a href="?page={{ pages_o.previous_page_number }}{% if search_query %}&amp;q={{ search_query|urlencode }}{% endif %}" aria-label="Page précédente">‹</a>{% endif %}
+                {% for n in pages_o.paginator.page_range %}
+                    {% if n == pages_o.number %}<span class="on" aria-current="page">{{ n }}</span>
+                    {% elif n > pages_o.number|add:'-3' and n < pages_o.number|add:'3' %}<a href="?page={{ n }}{% if search_query %}&amp;q={{ search_query|urlencode }}{% endif %}">{{ n }}</a>{% endif %}
+                {% endfor %}
+                {% if pages_o.has_next %}<a href="?page={{ pages_o.next_page_number }}{% if search_query %}&amp;q={{ search_query|urlencode }}{% endif %}" aria-label="Page suivante">›</a>{% endif %}
+            </nav>
+            {% endif %}
+        </aside>
+
+        <!-- Liste des indicateurs -->
+        <section class="ix-liste" aria-label="Indicateurs">
+            <div class="ix-tools">
+                <label class="ix-q"><input type="search" id="ixQ" autocomplete="off" aria-label="Rechercher un indicateur"></label>
+                <div class="ix-tabs" role="group" aria-label="Filtrer les indicateurs">
+                    <button type="button" data-f="" class="on">Tous <em id="ixT0">0</em></button>
+                    <button type="button" data-f="calc">Calculés <em id="ixT1">0</em></button>
+                    <button type="button" data-f="man">Saisie manuelle <em id="ixT2">0</em></button>
+                    <button type="button" data-f="todo" class="ix-tab-todo">À compléter <em id="ixT3">0</em></button>
+                </div>
+                <a href="#" class="ix-ajout" id="ixAjout" hidden><i class="bx bx-plus"></i> Ajouter un indicateur</a>
+            </div>
+            <div class="ix-entetes" aria-hidden="true"><span>Indicateur</span><span>Type</span><span>Fréquence</span><span>Déclaré / cible</span><span></span></div>
+
+            {% for element in pages_o %}
+            {% with inds=element.get_indicateurs %}
+            <div class="ix-groupe" data-groupe="{{ element.id }}">
+                <small>Objectif {{ forloop.counter }}</small>
+                <h3><a href="/evaluer/{{ gest_val_1 }}/{{ element.id }}/">{{ element.m_nom|default:element }}</a></h3>
+                {% if not inds %}<span class="vide">Aucun indicateur pour cet objectif. <a href="/elementEntity/{{ element.id }}/">Ajouter le premier</a></span>{% endif %}
+            </div>
+
+            {% for ind in inds %}
+            {% with cible=ind.cible_contractuelle|default:0 infos=ind.valeurs_champs.all %}
+            <button type="button" class="ix-ligne ix-ind" data-id="{{ ind.id }}" data-obj="{{ element.id }}"
+                    data-type="{% if ind.get_formule_affichee %}calc{% else %}man{% endif %}"
+                    data-q="{{ ind.m_name }} {{ ind.id }} {{ ind.nicename|default:'' }} {{ ind.source_donnees|default:'' }} {{ ind.frequence_collecte|default:'' }}{% for v in infos %} {{ v.champ.libelle }} {{ v.texte }}{% endfor %}"
+                    data-cible="{{ cible|unlocalize }}"
+                    data-todo="{% if ind.cible_contractuelle and ind.source_donnees and ind.mecanisme_verification and ind.frequence_collecte %}{% else %}1{% endif %}"
+                    aria-haspopup="dialog">
+                <span class="ix-nom">
+                    <span>{{ ind.nicename|default:ind.m_name }}</span>
+                    {% if ind.nicename %}<small class="ix-sub">{{ ind.m_name }}</small>{% endif %}
+                    <span class="ix-badges">
+                        {% if not ind.cible_contractuelle or not ind.source_donnees or not ind.mecanisme_verification or not ind.frequence_collecte %}<small class="ix-todo">Fiche à compléter</small>{% endif %}
+                        {% for v in infos %}{% if v.champ.type == 'list' and v.texte or v.champ.type == 'boolean' and v.texte %}{% if forloop.counter <= 2 %}<small class="ix-etiq">{{ v.champ.libelle }} : <b>{% if v.champ.type == 'boolean' %}{{ v.valeur }}{% else %}{{ v.texte }}{% endif %}</b></small>{% endif %}{% endif %}{% endfor %}
+                    </span>
+                </span>
+                <span class="ix-type {% if ind.get_formule_affichee %}calc{% else %}man{% endif %}">{% if ind.get_formule_affichee %}Calculé{% else %}Saisie manuelle{% endif %}</span>
+                <span class="ix-freq{% if not ind.frequence_collecte %} vide{% endif %}">{{ ind.frequence_collecte|default:"Non définie" }}</span>
+                <span class="ix-av" data-avancement>
+                    <span class="chiffres"><span><b data-declare>0</b> / {{ cible|default:"–" }}</span><span data-pct></span></span>
+                    <span class="ix-jauge"><i></i></span>
+                </span>
+                <i class="bx bx-chevron-right ix-chev" aria-hidden="true"></i>
+            </button>
+
+            <!-- Fiche de l'indicateur (affichée dans le panneau latéral) -->
+            <div class="ix-fiche-src" data-fiche-pour="{{ ind.id }}" data-titre="{{ ind.nicename|default:ind.m_name }}" data-code="{{ ind.m_name }}" data-objectif="{{ element.m_nom|default:element }}">
+                <article class="fx" data-fiche>
+                    <div class="fx-kpis">
+                        <div class="fx-kpi"><small>Atteinte de la cible</small><b data-f-pct>—</b><div class="ix-jauge" data-f-jauge><i></i></div></div>
+                        <div class="fx-kpi"><small>Déclaré / cible</small><b><span data-f-declare style="display:inline; margin:0; font-size:inherit; color:inherit">0</span> / {% if ind.cible_contractuelle %}{{ ind.cible_contractuelle|floatformat:"-2" }}{% else %}–{% endif %}</b><span data-f-reste></span></div>
+                        <div class="fx-kpi"><small>Collecte</small><b class="petit">{{ ind.frequence_collecte|default:"Non définie" }}</b><span>{% if ind.get_formule_affichee %}Calculé par formule{% else %}Saisie manuelle{% endif %}</span></div>
+                        <div class="fx-kpi {% if ind.cible_contractuelle and ind.source_donnees and ind.mecanisme_verification and ind.frequence_collecte %}ok{% else %}a-faire{% endif %}"><small>Fiche</small><b class="petit">{% if ind.cible_contractuelle and ind.source_donnees and ind.mecanisme_verification and ind.frequence_collecte %}Complète{% else %}À compléter{% endif %}</b><span><span data-f-score style="display:inline; margin:0">0/4</span> éléments renseignés</span></div>
                     </div>
-                    <div>
-                        <h2 class="text-sm font-bold text-slate-800">
-                            <a href="/evaluer/{{ gest_val_1 }}/{{ element.id }}/" class="hover:text-indigo-600 transition-colors">
-                                {{ element.m_nom|default:element }}
-                            </a><span class="ix-cnt">{{ element.get_indicateurs|length }} indicateur{{ element.get_indicateurs|length|pluralize }}</span>
-                        </h2>
-                        {% if element.objectif %}
-                        <p class="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
-                            <i class="bx bx-target-lock"></i> Objectif : {{ element.objectif }}
-                        </p>
+                    {% if not ind.cible_contractuelle or not ind.source_donnees or not ind.mecanisme_verification or not ind.frequence_collecte %}
+                    <div class="fx-alerte"><span>Il manque :</span>
+                        <b class="liste">{% if not ind.cible_contractuelle %}<span data-manque>la cible</span>{% endif %}{% if not ind.source_donnees %}<span data-manque>la source des données</span>{% endif %}{% if not ind.mecanisme_verification %}<span data-manque>le moyen de vérification</span>{% endif %}{% if not ind.frequence_collecte %}<span data-manque>la fréquence de collecte</span>{% endif %}</b>
+                        <a href="/edit_indicator/{{ ind.id }}/">Compléter la fiche</a>
+                    </div>
+                    {% endif %}
+                    <div class="fx-onglets" role="tablist" aria-label="Détail de l'indicateur">
+                        <button type="button" role="tab" aria-selected="true" data-onglet="def">Définition</button>
+                        <button type="button" role="tab" aria-selected="false" data-onglet="ver">Données et vérification</button>
+                        <button type="button" role="tab" aria-selected="false" data-onglet="inf">Informations complémentaires{% if infos %}<em>{{ infos|length }}</em>{% endif %}</button>
+                    </div>
+                    <div class="fx-panneau" role="tabpanel" data-panneau="def">
+                        <dl class="fx-grille">
+                            {% if ind.nicename %}<div><dt>Nom court</dt><dd>{{ ind.nicename }}</dd></div>{% endif %}
+                            <div><dt>Code technique</dt><dd>{{ ind.m_name }}</dd></div>
+                            <div><dt>Niveau de résultat</dt><dd{% if not ind.niveau_pyramide %} class="vide"{% endif %}>{% if ind.niveau_pyramide %}{{ ind.niveau_pyramide }}<small>{% if ind.niveau_pyramide == 'Impact' %}Changement durable visé à long terme{% elif ind.niveau_pyramide == 'Effet' %}Changement observé chez les bénéficiaires{% elif ind.niveau_pyramide == 'Produit' %}Biens et services livrés par le projet{% elif ind.niveau_pyramide == 'Activité' %}Actions réalisées par l'équipe{% endif %}</small>{% else %}Non précisé{% endif %}</dd></div>
+                            <div><dt>Cible</dt><dd{% if not ind.cible_contractuelle %} class="vide"{% endif %}>{% if ind.cible_contractuelle %}{{ ind.cible_contractuelle|floatformat:"-2" }}{% else %}Non définie{% endif %}</dd></div>
+                            <div class="large"><dt>Mode de calcul</dt><dd>{% if ind.get_formule_affichee %}<code>{{ ind.get_formule_affichee }}</code>{% else %}Les agents saisissent directement la valeur{% if ind.type_aggregation %}, regroupée par {{ ind.type_aggregation|lower }}{% endif %}.{% endif %}</dd></div>
+                        </dl>
+                    </div>
+                    <div class="fx-panneau" role="tabpanel" data-panneau="ver" hidden>
+                        <dl class="fx-grille">
+                            <div><dt>Source des données</dt><dd{% if not ind.source_donnees %} class="vide"{% endif %}>{{ ind.source_donnees|default:"Non précisée" }}</dd></div>
+                            <div><dt>Fréquence de collecte</dt><dd{% if not ind.frequence_collecte %} class="vide"{% endif %}>{{ ind.frequence_collecte|default:"Non définie" }}</dd></div>
+                            <div class="large"><dt>Moyen de vérification</dt><dd class="{% if ind.mecanisme_verification %}texte{% else %}vide{% endif %}">{% if ind.mecanisme_verification %}{{ ind.mecanisme_verification|linebreaksbr }}{% else %}Non précisé{% endif %}</dd></div>
+                        </dl>
+                    </div>
+                    <div class="fx-panneau" role="tabpanel" data-panneau="inf" hidden>
+                        {% if infos %}
+                        <dl class="fx-grille">
+                            {% for v in infos %}
+                            <div{% if v.champ.type == 'text' %} class="large"{% endif %}><dt>{{ v.champ.libelle }}</dt>
+                                {% if v.champ.type == 'number' %}<dd{% if v.nombre is None %} class="vide"{% endif %}>{% if v.nombre is not None %}{{ v.nombre|floatformat:"-2" }}{% if v.champ.unite %} <span class="fx-unite">{{ v.champ.unite }}</span>{% endif %}{% else %}Non renseigné{% endif %}</dd>
+                                {% elif v.champ.type == 'date' %}<dd{% if not v.date %} class="vide"{% endif %}>{{ v.date|date:"d/m/Y"|default:"Non renseignée" }}</dd>
+                                {% elif v.champ.type == 'file' %}<dd{% if not v.fichier %} class="vide"{% endif %}>{% if v.fichier %}<a class="fx-lien" href="{{ v.fichier.url }}" target="_blank" rel="noopener">Ouvrir le document</a>{% else %}Aucun fichier{% endif %}</dd>
+                                {% elif v.champ.type == 'boolean' %}<dd{% if not v.texte %} class="vide"{% endif %}>{{ v.valeur|default:"Non renseigné" }}</dd>
+                                {% else %}<dd class="{% if v.texte %}{% if v.champ.type == 'text' %}texte{% endif %}{% else %}vide{% endif %}">{{ v.texte|default:"Non renseigné"|linebreaksbr }}</dd>{% endif %}
+                            </div>
+                            {% endfor %}
+                        </dl>
+                        {% else %}
+                        <p class="fx-aucun">Aucune information complémentaire pour cet indicateur (bailleur, désagrégation, unité…). <a href="/edit_indicator/{{ ind.id }}/">En ajouter</a></p>
                         {% endif %}
                     </div>
-                </div>
-                
-                <a href="/elementEntity/{{ element.id }}/" 
-                   class="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-4 py-2 rounded-lg shadow-md shadow-indigo-200 transition-all flex items-center gap-2">
-                    <i class="bx bx-plus text-sm"></i> <span class="ix-lbl">Ajouter un indicateur</span>
-                </a>
+                    <footer class="fx-pied">
+                        <div class="ix-fiche-actions">
+                            <a href="/analyse_data_indicateur/{{ ind.id }}/" class="principal"><i class="bx bx-line-chart"></i> Analyse</a>
+                            <a href="/dynamic-cible/{{ ind.id }}/"><i class="bx bx-bullseye"></i> Cibles</a>
+                            <a href="/edit_indicator/{{ ind.id }}/"><i class="bx bx-edit-alt"></i> Modifier</a>
+                            <a href="/delete_indicateur/{{ ind.id }}/" class="suppr"><i class="bx bx-trash"></i> Supprimer</a>
+                        </div>
+                    </footer>
+                </article>
             </div>
+            {% endwith %}
+            {% endfor %}
+            {% endwith %}
+            {% endfor %}
 
-            <div class="divide-y divide-slate-100">
-                {% for ind in element.get_indicateurs %}
-                <details class="group bg-white ix-ind" data-type="{% if ind.get_formule_affichee %}calc{% else %}man{% endif %}" data-q="{{ ind.m_name }} {{ ind.id }} {{ ind.nicename|default:'' }} {{ ind.source_donnees|default:'' }} {{ ind.frequence_collecte|default:'' }}" data-cible="{{ ind.cible_contractuelle|default:0|unlocalize }}" data-src="{% if ind.source_donnees %}1{% endif %}" data-mv="{% if ind.mecanisme_verification %}1{% endif %}" data-freq="{% if ind.frequence_collecte %}1{% endif %}">
-                    <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-all list-none">
-                        <div class="flex items-center gap-3">
-                            <i class="bx bx-chevron-right text-slate-400 transition-transform group-open:rotate-90"></i>
-                            <span class="text-sm font-bold text-slate-700 group-open:text-indigo-600">{{ ind.m_name }}</span>
-                            <span class="text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-mono">ID: {{ ind.id }}</span>
-                            {% if ind.nicename %}<span class="ix-sub">{{ ind.nicename }}</span>{% endif %}
-                        </div>
-                        <span class="ix-meta">
-                            {% if ind.get_formule_affichee %}<span class="ix-tag calc">Calculé</span>{% else %}<span class="ix-tag man">Saisie manuelle</span>{% endif %}
-                            {% if ind.frequence_collecte %}<span class="ix-tag">{{ ind.frequence_collecte }}</span>{% endif %}
-                            <span class="ix-tag cib">Cible <b>{{ ind.cible_contractuelle|default:"0" }}</b></span>
-                            <a class="ix-go" href="/analyse_data_indicateur/{{ ind.id }}/" title="Analyse" aria-label="Analyse de l'indicateur"><i class="bx bx-line-chart"></i></a>
-                        </span>
-                    </summary>
-
-                    <div class="px-6 pb-6 pt-2 bg-slate-50/30">
-                        <div class="grid grid-cols-4 gap-4 mb-6">
-                            <div class="col-span-2">
-                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Nom court</label>
-                                <div class="text-sm text-slate-700 font-medium">{{ ind.nicename|default:"-" }}</div>
-                            </div>
-                            <div class="col-span-2">
-                                <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Formule</label>
-                                <div class="text-xs font-mono text-indigo-600 bg-white px-2 py-1 rounded border border-slate-200">{{ ind.get_formule_affichee|default:"Saisie manuelle" }}</div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-4 bg-white p-4 rounded-xl border border-slate-200 mb-6">
-                          <div>
-        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Pyramide</label>
-        <div class="text-xs font-bold text-slate-700">{{ ind.niveau_pyramide|default:"-" }}</div>
-    </div>
-    <div>
-        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fréquence</label>
-        <div class="text-xs font-bold text-slate-700">{{ ind.frequence_collecte|default:"-" }}</div>
-    </div>
-    <div>
-        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cible</label>
-        <div class="text-xs font-bold text-slate-700">{{ ind.cible_contractuelle|default:"0" }}</div>
-    </div>
-    <div>
-        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Source</label>
-        <div class="text-xs font-bold text-slate-700 truncate">{{ ind.source_donnees|default:"-" }}</div>
-    </div>
-    
-    <div class="col-span-2 md:col-span-4 pt-4 border-t border-slate-100">
-        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Mécanisme de vérification</label>
-        <div class="text-xs text-slate-600 italic bg-slate-50 p-2 rounded">
-            {{ ind.mecanisme_verification|default:"Aucun mécanisme précisé." }}
-        </div>
-    </div>
-</div>
-
-                        <div class="flex items-center gap-2">
-                              <a href="/dynamic-cible/{{ ind.id }}/" class="px-3 py-1.5 bg-white border border-dhis2-border text-slate-600 text-[11px] font-bold rounded hover:bg-slate-50 flex items-center gap-1">
-
-                                    <i class="bx bx-bullseye text-red-500"></i> Cibles
-
-                                </a> 
-                            <a href="/analyse_data_indicateur/{{ ind.id }}/" class="px-4 py-2 bg-slate-800 text-white text-[10px] font-black rounded-lg hover:bg-slate-900 uppercase tracking-wider">Analyse</a>
-                            <a href="/edit_indicator/{{ ind.id }}/" class="px-4 py-2 border border-slate-200 text-slate-600 text-[10px] font-black rounded-lg hover:bg-white uppercase tracking-wider">Modifier</a>
-                            <div class="flex-grow"></div>
-                            <a href="/delete_indicateur/{{ ind.id }}/" class="text-slate-300 hover:text-red-500 transition-colors">
-                                <i class="bx bx-trash text-lg"></i>
-                            </a>
-                             <a href="/delete_indicateur/{{ ind.id }}/" class="p-1.5 text-slate-400 hover:text-red-500 transition-colors ">
-
-                                    <i class="bx bx-trash text-lg"></i> Supprimer
-
-                                </a> 
-                        </div>
-                    </div>
-                </details>
-                {% empty %}
-                <div class="p-6 text-center text-slate-400 text-xs italic">Aucun indicateur défini.</div>
-                {% endfor %}
-            </div>
+            <div class="ix-none" id="ixNone"><b>Aucun indicateur ne correspond</b>Modifiez la recherche, le filtre ou l'objectif.</div>
         </section>
-        {% endfor %}
     </div>
-</main>
-    <!-- Bottom Nav (Mobile Only) - Style DHIS2 Mobile -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-dhis2-border flex justify-around py-2 z-50">
-        <a href="/" class="flex flex-col items-center text-dhis2-blue">
-            <i class="bx bxs-dashboard text-xl"></i>
-            <span class="text-[10px] font-bold">Dash</span>
-        </a>
-        <a href="/forms/" class="flex flex-col items-center text-slate-400">
-            <i class="bx bx-spreadsheet text-xl"></i>
-            <span class="text-[10px] font-bold">Formulaires</span>
-        </a>
-        <a href="/dataelts/" class="flex flex-col items-center text-slate-400">
-            <i class="bx bx-database text-xl"></i>
-            <span class="text-[10px] font-bold">Data</span>
-        </a>
-        <a href="/configurations_admin/" class="flex flex-col items-center text-slate-400">
-            <i class="bx bx-cog text-xl"></i>
-            <span class="text-[10px] font-bold">Config</span>
-        </a>
-    </nav>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
+    <!-- Panneau latéral : la fiche de l'indicateur choisi -->
+    <div class="ix-voile" data-fermer></div>
+    <aside class="ix-tiroir" id="ixTiroir" role="dialog" aria-modal="true" aria-labelledby="ixTiroirTitre" aria-hidden="true">
+        <div class="ix-tiroir-tete">
+            <div>
+                <small id="ixTiroirObj"></small>
+                <h2 id="ixTiroirTitre"></h2>
+                <code id="ixTiroirCode"></code>
+            </div>
+            <button type="button" class="ix-nav-fiche" data-pas="-1" aria-label="Indicateur précédent">‹</button>
+            <button type="button" class="ix-nav-fiche" data-pas="1" aria-label="Indicateur suivant">›</button>
+            <button type="button" class="ix-fermer" data-fermer aria-label="Fermer la fiche">×</button>
+        </div>
+        <div class="ix-tiroir-corps" id="ixTiroirCorps"></div>
+    </aside>
+</main>
+
+<!-- Navigation basse (téléphone) -->
+<nav class="ix-nav-bas" aria-label="Raccourcis">
+    <a href="/"><i class="bx bxs-dashboard"></i>Accueil</a>
+    <a href="/forms/"><i class="bx bx-spreadsheet"></i>Formulaires</a>
+    <a href="/dataelts/"><i class="bx bx-data"></i>Données</a>
+    <a href="/configurations_admin/"><i class="bx bx-cog"></i>Config</a>
+</nav>
+
+{{ somme_valeurs|json_script:"ixSommes" }}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
-  {% for message in messages %}
+{% for message in messages %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!window.Swal) return;
         Swal.fire({
-            toast: true,
-            position: "top-end",
-            // Mapping automatique des types
+            toast: true, position: "top-end",
             icon: "{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %}",
             title: "{{ message|escapejs }}",
-            showConfirmButton: false,
-            timer: 4000, // Augmenté légèrement pour une meilleure lisibilité
-            timerProgressBar: true,
-            didOpen: (toast) => {
-                toast.onmouseenter = Swal.stopTimer;
-                toast.onmouseleave = Swal.resumeTimer;
-            }
+            showConfirmButton: false, timer: 4000, timerProgressBar: true,
+            didOpen: function (toast) { toast.onmouseenter = Swal.stopTimer; toast.onmouseleave = Swal.resumeTimer; }
         });
     });
 </script>
 {% endfor %}
-<!-- ===== Indicateurs : recherche, filtres, déplier, confirmation de suppression (ajout) ===== -->
-<script>
-(function () {
-    var root = document.querySelector('.ix'); if (!root) return;
-    var inds = [].slice.call(root.querySelectorAll('details.ix-ind')), $ = function (id) { return document.getElementById(id); };
-    var nc = inds.filter(function (d) { return d.dataset.type === 'calc'; }).length, f = '';
-    $('ixN').textContent = inds.length; $('ixNC').textContent = nc; $('ixNM').textContent = inds.length - nc;
-    $('ixT0').textContent = inds.length; $('ixT1').textContent = nc; $('ixT2').textContent = inds.length - nc;
-    var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
-    inds.forEach(function (d) { var n = d.querySelector('summary > div > span'); d._name = n; d._txt = n.textContent; });
-    function mark(d, s) {
-        var t = d._txt; if (!s) { d._name.textContent = t; return; }
-        var i = norm(t).indexOf(s); if (i < 0) { d._name.textContent = t; return; }
-        d._name.textContent = ''; d._name.appendChild(document.createTextNode(t.slice(0, i)));
-        var m = document.createElement('mark'); m.className = 'ix-hl'; m.textContent = t.slice(i, i + s.length); d._name.appendChild(m);
-        d._name.appendChild(document.createTextNode(t.slice(i + s.length)));
-    }
-    function apply() {
-        var s = norm($('ixQ').value.trim()), shown = 0;
-        inds.forEach(function (d) { var ok = (!s || norm(d.dataset.q).indexOf(s) > -1) && (!f || (f === 'todo' ? d.dataset.todo === '1' : d.dataset.type === f)); d.hidden = !ok; if (ok) shown++; mark(d, ok ? s : ''); });
-        root.querySelectorAll('section').forEach(function (sec) {
-            var all = sec.querySelectorAll('details.ix-ind'), vis = sec.querySelectorAll('details.ix-ind:not([hidden])');
-            sec.style.display = (s || f) && all.length && !vis.length ? 'none' : '';
-        });
-        $('ixNone').classList.toggle('on', !!(s || f) && !shown);
-    }
-    $('ixQ').addEventListener('input', apply);
-    root.querySelectorAll('.ix-tabs button').forEach(function (b) { b.addEventListener('click', function () { f = b.dataset.f; root.querySelectorAll('.ix-tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); apply(); }); });
-    $('ixTog').addEventListener('click', function () {
-        var open = this.dataset.o !== '1'; this.dataset.o = open ? '1' : ''; this.textContent = open ? 'Tout replier' : 'Tout déplier';
-        inds.forEach(function (d) { if (!d.hidden) d.open = open; });
-    });
-    /* le lien d'analyse dans la ligne ne déplie pas la fiche */
-    root.querySelectorAll('.ix-go').forEach(function (a) { a.addEventListener('click', function (e) { e.stopPropagation(); }); });
-    /* suppression : confirmation avant de quitter la page */
-    root.addEventListener('click', function (e) {
-        var a = e.target.closest('a[href^="/delete_indicateur/"]'); if (!a) return;
-        e.preventDefault(); var name = (a.closest('details').querySelector('summary > div > span') || {}).textContent || 'cet indicateur';
-        if (window.Swal) Swal.fire({ title: 'Supprimer cet indicateur ?', text: '« ' + name.trim() + ' » et ses cibles ne seront plus disponibles.', icon: 'warning', showCancelButton: true,
-            confirmButtonText: 'Supprimer', cancelButtonText: 'Annuler', confirmButtonColor: '#E35A33', reverseButtons: true }).then(function (r) { if (r.isConfirmed) location.href = a.href; });
-        else if (confirm('Supprimer « ' + name.trim() + ' » ?')) location.href = a.href;
-    });
-    apply();
-})();
-</script>
 
-<!-- ===== Indicateurs : recherche de l'en-tête en direct + contrôle de complétude MEAL (ajout) ===== -->
+<!-- ===== Registre : chiffres, objectifs, filtres, recherche, panneau de la fiche ===== -->
 <script>
 (function () {
-    var root = document.querySelector('.ix'); if (!root) return;
-    var top = document.getElementById('searchInput'), q = document.getElementById('ixQ');
-    if (top && q) {
-        top.setAttribute('placeholder', 'Rechercher un indicateur, un code, une source…');
-        var sync = function () { q.value = top.value; q.dispatchEvent(new Event('input')); };
-        top.addEventListener('input', sync); if (top.value) sync();
+    var root = document.getElementById('ix'); if (!root) return;
+    var $ = function (id) { return document.getElementById(id); };
+    var lignes = [].slice.call(root.querySelectorAll('.ix-ligne'));
+    var filtre = '', objectif = '', courante = null;
+    var nombre = function (x) { var n = parseFloat(String(x == null ? '' : x).replace(/\s/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
+    var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+    var fmt = function (n) { return n.toLocaleString('fr-FR', { maximumFractionDigits: 2 }); };
+    function jauge(el, pct) { var i = el && el.querySelector('i'); if (!i) return; el.classList.toggle('ok', pct >= 100); requestAnimationFrame(function () { i.style.width = Math.min(100, Math.max(0, pct)) + '%'; }); }
+    function fiche(id) { return root.querySelector('.ix-fiche-src[data-fiche-pour="' + id + '"]'); }
+
+    /* --- Chiffres --- */
+    var nc = lignes.filter(function (l) { return l.dataset.type === 'calc'; }).length, aFaire = lignes.filter(function (l) { return l.dataset.todo === '1'; }).length;
+    $('ixN').textContent = lignes.length; $('ixNC').textContent = nc; $('ixNM').textContent = lignes.length - nc;
+    $('ixT0').textContent = lignes.length; $('ixT1').textContent = nc; $('ixT2').textContent = lignes.length - nc; $('ixT3').textContent = aFaire;
+    $('ixPct').textContent = (lignes.length ? Math.round((lignes.length - aFaire) * 100 / lignes.length) : 0) + ' %';
+    root.querySelector('[data-tous-nb]').textContent = lignes.length;
+    root.querySelectorAll('.ix-obj-btn[data-obj]:not([data-obj=""])').forEach(function (b) {
+        var siennes = lignes.filter(function (l) { return l.dataset.obj === b.dataset.obj; }), ok = siennes.filter(function (l) { return l.dataset.todo !== '1'; }).length;
+        b.querySelector('[data-obj-complet]').textContent = siennes.length ? ok + '/' + siennes.length + ' complètes' : '';
+        jauge(b.querySelector('.ix-jauge'), siennes.length ? ok * 100 / siennes.length : 0);
+    });
+
+    /* --- Avancement déclaré / cible (ligne + fiche) --- */
+    var sommes = {}; try { sommes = JSON.parse(($('ixSommes') || {}).textContent || '{}') || {}; } catch (e) { sommes = {}; }
+    lignes.forEach(function (l) {
+        var declare = nombre(sommes[l.dataset.id]), cible = nombre(l.dataset.cible), pct = cible > 0 ? declare * 100 / cible : 0;
+        l.querySelector('[data-declare]').textContent = fmt(declare);
+        l.querySelector('[data-pct]').textContent = cible > 0 ? Math.round(pct) + ' %' : 'pas de cible';
+        jauge(l.querySelector('[data-avancement] .ix-jauge'), pct);
+        var f = fiche(l.dataset.id); if (!f) return;
+        f.querySelector('[data-f-declare]').textContent = fmt(declare);
+        f.querySelector('[data-f-pct]').textContent = cible > 0 ? Math.round(pct) + ' %' : '—';
+        f.querySelector('[data-f-reste]').textContent = cible > 0 ? (declare >= cible ? 'Cible atteinte' : 'Reste ' + fmt(cible - declare)) : 'Aucune cible définie';
+        f.dataset.pct = pct;
+        f.querySelector('[data-f-score]').textContent = (4 - f.querySelectorAll('[data-manque]').length) + '/4';
+    });
+
+    /* --- Recherche, filtre de type, objectif --- */
+    lignes.forEach(function (l) { l._nom = l.querySelector('.ix-nom > span:first-child'); l._txt = l._nom.textContent; });
+    function surligner(l, s) {
+        var t = l._txt, i = s ? norm(t).indexOf(s) : -1;
+        if (i < 0) { l._nom.textContent = t; return; }
+        l._nom.textContent = ''; l._nom.appendChild(document.createTextNode(t.slice(0, i)));
+        var m = document.createElement('mark'); m.className = 'ix-hl'; m.textContent = t.slice(i, i + s.length); l._nom.appendChild(m);
+        l._nom.appendChild(document.createTextNode(t.slice(i + s.length)));
     }
-    var inds = [].slice.call(root.querySelectorAll('details.ix-ind')), todo = 0;
-    inds.forEach(function (d) {
-        var manque = [];
-        if (!(parseFloat(String(d.dataset.cible || '0').replace(',', '.')) > 0)) manque.push('cible');
-        if (!d.dataset.src) manque.push('source des données');
-        if (!d.dataset.mv) manque.push('moyen de vérification');
-        if (!d.dataset.freq) manque.push('fréquence de collecte');
-        var box = d.querySelector(':scope > div');
-        if (box && !box.querySelector('.ix-fiche-t')) box.insertAdjacentHTML('afterbegin', '<p class="ix-fiche-t"><i class="bx bx-id-card"></i>Fiche de l’indicateur</p>');
-        if (manque.length) {
-            todo++; d.dataset.todo = '1';
-            var meta = d.querySelector('.ix-meta');
-            if (meta) { var t = document.createElement('span'); t.className = 'ix-tag todo'; t.textContent = 'À compléter'; t.title = 'Manque : ' + manque.join(', '); meta.insertBefore(t, meta.firstChild); }
-            var grid = box && box.querySelectorAll(':scope > .grid')[1];
-            if (grid) { var m = document.createElement('div'); m.className = 'ix-manque'; m.innerHTML = '<i class="bx bx-error-circle"></i><span>Pour un indicateur MEAL complet, il manque : <b></b>.</span>'; m.querySelector('b').textContent = manque.join(', '); grid.insertAdjacentElement('afterend', m); }
+    function visibles() { return lignes.filter(function (l) { return !l.hidden; }); }
+    function appliquer() {
+        var s = norm($('ixQ').value.trim()), vus = 0;
+        lignes.forEach(function (l) {
+            var ok = (!objectif || l.dataset.obj === objectif) && (!s || norm(l.dataset.q).indexOf(s) > -1) && (!filtre || (filtre === 'todo' ? l.dataset.todo === '1' : l.dataset.type === filtre));
+            l.hidden = !ok; if (ok) vus++; surligner(l, ok ? s : '');
+        });
+        root.querySelectorAll('.ix-groupe').forEach(function (g) {
+            var siennes = lignes.filter(function (l) { return l.dataset.obj === g.dataset.groupe; });
+            var montre = (!objectif || g.dataset.groupe === objectif) && (siennes.some(function (l) { return !l.hidden; }) || (!siennes.length && !s && !filtre));
+            g.hidden = !montre;
+        });
+        $('ixNone').classList.toggle('on', !vus && !!(s || filtre || objectif) && !root.querySelector('.ix-groupe:not([hidden])'));
+    }
+    $('ixQ').addEventListener('input', appliquer);
+    var haut = $('searchInput');
+    if (haut) { haut.setAttribute('placeholder', 'Rechercher un indicateur, un code, un bailleur…'); var copier = function () { $('ixQ').value = haut.value; appliquer(); }; haut.addEventListener('input', copier); if (haut.value) copier(); }
+    root.querySelectorAll('.ix-tabs button').forEach(function (b) {
+        b.addEventListener('click', function () { filtre = b.dataset.f; root.querySelectorAll('.ix-tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); appliquer(); });
+    });
+    root.querySelectorAll('.ix-obj-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+            objectif = b.dataset.obj;
+            root.querySelectorAll('.ix-obj-btn').forEach(function (x) { x.setAttribute('aria-current', x === b ? 'true' : 'false'); });
+            var aj = $('ixAjout'); aj.hidden = !objectif; if (objectif) aj.href = b.dataset.ajout;
+            appliquer();
+        });
+    });
+
+    /* --- Panneau latéral : ouvrir la fiche, naviguer, fermer --- */
+    var tiroir = $('ixTiroir'), corps = $('ixTiroirCorps'), voile = root.querySelector('.ix-voile'), retour = null;
+    /* Le panneau est déplacé à la fin de <body> : sinon un parent de la page (animation, transform) le coince sous la barre du haut */
+    document.body.appendChild(voile); document.body.appendChild(tiroir);
+    var ouvertCls = function (on) { [voile, tiroir].forEach(function (x) { x.classList.toggle('ouvert', on); }); };
+    function ouvrir(ligne) {
+        var src = fiche(ligne.dataset.id); if (!src) return;
+        if (courante) { courante.classList.remove('on'); var ancienne = corps.firstElementChild; if (ancienne) fiche(courante.dataset.id).appendChild(ancienne); }
+        courante = ligne; ligne.classList.add('on');
+        $('ixTiroirObj').textContent = src.dataset.objectif; $('ixTiroirTitre').textContent = src.dataset.titre; $('ixTiroirCode').textContent = src.dataset.code;
+        var art = src.querySelector('[data-fiche]'); corps.appendChild(art); corps.scrollTop = 0;
+        jauge(art.querySelector('[data-f-jauge]'), nombre(src.dataset.pct));
+        var v = visibles(), i = v.indexOf(ligne);
+        tiroir.querySelector('[data-pas="-1"]').disabled = i <= 0; tiroir.querySelector('[data-pas="1"]').disabled = i < 0 || i >= v.length - 1;
+        if (!root.classList.contains('tiroir-ouvert')) {
+            retour = ligne; root.classList.add('tiroir-ouvert'); ouvertCls(true); document.body.classList.add('ix-tiroir-actif');
+            tiroir.setAttribute('aria-hidden', 'false'); setTimeout(function () { tiroir.querySelector('.ix-fermer').focus(); }, 50);
+        }
+    }
+    function fermer() {
+        if (!root.classList.contains('tiroir-ouvert')) return;
+        root.classList.remove('tiroir-ouvert'); ouvertCls(false); document.body.classList.remove('ix-tiroir-actif'); tiroir.setAttribute('aria-hidden', 'true');
+        if (courante) { var art = corps.firstElementChild; if (art) fiche(courante.dataset.id).appendChild(art); courante.classList.remove('on'); }
+        var r = courante || retour; courante = null; if (r) r.focus();
+    }
+    lignes.forEach(function (l) { l.addEventListener('click', function () { ouvrir(l); }); });
+    function clicPanneau(e) {
+        if (e.target.closest('[data-fermer]')) { fermer(); return; }
+        var n = e.target.closest('[data-pas]'); if (n && courante) { var v = visibles(), i = v.indexOf(courante) + (+n.dataset.pas); if (v[i]) { ouvrir(v[i]); v[i].scrollIntoView({ block: 'nearest' }); } return; }
+        var o = e.target.closest('[data-onglet]');
+        if (o) { var f = o.closest('[data-fiche]');
+            f.querySelectorAll('[data-onglet]').forEach(function (x) { x.setAttribute('aria-selected', x === o ? 'true' : 'false'); });
+            f.querySelectorAll('[data-panneau]').forEach(function (p) { p.hidden = p.dataset.panneau !== o.dataset.onglet; }); }
+    }
+    tiroir.addEventListener('click', clicPanneau); voile.addEventListener('click', fermer);
+    document.addEventListener('keydown', function (e) {
+        if (!root.classList.contains('tiroir-ouvert')) return;
+        if (e.key === 'Escape') { e.preventDefault(); fermer(); }
+        else if (e.key === 'Tab') {                         /* le focus reste dans le panneau */
+            var f = [].slice.call(tiroir.querySelectorAll('button:not([disabled]), a[href]')).filter(function (x) { return x.offsetParent !== null; });
+            if (!f.length) return;
+            if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+            else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
         }
     });
-    var k = root.querySelector('.ix-kpis');
-    if (k) k.insertAdjacentHTML('beforeend', '<div class="ix-k-todo"><b>' + todo + '</b><span>À compléter</span></div>');
-    var t3 = document.getElementById('ixT3'); if (t3) t3.textContent = todo;
+
+    /* --- Suppression : confirmation --- */
+    tiroir.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href^="/delete_indicateur/"]'); if (!a) return;
+        e.preventDefault();
+        var nom = $('ixTiroirTitre').textContent || 'cet indicateur';
+        if (window.Swal) Swal.fire({ title: 'Supprimer cet indicateur ?', text: '« ' + nom.trim() + ' » et ses cibles ne seront plus disponibles.', icon: 'warning', showCancelButton: true,
+            confirmButtonText: 'Supprimer', cancelButtonText: 'Annuler', confirmButtonColor: '#dc2626', reverseButtons: true }).then(function (r) { if (r.isConfirmed) location.href = a.href; });
+        else if (window.confirm('Supprimer « ' + nom.trim() + ' » ?')) location.href = a.href;
+    });
+
+    appliquer();
 })();
 </script>
 {%endblock%}

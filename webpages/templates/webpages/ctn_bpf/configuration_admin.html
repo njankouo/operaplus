@@ -1,979 +1,508 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuration Suivi-Évaluation</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Boxicons -->
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <!-- Animate.css -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.min.js" integrity="sha512-nKXmKvJyiGQy343jatQlzDprflyB5c+tKCzGP3Uq67v+lmzfnZUi/ZT+fc6ITZfSC5HhaBKUIvr/nTLCV+7F+Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-      <meta name="csrf-token" content="{{ csrf_token }}">
-
-    <style>
-        :root {
-            --primary: {{request.user.personnel.color_fond}};
-            --primary-light: {{request.user.personnel.color_fond}};
-            --secondary: {{request.user.personnel.color_fond}};
-            --accent: {{request.user.personnel.color_fond}};
-            --dark: {{request.user.personnel.color_fond}};
-            --light: {{request.user.personnel.color_fond}};
-            --transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-        }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #dfe6f0 100%);
-            min-height: 100vh;
-            color: var(--dark);
-        }
-
-        .config-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 2rem;
-            padding: 2rem;
-        }
-
-        .config-card {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            transition: var(--transition);
-            transform-style: preserve-3d;
-            position: relative;
-            border: none;
-        }
-
-        .config-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(108,92,231,0.1) 0%, rgba(0,184,148,0.05) 100%);
-            z-index: -1;
-            opacity: 0;
-            transition: var(--transition);
-        }
-
-        .config-card:hover {
-            transform: translateY(-10px) rotateY(5deg);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
-        }
-
-        .config-card:hover::before {
-            opacity: 1;
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: white;
-            padding: 1.5rem;
-            position: relative;
-            overflow: hidden;
-            border-bottom: none;
-        }
-
-        .card-header::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
-            transition: var(--transition);
-        }
-
-        .config-card:hover .card-header::after {
-            transform: rotate(45deg) translateY(-20px);
-        }
-
-        .card-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            display: inline-flex;
-            background: rgba(255, 255, 255, 0.2);
-            width: 70px;
-            height: 70px;
-            border-radius: 20px;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
-        }
-
-        .config-card:hover .card-icon {
-            transform: rotate(15deg) scale(1.1);
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .card-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            position: relative;
-            display: inline-block;
-        }
-
-        .card-title::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 0;
-            width: 40px;
-            height: 4px;
-            background: var(--accent);
-            transition: var(--transition);
-            border-radius: 2px;
-        }
-
-        .config-card:hover .card-title::after {
-            width: 100%;
-            background: white;
-        }
-
-        .card-body {
-            padding: 2rem;
-            position: relative;
-        }
-
-        .card-body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            opacity: 0;
-            transition: var(--transition);
-        }
-
-        .config-card:hover .card-body::before {
-            opacity: 1;
-        }
-
-        .setting-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-            transition: var(--transition);
-        }
-
-        .setting-item:hover {
-            transform: translateX(10px);
-            border-bottom-color: var(--primary-light);
-        }
-
-        .setting-label {
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-        }
-
-        .setting-label i {
-            margin-right: 12px;
-            color: var(--primary);
-            font-size: 1.2rem;
-            width: 24px;
-            text-align: center;
-        }
-
-        .form-control, .form-select {
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
-            transition: var(--transition);
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 0.25rem rgba(108, 92, 231, 0.25);
-        }
-
-        .config-btn {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.8rem 1.8rem;
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            color: white;
-            border: none;
-            border-radius: 50px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: var(--transition);
-            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .config-btn i {
-            margin-right: 8px;
-            transition: var(--transition);
-        }
-
-        .config-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(108, 92, 231, 0.3);
-            color: white;
-        }
-
-        .config-btn:hover i {
-            transform: translateX(5px);
-        }
-
-        .config-btn::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: 0.5s;
-        }
-
-        .config-btn:hover::after {
-            left: 100%;
-        }
-
-        /* Animation spécifique pour la pondération */
-        .ponderation-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-            background: rgba(108, 92, 231, 0.05);
-            padding: 0.75rem 1rem;
-            border-radius: 10px;
-            transition: var(--transition);
-        }
-
-        .ponderation-item:hover {
-            background: rgba(108, 92, 231, 0.1);
-            transform: translateX(5px);
-        }
-
-        .ponderation-label {
-            flex: 1;
-            font-weight: 500;
-        }
-
-        .ponderation-input {
-            width: 80px;
-            text-align: center;
-        }
-
-        /* Animation de période */
-        .periode-timeline {
-            position: relative;
-            padding-left: 30px;
-            margin: 1.5rem 0;
-        }
-
-        .periode-timeline::before {
-            content: '';
-            position: absolute;
-            left: 10px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: var(--primary-light);
-        }
-
-        .periode-item {
-            position: relative;
-            margin-bottom: 1.5rem;
-            padding: 0.75rem;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-            transition: var(--transition);
-        }
-
-        .periode-item:hover {
-            transform: translateX(10px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .periode-item::before {
-            content: '';
-            position: absolute;
-            left: -28px;
-            top: 20px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--primary);
-            border: 2px solid white;
-        }
-
-        /* Animation de fond */
-        .floating-shapes {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        .floating-shapes li {
-            position: absolute;
-            display: block;
-            list-style: none;
-            animation: float 25s linear infinite;
-            bottom: -150px;
-            opacity: 0.5;
-        }
-
-        .floating-shapes li:nth-child(1) {
-            left: 25%;
-            width: 80px;
-            height: 80px;
-            background: rgba(108, 92, 231, 0.1);
-            border-radius: 20px;
-            animation-delay: 0s;
-        }
-
-        .floating-shapes li:nth-child(2) {
-            left: 10%;
-            width: 50px;
-            height: 50px;
-            background: rgba(0, 184, 148, 0.1);
-            border-radius: 50%;
-            animation-delay: 2s;
-            animation-duration: 20s;
-        }
-
-        .floating-shapes li:nth-child(3) {
-            left: 70%;
-            width: 100px;
-            height: 100px;
-            background: rgba(253, 121, 168, 0.1);
-            border-radius: 10px;
-            animation-delay: 4s;
-        }
-
-        @keyframes float {
-            0% {
-                transform: translateY(0) rotate(0deg);
-                opacity: 0.5;
-            }
-            100% {
-                transform: translateY(-1000px) rotate(720deg);
-                opacity: 0;
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .config-container {
-                grid-template-columns: 1fr;
-                padding: 1rem;
-            }
-        }
-
-.float{
-    position:fixed;
-    width:60px;
-    height:60px;
-    bottom:40px;
-    right:40px;
-    background-color:{{request.user.personnel.color_fond}};
-    color:#FFF;
-    border-radius:50px;
-    text-align:center;
-    box-shadow: 2px 2px 3px #999;
-}
-
-.my-float{
-    margin-top:22px;
-}
-    </style>
-
-<!-- ===================== NOUVEAU DESIGN DE LA PAGE DE CONFIGURATION (ajout) ===================== -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paramètres · {{ actual_institution.nom }} · OperaPlus</title>
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% comment %}
+    PARAMÈTRES DE L'INSTITUTION — Material Design (style Material UI), sans Bootstrap.
+    Inchangés : toutes les fenêtres (formulaires, natures/catégories, financement, périodes, étapes, devises), leurs formulaires,
+    leurs scripts (htmx, fetch), les ids is_step_checkbox / is_frequency_checkbox / status-form et toutes les URLs.
+    Bootstrap est remplacé par : une feuille « md » (aspect Material) + un petit script qui ouvre/ferme les fenêtres et les onglets
+    (mêmes attributs data-bs-toggle / data-bs-target / data-bs-dismiss : rien à changer dans les fenêtres).
+{% endcomment %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
 <style>
-    :root {
-        --cfg-dom: {{ request.user.personnel.color_fond|default:'#1e293b' }};      /* dominante 60 % */
-        --cfg-acc: {{ request.user.personnel.color|default:'#4361ee' }};           /* accent 30 %    */
-        --cfg-tch: {{ request.user.personnel.color_tiers|default:'#FACC15' }};     /* touche 10 %    */
-        --cfg-ink: #fff; --cfg-acc-ink: #fff;
-        --cfg-bg: color-mix(in srgb, var(--cfg-dom) 5%, #f6f7f9);
-        --cfg-line: #e6e8ec; --cfg-soft: #f4f5f7; --cfg-text: #0f172a; --cfg-muted: #667085;
-        --cfg-shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px -16px rgba(15,23,42,.22);
-    }
-    body { font-family: 'Inter', system-ui, sans-serif !important; background: var(--cfg-bg) !important; color: var(--cfg-text) !important; text-align: left; }
-    .floating-shapes { display: none !important; }
-    body > .container { max-width: 1240px; padding: 24px 20px 60px !important; }
-    html.cfg-ready body > .container > .config-container,
-    html.cfg-ready body > .container > .text-left.mb-4 { display: none !important; }
+/* ========================================================================
+   1. JETONS MATERIAL (palette de l'utilisateur)
+   ======================================================================== */
+:root {
+    --md-primary: {{ request.user.personnel.color_fond|default:'#123A37' }};
+    --md-secondary: {{ request.user.personnel.color|default:'#E48B0C' }};
+    --md-on-primary: #fff;
+    --md-bg: #f4f6f8; --md-surface: #fff; --md-text: rgba(0,0,0,.87); --md-text2: rgba(0,0,0,.6); --md-text3: rgba(0,0,0,.38);
+    --md-divider: rgba(0,0,0,.12); --md-hover: rgba(0,0,0,.04); --md-error: #d32f2f; --md-success: #2e7d32; --md-warning: #ed6c02;
+    --md-e1: 0 2px 1px -1px rgba(0,0,0,.2), 0 1px 1px 0 rgba(0,0,0,.14), 0 1px 3px 0 rgba(0,0,0,.12);
+    --md-e2: 0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12);
+    --md-e4: 0 2px 4px -1px rgba(0,0,0,.2), 0 4px 5px 0 rgba(0,0,0,.14), 0 1px 10px 0 rgba(0,0,0,.12);
+    --md-e8: 0 5px 5px -3px rgba(0,0,0,.2), 0 8px 10px 1px rgba(0,0,0,.14), 0 3px 14px 2px rgba(0,0,0,.12);
+    --md-e24: 0 11px 15px -7px rgba(0,0,0,.2), 0 24px 38px 3px rgba(0,0,0,.14), 0 9px 46px 8px rgba(0,0,0,.12);
+    --md-ease: cubic-bezier(.4, 0, .2, 1);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; font-size: 14px; line-height: 1.5; color: var(--md-text); background: var(--md-bg); -webkit-font-smoothing: antialiased; }
+a { color: var(--md-primary); }
+h1, h2, h3, h4, h5, h6 { margin: 0 0 .5rem; font-weight: 500; line-height: 1.25; }
+h4 { font-size: 1.4rem; } h5 { font-size: 1.15rem; } h6 { font-size: 1rem; }
+p { margin: 0 0 1rem; }
+hr { border: 0; border-top: 1px solid var(--md-divider); margin: 12px 0; }
+.ms { font-family: 'Material Symbols Outlined'; font-weight: normal; font-style: normal; font-size: 22px; line-height: 1; letter-spacing: normal; text-transform: none;
+      display: inline-block; white-space: nowrap; direction: ltr; -webkit-font-smoothing: antialiased; font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      width: 1em; height: 1em; overflow: hidden; flex-shrink: 0; }   /* si la police d'icônes ne charge pas (hors ligne), rien d'illisible ne s'affiche */
 
-    /* ================= En-tête compact ================= */
-    body > .container > header {
-        background-color: var(--cfg-dom) !important; color: var(--cfg-ink) !important; border-radius: 22px !important;
-        padding: 22px 28px !important; margin-bottom: 22px !important; border-bottom: 4px solid var(--cfg-tch);
-        box-shadow: 0 18px 40px -28px var(--cfg-dom) !important;
-    }
-    body > .container > header .container-fluid { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 20px; padding: 0; }
-    body > .container > header h1 { grid-column: 1; font-size: 1.6rem !important; font-weight: 800 !important; letter-spacing: -.02em; margin: 0 !important; color: var(--cfg-ink) !important; }
-    body > .container > header h1 i { display: none; }
-    body > .container > header p { grid-column: 1; margin: 0 !important; font-size: .95rem !important; opacity: .8 !important; color: var(--cfg-ink) !important; }
-    body > .container > header .cfg-crumb { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: .85rem; font-weight: 600; opacity: .9; margin-bottom: 6px; }
-    body > .container > header .cfg-crumb span { opacity: .6; }
-    .cfg-hd-right { grid-column: 2; grid-row: 2 / span 2; display: flex; align-items: center; gap: 10px; }
-    .cfg-mode { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 12px; font-size: .85rem; font-weight: 700;
-                background: color-mix(in srgb, var(--cfg-ink) 14%, transparent); color: var(--cfg-ink); }
-    a.float { position: static !important; width: auto !important; height: auto !important; padding: 0 !important; margin: 0 !important; background: none !important;
-              box-shadow: none !important; border: 0 !important; color: inherit !important; display: inline-flex !important; align-items: center; gap: 6px;
-              text-decoration: none; font-weight: 700; }
-    a.float .my-float { margin: 0 !important; font-size: .8rem; }
-    a.float::after { content: "Tableau de bord"; }
-    a.float:hover { text-decoration: underline; }
+/* ========================================================================
+   2. COMPOSANTS MATERIAL DE LA PAGE
+   ======================================================================== */
+/* AppBar */
+.md-appbar { position: sticky; top: 0; z-index: 1100; background: var(--md-primary); color: var(--md-on-primary); box-shadow: var(--md-e4); }
+.md-appbar-in { max-width: 1280px; margin: 0 auto; height: 64px; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+.md-appbar h1 { margin: 0; font-size: 1.25rem; font-weight: 500; letter-spacing: .0075em; }
+.md-appbar small { display: block; font-size: .78rem; opacity: .8; line-height: 1.2; }
+.md-appbar .md-grow { flex: 1; min-width: 0; }
+.md-iconbtn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; color: inherit; display: inline-grid; place-items: center; cursor: pointer; text-decoration: none; position: relative; overflow: hidden; flex-shrink: 0; }
+.md-iconbtn:hover { background: rgba(255,255,255,.12); color: inherit; }
+.md-appchip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 16px; background: rgba(255,255,255,.16); font-size: .8125rem; white-space: nowrap; }
+.md-appchip .ms { font-size: 18px; }
 
-    /* ================= Mise en page 2 colonnes ================= */
-    #cfgApp { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 28px; align-items: start; }
-    .cfg-nav { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 4px; }
-    .cfg-search { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; margin-bottom: 12px; background: #fff;
-                  border: 1px solid var(--cfg-line); border-radius: 12px; }
-    .cfg-search:focus-within { border-color: var(--cfg-dom); box-shadow: 0 0 0 4px color-mix(in srgb, var(--cfg-dom) 12%, transparent); }
-    .cfg-search i { color: #98a2b3; font-size: .9rem; }
-    .cfg-search input { flex: 1; min-width: 0; border: 0; outline: 0 !important; background: transparent; font-size: .9rem; color: var(--cfg-text); }
-    .cfg-search kbd { font: 600 11px Inter, sans-serif; color: var(--cfg-muted); background: var(--cfg-soft); border-radius: 6px; padding: 2px 6px; }
-    .cfg-nav-label { font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #98a2b3; margin: 14px 12px 4px; }
-    .cfg-nav a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; color: #344054; font-weight: 600; font-size: .92rem;
-                 text-decoration: none; transition: background .15s, color .15s; position: relative; }
-    .cfg-nav a i { width: 18px; text-align: center; color: #98a2b3; transition: color .15s; }
-    .cfg-nav a:hover { background: #fff; color: var(--cfg-text); }
-    .cfg-nav a.is-on { background: #fff; color: var(--cfg-text); box-shadow: var(--cfg-shadow); }
-    .cfg-nav a.is-on i { color: var(--cfg-dom); }
-    html.cfg-light-dom .cfg-nav a.is-on i { color: color-mix(in srgb, var(--cfg-dom) 40%, #111); }
-    .cfg-nav a.is-on::before { content: ""; position: absolute; left: -10px; top: 9px; bottom: 9px; width: 3px; border-radius: 3px; background: var(--cfg-tch); }
-    .cfg-nav a.cfg-nav-danger { color: #b42318; } .cfg-nav a.cfg-nav-danger i { color: #f04438; }
-    .cfg-nav .cfg-count { margin-left: auto; font-size: .72rem; font-weight: 700; color: var(--cfg-muted); background: var(--cfg-soft); border-radius: 999px; padding: 1px 8px; }
+/* Mise en page */
+.md-page { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; display: grid; grid-template-columns: 256px minmax(0, 1fr); gap: 24px; align-items: start; }
+.md-nav { position: sticky; top: 88px; min-width: 0; }
+.md-page > * { min-width: 0; }
+.md-search { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; margin-bottom: 8px; border-radius: 4px; background: var(--md-surface); box-shadow: var(--md-e1); }
+.md-search .ms { color: var(--md-text2); font-size: 20px; }
+.md-search input { flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; font-size: .9375rem; background: transparent; color: var(--md-text); }
+.md-navlist { list-style: none; margin: 0; padding: 8px 0; background: var(--md-surface); border-radius: 4px; box-shadow: var(--md-e1); }
+.md-navlist a { position: relative; display: flex; align-items: center; gap: 16px; min-height: 44px; padding: 6px 16px; color: var(--md-text); text-decoration: none; font-size: .9375rem; overflow: hidden; }
+.md-navlist a .ms { color: var(--md-text2); font-size: 22px; }
+.md-navlist a:hover { background: var(--md-hover); }
+.md-navlist a.actif { background: color-mix(in srgb, var(--md-primary) 10%, transparent); color: var(--md-primary); font-weight: 500; }
+.md-navlist a.actif .ms { color: var(--md-primary); font-variation-settings: 'FILL' 1; }
+.md-navlist a.danger .ms, .md-navlist a.danger { color: var(--md-error); }
+.md-navlist hr { margin: 8px 0; }
 
-    .cfg-main { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+/* Sections (Paper) */
+.md-main { min-width: 0; display: grid; gap: 24px; }
+.md-section { scroll-margin-top: 88px; }
+.md-section-tete { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin: 0 4px 12px; }
+.md-section-tete h2 { margin: 0; font-size: 1.25rem; font-weight: 500; letter-spacing: .0075em; }
+.md-section-tete p { margin: 2px 0 0; color: var(--md-text2); font-size: .875rem; }
+.md-paper { background: var(--md-surface); border-radius: 4px; box-shadow: var(--md-e1); overflow: hidden; }
+.md-subheader { padding: 16px 16px 4px; font-size: .75rem; font-weight: 500; letter-spacing: .08333em; text-transform: uppercase; color: var(--md-text2); }
 
-    /* ================= Vue d'ensemble ================= */
-    .cfg-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-    .cfg-stat { background: #fff; border: 1px solid var(--cfg-line); border-radius: 16px; padding: 16px 18px; box-shadow: var(--cfg-shadow); display: flex; flex-direction: column; gap: 6px; }
-    .cfg-stat-k { display: flex; align-items: center; gap: 8px; font-size: .8rem; font-weight: 700; color: var(--cfg-muted); }
-    .cfg-stat-k i { color: var(--cfg-dom); }
-    .cfg-stat-v { font-size: 1.35rem; font-weight: 800; letter-spacing: -.01em; }
-    .cfg-stat-s { font-size: .8rem; color: var(--cfg-muted); }
-    .cfg-progress { grid-column: 1 / -1; background: #fff; border: 1px solid var(--cfg-line); border-radius: 16px; padding: 16px 18px; box-shadow: var(--cfg-shadow); }
-    .cfg-progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
-    .cfg-progress-top b { font-size: .95rem; } .cfg-progress-top span { font-size: .85rem; color: var(--cfg-muted); font-weight: 600; }
-    .cfg-bar { height: 8px; border-radius: 999px; background: var(--cfg-soft); overflow: hidden; }
-    .cfg-bar span { display: block; height: 100%; border-radius: 999px; background: var(--cfg-dom); transition: width .8s ease; }
-    .cfg-steps { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; }
-    .cfg-step { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; font-weight: 600; color: #344054; text-decoration: none; }
-    .cfg-step i { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px;
-                  background: var(--cfg-soft); color: #98a2b3; border: 1px solid var(--cfg-line); }
-    .cfg-step.ok i { background: var(--cfg-dom); color: var(--cfg-ink); border-color: var(--cfg-dom); }
+/* List items */
+.md-item { position: relative; overflow: hidden; display: flex; align-items: center; gap: 16px; min-height: 72px; padding: 8px 16px; color: var(--md-text); text-decoration: none;
+           border: 0; background: transparent; width: 100%; text-align: left; font: inherit; cursor: pointer; }
+.md-item + .md-item { border-top: 1px solid var(--md-divider); }
+.md-item:hover { background: var(--md-hover); color: var(--md-text); }
+.md-item:focus-visible { outline: 2px solid var(--md-primary); outline-offset: -2px; }
+.md-avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0;
+             background: color-mix(in srgb, var(--md-primary) 12%, #fff); color: var(--md-primary); }
+.md-avatar .ms { font-size: 22px; }
+.md-item-txt { flex: 1; min-width: 0; }
+.md-item-txt b { display: block; font-weight: 400; font-size: 1rem; line-height: 1.5; letter-spacing: .00938em; }
+.md-item-txt span { display: block; color: var(--md-text2); font-size: .875rem; line-height: 1.43; }
+.md-item > .ms { color: var(--md-text3); }
+.md-item-txt b .md-chip-new, .md-chip-new { display: inline-block; width: auto; margin-left: 8px; padding: 0 8px; height: 20px; line-height: 20px; border-radius: 10px; font-size: .75rem; font-weight: 500; vertical-align: 2px;
+               background: var(--md-secondary); color: #fff; }
 
-    /* ================= Sections ================= */
-    .cfg-section { background: #fff; border: 1px solid var(--cfg-line); border-radius: 20px; box-shadow: var(--cfg-shadow); scroll-margin-top: 20px; overflow: hidden; }
-    .cfg-section-hd { display: flex; align-items: flex-start; gap: 14px; padding: 20px 24px; border-bottom: 1px solid var(--cfg-line); }
-    .cfg-section-ico { width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-                       background: var(--cfg-dom); color: var(--cfg-ink); font-size: 16px; }
-    .cfg-section-hd h2 { font-size: 1.1rem; font-weight: 800; margin: 0; letter-spacing: -.01em; color: var(--cfg-text); }
-    .cfg-section-hd p { margin: 3px 0 0; font-size: .88rem; color: var(--cfg-muted); }
-    .cfg-section-bd { padding: 6px 12px 12px; }
-    .cfg-section.is-hidden { display: none; }
-    .cfg-section-danger .cfg-section-ico { background: #fef3f2; color: #d92d20; }
-    .cfg-section-danger { border-color: #fecdca; }
+/* Boutons Material (aussi utilisés par la page) */
+.md-btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 64px; height: 36px; padding: 6px 16px;
+          border-radius: 4px; border: 0; font: inherit; font-size: .875rem; font-weight: 500; letter-spacing: .02857em; text-transform: uppercase; cursor: pointer; text-decoration: none;
+          transition: background-color 250ms var(--md-ease), box-shadow 250ms var(--md-ease); }
+.md-btn .ms { font-size: 18px; }
+.md-btn.contained { background: var(--md-primary); color: var(--md-on-primary); box-shadow: var(--md-e2); }
+.md-btn.contained:hover { box-shadow: var(--md-e4); filter: brightness(1.1); color: var(--md-on-primary); }
+.md-btn.outlined { background: transparent; color: var(--md-primary); border: 1px solid color-mix(in srgb, var(--md-primary) 50%, transparent); padding: 5px 15px; }
+.md-btn.outlined:hover { background: color-mix(in srgb, var(--md-primary) 6%, transparent); border-color: var(--md-primary); }
+.md-btn.text { background: transparent; color: var(--md-primary); padding: 6px 8px; }
+.md-btn.text:hover { background: color-mix(in srgb, var(--md-primary) 6%, transparent); }
+.md-btn.error { background: var(--md-error); color: #fff; box-shadow: var(--md-e2); }
+.md-btn.error.outlined { background: transparent; color: var(--md-error); border-color: rgba(211,47,47,.5); box-shadow: none; }
+.md-btn:disabled { opacity: .38; cursor: default; box-shadow: none; }
+.md-ripple { position: absolute; border-radius: 50%; transform: scale(0); background: currentColor; opacity: .25; pointer-events: none; animation: mdRipple 550ms var(--md-ease); }
+@keyframes mdRipple { to { transform: scale(2.6); opacity: 0; } }
 
-    /* ---- Lignes de réglage ---- */
-    .setting-item { display: flex; align-items: center; gap: 14px; padding: 14px 12px !important; border-radius: 12px; border-bottom: 1px solid var(--cfg-soft) !important;
-                    transform: none !important; }
-    .cfg-section-bd > .setting-item:last-child, #status-form .setting-item { border-bottom: 0 !important; }
-    .setting-item.cfg-link { cursor: pointer; }
-    .setting-item.cfg-link:hover { background: color-mix(in srgb, var(--cfg-dom) 5%, #fff); }
-    .setting-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; font-weight: 600 !important; color: var(--cfg-text); }
-    .setting-label > i { display: none !important; }
-    .cfg-ico { width: 38px; height: 38px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-               background: var(--cfg-soft); color: #475467; font-size: 15px; transition: background .15s, color .15s; }
-    .setting-item.cfg-link:hover .cfg-ico { background: var(--cfg-dom); color: var(--cfg-ink); }
-    .cfg-txt { display: flex; flex-direction: column; min-width: 0; }
-    .cfg-txt > span:first-child { font-size: .95rem; }
-    .cfg-desc { font-size: .83rem; font-weight: 500; color: var(--cfg-muted); margin-top: 1px; }
-    .setting-item .btn, .cfg-action { border-radius: 10px !important; font-weight: 700 !important; padding: 7px 14px !important; font-size: .85rem !important;
-        border: 1px solid var(--cfg-line) !important; background: #fff !important; color: var(--cfg-text) !important; white-space: nowrap; text-decoration: none;
-        display: inline-flex; align-items: center; gap: 6px; }
-    .setting-item.cfg-link:hover .btn, .setting-item.cfg-link:hover .cfg-action { background: var(--cfg-acc) !important; border-color: var(--cfg-acc) !important; color: var(--cfg-acc-ink) !important; }
-    .cfg-chev { color: #98a2b3; font-size: .8rem; }
+/* Mode de planification : cartes à choisir + interrupteurs Material */
+#status-form { padding: 16px; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.md-choix { position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 4px; border: 1px solid var(--md-divider); cursor: pointer; transition: border-color .2s, background-color .2s; }
+.md-choix:hover { background: var(--md-hover); }
+.md-choix.on { border: 2px solid var(--md-primary); padding: 15px; background: color-mix(in srgb, var(--md-primary) 5%, #fff); }
+.md-choix b { display: block; font-weight: 500; font-size: 1rem; }
+.md-choix span { display: block; color: var(--md-text2); font-size: .875rem; }
+.md-switch { position: relative; width: 58px; height: 38px; padding: 12px; flex-shrink: 0; margin: -8px -8px 0 auto; }
+.md-switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 2; }
+.md-switch .track { display: block; width: 100%; height: 100%; border-radius: 7px; background: #000; opacity: .38; transition: opacity 150ms, background-color 150ms; }
+.md-switch .thumb { position: absolute; top: 9px; left: 9px; width: 20px; height: 20px; border-radius: 50%; background: #fafafa; box-shadow: var(--md-e1); transition: transform 150ms var(--md-ease), background-color 150ms; }
+.md-switch input:checked ~ .track { background: var(--md-primary); opacity: .5; }
+.md-switch input:checked ~ .thumb { transform: translateX(20px); background: var(--md-primary); }
+.md-switch input:focus-visible ~ .thumb { box-shadow: 0 0 0 10px color-mix(in srgb, var(--md-primary) 18%, transparent); }
+.md-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
+.md-actions small { margin-right: auto; color: var(--md-text2); }
 
-    /* ---- Planification ---- */
-    #status-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px 12px 6px; margin: 0; background: none; border: 0; }
-    #status-form .setting-item { flex-direction: column; align-items: flex-start; gap: 12px; padding: 18px !important; border: 2px solid var(--cfg-line) !important;
-                                 border-radius: 16px; cursor: pointer; position: relative; background: #fff; }
-    #status-form .setting-item:hover { border-color: #cbd5e1 !important; }
-    #status-form .setting-item.cfg-on { border-color: var(--cfg-dom) !important; background: color-mix(in srgb, var(--cfg-dom) 4%, #fff); }
-    #status-form .setting-item .switch { position: absolute; top: 16px; right: 16px; }
-    #status-form .setting-label { padding-right: 56px; }
-    #status-form .cfg-choice-tag { align-self: flex-start; margin-bottom: 4px; }
-    #status-form .cfg-choice-tag { display: none; font-size: .72rem; font-weight: 800; color: var(--cfg-ink); background: var(--cfg-dom); border-radius: 999px; padding: 2px 10px; }
-    #status-form .setting-item.cfg-on .cfg-choice-tag { display: inline-block; }
-    #status-form > .mt-4 { grid-column: 1 / -1; margin-top: 2px !important; text-align: right !important; }
-    #status-form .config-btn { width: auto; }
-    .cfg-hint { grid-column: 1 / -1; font-size: .85rem; color: var(--cfg-muted); margin: 0 4px; }
+/* Périodes */
+.md-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 16px; }
+.md-chip { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 16px; background: rgba(0,0,0,.08); font-size: .8125rem; }
+.md-chip em { font-style: normal; color: var(--md-text2); }
+.md-vide { padding: 16px; color: var(--md-text2); font-size: .875rem; }
 
-    /* ---- Interrupteurs ---- */
-    .switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; margin: 0; cursor: pointer; }
-    .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
-    .switch .slider { position: absolute; inset: 0; border-radius: 999px; background-color: #d0d5dd; transition: background-color .2s; }
-    .switch .slider::before { content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; border-radius: 50%; background: #fff;
-                              box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
-    .switch input:checked + .slider { background-color: var(--cfg-dom); }
-    .switch input:checked + .slider::before { transform: translateX(20px); }
-    .switch input:focus-visible + .slider { outline: 3px solid var(--cfg-tch); outline-offset: 2px; }
+/* Zone de danger */
+.md-danger { border: 1px solid rgba(211,47,47,.4); box-shadow: none; }
+.md-danger .md-avatar { background: #fdecea; color: var(--md-error); }
 
-    /* ---- Boutons principaux ---- */
-    .config-btn { display: inline-flex !important; align-items: center; gap: 8px; background: var(--cfg-acc) !important; color: var(--cfg-acc-ink) !important;
-                  border: 0 !important; border-radius: 10px !important; font-weight: 700 !important; box-shadow: none !important; padding: 10px 18px !important;
-                  transform: none !important; text-decoration: none !important; font-size: .9rem !important; }
-    .config-btn:hover { filter: brightness(.93); }
+/* Fenêtre de confirmation (Dialog Material) */
+.md-dialog-fond { position: fixed; inset: 0; z-index: 1300; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(0,0,0,.5); }
+.md-dialog-fond.ouvert { display: flex; }
+.md-dialog { width: min(480px, 100%); background: #fff; border-radius: 4px; box-shadow: var(--md-e24); }
+.md-dialog h3 { margin: 0; padding: 16px 24px; font-size: 1.25rem; font-weight: 500; }
+.md-dialog-c { padding: 0 24px 8px; color: var(--md-text2); }
+.md-dialog-a { display: flex; justify-content: flex-end; gap: 8px; padding: 8px; }
+.md-field { position: relative; margin: 16px 0 8px; }
+.md-field input { width: 100%; height: 56px; padding: 16px 14px 0; border: 1px solid rgba(0,0,0,.23); border-radius: 4px; font: inherit; font-size: 1rem; color: var(--md-text); outline: 0; }
+.md-field input:hover { border-color: var(--md-text); }
+.md-field input:focus { border: 2px solid var(--md-error); padding: 15px 13px 0; }
+.md-field label { position: absolute; left: 14px; top: 6px; font-size: .75rem; color: var(--md-text2); }
 
-    /* ---- Périodes ---- */
-    .cfg-periods { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; padding: 12px; }
-    .cfg-periods .periode-timeline { display: contents; }
-    .cfg-periods .periode-timeline::before { display: none !important; }
-    .periode-item { margin: 0 !important; padding: 14px 16px !important; border-radius: 14px !important; background: var(--cfg-soft) !important;
-                    border: 1px solid var(--cfg-line) !important; border-left: 4px solid var(--cfg-tch) !important; box-shadow: none !important; }
-    .periode-item::before, .periode-item::after { display: none !important; }
-    .periode-item h6 { font-weight: 800; margin: 0 0 6px; }
-    .periode-item .periode-details { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .periode-item .badge { background: #fff !important; color: #344054 !important; border: 1px solid var(--cfg-line); font-weight: 700; }
-    .cfg-section-ft { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 24px 18px; border-top: 1px solid var(--cfg-soft); }
+/* Snackbar */
+.md-snack { position: fixed; left: 50%; bottom: 24px; z-index: 1400; transform: translate(-50%, calc(100% + 40px)); visibility: hidden; min-width: 288px; max-width: calc(100% - 32px); display: flex; align-items: center; gap: 12px;
+            padding: 6px 8px 6px 16px; border-radius: 4px; background: #323232; color: #fff; box-shadow: var(--md-e8); font-size: .875rem; transition: transform 225ms var(--md-ease); }
+.md-snack.on { transform: translate(-50%, 0); visibility: visible; }
+.md-snack.error { background: var(--md-error); } .md-snack.success { background: var(--md-success); }
+.md-snack span { flex: 1; padding: 8px 0; }
+.md-snack button { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 6px; }
 
-    /* ---- Zone de danger ---- */
-    .cfg-section-danger .card.border-danger { border: 0 !important; box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
-    .cfg-section-danger .card.border-danger > .card-header { display: none; }
-    .cfg-section-danger .card.border-danger > .card-body { padding: 16px 12px !important; }
-    .cfg-section-danger .card.border-danger .card-title { font-size: 1rem !important; color: var(--cfg-text) !important; }
-    .cfg-section-danger .card.border-danger .card-title::after { display: none !important; }
-    .cfg-section-danger .card.border-danger > .card-footer { background: #fffbfa !important; border-top: 1px solid #fee4e2 !important; color: #b42318; }
-    .cfg-section-danger .btn-danger { background: #fff !important; color: #d92d20 !important; border: 1px solid #fda29b !important; box-shadow: none !important; border-radius: 10px; }
-    .cfg-section-danger .btn-danger:hover { background: #d92d20 !important; color: #fff !important; }
+@media (max-width: 960px) {
+    .md-page { grid-template-columns: 1fr; padding-top: 12px; }
+    .md-nav { position: sticky; top: 64px; z-index: 50; margin: 0 -16px; padding: 8px 16px; background: var(--md-bg); }
+    .md-navlist { display: flex; overflow-x: auto; padding: 0; border-radius: 0; box-shadow: none; background: transparent; gap: 8px; scrollbar-width: none; }
+    .md-navlist li { flex: 0 0 auto; } .md-navlist hr { display: none; }
+    .md-navlist a { min-height: 36px; border-radius: 18px; padding: 0 14px; gap: 6px; background: var(--md-surface); box-shadow: var(--md-e1); font-size: .875rem; }
+    .md-navlist a .ms { font-size: 18px; }
+    .md-search { margin-bottom: 8px; }
+    #status-form { grid-template-columns: 1fr; }
+    .md-appchip.mode { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
-    /* ---- Fenêtres (modales) uniformes ---- */
-    .modal-content { border: 0 !important; border-radius: 20px !important; overflow: hidden; }
-    .modal-header { background: var(--cfg-dom) !important; color: var(--cfg-ink) !important; border-bottom: 4px solid var(--cfg-tch) !important; padding: 18px 24px !important; }
-    .modal-header .modal-title, .modal-header h1, .modal-header h5, .modal-header small, .modal-header .text-dark, .modal-header .text-muted { color: var(--cfg-ink) !important; }
-    .modal-header .bg-primary-subtle { background: color-mix(in srgb, var(--cfg-ink) 16%, transparent) !important; color: var(--cfg-ink) !important; }
-    html:not(.cfg-light-dom) .modal-header .btn-close { filter: invert(1) grayscale(1) brightness(2); }
-    .modal .nav-tabs .nav-link.active { color: var(--cfg-dom) !important; border-bottom: 3px solid var(--cfg-tch) !important; font-weight: 700; }
-    .modal .btn-primary, .modal .submit-btn { background: var(--cfg-acc) !important; border-color: var(--cfg-acc) !important; color: var(--cfg-acc-ink) !important; }
+/* ========================================================================
+   3. FENÊTRES : remplace Bootstrap (mêmes classes, aspect Material)
+   ======================================================================== */
+.modal { position: fixed; inset: 0; z-index: 1300; display: none; overflow-x: hidden; overflow-y: auto; outline: 0; background: rgba(0,0,0,.5); }
+.modal.show { display: block; }
+.modal.fade .modal-dialog { transform: translateY(16px) scale(.98); opacity: 0; transition: transform 225ms var(--md-ease), opacity 225ms var(--md-ease); }
+.modal.show .modal-dialog { transform: none; opacity: 1; }
+.modal-dialog { position: relative; width: auto; max-width: 560px; margin: 32px auto; padding: 0 16px; pointer-events: none; }
+.modal-dialog.modal-lg { max-width: 860px; } .modal-dialog.modal-xl { max-width: 1140px; }
+.modal-dialog-centered { display: flex; align-items: center; min-height: calc(100% - 64px); }
+.modal-content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background: #fff; border-radius: 4px; box-shadow: var(--md-e24); overflow: hidden; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; background: var(--md-primary) !important; color: #fff !important; }
+.modal-header * { color: #fff !important; }
+.modal-header .bg-primary-subtle { background: rgba(255,255,255,.16) !important; }
+.modal-title { margin: 0; font-size: 1.25rem !important; font-weight: 500 !important; }
+.modal-body { position: relative; flex: 1 1 auto; padding: 16px 24px; }
+.modal-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; padding: 8px 16px; border-top: 1px solid var(--md-divider); }
+.btn-close { width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; cursor: pointer; position: relative; flex-shrink: 0; }
+.btn-close::before { content: "close"; font-family: 'Material Symbols Outlined'; font-size: 24px; color: #fff; line-height: 40px; }
+.btn-close:hover { background: rgba(255,255,255,.12); }
+body.modal-open { overflow: hidden; }
 
-    .cfg-empty { display: none; text-align: center; padding: 40px 20px; color: var(--cfg-muted); background: #fff; border-radius: 20px; border: 1px dashed var(--cfg-line); }
-    a:focus-visible, button:focus-visible, .setting-item:focus-visible, .cfg-nav a:focus-visible { outline: 3px solid var(--cfg-tch) !important; outline-offset: 2px; }
-    @media (prefers-reduced-motion: reduce) { .animate__animated { animation: none !important; } * { scroll-behavior: auto !important; } }
-    html { scroll-behavior: smooth; }
+/* Boutons */
+.btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 64px; padding: 6px 16px; border-radius: 4px; border: 1px solid transparent;
+       font: inherit; font-size: .875rem; font-weight: 500; letter-spacing: .02857em; text-transform: uppercase; line-height: 1.75; cursor: pointer; text-decoration: none; color: var(--md-primary);
+       background: transparent; transition: background-color 250ms var(--md-ease), box-shadow 250ms var(--md-ease), border-color 250ms; }
+.btn:hover { background: color-mix(in srgb, var(--md-primary) 6%, transparent); }
+.btn-sm { padding: 4px 10px; font-size: .8125rem; }
+.btn-primary, .btn-success, .btn-danger, .btn-secondary { color: #fff !important; box-shadow: var(--md-e2); }
+.btn-primary { background: var(--md-primary) !important; } .btn-success { background: var(--md-success) !important; } .btn-danger { background: var(--md-error) !important; }
+.btn-secondary { background: #757575 !important; }
+.btn-primary:hover, .btn-success:hover, .btn-danger:hover, .btn-secondary:hover { box-shadow: var(--md-e4); filter: brightness(1.08); }
+.btn-outline-primary { border-color: color-mix(in srgb, var(--md-primary) 50%, transparent); color: var(--md-primary); }
+.btn-outline-danger { border-color: rgba(211,47,47,.5); color: var(--md-error); }
+.btn-outline-danger:hover { background: rgba(211,47,47,.06); }
+.btn-outline-secondary { border-color: var(--md-divider); color: var(--md-text2); }
+.btn-light { background: #fff; border-color: var(--md-divider); color: var(--md-text2); min-width: 0; text-transform: none; padding: 4px 8px; }
+.btn-group { display: inline-flex; } .btn-group .btn + .btn { margin-left: -1px; }
 
-    /* ---- Tablette et mobile ---- */
-    @media (max-width: 991px) {
-        #cfgApp { grid-template-columns: 1fr; gap: 16px; }
-        .cfg-nav { position: sticky; top: 0; z-index: 20; flex-direction: row; overflow-x: auto; gap: 6px; padding: 10px 0; background: var(--cfg-bg); scrollbar-width: none; }
-        .cfg-nav .cfg-search { flex: 0 0 220px; margin: 0; }
-        .cfg-nav-label { display: none; }
-        .cfg-nav a { flex: 0 0 auto; background: #fff; border: 1px solid var(--cfg-line); }
-        .cfg-nav a.is-on::before { display: none; }
-        .cfg-nav a.is-on { border-color: var(--cfg-dom); }
-        .cfg-overview { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-        .cfg-stat { padding: 12px; } .cfg-stat-v { font-size: 1.05rem; } .cfg-stat-s { display: none; }
-        .cfg-stat-k { font-size: .72rem; }
-        .cfg-section-hd { padding: 16px; } .cfg-section-bd { padding: 4px 6px 8px; }
-        #status-form { grid-template-columns: 1fr; }
-        body > .container > header .container-fluid { grid-template-columns: 1fr; }
-        .cfg-hd-right { grid-column: 1; grid-row: auto; }
-    }
+/* Champs de saisie (TextField « outlined ») */
+.form-label, .label { display: block; margin-bottom: 4px; font-size: .75rem; font-weight: 500; letter-spacing: .03em; color: var(--md-text2); }
+.form-control, .form-select { display: block; width: 100%; min-height: 40px; padding: 8px 12px; font: inherit; font-size: .9375rem; color: var(--md-text); background: #fff;
+                              border: 1px solid rgba(0,0,0,.23); border-radius: 4px; outline: 0; transition: border-color 150ms; appearance: auto; }
+.form-control:hover, .form-select:hover { border-color: var(--md-text); }
+.form-control:focus, .form-select:focus { border-color: var(--md-primary); box-shadow: inset 0 0 0 1px var(--md-primary); }
+textarea.form-control { min-height: 88px; resize: vertical; }
+.input-group { display: flex; align-items: stretch; width: 100%; }
+.input-group > .form-control { flex: 1; min-width: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.input-group-text { display: flex; align-items: center; padding: 0 10px; border: 1px solid rgba(0,0,0,.23); border-right: 0; border-radius: 4px 0 0 4px; background: #fafafa; color: var(--md-text2); }
+.form-check { display: flex; align-items: center; gap: 8px; min-height: 24px; }
+.form-check-input { width: 18px; height: 18px; accent-color: var(--md-primary); margin: 0; }
+.form-switch .form-check-input { width: 34px; height: 18px; }
+
+/* Onglets (Tabs Material) */
+.nav { display: flex; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; gap: 0; }
+.nav-tabs { border-bottom: 1px solid var(--md-divider); }
+.nav-item { list-style: none; }
+.nav-link { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 12px 16px; border: 0 !important; background: transparent !important; color: var(--md-text2) !important;
+            font: inherit; font-size: .875rem; font-weight: 500; letter-spacing: .02857em; text-transform: uppercase; cursor: pointer; text-decoration: none; border-radius: 0 !important; }
+.nav-link:hover { background: var(--md-hover) !important; }
+.nav-link.active { color: var(--md-primary) !important; }
+.nav-link.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--md-primary); }
+.nav-pills { gap: 8px; } .nav-pills .nav-link { min-height: 36px; border-radius: 18px !important; padding: 6px 14px; }
+.nav-pills .nav-link.active { background: color-mix(in srgb, var(--md-primary) 10%, transparent) !important; } .nav-pills .nav-link.active::after { display: none; }
+.tab-content > .tab-pane { display: none; } .tab-content > .tab-pane.active { display: block; }
+.fade:not(.modal):not(.show) { opacity: 0; } .fade { transition: opacity 150ms linear; } .tab-pane.active.fade { opacity: 1; }
+
+/* Tableaux */
+.table-responsive { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; margin-bottom: 0; color: var(--md-text); font-size: .875rem; background: #fff; }
+.table th { padding: 12px 16px; text-align: left; font-weight: 500; color: var(--md-text); border-bottom: 1px solid var(--md-divider); background: #fff; white-space: nowrap; }
+.table td { padding: 12px 16px; border-bottom: 1px solid rgba(224,224,224,1); vertical-align: middle; }
+.table-hover tbody tr:hover { background: var(--md-hover); }
+.table-striped tbody tr:nth-child(odd) { background: #fafafa; }
+.align-middle td, .align-middle th { vertical-align: middle; }
+
+/* Cartes, badges, alertes */
+.card { position: relative; display: flex; flex-direction: column; background: #fff; border-radius: 4px; box-shadow: var(--md-e1); border: 0; }
+.card-header { padding: 12px 16px; border-bottom: 1px solid var(--md-divider); background: #fff; font-weight: 500; }
+.card-body { padding: 16px; flex: 1 1 auto; }
+.card-footer { padding: 8px 16px; border-top: 1px solid var(--md-divider); }
+.card-title { margin: 0 0 8px; font-weight: 500; }
+.badge, .badge-soft { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 12px; font-size: .75rem; font-weight: 500; background: rgba(0,0,0,.08); color: var(--md-text); }
+.alert { padding: 6px 16px; border-radius: 4px; font-size: .875rem; } .alert-success { background: #edf7ed; color: #1e4620; }
+
+/* Grille et utilitaires (sous-ensemble utilisé par les fenêtres) */
+.container { width: 100%; padding: 0; } .container-fluid { width: 100%; }
+.row { display: flex; flex-wrap: wrap; margin: 0 -8px; } .row > * { padding: 0 8px; width: 100%; }
+.row.g-3 { margin: -8px; } .row.g-3 > * { padding: 8px; }
+.col { flex: 1 0 0%; }
+@media (min-width: 768px) { .col-md-3 { flex: 0 0 auto; width: 25%; } .col-md-4 { flex: 0 0 auto; width: 33.333%; } .col-md-6 { flex: 0 0 auto; width: 50%; } .col-md-12 { flex: 0 0 auto; width: 100%; } }
+.d-flex { display: flex !important; } .d-inline-flex { display: inline-flex !important; } .d-none { display: none !important; } .d-block { display: block !important; }
+.flex-column { flex-direction: column !important; } .flex-wrap { flex-wrap: wrap !important; }
+.align-items-center { align-items: center !important; } .align-items-end { align-items: flex-end !important; } .align-items-start { align-items: flex-start !important; }
+.justify-content-between { justify-content: space-between !important; } .justify-content-center { justify-content: center !important; } .justify-content-end { justify-content: flex-end !important; }
+.gap-2 { gap: 8px !important; } .gap-3 { gap: 16px !important; }
+.m-0 { margin: 0 !important; } .mb-0 { margin-bottom: 0 !important; } .mb-1 { margin-bottom: 4px !important; } .mb-2 { margin-bottom: 8px !important; } .mb-3 { margin-bottom: 16px !important; } .mb-4 { margin-bottom: 24px !important; } .mb-5 { margin-bottom: 32px !important; }
+.mt-2 { margin-top: 8px !important; } .mt-3 { margin-top: 16px !important; } .mt-4 { margin-top: 24px !important; } .mt-5 { margin-top: 32px !important; }
+.me-1 { margin-right: 4px !important; } .me-2 { margin-right: 8px !important; } .me-3 { margin-right: 16px !important; } .ms-3 { margin-left: 16px !important; } .mx-auto { margin-left: auto !important; margin-right: auto !important; }
+.p-0 { padding: 0 !important; } .p-1 { padding: 4px !important; } .p-2 { padding: 8px !important; } .p-3 { padding: 16px !important; } .p-4 { padding: 24px !important; }
+.py-1 { padding-top: 4px !important; padding-bottom: 4px !important; } .py-2 { padding-top: 8px !important; padding-bottom: 8px !important; } .py-3 { padding-top: 16px !important; padding-bottom: 16px !important; } .py-4 { padding-top: 24px !important; padding-bottom: 24px !important; }
+.px-2 { padding-left: 8px !important; padding-right: 8px !important; } .px-4 { padding-left: 24px !important; padding-right: 24px !important; } .px-5 { padding-left: 32px !important; padding-right: 32px !important; }
+.ps-0 { padding-left: 0 !important; } .ps-4 { padding-left: 24px !important; } .pe-4 { padding-right: 24px !important; }
+.w-25 { width: 25% !important; } .w-100 { width: 100% !important; } .h-100 { height: 100% !important; }
+.text-center { text-align: center !important; } .text-end { text-align: right !important; } .text-uppercase { text-transform: uppercase !important; }
+.text-muted, .text-secondary { color: var(--md-text2) !important; } .text-dark { color: var(--md-text) !important; } .text-white, .text-light { color: #fff !important; }
+.text-primary { color: var(--md-primary) !important; } .text-success { color: var(--md-success) !important; } .text-danger { color: var(--md-error) !important; }
+.fw-bold, .fw-bolder { font-weight: 700 !important; } .fw-semibold { font-weight: 600 !important; } .fw-medium { font-weight: 500 !important; }
+.fs-4 { font-size: 1.4rem !important; } .fs-5 { font-size: 1.15rem !important; } .small, small { font-size: .8125rem; }
+.bg-white { background: #fff !important; } .bg-light, .bg-light-subtle { background: #fafafa !important; }
+.border { border: 1px solid var(--md-divider) !important; } .border-0 { border: 0 !important; } .border-bottom { border-bottom: 1px solid var(--md-divider) !important; } .border-end-0 { border-right: 0 !important; } .border-start-0 { border-left: 0 !important; }
+.rounded { border-radius: 4px !important; } .rounded-pill { border-radius: 999px !important; } .rounded-circle { border-radius: 50% !important; }
+.shadow-sm { box-shadow: var(--md-e1) !important; } .shadow, .shadow-lg { box-shadow: var(--md-e4) !important; }
+.invisible { visibility: hidden !important; } .opacity-50 { opacity: .5 !important; }
+.spinner-border { display: none; width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: mdSpin .75s linear infinite; }
+@keyframes mdSpin { to { transform: rotate(360deg); } }
+@media (max-width: 767px) { .w-25 { width: 100% !important; } }
 </style>
-<!-- ===================== FIN NOUVEAU DESIGN (styles) ===================== -->
 </head>
-<!-- ===================== PARAMÈTRES DE LA PLATEFORME : identité claire (ajout) =====================
-     La page s'annonce comme « Paramètres » d'OperaPlus, dit à quoi elle s'applique (l'institution),
-     et chaque famille de réglages a sa couleur et son icône. Rien n'est renommé ; supprimer ce bloc = retour. -->
-<script>
-    /* tant que la page n'est pas réorganisée, on ne montre pas l'ancienne mise en page (filet : 2,5 s maximum) */
-    document.documentElement.classList.add('pp-wait');
-    setTimeout(function () { document.documentElement.classList.remove('pp-wait'); }, 2500);
-</script>
-<style id="op-param">
-    html.pp-wait body > .container > *:not(header) { visibility: hidden !important; }
-    html.pp-wait .floating-shapes { display: none !important; }
-    :root { --p-ink: #10302B; --p-muted: #66736E; --p-paper: #F7F3EA; --p-line: #ECE4D3; --p-r: 18px;
-            --p-teal: #0F7B6C; --p-indigo: #3346A8; --p-saffron: #D98E04; --p-coral: #E0533D; --p-plum: #8A3FA0; --p-sky: #1C7FBF; --p-red: #C8321E;
-            --p-ombre: 0 1px 2px rgba(16,48,43,.04), 0 10px 26px -18px rgba(16,48,43,.22); }
-    html body { background: var(--p-paper) !important; }
-
-    /* ---- en-tête : on sait immédiatement où l'on est ---- */
-    html body > .container > header { position: relative; overflow: hidden; padding: 26px 30px 24px !important; border-radius: 24px !important; border-bottom: 0 !important;
-        box-shadow: inset 0 -5px 0 var(--cfg-tch), 0 18px 40px -30px rgba(16,48,43,.6) !important; }
-    html body > .container > header h1, html body > .container > header p:not(.p-scope) { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    .p-hero { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 20px; align-items: center; }
-    .p-emblem { grid-column: 1; grid-row: 1 / span 3; width: 74px; height: 74px; border-radius: 22px; display: grid; place-items: center; font-size: 34px;
-                background: color-mix(in srgb, var(--cfg-ink) 12%, transparent); color: var(--cfg-ink); }
-    .p-kicker { grid-column: 2; font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .75; color: var(--cfg-ink); }
-    .p-title { grid-column: 2; margin: 0; font-size: 2.1rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.05; color: var(--cfg-ink); }
-    .p-scope { grid-column: 2; margin: 2px 0 0 !important; font-size: .95rem; opacity: .85; color: var(--cfg-ink); max-width: 64ch; }
-    .p-scope b { font-weight: 700; }
-    html body > .container > header .p-hero .p-scope { grid-column: 2 !important; grid-row: 3; }
-    html body > .container > header .p-hero .p-kicker { grid-row: 1; } html body > .container > header .p-hero .p-title { grid-row: 2; }
-    .p-inst { grid-column: 3; grid-row: 1 / span 3; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-    .p-inst-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; font-size: .85rem; font-weight: 700;
-                   background: color-mix(in srgb, var(--cfg-ink) 14%, transparent); color: var(--cfg-ink); max-width: 320px; }
-    .p-inst-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    html body > .container > header .cfg-hd-right { display: none !important; }
-    html body > .container > header .cfg-crumb { margin-bottom: 14px !important; }
-
-    /* ---- navigation : titre « Paramètres » + couleur par famille ---- */
-    .p-nav-head { display: flex; align-items: center; gap: 10px; padding: 4px 12px 12px; margin-bottom: 6px; border-bottom: 1px solid var(--p-line); }
-    .p-nav-head > i { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: var(--p-ink); color: #fff; font-size: 15px; flex: 0 0 34px; }
-    .p-nav-head b { display: block; font-size: 1rem; font-weight: 800; color: var(--p-ink); }
-    .p-nav-head small { display: block; font-size: .75rem; color: var(--p-muted); font-weight: 600; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    html body .cfg-nav a { border-radius: 12px !important; }
-    html body .cfg-nav a i { color: var(--c, #98a2b3) !important; }
-    html body .cfg-nav a.is-on { box-shadow: var(--p-ombre) !important; }
-    html body .cfg-nav a.is-on::before { background: var(--c, var(--cfg-tch)) !important; }
-    html body .cfg-search { border-radius: 14px !important; border-color: var(--p-line) !important; }
-
-    /* ---- familles de réglages ---- */
-    #cfg-overview, .cfg-nav a[href="#cfg-overview"] { --c: var(--p-ink); }
-    #cfg-structure, .cfg-nav a[href="#cfg-structure"] { --c: var(--p-teal); }
-    #cfg-planification, .cfg-nav a[href="#cfg-planification"] { --c: var(--p-indigo); }
-    #cfg-periodes, .cfg-nav a[href="#cfg-periodes"] { --c: var(--p-saffron); }
-    #cfg-referentiels, .cfg-nav a[href="#cfg-referentiels"] { --c: var(--p-coral); }
-    #cfg-notifications, .cfg-nav a[href="#cfg-notifications"] { --c: var(--p-plum); }
-    #cfg-administration, .cfg-nav a[href="#cfg-administration"] { --c: var(--p-sky); }
-    #cfg-danger, .cfg-nav a[href="#cfg-danger"] { --c: var(--p-red); }
-
-    html body .cfg-section { border-radius: var(--p-r) !important; border-color: var(--p-line) !important; box-shadow: inset 0 4px 0 var(--c), var(--p-ombre) !important; }
-    html body .cfg-section-hd { border-bottom-color: var(--p-line) !important; padding-top: 22px !important; }
-    html body .cfg-section-ico { background: color-mix(in srgb, var(--c) 12%, #fff) !important; color: var(--c) !important; border-radius: 13px !important; }
-    html body .cfg-section-hd h2 { color: var(--p-ink) !important; }
-    html body .cfg-ico { background: color-mix(in srgb, var(--c, #475467) 9%, #fff) !important; color: var(--c, #475467) !important; border-radius: 12px !important; }
-    html body .setting-item.cfg-link:hover { background: color-mix(in srgb, var(--c, #000) 5%, #fff) !important; }
-    html body .setting-item.cfg-link:hover .cfg-ico { background: var(--c) !important; color: #fff !important; }
-    html body .setting-item .btn, html body .cfg-action { border-radius: 999px !important; }
-    html body .setting-item.cfg-link:hover .btn, html body .setting-item.cfg-link:hover .cfg-action { background: var(--c) !important; border-color: var(--c) !important; color: #fff !important; }
-    html body #status-form .setting-item.cfg-on { border-color: var(--c) !important; background: color-mix(in srgb, var(--c) 5%, #fff) !important; }
-    html body #status-form .cfg-choice-tag { background: var(--c) !important; color: #fff !important; }
-    html body #cfg-planification .switch input:checked + .slider { background-color: var(--c) !important; }
-    html body .periode-item { border-left-color: var(--p-saffron) !important; border-radius: 14px !important; }
-    html body .cfg-section-danger .cfg-section-ico { background: #FDEDEA !important; color: var(--p-red) !important; }
-
-    /* ---- vue d'ensemble ---- */
-    html body .cfg-stat { border-radius: 16px !important; border-color: var(--p-line) !important; box-shadow: var(--p-ombre) !important; }
-    html body .cfg-progress { border-radius: 16px !important; border-color: var(--p-line) !important; }
-    html body .cfg-bar span { background: var(--p-teal) !important; }
-    html body .cfg-step.ok i { background: var(--p-teal) !important; border-color: var(--p-teal) !important; color: #fff !important; }
-    .p-tuiles-t { margin: 6px 2px -8px; font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--p-muted); }
-    .p-tuiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-    .p-tuile { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 16px; background: #fff; border: 1px solid var(--p-line);
-               box-shadow: inset 0 3px 0 var(--c), var(--p-ombre); text-decoration: none; color: var(--p-ink); transition: transform .25s, box-shadow .25s; }
-    .p-tuile:hover { transform: translateY(-2px); color: var(--p-ink); }
-    .p-tuile > i { width: 40px; height: 40px; border-radius: 12px; flex: 0 0 40px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); }
-    .p-tuile b { display: block; font-size: .95rem; font-weight: 800; }
-    .p-tuile small { display: block; font-size: .8rem; color: var(--p-muted); line-height: 1.35; margin-top: 2px; }
-
-    @media (max-width: 991px) {
-        .p-hero { grid-template-columns: auto 1fr; }
-        .p-emblem { width: 56px; height: 56px; font-size: 26px; border-radius: 18px; grid-row: 1 / span 2; }
-        .p-title { font-size: 1.6rem; }
-        html body > .container > header .p-hero .p-scope { grid-column: 1 / -1 !important; grid-row: auto; }
-        .p-inst { grid-column: 1 / -1; grid-row: auto; flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
-        .p-nav-head { display: none; }
-        html body .cfg-nav { background: var(--p-paper) !important; }
-        .p-tuiles { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 560px) { .p-tuiles { grid-template-columns: 1fr; } html body > .container > header { padding: 20px !important; } }
-    @media (max-width: 640px) { html body > .container > header .p-hero .p-scope, .p-mode { display: none !important; } .p-emblem { width: 48px !important; height: 48px !important; font-size: 22px !important; } }
-    @media (prefers-reduced-motion: reduce) { .p-tuile { transition: none; } }
-    /* =================== RESTRUCTURATION : un thème par écran =================== */
-    #cfgApp.pp-on { display: block !important; }
-    #cfgApp.pp-on > .cfg-nav, #cfgApp.pp-on > .cfg-main { display: none !important; }
-    .pp-shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 28px; align-items: start; }
-    .pp-nav { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 4px; }
-    .pp-nav-head { display: flex; align-items: center; gap: 10px; padding: 4px 10px 14px; margin-bottom: 8px; border-bottom: 1px solid var(--p-line); }
-    .pp-nav-head > i { width: 36px; height: 36px; flex: 0 0 36px; border-radius: 12px; display: grid; place-items: center; background: var(--p-ink); color: #fff; }
-    .pp-nav-head b { display: block; font-size: 1.02rem; font-weight: 800; color: var(--p-ink); }
-    .pp-nav-head small { display: block; font-size: .76rem; font-weight: 600; color: var(--p-muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .pp-search { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; margin: 0 0 10px; border-radius: 14px; background: #fff; border: 1px solid var(--p-line); }
-    .pp-search:focus-within { border-color: var(--p-ink); }
-    .pp-search i { color: #98a2b3; font-size: .85rem; } .pp-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: .9rem; }
-    .pp-link { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; color: #344054; font-weight: 600; font-size: .93rem; text-decoration: none; position: relative; transition: background .2s, color .2s; }
-    .pp-link i { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 10px; display: grid; place-items: center; font-size: 13px; color: var(--c); background: color-mix(in srgb, var(--c) 10%, #fff); transition: background .2s, color .2s; }
-    .pp-link:hover { background: #fff; color: var(--p-ink); }
-    .pp-link.is-on { background: #fff; color: var(--p-ink); box-shadow: var(--p-ombre); }
-    .pp-link.is-on i { background: var(--c); color: #fff; }
-    .pp-link.is-on::before { content: ""; position: absolute; left: -8px; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--c); }
-    .pp-link[data-n]::after { content: attr(data-n); margin-left: auto; font-size: .72rem; font-weight: 700; color: var(--p-muted); background: #F1ECE1; border-radius: 999px; padding: 1px 8px; }
-
-    .pp-main { min-width: 0; }
-    html.pp-anim .pp-panel { animation: ppIn .3s cubic-bezier(.22,.8,.3,1); }
-    @keyframes ppIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-    .pp-head { display: flex; gap: 16px; align-items: center; margin: 2px 0 18px; }
-    .pp-ico { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 16px; display: grid; place-items: center; font-size: 21px; background: var(--c); color: #fff; }
-    .pp-head h2 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; color: var(--p-ink); }
-    .pp-head p { margin: 3px 0 0; color: var(--p-muted); font-size: .93rem; }
-    .pp-group { margin-bottom: 22px; }
-    .pp-group > h3, .pp-sub { margin: 0 0 8px 4px; font-size: .76rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--p-muted); }
-    .pp-note { margin: -2px 0 8px 4px; font-size: .85rem; color: var(--p-muted); }
-    .pp-card { background: #fff; border: 1px solid var(--p-line); border-radius: 18px; box-shadow: var(--p-ombre); padding: 6px 10px; }
-    .pp-card > .setting-item { border-bottom: 1px solid #F3EEE4 !important; border-radius: 12px; }
-    .pp-card > .setting-item:last-child { border-bottom: 0 !important; }
-    .pp-panel .cfg-ico { --c: inherit; background: color-mix(in srgb, var(--c) 10%, #fff) !important; color: var(--c) !important; }
-    .pp-panel .setting-item.cfg-link:hover { background: color-mix(in srgb, var(--c) 5%, #fff) !important; }
-    .pp-panel .setting-item.cfg-link:hover .cfg-ico { background: var(--c) !important; color: #fff !important; }
-    .pp-panel .setting-item.cfg-link:hover .btn, .pp-panel .setting-item.cfg-link:hover .cfg-action { background: var(--c) !important; border-color: var(--c) !important; color: #fff !important; }
-    .pp-panel #status-form { padding: 8px 2px 4px !important; }
-    .pp-panel #status-form .setting-item.cfg-on { border-color: var(--c) !important; background: color-mix(in srgb, var(--c) 5%, #fff) !important; }
-    .pp-panel #status-form .cfg-choice-tag { background: var(--c) !important; }
-    .pp-panel .switch input:checked + .slider { background-color: var(--c) !important; }
-    .pp-panel .cfg-periods { padding: 8px 2px !important; }
-    .pp-panel .cfg-section-ft { border-top: 1px solid #F3EEE4 !important; padding: 12px 4px 6px !important; }
-    .pp-panel .config-btn { background: var(--c) !important; color: #fff !important; border-radius: 999px !important; }
-    .pp-danger .pp-card { border-color: #F6C8BF; box-shadow: none; }
-    .pp-danger > h3 { color: var(--p-red); }
-    .pp-danger .card.border-danger { border: 0 !important; box-shadow: none !important; margin: 0 !important; }
-    .pp-danger .card.border-danger > .card-header { display: none; }
-    .pp-danger .btn-danger { background: #fff !important; color: var(--p-red) !important; border: 1px solid #F3A99B !important; border-radius: 999px !important; }
-    .pp-danger .btn-danger:hover { background: var(--p-red) !important; color: #fff !important; }
-    .pp-danger .card.border-danger > .card-body { padding: 14px 10px !important; }
-    .pp-danger .card.border-danger .card-title { font-size: 1rem !important; font-weight: 800 !important; color: var(--p-ink) !important; }
-    .pp-danger .card.border-danger .card-title::after { display: none !important; }
-    .pp-danger .card.border-danger > .card-footer { background: #FFF6F4 !important; border-top: 1px solid #FBD9D2 !important; color: var(--p-red) !important; border-radius: 0 0 14px 14px; font-size: .85rem; }
-
-    /* vue d'ensemble */
-    .pp-start { padding: 18px 20px; margin-bottom: 24px; }
-    .pp-start-hd { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 8px; }
-    .pp-start-hd b { font-size: 1rem; color: var(--p-ink); } .pp-start-hd span { font-size: .85rem; color: var(--p-muted); font-weight: 600; }
-    .pp-start ol { list-style: none; margin: 0; padding: 0; }
-    .pp-start li { display: flex; align-items: center; gap: 14px; padding: 12px 4px; border-top: 1px solid #F3EEE4; }
-    .pp-start li:first-child { border-top: 0; }
-    .pp-start .n { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: .85rem; background: #F1ECE1; color: var(--p-muted); }
-    .pp-start li.ok .n { background: var(--p-teal); color: #fff; } .pp-start li.todo .n { background: #FEF2D8; color: #8A5700; }
-    .pp-start li a { flex: 1; min-width: 0; text-decoration: none; color: var(--p-ink); } .pp-start li a b { display: block; font-size: .95rem; }
-    .pp-start li a small { display: block; font-size: .82rem; color: var(--p-muted); }
-    .pp-start li > i { color: #b9b2a4; font-size: .8rem; }
-    .pp-start li.ok a b { color: var(--p-muted); }
-    .pp-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
-    .pp-tile { display: grid; grid-template-columns: 42px 1fr; gap: 6px 12px; padding: 16px; border-radius: 16px; background: #fff; border: 1px solid var(--p-line);
-               box-shadow: inset 0 3px 0 var(--c), var(--p-ombre); text-decoration: none; color: var(--p-ink); transition: transform .25s; }
-    .pp-tile:hover { transform: translateY(-2px); color: var(--p-ink); }
-    .pp-tile > i { grid-row: 1 / span 2; width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); }
-    .pp-tile b { display: block; font-size: .97rem; font-weight: 800; } .pp-tile small { display: block; font-size: .8rem; color: var(--p-muted); line-height: 1.4; margin-top: 2px; }
-    .pp-tile em { grid-column: 2; justify-self: start; font-style: normal; font-size: .74rem; font-weight: 700; color: var(--c); }
-
-    .pp-searching .pp-panel { animation: none; }
-    .pp-searching .pp-head p { display: none; } .pp-searching .pp-head { margin-bottom: 10px; }
-    .pp-empty { display: none; text-align: center; padding: 40px; color: var(--p-muted); background: #fff; border: 1px dashed var(--p-line); border-radius: 18px; }
-    .p-tuiles, .p-tuiles-t { display: none !important; }
-
-    @media (max-width: 991px) {
-        .pp-shell { grid-template-columns: 1fr; gap: 14px; }
-        .pp-nav { position: sticky; top: 0; z-index: 30; flex-direction: row; overflow-x: auto; gap: 6px; padding: 10px 0; background: var(--p-paper); scrollbar-width: none; }
-        .pp-nav-head { display: none; } .pp-search { flex: 0 0 200px; margin: 0; }
-        .pp-link { flex: 0 0 auto; background: #fff; border: 1px solid var(--p-line); padding: 6px 12px 6px 6px; }
-        .pp-link.is-on { border-color: var(--c); } .pp-link.is-on::before, .pp-link[data-n]::after { display: none; }
-        .pp-head h2 { font-size: 1.25rem; } .pp-ico { width: 44px; height: 44px; flex-basis: 44px; font-size: 18px; }
-    }
-    @media (prefers-reduced-motion: reduce) { .pp-panel { animation: none; } }
-</style>
-
 <body>
-    <!-- Animation de fond -->
-    <ul class="floating-shapes">
-        <li></li>
-        <li></li>
-        <li></li>
-    </ul>
 
-    <div class="py-5 container">
-      
-
-
-         <header class="shadow-lg mb-5 p-4 rounded-4 text-white" 
-        style="background-color: {{request.user.personnel.color_fond}};">
-    
-    <div class="container-fluid">
-        <h1 class="mb-1 fs-2 fw-bolder">
-            <i class="me-2 text-white-50 bx bxs-cog"></i>
-            Configurations des elements de suivi evaluation
-        </h1>
-        <p class="opacity-75 mb-0 lead">
-            Gérez les formulaires, Natures et catégories des tâches, etc.
-        </p>
+<!-- ===================== Barre d'application ===================== -->
+<header class="md-appbar">
+    <div class="md-appbar-in">
+        <a href="/" class="md-iconbtn" aria-label="Retour au tableau de bord" title="Tableau de bord"><span class="ms">arrow_back</span></a>
+        <div class="md-grow">
+            <h1>Paramètres</h1>
+            <small>Réglages de l'institution {{ actual_institution.nom }} · réservé aux administrateurs</small>
+        </div>
+        <span class="md-appchip mode" id="mdModeChip"><span class="ms">event_available</span><span>Planification : {% if actual_institution.is_step %}échelonnée{% elif actual_institution.is_frequency %}périodique{% else %}à choisir{% endif %}</span></span>
+        <span class="md-appchip"><span class="ms">apartment</span>{{ actual_institution.sigle|default:actual_institution.nom }}</span>
     </div>
 </header>
-<div class="text-left mb-4">
-    <a href="/admin_institution" class="d-inline-flex align-items-center text-decoration-none border rounded-pill p-1 pe-4 shadow-sm bg-white transition-all hover-shadow-lg" style="transition: all 0.3s ease; border-color: #dee2e6;">
-        
-        <!-- Cercle icône avec fond vert doux -->
-        <div class="rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success me-3" style="width: 48px; height: 48px;">
-            <i class="bi bi-plus-lg fs-4"></i> <!-- Assure-toi d'avoir Bootstrap Icons -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
-                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-            </svg>
-        </div>
 
-        <!-- Texte avec hiérarchie -->
-        <div class="d-flex flex-column">
-            <span class="fw-bold text-dark mb-0" style="line-height: 1.2;">Ajouter une Institution</span>
-            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.05rem;">Configuration Système</small>
-        </div>
+<div class="md-page">
 
-        <!-- Petite flèche discrète pour l'appel à l'action -->
-        <i class="bi bi-chevron-right ms-3 text-secondary opacity-50"></i>
-    </a>
+    <!-- ===================== Navigation ===================== -->
+    <nav class="md-nav" aria-label="Rubriques des paramètres">
+        <label class="md-search"><span class="ms">search</span><input type="search" id="mdRecherche" placeholder="Rechercher un réglage" aria-label="Rechercher un réglage" autocomplete="off"></label>
+        <ul class="md-navlist">
+            <li><a href="#collecte" class="actif"><span class="ms">assignment</span>Collecte et indicateurs</a></li>
+            <li><a href="#planification"><span class="ms">event_note</span>Planification</a></li>
+            <li><a href="#finances"><span class="ms">payments</span>Finances</a></li>
+            <li><a href="#notifications"><span class="ms">notifications</span>Notifications</a></li>
+            <li><a href="#acces"><span class="ms">admin_panel_settings</span>Institution et accès</a></li>
+            <li><hr></li>
+            <li><a href="#danger" class="danger"><span class="ms">warning</span>Zone de danger</a></li>
+        </ul>
+    </nav>
 
+    <main class="md-main" id="mdMain">
 
-       <a href="/dupliquer-institution/" class="d-inline-flex align-items-center text-decoration-none border rounded-pill p-1 pe-4 shadow-sm bg-white transition-all hover-shadow-lg" style="transition: all 0.3s ease; border-color: #dee2e6;">
-        
-        <!-- Cercle icône avec fond vert doux -->
-        <div class="rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success me-3" style="width: 48px; height: 48px;">
-            <i class="bi bi-plus-lg fs-4"></i> <!-- Assure-toi d'avoir Bootstrap Icons -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
-                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-            </svg>
-        </div>
+        <!-- ===================== Collecte et indicateurs ===================== -->
+        <section class="md-section" id="collecte" aria-labelledby="t-collecte">
+            <div class="md-section-tete"><div><h2 id="t-collecte">Collecte et indicateurs</h2><p>Ce que les équipes saisissent et comment les indicateurs sont décrits.</p></div></div>
+            <div class="md-paper">
+                <div class="md-subheader">Formulaires</div>
+                <button type="button" class="md-item" data-bs-toggle="modal" data-bs-target="#exampleModal_dataform">
+                    <span class="md-avatar"><span class="ms">dynamic_form</span></span>
+                    <span class="md-item-txt"><b>Formulaires de collecte</b><span>Créer, modifier, dupliquer les formulaires de saisie</span></span>
+                    <span class="ms">chevron_right</span>
+                </button>
+                <div class="md-subheader">Indicateurs</div>
+                <a class="md-item" href="/data_element/group/">
+                    <span class="md-avatar"><span class="ms">category</span></span>
+                    <span class="md-item-txt"><b>Groupes d'indicateurs</b><span>Organiser les indicateurs par thème</span></span>
+                    <span class="ms">chevron_right</span>
+                </a>
+                <a class="md-item" href="/champs-dynamiques/">
+                    <span class="md-avatar"><span class="ms">tune</span></span>
+                    <span class="md-item-txt"><b>Champs dynamiques des indicateurs <span class="md-chip-new">Nouveau</span></b><span>Informations complémentaires : bailleur, désagrégation, unité, documents…</span></span>
+                    <span class="ms">chevron_right</span>
+                </a>
+                <a class="md-item" href="/indicateurs/atelier/">
+                    <span class="md-avatar"><span class="ms">bolt</span></span>
+                    <span class="md-item-txt"><b>Atelier des indicateurs</b><span>Créer des indicateurs rapidement et les rattacher au cadre logique</span></span>
+                    <span class="ms">chevron_right</span>
+                </a>
+                <div class="md-subheader">Éléments de données et opérations</div>
+                <a class="md-item" href="/data_element/group/">
+                    <span class="md-avatar"><span class="ms">dataset</span></span>
+                    <span class="md-item-txt"><b>Groupes d'éléments de données</b><span>Regrouper les éléments collectés</span></span>
+                    <span class="ms">chevron_right</span>
+                </a>
+                <button type="button" class="md-item" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                    <span class="md-avatar"><span class="ms">sell</span></span>
+                    <span class="md-item-txt"><b>Natures et catégories des opérations</b><span>Types d'opérations proposés à la saisie</span></span>
+                    <span class="ms">chevron_right</span>
+                </button>
+            </div>
+        </section>
 
-        <!-- Texte avec hiérarchie -->
-        <div class="d-flex flex-column">
-            <span class="fw-bold text-dark mb-0" style="line-height: 1.2;">Dupliquer Cette Institution</span>
-            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.05rem;">
-                {{actual_institution.nom}}
-            </small>
-        </div>
-
-        <!-- Petite flèche discrète pour l'appel à l'action -->
-        <i class="bi bi-chevron-right ms-3 text-secondary opacity-50"></i>
-    </a>
-
-
-
-      <a href="/roles_personnels/" class="d-inline-flex align-items-center text-decoration-none border rounded-pill p-1 pe-4 shadow-sm bg-white transition-all hover-shadow-lg" style="transition: all 0.3s ease; border-color: #dee2e6;">
-        
-        <!-- Cercle icône avec fond vert doux -->
-        <div class="rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success me-3" style="width: 48px; height: 48px;">
-            <i class="bi bi-plus-lg fs-4"></i> <!-- Assure-toi d'avoir Bootstrap Icons -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-plus" viewBox="0 0 16 16">
-                <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-            </svg>
-        </div>
-
-        <!-- Texte avec hiérarchie -->
-        <div class="d-flex flex-column">
-            <span class="fw-bold text-dark mb-0" style="line-height: 1.2;">Configurer les roles</span>
-            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.05rem;">
-                Roles
-            </small>
-        </div>
-
-        <!-- Petite flèche discrète pour l'appel à l'action -->
-        <i class="bi bi-chevron-right ms-3 text-secondary opacity-50"></i>
-    </a>
-</div>
-
-<style>
-    /* Petit effet de survol pour l'intuition sans charger le CSS */
-    .hover-shadow-lg:hover {
-        box-shadow: 0 1rem 3rem rgba(0,0,0,.1) !important;
-        transform: translateY(-2px);
-        border-color: #198754 !important; /* Couleur Success de Bootstrap */
-    }
-    .hover-shadow-lg:hover .bg-success {
-        background-color: #198754 !important;
-        color: white !important;
-    }
-</style>
-        <div class="config-container">
-            <!-- Module 1: Formulaire de données -->
-            <div class="config-card animate__animated animate__fadeInUp">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class='bx bx-edit-alt'></i>
+        <!-- ===================== Planification ===================== -->
+        <section class="md-section" id="planification" aria-labelledby="t-planification">
+            <div class="md-section-tete"><div><h2 id="t-planification">Planification</h2><p>Comment les activités sont planifiées et suivies dans le temps.</p></div></div>
+            <div class="md-paper">
+                <div class="md-subheader">Mode de planification · un seul à la fois</div>
+                <form action="/changeStatus/" method="POST" id="status-form">
+                    {% csrf_token %}
+                    <label class="md-choix{% if actual_institution.is_step %} on{% endif %}" data-choix>
+                        <span><b>Planification échelonnée</b><span>Les activités avancent par étapes successives (jalons).</span></span>
+                        <span class="md-switch"><input type="checkbox" name="is_step" id="is_step_checkbox" {% if actual_institution.is_step %}checked{% endif %}><span class="track"></span><span class="thumb"></span></span>
+                    </label>
+                    <label class="md-choix{% if actual_institution.is_frequency %} on{% endif %}" data-choix>
+                        <span><b>Planification périodique</b><span>Les activités sont suivies par période (mois, trimestre…).</span></span>
+                        <span class="md-switch"><input type="checkbox" name="is_frequency" id="is_frequency_checkbox" {% if actual_institution.is_frequency %}checked{% endif %}><span class="track"></span><span class="thumb"></span></span>
+                    </label>
+                    <div class="md-actions">
+                        <small id="mdModeEtat"></small>
+                        <button type="submit" class="md-btn contained"><span class="ms">check</span>Appliquer</button>
                     </div>
-                    <h3 class="card-title">Configurer Une Institution</h3>
+                </form>
+
+                <div class="md-subheader">Périodes de suivi</div>
+                <div class="md-chips">
+                    {% for periode_oks in periode_ok|slice:":6" %}
+                    <span class="md-chip"><span class="ms" style="font-size:18px">date_range</span>{{ periode_oks.nom }} <em>{{ periode_oks.annee }}</em></span>
+                    {% empty %}
+                    <span class="md-vide">Aucune période configurée pour l'instant.</span>
+                    {% endfor %}
                 </div>
-                <div class="card-body">
-                     <div class="setting-item">
-                        <span class="setting-label"><i class='bx bx-data'></i> Gestion des Groupes D'elements</span>
-                        <a class="btn-outline-primary btn btn-sm" href="/data_element/group/">Gérer</a>
-                    </div>
+                <button type="button" class="md-item" data-bs-toggle="modal" data-bs-target="#exampleModals">
+                    <span class="md-avatar"><span class="ms">calendar_month</span></span>
+                    <span class="md-item-txt"><b>Gérer les périodes</b><span>Créer, importer et ordonner les périodes de planification</span></span>
+                    <span class="ms">chevron_right</span>
+                </button>
+                <button type="button" class="md-item" data-bs-toggle="modal" data-bs-target="#exampleModal_etape">
+                    <span class="md-avatar"><span class="ms">format_list_numbered</span></span>
+                    <span class="md-item-txt"><b>Étapes d'échelonnage</b><span>Étapes utilisées par la planification échelonnée</span></span>
+                    <span class="ms">chevron_right</span>
+                </button>
+            </div>
+        </section>
 
-                     <div class="setting-item">
-                        <span class="setting-label"><i class='bx bx-data'></i> Gestion des Groupes D'indicateurs</span>
-                        <a class="btn-outline-primary btn btn-sm" href="/data_element/group/">Gérer</a>
-                    </div>
-                  <form action='/changeStatus/' method="POST" id="status-form">
-    {% csrf_token %}
-    <div class="setting-item">
-        <span class="setting-label"><i class='fa fa-shape-circle'></i> Planification échelonnée</span>
-        <label class="switch">
-            <input type="checkbox" name="is_step" id="is_step_checkbox" {% if actual_institution.is_step %} checked {% endif %}>
-            <span class="slider round"></span>
-        </label>
-    </div>
+        <!-- ===================== Finances ===================== -->
+        <section class="md-section" id="finances" aria-labelledby="t-finances">
+            <div class="md-section-tete"><div><h2 id="t-finances">Finances</h2><p>Bailleurs, lignes de financement et monnaies des budgets.</p></div></div>
+            <div class="md-paper">
+                <button type="button" class="md-item" data-bs-toggle="modal" data-bs-target="#exampleModal_sourcefinancement">
+                    <span class="md-avatar"><span class="ms">account_balance</span></span>
+                    <span class="md-item-txt"><b>Sources de financement</b><span>Bailleurs et lignes budgétaires</span></span>
+                    <span class="ms">chevron_right</span>
+                </button>
+                <button type="button" class="md-item" data-bs-toggle="modal" data-bs-target="#exampleModal_devise">
+                    <span class="md-avatar"><span class="ms">currency_exchange</span></span>
+                    <span class="md-item-txt"><b>Devises</b><span>Monnaies et taux de change utilisés dans les budgets</span></span>
+                    <span class="ms">chevron_right</span>
+                </button>
+            </div>
+        </section>
 
-    <div class="setting-item">
-        <span class="setting-label"><i class='fa fa-layer'></i> Planification périodique</span>
-        <label class="switch">
-            <input type="checkbox" name="is_frequency" id="is_frequency_checkbox" {% if actual_institution.is_frequency %} checked {% endif %}>
-            <span class="slider round"></span>
-        </label>
-    </div>
+        <!-- ===================== Notifications ===================== -->
+        <section class="md-section" id="notifications" aria-labelledby="t-notifications">
+            <div class="md-section-tete"><div><h2 id="t-notifications">Notifications</h2><p>Qui est prévenu, de quoi, et quand.</p></div></div>
+            <div class="md-paper">
+                <a class="md-item" href="{% url 'notifications-system' %}">
+                    <span class="md-avatar"><span class="ms">notifications_active</span></span>
+                    <span class="md-item-txt"><b>Règles de notification</b><span>Alertes de retard, validations, rappels</span></span>
+                    <span class="ms">chevron_right</span>
+                </a>
+            </div>
+        </section>
 
-    <div class="mt-4 text-center">
-        <button type='submit' class="config-btn">
-            <i class='bx bx-save'></i> Appliquer
-        </button>
-    </div>
-</form>
+        <!-- ===================== Institution et accès ===================== -->
+        <section class="md-section" id="acces" aria-labelledby="t-acces">
+            <div class="md-section-tete"><div><h2 id="t-acces">Institution et accès</h2><p>Qui peut voir, saisir et valider ; gestion des institutions.</p></div></div>
+            <div class="md-paper">
+                <a class="md-item" href="/roles_personnels/">
+                    <span class="md-avatar"><span class="ms">shield_person</span></span>
+                    <span class="md-item-txt"><b>Rôles et permissions</b><span>Qui peut voir, saisir et valider</span></span>
+                    <span class="ms">chevron_right</span>
+                </a>
+                <a class="md-item" href="/admin_institution">
+                    <span class="md-avatar"><span class="ms">domain_add</span></span>
+                    <span class="md-item-txt"><b>Ajouter une institution</b><span>Créer une nouvelle institution</span></span>
+                    <span class="ms">chevron_right</span>
+                </a>
+                <a class="md-item" href="/dupliquer-institution/">
+                    <span class="md-avatar"><span class="ms">content_copy</span></span>
+                    <span class="md-item-txt"><b>Dupliquer {{ actual_institution.nom }}</b><span>Copier toute la configuration actuelle dans une nouvelle institution</span></span>
+                    <span class="ms">chevron_right</span>
+                </a>
+            </div>
+        </section>
 
-<script>
-    // Récupérer les éléments de la page
-    const isStepCheckbox = document.getElementById('is_step_checkbox');
-    const isFrequencyCheckbox = document.getElementById('is_frequency_checkbox');
-    const form = document.getElementById('status-form');
-
-    // Fonction pour gérer la logique de désactivation
-    function handleCheckboxChange(event) {
-        const checkboxChanged = event.target;
-        
-        if (checkboxChanged.id === 'is_step_checkbox') {
-            if (checkboxChanged.checked) {
-                isFrequencyCheckbox.checked = false;
-            }
-        } else if (checkboxChanged.id === 'is_frequency_checkbox') {
-            if (checkboxChanged.checked) {
-                isStepCheckbox.checked = false;
-            }
-        }
-    }
-
-    // Ajouter des écouteurs d'événements
-    isStepCheckbox.addEventListener('change', handleCheckboxChange);
-    isFrequencyCheckbox.addEventListener('change', handleCheckboxChange);
-
-</script>
+        <!-- ===================== Zone de danger ===================== -->
+        <section class="md-section" id="danger" aria-labelledby="t-danger">
+            <div class="md-section-tete"><div><h2 id="t-danger" style="color:var(--md-error)">Zone de danger</h2><p>Action irréversible.</p></div></div>
+            <div class="md-paper md-danger">
+                <div class="md-item" style="cursor:default">
+                    <span class="md-avatar"><span class="ms">delete_forever</span></span>
+                    <span class="md-item-txt"><b>Supprimer définitivement l'institution</b><span>Toutes les données, accès et historiques de {{ actual_institution.nom }} seront supprimés. Les rapports déjà exportés ne seront plus valides.</span></span>
+                    <button type="button" class="md-btn error outlined" id="mdSupprimer">Supprimer</button>
                 </div>
             </div>
-            <a href="/" class="float">
-                <i class="fa-chevron-left my-float fa"></i>
-                </a>
+        </section>
+    </main>
+</div>
+
+<!-- Confirmation de suppression (Dialog Material) -->
+<div class="md-dialog-fond" id="mdDialog" role="dialog" aria-modal="true" aria-labelledby="mdDialogT">
+    <div class="md-dialog">
+        <h3 id="mdDialogT">Supprimer {{ actual_institution.nom }} ?</h3>
+        <div class="md-dialog-c">
+            Cette action est définitive : données, accès et historiques seront perdus. Pour confirmer, écrivez le nom de l'institution.
+            <div class="md-field"><label for="mdConfirm">Nom de l'institution</label><input id="mdConfirm" autocomplete="off" placeholder="{{ actual_institution.nom }}"></div>
+        </div>
+        <div class="md-dialog-a">
+            <button type="button" class="md-btn text" data-md-fermer>Annuler</button>
+            <a href="/delete_institution/{% firstof line.id actual_institution.id %}/" class="md-btn error" id="mdConfirmer" aria-disabled="true" style="pointer-events:none;opacity:.38">Supprimer définitivement</a>
+        </div>
+    </div>
+</div>
+
+<!-- Snackbar (messages) -->
+<div class="md-snack" id="mdSnack" role="status" aria-live="polite"><span></span><button type="button" aria-label="Fermer"><span class="ms">close</span></button></div>
+{% if messages %}
+<script>window.MD_MESSAGES = [{% for message in messages %}{ t: "{{ message|escapejs }}", k: "{{ message.tags|escapejs }}" }{% if not forloop.last %},{% endif %}{% endfor %}];</script>
+{% endif %}
+
+<!-- ===================== FENÊTRES (contenu d'origine, inchangé sauf corrections signalées) ===================== -->
   <div class="modal fade" id="exampleModal_dataform" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
@@ -1058,86 +587,13 @@
     </div>
 </div>
 
-<script>
-// 1. LOGIQUE DE BASCULEMENT (TOGGLE)
-function switchTab(view) {
-    const list = document.getElementById('view-list');
-    const add = document.getElementById('view-add');
-    const btnList = document.getElementById('btn-list');
-    const btnAdd = document.getElementById('btn-add');
-    const search = document.getElementById('searchContainer');
-
-    if (view === 'list') {
-        list.classList.remove('d-none');
-        add.classList.add('d-none');
-        btnList.classList.add('active');
-        btnAdd.classList.remove('active');
-        search.classList.remove('invisible');
-    } else {
-        list.classList.add('d-none');
-        add.classList.remove('d-none');
-        btnList.classList.remove('active');
-        btnAdd.classList.add('active');
-        search.classList.add('invisible');
-    }
-}
-
-// 2. LOGIQUE DE FILTRAGE
-function filterTable() {
-    const input = document.getElementById("erpSearchInput");
-    const filter = input.value.toUpperCase();
-    const table = document.getElementById("erpTable");
-    const tr = table.getElementsByTagName("tr");
-
-    for (let i = 1; i < tr.length; i++) { // On commence à 1 pour sauter le header
-        const td = tr[i].getElementsByClassName("search-target")[0];
-        if (td) {
-            const txtValue = td.textContent || td.innerText;
-            if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                tr[i].style.display = "";
-            } else {
-                tr[i].style.display = "none";
-            }
-        }
-    }
-}
-</script>
-
-<style>
-/* Style spécifique pour l'aspect bouton d'onglet ERP */
-.nav-pills .nav-link {
-    color: #6c757d;
-    border-radius: 6px;
-    padding: 8px 16px;
-    transition: all 0.2s;
-}
-.nav-pills .nav-link.active {
-    background-color: #f0f7ff;
-    color: #0d6efd;
-    border: 1px solid #cfe2ff;
-}
-.nav-link:not(.active):hover {
-    background-color: #f8f9fa;
-}
-</style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha512-DxV+EoADOkOygM4IR9yXP8Sb2qwgidEmeqAEmDKIOfPRQZOWbXCzLC6vjbZyy0vPisbH2SyW27+ddLVCN+OMzQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<style>
-    .htmx-request .spinner-border {
-    display: inline-block;
-}
-.htmx-request button {
-    opacity: 0.7;
-}
-</style>
-<!-- Modal -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       
       <div class="modal-header">
         <h1 class="modal-title fs-5" id="exampleModal">
-            <i class="me-2 bi bi-tags-fill"></i> Gestion des Catégories & Natures
+            <i class="me-2 fa-solid fa-tags"></i> Gestion des Catégories & Natures
         </h1>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
       </div>
@@ -1147,12 +603,12 @@ function filterTable() {
         <ul class="nav nav-tabs nav-justified" id="myTab" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories" type="button" role="tab" aria-controls="categories" aria-selected="true">
-                <i class="me-2 bi bi-folder-fill"></i> Catégories
+                <i class="me-2 fa-solid fa-folder"></i> Catégories
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="natures-tab" data-bs-toggle="tab" data-bs-target="#natures" type="button" role="tab" aria-controls="natures" aria-selected="false">
-                <i class="me-2 bi bi-basket-fill"></i> Natures
+                <i class="me-2 fa-solid fa-basket-shopping"></i> Natures
             </button>
           </li>
         </ul>
@@ -1177,7 +633,7 @@ function filterTable() {
                         </div>
                         
                         <button type="submit" class="d-flex align-items-center btn btn-primary">
-                            <i class="me-2 bi bi-plus-lg"></i> Enregistrer
+                            <i class="me-2 fa-solid fa-plus"></i> Enregistrer
                         </button>
                     </form>
                 </div>
@@ -1222,7 +678,7 @@ function filterTable() {
                         </div>
                         
                         <button type="submit" class="d-flex align-items-center btn btn-success">
-                            <i class="me-2 bi bi-plus-lg"></i> Valider
+                            <i class="me-2 fa-solid fa-plus"></i> Valider
                         </button>
                     </form>
                 </div>
@@ -1259,120 +715,6 @@ function filterTable() {
   </div>
 </div>  
 
-            
-
-           
-            <!-- Module 5: Période -->
-            <div class="config-card animate__animated animate__fadeInUp animate__delay-4s">
-      <div class="card-header">
-          <div class="card-icon">
-              <i class='bx bx-calendar'></i>
-          </div>
-          <h3 class="card-title">Période d'Évaluation</h3>
-      </div>
-      <div class="card-body">
-          <div class="periode-timeline">
-              {% for periode_oks in periode_ok|slice:":3" %}
-              <div class="periode-item">
-                  <h6>{{ periode_oks.nom }}</h6>
-                  <div class="periode-details">
-                      <small>{{ periode_oks.annee }}</small>
-                      <span class="bg-primary badge">Numero d'ordre: {{ periode_oks.numero_ordre }}</span>
-                  </div>
-              </div>
-              {% endfor %}
-          </div>
-          <div class="mt-3 text-center">
-              <a href="#" class="config-btn" data-bs-toggle="modal" data-bs-target="#exampleModals">
-                  <i class='bx-dots-horizontal-rounded bx'></i> Plus d'options
-              </a>
-          </div>
-      </div>
-  </div>
-              <div class="config-card animate__animated animate__fadeInUp animate__delay-5s">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <i class='bx bx-cog'></i>
-                    </div>
-                    <h3 class="card-title">Autres Paramètres</h3>
-                </div>
-                <div class="card-body">
-                    <div class="setting-item">
-                        <span class="setting-label"><i class='bx bx-data'></i> Nature / Categories Des Operations</span>
-                        <a class="btn-outline-primary btn btn-sm" href="#"  data-bs-toggle="modal" data-bs-target="#exampleModal">Gérer</a>
-                    </div>
-                    <div class="setting-item">
-                        <span class="setting-label"><i class='bx bx-data'></i> Gestion des Formulaires</span>
-                        <a class="btn-outline-primary btn btn-sm" href="#" data-bs-toggle="modal" data-bs-target="#exampleModal_dataform">Gérer</a>
-                    </div>
-                     <div class="setting-item">
-                        <span class="setting-label"><i class='fa fa-coins'></i> Sources De Financement</span>
-                        <button class="btn-outline-primary btn btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal_sourcefinancement">Gérer</button>
-                    </div>
-
-                     <div class="setting-item">
-                        <span class="setting-label"><i class='fa fa-cog'></i> Echelonnage</span>
-                        <button class="btn-outline-primary btn btn-sm"  data-bs-toggle="modal" data-bs-target="#exampleModal_etape">Gérer</button>
-                    </div>
-
-
-                     <div class="setting-item">
-                        <span class="setting-label"><i class='fa-layer-group fa'></i> Gestion des devises</span>
-                        <button class="btn-outline-primary btn btn-sm"  data-bs-toggle="modal" data-bs-target="#exampleModal_devise">Gérer</button>
-                    </div>
-                   <div class="mt-4 text-center">
-                        <a href="{%url 'notifications-system'%}" class="config-btn">
-                            <i class='bx-dots-horizontal-rounded bx'></i> Configurer les notifications
-                        </a>
-                    </div> 
-                </div>
-            </div>
-        
-
-    <style>
-        .hidden {
-            display: none;
-        }
-
-        .visible {
-            display: block;
-        }
-
-        .toggle-buttons {
-            display: flex;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            overflow: hidden;
-            border: 1px solid #0d6efd;
-            width: fit-content;
-        }
-
-        .toggle-btn {
-            border-radius: 0;
-            margin: 0;
-            border: none;
-        }
-
-        .action-buttons {
-            white-space: nowrap;
-        }
-
-        .action-btn {
-            padding: 0.25rem 0.5rem;
-            margin: 0 2px;
-        }
-
-        .submit-btn {
-            background-color: #0d6efd;
-        }
-
-        .submit-btn:hover {
-            background-color: #0b5ed7;
-        }
-    </style>
-<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-
-<!-- Modal -->
 <div class="modal fade" id="exampleModal_sourcefinancement" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -1472,123 +814,6 @@ function filterTable() {
     </div>
   </div>
 </div>
-
-<script src="https://cdn.rawgit.com/alertifyjs/alertify.js/v1.0.11/dist/js/alertify.js"></script>
-
-<script src="https://cdn.rawgit.com/alertifyjs/alertify.js/v1.0.11/dist/js/ngAlertify.js"></script>
-<!-- Bootstrap & jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    function SubmitForm(){
-
-    // 1. Récupération des éléments du formulaire
-    const form = document.getElementById('financeForm');
-    const code = document.getElementById('code').value;
-    const libelle = document.getElementById('libelle').value;
-    const description = document.getElementById('description').value;
-
-
-    // 2. Préparation des données pour l'envoi
-    const formData = new FormData();
-    formData.append('code', code);
-    formData.append('libelle', libelle);
-    formData.append('description', description);
-
-
-    const url = '/save_source_financement/';
-
-
-    fetch(url, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-        }
-    })
-    .then(response => {
-
-        if (!response.ok) {
-            throw new Error('Erreur réseau ou réponse non valide');
-        }
-        return response.json();
-    })
-    .then(data => {
-
-        console.log('Succès:', data);
- alertify.success("You've clicked 'OK'");
-
-        // Réinitialisation du formulaire
-        form.reset();
-
-
-
-        if (typeof showTable === 'function') {
-            showTable();
-        }
-    })
-    .catch(error => {
-
-    });
-}
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const showTableBtn = document.getElementById('showTableBtn');
-        const showFormBtn = document.getElementById('showFormBtn');
-        const addNewBtn = document.getElementById('addNewBtn');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const tableSection = document.getElementById('tableSection');
-        const formSection = document.getElementById('formSection');
-        const formTitle = document.getElementById('formTitle');
-        const financeForm = document.getElementById('financeForm');
-
-        // Fonction pour afficher le tableau et masquer le formulaire
-        function showTable() {
-            tableSection.classList.remove('hidden');
-            tableSection.classList.add('visible');
-
-            formSection.classList.remove('visible');
-            formSection.classList.add('hidden');
-
-            showTableBtn.classList.remove('btn-outline-primary');
-            showTableBtn.classList.add('btn-primary');
-
-            showFormBtn.classList.remove('btn-primary');
-            showFormBtn.classList.add('btn-outline-primary');
-        }
-
-        // Fonction pour afficher le formulaire et masquer le tableau
-        function showForm() {
-            formSection.classList.remove('hidden');
-            formSection.classList.add('visible');
-
-            tableSection.classList.remove('visible');
-            tableSection.classList.add('hidden');
-
-            showFormBtn.classList.remove('btn-outline-primary');
-            showFormBtn.classList.add('btn-primary');
-
-            showTableBtn.classList.remove('btn-primary');
-            showTableBtn.classList.add('btn-outline-primary');
-
-            // Réinitialiser le formulaire
-            financeForm.reset();
-            formTitle.textContent = "Ajouter une Source de Financement";
-        }
-
-        // Événements pour les boutons
-        showTableBtn.addEventListener('click', showTable);
-        showFormBtn.addEventListener('click', showForm);
-        addNewBtn.addEventListener('click', showForm);
-        cancelBtn.addEventListener('click', showTable);
-
-
-
-        // Initialisation pour s'assurer que le tableau est visible au chargement
-        showTable();
-    });
-</script>
-
 
 <div class="modal fade" id="exampleModals" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
@@ -1791,95 +1016,8 @@ function filterTable() {
                     </div>
 
 </div>
+</div></div></div></div></div></div></div>   <!-- fermetures manquantes dans la version d'origine -->
 
-
-
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const toggleButton = document.getElementById('toggleButton');
-            const cancelButton = document.getElementById('cancelButton');
-            const periodesSection = document.getElementById('periodesSection');
-            const addSection = document.getElementById('addSection');
-
-            function toggleSections() {
-                if (periodesSection.style.display === 'block' || periodesSection.style.display === '') {
-                    periodesSection.style.display = 'none';
-                    addSection.style.display = 'block';
-                    toggleButton.querySelector('span').textContent = 'Voir les périodes';
-                    toggleButton.querySelector('i').className = 'bx bx-list-ul me-2';
-                } else {
-                    periodesSection.style.display = 'block';
-                    addSection.style.display = 'none';
-                    toggleButton.querySelector('span').textContent = 'Nouvelle Période';
-                    toggleButton.querySelector('i').className = 'bx bx-plus me-2';
-                }
-            }
-
-            if (toggleButton && periodesSection && addSection) {
-                toggleButton.addEventListener('click', toggleSections);
-
-                if (cancelButton) {
-                    cancelButton.addEventListener('click', function() {
-                        periodesSection.style.display = 'block';
-                        addSection.style.display = 'none';
-                        toggleButton.querySelector('span').textContent = 'Nouvelle Période';
-                        toggleButton.querySelector('i').className = 'bx bx-plus me-2';
-                    });
-                }
-            }
-
-            // Tooltip initialization
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-        });
-    </script>
-
-            <!-- Module 6: Autres Paramètres -->
-
-        </div>
-    </div>
-          </div>
-      </div>
-    </div>
-  </div>
-</div>
-        </div>
-
-<!-- Lien stylisé comme une action rapide -->
-
- <!-- Ajout de border-2 pour une bordure plus visible et une ombre légère rouge -->
-<div class="card border-danger border-2 mt-5 shadow-sm" style="border-style: solid;">
-  
-  <div class="card-header bg-danger text-white fw-bold py-3">
-    <i class="bi bi-exclamation-octagon-fill me-2"></i> ZONE DE DANGER : ACTION IRRÉVERSIBLE
-  </div>
-  
-  <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3 bg-white">
-    <div>
-      <h6 class="card-title mb-1 fw-bold text-danger">Supprimer définitivement l'institution</h6>
-      <p class="card-text text-muted small mb-0">
-        Attention : Cette opération supprimera toutes les données, accès et historiques liés à cette institution.
-      </p>
-    </div>
-    
-    <!-- Bouton avec une ombre rouge pour attirer l'attention -->
-    <a href="/delete_institution/{{line.id}}/" class="btn btn-danger px-4 fw-bold shadow">
-      <i class="bi bi-trash-fill me-1"></i> Supprimer l'institution
-    </a>
-  </div>
-
-  <!-- Footer avec un fond rouge très clair (subtle) pour rester lisible mais rester dans le thème -->
-  <div class="card-footer bg-danger-subtle border-top border-danger py-2">
-    <small class="text-danger fw-semibold">
-      <i class="bi bi-info-circle-fill me-1"></i> 
-      Note importante : Les rapports exportés précédemment ne seront plus valides après cette action.
-    </small>
-  </div>
-</div>
 <div class="modal fade" id="exampleModal_etape" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl"> <div class="modal-content">
       <div class="text-light modal-header" style="background-color:{{request.user.personnel.color_fond}}">
@@ -1993,28 +1131,7 @@ function filterTable() {
     </div>
   </div>
 </div>
- <!-- ⭐ STYLES (à mettre UNE SEULE FOIS dans le <head>) -->
-<style>
-.card-soft {
-  border: none;
-  border-radius: 18px;
-  box-shadow: 0 10px 25px rgba(0,0,0,.05);
-  transition: .2s;
-}
-.card-soft:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(0,0,0,.12);
-}
-.badge-soft {
-  background:#eef3ff;
-  color:#2954d1;
-  border-radius:12px;
-  padding:6px 10px;
-}
-</style>
 
-
-<!-- 💱 MODAL GESTION DEVISES -->
 <div class="modal fade" id="exampleModal_devise" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -2041,7 +1158,7 @@ function filterTable() {
           </li>
 
           <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#list">
+            <button class="nav-link" id="list-tab" data-bs-toggle="tab" data-bs-target="#list">
               📋 Liste des Devises
             </button>
           </li>
@@ -2121,7 +1238,7 @@ function filterTable() {
 
                       
 
-                     <div class="form-check form-switch"
+                     <div class="form-check form-switch">
                       
                         {%include 'partials/devise_switch.html' with devises=devises%}
 
@@ -2130,6 +1247,7 @@ function filterTable() {
                   </div>
                 </div>
               </div>
+              </div>  <!-- fermeture manquante de la colonne -->
               {% endfor %}
 
             </div>
@@ -2148,9 +1266,287 @@ function filterTable() {
     </div>
   </div>
 </div>
-</section>
+
+<!-- ===================== Scripts et styles des fenêtres (d'origine) ===================== -->
+<script>
+// 1. LOGIQUE DE BASCULEMENT (TOGGLE)
+function switchTab(view) {
+    const list = document.getElementById('view-list');
+    const add = document.getElementById('view-add');
+    const btnList = document.getElementById('btn-list');
+    const btnAdd = document.getElementById('btn-add');
+    const search = document.getElementById('searchContainer');
+
+    if (view === 'list') {
+        list.classList.remove('d-none');
+        add.classList.add('d-none');
+        btnList.classList.add('active');
+        btnAdd.classList.remove('active');
+        search.classList.remove('invisible');
+    } else {
+        list.classList.add('d-none');
+        add.classList.remove('d-none');
+        btnList.classList.remove('active');
+        btnAdd.classList.add('active');
+        search.classList.add('invisible');
+    }
+}
+
+// 2. LOGIQUE DE FILTRAGE
+function filterTable() {
+    const input = document.getElementById("erpSearchInput");
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById("erpTable");
+    const tr = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < tr.length; i++) { // On commence à 1 pour sauter le header
+        const td = tr[i].getElementsByClassName("search-target")[0];
+        if (td) {
+            const txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+</script>
+<style>
+/* Style spécifique pour l'aspect bouton d'onglet ERP */
+.nav-pills .nav-link {
+    color: #6c757d;
+    border-radius: 6px;
+    padding: 8px 16px;
+    transition: all 0.2s;
+}
+.nav-pills .nav-link.active {
+    background-color: #f0f7ff;
+    color: #0d6efd;
+    border: 1px solid #cfe2ff;
+}
+.nav-link:not(.active):hover {
+    background-color: #f8f9fa;
+}
+</style>
+<style>
+    .htmx-request .spinner-border {
+    display: inline-block;
+}
+.htmx-request button {
+    opacity: 0.7;
+}
+</style>
+    <style>
+        .hidden {
+            display: none;
+        }
+
+        .visible {
+            display: block;
+        }
+
+        .toggle-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #0d6efd;
+            width: fit-content;
+        }
+
+        .toggle-btn {
+            border-radius: 0;
+            margin: 0;
+            border: none;
+        }
+
+        .action-buttons {
+            white-space: nowrap;
+        }
+
+        .action-btn {
+            padding: 0.25rem 0.5rem;
+            margin: 0 2px;
+        }
+
+        .submit-btn {
+            background-color: #0d6efd;
+        }
+
+        .submit-btn:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
+<script>
+    function SubmitForm(){
+
+    // 1. Récupération des éléments du formulaire
+    const form = document.getElementById('financeForm');
+    const code = document.getElementById('code').value;
+    const libelle = document.getElementById('libelle').value;
+    const description = document.getElementById('description').value;
 
 
+    // 2. Préparation des données pour l'envoi
+    const formData = new FormData();
+    formData.append('code', code);
+    formData.append('libelle', libelle);
+    formData.append('description', description);
+
+
+    const url = '/save_source_financement/';
+
+
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        }
+    })
+    .then(response => {
+
+        if (!response.ok) {
+            throw new Error('Erreur réseau ou réponse non valide');
+        }
+        return response.json();
+    })
+    .then(data => {
+
+        console.log('Succès:', data);
+ alertify.success('Source de financement enregistrée.');
+
+        // Réinitialisation du formulaire
+        form.reset();
+
+
+
+        if (typeof showTable === 'function') {
+            showTable();
+        }
+    })
+    .catch(error => {
+
+    });
+}
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const showTableBtn = document.getElementById('showTableBtn');
+        const showFormBtn = document.getElementById('showFormBtn');
+        const addNewBtn = document.getElementById('addNewBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const tableSection = document.getElementById('tableSection');
+        const formSection = document.getElementById('formSection');
+        const formTitle = document.getElementById('formTitle');
+        const financeForm = document.getElementById('financeForm');
+
+        // Fonction pour afficher le tableau et masquer le formulaire
+        function showTable() {
+            tableSection.classList.remove('hidden');
+            tableSection.classList.add('visible');
+
+            formSection.classList.remove('visible');
+            formSection.classList.add('hidden');
+
+            showTableBtn.classList.remove('btn-outline-primary');
+            showTableBtn.classList.add('btn-primary');
+
+            showFormBtn.classList.remove('btn-primary');
+            showFormBtn.classList.add('btn-outline-primary');
+        }
+
+        // Fonction pour afficher le formulaire et masquer le tableau
+        function showForm() {
+            formSection.classList.remove('hidden');
+            formSection.classList.add('visible');
+
+            tableSection.classList.remove('visible');
+            tableSection.classList.add('hidden');
+
+            showFormBtn.classList.remove('btn-outline-primary');
+            showFormBtn.classList.add('btn-primary');
+
+            showTableBtn.classList.remove('btn-primary');
+            showTableBtn.classList.add('btn-outline-primary');
+
+            // Réinitialiser le formulaire
+            financeForm.reset();
+            formTitle.textContent = "Ajouter une Source de Financement";
+        }
+
+        // Événements pour les boutons
+        showTableBtn.addEventListener('click', showTable);
+        showFormBtn.addEventListener('click', showForm);
+        addNewBtn.addEventListener('click', showForm);
+        if (cancelBtn) cancelBtn.addEventListener('click', showTable);   /* corrigé : ce bouton n'existe pas dans la fenêtre (plantait le script) */
+
+
+
+        // Initialisation pour s'assurer que le tableau est visible au chargement
+        showTable();
+    });
+</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleButton = document.getElementById('toggleButton');
+            const cancelButton = document.getElementById('cancelButton');
+            const periodesSection = document.getElementById('periodesSection');
+            const addSection = document.getElementById('addSection');
+
+            function toggleSections() {
+                if (periodesSection.style.display === 'block' || periodesSection.style.display === '') {
+                    periodesSection.style.display = 'none';
+                    addSection.style.display = 'block';
+                    toggleButton.querySelector('span').textContent = 'Voir les périodes';
+                    toggleButton.querySelector('i').className = 'bx bx-list-ul me-2';
+                } else {
+                    periodesSection.style.display = 'block';
+                    addSection.style.display = 'none';
+                    toggleButton.querySelector('span').textContent = 'Nouvelle Période';
+                    toggleButton.querySelector('i').className = 'bx bx-plus me-2';
+                }
+            }
+
+            if (toggleButton && periodesSection && addSection) {
+                toggleButton.addEventListener('click', toggleSections);
+
+                if (cancelButton) {
+                    cancelButton.addEventListener('click', function() {
+                        periodesSection.style.display = 'block';
+                        addSection.style.display = 'none';
+                        toggleButton.querySelector('span').textContent = 'Nouvelle Période';
+                        toggleButton.querySelector('i').className = 'bx bx-plus me-2';
+                    });
+                }
+            }
+
+            // Tooltip initialization
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+<style>
+.card-soft {
+  border: none;
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.05);
+  transition: .2s;
+}
+.card-soft:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0,0,0,.12);
+}
+.badge-soft {
+  background:#eef3ff;
+  color:#2954d1;
+  border-radius:12px;
+  padding:6px 10px;
+}
+</style>
     <script>
         document.body.addEventListener('htmx:configRequest', (event) => {
             if (event.detail.method !== 'get') {
@@ -2159,470 +1555,123 @@ function filterTable() {
             }
         });
     </script>
-    <!-- Bootstrap JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Animation 3D des cartes au survol
-        document.querySelectorAll('.config-card').forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const x = e.clientX - card.getBoundingClientRect().left;
-                const y = e.clientY - card.getBoundingClientRect().top;
-
-                const centerX = card.offsetWidth / 2;
-                const centerY = card.offsetHeight / 2;
-
-                const angleX = (y - centerY) / 20;
-                const angleY = (centerX - x) / 20;
-
-                card.style.transform = `translateY(-10px) rotateX(${angleX}deg) rotateY(${angleY}deg)`;
-            });
-
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = 'translateY(-10px) rotateY(5deg)';
-            });
-        });
-
-        // Validation des pondérations
-        document.querySelectorAll('.ponderation-input').forEach(input => {
-            input.addEventListener('change', function() {
-                let total = 0;
-                document.querySelectorAll('.ponderation-input').forEach(i => {
-                    total += parseInt(i.value) || 0;
-                });
-
-                if(total !== 100) {
-                    this.style.borderColor = '#fd79a8';
-                    setTimeout(() => {
-                        this.style.borderColor = '#e0e0e0';
-                    }, 2000);
-                }
-            });
-        });
-    </script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Inclure le JS de DataTables -->
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-
-
-    {% for message in messages %}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-     {% if message.tags == 'success' %}
-
-    <script type="text/javascript">
-     Swal.fire({
-     position: "top-end",
-     icon: "success",
-     title: "{{message}}",
-     showConfirmButton: false,
-     timer: 2000
-    });
-    </script>
-    {%endif%}
-    {%endfor%}
-    </script>
-    {% for message in messages %}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-     {% if message.tags == 'error' %}
-
-    <script type="text/javascript">
-     Swal.fire({
-     position: "top-end",
-     icon: "error",
-     title: "{{message}}",
-     showConfirmButton: false,
-     timer: 5000
-    });
-    </script>
-    {%endif%}
-    {%endfor%}
-
-<!-- ===================== NOUVEAU DESIGN : script (ajout) ===================== -->
+<!-- ===================== Comportements (remplace Bootstrap JS) ===================== -->
 <script>
+/* Petit remplaçant de Bootstrap : fenêtres (data-bs-toggle="modal"), fermeture (data-bs-dismiss), onglets (data-bs-toggle="tab").
+   Les fenêtres existantes fonctionnent sans modification. */
 (function () {
-    var root = document.documentElement;
-    function ink(hex) {
-        var h = String(hex || '#000').trim().replace('#', ''); if (h.length === 3) h = h.replace(/./g, '$&$&');
-        var c = [0, 2, 4].map(function (i) { var v = parseInt(h.substr(i, 2), 16) / 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
-        return (.2126 * c[0] + .7152 * c[1] + .0722 * c[2]) > .42 ? '#111111' : '#FFFFFF';
+    var ouvertes = [], declencheur = null;
+    function ouvrir(m, source) {
+        if (!m || m.classList.contains('show')) return;
+        declencheur = source || document.activeElement;
+        m.style.display = 'block'; m.removeAttribute('aria-hidden'); m.setAttribute('aria-modal', 'true'); m.setAttribute('role', 'dialog');
+        requestAnimationFrame(function () { m.classList.add('show'); });
+        document.body.classList.add('modal-open'); ouvertes.push(m);
+        m.dispatchEvent(new Event('shown.bs.modal'));
+        setTimeout(function () { var f = m.querySelector('input:not([type=hidden]), select, textarea, button'); if (f) f.focus({ preventScroll: true }); }, 60);
     }
-    var cs = getComputedStyle(root);
-    root.style.setProperty('--cfg-ink', ink(cs.getPropertyValue('--cfg-dom')));
-    root.style.setProperty('--cfg-acc-ink', ink(cs.getPropertyValue('--cfg-acc')));
-    root.classList.toggle('cfg-light-dom', ink(cs.getPropertyValue('--cfg-dom')) === '#111111');
-
-    var container = document.querySelector('body > .container');
-    var grid = container && container.querySelector(':scope > .config-container');
-    if (!container || !grid) return;
-
-    /* Les fenêtres (modales) placées dans la grille sont remontées dans <body> pour rester utilisables */
-    grid.querySelectorAll('.modal').forEach(function (m) { document.body.appendChild(m); });
-
-    function norm(x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
-    function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
-
-    /* ---------- Repérer vos éléments existants ---------- */
-    var cards = [].slice.call(grid.querySelectorAll('.config-card'));
-    function cardBy(re) { return cards.filter(function (c) { return re.test(norm((c.querySelector('.card-title') || {}).textContent)); })[0]; }
-    var cInst = cardBy(/configurer une institution/), cPer = cardBy(/periode/), cAutre = cardBy(/autres parametres/);
-    var statusForm = document.getElementById('status-form');
-    var actions = [].slice.call(container.querySelectorAll(':scope > .text-left.mb-4 > a'));
-    var danger = document.querySelector('.card.border-danger');
-    var back = document.querySelector('a.float');
-
-    /* ---------- Icônes et descriptions des paramètres ---------- */
-    var INFO = [
-        [/groupes d.?elements/, 'fa-diagram-project', 'Regrouper les éléments de données collectés'],
-        [/groupes d.?indicateurs/, 'fa-bullseye', 'Organiser les indicateurs par thème'],
-        [/planification echelonnee/, 'fa-stairs', 'Les activités avancent par étapes successives'],
-        [/planification periodique/, 'fa-calendar-week', 'Les activités sont suivies par période : mois, trimestres…'],
-        [/nature|categorie/, 'fa-tags', 'Types et catégories des opérations'],
-        [/formulaire/, 'fa-file-lines', 'Formulaires de collecte des données'],
-        [/financement/, 'fa-hand-holding-dollar', 'Bailleurs et lignes de financement'],
-        [/echelonnage/, 'fa-list-ol', "Étapes utilisées pour l'échelonnage"],
-        [/devise/, 'fa-coins', 'Monnaies utilisées dans les budgets']
-    ];
-    function decorate(row) {
-        var label = row.querySelector('.setting-label'); if (!label || row.__cfg) return; row.__cfg = true;
-        var text = label.textContent.trim(), n = norm(text), info = ['', 'fa-sliders', ''];
-        for (var i = 0; i < INFO.length; i++) if (INFO[i][0].test(n)) { info = INFO[i]; break; }
-        label.innerHTML = '<span class="cfg-ico"><i class="fa-solid ' + info[1] + '" aria-hidden="true"></i></span>' +
-            '<span class="cfg-txt"><span>' + text + '</span>' + (info[2] ? '<span class="cfg-desc">' + info[2] + '</span>' : '') + '</span>';
-        var btn = row.querySelector('.btn, .cfg-action');
-        if (btn) {
-            row.classList.add('cfg-link'); row.tabIndex = 0; row.setAttribute('role', 'button'); row.setAttribute('aria-label', text);
-            if (!btn.querySelector('.cfg-chev')) btn.insertAdjacentHTML('beforeend', ' <i class="fa-solid fa-chevron-right cfg-chev" aria-hidden="true"></i>');
-            row.addEventListener('click', function (e) { if (!e.target.closest('.btn, .cfg-action')) btn.click(); });
-            row.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); } });
-        }
+    function fermer(m) {
+        if (!m || !m.classList.contains('show')) return;
+        m.classList.remove('show'); m.setAttribute('aria-hidden', 'true');
+        setTimeout(function () { m.style.display = ''; }, 200);
+        ouvertes = ouvertes.filter(function (x) { return x !== m; });
+        if (!ouvertes.length) document.body.classList.remove('modal-open');
+        m.dispatchEvent(new Event('hidden.bs.modal'));
+        if (declencheur && declencheur.focus) declencheur.focus();
     }
-    /* Ligne fabriquée à partir d'un lien (actions rapides, notifications) */
-    function rowFromLink(a, title, desc, icon) {
-        var row = el('div', 'setting-item');
-        row.appendChild(el('span', 'setting-label', title));
-        a.classList.add('cfg-action'); a.classList.remove('config-btn');
-        a.innerHTML = '<span>Ouvrir</span>';
-        row.appendChild(a);
-        INFO.push([new RegExp('^' + norm(title).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'), icon, desc]);
-        decorate(row);
-        return row;
+    function onglet(btn) {
+        var cible = document.querySelector(btn.getAttribute('data-bs-target') || btn.getAttribute('href')); if (!cible) return;
+        var nav = btn.closest('.nav, [role=tablist]');
+        if (nav) nav.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (b) { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+        btn.classList.add('active'); btn.setAttribute('aria-selected', 'true');
+        [].forEach.call(cible.parentNode.children, function (p) { if (p.classList.contains('tab-pane')) p.classList.remove('active', 'show'); });
+        cible.classList.add('active', 'show');
     }
-
-    /* ---------- Construire la nouvelle page ---------- */
-    var app = el('div'); app.id = 'cfgApp';
-    var nav = el('nav', 'cfg-nav'); nav.setAttribute('aria-label', 'Sections de la configuration');
-    var main = el('div', 'cfg-main');
-    app.appendChild(nav); app.appendChild(main);
-    grid.parentNode.insertBefore(app, grid);
-
-    nav.innerHTML = '<label class="cfg-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>' +
-        '<input type="search" placeholder="Rechercher un réglage" aria-label="Rechercher un réglage"><kbd>/</kbd></label>';
-
-    var SECTIONS = [];
-    function section(id, icon, title, desc, group, cls) {
-        var sec = el('section', 'cfg-section' + (cls ? ' ' + cls : '')); sec.id = 'cfg-' + id; sec.setAttribute('aria-labelledby', 'cfg-' + id + '-t');
-        sec.innerHTML = '<div class="cfg-section-hd"><span class="cfg-section-ico"><i class="fa-solid ' + icon + '" aria-hidden="true"></i></span>' +
-            '<div><h2 id="cfg-' + id + '-t">' + title + '</h2><p>' + desc + '</p></div></div><div class="cfg-section-bd"></div>';
-        main.appendChild(sec);
-        if (group) nav.appendChild(el('div', 'cfg-nav-label', group));
-        var link = el('a', cls === 'cfg-section-danger' ? 'cfg-nav-danger' : '', '<i class="fa-solid ' + icon + '" aria-hidden="true"></i>' + title);
-        link.href = '#cfg-' + id; nav.appendChild(link);
-        SECTIONS.push({ sec: sec, link: link });
-        return sec.querySelector('.cfg-section-bd');
-    }
-
-    /* Vue d'ensemble */
-    var ov = el('section', 'cfg-overview'); ov.id = 'cfg-overview'; ov.style.scrollMarginTop = '20px';
-    main.appendChild(ov);
-    nav.appendChild(el('div', 'cfg-nav-label', 'Général'));
-    var ovLink = el('a', '', '<i class="fa-solid fa-house" aria-hidden="true"></i>Vue d\'ensemble'); ovLink.href = '#cfg-overview';
-    nav.appendChild(ovLink); SECTIONS.push({ sec: ov, link: ovLink });
-
-    /* 1. Structure des données */
-    var bStruct = section('structure', 'fa-diagram-project', 'Structure des données', 'Comment vos données et indicateurs sont organisés.', 'Configuration');
-    if (cInst) [].slice.call(cInst.querySelectorAll('.card-body > .setting-item')).forEach(function (r) { decorate(r); bStruct.appendChild(r); });
-
-    /* 2. Planification */
-    var bPlan = section('planification', 'fa-calendar-check', 'Mode de planification', 'Choisissez comment les activités sont planifiées. Un seul mode à la fois.');
-    if (statusForm) {
-        bPlan.appendChild(statusForm);
-        statusForm.querySelectorAll('.setting-item').forEach(function (r) {
-            decorate(r);
-            var txt = r.querySelector('.cfg-txt'); if (txt) txt.insertAdjacentHTML('afterbegin', '<span class="cfg-choice-tag">Mode actif</span>');
-        });
-    }
-
-    /* 3. Périodes */
-    var bPer = section('periodes', 'fa-calendar-days', "Périodes d'évaluation", 'Les périodes de suivi actuellement configurées.');
-    if (cPer) {
-        var tl = cPer.querySelector('.periode-timeline'), more = cPer.querySelector('.config-btn');
-        var wrap = el('div', 'cfg-periods'); if (tl) wrap.appendChild(tl); bPer.appendChild(wrap);
-        if (!tl || !tl.querySelector('.periode-item')) wrap.innerHTML = '<p class="cfg-desc" style="padding:8px">Aucune période configurée pour l\'instant.</p>';
-        if (more) { more.innerHTML = '<i class="fa-solid fa-gear" aria-hidden="true"></i> Gérer les périodes'; var ft = el('div', 'cfg-section-ft'); ft.appendChild(more); bPer.parentNode.appendChild(ft); }
-    }
-
-    /* 4. Référentiels */
-    var bRef = section('referentiels', 'fa-book', 'Référentiels', 'Listes de valeurs utilisées dans tout le système.');
-    var notif = null;
-    if (cAutre) {
-        [].slice.call(cAutre.querySelectorAll('.card-body > .setting-item')).forEach(function (r) { decorate(r); bRef.appendChild(r); });
-        notif = cAutre.querySelector('.card-body .config-btn');
-    }
-
-    /* 5. Notifications */
-    if (notif) {
-        var bNot = section('notifications', 'fa-bell', 'Notifications', 'Quand et comment les membres sont prévenus.');
-        bNot.appendChild(rowFromLink(notif, 'Règles de notification', 'Alertes de retard, validations, rappels', 'fa-bell'));
-    }
-
-    /* 6. Administration (vos 3 actions rapides) */
-    if (actions.length) {
-        var bAdm = section('administration', 'fa-building', 'Institution et accès', 'Créer, dupliquer une institution et gérer les rôles.', 'Administration');
-        var ADM = { '/admin_institution': ['Ajouter une institution', 'Créer une nouvelle institution', 'fa-building-circle-check'],
-                    '/dupliquer-institution/': ['Dupliquer cette institution', 'Copier toute la configuration actuelle', 'fa-clone'],
-                    '/roles_personnels/': ['Rôles et permissions', 'Qui peut voir, saisir et valider', 'fa-user-shield'] };
-        actions.forEach(function (a) {
-            var k = ADM[a.getAttribute('href')] || [a.textContent.trim(), '', 'fa-arrow-right'];
-            bAdm.appendChild(rowFromLink(a, k[0], k[1], k[2]));
-        });
-    }
-
-    /* 7. Zone de danger */
-    if (danger) {
-        var bDan = section('danger', 'fa-triangle-exclamation', 'Zone de danger', 'Actions irréversibles. À utiliser avec précaution.', null, 'cfg-section-danger');
-        bDan.appendChild(danger);
-    }
-
-    var empty = el('div', 'cfg-empty', 'Aucun réglage ne correspond à votre recherche.'); main.appendChild(empty);
-
-    /* ---------- Vue d'ensemble : chiffres et progression ---------- */
-    var step = document.getElementById('is_step_checkbox'), freq = document.getElementById('is_frequency_checkbox');
-    var nPer = main.querySelectorAll('.periode-item').length, nRef = bRef.querySelectorAll('.setting-item').length;
-    function modeName() { return step && step.checked ? 'Échelonnée' : freq && freq.checked ? 'Périodique' : 'À choisir'; }
-    function renderOverview() {
-        var checks = [
-            ['Structure', !!bStruct.querySelector('.setting-item'), '#cfg-structure'],
-            ['Mode de planification', modeName() !== 'À choisir', '#cfg-planification'],
-            ['Périodes', nPer > 0, '#cfg-periodes'],
-            ['Référentiels', nRef > 0, '#cfg-referentiels']
-        ];
-        var done = checks.filter(function (c) { return c[1]; }).length, pct = Math.round(done / checks.length * 100);
-        ov.innerHTML =
-            '<div class="cfg-stat"><span class="cfg-stat-k"><i class="fa-solid fa-calendar-check"></i>Planification</span><span class="cfg-stat-v">' + modeName() + '</span><span class="cfg-stat-s">Mode actuel</span></div>' +
-            '<div class="cfg-stat"><span class="cfg-stat-k"><i class="fa-solid fa-calendar-days"></i>Périodes</span><span class="cfg-stat-v">' + nPer + '</span><span class="cfg-stat-s">' + (nPer > 1 ? 'périodes affichées' : 'période affichée') + '</span></div>' +
-            '<div class="cfg-stat"><span class="cfg-stat-k"><i class="fa-solid fa-book"></i>Référentiels</span><span class="cfg-stat-v">' + nRef + '</span><span class="cfg-stat-s">listes à tenir à jour</span></div>' +
-            '<div class="cfg-progress"><div class="cfg-progress-top"><b>Mise en route de l\'institution</b><span>' + done + ' sur ' + checks.length + ' étapes</span></div>' +
-            '<div class="cfg-bar"><span style="width:' + pct + '%"></span></div><div class="cfg-steps">' +
-            checks.map(function (c) { return '<a class="cfg-step' + (c[1] ? ' ok' : '') + '" href="' + c[2] + '"><i class="fa-solid ' + (c[1] ? 'fa-check' : 'fa-minus') + '"></i>' + c[0] + '</a>'; }).join('') +
-            '</div></div>';
-    }
-
-    /* ---------- En-tête : fil d'Ariane, mode actif ---------- */
-    var hd = container.querySelector(':scope > header .container-fluid');
-    var modeChip = el('span', 'cfg-mode');
-    if (hd) {
-        var crumb = el('div', 'cfg-crumb');
-        if (back) { back.setAttribute('aria-label', 'Retour au tableau de bord'); crumb.appendChild(back); crumb.appendChild(el('span', '', '/')); }
-        crumb.appendChild(el('b', '', 'Configuration'));
-        hd.insertBefore(crumb, hd.firstChild);
-        var right = el('div', 'cfg-hd-right'); right.appendChild(modeChip); hd.appendChild(right);
-    }
-    function syncMode() {
-        modeChip.innerHTML = '<i class="fa-solid fa-calendar-check" aria-hidden="true"></i> Planification : ' + modeName().toLowerCase();
-        [step, freq].forEach(function (c) { if (c) { var r = c.closest('.setting-item'); if (r) r.classList.toggle('cfg-on', c.checked); } });
-        renderOverview();
-    }
-    [step, freq].forEach(function (c) {
-        if (!c) return;
-        c.addEventListener('change', function () { setTimeout(syncMode, 0); });
-        var r = c.closest('.setting-item');
-        if (r) r.addEventListener('click', function (e) { if (e.target.closest('label.switch')) return; c.checked = !c.checked; c.dispatchEvent(new Event('change', { bubbles: true })); });
+    document.addEventListener('click', function (e) {
+        var t = e.target.closest('[data-bs-toggle="modal"]');
+        if (t) { e.preventDefault(); ouvrir(document.querySelector(t.getAttribute('data-bs-target') || t.getAttribute('href')), t); return; }
+        var d = e.target.closest('[data-bs-dismiss="modal"]');
+        if (d) { fermer(d.closest('.modal')); return; }
+        var o = e.target.closest('[data-bs-toggle="tab"]');
+        if (o) { e.preventDefault(); onglet(o); return; }
+        if (e.target.classList && e.target.classList.contains('modal')) fermer(e.target);          /* clic sur le fond */
     });
-    syncMode();
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ouvertes.length) fermer(ouvertes[ouvertes.length - 1]); });
 
-    /* ---------- Recherche ---------- */
-    var input = nav.querySelector('input');
-    input.addEventListener('input', function () {
-        var q = norm(input.value), any = false;
-        SECTIONS.forEach(function (s) {
-            if (s.sec === ov) { s.sec.style.display = q ? 'none' : ''; s.link.style.display = q ? 'none' : ''; return; }
-            var head = norm(s.sec.querySelector('.cfg-section-hd').textContent), rows = s.sec.querySelectorAll('.cfg-section-bd .setting-item'), hit = !q || head.indexOf(q) > -1, rowHit = false;
-            rows.forEach(function (r) { var ok = !q || hit || norm(r.textContent).indexOf(q) > -1; r.style.display = ok ? '' : 'none'; rowHit = rowHit || ok; });
-            var show = !q || hit || rowHit || (!rows.length && norm(s.sec.textContent).indexOf(q) > -1);
-            s.sec.classList.toggle('is-hidden', !show); s.link.style.display = show ? '' : 'none'; any = any || show;
-        });
-        empty.style.display = any ? 'none' : 'block';
-    });
-    document.addEventListener('keydown', function (e) {
-        if (e.key === '/' && !/input|textarea|select/i.test((document.activeElement || {}).tagName) && !document.querySelector('.modal.show')) { e.preventDefault(); input.focus(); }
-    });
-
-    /* ---------- Section active dans la navigation ---------- */
-    function setActive(link) { SECTIONS.forEach(function (s) { s.link.classList.toggle('is-on', s.link === link); s.link.setAttribute('aria-current', s.link === link ? 'true' : 'false'); }); }
-    setActive(ovLink);
-    if ('IntersectionObserver' in window) {
-        var io = new IntersectionObserver(function (entries) {
-            entries.forEach(function (en) { if (en.isIntersecting) { var s = SECTIONS.filter(function (x) { return x.sec === en.target; })[0]; if (s) setActive(s.link); } });
-        }, { rootMargin: '-30% 0px -60% 0px' });
-        SECTIONS.forEach(function (s) { io.observe(s.sec); });
-    }
-    nav.addEventListener('click', function (e) { var a = e.target.closest('a[href^="#cfg-"]'); if (a) setActive(a); });
-
-    /* Compteurs dans la navigation */
-    [['#cfg-referentiels', nRef], ['#cfg-periodes', nPer]].forEach(function (c) {
-        var a = nav.querySelector('a[href="' + c[0] + '"]'); if (a && c[1]) a.insertAdjacentHTML('beforeend', '<span class="cfg-count">' + c[1] + '</span>');
-    });
-
-    root.classList.add('cfg-ready');
+    /* Compatibilité : les scripts existants qui appelleraient bootstrap.Modal / bootstrap.Tooltip */
+    function Modal(el) { this.el = typeof el === 'string' ? document.querySelector(el) : el; }
+    Modal.prototype.show = function () { ouvrir(this.el); }; Modal.prototype.hide = function () { fermer(this.el); };
+    Modal.getInstance = Modal.getOrCreateInstance = function (el) { return new Modal(el); };
+    window.bootstrap = window.bootstrap || { Modal: Modal, Tooltip: function () {}, Tab: function (el) { return { show: function () { onglet(el); } }; } };
 })();
-</script>
-<!-- ===================== FIN NOUVEAU DESIGN (script) ===================== -->
-<!-- ===================== PARAMÈTRES DE LA PLATEFORME : script (ajout) ===================== -->
-<script>
+
+/* Ondulation Material au clic */
+document.addEventListener('pointerdown', function (e) {
+    var el = e.target.closest('.md-btn, .md-item, .md-navlist a, .btn, .md-iconbtn'); if (!el || el.disabled) return;
+    var r = el.getBoundingClientRect(), d = Math.max(r.width, r.height), s = document.createElement('span');
+    s.className = 'md-ripple'; s.style.width = s.style.height = d + 'px'; s.style.left = (e.clientX - r.left - d / 2) + 'px'; s.style.top = (e.clientY - r.top - d / 2) + 'px';
+    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+    el.appendChild(s); setTimeout(function () { s.remove(); }, 600);
+});
+
 (function () {
-    var INST = '{{ actual_institution.nom|escapejs }}' || 'votre institution';
-    document.title = 'Paramètres · ' + INST + ' · OperaPlus';
-    var esc = function (t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
-
-    /* 1. en-tête : « Paramètres » d'OperaPlus, pour quelle institution, avec quel mode */
-    var hd = document.querySelector('body > .container > header .container-fluid');
-    if (hd && !hd.querySelector('.p-hero')) {
-        var hero = document.createElement('div'); hero.className = 'p-hero';
-        hero.innerHTML = '<span class="p-emblem" aria-hidden="true"><i class="fa-solid fa-gear"></i></span>'
-            + '<span class="p-kicker">OperaPlus · Paramètres de la plateforme</span>'
-            + '<h2 class="p-title">Paramètres</h2>'
-            + '<p class="p-scope">Réglages qui s’appliquent à <b>toute l’institution ' + esc(INST) + '</b> et à tous ses projets : structure des données, planification, périodes, listes de référence, notifications et accès. Réservé aux administrateurs.</p>'
-            + '<div class="p-inst"><span class="p-inst-chip" title="Institution configurée"><i class="fa-solid fa-building" aria-hidden="true"></i><span>' + esc(INST) + '</span></span>'
-            + '<span class="p-inst-chip p-mode"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span></span></span></div>';
-        hd.appendChild(hero);
-        var chip = hd.querySelector('.cfg-mode'), pm = hero.querySelector('.p-mode span');
-        var copie = function () { if (chip && pm) pm.textContent = chip.textContent.trim(); };
-        copie(); if (chip) new MutationObserver(copie).observe(chip, { childList: true, subtree: true, characterData: true });
-        var cr = hd.querySelector('.cfg-crumb b'); if (cr) cr.textContent = 'Paramètres';
-    }
-
-    /* 2. navigation : titre « Paramètres » et institution */
-    var nav = document.querySelector('.cfg-nav');
-    if (nav && !nav.querySelector('.p-nav-head')) {
-        nav.insertAdjacentHTML('afterbegin', '<div class="p-nav-head"><i class="fa-solid fa-gear" aria-hidden="true"></i><div><b>Paramètres</b><small>' + esc(INST) + '</small></div></div>');
-    }
-
-    /* 3. RESTRUCTURATION : un thème par écran, réglages regroupés selon ce que l'on veut faire.
-          Les lignes existantes (et leurs boutons / fenêtres) sont DÉPLACÉES, jamais recréées. */
-    var montrerPage = function () { document.documentElement.classList.remove('pp-wait'); };
-    var app = document.getElementById('cfgApp'); if (!app || app.querySelector('.pp-shell')) { montrerPage(); return; }
-    var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
-    var rows = [].slice.call(app.querySelectorAll('.cfg-main .setting-item')).filter(function (r) { return !r.closest('#status-form'); });
-    var row = function (re) { return rows.filter(function (r) { var t = r.querySelector('.cfg-txt > span'); return t && re.test(norm(t.textContent)); })[0] || null; };
-    var R = {
-        formulaires: row(/formulaire/), groupesDE: row(/groupes d.?el/), groupesIND: row(/groupes d.?ind/), natures: row(/nature|categorie/),
-        financement: row(/financement/), devises: row(/devise/), echelonnage: row(/echelonnage/),
-        notif: row(/notification/), roles: row(/role/), ajouter: row(/ajouter une institution/), dupliquer: row(/dupliquer/)
-    };
-    var statusForm = document.getElementById('status-form');
-    var periodes = app.querySelector('.cfg-periods'), gererPeriodes = app.querySelector('#cfg-periodes .cfg-section-ft');
-    var danger = document.querySelector('.card.border-danger');
-    var nbPer = app.querySelectorAll('.periode-item').length;
+    /* Mode de planification : un seul à la fois (même logique qu'avant) */
     var step = document.getElementById('is_step_checkbox'), freq = document.getElementById('is_frequency_checkbox');
-    var mode = function () { return step && step.checked ? 'Échelonnée' : freq && freq.checked ? 'Périodique' : ''; };
-
-    var THEMES = [
-        { id: 'accueil', ico: 'fa-house', c: '--p-ink', t: 'Vue d’ensemble', d: 'Où en est la configuration de l’institution, et par où commencer.' },
-        { id: 'collecte', ico: 'fa-clipboard-list', c: '--p-teal', t: 'Collecte des données', d: 'Ce que les équipes saisissent : formulaires, éléments, indicateurs et types d’opérations.',
-          groupes: [['Formulaires', [R.formulaires]], ['Organisation des données', [R.groupesDE, R.groupesIND]], ['Opérations', [R.natures]]] },
-        { id: 'planification', ico: 'fa-calendar-check', c: '--p-indigo', t: 'Planification', d: 'Comment les activités sont planifiées et suivies dans le temps.',
-          groupes: [['Mode de planification', [statusForm], 'Un seul mode à la fois. Cliquez sur « Appliquer » pour enregistrer.'], ['Périodes de suivi', [periodes, gererPeriodes]], ['Étapes (planification échelonnée)', [R.echelonnage]]] },
-        { id: 'finances', ico: 'fa-hand-holding-dollar', c: '--p-saffron', t: 'Finances', d: 'Bailleurs, lignes de financement et monnaies des budgets.',
-          groupes: [['Financement', [R.financement]], ['Monnaies', [R.devises]]] },
-        { id: 'notifications', ico: 'fa-bell', c: '--p-plum', t: 'Notifications', d: 'Qui est prévenu, de quoi, et quand.', groupes: [['Règles', [R.notif]]] },
-        { id: 'acces', ico: 'fa-user-shield', c: '--p-sky', t: 'Institution et accès', d: 'Qui peut voir, saisir et valider ; gestion des institutions.',
-          groupes: [['Accès', [R.roles]], ['Institutions', [R.ajouter, R.dupliquer]], ['Zone de danger', [danger], 'Actions irréversibles.', 'danger']] }
-    ];
-
-    var shell = document.createElement('div'); shell.className = 'pp-shell';
-    var nav = document.createElement('nav'); nav.className = 'pp-nav'; nav.setAttribute('aria-label', 'Thèmes des paramètres');
-    nav.innerHTML = '<div class="pp-nav-head"><i class="fa-solid fa-gear" aria-hidden="true"></i><div><b>Paramètres</b><small>' + esc(INST) + '</small></div></div>'
-        + '<label class="pp-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" placeholder="Rechercher un réglage" aria-label="Rechercher un réglage"></label>';
-    var main = document.createElement('div'); main.className = 'pp-main';
-    shell.appendChild(nav); shell.appendChild(main);
-    app.appendChild(shell); app.classList.add('pp-on');
-
-    var panneaux = {};
-    THEMES.forEach(function (T) {
-        var a = document.createElement('a'); a.href = '#' + T.id; a.className = 'pp-link'; a.style.setProperty('--c', 'var(' + T.c + ')'); a.dataset.id = T.id;
-        a.innerHTML = '<i class="fa-solid ' + T.ico + '" aria-hidden="true"></i><span>' + T.t + '</span>';
-        nav.appendChild(a);
-        var sec = document.createElement('section'); sec.className = 'pp-panel'; sec.id = 'pp-' + T.id; sec.hidden = true; sec.style.setProperty('--c', 'var(' + T.c + ')');
-        sec.setAttribute('aria-labelledby', 'pp-' + T.id + '-t');
-        sec.innerHTML = '<header class="pp-head"><span class="pp-ico"><i class="fa-solid ' + T.ico + '" aria-hidden="true"></i></span><div><h2 id="pp-' + T.id + '-t">' + T.t + '</h2><p>' + T.d + '</p></div></header>';
-        (T.groupes || []).forEach(function (G) {
-            var items = G[1].filter(Boolean); if (!items.length) return;
-            var g = document.createElement('div'); g.className = 'pp-group' + (G[3] === 'danger' ? ' pp-danger' : '');
-            g.innerHTML = '<h3>' + G[0] + '</h3>' + (G[2] ? '<p class="pp-note">' + G[2] + '</p>' : '');
-            var card = document.createElement('div'); card.className = 'pp-card'; items.forEach(function (x) { card.appendChild(x); }); g.appendChild(card);
-            sec.appendChild(g); a.dataset.n = (+a.dataset.n || 0) + card.querySelectorAll('.setting-item').length;
-        });
-        main.appendChild(sec); panneaux[T.id] = { sec: sec, link: a, T: T };
-    });
-
-    /* vue d'ensemble : 3 étapes de mise en route + accès directs (avec un résumé par thème) */
-    var acc = panneaux.accueil.sec;
-    function etapes() {
-        var E = [
-            ['Choisir le mode de planification', !!mode(), '#planification', mode() ? 'Mode actuel : ' + mode().toLowerCase() : 'Aucun mode choisi'],
-            ['Créer les périodes de suivi', nbPer > 0, '#planification', nbPer ? nbPer + ' période(s) affichée(s)' : 'Aucune période'],
-            ['Concevoir les formulaires de collecte', null, '#collecte', 'À vérifier dans « Collecte des données »'],
-            ['Attribuer les rôles des membres', null, '#acces', 'À vérifier dans « Institution et accès »']
-        ];
-        var faits = E.filter(function (e) { return e[1] === true; }).length;
-        return '<div class="pp-card pp-start"><div class="pp-start-hd"><b>Mise en route de l’institution</b><span>' + faits + ' étape(s) confirmée(s) sur ' + E.length + '</span></div><ol>'
-            + E.map(function (e, k) { return '<li class="' + (e[1] === true ? 'ok' : e[1] === false ? 'todo' : 'check') + '"><span class="n">' + (e[1] === true ? '<i class="fa-solid fa-check"></i>' : k + 1) + '</span><a href="' + e[2] + '"><b>' + e[0] + '</b><small>' + e[3] + '</small></a><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></li>'; }).join('')
-            + '</ol></div>';
+    var etat = document.getElementById('mdModeEtat'), initial = [step.checked, freq.checked];
+    function maj() {
+        document.querySelectorAll('[data-choix]').forEach(function (c) { c.classList.toggle('on', c.querySelector('input').checked); });
+        var change = step.checked !== initial[0] || freq.checked !== initial[1];
+        etat.textContent = change ? 'Modification non appliquée : cliquez sur « Appliquer ».' : '';
     }
-    function tuiles() {
-        return '<div class="pp-tiles">' + THEMES.slice(1).map(function (T) {
-            var n = +panneaux[T.id].link.dataset.n || 0;
-            return '<a class="pp-tile" href="#' + T.id + '" style="--c: var(' + T.c + ')"><i class="fa-solid ' + T.ico + '" aria-hidden="true"></i><span><b>' + T.t + '</b><small>' + T.d + '</small></span>' + (n ? '<em>' + n + ' réglage' + (n > 1 ? 's' : '') + '</em>' : '') + '</a>';
-        }).join('') + '</div>';
-    }
-    function rendreAccueil() { acc.querySelectorAll('.pp-start, .pp-tiles, .pp-sub').forEach(function (x) { x.remove(); });
-        acc.insertAdjacentHTML('beforeend', etapes() + '<h3 class="pp-sub">Tous les thèmes</h3>' + tuiles()); }
-    rendreAccueil();
-    [step, freq].forEach(function (c) { if (c) c.addEventListener('change', function () { setTimeout(rendreAccueil, 0); }); });
+    step.addEventListener('change', function () { if (step.checked) freq.checked = false; maj(); });
+    freq.addEventListener('change', function () { if (freq.checked) step.checked = false; maj(); });
 
-    /* navigation : un seul thème affiché ; l'adresse (#collecte…) permet le retour arrière et le partage du lien */
-    function montrer(id) {
-        if (!panneaux[id]) id = 'accueil';
-        Object.keys(panneaux).forEach(function (k) { var on = k === id; panneaux[k].sec.hidden = !on; panneaux[k].link.classList.toggle('is-on', on); panneaux[k].link.setAttribute('aria-current', on ? 'page' : 'false'); });
-        var cr = document.querySelector('body > .container > header .cfg-crumb b'); if (cr) cr.textContent = id === 'accueil' ? 'Paramètres' : 'Paramètres · ' + panneaux[id].T.t;
-        document.title = (id === 'accueil' ? 'Paramètres' : panneaux[id].T.t + ' · Paramètres') + ' · ' + INST;
-        var L = panneaux[id].link; if (L.parentNode.scrollWidth > L.parentNode.clientWidth) L.parentNode.scrollTo({ left: L.offsetLeft - 16, behavior: 'smooth' });   /* téléphone : onglet actif visible */
+    /* Navigation : rubrique active selon le défilement */
+    var liens = [].slice.call(document.querySelectorAll('.md-navlist a'));
+    function actif(id) { liens.forEach(function (a) { a.classList.toggle('actif', a.getAttribute('href') === '#' + id); }); }
+    if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) actif(en.target.id); }); }, { rootMargin: '-35% 0px -60% 0px' });
+        document.querySelectorAll('.md-section').forEach(function (s) { io.observe(s); });
     }
-    function depuisAdresse() { var h = (location.hash || '').replace('#', ''); montrer(h); }
-    window.addEventListener('hashchange', function () { document.documentElement.classList.add('pp-anim'); depuisAdresse(); var t = app.getBoundingClientRect().top + scrollY - 12; if (scrollY > t) scrollTo({ top: t }); });
-    depuisAdresse();
 
-    /* recherche : tous les réglages qui correspondent, quel que soit le thème */
-    var champ = nav.querySelector('input'), vide = document.createElement('p'); vide.className = 'pp-empty'; vide.textContent = 'Aucun réglage ne correspond.'; main.appendChild(vide);
+    /* Recherche d'un réglage */
+    var champ = document.getElementById('mdRecherche');
+    var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
     champ.addEventListener('input', function () {
         var q = norm(champ.value.trim());
-        if (!q) { vide.style.display = 'none'; main.classList.remove('pp-searching'); main.querySelectorAll('.pp-group, .setting-item').forEach(function (x) { x.style.display = ''; }); depuisAdresse(); return; }
-        main.classList.add('pp-searching'); var n = 0;
-        Object.keys(panneaux).forEach(function (k) {
-            var P = panneaux[k], vu = 0;
-            P.sec.querySelectorAll('.pp-group').forEach(function (g) {
-                var gHit = norm(g.querySelector('h3').textContent).indexOf(q) > -1, gv = 0;
-                g.querySelectorAll('.setting-item').forEach(function (r) { var ok = gHit || norm(r.textContent).indexOf(q) > -1; r.style.display = ok ? '' : 'none'; if (ok) gv++; });
-                if (!g.querySelector('.setting-item')) gv = gHit || norm(g.textContent).indexOf(q) > -1 ? 1 : 0;
-                g.style.display = gv ? '' : 'none'; vu += gv;
-            });
-            P.sec.hidden = !(vu && k !== 'accueil'); n += vu;
+        document.querySelectorAll('.md-section').forEach(function (s) {
+            var vus = 0;
+            s.querySelectorAll('.md-item').forEach(function (it) { var ok = !q || norm(it.textContent).indexOf(q) > -1; it.style.display = ok ? '' : 'none'; if (ok) vus++; });
+            s.querySelectorAll('.md-subheader, .md-chips, #status-form').forEach(function (x) { x.style.display = q ? 'none' : ''; });
+            s.style.display = !q || vus || norm(s.querySelector('h2').textContent).indexOf(q) > -1 ? '' : 'none';
         });
-        vide.style.display = n ? 'none' : 'block';
     });
     document.addEventListener('keydown', function (e) { if (e.key === '/' && !/input|textarea|select/i.test((document.activeElement || {}).tagName) && !document.querySelector('.modal.show')) { e.preventDefault(); champ.focus(); } });
-    montrerPage();
+
+    /* Suppression : confirmation en écrivant le nom de l'institution */
+    var dlg = document.getElementById('mdDialog'), conf = document.getElementById('mdConfirm'), go = document.getElementById('mdConfirmer');
+    var nom = norm('{{ actual_institution.nom|escapejs }}').trim();
+    document.getElementById('mdSupprimer').addEventListener('click', function () { dlg.classList.add('ouvert'); conf.value = ''; go.style.pointerEvents = 'none'; go.style.opacity = '.38'; setTimeout(function () { conf.focus(); }, 50); });
+    conf.addEventListener('input', function () { var ok = norm(conf.value).trim() === nom && nom !== ''; go.style.pointerEvents = ok ? '' : 'none'; go.style.opacity = ok ? '' : '.38'; go.setAttribute('aria-disabled', ok ? 'false' : 'true'); });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg || e.target.closest('[data-md-fermer]')) dlg.classList.remove('ouvert'); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') dlg.classList.remove('ouvert'); });
+
+    /* Messages : snackbar Material */
+    var sn = document.getElementById('mdSnack'), file = (window.MD_MESSAGES || []).slice();
+    function suivant() {
+        var m = file.shift(); if (!m) return;
+        sn.className = 'md-snack on ' + (m.k.indexOf('error') > -1 ? 'error' : m.k.indexOf('success') > -1 ? 'success' : '');
+        sn.querySelector('span').textContent = m.t;
+        clearTimeout(sn._t); sn._t = setTimeout(function () { sn.classList.remove('on'); setTimeout(suivant, 300); }, 4500);
+    }
+    sn.querySelector('button').addEventListener('click', function () { sn.classList.remove('on'); setTimeout(suivant, 300); });
+    window.mdNotifier = function (t, k) { file.push({ t: t, k: k || '' }); if (!sn.classList.contains('on')) suivant(); };
+    suivant();
+    /* alertify (utilisé par la fenêtre « Sources de financement ») → snackbar */
+    if (!window.alertify) window.alertify = {};
+    window.alertify.success = function (t) { window.mdNotifier(t, 'success'); };
+    window.alertify.error = function (t) { window.mdNotifier(t, 'error'); };
 })();
 </script>
-
 </body>
 </html>

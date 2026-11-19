@@ -3993,146 +3993,8 @@ def ajax_institution(request):
     }
     return JsonResponse(data, safe=False)
 
-def save_indicateur(request):
-    if request.method != "POST":
-        return redirect('/evaluer/0/')
-
-    # 1. Collecte des données
-    context = basis(request)
-    actual_institution = context.get('actual_institution')
-    name = request.POST.get("nature_indicateur", '').strip()
-    nicename = request.POST.get('nicename', '').strip()
-    type_entity = request.POST.get("entity_id", '')
-    
-    # Éléments de la formule
-    input_numerateur = request.POST.get("numerateur", '')
-    input_denominateur = request.POST.get("denominateur", '')
-    default_calcul = request.POST.get("default_calcul", '1')
-
-    niveau_pyramide=request.POST.get("niveau_pyramide", None),
-    source_donnees=request.POST.get("source", None),
-    frequence_collecte=request.POST.get("frequence", None),
-    mecanisme_verification=request.POST.get("mecanisme_verification", None),
-    cible_contractuelle=request.POST.get("cible", None)
-    
-    try:
-        coefficient = int(request.POST.get("coefficient", 0))
-    except (ValueError, TypeError):
-        coefficient = 0
-
-    try:
-        # 2. Validation de l'entité
-        if not type_entity.isdigit():
-            raise ValueError("Identifiant d'entité invalide.")
-        
-        entity = Entity.objects.get(id=int(type_entity))
-
-        # 3. Préparation de la formule pour le champ NUMERATEUR
-        # On construit la chaîne de caractères de la formule
-        if default_calcul == "1" and input_numerateur and input_denominateur:
-            formule_finale = f"${input_numerateur}$ * {coefficient} / ${input_denominateur}$"
-        else:
-            formule_finale = input_numerateur
-
-        # 4. Création de l'objet Indicateur
-        # Ici, on assigne la formule au champ 'numerateur' de votre modèle
-        indi = Indicateur(
-            m_name=name,
-            nicename=nicename,
-            m_enti=entity,
-            m_numerateur=formule_finale, 
-            m_denominateur=input_denominateur,
-            type_aggregation=request.POST.get('aggregation_type', ''),
-            m_institution=actual_institution,
-            
-            # Ajout des nouveaux champs ici :
-            niveau_pyramide=niveau_pyramide,
-            source_donnees=source_donnees,
-            frequence_collecte=frequence_collecte,
-            mecanisme_verification=mecanisme_verification,
-            cible_contractuelle=cible_contractuelle
-        )
-
-        # 5. Sauvegarde
-        indi.save()
-        messages.success(request, 'Indicateur (avec formule en numérateur) créé avec succès.')
-
-    except Entity.DoesNotExist:
-        messages.error(request, "Entité introuvable.")
-    except OperationalError:
-        messages.error(request, "Erreur de base de données.")
-    except ValueError as e:
-        messages.error(request, str(e))
-    except Exception as e:
-        messages.error(request, f"Erreur : {e}")
-
-    return redirect('/evaluer/0/')
-
-# @login_required(login_url='/log_account')
-# def evaluer(request, hierachie="0", gest_id=0, search=None, specifi_id=None):
-#     context = basis(request)
-#     hierachie = int(hierachie)
-#     if specifi_id == None:
-#         if hierachie != -1:
-#             entity = InsitutionEntities.objects.filter(m_hierachie=hierachie, m_institution=context[
-#                 'actual_institution']).first().m_entity_type
-#         else:
-#             entity = InsitutionEntities.objects.filter(m_institution=context['actual_institution']).last().m_entity_type
-#         context['entity'] = entity
-#         context['hierachie'] = hierachie
-#         context['hierachy'] = hierachie
-#         if gest_id == 0:
-#             elements = entity.lines()
-#         else:
-#             get_e = Entity.objects.get(id=int(gest_id))
-#             context['base_val'] = get_e
-#             elements = list(get_e.sub_entities())
-#             context['sup_hierachy'] = list()
-#             for t in get_e.sup_hierachie():
-#                 context['sup_hierachy'].append(t)
-#             context['sup_hierachy'].append(get_e)
-#
-#         if search != None:
-#             tmp = elements
-#             elements = list()
-#             for t in tmp:
-#                 if search in t.m_value_fields:
-#                     elements.append(t)
-#
-#     else:
-#         a_entity = Entity.objects.get(id=specifi_id)
-#         entity = a_entity.m_type_entity
-#         context['entity'] = entity
-#         context['hierachie'] = hierachie
-#         context['hierachy'] = hierachie
-#         elements = [a_entity]
-#     paginator_o = Paginator(elements, 10)
-#     page_number_o = request.GET.get('page')
-#     elements_page = paginator_o.get_page(page_number_o)
-#     # oeuvres_date
-#     dataelts = DataElement.objects.filter(m_institution=context["actual_institution"])
-#
-#     context["indi_options"] = entity.indicateurs
-#     try:
-#         context["indi_options"][0] == None
-#         context["no_secund"] = False
-#     except:
-#         context["no_secund"] = None
-#
-#     context['menu'] = 'g'
-#     context['g_v'] = 'i2'
-#     context['gest_id'] = gest_id
-#     context['gest_val'] = hierachie
-#     context['gest_val_1'] = hierachie + 1
-#     context['pages_o'] = elements_page
-#     context['num_pages'] = paginator_o.num_pages
-#     context['page_range'] = paginator_o.page_range
-#     context['dataelts'] = dataelts
-#     context['dataelts2'] = dataelts.exclude(m_default_value=None)
-#
-#     template = "evaluer.html"
-#     return render(request, template, context)
 from django.db.models import Sum
+
 @login_required(login_url='/log_account')
 def evaluer(request, hierachie="0", gest_id=0, search=None, specifi_id=None):
     context = basis(request)
@@ -4142,22 +4004,15 @@ def evaluer(request, hierachie="0", gest_id=0, search=None, specifi_id=None):
     hierachie = int(hierachie)
     if specifi_id == None:
         if hierachie != -1:
-            # 1. On récupère l'objet intermédiaire d'abord
             inst_entity_obj = InsitutionEntities.objects.filter(
-                m_hierachie=hierachie, 
+                m_hierachie=hierachie,
                 m_institution=context['actual_institution']
             ).first()
-
-            # 2. On vérifie s'il existe
             if not inst_entity_obj:
                 context['error_type'] = "Niveau hiérarchique inexistant"
                 context['gest_id'] = hierachie
-                # On retourne ton design custom sans héritage
                 return render(request, "entity_not_found.html", context)
-
-            # 3. Maintenant on peut accéder en toute sécurité à m_entity_type
             entity = inst_entity_obj.m_entity_type
-
         else:
             entity = InsitutionEntities.objects.filter(m_institution=context['actual_institution']).last().m_entity_type
         context['entity'] = entity
@@ -4180,7 +4035,6 @@ def evaluer(request, hierachie="0", gest_id=0, search=None, specifi_id=None):
             for t in tmp:
                 if search in t.m_value_fields:
                     elements.append(t)
-
     else:
         a_entity = Entity.objects.get(id=specifi_id)
         entity = a_entity.m_type_entity
@@ -4188,12 +4042,11 @@ def evaluer(request, hierachie="0", gest_id=0, search=None, specifi_id=None):
         context['hierachie'] = hierachie
         context['hierachy'] = hierachie
         elements = [a_entity]
+
     paginator_o = Paginator(elements, 10)
-    page_number_o = request.GET.get('page')
-    elements_page = paginator_o.get_page(page_number_o)
-    # oeuvres_date
+    elements_page = paginator_o.get_page(request.GET.get('page'))
+
     dataelts = DataElement.objects.filter(m_institution=context["actual_institution"])
-    periode_ok=PeriodeOk.objects.all()
     context["indi_options"] = entity.indicateurs
     try:
         context["indi_options"][0] == None
@@ -4211,54 +4064,33 @@ def evaluer(request, hierachie="0", gest_id=0, search=None, specifi_id=None):
     context['page_range'] = paginator_o.page_range
     context['dataelts'] = dataelts
     context['dataelts2'] = dataelts.exclude(m_default_value=None)
-    context['periode_ok']=periode_ok
-    periode = Periode.objects.all()
-    context['periode']=periode
-    actual_institution=context['actual_institution']
-    structure=Structure.objects.filter(institution_id=actual_institution)
-    context['structure']=structure
+    context['periode_ok'] = PeriodeOk.objects.all()
+    context['periode'] = Periode.objects.all()
+    context['structure'] = Structure.objects.filter(institution_id=actual_institution)
 
-    indicateur_valeur = IndicateurValeur.objects.filter(institution_id=actual_institution,type_donnee='valeur_form')
+    indicateur_valeur = IndicateurValeur.objects.filter(institution_id=actual_institution, type_donnee='valeur_form')
     indicateur = Indicateur.objects.filter(m_institution_id=actual_institution)
 
-
-
-
-    somme_valeurs = {}
-
-    for indicateurs in indicateur:
-        # print(f"Traitement de l'indicateur ID: {indicateurs.id}")
-        total = IndicateurValeur.objects.filter(
-            indicateur=indicateurs,
-            institution=actual_institution,
-            type_donnee='valeur_form',
-
-        ).aggregate(total_valeur=Sum('valeur'))['total_valeur'] or 0
-        somme_valeurs[indicateurs.id] = total
-        # print(somme_valeurs)
+    # 1. Total déclaré par indicateur : une seule requête
+    somme_valeurs = dict(
+        indicateur_valeur.values_list('indicateur_id').annotate(total=Sum('valeur'))
+    )
 
     context['indicateur_valeur'] = indicateur_valeur
     context['somme_valeurs'] = somme_valeurs
 
-    # nature = NatureIndicateur.objects.all()
-    # context['nature'] = nature
-        # Configuration de la pagination
-    paginator = Paginator(indicateur, 6)  # 10 objets par page
-    page_number = request.GET.get('page')
+    # 2. Liste paginée des indicateurs : paramètre à part (?page_ind=)
+    paginator = Paginator(indicateur, 6)
     try:
-        indicateurs_page = paginator.page(page_number)
+        indicateurs_page = paginator.page(request.GET.get('page_ind'))
     except PageNotAnInteger:
-        # Si `page` n'est pas un entier, renvoie la première page
         indicateurs_page = paginator.page(1)
     except EmptyPage:
-        # Si la page est hors limites (ex. 9999), renvoie la dernière page
         indicateurs_page = paginator.page(paginator.num_pages)
-    context['indicateur']= indicateurs_page
-    groupe_indicateur = GroupeIndicateur.objects.only('libelle')
-    context['groupe_indicateur'] = groupe_indicateur
+    context['indicateur'] = indicateurs_page
+    context['groupe_indicateur'] = GroupeIndicateur.objects.only('libelle')
 
-    template = "evaluer.html"
-    return render(request, template, context)
+    return render(request, "evaluer.html", context)
 def evaluer_detail(request, gest_id=0):
     return evaluer(request, "0", 0, None, gest_id)
 
@@ -10373,6 +10205,49 @@ def structure_details(request, structure_id=0):
     context['fields'] = fields
     context['is_tache'] = True
     return render(request, template, context)
+
+import unicodedata
+from django.db.models import Count, Q
+
+
+# ---------- Outils (← ajout) ----------
+def code_sexe(valeur):
+    """'F', 'Femme', 'féminin', 'female'… → 'F' ; 'M', 'Homme', 'Masculin', 'male'… → 'M' ; vide ou autre → 'N'."""
+    t = unicodedata.normalize('NFD', str(valeur or '')).encode('ascii', 'ignore').decode().strip().lower()
+    if t[:1] == 'f':
+        return 'F'
+    if t[:1] in ('m', 'h'):
+        return 'M'
+    return 'N'
+
+
+def compte_sexes(qs):
+    """{'F', 'M', 'N', 'total'} : chaque personne comptée une seule fois (même rattachée à plusieurs structures)."""
+    c = {'F': 0, 'M': 0, 'N': 0}
+    for l in Personnel.objects.filter(id__in=qs.values('id')).values('sexe').annotate(n=Count('id')):
+        c[code_sexe(l['sexe'])] += l['n']
+    c['total'] = c['F'] + c['M'] + c['N']
+    return c
+
+
+def filtre_sexe(qs, code):
+    """Garde un genre, quelle que soit l'écriture en base (F, Femme, féminin…)."""
+    valeurs = [v for v in set(qs.values_list('sexe', flat=True)) if v is not None and code_sexe(v) == code]
+    filtre = Q(sexe__in=valeurs)
+    if code == 'N':
+        filtre |= Q(sexe__isnull=True)
+    return qs.filter(filtre)
+
+
+def photo_reelle(personnel, image_generique):
+    """La photo de l'agent, ou None s'il n'en a pas (ou s'il a seulement l'ancienne image générique « USR »).
+    Sans photo, la page affiche le logo de l'institution."""
+    photo = getattr(personnel, 'photo', None)
+    if not photo or (image_generique and photo.name == image_generique):
+        return None
+    return photo
+
+
 def personnels(request, name=None, lis_peros=None):
     template = "roles.html"
     context = basis(request)
@@ -10389,16 +10264,29 @@ def personnels(request, name=None, lis_peros=None):
         personnel_structure__m_structure__institution=institution
     ).distinct()
 
-    # Copie pour le filtrage de la liste (recherche par nom/prénom)
+    # Recherche dans TOUT le registre : ?q=… (champ de recherche de la page) ou name (votre URL)   ← corrigé
+    q = (request.GET.get('q') or name or '').strip()[:100]
     personnels_qs = base_personnels_qs
-    if name:
+    for mot in q.split()[:5]:                      # « Jean Dupont » : chaque mot doit être trouvé
         personnels_qs = personnels_qs.filter(
-            Q(prenom__icontains=name) | Q(nom__icontains=name)
+            Q(prenom__icontains=mot) | Q(nom__icontains=mot) | Q(mail__icontains=mot) | Q(tel__icontains=mot)
         )
+
+    # Filtre de genre sur tout le registre : ?sexe=F / M / N   ← ajout
+    sexe = request.GET.get('sexe') if request.GET.get('sexe') in ('F', 'M', 'N') else ''
+    compte_liste = compte_sexes(personnels_qs)     # chiffres des boutons Tous / Femmes / Hommes (avec la recherche)
+    if sexe:
+        personnels_qs = filtre_sexe(personnels_qs, sexe)
+
+    personnels_qs = personnels_qs.order_by('nom', 'prenom', 'id')   # ← corrigé : pages stables
 
     # =========================
     # 📄 PAGINATION (Database Level)
     # =========================
+    # Ancienne image générique copiée dans les fiches sans photo : traitée comme « pas de photo »   ← ajout
+    generique = OperaFile.objects.filter(m_name="USR").first()
+    image_generique = generique.m_file.name if generique and generique.m_file else None
+
     paginator = Paginator(personnels_qs, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -10408,12 +10296,12 @@ def personnels(request, name=None, lis_peros=None):
     for personnel in page_obj:
         lines.append({
             'id': personnel.id,
-            'photo': personnel.photo,
+            'photo': photo_reelle(personnel, image_generique),   # ← corrigé : None → logo de l'institution
             'prenom': personnel.prenom,
             'nom': personnel.nom,
             'tel': personnel.tel,
             'mail': personnel.mail,
-            'sexe': getattr(personnel, 'sexe', ''),
+            'sexe': code_sexe(getattr(personnel, 'sexe', '')),   # ← corrigé : 'F', 'M' ou 'N', même règle que les chiffres
             'genre': getattr(personnel, 'genre', ''),
             'nationalite': getattr(personnel, 'nationalite', ''),
             'get_function': personnel.get_function(institution.id),
@@ -10425,8 +10313,11 @@ def personnels(request, name=None, lis_peros=None):
         'fields': ['', 'Nom', 'Prenom', 'Telephone', 'Email', 'Fonction', 'Structures'],
         'personnel_filter': page_obj,
         'num_pages': paginator.num_pages,
-        'page_range': paginator.page_range,
-        'lines': lines
+        'page_range': paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1),   # ← corrigé : 1 … 4 5 6 … 20
+        'lines': lines,
+        'q': q,                                    # ← ajout
+        'sexe': sexe,                              # ← ajout
+        'compte_liste': compte_liste,              # ← ajout
     })
 
     # =========================
@@ -10451,7 +10342,7 @@ def personnels(request, name=None, lis_peros=None):
     # =========================
     roles_qs = Role.objects.filter(actual_institution=institution)
     structures_qs = Structure.objects.filter(institution=institution)
-    
+
     context.update({
         'menu': 'g',
         'g_v': 'p2',
@@ -10473,46 +10364,43 @@ def personnels(request, name=None, lis_peros=None):
     # 💾 EXACT COUNTS & SESSION FLASH
     # =========================
     perso_id = request.session.get('perso_saved')
-    
-    # Conditions exactes basées sur votre template (sexe='F' ou genre='Femme')
-    female_condition = Q(sexe='F') | Q(sexe='Femme')
-    male_condition = Q(sexe='M') | Q(sexe='Homme')
 
+    # ← corrigé : même règle partout (avant : « féminin », « f », « Masculin »… n'étaient comptés nulle part)
+    total = compte_sexes(base_personnels_qs)
     context.update({
-        'members_count': base_personnels_qs.count(),
-        'country_members_female': base_personnels_qs.filter(female_condition).count(),
-        'country_members_male': base_personnels_qs.filter(male_condition).count(),
+        'members_count': total['total'],
+        'country_members_female': total['F'],
+        'country_members_male': total['M'],
+        'country_members_non_renseigne': total['N'],   # ← ajout : genre vide, affiché au lieu de disparaître
     })
-    
+
+    # Nationalités sur tout l'effectif (← ajout ; avant : les 10 agents de la page)
+    try:
+        rep = list(Personnel.objects.filter(id__in=base_personnels_qs.values('id'))
+                   .values('nationalite').annotate(n=Count('id')).order_by('-n'))
+        nat = [[(r['nationalite'] or '').strip() or 'Non renseignée', r['n']] for r in rep[:4]]
+        if len(rep) > 4:
+            nat.append(['Autres', sum(r['n'] for r in rep[4:])])
+        context['nationalites'] = nat
+    except Exception:                              # pas de champ nationalite : la page se replie sur la page affichée
+        context['nationalites'] = None
+
     if perso_id:
         try:
             context['perso_saved'] = True
-            context['perso_get'] = Personnel.objects.get(id=perso_id)
+            context['perso_get'] = perso = Personnel.objects.get(id=perso_id)
+            # ← ajout : de quoi remplir la fenêtre « fiche de l'agent » ouverte après l'enregistrement
+            context['perso_statut'] = request.session.get('perso_statut') or 'nouveau'
+            context['perso_f'] = code_sexe(getattr(perso, 'sexe', '')) == 'F'          # accords : ajouté / ajoutée
+            context['perso_fonction'] = perso.get_function(institution.id)
+            context['perso_structure'] = perso.get_structure(institution.id)
+            context['perso_photo'] = photo_reelle(perso, image_generique)                # None → logo de l'institution
         except Personnel.DoesNotExist:
             pass
         request.session['perso_saved'] = None
+        request.session['perso_statut'] = None
 
     return render(request, template, context)
-
-# def personnel_id(request, perso_id):
-#     context = basis(request)
-#     template = "profile.html"
-#     personnel = Personnel.objects.get(id=perso_id)
-#     context["personnel"] = personnel
-#     context["prenom"] = personnel.prenom
-#     context["nom"] = personnel.nom
-#     context["role"] = personnel.get_function(context["actual_institution"].id)
-#     return render(request, template, context)
-
-
-"""
-def roles(request):
-	template = "personnel_roles.html"
-	context = basis(request)
-	context['lines'] = Role.objects.filter(institution=context['actual_institution'])
-	context['menu'] = 'g'
-	return render(request,template,context)
-"""
 
 
 def filter_perso(request, structure_id=0, role_id=0):
@@ -28870,46 +28758,131 @@ def api_get_categories(request):
     categories_list = list(categories)
 
     return JsonResponse(categories_list, safe=False)
+# =====================================================================
+#  OperaPlus — Modification d'un indicateur (avec changement de rattachement + champs dynamiques)
+#  Template : indicateurs/edit_indicator.html (même dossier que evaluer.html)
+#  Mêmes URLs qu'avant :
+#      path('edit_indicator/<int:id>/',     views.edit_indicator),
+#      path('editions_indicator/<int:id>/', views.editions_indicator),
+#
+#  Réutilise (déjà chez vous) :
+#      champs_disponibles, valeurs_existantes          → backend/indicateur_champs.py
+#      enregistrer_champs_dynamiques, _texte, _nombre  → backend/save_indicateur.py
+#
+#  Imports (à fusionner avec les vôtres) :
+#      import logging
+#      from django.contrib import messages
+#      from django.contrib.auth.decorators import login_required
+#      from django.db import transaction as db_transaction
+#      from django.shortcuts import get_object_or_404, redirect, render
+#      from django.views.decorators.http import require_POST
+#      from .models import Indicateur, InsitutionEntities, CategorieOperation, DataElement
+# =====================================================================
 
-def edit_indicator(request,id):
-    template ='edit_indicator.html'
+import logging
+
+journal = logging.getLogger('operaplus')
+
+AGREGATIONS = ('Somme', 'Moyenne', 'Minimum', 'Maximum', 'Dernière valeur', 'Compteur')
+NIVEAUX = ('Impact', 'Effet', 'Produit', 'Activité')
+
+
+def entites_pour_rattachement(institution):
+    """
+    Éléments du cadre logique de l'institution, rangés par niveau (Objectif, Résultat…).
+    Sert à la fois à remplir la liste ET à vérifier le choix envoyé : impossible de rattacher
+    un indicateur à l'élément d'une autre institution.
+    """
+    groupes = []
+    for niveau in InsitutionEntities.objects.filter(m_institution=institution).order_by('m_hierachie'):
+        entites = [{'id': e.id, 'nom': getattr(e, 'm_nom', None) or str(e)} for e in niveau.m_entity_type.lines()]
+        if entites:
+            groupes.append({'niveau': str(niveau.m_entity_type), 'entites': entites})
+    return groupes
+
+
+@login_required(login_url='/log_account')
+def edit_indicator(request, id):
     context = basis(request)
-    actual_institution=context['actual_institution']
-    indicator = get_object_or_404(Indicateur, id=id)
+    actual_institution = context['actual_institution']
+    # L'indicateur doit appartenir à l'institution active (avant : n'importe quel id était ouvert)
+    indicator = get_object_or_404(Indicateur.objects.select_related('m_enti'), id=id, m_institution=actual_institution)
+
     context['indicator'] = indicator
-    categories = CategorieOperation.objects.filter(institution=context['actual_institution'])
-    dataelts = DataElement.objects.filter(m_institution=actual_institution)
-    context['dataelts'] = dataelts
-    context['categories'] = categories
-    return render(request,template,context)
+    context['categories'] = CategorieOperation.objects.filter(institution=actual_institution)
+    context['dataelts'] = DataElement.objects.filter(m_institution=actual_institution)
+    context['entites_groupes'] = entites_pour_rattachement(actual_institution)    # ← ajout : changer d'objectif / d'entité
+    context['champs_dynamiques'] = champs_disponibles(actual_institution)           # ← ajout : bibliothèque de champs
+    context['champs_valeurs'] = valeurs_existantes(indicator)                       # ← ajout : valeurs déjà renseignées
+    return render(request, 'edit_indicator.html', context)
+
+
+@login_required(login_url='/log_account')
+@require_POST
 def editions_indicator(request, id):
-    if request.method == 'POST':
-        try:
-            # Récupération de l'objet
-            indicateur = Indicateur.objects.get(id=int(id))
-            
-            # Mise à jour des champs
-            indicateur.m_name = request.POST.get('nature_indicateur')
-            indicateur.m_numerateur = request.POST.get('numerateur')
-            indicateur.nicename = request.POST.get('nicename')
-            indicateur.type_aggregation = request.POST.get('type')
-            
-            # Correction : Assignation des autres champs à l'objet
-            indicateur.niveau_pyramide = request.POST.get('niveau_pyramide')
-            indicateur.source_donnees = request.POST.get('source')
-            indicateur.frequence_collecte = request.POST.get('frequence')
-            indicateur.mecanisme_verification = request.POST.get('mecanisme_verification')
-            indicateur.cible_contractuelle = request.POST.get('cible')
-            
-            # Sauvegarde finale
-            indicateur.save()
-            messages.success(request, 'Édition réussie')
-            
-        except Exception as error:
-            messages.error(request, f'Erreur survenue : {error}')
-            return redirect(request.META.get('HTTP_REFERER'))
-            
-    return redirect('/evaluer/0/0/')
+    context = basis(request)
+    actual_institution = context['actual_institution']
+    indicator = get_object_or_404(Indicateur, id=id, m_institution=actual_institution)
+    retour_page = f'/edit_indicator/{indicator.id}/'
+
+    # --- 1. Lecture ---
+    nom = (request.POST.get('nature_indicateur') or '').strip().upper()
+    agregation = request.POST.get('type', '')
+    niveau = _texte(request, 'niveau_pyramide')
+    entite_id = (request.POST.get('entity_id') or '').strip()
+
+    # --- 2. Vérifications ---
+    if not nom:
+        messages.error(request, "Le nom de l'indicateur est obligatoire.")
+        return redirect(retour_page)
+    if agregation not in AGREGATIONS:
+        messages.error(request, "Choisissez un type d'agrégation dans la liste.")
+        return redirect(retour_page)
+    if niveau and niveau not in NIVEAUX:
+        messages.error(request, 'Niveau de la pyramide inconnu.')
+        return redirect(retour_page)
+    if (request.POST.get('cible') or '').strip() and _nombre(request, 'cible') is None:
+        messages.error(request, 'La cible doit être un nombre (ex. 500 ou 12,5).')
+        return redirect(retour_page)
+
+    autorisees = {e['id'] for g in entites_pour_rattachement(actual_institution) for e in g['entites']}
+    if not entite_id.isdigit() or int(entite_id) not in autorisees:
+        messages.error(request, 'Élément du cadre logique introuvable : choisissez-le dans la liste.')
+        return redirect(retour_page)
+    nouvelle_entite = int(entite_id)
+    deplace = nouvelle_entite != indicator.m_enti_id
+
+    # --- 3. Enregistrement (tout ou rien) ---
+    try:
+        with db_transaction.atomic():
+            indicator.m_name = nom
+            indicator.nicename = (request.POST.get('nicename') or '').strip()
+            indicator.m_enti_id = nouvelle_entite
+            indicator.m_numerateur = (request.POST.get('numerateur') or '').strip()
+            indicator.type_aggregation = agregation
+            indicator.niveau_pyramide = niveau
+            indicator.source_donnees = _texte(request, 'source')
+            indicator.frequence_collecte = _texte(request, 'frequence')
+            indicator.mecanisme_verification = _texte(request, 'mecanisme_verification')
+            indicator.cible_contractuelle = _nombre(request, 'cible')
+            indicator.save()
+
+            erreurs_champs = enregistrer_champs_dynamiques(request, indicator, actual_institution)
+    except Exception:
+        journal.exception("Erreur lors de la modification de l'indicateur %s", indicator.id)
+        messages.error(request, "Les modifications n'ont pas pu être enregistrées. Réessayez.")
+        return redirect(retour_page)
+
+    if erreurs_champs:                       # l'indicateur est enregistré, certaines valeurs non : on reste sur la page
+        for erreur in erreurs_champs:
+            messages.warning(request, erreur)
+        return redirect(retour_page)
+
+    texte = f'Indicateur « {indicator.nicename or nom} » modifié.'
+    if deplace:
+        texte += ' Il est maintenant rattaché à un autre élément du cadre logique.'
+    messages.success(request, texte)
+    return redirect('/evaluer/0/')
 
 def template_participant(request):
     try:
@@ -29556,7 +29529,79 @@ def download_report(request, id):
     response['Content-Disposition'] = f'attachment; filename="{rapport.piece_jointe.name}"'
     return response
 
+# =====================================================================
+#  OperaPlus — Champs dynamiques renseignés lors de la configuration d'un indicateur
+#  Template : partials/champs_indicateur_valeurs.html (inclus dans forms_indicator.html)
+#  Modèles  : ChampDynamique, ChampDynamiqueValue (modeles_champs_dynamiques.py)
+#
+#  Le formulaire envoie :
+#      champs_json = [3, 7, 12]        → les champs choisis, dans l'ordre
+#      cd_3, cd_7, cd_12               → leurs valeurs (cd_<id> ; un fichier arrive dans request.FILES)
+#  Le <form> doit avoir enctype="multipart/form-data" (pour les champs « photo / fichier »).
+# =====================================================================
 
+import json
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+
+# from .models import Entity, DataElement, ChampDynamique, ChampDynamiqueValue
+
+MAX_CHAMPS = 50
+TAILLE_MAX_FICHIER = 5 * 1024 * 1024
+TYPES_FICHIER = ('image/jpeg', 'image/png', 'image/webp', 'application/pdf')
+
+
+def champs_disponibles(institution):
+    """Champs actifs de la bibliothèque, au format attendu par la page."""
+    return list(ChampDynamique.objects.filter(institution=institution, actif=True)
+                .order_by('libelle').values('id', 'libelle', 'type', 'unite', 'choix'))
+
+
+def valeurs_existantes(indicateur):
+    """Valeurs déjà renseignées (page de modification), dans l'ordre."""
+    return [{'champ_id': v.champ_id, 'valeur': v.valeur_formulaire,
+             'fichier_url': v.fichier.url if v.fichier else '', 'fichier_nom': v.fichier.name.rsplit('/', 1)[-1] if v.fichier else ''}
+            for v in indicateur.valeurs_champs.select_related('champ').filter(champ__actif=True)]
+
+
+def _lire_une_valeur(champ, request):
+    """Renvoie (valeurs_a_enregistrer, message_d_erreur)."""
+    nom = f'cd_{champ.id}'
+    if champ.type == 'file':
+        f = request.FILES.get(nom)
+        if not f:
+            return {}, ''                                    # rien envoyé : on garde le fichier existant
+        if f.size > TAILLE_MAX_FICHIER:
+            return None, f'« {champ.libelle} » : fichier trop lourd (5 Mo au maximum).'
+        if getattr(f, 'content_type', '') not in TYPES_FICHIER:
+            return None, f'« {champ.libelle} » : format accepté, photo (JPG, PNG, WEBP) ou PDF.'
+        return {'fichier': f}, ''
+
+    brut = (request.POST.get(nom) or '').strip()
+    vide = {'nombre': None, 'texte': '', 'date': None}
+    if not brut:
+        return vide, ''
+    if champ.type == 'number':
+        try:
+            return {**vide, 'nombre': Decimal(brut.replace(' ', '').replace(' ', '').replace(',', '.'))}, ''
+        except InvalidOperation:
+            return None, f'« {champ.libelle} » : écrivez un nombre (ex. 24 ou 12,5).'
+    if champ.type == 'date':
+        try:
+            return {**vide, 'date': datetime.strptime(brut, '%Y-%m-%d').date()}, ''
+        except ValueError:
+            return None, f'« {champ.libelle} » : date invalide.'
+    if champ.type == 'list' and brut not in (champ.choix or []):
+        return None, f'« {champ.libelle} » : choisissez une valeur de la liste.'
+    if champ.type == 'boolean' and brut not in ('oui', 'non'):
+        return None, f'« {champ.libelle} » : répondez par oui ou non.'
+    return {**vide, 'texte': brut[:2000]}, ''
+
+
+
+# ---------------------------------------------------------------------
+#  Votre vue elementEntity, complétée (même nom, même template) :
+# ---------------------------------------------------------------------
 def elementEntity(request, id):
     context = basis(request)
     entity = Entity.objects.get(id=int(id))
@@ -29570,9 +29615,23 @@ def elementEntity(request, id):
     dataelts = DataElement.objects.filter(m_institution=actual_institution)
 
     context['dataelts'] = dataelts
+    context['champs_dynamiques'] = champs_disponibles(actual_institution)    # ← ajout : la bibliothèque de champs
+    context['champs_valeurs'] = []                                           # ← création : rien n'est encore renseigné
 
     return render(request, template, context)
 
+
+# ---------------------------------------------------------------------
+#  Dans votre vue /save_indicateur/, JUSTE APRÈS la création de l'indicateur :
+#
+#      for erreur in enregistrer_champs_dynamiques(request, indicateur, actual_institution):
+#          messages.warning(request, erreur)
+#
+#  Page de modification (/edit_indicator/<id>/) : ajoutez au contexte
+#      context['champs_dynamiques'] = champs_disponibles(actual_institution)
+#      context['champs_valeurs'] = valeurs_existantes(indicateur)
+#  incluez le même bloc, et appelez enregistrer_champs_dynamiques(...) dans la vue qui enregistre.
+# ---------------------------------------------------------------------
 from django.utils import timezone
 from django.contrib import messages
 from django.shortcuts import redirect
@@ -30933,66 +30992,261 @@ def UpdateRACI(request, id):
     return redirect(request.META.get('HTTP_REFERER','/'))
 
 
-def Update_Entities(request, id):
-    try:
-        entity = Entity.objects.get(id=int(id))
-        
-        context = basis(request)
-        actual_institution = context['actual_institution']
-        
-        template ='edit_entities.html'
-        context ['actual_institution'] = actual_institution
-        context ['entity'] = entity
-        champ_values = ChampValue.objects.filter(entities=entity)
-        context['champ_values'] = champ_values
-        
-        return render(request, template, context)
-    except Exception as e:
-        messages.error(request,f'erreur survenue aucour de la recuperation')
+# =====================================================================
+#  OperaPlus — Modifier un élément du cadre logique (Update_Entities) + changer son élément parent
+#  Template : edit_entities.html (votre page, complétée d'un bloc « Rattachement »)
+#
+#  Même nom de vue, même template, mêmes variables (entity, champ_values, actual_institution) + 3 ajouts :
+#      niveau_parent    : nom du niveau au-dessus (ex. « Objectif »), None pour le niveau le plus haut
+#      parents_possibles: [{'id', 'nom'}] éléments de ce niveau dans votre institution
+#      parent_actuel    : l'élément parent actuel (ou None)
+#
+#  La vue traite aussi l'ENREGISTREMENT (POST) : nom, objectif, observation, attributs dynamiques et parent.
+#  ⚠ Si votre URL 'Update-Entity' pointe vers une AUTRE vue d'enregistrement, gardez-la et ajoutez-y simplement :
+#        erreur = changer_parent(entity, request.POST.get('parent_id'), actual_institution)
+#
+#  Imports (à fusionner) :
+#      import logging
+#      from django.contrib import messages
+#      from django.contrib.auth.decorators import login_required
+#      from django.db import transaction as db_transaction
+#      from django.shortcuts import redirect, render
+#      from .models import Entity, EntityHierachie, InsitutionEntities, ChampValue
+# =====================================================================
+
+import logging
+
+journal = logging.getLogger('operaplus')
+
+
+def _niveau(entity, institution):
+    """Niveau de l'élément dans le cadre logique de l'institution (0 = le plus haut), ou None s'il n'en fait pas partie."""
+    ie = InsitutionEntities.objects.filter(m_institution=institution, m_entity_type=entity.m_type_entity).first()
+    return ie.m_hierachie if ie else None
+
+
+def parents_possibles(entity, institution):
+    """(nom du niveau au-dessus, [{'id', 'nom'}]) — vide si l'élément est au niveau le plus haut."""
+    niveau = _niveau(entity, institution)
+    if not niveau:                                             # None ou 0 : pas de parent possible
+        return None, []
+    dessus = InsitutionEntities.objects.filter(m_institution=institution, m_hierachie=niveau - 1).first()
+    if not dessus:
+        return None, []
+    lignes = [{'id': e.id, 'nom': getattr(e, 'm_nom', None) or str(e)} for e in dessus.m_entity_type.lines() if e.id != entity.id]
+    return str(dessus.m_entity_type), lignes
+
+
+def parent_actuel(entity):
+    lien = EntityHierachie.objects.filter(m_sub_entity=entity).select_related('m_sup_entity').first()
+    return lien.m_sup_entity if lien else None
+
+
+def _repartir_ponderation(parent):
+    """Pondération équitable entre les enfants d'un parent (même règle qu'à la création)."""
+    if parent is None:
+        return
+    ids = list(EntityHierachie.objects.filter(m_sup_entity=parent).values_list('m_sub_entity_id', flat=True))
+    if ids:
+        Entity.objects.filter(id__in=ids).update(ponderation=100 / len(ids))
+
+
+def changer_parent(entity, nouveau_id, institution):
+    """
+    Rattache l'élément à un autre parent du niveau au-dessus.
+    Ses sous-éléments, tâches et indicateurs le suivent (ils restent attachés à lui).
+    Renvoie un message d'erreur, ou '' si tout va bien (y compris « rien à changer »).
+    """
+    nouveau_id = (nouveau_id or '').strip()
+    if not nouveau_id.isdigit():
+        return ''                                              # champ absent (niveau le plus haut) : rien à faire
+    _, possibles = parents_possibles(entity, institution)
+    if int(nouveau_id) not in {p['id'] for p in possibles}:
+        return "Élément parent introuvable : choisissez-le dans la liste."
+    ancien = parent_actuel(entity)
+    if ancien and ancien.id == int(nouveau_id):
+        return ''
+    nouveau = Entity.objects.get(id=int(nouveau_id))
+    EntityHierachie.objects.filter(m_sub_entity=entity).delete()
+    EntityHierachie.objects.create(m_sup_entity=nouveau, m_sub_entity=entity)
+    _repartir_ponderation(ancien)                              # les frères restants se partagent 100 %
+    _repartir_ponderation(nouveau)                             # idem chez le nouveau parent
+    return ''
+
+
+def _enregistrer_attributs(request, champ_values):
+    """Attributs dynamiques (champ_<id>). Une case à cocher absente = « False »."""
+    for cv in champ_values:
+        nom = f'champ_{cv.champ.id}'
+        if cv.champ.type == 'boolean':
+            cv.value = 'True' if request.POST.get(nom) else 'False'
+        elif nom in request.POST:
+            cv.value = (request.POST.get(nom) or '').strip()
+        else:
+            continue
+        cv.save()
+
+# =====================================================================
+#  OperaPlus — Modifier un élément du cadre logique (Update_Entity) + changer son élément parent
+#  Template : edit_entities.html (votre page, complétée d'un bloc « Rattachement »)
+#
+#  Même nom de vue, même template, mêmes variables (entity, champ_values, actual_institution) + 3 ajouts :
+#      niveau_parent    : nom du niveau au-dessus (ex. « Objectif »), None pour le niveau le plus haut
+#      parents_possibles: [{'id', 'nom'}] éléments de ce niveau dans votre institution
+#      parent_actuel    : l'élément parent actuel (ou None)
+#
+#  UNE seule vue pour afficher (GET) et enregistrer (POST) : Update_Entity (URL 'Update-Entity').
+#  Update_Entities (votre ancienne vue d'affichage) devient un simple alias : rien à changer dans urls.py.
+#
+#  Corrigé par rapport à votre Update_Entity :
+#   1. Les attributs « oui / non » ne restaient jamais cochés : la case envoie « on », la page attendait « True ».
+#      On enregistre maintenant « True » / « False » (et la page reconnaît aussi les anciens « on »).
+#   2. Un attribut absent du formulaire n'est plus effacé.
+#   3. Changement de parent (rattachement), avec répartition des pondérations.
+#   4. Seuls les éléments de VOTRE institution peuvent être modifiés ; nom vide refusé.
+#   5. Tout ou rien (atomic) ; l'erreur technique n'est plus affichée à l'utilisateur (elle va dans le journal).
+#   6. Après enregistrement : retour sur la page, avec le message.
+#
+#  Imports (à fusionner) :
+#      import logging
+#      from django.contrib import messages
+#      from django.contrib.auth.decorators import login_required
+#      from django.db import transaction as db_transaction
+#      from django.shortcuts import redirect, render
+#      from .models import Entity, EntityHierachie, InsitutionEntities, ChampValue
+# =====================================================================
+
+import logging
+
+journal = logging.getLogger('operaplus')
+
+
+def _niveau(entity, institution):
+    """Niveau de l'élément dans le cadre logique de l'institution (0 = le plus haut), ou None s'il n'en fait pas partie."""
+    ie = InsitutionEntities.objects.filter(m_institution=institution, m_entity_type=entity.m_type_entity).first()
+    return ie.m_hierachie if ie else None
+
+
+def parents_possibles(entity, institution):
+    """(nom du niveau au-dessus, [{'id', 'nom'}]) — vide si l'élément est au niveau le plus haut."""
+    niveau = _niveau(entity, institution)
+    if not niveau:                                             # None ou 0 : pas de parent possible
+        return None, []
+    dessus = InsitutionEntities.objects.filter(m_institution=institution, m_hierachie=niveau - 1).first()
+    if not dessus:
+        return None, []
+    lignes = [{'id': e.id, 'nom': getattr(e, 'm_nom', None) or str(e)} for e in dessus.m_entity_type.lines() if e.id != entity.id]
+    return str(dessus.m_entity_type), lignes
+
+
+def parent_actuel(entity):
+    lien = EntityHierachie.objects.filter(m_sub_entity=entity).select_related('m_sup_entity').first()
+    return lien.m_sup_entity if lien else None
+
+
+def _repartir_ponderation(parent):
+    """Pondération équitable entre les enfants d'un parent (même règle qu'à la création)."""
+    if parent is None:
+        return
+    ids = list(EntityHierachie.objects.filter(m_sup_entity=parent).values_list('m_sub_entity_id', flat=True))
+    if ids:
+        Entity.objects.filter(id__in=ids).update(ponderation=100 / len(ids))
+
+
+def changer_parent(entity, nouveau_id, institution):
+    """
+    Rattache l'élément à un autre parent du niveau au-dessus.
+    Ses sous-éléments, tâches et indicateurs le suivent (ils restent attachés à lui).
+    Renvoie un message d'erreur, ou '' si tout va bien (y compris « rien à changer »).
+    """
+    nouveau_id = (nouveau_id or '').strip()
+    if not nouveau_id.isdigit():
+        return ''                                              # champ absent (niveau le plus haut) : rien à faire
+    _, possibles = parents_possibles(entity, institution)
+    if int(nouveau_id) not in {p['id'] for p in possibles}:
+        return "Élément parent introuvable : choisissez-le dans la liste."
+    ancien = parent_actuel(entity)
+    if ancien and ancien.id == int(nouveau_id):
+        return ''
+    nouveau = Entity.objects.get(id=int(nouveau_id))
+    EntityHierachie.objects.filter(m_sub_entity=entity).delete()
+    EntityHierachie.objects.create(m_sup_entity=nouveau, m_sub_entity=entity)
+    _repartir_ponderation(ancien)                              # les frères restants se partagent 100 %
+    _repartir_ponderation(nouveau)                             # idem chez le nouveau parent
+    return ''
+
+
+def _enregistrer_attributs(request, champ_values):
+    """Attributs dynamiques (champ_<id>). Une case à cocher absente = « False »."""
+    for cv in champ_values:
+        nom = f'champ_{cv.champ.id}'
+        if cv.champ.type == 'boolean':
+            cv.value = 'True' if request.POST.get(nom) else 'False'
+        elif nom in request.POST:
+            cv.value = (request.POST.get(nom) or '').strip()
+        else:
+            continue
+        cv.save()
+
+
+@login_required(login_url='/log_account')
+def Update_Entity(request, id):
+    template = 'edit_entities.html'
+    context = basis(request)
+    actual_institution = context.get('actual_institution')
+    context['actual_institution'] = actual_institution
+
+    entity = Entity.objects.filter(id=id).select_related('m_type_entity').first()
+    # L'élément doit appartenir au cadre logique de VOTRE institution
+    if not entity or _niveau(entity, actual_institution) is None:
+        messages.error(request, "Élément introuvable dans le cadre logique de votre institution.")
+        return redirect('/configurations/')
+
+    champ_values = ChampValue.objects.filter(entities=entity).select_related('champ')
+
+    if request.method == 'POST':
+        nom = (request.POST.get('nom') or '').strip()
+        if not nom:
+            messages.error(request, "Le nom est obligatoire.")
+        else:
+            try:
+                with db_transaction.atomic():
+                    entity.m_nom = nom[:255]
+                    entity.objectif = (request.POST.get('objectif') or '').strip()
+                    entity.observation = (request.POST.get('observation') or '').strip()
+                    entity.save()
+                    _enregistrer_attributs(request, champ_values)
+                    ancien = parent_actuel(entity)
+                    erreur = changer_parent(entity, request.POST.get('parent_id'), actual_institution)
+                    if erreur:
+                        raise ValueError(erreur)
+                nouveau = parent_actuel(entity)
+                if nouveau and (not ancien or ancien.id != nouveau.id):
+                    messages.success(request, f"« {nom} » est maintenant rattaché à « {getattr(nouveau, 'm_nom', nouveau)} ». "
+                                              f"Ses sous-éléments et indicateurs le suivent ; les pondérations ont été réparties à parts égales.")
+                else:
+                    messages.success(request, f"« {nom} » a été mis à jour.")
+                return redirect(request.path)
+            except ValueError as e:
+                messages.error(request, str(e))
+            except Exception:
+                journal.exception("Modification de l'élément %s", entity.id)
+                messages.error(request, "Les modifications n'ont pas pu être enregistrées. Réessayez.")
+
+    niveau_parent, possibles = parents_possibles(entity, actual_institution)
+    context.update({
+        'entity': entity,
+        'champ_values': champ_values,
+        'niveau_parent': niveau_parent,                      # ← ajout
+        'parents_possibles': possibles,                      # ← ajout
+        'parent_actuel': parent_actuel(entity),              # ← ajout
+        'nb_sous_elements': EntityHierachie.objects.filter(m_sup_entity=entity).count(),
+    })
     return render(request, template, context)
 
-def Update_Entity(request, id):
-    try:
-        entity = Entity.objects.get(id=int(id))
-        
-        if request.method == 'POST':
-            # ✅ Champs fixes de l'entité
-            entity.m_nom = request.POST.get('nom', '')
-            entity.objectif = request.POST.get('objectif', '')
-            entity.observation = request.POST.get('observation', '')  # Ajouté
-            
-            # ✅ Sauvegarde entité APRÈS champs dynamiques
-            entity.save()
-            
-            # ✅ Mise à jour TOUS les ChampValue existants
-            champ_values = ChampValue.objects.filter(entities=entity).select_related('champ')
-            updated_count = 0
-            
-            for champ_value in champ_values:
-                field_name = f'champ_{champ_value.champ.id}'
-                new_value = request.POST.get(field_name, '')
-                
-                # ✅ Met à jour la valeur existante
-                champ_value.value = new_value
-                champ_value.save()
-                updated_count += 1
-            
-            messages.success(request, f"Entité mise à jour ! {updated_count} champs dynamiques sauvegardés.")
-            return redirect('.')  # URL fixe recommandée
-        
-        # GET: affichage formulaire
-        context = basis(request)
-        context['entity'] = entity
-        context['champ_values'] = ChampValue.objects.filter(entities=entity).select_related('champ')
-        return render(request, 'edit_entities.html', context)
-        
-    except Entity.DoesNotExist:
-        messages.error(request, "Entité non trouvée")
-    except Exception as e:
-        messages.error(request, f"Erreur: {str(e)}")
-    
-    return redirect(request.META.get('HTTP_REFERER','/'))
 
+# Ancienne vue d'affichage : même comportement (évite deux codes à maintenir)
+Update_Entities = Update_Entity
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -32419,122 +32673,364 @@ def license(request):
 
 import secrets
 import string
+# =====================================================================
+#  OperaPlus — save_personnel_institution (corrigée)
+#  Même nom, même URL (/save_personnel_institution/), mêmes champs POST, même redirection (/personnels/).
+#
+#  Corrigé :
+#   1. MultipleObjectsReturned : les fonctions en double (même agent, même institution) ne font plus planter ;
+#      la plus récente est gardée, les doublons sont supprimés.
+#   2. Agent déjà connu (même e-mail) — géré proprement, sans doublon :
+#        • déjà dans VOTRE équipe      → rien n'est écrasé ; message « déjà dans votre équipe, utilisez Modifier » ;
+#        • connu dans une AUTRE institution → il est ajouté à votre équipe (fonction + structure) ; son nom, sa photo,
+#          son mot de passe ne sont PAS modifiés (ils lui appartiennent) ; il reçoit un e-mail l'informant de l'ajout ;
+#        • compte utilisateur sans fiche → la fiche est créée et reliée au compte existant.
+#   3. La structure d'un agent présent dans plusieurs institutions n'est plus écrasée par celle d'une autre institution.
+#   4. Sécurité : seule une fiche de VOTRE institution peut être modifiée (avant : n'importe quel id) ;
+#      fonction et structure doivent appartenir à votre institution ; réservé aux utilisateurs connectés, en POST.
+#   5. E-mail en double refusé à la modification ; e-mail mis en minuscules (Jean@X.org = jean@x.org).
+#   6. Le genre est aussi mis à jour en modification (avant : oublié).
+#   7. Si l'e-mail du mot de passe ne part pas, le message le dit clairement (sans afficher l'erreur technique).
+#   8. Tout ou rien : fiche, structure et fonction sont enregistrées ensemble (atomic).
+#   9. Le registre affiche « X a été enregistré(e) » (session perso_saved, déjà lue par la vue personnels).
+#
+#  Imports (à fusionner avec les vôtres) :
+#      import logging, secrets, string
+#      from django.conf import settings
+#      from django.contrib import messages
+#      from django.contrib.auth.decorators import login_required
+#      from django.contrib.auth.models import User
+#      from django.core.exceptions import ValidationError
+#      from django.core.mail import EmailMessage
+#      from django.core.validators import validate_email
+#      from django.db import transaction as db_transaction
+#      from django.shortcuts import redirect
+#      from django.template.loader import render_to_string
+#      from django.views.decorators.http import require_POST
+#      from .models import Personnel, Personnel_Function, Personnel_Structure, Role, Structure, Entity, OperaFile
+# =====================================================================
 
+import logging
+import secrets
+import string
+
+journal = logging.getLogger('operaplus')
+
+
+# ---------------------------------------------------------------------
+#  Petits outils
+# ---------------------------------------------------------------------
+def _txt(request, nom, longueur=150):
+    return (request.POST.get(nom) or '').strip()[:longueur]
+
+
+def _id(valeur):
+    """'12' → 12 ; vide, '0' ou texte → None (plus de plantage sur int('abc'))."""
+    valeur = (valeur or '').strip()
+    return int(valeur) if valeur.isdigit() and int(valeur) > 0 else None
+
+
+def _sexe(valeur):
+    v = (valeur or '').strip().upper()[:1]
+    return v if v in ('F', 'M') else ''
+
+
+def _mot_de_passe(longueur=12):
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(longueur))
+
+
+def _envoyer(request, sujet, gabarit, contexte, destinataire, erreur):
+    """Envoie un e-mail APRÈS l'enregistrement en base ; en cas d'échec, message clair (détail dans le journal)."""
+    def envoi():
+        try:
+            mail = EmailMessage(sujet, render_to_string(gabarit, contexte), settings.EMAIL_HOST_USER, [destinataire])
+            mail.content_subtype = 'html'
+            mail.send()
+        except Exception:
+            journal.exception("E-mail non envoyé à %s", destinataire)
+            messages.warning(request, erreur)
+    db_transaction.on_commit(envoi)
+
+
+def est_dans_institution(personnel, institution):
+    """L'agent fait-il déjà partie de l'équipe de cette institution ?"""
+    return (Personnel_Function.objects.filter(m_personnel=personnel, m_institution=institution).exists()
+            or Personnel_Structure.objects.filter(m_personnel=personnel, m_structure__institution=institution).exists())
+
+
+def _lier_structure(personnel, institution, structure):
+    """Une structure par agent ET par institution (avant : on écrasait la structure prise dans n'importe quelle institution)."""
+    liens = list(Personnel_Structure.objects.filter(m_personnel=personnel, m_structure__institution=institution).order_by('-id'))
+    if liens:
+        lien = liens[0]
+        if lien.m_structure_id != structure.id:
+            lien.m_structure = structure
+            lien.save(update_fields=['m_structure'])
+        Personnel_Structure.objects.filter(id__in=[l.id for l in liens[1:]]).delete()      # doublons
+    else:
+        Personnel_Structure.objects.create(m_personnel=personnel, m_structure=structure)
+
+
+def _lier_fonction(personnel, institution, role, entite=None):
+    """
+    Une fonction par agent ET par institution.
+    Remplace update_or_create, qui plantait (MultipleObjectsReturned) dès qu'il existait des doublons :
+    on garde la ligne la plus récente, on supprime les autres.
+    """
+    lignes = list(Personnel_Function.objects.select_for_update()
+                  .filter(m_personnel=personnel, m_institution=institution).order_by('-id'))
+    if lignes:
+        pf = lignes[0]
+        pf.m_role = role
+        if entite is not None:
+            pf.m_entity = entite
+        pf.save()
+        Personnel_Function.objects.filter(id__in=[l.id for l in lignes[1:]]).delete()
+    else:
+        valeurs = {'m_personnel': personnel, 'm_institution': institution, 'm_role': role}
+        if entite is not None:
+            valeurs['m_entity'] = entite
+        Personnel_Function.objects.create(**valeurs)
+
+
+from django.core.validators import validate_email
+@login_required(login_url='/log_account')
+@require_POST
+def _txt(request, nom, longueur=150):
+    return (request.POST.get(nom) or '').strip()[:longueur]
+
+
+def _id(valeur):
+    """'12' → 12 ; vide, '0' ou texte → None (plus de plantage sur int('abc'))."""
+    valeur = (valeur or '').strip()
+    return int(valeur) if valeur.isdigit() and int(valeur) > 0 else None
+
+
+def _sexe(valeur):
+    v = (valeur or '').strip().upper()[:1]
+    return v if v in ('F', 'M') else ''
+
+
+def _mot_de_passe(longueur=12):
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(longueur))
+
+
+def _envoyer(request, sujet, gabarit, contexte, destinataire, erreur):
+    """Envoie un e-mail APRÈS l'enregistrement en base ; en cas d'échec, message clair (détail dans le journal)."""
+    def envoi():
+        try:
+            mail = EmailMessage(sujet, render_to_string(gabarit, contexte), settings.EMAIL_HOST_USER, [destinataire])
+            mail.content_subtype = 'html'
+            mail.send()
+        except Exception:
+            journal.exception("E-mail non envoyé à %s", destinataire)
+            messages.warning(request, erreur)
+    db_transaction.on_commit(envoi)
+
+
+def est_dans_institution(personnel, institution):
+    """L'agent fait-il déjà partie de l'équipe de cette institution ?"""
+    return (Personnel_Function.objects.filter(m_personnel=personnel, m_institution=institution).exists()
+            or Personnel_Structure.objects.filter(m_personnel=personnel, m_structure__institution=institution).exists())
+
+
+def _lier_structure(personnel, institution, structure):
+    """Une structure par agent ET par institution (avant : on écrasait la structure prise dans n'importe quelle institution)."""
+    liens = list(Personnel_Structure.objects.filter(m_personnel=personnel, m_structure__institution=institution).order_by('-id'))
+    if liens:
+        lien = liens[0]
+        if lien.m_structure_id != structure.id:
+            lien.m_structure = structure
+            lien.save(update_fields=['m_structure'])
+        Personnel_Structure.objects.filter(id__in=[l.id for l in liens[1:]]).delete()      # doublons
+    else:
+        Personnel_Structure.objects.create(m_personnel=personnel, m_structure=structure)
+
+
+def _lier_fonction(personnel, institution, role, entite=None):
+    """
+    Une fonction par agent ET par institution.
+    Remplace update_or_create, qui plantait (MultipleObjectsReturned) dès qu'il existait des doublons :
+    on garde la ligne la plus récente, on supprime les autres.
+    """
+    lignes = list(Personnel_Function.objects.select_for_update()
+                  .filter(m_personnel=personnel, m_institution=institution).order_by('-id'))
+    if lignes:
+        pf = lignes[0]
+        pf.m_role = role
+        if entite is not None:
+            pf.m_entity = entite
+        pf.save()
+        Personnel_Function.objects.filter(id__in=[l.id for l in lignes[1:]]).delete()
+    else:
+        valeurs = {'m_personnel': personnel, 'm_institution': institution, 'm_role': role}
+        if entite is not None:
+            valeurs['m_entity'] = entite
+        Personnel_Function.objects.create(**valeurs)
+
+
+# ---------------------------------------------------------------------
+#  Vue
+# ---------------------------------------------------------------------
+@login_required(login_url='/log_account')
+@require_POST
 def save_personnel_institution(request):
     context = basis(request)
     inst_actuelle = context.get('actual_institution')
-    
-    generator = request.POST.get('generator')
-    edit_or_create = request.POST.get('edit_or_create')
-    r_mail = request.POST.get('mail')
-    
-    if generator == "p2":
-        # 1. Extraction des données
-        r_nom = request.POST.get('nom')
-        r_prenom = request.POST.get('prenom')
-        r_tel = request.POST.get('tel')
-        r_sexe = request.POST.get('sexe')
-        r_poste = request.POST.get('poste', '')
-        
-        r_img = request.FILES.get('photo')
-        
-        # Gestion de l'image par défaut en création
-        if not r_img and edit_or_create != 'e':
-            default_file = OperaFile.objects.filter(m_name="USR").first()
-            r_img = default_file.m_file if default_file else None
+    if not inst_actuelle or request.POST.get('generator') != 'p2':
+        return redirect('/personnels/')
 
-        # 2. Vérification existence
-        user_exists = User.objects.filter(email=r_mail).first()
-        personnel = Personnel.objects.filter(mail=r_mail).first()
+    edition = request.POST.get('edit_or_create') == 'e'
 
-        if edit_or_create != 'e':  # --- MODE CRÉATION ---
-            if not user_exists:
-                # Génération mot de passe et utilisateur
-                alphabet = string.ascii_letters + string.digits
-                password = ''.join(secrets.choice(alphabet) for i in range(8))
-                username = f"user_{secrets.token_hex(4)}" 
-                user = User.objects.create_user(username=username, email=r_mail, password=password)
-                
-                # Envoi de l'email
-                try:
-                    subject = "Nouveau Compte Opera +"
-                    msg_html = render_to_string('mails/new_personnel.html', {
-                        'password': password,
-                        'name': f"{r_nom} {r_prenom}"
-                    })
-                    email = EmailMessage(subject, msg_html, settings.EMAIL_HOST_USER, [r_mail])
-                    email.content_subtype = 'html'
-                    email.send()
-                except Exception as e:
-                    messages.error(request,f"Erreur mail: {e}")
-                
-                messages.success(request, f"Le compte de {r_nom} a été créé.")
+    # ===== 1. Lecture et vérifications =====
+    r_nom = _txt(request, 'nom')
+    r_prenom = _txt(request, 'prenom')
+    r_mail = _txt(request, 'mail', 254).lower()
+    r_tel = _txt(request, 'tel', 30)
+    r_sexe = _sexe(request.POST.get('sexe'))
+    r_poste = _txt(request, 'poste')
+    r_img = request.FILES.get('photo')
+
+    erreurs = []
+    if not r_nom:
+        erreurs.append('Le nom est obligatoire.')
+    try:
+        validate_email(r_mail)
+    except ValidationError:
+        erreurs.append('Adresse e-mail invalide.')
+    if r_img and (r_img.size > 5 * 1024 * 1024 or not (getattr(r_img, 'content_type', '') or '').startswith('image/')):
+        erreurs.append('La photo doit être une image de 5 Mo au maximum.')
+
+    # Fonction et structure : uniquement celles de VOTRE institution
+    r_role = Role.objects.filter(id=_id(request.POST.get('Fonction')), actual_institution=inst_actuelle).first()
+    r_structure = Structure.objects.filter(id=_id(request.POST.get('Structure')), institution=inst_actuelle).first()
+    if not edition and not r_role:
+        erreurs.append('Choisissez la fonction de l’agent.')
+    if not edition and not r_structure:
+        erreurs.append('Choisissez la structure de l’agent : sans elle, il n’apparaît pas dans le registre.')
+
+    if erreurs:
+        for e in erreurs:
+            messages.error(request, e)
+        return redirect('/personnels/')
+
+    entite = None
+    simple_user = _id(request.POST.get('simple_user'))
+    if simple_user:
+        entite = Entity.objects.filter(id=simple_user).first()
+
+    try:
+        with db_transaction.atomic():
+            if edition:
+                personnel = _modifier(request, inst_actuelle, r_nom, r_prenom, r_mail, r_tel, r_sexe, r_img)
+                if personnel is None:
+                    return redirect('/personnels/')
+                statut = 'modifie'
             else:
-                # L'utilisateur existe déjà
-                user = user_exists
-                # On récupère la photo existante pour le modal
-                p_existant = Personnel.objects.filter(bd_user=user).first()
-                if p_existant and p_existant.photo:
-                    request.session['temp_photo_url'] = p_existant.photo.url
-                
-                messages.info(request, "EXISTANT")
+                personnel, statut = _creer_ou_rattacher(request, inst_actuelle, r_nom, r_prenom, r_mail, r_tel, r_sexe, r_poste, r_img)
+                if statut == 'deja':                        # déjà dans l'équipe : rien n'est modifié, on montre sa fiche
+                    _montrer(request, personnel, statut)
+                    return redirect('/personnels/')
 
-            # Création de la fiche personnel si elle n'existe pas encore
-            if not personnel:
-                personnel = Personnel.objects.create(
-                    bd_user=user, nom=r_nom, prenom=r_prenom, mail=r_mail, 
-                    photo=r_img, tel=r_tel, sexe=r_sexe, fonction=r_poste,
-                    actual_institution=inst_actuelle
-                )
-        
-        else:  # --- MODE ÉDITION ---
-            edit_id = request.POST.get('edit_id')
-            personnel = Personnel.objects.get(id=int(edit_id))
-            personnel.nom, personnel.prenom = r_nom, r_prenom
-            personnel.mail = r_mail
-            personnel.tel = r_tel 
-            if r_img: 
-                personnel.photo = r_img
-            
-            if personnel.bd_user:
-                personnel.bd_user.email = r_mail
-                personnel.bd_user.save()
-            personnel.save()
-            messages.success(request, "Fiche mise à jour.")
+            # ===== Structure et fonction dans CETTE institution =====
+            if r_structure:
+                _lier_structure(personnel, inst_actuelle, r_structure)
+            if r_role:
+                _lier_fonction(personnel, inst_actuelle, r_role, entite)
 
-        # 3. Liens Structure & Fonction (Correction MultipleObjectsReturned)
-        struct_id = request.POST.get('Structure', '0')
-        role_id = request.POST.get('Fonction')
-        r_structure = Structure.objects.filter(id=int(struct_id)).first() if struct_id != '0' else None
-        
-        if role_id:
-            try:
-                r_role = Role.objects.get(id=int(role_id))
+    except Exception:
+        journal.exception("Enregistrement d'un agent (%s)", r_mail)
+        messages.error(request, "L'agent n'a pas pu être enregistré. Réessayez ; si le problème continue, contactez l'administrateur.")
+        return redirect('/personnels/')
 
-                # Gestion Personnel_Structure (Sécurisé)
-                ps_link = Personnel_Structure.objects.filter(m_personnel=personnel).first()
-                if ps_link:
-                    ps_link.m_structure = r_structure
-                    ps_link.save()
-                else:
-                    Personnel_Structure.objects.create(m_personnel=personnel, m_structure=r_structure)
+    _montrer(request, personnel, statut)
+    return redirect('/personnels/')
 
-                # Gestion Personnel_Function
-                simple_user = request.POST.get('simple_user', '0')
-                pf_defaults = {'m_role': r_role}
-                if simple_user != '0':
-                    entity = Entity.objects.filter(id=int(simple_user)).first()
-                    if entity: pf_defaults['m_entity'] = entity
 
-                Personnel_Function.objects.update_or_create(
-                    m_personnel=personnel,
-                    m_institution=inst_actuelle,
-                    defaults=pf_defaults
-                )
-            except Role.DoesNotExist:
-                pass
+def _montrer(request, personnel, statut):
+    """Le registre ouvrira la fenêtre « fiche de l'agent » avec le message correspondant à la situation."""
+    request.session['perso_saved'] = personnel.id
+    request.session['perso_statut'] = statut
 
-    return redirect("/personnels/")
+
+def _creer_ou_rattacher(request, inst, nom, prenom, mail, tel, sexe, poste, img):
+    """
+    Création d'un agent, en tenant compte de ceux qui existent déjà (même e-mail).
+    Renvoie (fiche, statut) — statut : 'deja' (rien modifié), 'rattache', 'lie' ou 'nouveau'.
+    """
+    personnel = Personnel.objects.filter(mail__iexact=mail).first()
+    utilisateur = User.objects.filter(email__iexact=mail).first() or (personnel.bd_user if personnel else None)
+
+    # --- Cas 1 : déjà dans VOTRE équipe → on n'écrase rien ---
+    if personnel and est_dans_institution(personnel, inst):
+        return personnel, 'deja'
+
+    # --- Cas 2 : connu ailleurs (fiche existante, autre institution) → ajouté à votre équipe, données personnelles intactes ---
+    if personnel:
+        if not personnel.bd_user and utilisateur:
+            personnel.bd_user = utilisateur
+            personnel.save(update_fields=['bd_user'])
+        nom_affiche = f"{personnel.prenom or ''} {personnel.nom}".strip()
+        _envoyer(request, f"Vous avez été ajouté(e) à l'équipe {getattr(inst, 'nom', '')}",
+                 'mails/ajout_institution.html', {'name': nom_affiche, 'institution': inst}, mail,
+                 f"{nom_affiche} a été ajouté(e), mais l'e-mail d'information n'a pas pu être envoyé.")
+        return personnel, 'rattache'
+
+    # --- Cas 3 : compte utilisateur existant sans fiche → fiche créée et reliée au compte ---
+    mot_de_passe = None
+    if not utilisateur:
+        mot_de_passe = _mot_de_passe()
+        utilisateur = User.objects.create_user(username=f"user_{secrets.token_hex(4)}", email=mail, password=mot_de_passe)
+
+    # Sans photo : le champ reste vide ; les pages affichent alors le logo de l'institution (actual_institution.img).
+    # (avant : une image générique « USR » était copiée dans chaque fiche)
+
+    personnel = Personnel.objects.create(
+        bd_user=utilisateur, nom=nom, prenom=prenom, mail=mail, photo=img, tel=tel, sexe=sexe,
+        fonction=poste, actual_institution=inst,
+    )
+
+    nom_affiche = f"{prenom} {nom}".strip()
+    if mot_de_passe:                                        # nouveau compte : identifiants par e-mail
+        _envoyer(request, "Nouveau Compte Opera +", 'mails/new_personnel.html',
+                 {'password': mot_de_passe, 'name': f"{nom} {prenom}".strip()}, mail,
+                 f"Le compte de {nom_affiche} a été créé, mais l'e-mail avec ses identifiants n'a pas pu partir : "
+                 f"faites-lui réinitialiser son mot de passe (« Mot de passe oublié »).")
+        return personnel, 'nouveau'
+    return personnel, 'lie'
+
+
+def _modifier(request, inst, nom, prenom, mail, tel, sexe, img):
+    """Modification d'une fiche de VOTRE institution. Renvoie la fiche, ou None (message déjà posé)."""
+    personnel = Personnel.objects.filter(id=_id(request.POST.get('edit_id'))).select_for_update().first()
+    if not personnel or not est_dans_institution(personnel, inst):
+        messages.error(request, "Fiche introuvable dans votre institution.")
+        return None
+
+    # L'e-mail sert d'identifiant : il ne doit appartenir à personne d'autre
+    if (Personnel.objects.filter(mail__iexact=mail).exclude(id=personnel.id).exists()
+            or User.objects.filter(email__iexact=mail).exclude(id=personnel.bd_user_id).exists()):
+        messages.error(request, f"L'adresse {mail} est déjà utilisée par un autre compte : rien n'a été modifié.")
+        return None
+
+    personnel.nom = nom
+    if prenom:
+        personnel.prenom = prenom
+    personnel.mail = mail
+    personnel.tel = tel
+    if sexe:
+        personnel.sexe = sexe
+    if img:
+        personnel.photo = img
+    personnel.save()
+
+    if personnel.bd_user and personnel.bd_user.email != mail:
+        personnel.bd_user.email = mail
+        personnel.bd_user.save(update_fields=['email'])
+
+    return personnel
 
 
 def save_operation(request):
@@ -35962,3 +36458,421 @@ def AjouterFormulaire(request, id):
     return render(request, 'dataset-operation.html', context)
 
 
+
+
+# =====================================================================
+#  OperaPlus — Bibliothèque des champs dynamiques des indicateurs (vues)
+#  Modèles : backend/modeles_champs_dynamiques.py (ChampDynamique, IndicateurChamp, ChampDynamiqueValue)
+#  Template : bibliotheque_champs.html
+#
+#  urls.py :
+#      path('champs-dynamiques/', views.bibliotheque_champs, name='bibliotheque-champs'),
+#      path('champs-dynamiques/enregistrer/', views.enregistrer_champ, name='enregistrer-champ'),
+#      path('champs-dynamiques/<int:id>/archiver/', views.archiver_champ, name='archiver-champ'),
+# =====================================================================
+
+import json
+
+from django.contrib import messages
+from django.db.models import Count
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.text import slugify
+from django.views.decorators.http import require_POST
+
+# from .models import ChampDynamique
+
+TYPES_VALIDES = {t for t, _ in ChampDynamique.TYPES}
+
+
+def _code(texte):
+    return slugify(texte or '').replace('-', '_')[:40]
+
+
+def _code_libre(institution, base):
+    """Code unique dans la bibliothèque (menages, menages_2, menages_3…)."""
+    base = base or 'champ'
+    code, n = base, 2
+    while ChampDynamique.objects.filter(institution=institution, code=code).exists():
+        code = f'{base[:36]}_{n}'
+        n += 1
+    return code
+
+
+def bibliotheque_champs(request):
+    context = basis(request)
+    context['champs'] = (ChampDynamique.objects
+                         .filter(institution=context.get('actual_institution'))
+                         .annotate(nb_utilisations=Count('valeurs', distinct=True),          # réponses déjà collectées
+                                   nb_indicateurs=Count('valeurs__indicateur', distinct=True))  # indicateurs qui posent la question
+                         .order_by('-actif', 'libelle'))
+    return render(request, 'bibliotheque_champs.html', context)
+
+
+@require_POST
+def enregistrer_champ(request):
+    context = basis(request)
+    institution = context.get('actual_institution')
+
+    libelle = request.POST.get('libelle', '').strip()[:120]
+    type_ = request.POST.get('type', '')
+    if not libelle or type_ not in TYPES_VALIDES:
+        messages.error(request, 'Écrivez la question et choisissez la forme de la réponse.')
+        return redirect('bibliotheque-champs')
+
+    try:
+        choix = [str(c).strip()[:80] for c in json.loads(request.POST.get('choix') or '[]') if str(c).strip()]
+    except ValueError:
+        choix = []
+    if type_ == 'list' and len(choix) < 2:
+        messages.error(request, 'Une question à choix demande au moins deux choix.')
+        return redirect('bibliotheque-champs')
+    if type_ != 'list':
+        choix = []
+    unite = request.POST.get('unite', '').strip()[:20] if type_ == 'number' else ''
+    champ_id = request.POST.get('id')
+
+    doublon = ChampDynamique.objects.filter(institution=institution, libelle__iexact=libelle)
+    if champ_id:
+        doublon = doublon.exclude(id=champ_id)
+    if doublon.exists():
+        messages.error(request, f'La question « {libelle} » existe déjà : utilisez-la.')
+        return redirect('bibliotheque-champs')
+
+    if champ_id:
+        champ = get_object_or_404(ChampDynamique, id=int(champ_id), institution=institution)
+        if champ.type != type_ and champ.valeurs.exists():
+            messages.error(request, f'« {champ.libelle} » a déjà des réponses : la forme de la réponse ne peut plus changer.')
+            return redirect('bibliotheque-champs')
+        champ.libelle, champ.type, champ.unite, champ.choix = libelle, type_, unite, choix
+        champ.save(update_fields=['libelle', 'type', 'unite', 'choix'])      # le code ne change jamais
+        messages.success(request, f'Question « {libelle} » modifiée.')
+    else:
+        ChampDynamique.objects.create(
+            institution=institution, libelle=libelle, type=type_, unite=unite, choix=choix,
+            code=_code_libre(institution, _code(request.POST.get('code') or libelle)),
+        )
+        messages.success(request, f'Question « {libelle} » ajoutée.')
+
+    return redirect('bibliotheque-champs')
+
+
+@require_POST
+def archiver_champ(request, id):
+    context = basis(request)
+    champ = get_object_or_404(ChampDynamique, id=id, institution=context.get('actual_institution'))
+    champ.actif = False
+    champ.save(update_fields=['actif'])
+    messages.success(request, f'« {champ.libelle} » archivée : elle ne sera plus proposée, ses réponses sont conservées.')
+    return redirect('bibliotheque-champs')
+
+
+
+
+import json
+import logging
+
+from decimal import Decimal, InvalidOperation
+
+journal = logging.getLogger('operaplus')
+
+
+def _texte(request, nom):
+    """Valeur texte du formulaire, nettoyée ; None si vide."""
+    valeur = (request.POST.get(nom) or '').strip()
+    return valeur or None
+
+
+def _nombre(request, nom):
+    """Nombre du formulaire (accepte « 1 500 » et « 12,5 ») ; None si vide ou invalide."""
+    brut = (request.POST.get(nom) or '').strip().replace(' ', '').replace(' ', '').replace(',', '.')
+    if not brut:
+        return None
+    try:
+        return float(brut)
+    except ValueError:
+        return None
+
+
+def save_indicateur(request):
+    if request.method != "POST":
+        return redirect('/evaluer/0/')
+
+    # 1. Collecte des données
+    context = basis(request)
+    actual_institution = context.get('actual_institution')
+    name = request.POST.get("nature_indicateur", '').strip().upper()
+    nicename = request.POST.get('nicename', '').strip()
+    type_entity = request.POST.get("entity_id", '')
+
+    # Éléments de la formule
+    input_numerateur = request.POST.get("numerateur", '').strip()
+    input_denominateur = request.POST.get("denominateur", '').strip()
+    default_calcul = request.POST.get("default_calcul", '1')
+
+    # Fiche MEAL (sans virgule finale : sinon Python crée un tuple)
+    niveau_pyramide = _texte(request, "niveau_pyramide")
+    source_donnees = _texte(request, "source")
+    frequence_collecte = _texte(request, "frequence")
+    mecanisme_verification = _texte(request, "mecanisme_verification")
+    cible_contractuelle = _nombre(request, "cible")
+
+    try:
+        coefficient = int(request.POST.get("coefficient", 0))
+    except (ValueError, TypeError):
+        coefficient = 0
+
+    try:
+        # 2. Validation
+        if not name:
+            raise ValueError("Le nom technique de l'indicateur est obligatoire.")
+        if not type_entity.isdigit():
+            raise ValueError("Identifiant d'entité invalide.")
+        entity = Entity.objects.get(id=int(type_entity))
+
+        # 3. Formule (stockée dans le numérateur, comme avant)
+        if default_calcul == "1" and input_numerateur and input_denominateur:
+            formule_finale = f"${input_numerateur}$ * {coefficient} / ${input_denominateur}$"
+        else:
+            formule_finale = input_numerateur
+
+        with db_transaction.atomic():
+            # 4. Création de l'indicateur
+            indi = Indicateur.objects.create(
+                m_name=name,
+                nicename=nicename,
+                m_enti=entity,
+                m_numerateur=formule_finale,
+                m_denominateur=input_denominateur,
+                type_aggregation=request.POST.get('aggregation_type', ''),
+                m_institution=actual_institution,
+                niveau_pyramide=niveau_pyramide,
+                source_donnees=source_donnees,
+                frequence_collecte=frequence_collecte,
+                mecanisme_verification=mecanisme_verification,
+                cible_contractuelle=cible_contractuelle,
+            )
+
+            # 5. Champs dynamiques (informations complémentaires) de l'indicateur
+            erreurs_champs = enregistrer_champs_dynamiques(request, indi, actual_institution)
+
+        messages.success(request, f'Indicateur « {nicename or name} » créé.')
+        for erreur in erreurs_champs:
+            messages.warning(request, erreur)
+
+    except Entity.DoesNotExist:
+        messages.error(request, "Entité introuvable.")
+    except OperationalError:
+        messages.error(request, "Erreur de base de données. Réessayez.")
+    except ValueError as e:
+        messages.error(request, str(e))
+    except Exception:
+        journal.exception("Erreur lors de la création d'un indicateur")
+        messages.error(request, "L'indicateur n'a pas pu être créé. Réessayez ou contactez l'administrateur.")
+
+    return redirect('/evaluer/0/')
+
+
+# =====================================================================
+#  Champs dynamiques : les 3 éléments ci-dessous vont ENSEMBLE
+#  (vous aviez collé enregistrer_champs_dynamiques seule : elle a besoin de _lire_une_valeur et des constantes)
+# =====================================================================
+
+MAX_CHAMPS = 50
+TAILLE_MAX_FICHIER = 5 * 1024 * 1024
+TYPES_FICHIER = ('image/jpeg', 'image/png', 'image/webp', 'application/pdf')
+
+
+def _lire_une_valeur(champ, request):
+    """Renvoie (valeurs_a_enregistrer, message_d_erreur)."""
+    nom = f'cd_{champ.id}'
+    if champ.type == 'file':
+        f = request.FILES.get(nom)
+        if not f:
+            return {}, ''                                    # rien envoyé : on garde le fichier existant
+        if f.size > TAILLE_MAX_FICHIER:
+            return None, f'« {champ.libelle} » : fichier trop lourd (5 Mo au maximum).'
+        if getattr(f, 'content_type', '') not in TYPES_FICHIER:
+            return None, f'« {champ.libelle} » : format accepté, photo (JPG, PNG, WEBP) ou PDF.'
+        return {'fichier': f}, ''
+
+    brut = (request.POST.get(nom) or '').strip()
+    vide = {'nombre': None, 'texte': '', 'date': None}
+    if not brut:
+        return vide, ''
+    if champ.type == 'number':
+        try:
+            return {**vide, 'nombre': Decimal(brut.replace(' ', '').replace(' ', '').replace(',', '.'))}, ''
+        except InvalidOperation:
+            return None, f'« {champ.libelle} » : écrivez un nombre (ex. 24 ou 12,5).'
+    if champ.type == 'date':
+        try:
+            return {**vide, 'date': datetime.strptime(brut, '%Y-%m-%d').date()}, ''
+        except ValueError:
+            return None, f'« {champ.libelle} » : date invalide.'
+    if champ.type == 'list' and brut not in (champ.choix or []):
+        return None, f'« {champ.libelle} » : choisissez une valeur de la liste.'
+    if champ.type == 'boolean' and brut not in ('oui', 'non'):
+        return None, f'« {champ.libelle} » : répondez par oui ou non.'
+    return {**vide, 'texte': brut[:2000]}, ''
+
+
+def enregistrer_champs_dynamiques(request, indicateur, institution):
+    """
+    Enregistre les champs dynamiques de l'indicateur à partir du formulaire.
+    - seuls les champs ACTIFS de l'institution sont acceptés ;
+    - un champ retiré de la fiche perd sa valeur ;
+    - une valeur invalide n'est pas enregistrée : son message est renvoyé.
+    Renvoie la liste des messages d'erreur (vide si tout va bien).
+    """
+    try:
+        ids = json.loads(request.POST.get('champs_json') or '[]')
+    except ValueError:
+        return ['Champs dynamiques illisibles : rien n’a été modifié.']
+    ids = [int(i) for i in ids if str(i).isdigit()][:MAX_CHAMPS] if isinstance(ids, list) else []
+    ids = list(dict.fromkeys(ids))                           # sans doublon, ordre conservé
+    champs = {c.id: c for c in ChampDynamique.objects.filter(institution=institution, actif=True, id__in=ids)}
+
+    erreurs, gardes = [], []
+    for ordre, champ_id in enumerate(i for i in ids if i in champs):
+        champ = champs[champ_id]
+        valeurs, erreur = _lire_une_valeur(champ, request)
+        gardes.append(champ_id)
+        if erreur:
+            erreurs.append(erreur)
+            ChampDynamiqueValue.objects.get_or_create(champ=champ, indicateur=indicateur, defaults={'ordre': ordre})
+            continue
+        ChampDynamiqueValue.objects.update_or_create(champ=champ, indicateur=indicateur, defaults={**valeurs, 'ordre': ordre})
+    indicateur.valeurs_champs.exclude(champ_id__in=gardes).delete()
+    return erreurs
+
+
+
+
+import logging
+
+journal = logging.getLogger('operaplus')
+
+MAX_SERIE = 100                       # indicateurs créés d'un coup, au plus
+AGREGATIONS = ('Somme', 'Moyenne', 'Minimum', 'Maximum', 'Dernière valeur', 'Compteur')
+NIVEAUX = ('Impact', 'Effet', 'Produit', 'Activité')
+FREQUENCES = ('Journalière', 'Hebdomadaire', 'Mensuelle', 'Trimestrielle', 'Semestrielle', 'Annuelle')
+
+
+def _choix(request, nom, permis, defaut=None):
+    """Valeur d'une liste fermée : refusée si elle n'est pas prévue."""
+    valeur = (request.POST.get(nom) or '').strip()
+    return valeur if valeur in permis else defaut
+
+
+def _entite_autorisee(institution, brut):
+    """id d'un élément du cadre logique de l'institution, ou None (« plus tard » / inconnu)."""
+    brut = (brut or '').strip()
+    if not brut.isdigit():
+        return None
+    autorisees = {e['id'] for g in entites_pour_rattachement(institution) for e in g['entites']}
+    return int(brut) if int(brut) in autorisees else None
+
+
+@login_required(login_url='/log_account')
+def atelier_indicateurs(request):
+    context = basis(request)
+    institution = context.get('actual_institution')
+    if not institution:
+        return redirect('/no_institution/')
+
+    indicateurs = (Indicateur.objects.filter(m_institution=institution)
+                   .select_related('m_enti').order_by('m_enti_id', '-id'))
+    nouveaux = [int(i) for i in (request.GET.get('nouveaux') or '').split(',') if i.isdigit()]
+
+    context['indicateurs'] = indicateurs
+    context['nb_non_rattaches'] = sum(1 for i in indicateurs if i.m_enti_id is None)
+    context['entites_groupes'] = entites_pour_rattachement(institution)
+    context['nouveaux'] = nouveaux
+    context['niveaux'], context['frequences'], context['agregations'] = NIVEAUX, FREQUENCES, AGREGATIONS
+    return render(request, 'atelier_indicateurs.html', context)
+
+
+@login_required(login_url='/log_account')
+@require_POST
+def creer_indicateurs_rapide(request):
+    institution = basis(request).get('actual_institution')
+    mode = request.POST.get('mode')                       # 'un' ou 'serie'
+
+    # Noms à créer
+    if mode == 'serie':
+        lignes = (request.POST.get('noms') or '').splitlines()
+        noms = []
+        for ligne in lignes:
+            nom = ligne.strip().strip('-•*').strip().upper()[:255]
+            if nom and nom not in noms:
+                noms.append(nom)
+        if len(noms) > MAX_SERIE:
+            messages.error(request, f'{len(noms)} lignes : {MAX_SERIE} indicateurs au plus d’un coup.')
+            return redirect('atelier-indicateurs')
+    else:
+        nom = (request.POST.get('nature_indicateur') or '').strip().upper()[:255]
+        noms = [nom] if nom else []
+
+    if not noms:
+        messages.error(request, "Écrivez le nom d'au moins un indicateur.")
+        return redirect('atelier-indicateurs')
+
+    # Pas de doublon dans l'institution
+    existants = set(Indicateur.objects.filter(m_institution=institution, m_name__in=noms).values_list('m_name', flat=True))
+    a_creer = [n for n in noms if n not in existants]
+
+    commun = dict(
+        m_institution=institution,
+        m_enti_id=_entite_autorisee(institution, request.POST.get('entity_id')),
+        niveau_pyramide=_choix(request, 'niveau_pyramide', NIVEAUX),
+        frequence_collecte=_choix(request, 'frequence', FREQUENCES),
+        type_aggregation=_choix(request, 'aggregation_type', AGREGATIONS, 'Somme'),
+        m_numerateur='', m_denominateur='',
+    )
+    if mode != 'serie':                                    # champs propres au formulaire « un indicateur »
+        commun['nicename'] = (request.POST.get('nicename') or '').strip()[:255]
+        commun['cible_contractuelle'] = _nombre(request, 'cible')
+
+    try:
+        with db_transaction.atomic():
+            crees = [Indicateur.objects.create(m_name=n, **commun) for n in a_creer]
+    except Exception:
+        journal.exception('Création rapide d’indicateurs')
+        messages.error(request, "Les indicateurs n'ont pas pu être créés. Réessayez.")
+        return redirect('atelier-indicateurs')
+
+    if crees:
+        messages.success(request, f'{len(crees)} indicateur{"s" if len(crees) > 1 else ""} créé{"s" if len(crees) > 1 else ""}.')
+    if existants:
+        messages.warning(request, 'Déjà dans votre liste, non recréé(s) : ' + ', '.join(sorted(existants)[:5]) + (' …' if len(existants) > 5 else ''))
+    ids = ','.join(str(i.id) for i in crees)
+    return redirect(f'/indicateurs/atelier/?nouveaux={ids}' if ids else '/indicateurs/atelier/')
+
+
+@login_required(login_url='/log_account')
+@require_POST
+def attribuer_indicateurs(request):
+    institution = basis(request).get('actual_institution')
+    ids = [int(i) for i in request.POST.getlist('indicateurs') if i.isdigit()]
+    cible = (request.POST.get('entity_id') or '').strip()
+
+    if not ids:
+        messages.error(request, 'Cochez au moins un indicateur.')
+        return redirect('atelier-indicateurs')
+
+    # Seuls les indicateurs de l'institution active sont touchés
+    choisis = Indicateur.objects.filter(m_institution=institution, id__in=ids)
+
+    if cible == 'aucun':
+        n = choisis.update(m_enti=None)
+        messages.success(request, f'{n} indicateur{"s" if n > 1 else ""} détaché{"s" if n > 1 else ""} du cadre logique.')
+        return redirect('atelier-indicateurs')
+
+    entite_id = _entite_autorisee(institution, cible)
+    if entite_id is None:
+        messages.error(request, 'Choisissez l’élément du cadre logique auquel rattacher la sélection.')
+        return redirect('atelier-indicateurs')
+
+    n = choisis.update(m_enti_id=entite_id)
+    messages.success(request, f'{n} indicateur{"s" if n > 1 else ""} rattaché{"s" if n > 1 else ""}.')
+    return redirect('atelier-indicateurs')

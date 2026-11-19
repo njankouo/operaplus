@@ -1,161 +1,291 @@
-{% extends "./evaluer.html" %}
-{% block content %}
 {% load dict_helper %}
+{% load l10n %}
+{% comment %}
+    CIBLES PAR STRUCTURE (Liquid Morph)
+    Inchangés : indicateur, periodes, structures, mapping_valeurs, get_valeur, l'URL save_meal_data et les données envoyées ;
+    les classes js-row / js-row-mode / js-baseline-start / js-interpolation / js-target / js-total-col,
+    les ids analyticsTable, total-baseline, graphModal, modalTitle, modalSubtitle, chartContainer, erpNotify, statusDot, erpNotifyText,
+    les fonctions notify, calculateRow, calculateTotals, showMiniGraph, closeModal, saveData.
+{% endcomment %}
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cibles par structure · {% firstof indicateur.nicename indicateur.m_name indicateur.nom %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 <!-- Bibliothèque de Graphiques -->
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
 
-<div class="min-h-screen bg-[#09090b] text-zinc-100 font-sans selection:bg-blue-500/30">
-    
-    <!-- Header / Toolbar -->
-    <header class="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-6 backdrop-blur-md">
-        <div class="flex flex-col">
-            <span class="text-[10px] font-bold uppercase tracking-widest text-blue-500">Analytics Engine</span>
-            <h1 class="text-sm font-semibold tracking-tight">{{ indicateur.nom }}</h1>
+<style>
+    /* Page autonome : n'hérite d'aucun gabarit */
+    html, body { margin: 0; padding: 0; }
+    body { background: #f5f7fa; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    button, input, select { font-family: inherit; }
+    .cs { --dom: #123A37; --acc: #E48B0C; --ok: #047857; --danger: #dc2626; --warn: #b45309;
+          --ink: #0f172a; --txt: #334155; --muted: #64748b; --line: #e5e7eb; --soft: #f8fafc;
+          background: #f5f7fa; padding: 24px clamp(12px, 3vw, 32px) 40px; min-height: 100vh; max-width: 1600px; margin: 0 auto; color: var(--txt); }
+    .cs * { box-sizing: border-box; }
+
+    /* En-tête */
+    .cs-tete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+    .cs-tete small { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--dom); }
+    .cs-tete h1 { margin: 3px 0 0; font-size: 22px; font-weight: 800; line-height: 1.25; color: var(--ink); }
+    .cs-tete p { margin: 5px 0 0; max-width: 720px; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+    .cs-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .cs-etat { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+    .cs-etat.sale { color: var(--warn); }
+    .cs-etat.sale::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--acc); vertical-align: 1px; }
+    .cs-btn { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border: 1px solid var(--line); border-radius: 11px; background: #fff; font: inherit; font-size: 13.5px; font-weight: 700; color: var(--txt); cursor: pointer; text-decoration: none; }
+    .cs-btn:hover { border-color: var(--dom); color: var(--dom); }
+    .cs-btn.principal { background: var(--dom); border-color: var(--dom); color: #fff; }
+    .cs-btn.principal:hover { filter: brightness(1.08); color: #fff; }
+    .cs-btn i { font-size: 17px; }
+
+    /* Chiffres */
+    .cs-chiffres { display: flex; flex-wrap: wrap; margin-bottom: 14px; background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; width: fit-content; max-width: 100%; }
+    .cs-chiffres > div { padding: 10px 18px; }
+    .cs-chiffres > div + div { border-left: 1px solid var(--line); }
+    .cs-chiffres b { display: block; font-size: 19px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .cs-chiffres span { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+    /* Carte du tableau */
+    .cs-carte { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+    .cs-outils { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .cs-cherche { flex: 1 1 220px; height: 38px; padding: 0 12px; border: 1px solid #d5dde5; border-radius: 10px; font: inherit; font-size: 13.5px; }
+    .cs-cherche:focus, .cs-outils select:focus { outline: none; border-color: var(--dom); }
+    .cs-modele { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+    .cs-modele select { height: 38px; padding: 0 10px; border: 1px solid #d5dde5; border-radius: 10px; background: #fff; font: inherit; font-size: 13px; color: var(--ink); }
+    .cs-legende { display: flex; flex-wrap: wrap; gap: 14px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--soft); font-size: 12px; color: var(--muted); }
+    .cs-legende span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 3px; vertical-align: -1px; }
+    .cs-legende .auto::before { background: #fff; border: 1px dashed #cbd5e1; }
+    .cs-legende .saisi::before { background: #fff; border: 1px solid var(--ink); }
+    .cs-legende .fin::before { background: color-mix(in srgb, var(--acc) 22%, #fff); }
+
+    .cs-defile { overflow-x: auto; }
+    .cs-table { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+    .cs-table th { position: sticky; top: 0; z-index: 2; height: 44px; padding: 0 10px; background: var(--soft); border-bottom: 1px solid var(--line);
+                   font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); text-align: center; white-space: nowrap; }
+    .cs-table th.fin { color: #9a3412; background: color-mix(in srgb, var(--acc) 12%, #fff); }
+    .cs-table td { padding: 0; border-bottom: 1px solid #f1f5f9; border-left: 1px solid #f1f5f9; }
+    .cs-table .col-s { position: sticky; left: 0; z-index: 3; min-width: 230px; max-width: 280px; background: #fff; border-left: 0; box-shadow: 1px 0 0 var(--line); text-align: left; }
+    .cs-table th.col-s { z-index: 4; background: var(--soft); }
+    .cs-table .col-m { min-width: 120px; }
+    .cs-struct { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 8px 0 14px; min-height: 48px; }
+    .cs-struct span { font-size: 13px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+    .cs-struct button { flex-shrink: 0; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font-size: 17px; }
+    .cs-struct button:hover { background: var(--soft); color: var(--dom); }
+    .cs-table select.js-row-mode { width: 100%; height: 48px; padding: 0 8px; border: 0; background: transparent; font: inherit; font-size: 12.5px; color: var(--txt); cursor: pointer; }
+    .cs-table input { width: 100%; min-width: 92px; height: 48px; padding: 0 8px; border: 0; background: transparent; font: inherit; font-size: 14px; text-align: center; color: var(--ink); }
+    .cs-table input:focus, .cs-table select.js-row-mode:focus { outline: 2px solid var(--dom); outline-offset: -2px; background: #fff; }
+    .cs-table input.js-interpolation:not([data-manual="true"]) { color: #94a3b8; font-style: italic; }      /* calculé automatiquement */
+    .cs-table input.js-interpolation[data-manual="true"] { font-weight: 700; }                             /* saisi à la main */
+    .cs-table td.fin { background: color-mix(in srgb, var(--acc) 8%, #fff); }
+    .cs-table input.js-target { font-weight: 800; color: #9a3412; }
+    .cs-table input.js-baseline-start { color: var(--txt); }
+    .cs-table tbody tr:hover td { background-color: #fbfcfd; }
+    .cs-table tbody tr:hover td.fin { background: color-mix(in srgb, var(--acc) 12%, #fff); }
+    .cs-table tr[hidden] { display: none; }
+    .cs-table tfoot td { height: 48px; padding: 0 10px; background: var(--soft); border-top: 2px solid var(--line); font-size: 13px; font-weight: 800; color: var(--ink); text-align: center; }
+    .cs-table tfoot td.col-s { padding-left: 14px; text-align: left; font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--dom); background: var(--soft); }
+    .cs-table tfoot td.fin { color: #9a3412; }
+    .cs-vide { padding: 40px 16px; text-align: center; color: var(--muted); }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+
+    /* Graphique */
+    .cs-modal { position: fixed; inset: 0; z-index: 11000; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(15,23,42,.45); }
+    .cs-modal.flex { display: flex; }
+    .cs-modal-boite { width: min(900px, 100%); background: #fff; border-radius: 18px; padding: 20px; box-shadow: 0 30px 60px -25px rgba(15,23,42,.5); }
+    .cs-modal-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+    .cs-modal-tete h3 { margin: 0; font-size: 17px; font-weight: 800; color: var(--ink); }
+    .cs-modal-tete p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
+    .cs-fermer { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font-size: 18px; cursor: pointer; color: var(--txt); }
+    #chartContainer { min-height: 360px; }
+
+    /* Message */
+    .cs-toast { position: fixed; right: 24px; bottom: 24px; z-index: 11100; transform: translateY(160%); transition: transform .35s cubic-bezier(.22,1,.36,1); }
+    .cs-toast.translate-y-32 { transform: translateY(160%); }
+    .cs-toast:not(.translate-y-32) { transform: none; }
+    .cs-toast > div { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; background: var(--ink); color: #fff; box-shadow: 0 18px 36px -18px rgba(15,23,42,.6); font-size: 13.5px; font-weight: 700; }
+    #statusDot { width: 9px; height: 9px; border-radius: 50%; background: #60a5fa; }
+    #statusDot.bg-red-500 { background: #f87171; }
+    #statusDot.ok { background: #34d399; }
+
+    @media (max-width: 760px) {
+        .cs { padding: 14px 10px 40px; }
+        .cs-tete h1 { font-size: 19px; }
+        .cs-actions { width: 100%; } .cs-actions .cs-btn { flex: 1; justify-content: center; }
+        .cs-chiffres { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+        .cs-chiffres > div { padding: 8px 12px; } .cs-chiffres > div:nth-child(3) { border-left: 0; } .cs-chiffres > div:nth-child(n+3) { border-top: 1px solid var(--line); }
+        .cs-modele { width: 100%; flex-direction: column; align-items: stretch; } .cs-modele select { width: 100%; }
+        .cs-table .col-m { min-width: 100px; }
+        .cs-table .col-s { min-width: 150px; max-width: 170px; }
+        .cs-struct span { font-size: 12.5px; }
+        .cs-toast { left: 12px; right: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .cs-toast { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="cs" id="cs">
+
+    <header class="cs-tete">
+        <div>
+            <small>Cibles par structure</small>
+            <h1>{% firstof indicateur.nicename indicateur.m_name indicateur.nom %}</h1>
+            <p>Pour chaque structure, saisissez la <b>situation de départ</b> et la <b>cible finale</b> (dernière colonne). Les périodes intermédiaires se calculent seules selon le modèle choisi ; vous pouvez corriger n'importe quelle case.</p>
         </div>
-        
-        <div class="flex items-center gap-6">
-            <button onclick="saveData()" 
-                    class="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-blue-500 hover:shadow-[0_0_15px_rgba(59,130,246,0.4)] active:scale-95">
-                <i class="fa fa-save text-[10px]"></i> Publier les données
-            </button>
+        <div class="cs-actions">
+            <span class="cs-etat" id="csEtat" aria-live="polite">Tout est publié</span>
+            <a href="/evaluer/0/" class="cs-btn"><i class="bx bx-arrow-back"></i> Registre</a>
+            <button type="button" onclick="saveData()" class="cs-btn principal"><i class="bx bx-cloud-upload"></i> Publier les données</button>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="p-6">
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden">
-            
-            <!-- Table Wrapper with Horizontal Scroll -->
-            <div class="overflow-x-auto custom-scrollbar">
-                <table class="w-full border-collapse text-left" id="analyticsTable">
-                    <thead>
-                        <tr class="bg-zinc-800/50">
-                            <!-- Sticky Columns -->
-                            <th class="sticky left-0 z-40 min-w-[120px] border-b border-r border-zinc-800 bg-zinc-900 px-4 py-3 text-[10px] font-bold uppercase text-zinc-500">UID / Actions</th>
-                            <th class="sticky left-[120px] z-40 min-w-[130px] border-b border-r border-zinc-800 bg-zinc-900 px-4 py-3 text-[10px] font-bold uppercase text-zinc-500 text-center">Modèle</th>
-                            
-                            <th class="min-w-[120px] border-b border-zinc-800 px-4 py-3 text-[10px] font-bold uppercase text-zinc-500 text-center">Baseline (B)</th>
-                            {% for p in periodes %}
-                            <th class="min-w-[110px] border-b border-zinc-800 px-4 py-3 text-[10px] font-bold uppercase text-zinc-500 text-center">
-                                {{ p.nom }}
-                            </th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-800">
-                        {% for s in structures %}
-                        <tr data-id="{{ s.id }}" class="js-row group hover:bg-zinc-800/30 transition-colors">
-                            <!-- UID & Action (Sticky) -->
-                            <td class="sticky left-0 z-30 border-r border-zinc-800 bg-zinc-900 px-4 py-0 transition-colors">
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="font-mono text-[11px] text-zinc-400">{{ s.nom|slice:":8"|upper }}</span>
-                                    <button onclick="showMiniGraph('{{ s.id }}')" class="text-zinc-600 hover:text-blue-400 transition-colors p-2" title="Voir l'aperçu">
-                                        <i class="fa fa-chart-line text-xs"></i>
-                                    </button>
-                                </div>
-                            </td>
+    <div class="cs-chiffres" aria-live="polite">
+        <div><b>{{ structures|length }}</b><span>Structures</span></div>
+        <div><b>{{ periodes|length }}</b><span>Périodes</span></div>
+        <div><b id="csDepart">0</b><span>Départ (total)</span></div>
+        <div><b id="csCible">0</b><span id="csCibleLib">Cible finale (total)</span></div>
+    </div>
 
-                            <!-- Mode Selector (Per Line - Sticky) -->
-                            <td class="sticky left-[120px] z-30 border-r border-zinc-800 bg-zinc-900 px-2 py-0">
-                                <select class="js-row-mode w-full bg-transparent text-[10px] text-zinc-400 outline-none border-none focus:text-blue-400 cursor-pointer">
-                                    <option value="linear" class="bg-zinc-900">Linéaire</option>
-                                    <option value="exponential" class="bg-zinc-900">Exponentiel</option>
-                                    <option value="sigmoide" class="bg-zinc-900">Courbe S</option>
-                                </select>
-                            </td>
-                            
-                            <!-- Baseline -->
-                            <td class="bg-white/[0.01] p-0 border-r border-zinc-800/30">
-                                <input type="number" step="0.1" value="{{ mapping_valeurs|get_valeur:s.id|stringformat:'d'|add:',baseline'|default:0 }}" 
-                                       class="js-baseline-start w-full h-[48px] bg-transparent text-center font-mono text-sm outline-none">
-                            </td>
-
-                            {% for p in periodes %}
-                            <td class="p-0 border-r border-zinc-800/20 {% if forloop.last %}bg-blue-500/5{% endif %}">
-                                {% with s_id=s.id|stringformat:"d" p_id=p.id|stringformat:"d" %}
-                                {% with current_key=s_id|add:","|add:p_id %}
-                                {% with val=mapping_valeurs|get_valeur:current_key %}
-                                    
-                                    {% if forloop.last %}
-                                        <input type="number" step="0.1" value="{{ val|default:0 }}" 
-                                               class="js-target w-full h-[48px] bg-transparent text-center font-mono text-sm font-bold text-blue-400 outline-none" 
-                                               data-periode-id="{{ p.id }}">
-                                    {% else %}
-                                        <input type="number" step="0.1" value="{{ val }}"
-                                               class="js-interpolation w-full h-[48px] bg-transparent text-center font-mono text-sm outline-none placeholder:text-zinc-800" 
-                                               placeholder="--" data-periode-id="{{ p.id }}"
-                                               {% if val %} data-manual="true" {% endif %}>
-                                    {% endif %}
-
-                                {% endwith %}{% endwith %}{% endwith %}
-                            </td>
-                            {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    <!-- Total Row -->
-                    <tfoot>
-                        <tr class="bg-zinc-950 border-t-2 border-zinc-800">
-                            <td class="sticky left-0 z-30 bg-zinc-950 px-4 py-3 text-[10px] font-black uppercase text-blue-500 border-r border-zinc-800">Total Cumulé</td>
-                            <td class="sticky left-[120px] z-30 bg-zinc-950 border-r border-zinc-800"></td>
-                            <td id="total-baseline" class="font-mono text-xs text-center text-zinc-500">-</td>
-                            {% for p in periodes %}
-                            <td class="js-total-col font-mono text-xs text-center text-blue-400/80 font-bold">-</td>
-                            {% endfor %}
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+    <section class="cs-carte">
+        <div class="cs-outils">
+            <input type="search" class="cs-cherche" id="csCherche" placeholder="Rechercher une structure…" aria-label="Rechercher une structure" autocomplete="off">
+            <label class="cs-modele">Modèle pour toutes les lignes
+                <select id="csModeTous">
+                    <option value="">— choisir —</option>
+                    <option value="linear">Linéaire (progression régulière)</option>
+                    <option value="exponential">Exponentiel (lent puis rapide)</option>
+                    <option value="sigmoide">Courbe S (lent, rapide, lent)</option>
+                </select>
+            </label>
         </div>
-    </main>
+        <div class="cs-legende">
+            <span class="auto">En gris italique : calculé automatiquement</span>
+            <span class="saisi">En gras : saisi à la main (conservé)</span>
+            <span class="fin">Dernière colonne : cible finale</span>
+        </div>
 
-    <!-- Modal Graphique -->
-    <div id="graphModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-        <div class="w-full max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
-            <div class="mb-4 flex items-center justify-between">
+        <!-- Table Wrapper with Horizontal Scroll -->
+        <div class="cs-defile">
+            <table class="cs-table" id="analyticsTable" data-agregation="{{ indicateur.type_aggregation|default:'Somme' }}">
+                <thead>
+                    <tr>
+                        <th class="col-s">Structure</th>
+                        <th class="col-m">Modèle</th>
+                        <th title="Situation de départ">Départ (B)</th>
+                        {% for p in periodes %}
+                        <th {% if forloop.last %}class="fin" title="Cible finale"{% endif %}>{{ p.nom }}{% if forloop.last %} · cible{% endif %}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in structures %}
+                    {% with s_id=s.id|stringformat:"d" %}
+                    {% with bkey=s_id|add:",baseline" %}
+                    <tr data-id="{{ s.id }}" data-nom="{{ s.nom }}" class="js-row">
+                        <td class="col-s">
+                            <div class="cs-struct">
+                                <span>{{ s.nom }}</span>
+                                <button type="button" onclick="showMiniGraph('{{ s.id }}')" title="Voir la courbe" aria-label="Voir la courbe de {{ s.nom }}"><i class="bx bx-line-chart"></i></button>
+                            </div>
+                        </td>
+                        <td class="col-m">
+                            <select class="js-row-mode" aria-label="Modèle de progression">
+                                <option value="linear">Linéaire</option>
+                                <option value="exponential">Exponentiel</option>
+                                <option value="sigmoide">Courbe S</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" step="any" inputmode="decimal" aria-label="Départ — {{ s.nom }}"
+                                   value="{{ mapping_valeurs|get_valeur:bkey|default:0|unlocalize }}" class="js-baseline-start">
+                        </td>
+                        {% for p in periodes %}
+                        <td {% if forloop.last %}class="fin"{% endif %}>
+                            {% with p_id=p.id|stringformat:"d" %}
+                            {% with current_key=s_id|add:","|add:p_id %}
+                            {% with val=mapping_valeurs|get_valeur:current_key %}
+                                {% if forloop.last %}
+                                    <input type="number" step="any" inputmode="decimal" value="{{ val|default:0|unlocalize }}" class="js-target"
+                                           data-periode-id="{{ p.id }}" aria-label="Cible finale ({{ p.nom }}) — {{ s.nom }}">
+                                {% else %}
+                                    <input type="number" step="any" inputmode="decimal" value="{% if val is not None %}{{ val|unlocalize }}{% endif %}" class="js-interpolation"
+                                           placeholder="–" data-periode-id="{{ p.id }}" aria-label="{{ p.nom }} — {{ s.nom }}"
+                                           {% if val %}data-manual="true"{% endif %}>
+                                {% endif %}
+                            {% endwith %}{% endwith %}{% endwith %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endwith %}{% endwith %}
+                    {% empty %}
+                    <tr><td colspan="{{ periodes|length|add:3 }}" class="cs-vide">Aucune structure : ajoutez d'abord les structures de votre institution.</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td class="col-s" id="csTotalLib">Total</td>
+                        <td></td>
+                        <td id="total-baseline">–</td>
+                        {% for p in periodes %}
+                        <td class="js-total-col{% if forloop.last %} fin{% endif %}">–</td>
+                        {% endfor %}
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+
+    <!-- Graphique -->
+    <div id="graphModal" class="cs-modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="cs-modal-boite">
+            <div class="cs-modal-tete">
                 <div>
-                    <h3 id="modalTitle" class="text-lg font-bold text-white">Analyse de Projection</h3>
-                    <p id="modalSubtitle" class="text-xs text-zinc-500 uppercase tracking-widest"></p>
+                    <h3 id="modalTitle">Trajectoire des cibles</h3>
+                    <p id="modalSubtitle"></p>
                 </div>
-                <button onclick="closeModal()" class="rounded-full bg-zinc-900 p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors">
-                    <i class="fa fa-times w-5 h-5 flex items-center justify-center"></i>
-                </button>
+                <button type="button" onclick="closeModal()" class="cs-fermer" aria-label="Fermer">×</button>
             </div>
-            <div id="chartContainer" class="h-[400px] w-full"></div>
+            <div id="chartContainer"></div>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="erpNotify" class="fixed bottom-8 right-8 translate-y-32 transition-all duration-500 ease-out z-[100]">
-        <div class="flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-900 p-4 shadow-2xl shadow-black">
-            <div id="statusDot" class="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
-            <p class="text-xs font-bold uppercase tracking-tighter" id="erpNotifyText">Prêt</p>
-        </div>
+    <!-- Message -->
+    <div id="erpNotify" class="cs-toast translate-y-32" role="status" aria-live="polite">
+        <div><span id="statusDot"></span><p id="erpNotifyText" style="margin:0">Prêt</p></div>
     </div>
 </div>
-
-<style>
-    .custom-scrollbar::-webkit-scrollbar { height: 8px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #09090b; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; border: 2px solid #09090b; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
-    
-    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    input[type=number] { -moz-appearance: textfield; }
-</style>
 
 <script>
     const table = document.getElementById('analyticsTable');
     let currentChart = null;
+    let modifie = false;                                   /* modifications non publiées */
+    const AGR = (table && table.dataset.agregation) || 'Somme';
+    const MOYENNE = AGR === 'Moyenne';                     /* un taux / une moyenne ne s'additionne pas entre structures */
+    const fmt = (n, d) => n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: d == null ? 1 : d });
+
+    function marquer(etat) {
+        modifie = etat;
+        const e = document.getElementById('csEtat');
+        e.textContent = etat ? 'Modifications non publiées' : 'Tout est publié';
+        e.classList.toggle('sale', etat);
+    }
 
     function notify(msg, type = 'info') {
         const el = document.getElementById('erpNotify');
         const dot = document.getElementById('statusDot');
         document.getElementById('erpNotifyText').textContent = msg;
-        dot.className = "h-2 w-2 rounded-full " + (type === 'error' ? 'bg-red-500 animate-none' : 'bg-blue-500 animate-pulse');
+        dot.className = type === 'error' ? 'bg-red-500' : (type === 'success' ? 'ok' : '');
         el.classList.remove('translate-y-32');
-        setTimeout(() => el.classList.add('translate-y-32'), 3000);
+        clearTimeout(notify._t);
+        notify._t = setTimeout(() => el.classList.add('translate-y-32'), 3200);
     }
 
     function calculateRow(row, forceRecalc = false) {
@@ -164,72 +294,86 @@
         const targetVal = parseFloat(row.querySelector('.js-target').value) || 0;
         const steps = row.querySelectorAll('.js-interpolation');
         const totalSteps = steps.length + 1;
+        /* départ et cible entiers (ménages, écoles…) → étapes entières ; sinon 1 décimale */
+        const decimales = (Number.isInteger(startVal) && Number.isInteger(targetVal)) ? 0 : 1;
 
         steps.forEach((input, i) => {
             if (forceRecalc || input.dataset.manual !== "true" || input.value === "") {
                 let val;
                 const t = (i + 1) / totalSteps;
-                
                 if (mode === 'exponential') val = startVal + (targetVal - startVal) * Math.pow(t, 2);
                 else if (mode === 'sigmoide') val = startVal + (targetVal - startVal) * (t * t * (3 - 2 * t));
                 else val = startVal + (targetVal - startVal) * t;
-                
-                input.value = val.toFixed(1);
-                if(forceRecalc) input.dataset.manual = "false";
+                input.value = val.toFixed(decimales);
+                input.dataset.manual = "false";
             }
         });
         calculateTotals();
     }
 
     function calculateTotals() {
-        // Total Baseline
-        let sumB = 0;
-        document.querySelectorAll('.js-baseline-start').forEach(i => sumB += parseFloat(i.value) || 0);
-        document.getElementById('total-baseline').textContent = sumB.toLocaleString();
+        const rows = Array.from(document.querySelectorAll('.js-row'));
+        const combiner = (vals) => {
+            if (!vals.length) return 0;
+            const s = vals.reduce((a, b) => a + b, 0);
+            if (MOYENNE) return s / vals.length;
+            if (AGR === 'Maximum') return Math.max(...vals);
+            if (AGR === 'Minimum') return Math.min(...vals);
+            return s;
+        };
+        const lire = (input) => input && input.value !== '' ? parseFloat(input.value) : null;
 
-        // Totals par colonnes (Périodes)
-        const rows = document.querySelectorAll('.js-row');
+        // Départ
+        const departs = rows.map(r => lire(r.querySelector('.js-baseline-start'))).filter(v => v !== null && !isNaN(v));
+        const totalB = combiner(departs);
+        document.getElementById('total-baseline').textContent = fmt(totalB);
+        document.getElementById('csDepart').textContent = fmt(totalB);
+
+        // Par période
         const totalCells = document.querySelectorAll('.js-total-col');
-
+        let derniere = 0;
         totalCells.forEach((cell, colIndex) => {
-            let colSum = 0;
-            rows.forEach(row => {
-                const allInputs = row.querySelectorAll('.js-interpolation, .js-target');
-                colSum += parseFloat(allInputs[colIndex].value) || 0;
-            });
-            cell.textContent = colSum.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+            const vals = rows.map(row => lire(row.querySelectorAll('.js-interpolation, .js-target')[colIndex])).filter(v => v !== null && !isNaN(v));
+            const v = combiner(vals);
+            cell.textContent = fmt(v);
+            derniere = v;
         });
+        document.getElementById('csCible').textContent = fmt(derniere);
     }
 
-    // Graphique Analytics
+    // Graphique
     function showMiniGraph(structureId) {
         const row = document.querySelector(`tr[data-id="${structureId}"]`);
-        const name = row.querySelector('span').textContent;
-        const mode = row.querySelector('.js-row-mode').value;
-        
+        const name = row.dataset.nom || row.querySelector('span').textContent;
+        const mode = row.querySelector('.js-row-mode');
         const baseline = parseFloat(row.querySelector('.js-baseline-start').value) || 0;
         const targets = Array.from(row.querySelectorAll('.js-interpolation, .js-target')).map(input => parseFloat(input.value) || 0);
-        
-        const dataSeries = [baseline, ...targets];
-        const labels = ["Baseline", {% for p in periodes %}"{{ p.nom }}",{% endfor %}];
+        const labels = ["Départ", {% for p in periodes %}"{{ p.nom|escapejs }}",{% endfor %}];
 
         const modal = document.getElementById('graphModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-        document.getElementById('modalSubtitle').textContent = `${name} • ${mode}`;
+        document.getElementById('modalTitle').textContent = name;
+        document.getElementById('modalSubtitle').textContent = 'Trajectoire des cibles · modèle ' + mode.options[mode.selectedIndex].text.toLowerCase();
+        modal.querySelector('.cs-fermer').focus();
 
+        if (!window.ApexCharts) { document.getElementById('chartContainer').textContent = 'Graphique indisponible (pas de connexion).'; return; }
+        const css = getComputedStyle(document.getElementById('cs'));
         const options = {
-            series: [{ name: 'Projection', data: dataSeries }],
-            chart: { type: 'area', height: 380, toolbar: { show: false }, background: 'transparent', foreColor: '#71717a' },
-            colors: ['#3b82f6'],
-            stroke: { curve: mode === 'sigmoide' ? 'smooth' : 'straight', width: 3 },
-            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0 } },
-            markers: { size: 5 },
+            series: [{ name: 'Cible', data: [baseline, ...targets] }],
+            chart: { type: 'area', height: 360, toolbar: { show: false }, fontFamily: 'inherit', foreColor: '#64748b', animations: { speed: 400 } },
+            colors: [css.getPropertyValue('--dom').trim() || '#123A37'],
+            stroke: { curve: mode.value === 'sigmoide' ? 'smooth' : 'straight', width: 3 },
+            fill: { type: 'gradient', gradient: { opacityFrom: 0.28, opacityTo: 0 } },
+            markers: { size: 5, strokeWidth: 0 },
+            dataLabels: { enabled: false },
+            grid: { borderColor: '#eef1f5', strokeDashArray: 3 },
             xaxis: { categories: labels },
-            theme: { mode: 'dark' }
+            yaxis: { labels: { formatter: v => fmt(v) } },
+            tooltip: { y: { formatter: v => fmt(v) } }
         };
-
         if (currentChart) currentChart.destroy();
+        document.getElementById('chartContainer').innerHTML = '';
         currentChart = new ApexCharts(document.querySelector("#chartContainer"), options);
         currentChart.render();
     }
@@ -239,9 +383,9 @@
         document.getElementById('graphModal').classList.remove('flex');
     }
 
-    // Sauvegarde Cloud
+    // Publication (mêmes données qu'avant)
     async function saveData() {
-        notify("Publication en cours...");
+        notify("Publication en cours…");
         const rowsData = Array.from(document.querySelectorAll('.js-row')).map(row => {
             const vals = { 'baseline': row.querySelector('.js-baseline-start').value };
             row.querySelectorAll('[data-periode-id]').forEach(el => {
@@ -256,27 +400,66 @@
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
                 body: JSON.stringify({ indicateur_id: "{{ indicateur.id }}", donnees: rowsData })
             });
-            if(response.ok) notify("Données synchronisées", 'success');
-            else notify("Erreur de sauvegarde", 'error');
-        } catch (e) { notify("Erreur réseau", 'error'); }
+            if (response.ok) { notify("Cibles publiées", 'success'); marquer(false); }
+            else notify("Erreur de sauvegarde : rien n'a été publié", 'error');
+        } catch (e) { notify("Pas de connexion : réessayez", 'error'); }
     }
 
-    // Initialisation & Listeners
-    table.addEventListener('input', e => {
-        const row = e.target.closest('tr');
-        if (e.target.matches('.js-baseline-start, .js-target')) calculateRow(row, true);
-        if (e.target.matches('.js-interpolation')) { 
-            e.target.dataset.manual = "true"; 
-            calculateTotals(); 
-        }
+    if (table) {
+        table.addEventListener('input', e => {
+            const row = e.target.closest('tr');
+            if (e.target.matches('.js-baseline-start, .js-target')) calculateRow(row, false);   /* les cases saisies à la main sont gardées */
+            if (e.target.matches('.js-interpolation')) {
+                e.target.dataset.manual = e.target.value === '' ? "false" : "true";
+                if (e.target.value === '') calculateRow(row, false); else calculateTotals();
+            }
+            marquer(true);
+        });
+        table.addEventListener('change', e => {
+            if (e.target.matches('.js-row-mode')) { calculateRow(e.target.closest('tr'), true); marquer(true); }
+        });
+        /* Entrée : case du dessous, comme dans un tableur */
+        table.addEventListener('keydown', e => {
+            if (e.key !== 'Enter' || !e.target.matches('input')) return;
+            e.preventDefault();
+            const td = e.target.closest('td'), col = Array.from(td.parentNode.children).indexOf(td);
+            let tr = td.parentNode.nextElementSibling;
+            while (tr && tr.hidden) tr = tr.nextElementSibling;
+            const suivant = tr && tr.children[col] && tr.children[col].querySelector('input');
+            if (suivant) { suivant.focus(); suivant.select(); }
+        });
+    }
+
+    // Recherche d'une structure
+    document.getElementById('csCherche').addEventListener('input', function () {
+        const q = this.value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        document.querySelectorAll('.js-row').forEach(r => {
+            r.hidden = !!q && (r.dataset.nom || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').indexOf(q) < 0;
+        });
     });
 
-    table.addEventListener('change', e => {
-        if (e.target.matches('.js-row-mode')) calculateRow(e.target.closest('tr'), true);
+    // Modèle pour toutes les lignes
+    document.getElementById('csModeTous').addEventListener('change', function () {
+        if (!this.value) return;
+        const v = this.value;
+        if (!confirm('Appliquer ce modèle à toutes les structures ? Les cases saisies à la main seront recalculées.')) { this.value = ''; return; }
+        document.querySelectorAll('.js-row').forEach(row => { row.querySelector('.js-row-mode').value = v; calculateRow(row, true); });
+        marquer(true); this.value = '';
     });
 
-    window.onload = () => {
+    // Fermer le graphique : Échap ou clic à côté
+    document.getElementById('graphModal').addEventListener('click', e => { if (e.target.id === 'graphModal') closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    // Ne pas perdre un travail non publié
+    window.addEventListener('beforeunload', e => { if (modifie) { e.preventDefault(); e.returnValue = ''; } });
+
+    window.addEventListener('load', () => {
         document.querySelectorAll('.js-row').forEach(row => calculateRow(row, false));
-    };
+        document.getElementById('csTotalLib').textContent = MOYENNE ? 'Moyenne' : (AGR === 'Maximum' ? 'Maximum' : (AGR === 'Minimum' ? 'Minimum' : 'Total'));
+        document.getElementById('csCibleLib').textContent = MOYENNE ? 'Cible finale (moyenne)' : 'Cible finale (total)';
+        if (MOYENNE) document.querySelector('#csDepart + span').textContent = 'Départ (moyenne)';
+    });
 </script>
-{% endblock %}
+</body>
+</html>

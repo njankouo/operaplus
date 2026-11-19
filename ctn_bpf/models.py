@@ -3503,6 +3503,13 @@ class Champ(models.Model):
     indicateur = models.BooleanField(default=False)
     institution = models.ForeignKey(Institution, on_delete = models.SET_NULL, null=True)
     operation = models.ForeignKey(Operation, on_delete = models.SET_NULL, null=True, blank=True)
+
+    code    = models.SlugField(max_length=40)
+
+
+    unite   = models.CharField(max_length=20, blank=True)
+    choix   = models.JSONField(default=list, blank=True)
+    actif   = models.BooleanField(default=True)
     
     
     class Meta:
@@ -3688,3 +3695,92 @@ class DataSetTransaction(models.Model):
     soumis = models.BooleanField(default=False)
     valide = models.BooleanField(default=False)
     date_soumission = models.DateTimeField(null=True)
+
+
+
+
+
+# =====================================================================
+#  OperaPlus — Champs dynamiques PROPRES AUX INDICATEURS
+#  À ajouter dans models.py (vos modèles Champ / ChampValue des entités ne bougent pas).
+#  Puis : python manage.py makemigrations && python manage.py migrate
+#
+#  ChampDynamique       : le champ, créé une fois dans la bibliothèque de l'institution
+#                         (ex. « Bailleur », liste : AFD, UE, Banque mondiale)
+#  ChampDynamiqueValue  : sa valeur pour UN indicateur, saisie lors de la configuration de l'indicateur
+#                         (ex. indicateur « Ménages sensibilisés » → Bailleur = AFD)
+# =====================================================================
+
+from django.db import models
+
+
+class ChampDynamique(models.Model):
+    TYPES = [
+        ('number', 'Nombre'),
+        ('text', 'Texte'),
+        ('date', 'Date'),
+        ('boolean', 'Oui / Non'),
+        ('file', 'Photo / fichier'),
+        ('list', 'Liste de choix'),
+    ]
+    institution = models.ForeignKey('Institution', on_delete=models.CASCADE, related_name='champs_dynamiques')
+    code = models.SlugField(max_length=40)                    # fixe après création
+    libelle = models.CharField(max_length=120)                # modifiable
+    type = models.CharField(max_length=10, choices=TYPES)
+    unite = models.CharField(max_length=20, blank=True)       # pour 'number' : ménages, FCFA, km…
+    choix = models.JSONField(default=list, blank=True)        # pour 'list' : ["AFD", "UE"]
+    actif = models.BooleanField(default=True)                 # on archive, on ne supprime pas
+    date_creation = models.DateTimeField(auto_now_add=True)
+    liens_indicateurs = models.TextField()
+
+    class Meta:
+        ordering = ['libelle']
+        unique_together = [('institution', 'code')]
+
+    def __str__(self):
+        return self.libelle
+
+
+class ChampDynamiqueValue(models.Model):
+    champ = models.ForeignKey(ChampDynamique, on_delete=models.PROTECT, related_name='valeurs')
+    indicateur = models.ForeignKey('Indicateur', on_delete=models.CASCADE, related_name='valeurs_champs')
+    # une colonne par type de valeur
+    nombre = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    texte = models.TextField(blank=True)                      # texte, choix de liste, oui/non
+    date = models.DateField(null=True, blank=True)
+    fichier = models.FileField(upload_to='champs_indicateurs/', null=True, blank=True)
+    ordre = models.PositiveIntegerField(default=0)            # ordre d'affichage dans la fiche
+    date_maj = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['ordre']
+        unique_together = [('champ', 'indicateur')]           # une valeur par champ et par indicateur
+
+    def __str__(self):
+        return f'{self.champ.libelle} : {self.valeur}'
+
+    @property
+    def valeur(self):
+        """La valeur lisible, quel que soit le type."""
+        t = self.champ.type
+        if t == 'number':
+            return self.nombre
+        if t == 'date':
+            return self.date
+        if t == 'file':
+            return self.fichier.url if self.fichier else ''
+        if t == 'boolean':
+            return {'oui': 'Oui', 'non': 'Non'}.get(self.texte, '')
+        return self.texte
+
+    @property
+    def valeur_formulaire(self):
+        """La valeur telle qu'un champ de formulaire l'attend (pour la modification)."""
+        t = self.champ.type
+        if t == 'number':
+            return '' if self.nombre is None else format(self.nombre.normalize(), 'f')
+        if t == 'date':
+            return self.date.isoformat() if self.date else ''
+        if t == 'file':
+            return ''
+        return self.texte

@@ -1,0 +1,408 @@
+{% extends './index.html' %}
+
+{% block main %}
+{% comment %}
+    QUESTIONS DE COLLECTE (bibliothèque de champs) — version explicite.
+    Un champ dynamique = un ChampDynamique (libelle, type, unite, choix, code), propre aux indicateurs. On le crée une fois ici,
+    on l'ajoute ensuite à un indicateur et on renseigne sa valeur dans la configuration de l'indicateur.
+    Contexte attendu : champs (ChampDynamique annotés de nb_utilisations et nb_indicateurs).
+    Formulaire : POST {% url 'enregistrer-champ' %}  →  id, libelle, code, type, unite, choix (JSON)
+    Archiver   : POST {% url 'archiver-champ' id %}  (formulaire dans partials/champ_ligne.html)
+{% endcomment %}
+<style>
+    .lm-bc { --ok: var(--sbx-ok, #2A8A7D); --line: var(--lm-line, rgba(15,23,42,.08)); --ink: var(--lm-ink, #0b1220); --mute: var(--lm-mute, #5b6475);
+             --dom: var(--lm-dom, #1e293b); --acc: var(--lm-acc, #4361ee); --ease: var(--lm-ease, ease); --surface: #fff; --sol: rgba(15,23,42,.03); }
+    .lm-bc * { box-sizing: border-box; }
+    .t-number { --t: #2F5BC9; } .t-text { --t: #475164; } .t-date { --t: #7A4BC2; } .t-list { --t: #9A5800; } .t-boolean { --t: #1F6F64; } .t-file { --t: #A3300F; }
+
+    /* ---------- En-tête ---------- */
+    .lm-bc-tete small { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+    .lm-bc-tete h1 { margin: 6px 0 6px; font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; color: var(--ink); }
+    .lm-bc-tete p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--mute); max-width: 720px; }
+
+    /* ---------- Comment ça marche : 3 étapes ---------- */
+    .lm-bc-etapes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+    .lm-bc-etape { display: flex; gap: 12px; padding: 16px 18px; }
+    .lm-bc-etape + .lm-bc-etape { border-left: 1px solid var(--line); }
+    .lm-bc-etape .n { width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 800; background: color-mix(in srgb, var(--dom) 9%, #fff); color: var(--dom); }
+    .lm-bc-etape.ici .n { background: var(--dom); color: var(--lm-dom-ink, #fff); }
+    .lm-bc-etape b { display: block; font-size: 13.5px; color: var(--ink); }
+    .lm-bc-etape span { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.45; color: var(--mute); }
+    .lm-bc-etape em { font-style: normal; font-weight: 700; color: var(--ink); }
+    .lm-bc-etape .ici-tag { display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; background: var(--dom); color: var(--lm-dom-ink, #fff); vertical-align: 1px; }
+
+    .lm-bc-corps { display: grid; grid-template-columns: minmax(380px, 460px) minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 18px; }
+
+    /* ---------- Boutons ---------- */
+    .lm-bc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 13px; border: 1px solid var(--line);
+                 background: var(--surface); font: inherit; font-size: 14px; font-weight: 700; color: var(--ink); cursor: pointer; text-decoration: none;
+                 transition: border-radius .4s var(--ease), background-color .2s; }
+    .lm-bc-btn:hover { border-radius: 22px; }
+    .lm-bc-btn.principal { background: var(--dom); border-color: transparent; color: var(--lm-dom-ink, #fff); }
+    .lm-bc-petit { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+                   font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink); cursor: pointer; transition: border-radius .4s var(--ease); }
+    .lm-bc-petit:hover { border-radius: 17px; }
+    .lm-bc-petit i { font-size: 11px; color: var(--mute); }
+
+    /* ---------- Formulaire « Créer une question » ---------- */
+    .lm-bc-form { position: sticky; top: 84px; background: var(--surface); border: 1px solid var(--line); border-radius: 24px; overflow: hidden; box-shadow: var(--lm-shadow, 0 10px 30px -18px rgba(15,23,42,.22)); }
+    .lm-bc-form > header { padding: 18px 22px 14px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .lm-bc-form h2 { margin: 0; font-size: 17px; font-weight: 800; color: var(--ink); }
+    .lm-bc-form header small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--mute); }
+    .lm-bc-q { padding: 18px 22px; border-bottom: 1px solid var(--line); }
+    .lm-bc-q[hidden] { display: none; }
+    .lm-bc-q-tete { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .lm-bc-q-tete .n { width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; font-size: 12.5px; font-weight: 800; background: var(--dom); color: var(--lm-dom-ink, #fff); }
+    .lm-bc-q-tete label, .lm-bc-q-tete legend { font-size: 14.5px; font-weight: 800; color: var(--ink); padding: 0; }
+    .lm-bc-q-aide { margin: -4px 0 10px 36px; font-size: 12.5px; line-height: 1.45; color: var(--mute); }
+    .lm-bc-input { width: 100%; height: 48px; padding: 0 14px; border-radius: 13px; border: 1px solid rgba(15,23,42,.14); background: var(--surface); font: inherit; font-size: 15px; color: var(--ink); outline: none;
+                   transition: border-radius .4s var(--ease), border-color .2s; }
+    .lm-bc-input:focus { border-radius: 22px; border-color: color-mix(in srgb, var(--dom) 45%, #fff); }
+    .lm-bc-exemples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--mute); }
+    .lm-bc-exemples button { height: 28px; padding: 0 10px; border-radius: 999px; border: 1px dashed rgba(15,23,42,.2); background: transparent; font: inherit; font-size: 12px; color: var(--ink); cursor: pointer; }
+
+    /* Types de réponse : tuiles avec exemple */
+    .lm-bc-types { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .lm-bc-types label { position: relative; cursor: pointer; }
+    .lm-bc-types input { position: absolute; opacity: 0; }
+    .lm-bc-types span { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 2px 10px; align-items: center; padding: 10px 12px; min-height: 62px; border-radius: 14px; border: 1px solid rgba(15,23,42,.12);
+                        transition: border-color .2s, background-color .2s, border-radius .4s var(--ease); }
+    .lm-bc-types span i { grid-row: span 2; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 14px; color: var(--t); background: color-mix(in srgb, var(--t) 10%, #fff); }
+    .lm-bc-types span b { font-size: 13.5px; color: var(--ink); }
+    .lm-bc-types span small { font-size: 11.5px; color: var(--mute); }
+    .lm-bc-types input:checked + span { border-color: var(--t); background: color-mix(in srgb, var(--t) 6%, #fff); border-radius: 18px; box-shadow: inset 0 0 0 1px var(--t); }
+    .lm-bc-types input:disabled + span { opacity: .4; cursor: not-allowed; }
+    .lm-bc-types input:focus-visible + span { outline: 3px solid color-mix(in srgb, var(--acc) 40%, transparent); outline-offset: 2px; }
+
+    /* Choix de la liste */
+    .lm-bc-puces { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; min-height: 48px; border-radius: 13px; border: 1px solid rgba(15,23,42,.14); }
+    .lm-bc-puces:focus-within { border-color: color-mix(in srgb, var(--dom) 45%, #fff); }
+    .lm-bc-puce { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 4px 0 11px; border-radius: 9px; background: color-mix(in srgb, var(--dom) 8%, #fff); font-size: 13.5px; font-weight: 600; color: var(--ink); }
+    .lm-bc-puce button { width: 24px; height: 24px; border: 0; border-radius: 6px; background: transparent; color: var(--mute); cursor: pointer; font-size: 15px; line-height: 1; }
+    .lm-bc-puce button:hover { color: #B4361B; }
+    .lm-bc-puces input { flex: 1 1 140px; min-width: 120px; height: 32px; border: 0; outline: none; font: inherit; font-size: 14px; color: var(--ink); background: transparent; }
+    #lmBc .lm-bc-puces input:focus, #lmBc .lm-bc-puces input:focus-visible { outline: none !important; box-shadow: none !important; border: 0 !important; }
+
+    /* Aperçu : un téléphone */
+    .lm-bc-apercu { padding: 18px 22px; background: color-mix(in srgb, var(--dom) 4%, #fff); }
+    .lm-bc-tel { max-width: 300px; margin: 10px auto 0; padding: 14px; border-radius: 26px; background: #fff; border: 6px solid #1f2937; box-shadow: 0 14px 30px -20px rgba(15,23,42,.5); }
+    .lm-bc-tel .lab { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #0b1220; }
+    .lm-bc-tel .zone { display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 12px; border-radius: 12px; border: 1px solid rgba(15,23,42,.14); background: #fff; font-size: 14px; color: #8a93a3; }
+    .lm-bc-tel .zone b { margin-left: auto; font-weight: 600; color: #5b6475; }
+    .lm-bc-tel .oui-non { display: flex; gap: 8px; }
+    .lm-bc-tel .oui-non span { flex: 1; height: 44px; display: grid; place-items: center; border-radius: 12px; border: 1px solid rgba(15,23,42,.14); font-size: 14px; font-weight: 700; color: #0b1220; }
+    .lm-bc-tel .photo { height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 12px; border: 1.5px dashed rgba(15,23,42,.2); font-size: 13px; font-weight: 700; color: #0b1220; }
+
+    /* Options avancées (code technique) */
+    .lm-bc-avance { padding: 0 22px 14px; background: color-mix(in srgb, var(--dom) 4%, #fff); }
+    .lm-bc-avance summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--mute); }
+    .lm-bc-avance div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 8px; font-size: 12px; color: var(--mute); }
+    .lm-bc-avance input { height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line); font: 12px/1 ui-monospace, monospace; color: var(--ink); background: #fff; width: 200px; }
+    .lm-bc-avance input[readonly] { opacity: .7; }
+
+    .lm-bc-erreur { display: none; margin: 0; padding: 12px 22px; font-size: 13px; font-weight: 600; color: #B4361B; background: #FDE8E1; }
+    .lm-bc-erreur.on { display: block; }
+    .lm-bc-form footer { display: flex; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--line); }
+    .lm-bc-form footer .principal { flex: 1; }
+
+    /* ---------- Liste « Vos questions » ---------- */
+    .lm-bc-liste { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; overflow: hidden; }
+    .lm-bc-liste > header { padding: 18px 20px 12px; }
+    .lm-bc-liste h2 { margin: 0; font-size: 17px; font-weight: 800; color: var(--ink); }
+    .lm-bc-liste header p { margin: 2px 0 0; font-size: 12.5px; color: var(--mute); }
+    .lm-bc-outils { padding: 0 20px 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-bottom: 1px solid var(--line); }
+    .lm-bc-cherche { position: relative; flex: 1 1 220px; }
+    .lm-bc-cherche i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--mute); }
+    .lm-bc-cherche input { width: 100%; height: 40px; padding: 0 12px 0 34px; border-radius: 12px; border: 1px solid var(--line); background: var(--sol); font: inherit; font-size: 13.5px; color: var(--ink); outline: none; }
+    .lm-bc-cherche input:focus { background: var(--surface); border-color: color-mix(in srgb, var(--dom) 35%, #fff); }
+    .lm-bc-filtres { display: flex; flex-wrap: wrap; gap: 6px; }
+    .lm-bc-filtres button { height: 32px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font: inherit; font-size: 12.5px; font-weight: 700; color: var(--mute); cursor: pointer; }
+    .lm-bc-filtres button.on { background: var(--dom); border-color: transparent; color: var(--lm-dom-ink, #fff); }
+    .lm-bc-items { list-style: none; margin: 0; padding: 8px; }
+    .lm-bc-item { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; transition: background-color .2s, border-radius .4s var(--ease); }
+    .lm-bc-item + .lm-bc-item { border-top: 1px solid var(--line); border-radius: 0; }
+    .lm-bc-item:hover { background: var(--sol); }
+    .lm-bc-item.on { background: color-mix(in srgb, var(--acc) 8%, #fff); border-radius: 16px; }
+    .lm-bc-item[hidden] { display: none; }
+    .lm-bc-item.archive { opacity: .55; }
+    .lm-bc-ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 15px; color: var(--t); background: color-mix(in srgb, var(--t) 10%, #fff); }
+    .lm-bc-item b { display: block; font-size: 14.5px; font-weight: 700; color: var(--ink); }
+    .lm-bc-rep { display: block; margin-top: 3px; font-size: 12.5px; color: var(--mute); }
+    .lm-bc-rep strong { font-weight: 700; color: var(--t); }
+    .lm-bc-usage { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--sol); color: var(--mute); }
+    .lm-bc-usage.oui { background: color-mix(in srgb, var(--ok) 12%, #fff); color: #1F6F64; }
+    .lm-bc-actions { display: flex; gap: 6px; }
+    .lm-bc-input[aria-invalid="true"], .lm-bc-puces[aria-invalid="true"] { border-color: #B4361B !important; }
+    .lm-bc-vide { margin: 0; padding: 34px 20px; text-align: center; font-size: 13.5px; line-height: 1.55; color: var(--mute); }
+    .lm-bc-vide b { display: block; font-size: 15px; color: var(--ink); margin-bottom: 4px; }
+
+    @media (max-width: 1060px) {
+        .lm-bc-corps { grid-template-columns: 1fr; }
+        .lm-bc-form { position: static; }
+        .lm-bc-etapes { grid-template-columns: 1fr; }
+        .lm-bc-etape + .lm-bc-etape { border-left: 0; border-top: 1px solid var(--line); }
+    }
+    @media (max-width: 560px) {
+        .lm-bc-item { grid-template-columns: 42px minmax(0, 1fr); }
+        .lm-bc-actions { grid-column: 2; }
+    }
+    html.sbx-dark .lm-bc { --surface: #181c25; --sol: rgba(255,255,255,.04); }
+    @media (prefers-reduced-motion: reduce) { .lm-bc * { transition: none !important; } }
+</style>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lm-bc" id="lmBc">
+
+    <!-- En-tête -->
+    <div class="lm-bc-tete">
+        <small>Paramétrage · Indicateurs</small>
+        <h1>Champs dynamiques des indicateurs</h1>
+        <p>Ici, vous créez les <b>informations complémentaires</b> que l'on renseigne dans la fiche d'un indicateur : « Bailleur », « Désagrégation », « Unité de mesure », « Fiche de référence »…
+           Chaque champ est créé <b>une seule fois</b>, puis ajouté aux indicateurs qui en ont besoin.</p>
+    </div>
+
+    <!-- Comment ça marche -->
+    <div class="lm-bc-etapes" aria-label="Comment ça marche">
+        <div class="lm-bc-etape ici"><span class="n">1</span><div><b>Créez le champ <span class="ici-tag">Vous êtes ici</span></b><span>Ex. <em>« Bailleur »</em>, valeur : un choix dans une liste.</span></div></div>
+        <div class="lm-bc-etape"><span class="n">2</span><div><b>Ajoutez-le à un indicateur</b><span>Dans la configuration de l'indicateur, bloc « Informations complémentaires ».</span></div></div>
+        <div class="lm-bc-etape"><span class="n">3</span><div><b>Renseignez sa valeur</b><span>Ex. Bailleur = AFD. La valeur apparaît dans la fiche de l'indicateur.</span></div></div>
+    </div>
+
+    <div class="lm-bc-corps">
+
+        <!-- ========== Créer / modifier un champ ========== -->
+        <form class="lm-bc-form" id="lmBcForm" method="post" action="{% url 'enregistrer-champ' %}" data-type="number">
+            {% csrf_token %}
+            <input type="hidden" name="id" id="lmBcId" value="">
+            <input type="hidden" name="choix" id="lmBcChoixJson" value="[]">
+            <header>
+                <div><h2 id="lmBcTitre">Créer un champ</h2><small id="lmBcSous">Répondez aux questions ci-dessous, l'aperçu se met à jour.</small></div>
+                <button type="button" class="lm-bc-petit" data-nouveau title="Repartir d'un champ vide"><i class="fa-solid fa-rotate-left"></i> Vider</button>
+            </header>
+
+            <!-- 1. L'information -->
+            <div class="lm-bc-q">
+                <div class="lm-bc-q-tete"><span class="n">1</span><label for="lmBcLibelle">Quelle information voulez-vous ajouter aux indicateurs ?</label></div>
+                <p class="lm-bc-q-aide">Son nom, tel qu'il apparaîtra dans la fiche.</p>
+                <input class="lm-bc-input" id="lmBcLibelle" name="libelle" required maxlength="120" placeholder="Ex. Ménages sensibilisés" autocomplete="off">
+                <div class="lm-bc-exemples" id="lmBcExemples"><span>Idées :</span>
+                    <button type="button" data-ex="Bailleur|list|">Bailleur</button>
+                    <button type="button" data-ex="Population cible|number|personnes">Population cible</button>
+                    <button type="button" data-ex="Fiche de référence|file|">Fiche de référence</button>
+                </div>
+            </div>
+
+            <!-- 2. La forme de la réponse -->
+            <fieldset class="lm-bc-q" style="border:0; margin:0">
+                <div class="lm-bc-q-tete"><span class="n">2</span><legend>Quelle forme a la valeur ?</legend></div>
+                <div class="lm-bc-types">
+                    <label class="t-number"><input type="radio" name="type" value="number" checked><span><i class="fa-solid fa-hashtag"></i><b>Par un nombre</b><small>ex. 24</small></span></label>
+                    <label class="t-list"><input type="radio" name="type" value="list"><span><i class="fa-solid fa-list-ul"></i><b>En choisissant</b><small>ex. AFD, Union européenne…</small></span></label>
+                    <label class="t-text"><input type="radio" name="type" value="text"><span><i class="fa-solid fa-font"></i><b>Par un texte libre</b><small>ex. une remarque</small></span></label>
+                    <label class="t-date"><input type="radio" name="type" value="date"><span><i class="fa-regular fa-calendar"></i><b>Par une date</b><small>ex. 17/11/2026</small></span></label>
+                    <label class="t-boolean"><input type="radio" name="type" value="boolean"><span><i class="fa-solid fa-toggle-on"></i><b>Par oui ou non</b><small>ex. Oui</small></span></label>
+                    <label class="t-file"><input type="radio" name="type" value="file"><span><i class="fa-solid fa-camera"></i><b>Par une photo</b><small>ou un document</small></span></label>
+                </div>
+            </fieldset>
+
+            <!-- 3a. Unité (si nombre) -->
+            <div class="lm-bc-q" id="lmBcQUnite">
+                <div class="lm-bc-q-tete"><span class="n">3</span><label for="lmBcUnite">Ce nombre compte quoi ? <span style="font-weight:500; color:var(--mute)">(facultatif)</span></label></div>
+                <input class="lm-bc-input" id="lmBcUnite" name="unite" maxlength="20" placeholder="Ex. ménages, personnes, FCFA, km">
+            </div>
+
+            <!-- 3b. Choix (si liste) -->
+            <div class="lm-bc-q" id="lmBcQChoix" hidden>
+                <div class="lm-bc-q-tete"><span class="n">3</span><label for="lmBcPuceSaisie">Quels choix proposer ?</label></div>
+                <p class="lm-bc-q-aide">Tapez un choix puis appuyez sur Entrée. Au moins deux choix.</p>
+                <div class="lm-bc-puces" id="lmBcPuces"><input id="lmBcPuceSaisie" placeholder="Ex. Dschang puis Entrée" autocomplete="off"></div>
+            </div>
+
+            <!-- Aperçu -->
+            <div class="lm-bc-apercu" aria-live="polite">
+                <div class="lm-bc-q-tete" style="margin:0"><span class="n" style="background:var(--ok)"><i class="fa-solid fa-eye" style="font-size:11px"></i></span><span style="font-size:14.5px; font-weight:800; color:var(--ink)">Voici la zone de saisie dans la fiche de l'indicateur</span></div>
+                <div class="lm-bc-tel"><span class="lab" id="lmBcApLib">Votre champ</span><div id="lmBcApZone"></div></div>
+            </div>
+            <details class="lm-bc-avance">
+                <summary>Options avancées</summary>
+                <div><span>Code technique :</span><input id="lmBcCode" name="code" maxlength="40" pattern="[a-z0-9_]+" aria-label="Code technique"><span id="lmBcCodeAide">rempli automatiquement, vous n'avez rien à faire</span></div>
+            </details>
+
+            <p class="lm-bc-erreur" id="lmBcErreur" role="alert"></p>
+            <footer>
+                <button type="button" class="lm-bc-btn" data-nouveau>Annuler</button>
+                <button type="submit" class="lm-bc-btn principal"><i class="fa-solid fa-check"></i> <span id="lmBcValider">Enregistrer le champ</span></button>
+            </footer>
+        </form>
+
+        <!-- ========== Vos champs ========== -->
+        <section class="lm-bc-liste" aria-label="Vos champs">
+            <header>
+                <h2>Vos champs <span style="color:var(--mute); font-weight:600">({{ champs|length }})</span></h2>
+                <p>Cliquez sur « Modifier » pour changer un champ existant.</p>
+            </header>
+            <div class="lm-bc-outils">
+                <label class="lm-bc-cherche"><i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="search" id="lmBcCherche" placeholder="Chercher un champ…" autocomplete="off" aria-label="Chercher un champ"></label>
+                <div class="lm-bc-filtres" role="group" aria-label="Filtrer par forme de réponse">
+                    <button type="button" class="on" data-filtre="">Tous</button>
+                    <button type="button" data-filtre="number">Nombres</button>
+                    <button type="button" data-filtre="list">Choix</button>
+                    <button type="button" data-filtre="text">Textes</button>
+                    <button type="button" data-filtre="autre">Autres</button>
+                </div>
+            </div>
+            <ul class="lm-bc-items" id="lmBcItems">
+                {% for c in champs %}
+                {% include './partials/champ_ligne.html' %}
+                {% empty %}
+                <li class="lm-bc-vide"><b>Aucun champ pour le moment</b>Commencez avec le formulaire : par exemple « Bailleur », valeur choisie dans une liste.</li>
+                {% endfor %}
+            </ul>
+            <p class="lm-bc-vide" id="lmBcRien" hidden>Aucun champ ne correspond à votre recherche.</p>
+        </section>
+    </div>
+</div>
+
+<script>
+(function () {
+    var racine = document.getElementById('lmBc'); if (!racine) return;
+    var $ = function (id) { return document.getElementById(id); };
+    var form = $('lmBcForm'), lib = $('lmBcLibelle'), code = $('lmBcCode'), unite = $('lmBcUnite'), puces = $('lmBcPuces'), saisie = $('lmBcPuceSaisie');
+    var choix = [], codeManuel = false;
+
+    function slug(t) { return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40); }
+    function typeCourant() { var r = form.querySelector('input[name="type"]:checked'); return r ? r.value : 'number'; }
+    function echap(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+    /* Aperçu + étape 3 adaptée au type */
+    function apercu() {
+        var t = typeCourant(), z = $('lmBcApZone'), u = unite.value.trim();
+        form.dataset.type = t;
+        $('lmBcQUnite').hidden = t !== 'number';
+        $('lmBcQChoix').hidden = t !== 'list';
+        $('lmBcApLib').textContent = lib.value.trim() || 'Votre champ';
+        if (t === 'number') z.innerHTML = '<div class="zone">0' + (u ? '<b>' + echap(u) + '</b>' : '') + '</div>';
+        else if (t === 'list') z.innerHTML = '<div class="zone">' + (choix.length ? 'Choisir… <b>▾ ' + choix.length + ' choix</b>' : 'Ajoutez des choix à l\'étape 3') + '</div>';
+        else if (t === 'date') z.innerHTML = '<div class="zone">jj/mm/aaaa <b><i class="fa-regular fa-calendar"></i></b></div>';
+        else if (t === 'boolean') z.innerHTML = '<div class="oui-non"><span>Oui</span><span>Non</span></div>';
+        else if (t === 'file') z.innerHTML = '<div class="photo"><i class="fa-solid fa-camera"></i>Prendre une photo</div>';
+        else z.innerHTML = '<div class="zone">Écrire ici…</div>';
+        $('lmBcChoixJson').value = JSON.stringify(t === 'list' ? choix : []);
+    }
+
+    /* Choix de la liste */
+    function dessinerPuces() {
+        puces.querySelectorAll('.lm-bc-puce').forEach(function (p) { p.remove(); });
+        choix.forEach(function (c, i) {
+            var s = document.createElement('span'); s.className = 'lm-bc-puce';
+            s.innerHTML = echap(c) + '<button type="button" aria-label="Retirer ' + echap(c) + '" data-i="' + i + '">×</button>';
+            puces.insertBefore(s, saisie);
+        });
+        apercu();
+    }
+    function ajouterChoix(texte) {
+        texte.split(/[,\n;]/).map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (x) {
+            if (!choix.some(function (c) { return c.toLowerCase() === x.toLowerCase(); })) choix.push(x);
+        });
+        saisie.value = ''; dessinerPuces();
+    }
+    saisie.addEventListener('keydown', function (e) {
+        if ((e.key === 'Enter' || e.key === ',') && saisie.value.trim()) { e.preventDefault(); ajouterChoix(saisie.value); }
+        else if (e.key === 'Enter') e.preventDefault();
+        else if (e.key === 'Backspace' && !saisie.value && choix.length) { choix.pop(); dessinerPuces(); }
+    });
+    saisie.addEventListener('paste', function (e) { var t = (e.clipboardData || window.clipboardData).getData('text'); if (/[,\n;]/.test(t)) { e.preventDefault(); ajouterChoix(t); } });
+    saisie.addEventListener('blur', function () { if (saisie.value.trim()) ajouterChoix(saisie.value); });
+    puces.addEventListener('click', function (e) { var b = e.target.closest('[data-i]'); if (b) { choix.splice(+b.dataset.i, 1); dessinerPuces(); } else saisie.focus(); });
+
+    /* Code technique : suit le libellé tant qu'on ne l'a pas changé ; figé une fois la question créée */
+    lib.addEventListener('input', function () { if (!codeManuel && !code.readOnly) code.value = slug(lib.value); apercu(); });
+    code.addEventListener('input', function () { codeManuel = true; code.value = slug(code.value); });
+    form.addEventListener('change', apercu); unite.addEventListener('input', apercu);
+
+    /* Idées d'exemples : remplissent le formulaire d'un clic */
+    $('lmBcExemples').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-ex]'); if (!b) return;
+        var p = b.dataset.ex.split('|'); lib.value = p[0]; unite.value = p[2] || '';
+        var r = form.querySelector('input[name="type"][value="' + p[1] + '"]'); if (r && !r.disabled) r.checked = true;
+        if (!code.readOnly) { codeManuel = false; code.value = slug(p[0]); }
+        apercu(); (p[1] === 'list' ? saisie : lib).focus();
+    });
+
+    /* Nouvelle question / modifier une question */
+    function remplir(li, sansDefiler) {
+        racine.querySelectorAll('.lm-bc-item.on').forEach(function (x) { x.classList.remove('on'); });
+        if (li) li.classList.add('on');
+        $('lmBcId').value = li ? li.dataset.id : '';
+        lib.value = li ? li.dataset.libelle : ''; code.value = li ? li.dataset.code : ''; unite.value = li ? li.dataset.unite : '';
+        code.readOnly = !!(li && li.dataset.code); codeManuel = !!li;
+        $('lmBcCodeAide').textContent = code.readOnly ? 'fixe : il relie les réponses déjà collectées' : 'rempli automatiquement, vous n\'avez rien à faire';
+        var t = li ? li.dataset.type : 'number';
+        var r = form.querySelector('input[name="type"][value="' + t + '"]'); if (r) r.checked = true;
+        var bloque = li && +li.dataset.utilise > 0;   /* des réponses existent : la forme de réponse ne change plus */
+        form.querySelectorAll('input[name="type"]').forEach(function (x) { x.disabled = bloque && x.value !== t; });
+        choix = li && li.dataset.choix ? li.dataset.choix.split('|') : [];
+        $('lmBcTitre').textContent = li ? 'Modifier le champ' : 'Créer un champ';
+        $('lmBcSous').textContent = li ? (bloque ? li.dataset.utilise + ' réponse(s) déjà collectée(s) : vous pouvez changer le texte, pas la forme de la réponse.' : 'Aucune réponse encore : tout est modifiable.')
+                                      : 'Répondez aux questions ci-dessous, l\'aperçu se met à jour.';
+        $('lmBcValider').textContent = li ? 'Enregistrer les changements' : 'Enregistrer le champ';
+        $('lmBcErreur').classList.remove('on');
+        dessinerPuces();
+        erreurForm('');
+        if (!sansDefiler) { form.scrollIntoView({ behavior: 'smooth', block: 'start' }); lib.focus({ preventScroll: true }); }
+    }
+    racine.addEventListener('click', function (e) {
+        if (e.target.closest('[data-nouveau]')) { remplir(null); return; }
+        var m = e.target.closest('[data-modifier]'); if (m) remplir(m.closest('.lm-bc-item'));
+    });
+    /* Archiver : simple confirmation, puis envoi du formulaire de la ligne */
+    racine.addEventListener('submit', function (e) {
+        var f = e.target.closest('[data-archiver]'); if (!f) return;
+        var li = f.closest('.lm-bc-item'), n = +li.dataset.utilise;
+        if (!window.confirm('Ne plus proposer « ' + li.dataset.libelle + ' » ?' + (n ? ' Les ' + n + ' réponse(s) déjà collectée(s) sont conservées.' : ''))) e.preventDefault();
+    });
+
+    /* Recherche et filtre */
+    var filtre = '';
+    function filtrer() {
+        var q = slug($('lmBcCherche').value), vus = 0;
+        racine.querySelectorAll('.lm-bc-item').forEach(function (li) {
+            var t = li.dataset.type, okT = !filtre || (filtre === 'autre' ? ['date', 'boolean', 'file'].indexOf(t) > -1 : t === filtre);
+            var ok = okT && (!q || slug(li.dataset.libelle).indexOf(q) > -1);
+            li.hidden = !ok; if (ok) vus++;
+        });
+        $('lmBcRien').hidden = vus > 0 || !racine.querySelector('.lm-bc-item');
+    }
+    $('lmBcCherche').addEventListener('input', filtrer);
+    racine.querySelectorAll('[data-filtre]').forEach(function (b) {
+        b.addEventListener('click', function () { racine.querySelectorAll('[data-filtre]').forEach(function (x) { x.classList.toggle('on', x === b); }); filtre = b.dataset.filtre; filtrer(); });
+    });
+
+    /* Message d'erreur sous le formulaire, champ concerné encadré */
+    function erreurForm(message, champs) {
+        $('lmBcErreur').textContent = message || ''; $('lmBcErreur').classList.toggle('on', !!message);
+        champs = champs || {};
+        lib.setAttribute('aria-invalid', champs.libelle ? 'true' : 'false');
+        puces.setAttribute('aria-invalid', champs.choix ? 'true' : 'false');
+    }
+
+    /* Vérification avant envoi (le serveur revérifie tout) ; sans erreur, le formulaire part normalement */
+    form.addEventListener('submit', function (e) {
+        var msg = '', champs = {}, l = lib.value.trim().toLowerCase(), id = $('lmBcId').value;
+        if (!code.value) code.value = slug(lib.value);
+        $('lmBcChoixJson').value = JSON.stringify(typeCourant() === 'list' ? choix : []);
+        racine.querySelectorAll('.lm-bc-item').forEach(function (li) {
+            if (li.dataset.id !== id && li.dataset.libelle.toLowerCase() === l) { msg = 'Le champ « ' + li.dataset.libelle + ' » existe déjà. Utilisez-le au lieu d\'en créer un autre.'; champs.libelle = 1; }
+        });
+        if (typeCourant() === 'list' && choix.length < 2) { msg = 'Ajoutez au moins deux choix à l\'étape 3.'; champs.choix = 1; }
+        if (!lib.value.trim()) { msg = 'Écrivez d\'abord le nom du champ (étape 1).'; champs.libelle = 1; }
+        erreurForm(msg, champs);
+        if (msg) { e.preventDefault(); return; }
+        form.querySelector('button[type="submit"]').disabled = true;          /* pas de double envoi */
+        $('lmBcValider').textContent = 'Enregistrement…';
+    });
+
+    apercu();
+})();
+</script>
+{% endblock %}
