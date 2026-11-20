@@ -14470,6 +14470,19 @@ def authorized_institutions(request):
         institutions = [request.user.personnel.get_institution]
     return institutions
 
+# =====================================================================
+#  OperaPlus — VOTRE fonction basis(request), corrigée sans changer ce qu'elle renvoie.
+#  Mêmes clés de contexte. Chaque modification est marquée « ← corrigé » ou « ← ajout ».
+#  basis() est appelée par presque toutes les vues : un plantage ici fait tomber tout le site.
+#  Imports déjà présents chez vous : import datetime  (le module) · Aggregate
+# =====================================================================
+
+
+def _semaine_du_mois(jour):
+    """← ajout : n° de la semaine dans le mois (semaines du lundi au dimanche ; la 1re contient le 1er du mois)."""
+    premier = jour.replace(day=1)
+    return (jour.day + premier.weekday() - 1) // 7 + 1
+
 
 def basis(request):
     permissions = list()
@@ -14477,32 +14490,28 @@ def basis(request):
     animate = None
     animate2 = None
     context = dict()
-    user = request.user
-    try:
-        if request.session['logged'] == 1:
-            request.session['logged'] = 0
-            animate = 0
-    except:
-        pass
-    try:
-        if request.session['new_rapport'] == 1:
-            request.session['new_rapport'] = 0
-            animate2 = 0
-        elif request.session['new_rapport'] == 2:
-            request.session['new_rapport'] = 0
-            animate2 = 1
-    except:
-        pass
 
-    if request != None and user.is_authenticated:
-        actual_institution = user.personnel.actual_institution
-        bool(actual_institution)
+    # ← corrigé : request.session.get(...) au lieu de try / except nu (qui cachait aussi les vraies erreurs)
+    if request.session.get('logged') == 1:
+        request.session['logged'] = 0
+        animate = 0
+    nouveau_rapport = request.session.get('new_rapport')
+    if nouveau_rapport == 1:
+        request.session['new_rapport'] = 0
+        animate2 = 0
+    elif nouveau_rapport == 2:
+        request.session['new_rapport'] = 0
+        animate2 = 1
 
+    user = getattr(request, 'user', None)
+    # ← corrigé : un compte sans fiche personnel (admin, compte de service) faisait planter TOUTES les pages
+    personnel = getattr(user, 'personnel', None) if user is not None and user.is_authenticated else None
+    # ← corrigé : un personnel sans institution active faisait aussi planter (actual_institution.id sur None)
+    actual_institution = getattr(personnel, 'actual_institution', None) if personnel is not None else None
+
+    if personnel is not None and actual_institution is not None:
         programmes = list()  # request.user.personnel.get_programmes()
         nb_programmes = 0
-
-        personnel = request.user.personnel
-        bool(personnel)
 
         prenom = personnel.prenom
         nom = personnel.nom
@@ -14510,20 +14519,21 @@ def basis(request):
         picture = personnel.photo
         functi = role
         entity_manage = None
-        if actual_institution.owner != None and actual_institution.owner.m_user == request.user:
+        role_fonction = getattr(functi, 'm_role', None)               # ← ajout : une fonction sans rôle ne plante plus
+
+        if actual_institution.owner != None and actual_institution.owner.m_user == user:
             permissions = 100
-        elif functi == None:
+        elif functi == None or role_fonction is None:                 # ← corrigé : sans rôle = utilisateur simple
             permissions = 10
         else:
-            permissions = functi.m_role.permissions
-            if functi.m_role.m_nature == "1":
-                # enti = funxti
+            permissions = role_fonction.permissions
+            if role_fonction.m_nature == "1":
                 eRACI = personnel.RACI_manage()
-                if eRACI != None:
-                    if eRACI[0] != None:
-                        entity_manage = eRACI[0]
+                if eRACI != None and eRACI[0] != None:
+                    entity_manage = eRACI[0]
             elif permissions < 0:
                 entity_manage = functi.m_entity
+
         context = {
             'actual_institution': actual_institution,
             'animate': animate,
@@ -14547,20 +14557,14 @@ def basis(request):
         context['this_period'] = datetime.datetime.now()
         context['operations_name'] = actual_institution.operations_name
         context['insti_structures'] = actual_institution.structures()
-        context['default_period'] = context['actual_institution'].default_period
+        context['default_period'] = actual_institution.default_period
 
         get_entities = actual_institution.get_entities()
-
         context['get_entities'] = get_entities
         context['get_entities2'] = list(get_entities)[:-1]
 
-        top_entity = context['actual_institution'].top_entity()
-        bool(top_entity)
-        context['top_entity'] = top_entity
-
-        last_entity = context['actual_institution'].last_entity()
-        bool(last_entity)
-        context['last_entity'] = last_entity
+        context['top_entity'] = actual_institution.top_entity()       # ← corrigé : les « bool(...) » seuls ne servaient à rien
+        context['last_entity'] = actual_institution.last_entity()
 
         if actual_institution.finan_options != None:
             context["finances"] = actual_institution.finances()
@@ -14568,17 +14572,18 @@ def basis(request):
             context["finan_options"] = actual_institution.finan_options
             context["depenses_eff"] = actual_institution.depenses_eff
 
-        tmp_week = int(max(1, context['this_period'].day / 7))
-        if context['this_period'].day > context['this_period'].isoweekday() * tmp_week:
-            tmp_week += 1
-        context['this_week'] = tmp_week
+        # ← corrigé : l'ancien calcul donnait de mauvais numéros de semaine (ex. mercredi 18/11/2026 → semaine 3 au lieu de 4)
+        context['this_week'] = _semaine_du_mois(context['this_period'])
         context['operations_modules'] = Aggregate.objects.filter(
-            m_institution__id=context['actual_institution'].id).select_related('m_institution').first()
-
+            m_institution__id=actual_institution.id).select_related('m_institution').first()
 
     else:
-        actual_institution = None
         context["institution"] = None
+        if personnel is not None:                                     # ← ajout : connecté mais sans institution active
+            context['actual_institution'] = None
+            context['prenom'] = personnel.prenom
+            context['nom'] = personnel.nom
+            context['permissions'] = 10
     return context
 
 
@@ -37047,3 +37052,48 @@ def count_transaction_a_valider(request):
                                              etat_validation=False     ).count()   # ← corrigé : seulement les validées
 
     return JsonResponse({'total': transaction, 'a_valider': 0})                  # pas de pastille « à valider »
+
+
+URL_PAGE = '/sans-institution/'
+URL_DECONNEXION = '/log/1/'          # ← à adapter : l'adresse de déconnexion de votre site
+
+# Adresses toujours accessibles (sinon l'utilisateur serait bloqué en boucle)
+CHEMINS_LIBRES = (
+    URL_PAGE, URL_DECONNEXION, '/login', '/log/1/', '/accounts/', '/admin/',
+    '/static/', '/media/', '/sw.js', '/serviceworker.js', '/manifest', '/hors-ligne/', '/offline', '/favicon',   # ← ajout : votre /serviceworker.js
+)
+
+
+def _institution_active(user):
+    """(personnel, institution) — None si absent. Ne lève jamais d'erreur."""
+    personnel = getattr(user, 'personnel', None)
+    return personnel, (getattr(personnel, 'actual_institution', None) if personnel is not None else None)
+
+
+class SansInstitutionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = getattr(request, 'user', None)
+        if user is not None and user.is_authenticated and not request.path.startswith(CHEMINS_LIBRES):
+            personnel, institution = _institution_active(user)
+            if personnel is not None and institution is None:
+                # appels JavaScript (compteurs, graphiques) : réponse JSON claire au lieu d'une page HTML
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', ''):
+                    return JsonResponse({'erreur': 'sans_institution', 'redirection': URL_PAGE}, status=403)
+                return redirect(URL_PAGE)
+        return self.get_response(request)
+
+
+def sans_institution(request):
+    if not request.user.is_authenticated:
+        return redirect(settings.LOGIN_URL)
+    personnel, institution = _institution_active(request.user)
+    if institution is not None:                      # ré-associé entre-temps : retour à l'accueil
+        return redirect('/')
+    return render(request, 'sans_institution.html', {
+        'personnel': personnel,
+        'lien_deconnexion': URL_DECONNEXION,
+        'courriel_support': getattr(settings, 'DEFAULT_FROM_EMAIL', ''),
+    })   # ← corrigé : code 200 (page d'information) — le 403 faisait écrire « Forbidden » dans les journaux à chaque visite

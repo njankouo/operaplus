@@ -182,7 +182,8 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  
     'allauth.account.middleware.AccountMiddleware',
-    'archive.middleware.RequeteCouranteMiddleware'
+    'archive.middleware.RequeteCouranteMiddleware',
+  
 ]
 
 #SESSION_ENGINE = "django.contrib.sessions.backends.cache"

@@ -356,6 +356,8 @@ gestionnaire_url_patterns = [
 
    path('valid-transaction/', views.ValidTransaction, name='valid-transaction'),
 
+   path('sans-institution/', views.sans_institution, name='sans-institution'),
+
 
    path('editer-tache/<int:id>/',views.file_duplik,name='editer-tache'),
 

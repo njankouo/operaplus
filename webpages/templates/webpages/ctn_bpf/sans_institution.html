@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accès en attente — OperaPlus</title>
+<style>
+  :root { --ink:#14212e; --ink-2:#4d5b6a; --ink-3:#8a97a6; --line:#e4e9f0; --soft:#f5f8fb;
+          --brand:#1d5d90; --brand-d:#123f63; --brand-2:#e7f0f8; --amber:#b86e0a; --amber-bg:#fff4e2; --ok:#1f8a5a; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: #fff; }
+
+  .page { min-height: 100%; display: grid; grid-template-columns: minmax(320px, 44%) minmax(0, 1fr); }
+  @media (max-width: 900px) { .page { grid-template-columns: minmax(0, 1fr); } }
+
+  /* ---------- Panneau de gauche ---------- */
+  .marque { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 32px;
+            padding: 40px 48px; color: #fff; background: var(--brand-d); overflow: hidden; }
+  .marque::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+                    background-image: radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px); background-size: 22px 22px; }
+  .marque > * { position: relative; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: -.01em; }
+  .logo i { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: #fff; color: var(--brand-d); font-style: normal; font-size: 15px; }
+  .illu { width: 100%; max-width: 360px; margin: 0 auto; }
+  .marque h2 { margin: 0 0 10px; font-size: 26px; line-height: 1.25; letter-spacing: -.02em; }
+  .marque p { margin: 0; font-size: 15px; line-height: 1.6; color: rgba(255,255,255,.75); max-width: 30rem; }
+  @media (max-width: 900px) {
+    .marque { padding: 24px 20px 28px; gap: 18px; }
+    .illu { max-width: 220px; }
+    .marque h2 { font-size: 21px; }
+  }
+
+  /* ---------- Contenu ---------- */
+  .contenu { display: flex; align-items: center; justify-content: center; padding: 48px 40px; background: var(--soft); }
+  @media (max-width: 900px) { .contenu { padding: 24px 16px 40px; } }
+  .boite { width: 100%; max-width: 540px; }
+
+  .qui { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 26px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .avatar { flex: none; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-2); color: var(--brand); font-weight: 800; font-size: 15px; text-transform: uppercase; }
+  .qui-t { min-width: 0; flex: 1; }
+  .qui-t b { display: block; font-size: 15px; }
+  .qui-t span { display: block; font-size: 13px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .statut { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: var(--amber-bg); color: var(--amber); font-size: 12px; font-weight: 700; }
+  .statut::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  h1 { margin: 0 0 10px; font-size: 28px; line-height: 1.2; letter-spacing: -.02em; }
+  .intro { margin: 0 0 26px; font-size: 15.5px; line-height: 1.6; color: var(--ink-2); }
+
+  .etapes { list-style: none; margin: 0 0 28px; padding: 0; counter-reset: e; }
+  .etapes li { position: relative; display: flex; gap: 14px; padding: 0 0 20px; }
+  .etapes li:last-child { padding-bottom: 0; }
+  .etapes li::before { counter-increment: e; content: counter(e); flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+                       background: #fff; border: 1.5px solid var(--brand); color: var(--brand); font-weight: 800; font-size: 13px; z-index: 1; }
+  .etapes li:not(:last-child)::after { content: ""; position: absolute; left: 14px; top: 30px; bottom: 0; width: 2px; background: var(--line); }
+  .etapes b { display: block; font-size: 15px; margin: 4px 0 2px; }
+  .etapes span { display: block; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+  .etapes li.fait::before { content: "✓"; background: var(--ok); border-color: var(--ok); color: #fff; }
+
+  .causes { margin: 0 0 28px; padding: 14px 16px; border-radius: 10px; background: #fff; border: 1px solid var(--line); font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+  .causes b { color: var(--ink); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 18px; border-radius: 10px; font-size: 15px; font-weight: 600;
+         text-decoration: none; border: 1px solid var(--line); color: var(--ink); background: #fff; cursor: pointer; font-family: inherit; transition: background .15s, border-color .15s; }
+  .btn:hover { border-color: #c5d0dc; background: #fbfcfd; }
+  .btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .btn.principal { flex: 1 1 200px; background: var(--brand); border-color: var(--brand); color: #fff; }
+  .btn.principal:hover { background: var(--brand-d); border-color: var(--brand-d); }
+  .btn svg { width: 18px; height: 18px; }
+  .actions form { margin: 0; }
+  .note { margin: 22px 0 0; font-size: 12.5px; color: var(--ink-3); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <aside class="marque">
+    <div class="logo"><i>O+</i>OperaPlus</div>
+
+    <svg class="illu" viewBox="0 0 360 220" fill="none" aria-hidden="true">
+      <!-- institution -->
+      <rect x="208" y="52" width="122" height="128" rx="10" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.35)" stroke-width="2"/>
+      <path d="M200 60 269 22l69 38" stroke="rgba(255,255,255,.55)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <g fill="rgba(255,255,255,.28)">
+        <rect x="228" y="76" width="22" height="18" rx="3"/><rect x="258" y="76" width="22" height="18" rx="3"/><rect x="288" y="76" width="22" height="18" rx="3"/>
+        <rect x="228" y="104" width="22" height="18" rx="3"/><rect x="258" y="104" width="22" height="18" rx="3"/><rect x="288" y="104" width="22" height="18" rx="3"/>
+      </g>
+      <rect x="254" y="138" width="30" height="42" rx="4" fill="rgba(255,255,255,.45)"/>
+      <!-- personne -->
+      <circle cx="70" cy="92" r="26" fill="rgba(255,255,255,.9)"/>
+      <path d="M28 180c0-26 19-44 42-44s42 18 42 44" fill="rgba(255,255,255,.9)"/>
+      <!-- lien interrompu -->
+      <path d="M118 120h26" stroke="#f2b45a" stroke-width="3" stroke-linecap="round"/>
+      <path d="M170 120h30" stroke="#f2b45a" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 8"/>
+      <circle cx="157" cy="120" r="14" fill="#f2b45a"/>
+      <path d="M151 114l12 12m0-12-12 12" stroke="#123f63" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+
+    <div>
+      <h2>Votre accès est en attente</h2>
+      <p>Pour protéger les données de chaque institution, un compte ne voit rien tant qu'un administrateur ne l'a pas associé à son institution.</p>
+    </div>
+  </aside>
+
+  <main class="contenu">
+    <div class="boite">
+      <div class="qui">
+        <span class="avatar">{% if personnel %}{{ personnel.prenom|default:''|slice:":1" }}{{ personnel.nom|default:''|slice:":1" }}{% else %}{{ request.user.get_username|slice:":1" }}{% endif %}</span>
+        <div class="qui-t">
+          <b>{% if personnel %}{{ personnel.prenom|default:'' }} {{ personnel.nom|default:'' }}{% else %}{{ request.user.get_username }}{% endif %}</b>
+          <span>Connecté en tant que {{ request.user.get_username }}</span>
+        </div>
+        <span class="statut">Sans institution</span>
+      </div>
+
+      <h1>Votre compte n'est associé à aucune institution</h1>
+      <p class="intro">Vous êtes bien connecté, mais aucune institution active n'est rattachée à votre compte. Voici comment retrouver l'accès :</p>
+
+      <ol class="etapes">
+        <li class="fait"><div><b>Connexion réussie</b><span>Votre identifiant et votre mot de passe sont valides.</span></div></li>
+        <li><div><b>Contactez l'administrateur de votre institution</b><span>Demandez-lui de vous associer à l'institution (ou de réactiver votre accès s'il a été désactivé).</span></div></li>
+        <li><div><b>Cliquez sur « Réessayer »</b><span>Dès que c'est fait, vous serez dirigé automatiquement vers votre espace.</span></div></li>
+      </ol>
+
+      <div class="causes"><b>Pourquoi ?</b> Soit votre compte vient d'être créé et n'a pas encore été associé, soit l'administrateur a retiré ou désactivé votre accès.</div>
+
+      <div class="actions">
+        <a class="btn principal" href="/sans-institution/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg>Réessayer</a>
+        {% if courriel_support %}<a class="btn" href="mailto:{{ courriel_support }}?subject=Association%20%C3%A0%20une%20institution">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Support</a>{% endif %}
+        <form method="post" action="{{ lien_deconnexion }}">{% csrf_token %}{# POST : exigé par la déconnexion de Django 5 #}
+          <button type="submit" class="btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Se déconnecter</button>
+        </form>
+      </div>
+      <p class="note">Vous pensez qu'il s'agit d'une erreur ? Signalez-le à votre administrateur en indiquant votre identifiant : {{ request.user.get_username }}.</p>
+    </div>
+  </main>
+</div>
+</body>
+</html>
