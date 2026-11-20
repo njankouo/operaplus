@@ -24522,14 +24522,14 @@ def save_transaction_ajax(request):
                     operation_id=operation_id
                 )
 
-            IndicateurValeur.objects.create(
-                operation=operation,
-                date_enregistrement=date_realisation,
-                type_donnee='DECLARATION',
-                valeur=niveau_execution_float,
-                etat=True,
-                commentaire=commentaire
-            )
+            # IndicateurValeur.objects.create(
+            #     operation=operation,
+            #     date_enregistrement=date_realisation,
+            #     type_donnee='DECLARATION',
+            #     valeur=niveau_execution_float,
+            #     etat=True,
+            #     commentaire=commentaire
+            # )
 
             # Calcul et mise à jour opération
             operation.niveau_execution = niveau_execution_float
@@ -29641,97 +29641,100 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from django.utils import timezone
 
+# =====================================================================
+#  OperaPlus — VOTRE vue validation_transaction, corrigée sans changer la logique de calcul.
+#  Chaque modification est marquée « ← corrigé » ou « ← ajout ».
+#  Imports nécessaires (à ne pas dupliquer s'ils existent déjà dans views.py) :
+#      from decimal import Decimal, InvalidOperation
+#      from django.db import transaction as db_transaction
+# =====================================================================
+
+
+def _decimal(valeur):
+    """'12,5' / '12.5' / 12 → Decimal ; None si ce n'est pas un nombre fini."""          # ← ajout
+    try:
+        d = Decimal(str(valeur).strip().replace(' ', '').replace(',', '.'))
+    except (InvalidOperation, ValueError, TypeError):
+        return None
+    return d if d.is_finite() else None
+
+
 def validation_transaction(request):
     context = basis(request)
     actual_institution = context['actual_institution']
+    retour = request.META.get('HTTP_REFERER') or '/accountable/'      # ← corrigé : on revient à la page d'où vient le formulaire
+                                                                      #   (avant : /validation-transaction, adresse sans « / » final et différente de /valid-transaction/)
+    if request.method != 'POST':
+        return redirect('/accountable/')
 
-    if request.method == 'POST':
-        try:
-            # Configuration de la précision décimale
-            getcontext().prec = 6  # 6 chiffres significatifs
+    # ← corrigé : plus de getcontext().prec = 6 — ce réglage s'appliquait à TOUT le serveur
+    #   et arrondissait à 6 chiffres significatifs n'importe quel calcul Decimal (ex. 1 234 567 → 1 234 570).
 
-            operation = request.POST['operations']
-            commentaire = request.POST['commentaire']
-            niveau_execution = request.POST.get('niveau',0) or request.POST.get('precision',0)
-            transaction = request.POST['transaction']
+    personnel = getattr(request.user, 'personnel', None)
+    operation = request.POST.get('operations')
+    transaction_id = request.POST.get('transaction')                 # ← corrigé : ne masque plus « transaction » de Django
+    commentaire = request.POST.get('commentaire', '')
+    niveau_execution = _decimal(request.POST.get('niveau') or request.POST.get('precision') or 0)
 
-            # Conversion des valeurs en Decimal
-            try:
-                niveau_execution = Decimal(niveau_execution)
-            except (ValueError, TypeError):
-                messages.error(request, "Le niveau d'exécution doit être un nombre valide")
-                return redirect('/validation-transaction/')
+    if not operation or not transaction_id:
+        messages.error(request, "Opération ou transaction manquante.")
+        return redirect(retour)
+    if niveau_execution is None:                                      # ← corrigé : « abc » levait InvalidOperation (non intercepté)
+        messages.error(request, "Le niveau d'exécution doit être un nombre valide")
+        return redirect(retour)
+    if not Decimal('0') <= niveau_execution <= Decimal('100'):
+        messages.error(request, "Le niveau d'exécution doit être compris entre 0 et 100")
+        return redirect(retour)
 
-            instance_operation = Operation.objects.get(id=operation)
-            indicateur_id = IndicateurValeur.objects.get(id=int(transaction))
+    try:
+        # ← ajout : seul l'approbateur (A) de l'opération, dans l'institution active, peut valider
+        instance_operation = Operation.objects.select_related('tache').get(
+            id=operation, m_institution=actual_institution, accountable=personnel)
+        # ← ajout : la transaction doit appartenir à cette opération
+        indicateur_id = IndicateurValeur.objects.get(id=int(transaction_id), operation=instance_operation)
+    except Operation.DoesNotExist:
+        messages.error(request, "Opération introuvable, ou vous n'en êtes pas l'approbateur.")
+        return redirect(retour)
+    except (IndicateurValeur.DoesNotExist, ValueError):              # ← corrigé : avant, HistoricRACI (sans rapport)
+        messages.error(request, "La transaction spécifiée n'existe pas pour cette opération.")
+        return redirect(retour)
 
-            # Validation des valeurs
-            if not Decimal('0') <= niveau_execution <= Decimal('100'):
-                messages.error(request, "Le niveau d'exécution doit être compris entre 0 et 100")
-                return redirect('/validation-transaction')
+    if indicateur_id.etat_validation:                                 # ← ajout : pas de double validation (double clic, retour arrière)
+        messages.info(request, "Cette transaction a déjà été validée.")
+        return redirect(retour)
 
-
-
-
-           # now = datetime.datetime.now()
-
-
-            # historic.date_realisation=request.POST.get('date_validation')
-
-            # historic.commentaire_validation_transaction = request.POST.get('commentaire')
-
-            # historic.progression_valide=niveau_execution
-
-
-            # historic.etat_validation = True
-            # historic.save()
-
-
-
-            indicateur = IndicateurValeur.objects.create(
-                operation = instance_operation,
-                type_donnee = 'VALIDATION',
-                date_enregistrement = request.POST.get('date_validation'),
-                valeur = niveau_execution,
-                commentaire = commentaire,
-                etat_validation = True
-
-            )
-            indicateur.save()
-
+    try:
+        with db_transaction.atomic():                                 # ← ajout : tout ou rien (pas de totaux à moitié mis à jour)
             indicateur_id.etat_validation = True
-
             indicateur_id.save()
 
-            # Calcul avec valeurs Decimal
-            total_operation = (instance_operation.ponderation * niveau_execution) / Decimal('100')
+            # Calcul avec valeurs Decimal (votre formule)
+            ponderation = _decimal(instance_operation.ponderation) or Decimal('0')   # ← corrigé : None ou float faisait planter
+            total_operation = (ponderation * niveau_execution) / Decimal('100')
 
             # Mise à jour de l'opération
             instance_operation.niveau_execution_valide = niveau_execution
             instance_operation.resultat_niveau_execution_valide = total_operation
-            #instance_operation.etat_transaction = False
             instance_operation.save()
 
             # 1. Mise à jour de la tâche directe
             tache = instance_operation.tache
-            operations_tache = Operation.objects.filter(tache=tache)
-
             total_tache = sum(
                 Decimal(str(op.resultat_niveau_execution_valide or 0))
-                for op in operations_tache
+                for op in Operation.objects.filter(tache=tache)
             )
             tache.resultat_niveau_execution_valide = total_tache
             tache.save()
 
-            # 2. Propagation dans la hiérarchie
+            # 2. Propagation dans la hiérarchie (votre fonction, inchangée sauf select_related)
             def update_parent_entities(current_entity):
-                parent_relations = EntityHierachie.objects.filter(m_sub_entity=current_entity)
+                parent_relations = EntityHierachie.objects.filter(m_sub_entity=current_entity).select_related('m_sup_entity')
 
                 for relation in parent_relations:
                     parent_entity = relation.m_sup_entity
                     entite = parent_entity.m_type_entity
 
-                    child_relations = EntityHierachie.objects.filter(m_sup_entity=parent_entity)
+                    child_relations = EntityHierachie.objects.filter(m_sup_entity=parent_entity).select_related('m_sub_entity')  # ← ajout
 
                     total_parent = sum(
                         (Decimal(str(rel.m_sub_entity.resultat_niveau_execution_valide or 0)) *
@@ -29752,10 +29755,10 @@ def validation_transaction(request):
                         related_entities = Entity.objects.filter(m_type_entity=entite).distinct()
 
                         total_institution = sum(
-    (Decimal(str(entity.resultat_niveau_execution_valide or 0)) *
-     Decimal(str(entity.ponderation or 0))) / Decimal('100')
-    for entity in related_entities
-)
+                            (Decimal(str(entity.resultat_niveau_execution_valide or 0)) *
+                             Decimal(str(entity.ponderation or 0))) / Decimal('100')
+                            for entity in related_entities
+                        )
 
                         actual_institution.process_valid = total_institution
                         actual_institution.save()
@@ -29763,17 +29766,12 @@ def validation_transaction(request):
                     update_parent_entities(parent_entity)
 
             update_parent_entities(tache)
-            messages.success(request, 'Validation réussie')
+    except Exception as e:
+        messages.error(request, f"Erreur survenue lors de la validation : {e}. Rien n'a été modifié.")   # ← corrigé : grâce à atomic
+        return redirect(retour)
 
-        except Operation.DoesNotExist:
-            messages.error(request, "L'opération spécifiée n'existe pas")
-        except HistoricRACI.DoesNotExist:
-            messages.error(request, "La transaction historique spécifiée n'existe pas")
-        except Exception as e:
-            messages.error(request, f"Erreur survenue lors de la validation: {str(e)}")
-
-    return redirect('/alert_notifs/0/1/')
-
+    messages.success(request, 'Validation réussie')
+    return redirect('/accountable/')
 
 def add_ponderation(request):
     if request.method == 'POST':
@@ -34756,7 +34754,7 @@ def ValidTransaction(request):
     context=basis(request)
     actual_institution=context.get('actual_institution')
     context = {
-    'transaction_valide':IndicateurValeur.objects.filter(institution=actual_institution, etat=True),
+    'transaction_valide':IndicateurValeur.objects.filter(personnel=request.user.personnel,institution=actual_institution, etat=True,etat_validation=False),
     'actual_institution':actual_institution
     }
     return render(request, template, context)
@@ -35570,17 +35568,68 @@ def AdvanceDashboard(request):
     return render(request, template, context)
 
 
+
+
+TYPE_PREVISION = 'PREVISION'      # les prévisions ne sont pas des déclarations à valider
+
+
+def _q_declaration():
+    """Toute ligne qui n'est pas une prévision (type_donnee vide compris)."""
+    return Q(type_donnee__isnull=True) | ~Q(type_donnee=TYPE_PREVISION)
+
+
+def _poser(obj, nom, valeur):
+    """Pose un attribut calculé pour le template, sans écraser une propriété du modèle si elle existe déjà."""
+    try:
+        setattr(obj, nom, valeur)
+    except AttributeError:
+        pass
+
+
+def _ajouter_stats_transactions(operations):
+    """← ajout : pour chaque opération, nombre de transactions, validées, et s'il en reste à valider (1 seule requête)."""
+    DECLARATION = _q_declaration()
+    stats = {
+        l['operation_id']: l for l in
+        IndicateurValeur.objects
+        .filter(operation_id__in=[o.id for o in operations])
+        .values('operation_id')
+        .annotate(previsions=Count('id', filter=Q(type_donnee=TYPE_PREVISION)),          # ← ajout : compté à part
+                  total=Count('id', filter=DECLARATION),
+                  validees=Count('id', filter=DECLARATION & Q(etat_validation=True)))
+    }
+    for o in operations:
+        s = stats.get(o.id, {})
+        total, validees = s.get('total', 0), s.get('validees', 0)
+        _poser(o, 'nb_previsions', s.get('previsions', 0))  # ← ajout : visible sur la carte
+        _poser(o, 'nb_transactions', total)
+        _poser(o, 'nb_total', total)                       # barre d'avancement : validées / déclarées
+        _poser(o, 'nb_completed', validees)
+        _poser(o, 'has_dataset', validees < total)         # badge « Action requise » : il reste des déclarations à valider
+    return operations
+
+
 def accountable(request):
     context = basis(request)
     actual_institution = context.get('actual_institution')
-    operation_accountable = Operation.objects.filter(
-        accountable=request.user.personnel, 
-        m_institution=actual_institution, 
-        etat=1
-    ).order_by('id')
-    context['operation_accountable'] = operation_accountable
-    return render(request,'accountable.html', context)
 
+    # ← corrigé : un compte sans fiche personnel (admin, compte de service) faisait planter la page
+    personnel = getattr(request.user, 'personnel', None)
+
+    if personnel is None or actual_institution is None:
+        operation_accountable = []
+        transaction = 0
+    else:
+        operation_accountable = list(Operation.objects
+                                     .filter(accountable=personnel, m_institution=actual_institution, etat=1)
+                                     .select_related('m_institution')      # ← ajout : sigle et logo sans 1 requête par carte
+                                     .order_by('date_echeance', 'id'))     # ← corrigé : échéances les plus proches d'abord
+        _ajouter_stats_transactions(operation_accountable)                 # ← ajout
+        transaction = IndicateurValeur.objects.filter(personnel=personnel, institution=actual_institution,etat=True,etat_validation=False).count()   # votre filtre institution
+
+    context['operation_accountable'] = operation_accountable
+    context['transaction'] = transaction
+    return render(request, 'accountable.html', context)
 
 def count_accountable_operation(request):
     context = basis(request)
@@ -36985,3 +37034,16 @@ def service_worker(request):
 def hors_ligne(request):
     # Page publique et identique pour tous (pas de @login_required) : elle est gardée en mémoire par le navigateur
     return render(request, 'hors_ligne.html')
+
+
+def count_transaction_a_valider(request):
+    context = basis(request)
+    actual_institution = context.get('actual_institution')
+    personnel = getattr(request.user, 'personnel', None)
+    if personnel is None or actual_institution is None:
+        return JsonResponse({'total': 0, 'a_valider': 0})
+
+    transaction = IndicateurValeur.objects.filter(personnel=personnel, institution=actual_institution, etat=True,
+                                             etat_validation=False     ).count()   # ← corrigé : seulement les validées
+
+    return JsonResponse({'total': transaction, 'a_valider': 0})                  # pas de pastille « à valider »

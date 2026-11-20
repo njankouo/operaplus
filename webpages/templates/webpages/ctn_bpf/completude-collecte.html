@@ -9,20 +9,29 @@
     4. le classement et la liste des structures à relancer.
   Ids, classes, variables Django et JS d'origine conservés ; ajouts marqués « ajout ».
 {% endcomment %}
-<div class="cc-ui{% if periodes|length > 8 %} is-dense{% endif %}">
+<div class="cc-ui{% if periodes|length > 8 %} is-dense{% endif %}" data-total="{{ total_structures }}" data-ajour="{{ nb_ajour }}" data-retard="{{ nb_retard }}" data-jamais="{{ nb_jamais }}">{# ajout : données des graphiques #}
 
 {# ================= EN-TÊTE ================= #}
-<section class="cc-hero">
+<section class="cc-hero" style="--hd: {{ request.user.personnel.color_fond|default:'#1d5d90' }}">{# ajout : bandeau aux couleurs de l'utilisateur #}
     <div class="cc-hero-txt">
-        <a href="javascript:history.back()" class="cc-back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>Retour
-        </a>
+        <nav class="cc-crumb">{# ajout : fil d'Ariane #}
+            <a href="javascript:history.back()" class="cc-back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>Retour
+            </a>
+            <span>/</span><span>Collecte des données</span><span>/</span><b>Complétude</b>
+        </nav>
+        <div class="cc-title">{# ajout #}
+            <span class="cc-hero-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+            <div>
         <h1>Complétude de la collecte</h1>
         <p class="cc-sub"><span class="cc-ds">{{ dataset.m_name|default:dataset }}</span></p>
+            </div>
+        </div>
         <div class="cc-meta">
             {% if dataset.periodicite %}<span class="cc-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>{{ dataset.periodicite }}</span>{% endif %}
             <span class="cc-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>{{ total_structures }} structure{% if total_structures > 1 %}s{% endif %} déclarée{% if total_structures > 1 %}s{% endif %}</span>
             <span class="cc-pill">{{ periodes|length }} période{% if periodes|length > 1 %}s{% endif %}{% if annee %} en {{ annee }}{% endif %}</span>
+            <span class="cc-pill cc-pill-time">Situation au {% now "d/m/Y à H:i" %}</span>{# ajout #}
         </div>
     </div>
     <div class="cc-actions">{# ajout #}
@@ -40,21 +49,34 @@
     </div>
 </section>
 
+{# ajout : navigation dans la page, reste visible en haut pendant le défilement #}
+<nav class="cc-tabsnav" aria-label="Sections de la page">
+    <a href="#cc-synthese" class="is-on">Synthèse</a>
+    {% if periodes %}<a href="#cc-evolution">Évolution</a><a href="#cc-periodes">Par période</a>{% endif %}
+    <a href="#cc-structures">Structures</a>
+    <a href="#cc-classement">Classement &amp; relances</a>
+</nav>
+
 {# ================= BAROMÈTRE + SYNTHÈSE ================= #}
-<section class="cc-kpis">
+<section class="cc-kpis" id="cc-synthese">
     <div class="cc-kpi-main">
-        <div class="cc-gauge {% if not cases_dues %}g-none{% endif %}">
-            <svg viewBox="0 0 200 118" aria-hidden="true">
+        <div class="cc-gauge {% if not cases_dues %}g-none{% elif taux >= 80 %}g-ok{% elif taux >= 50 %}g-warn{% else %}g-no{% endif %}">
+            <svg viewBox="0 0 240 138" aria-hidden="true">
                 <defs>
                     <linearGradient id="ccG" x1="0" x2="1"><stop offset="0" stop-color="#d4697a"/><stop offset=".5" stop-color="#e3a23a"/><stop offset="1" stop-color="#43a074"/></linearGradient>
                 </defs>
-                <path d="M22 104 A78 78 0 0 1 178 104" class="cc-g-bg" pathLength="100"/>
-                <path d="M22 104 A78 78 0 0 1 178 104" class="cc-g-val" pathLength="100" style="--t: {{ taux }}"/>
-                <g class="cc-g-needle" style="--t: {{ taux }}"><line x1="100" y1="104" x2="100" y2="40"/><circle cx="100" cy="104" r="6"/></g>
+                <g class="cc-g-zones"><path class="z-no" d="M16.0 122.0 A104 104 0 0 1 120.0 18.0"/><path class="z-warn" d="M120.0 18.0 A104 104 0 0 1 204.1 60.9"/><path class="z-ok" d="M204.1 60.9 A104 104 0 0 1 224.0 122.0"/></g>{# ajout : zones critique / à améliorer / objectif #}
+                <g class="cc-g-ticks"><line x1="10.0" y1="122.0" x2="3.0" y2="122.0" class="tk-big"/><line x1="11.4" y1="104.8" x2="7.4" y2="104.2"/><line x1="15.4" y1="88.0" x2="11.6" y2="86.8"/><line x1="22.0" y1="72.1" x2="18.4" y2="70.2"/><line x1="31.0" y1="57.3" x2="27.8" y2="55.0"/><line x1="42.2" y1="44.2" x2="37.3" y2="39.3" class="tk-big"/><line x1="55.3" y1="33.0" x2="53.0" y2="29.8"/><line x1="70.1" y1="24.0" x2="68.2" y2="20.4"/><line x1="86.0" y1="17.4" x2="84.8" y2="13.6"/><line x1="102.8" y1="13.4" x2="102.2" y2="9.4"/><line x1="120.0" y1="12.0" x2="120.0" y2="5.0" class="tk-big"/><line x1="137.2" y1="13.4" x2="137.8" y2="9.4"/><line x1="154.0" y1="17.4" x2="155.2" y2="13.6"/><line x1="169.9" y1="24.0" x2="171.8" y2="20.4"/><line x1="184.7" y1="33.0" x2="187.0" y2="29.8"/><line x1="197.8" y1="44.2" x2="202.7" y2="39.3" class="tk-big"/><line x1="209.0" y1="57.3" x2="212.2" y2="55.0"/><line x1="218.0" y1="72.1" x2="221.6" y2="70.2"/><line x1="224.6" y1="88.0" x2="228.4" y2="86.8"/><line x1="228.6" y1="104.8" x2="232.6" y2="104.2"/><line x1="230.0" y1="122.0" x2="237.0" y2="122.0" class="tk-big"/></g>
+                <path d="M32.0 122.0 A88 88 0 0 1 208.0 122.0" class="cc-g-bg" pathLength="100"/>
+                <path d="M32.0 122.0 A88 88 0 0 1 208.0 122.0" class="cc-g-val" pathLength="100" style="--t: {{ taux }}"/>
+                <g class="cc-g-lbl"><text x="52.0" y="126.0">0</text><text x="71.9" y="76.9">25</text><text x="120.0" y="57.0">50</text><text x="168.1" y="76.9">75</text><text x="188.0" y="126.0">100</text></g>
+                <g class="cc-g-obj"><line x1="183.1" y1="76.2" x2="207.4" y2="58.5"/><text x="219.5" y="49.7">80</text></g>{# ajout : repère d'objectif #}
+                <g class="cc-g-needle" style="--t: {{ taux }}"><path d="M116.5 122 L120 46 L123.5 122 Z"/><circle cx="120" cy="122" r="8"/><circle cx="120" cy="122" r="3" class="cc-g-hub"/></g>
             </svg>
             <div class="cc-g-scale" aria-hidden="true"><span>0 %</span><span>100 %</span></div>{# ajout #}
             {% if cases_dues %}
             <div class="cc-g-num"><b>{{ taux }}<small>%</small></b><span>de complétude</span></div>
+            <span class="cc-g-verdict">{% if taux >= 80 %}Objectif atteint{% elif taux >= 50 %}À améliorer{% else %}Niveau critique{% endif %}</span>{# ajout #}
             {% else %}{# aucune période clôturée : pas de « 0 % » trompeur #}
             <div class="cc-g-num"><b>—</b><span>rien d'exigible pour l'instant</span></div>
             {% endif %}
@@ -75,6 +97,7 @@
         </p>
 
         <div class="cc-split">
+            <div id="ccDonut" class="cc-donut" aria-hidden="true"></div>{# ajout : anneau des statuts (ApexCharts) #}
             <div class="cc-split-bar" role="img" aria-label="{{ nb_ajour }} à jour, {{ nb_retard }} en retard, {{ nb_jamais }} sans saisie">
                 {% if nb_ajour %}<span class="s-ok" style="flex: {{ nb_ajour }}" title="{{ nb_ajour }} à jour"></span>{% endif %}
                 {% if nb_retard %}<span class="s-warn" style="flex: {{ nb_retard }}" title="{{ nb_retard }} en retard"></span>{% endif %}
@@ -90,8 +113,20 @@
 </section>
 
 {% if periodes %}
+{# ================= ÉVOLUTION (ajout) ================= #}
+<section class="cc-sec cc-card cc-evo" id="cc-evolution">
+    <div class="cc-sec-head">
+        <div>
+            <h2>Évolution de la saisie</h2>
+            <span class="cc-hint">Barres : part des structures ayant saisi chaque période · Ligne : complétude cumulée depuis le début de l'année · Pointillé : objectif 80 %</span>
+        </div>
+    </div>
+    <div id="ccEvo" class="cc-evo-chart"></div>
+    <p class="cc-chart-off" hidden>Graphique indisponible sans connexion : les mêmes chiffres figurent dans « Par période » ci-dessous.</p>
+</section>
+
 {# ================= PAR PÉRIODE ================= #}
-<section class="cc-sec cc-card cc-per-sec">
+<section class="cc-sec cc-card cc-per-sec" id="cc-periodes">
     <div class="cc-sec-head">
         <div>
             <h2>Par période</h2>
@@ -102,7 +137,7 @@
     <div class="cc-strip-wrap">
         <div class="cc-strip" role="tablist">
             {% for p in periodes %}
-            <button type="button" role="tab" class="cc-per-card st-{{ p.statut }} {% if p.pct >= 80 %}lvl-ok{% elif p.pct >= 50 %}lvl-warn{% else %}lvl-no{% endif %}{% if p.periode.id == periode_courante.periode.id %} is-on{% endif %}" data-p="{{ p.periode.id }}" style="--i: {{ forloop.counter0 }}">
+            <button type="button" role="tab" class="cc-per-card st-{{ p.statut }} {% if p.pct >= 80 %}lvl-ok{% elif p.pct >= 50 %}lvl-warn{% else %}lvl-no{% endif %}{% if p.periode.id == periode_courante.periode.id %} is-on{% endif %}" data-p="{{ p.periode.id }}" data-label="{{ p.label }}" data-pct="{{ p.pct }}" data-n="{{ p.nb_saisies }}" data-statut="{{ p.statut }}" style="--i: {{ forloop.counter0 }}">
                 <span class="cc-per-top">
                     <span class="cc-per-name">{{ p.label }}</span>
                     <span class="cc-st">{% if p.statut == 'a_venir' %}À venir{% elif p.statut == 'en_cours' %}En cours{% else %}Clôturée{% endif %}</span>
@@ -141,7 +176,7 @@
 {% endif %}
 
 {# ================= 1. STRUCTURES DÉCLARÉES ================= #}
-<section class="cc-sec cc-card">
+<section class="cc-sec cc-card" id="cc-structures">
     <div class="cc-sec-head">
         <div>
             <h2><span class="cc-step">1</span>Structures déclarées</h2>
@@ -205,7 +240,7 @@
 </section>
 
 {# ================= 2. STRUCTURES AYANT DÉJÀ SAISI ================= #}
-<section class="cc-sec cc-sec-plain">
+<section class="cc-sec cc-sec-plain" id="cc-classement">
     <div class="cc-two">
         <div class="cc-card cc-rank">
             <div class="cc-sec-head">
@@ -286,10 +321,41 @@
 .cc-ui .cc-sec, .cc-ui .cc-hero, .cc-ui .cc-two > * { min-width: 0; }
 .cc-ui .cc-card { background: #fff; border: 1px solid var(--line); border-radius: 6px; }
 
-/* ---------- En-tête ---------- */
-.cc-ui .cc-hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem 2rem; flex-wrap: wrap; padding: 0 0 1.1rem; border-bottom: 1px solid var(--line); }
-.cc-ui .cc-hero-txt { min-width: 0; }
-.cc-ui .cc-back { display: inline-flex; align-items: center; gap: .2rem; font-size: .76rem; font-weight: 600; color: var(--brand); text-decoration: none; }
+/* ---------- En-tête : bandeau ---------- */
+.cc-ui .cc-hero { --hd2: color-mix(in srgb, var(--hd) 82%, #000);
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 1.2rem 2rem; flex-wrap: wrap;
+    padding: 1.3rem 1.6rem 1.4rem; border-radius: 8px; color: #fff; background: var(--hd2); }
+.cc-ui .cc-crumb { display: flex; align-items: center; flex-wrap: wrap; gap: .45rem; font-size: .74rem; color: rgba(255,255,255,.7); }
+.cc-ui .cc-crumb b { color: #fff; font-weight: 600; }
+.cc-ui .cc-title { display: flex; align-items: center; gap: .9rem; margin-top: .8rem; }
+.cc-ui .cc-hero-ico { flex: none; width: 2.9rem; height: 2.9rem; border-radius: 8px; display: grid; place-items: center; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); }
+.cc-ui .cc-hero-ico svg { width: 1.45rem; height: 1.45rem; }
+.cc-ui .cc-hero h1 { margin-top: 0; color: #fff; }
+.cc-ui .cc-hero .cc-sub { color: rgba(255,255,255,.82); }
+.cc-ui .cc-hero .cc-pill { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.22); color: #fff; }
+.cc-ui .cc-hero .cc-pill svg { color: rgba(255,255,255,.75); }
+.cc-ui .cc-hero .cc-pill-time { background: transparent; border-style: dashed; color: rgba(255,255,255,.8); font-weight: 500; }
+.cc-ui .cc-hero .cc-year-l { color: rgba(255,255,255,.7); }
+.cc-ui .cc-hero .cc-year, .cc-ui .cc-hero .cc-btn { border-color: transparent; }
+.cc-ui .cc-hero .cc-btn { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(255,255,255,.25); }
+.cc-ui .cc-hero .cc-btn svg { color: #fff; }
+.cc-ui .cc-hero .cc-btn:hover { background: rgba(255,255,255,.24); border-color: rgba(255,255,255,.4); }
+.cc-ui .cc-hero #ccExport { background: #fff; color: var(--hd2); border-color: #fff; }
+.cc-ui .cc-hero #ccExport svg { color: var(--hd2); }
+.cc-ui .cc-hero #ccExport:hover { background: #f1f5f9; }
+.cc-ui .cc-hero .cc-year:focus-visible, .cc-ui .cc-hero .cc-btn:focus-visible { outline-color: #fff; }
+@media (max-width: 560px) { .cc-ui .cc-hero { padding: 1.1rem 1rem 1.2rem; } .cc-ui .cc-hero-ico { display: none; } }
+
+/* Navigation dans la page (ajout) */
+.cc-ui .cc-tabsnav { position: sticky; top: 0; z-index: 20; display: flex; gap: .2rem; overflow-x: auto; scrollbar-width: none; margin-top: 1rem; padding: .3rem;
+    background: rgba(255,255,255,.96); border: 1px solid var(--line); border-radius: 6px; }
+.cc-ui .cc-tabsnav a { flex: none; padding: .45rem .85rem; border-radius: 4px; font-size: .8rem; font-weight: 600; color: var(--ink-2); text-decoration: none; white-space: nowrap; }
+.cc-ui .cc-tabsnav a:hover { background: var(--soft); color: var(--ink); }
+.cc-ui .cc-tabsnav a.is-on { background: var(--brand-2); color: var(--brand); }
+.cc-ui [id^="cc-"] { scroll-margin-top: 4rem; }
+.cc-ui .cc-hero-txt { min-width: 0; flex: 1 1 min(24rem, 100%); }
+.cc-ui .cc-actions { flex: 0 1 auto; min-width: 0; }
+.cc-ui .cc-back { display: inline-flex; align-items: center; gap: .2rem; font-size: .76rem; font-weight: 600; color: #fff; text-decoration: none; }
 .cc-ui .cc-back:hover { text-decoration: underline; }
 .cc-ui .cc-back svg { width: .95rem; height: .95rem; }
 .cc-ui h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.01em; margin-top: .35rem; }
@@ -309,25 +375,36 @@
 .cc-ui .cc-year:focus-visible, .cc-ui .cc-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
 
 /* ---------- Baromètre + synthèse ---------- */
-.cc-ui .cc-kpis { display: grid; grid-template-columns: 19rem minmax(0, 1fr); margin-top: 1.25rem; background: #fff; border: 1px solid var(--line); border-radius: 6px; }
+.cc-ui .cc-kpis { display: grid; grid-template-columns: 21rem minmax(0, 1fr); margin-top: 1.25rem; background: #fff; border: 1px solid var(--line); border-radius: 6px; }
 @media (max-width: 820px) { .cc-ui .cc-kpis { grid-template-columns: minmax(0, 1fr); } }
 .cc-ui .cc-kpi-main { padding: 1.3rem 1.4rem 1.2rem; border-right: 1px solid var(--line-2); }
 @media (max-width: 820px) { .cc-ui .cc-kpi-main { border-right: 0; border-bottom: 1px solid var(--line-2); } }
 
 /* Le baromètre d'origine (arc dégradé + aiguille) */
 .cc-ui .cc-gauge { position: relative; text-align: center; }
-.cc-ui .cc-gauge svg { width: 100%; max-width: 15rem; display: block; margin: 0 auto; overflow: visible; }
-.cc-ui .cc-g-bg { fill: none; stroke: #edf0f5; stroke-width: 15; stroke-linecap: round; }
-.cc-ui .cc-g-val { fill: none; stroke: url(#ccG); stroke-width: 15; stroke-linecap: round; stroke-dasharray: var(--t) 100; animation: ccArc 1.2s cubic-bezier(.2,.8,.3,1) both .15s; }
-.cc-ui .cc-g-needle { transform-origin: 100px 104px; transform: rotate(calc(var(--t) * 1.8deg - 90deg)); animation: ccNeedle 1.2s cubic-bezier(.2,.8,.3,1) both .15s; }
-.cc-ui .cc-g-needle line { stroke: var(--navy); stroke-width: 3; stroke-linecap: round; }
-.cc-ui .cc-g-needle circle { fill: var(--navy); stroke: #fff; stroke-width: 3; }
+.cc-ui .cc-gauge { --g: var(--navy); }
+.cc-ui .g-ok { --g: var(--ok); } .cc-ui .g-warn { --g: #b77900; } .cc-ui .g-no { --g: var(--no); }
+.cc-ui .cc-gauge svg { width: 100%; max-width: 17rem; display: block; margin: 0 auto; overflow: visible; }
+.cc-ui .cc-g-zones path { fill: none; stroke-width: 6; }
+.cc-ui .z-no { stroke: #eba9a9; } .cc-ui .z-warn { stroke: #f2cf84; } .cc-ui .z-ok { stroke: #93cf9d; }
+.cc-ui .cc-g-ticks line { stroke: #a7b2bd; stroke-width: 1; }
+.cc-ui .cc-g-ticks .tk-big { stroke: var(--ink-2); stroke-width: 2; }
+.cc-ui .cc-g-lbl text { font-size: 10px; font-weight: 600; fill: var(--ink-3); text-anchor: middle; font-variant-numeric: tabular-nums; }
+.cc-ui .cc-g-obj line { stroke: var(--ink); stroke-width: 2.5; }
+.cc-ui .cc-g-obj text { font-size: 9px; font-weight: 800; fill: var(--ink); text-anchor: middle; }
+.cc-ui .cc-g-bg { fill: none; stroke: #eef1f5; stroke-width: 16; }
+.cc-ui .cc-g-val { fill: none; stroke: url(#ccG); stroke-width: 16; stroke-dasharray: var(--t) 100; animation: ccArc 1.2s cubic-bezier(.2,.8,.3,1) both .15s; }
+.cc-ui .cc-g-needle { transform-origin: 120px 122px; transform: rotate(calc(var(--t) * 1.8deg - 90deg)); animation: ccNeedle 1.2s cubic-bezier(.2,.8,.3,1) both .15s; }
+.cc-ui .cc-g-needle path, .cc-ui .cc-g-needle circle { fill: var(--navy); }
+.cc-ui .cc-g-needle .cc-g-hub { fill: #fff; }
+.cc-ui .cc-g-scale { display: none; }
+.cc-ui .cc-g-verdict { display: inline-block; margin-top: .45rem; padding: .15rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 700; color: var(--g); background: color-mix(in srgb, var(--g) 12%, #fff); }
 .cc-ui .g-none .cc-g-val, .cc-ui .g-none .cc-g-needle { opacity: .25; }
 @keyframes ccArc { from { --t: 0; } }
 @keyframes ccNeedle { from { --t: 0; } }
-.cc-ui .cc-g-scale { display: flex; justify-content: space-between; max-width: 15rem; margin: .1rem auto 0; padding: 0 .2rem; font-size: .66rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.cc-ui .cc-g-scale { display: none !important; justify-content: space-between; max-width: 15rem; margin: .1rem auto 0; padding: 0 .2rem; font-size: .66rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .cc-ui .cc-g-num { margin-top: .2rem; }
-.cc-ui .cc-g-num b { display: block; font-size: 2.3rem; font-weight: 800; line-height: 1; color: var(--navy); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.cc-ui .cc-g-num b { display: block; font-size: 2.4rem; font-weight: 800; line-height: 1; color: var(--g); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 .cc-ui .cc-g-num b small { font-size: 1.1rem; color: var(--ink-2); margin-left: .1rem; }
 .cc-ui .cc-g-num span { display: block; margin-top: .25rem; font-size: .78rem; color: var(--ink-2); font-weight: 600; }
 .cc-ui .cc-g-cap { margin-top: .7rem; font-size: .78rem; color: var(--ink-2); line-height: 1.45; }
@@ -346,6 +423,21 @@
 .cc-ui .cc-stat em { font-style: normal; font-weight: 700; font-size: .82rem; }
 .cc-ui .cc-stat small { font-size: .72rem; color: var(--ink-3); }
 .cc-ui .s-ok { background: var(--ok); } .cc-ui .s-warn { background: var(--warn); } .cc-ui .s-no { background: var(--no); }
+/* ajout : anneau + compteurs côte à côte quand ApexCharts est chargé */
+.cc-ui .cc-donut { display: none; }
+.cc-ui.has-apex .cc-split { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: 1rem; align-items: center; }
+.cc-ui.has-apex .cc-donut { display: block; min-height: 11rem; }
+.cc-ui.has-apex .cc-split-bar { display: none; }
+.cc-ui.has-apex .cc-split-leg { grid-template-columns: minmax(0, 1fr); margin-top: 0; gap: .45rem; }
+.cc-ui.has-apex .cc-stat { grid-template-columns: auto 2.6rem minmax(0, 1fr); align-items: center; column-gap: .6rem; padding: .5rem .75rem; }
+.cc-ui.has-apex .cc-stat i { grid-row: span 2; margin: 0; }
+.cc-ui.has-apex .cc-stat b { grid-row: span 2; font-size: 1.4rem; text-align: right; }
+.cc-ui.has-apex .cc-stat em, .cc-ui.has-apex .cc-stat small { grid-column: 3; }
+@media (max-width: 560px) { .cc-ui.has-apex .cc-split { grid-template-columns: minmax(0, 1fr); } .cc-ui.has-apex .cc-donut { max-width: 12rem; margin: 0 auto; } }
+/* ajout : graphique d'évolution */
+.cc-ui .cc-evo-chart { padding: .6rem .8rem 0; min-height: 320px; }
+.cc-ui .cc-chart-off { padding: 1.4rem 1.2rem; color: var(--ink-3); font-size: .82rem; }
+.cc-ui .apexcharts-tooltip { font-size: .78rem; }
 
 /* ---------- Sections ---------- */
 .cc-ui .cc-sec { margin-top: 1.25rem; }
@@ -491,7 +583,10 @@
 /* ---------- Impression ---------- */
 @media print {
     .cc-ui { max-width: none; contain: none; font-size: 11px; }
-    .cc-ui .cc-actions, .cc-ui .cc-back, .cc-ui .cc-tools, .cc-ui .cc-panel { display: none !important; }
+    .cc-ui .cc-actions, .cc-ui .cc-back, .cc-ui .cc-tools, .cc-ui .cc-panel, .cc-ui .cc-tabsnav, .cc-ui .cc-crumb { display: none !important; }
+    .cc-ui .cc-hero { background: #fff !important; color: var(--ink) !important; border: 1px solid var(--line); }
+    .cc-ui .cc-hero h1, .cc-ui .cc-hero .cc-sub, .cc-ui .cc-hero .cc-pill { color: var(--ink) !important; }
+    .cc-ui .cc-evo, .cc-ui .cc-split { break-inside: avoid; }
     .cc-ui .cc-per-sec { grid-template-columns: 1fr; }
     .cc-ui .cc-table-wrap, .cc-ui .cc-rank-body, .cc-ui .cc-rel-body, .cc-ui .cc-strip { max-height: none; overflow: visible; contain: none; }
     .cc-ui .cc-table th, .cc-ui .td-name { position: static; }
@@ -513,6 +608,18 @@
     var actif = document.querySelector('.cc-per-card.is-on');
     /* ← corrigé : la liste est verticale, on fait défiler jusqu'à la période affichée */
     if (actif) actif.parentNode.scrollTop = actif.offsetTop - actif.parentNode.offsetTop - 60;
+
+    /* ajout : l'onglet de la section visible s'allume pendant le défilement */
+    var liens = Array.prototype.slice.call(document.querySelectorAll('.cc-tabsnav a'));
+    if (liens.length && 'IntersectionObserver' in window) {
+        var obs = new IntersectionObserver(function (entrees) {
+            entrees.forEach(function (e) {
+                if (!e.isIntersecting) return;
+                liens.forEach(function (a) { a.classList.toggle('is-on', a.getAttribute('href') === '#' + e.target.id); });
+            });
+        }, { rootMargin: '-30% 0px -60% 0px' });
+        liens.forEach(function (a) { var cible = document.querySelector(a.getAttribute('href')); if (cible) obs.observe(cible); });
+    }
 
     /* Filtres du tableau */
     var tbl = document.getElementById('ccDecl');
@@ -557,6 +664,85 @@
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
     });
+})();
+</script>
+
+{# ajout : graphiques (ApexCharts). Sans connexion, la page reste complète : les graphiques sont simplement remplacés par un message. #}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
+<script>
+(function () {
+    var ui = document.querySelector('.cc-ui');
+    if (!ui) return;
+    if (!window.ApexCharts) {
+        document.querySelectorAll('.cc-chart-off').forEach(function (p) { p.hidden = false; });
+        var evo = document.getElementById('ccEvo'); if (evo) evo.style.minHeight = '0';
+        return;
+    }
+    ui.classList.add('has-apex');
+    var C = { ok: '#2e7d32', warn: '#e09b00', no: '#c62828', cours: '#7ea6c8', ink: '#1f2933', ink3: '#8795a1', line: '#eef1f5' };
+    var police = getComputedStyle(ui).fontFamily;
+    var total = parseInt(ui.dataset.total || '0', 10);
+
+    /* --- Anneau : statut des structures --- */
+    var donut = document.getElementById('ccDonut');
+    var vals = [ui.dataset.ajour, ui.dataset.retard, ui.dataset.jamais].map(function (v) { return parseInt(v || '0', 10); });
+    if (donut && total) new ApexCharts(donut, {
+        chart: { type: 'donut', height: 176, fontFamily: police, animations: { speed: 500 } },
+        series: vals, labels: ['À jour', 'En retard', 'Rien saisi'], colors: [C.ok, C.warn, C.no],
+        legend: { show: false }, dataLabels: { enabled: false }, stroke: { width: 2, colors: ['#fff'] },
+        plotOptions: { pie: { donut: { size: '72%', labels: { show: true,
+            value: { fontSize: '22px', fontWeight: 800, color: C.ink, offsetY: 2 },
+            name: { fontSize: '11px', color: C.ink3, offsetY: -4 },
+            total: { show: true, label: 'structures', color: C.ink3, fontSize: '11px', formatter: function () { return total; } } } } } },
+        tooltip: { y: { formatter: function (v) { return v + ' structure' + (v > 1 ? 's' : '') + ' (' + Math.round(100 * v / total) + ' %)'; } } }
+    }).render();
+
+    /* --- Évolution : barres par période + complétude cumulée --- */
+    var zone = document.getElementById('ccEvo');
+    var cartes = Array.prototype.slice.call(document.querySelectorAll('.cc-per-card'));
+    if (!zone || !cartes.length) return;
+    var labels = [], barres = [], cumul = [], nb = [], statuts = [], somme = 0, closes = 0;
+    cartes.forEach(function (c) {
+        var st = c.dataset.statut, n = parseInt(c.dataset.n || '0', 10);
+        labels.push(c.dataset.label); statuts.push(st); nb.push(n);
+        barres.push(st === 'a_venir' ? null : parseInt(c.dataset.pct || '0', 10));
+        if (st === 'cloturee' && total) { somme += n; closes += 1; cumul.push(Math.round(1000 * somme / (total * closes)) / 10); }
+        else cumul.push(null);
+    });
+    var dense = cartes.length > 8;
+    var graphe = new ApexCharts(zone, {
+        chart: { type: 'line', height: 320, fontFamily: police, toolbar: { show: true, tools: { download: true, selection: false, zoom: false, zoomin: false, zoomout: false, pan: false, reset: false } },
+                 animations: { speed: 500 },
+                 events: { dataPointSelection: function (e, ctx, o) { var b = cartes[o.dataPointIndex]; if (b) b.click(); } } },
+        series: [
+            { name: 'Structures ayant saisi', type: 'column', data: barres },
+            { name: 'Complétude cumulée', type: 'line', data: cumul }
+        ],
+        labels: labels,
+        colors: [function (o) {
+            var st = statuts[o.dataPointIndex];
+            if (st === 'en_cours') return C.cours;
+            return o.value >= 80 ? C.ok : o.value >= 50 ? C.warn : C.no;
+        }, C.ink],
+        plotOptions: { bar: { columnWidth: dense ? '72%' : '45%', borderRadius: 2 } },
+        stroke: { width: [0, 2.5], curve: 'straight' },
+        markers: { size: [0, dense ? 0 : 4], strokeWidth: 0, hover: { size: 5 } },
+        dataLabels: { enabled: !dense, enabledOnSeries: [0], formatter: function (v) { return v === null ? '' : v + ' %'; },
+                      offsetY: -18, style: { fontSize: '10px', fontWeight: 700, colors: [C.ink] }, background: { enabled: false } },
+        yaxis: { min: 0, max: 100, tickAmount: 4, labels: { formatter: function (v) { return Math.round(v) + ' %'; }, style: { colors: C.ink3 } } },
+        xaxis: { labels: { rotate: dense ? -50 : 0, rotateAlways: dense, hideOverlappingLabels: true, trim: true, maxHeight: 80, style: { colors: C.ink3, fontSize: '10px' } },
+                 axisBorder: { color: '#dde3ea' }, axisTicks: { show: false }, tooltip: { enabled: false } },
+        grid: { borderColor: C.line, strokeDashArray: 0, padding: { left: 8, right: 8 } },
+        annotations: { yaxis: [{ y: 80, borderColor: C.ink, strokeDashArray: 5, borderWidth: 1.5,
+            label: { text: 'Objectif 80 %', position: 'right', textAnchor: 'end', offsetX: -2, borderWidth: 0, style: { background: C.ink, color: '#fff', fontSize: '10px', fontWeight: 700, padding: { left: 6, right: 6, top: 2, bottom: 2 } } } }] },
+        legend: { position: 'top', horizontalAlign: 'left', fontSize: '12px', markers: { width: 10, height: 10, radius: 2 }, itemMargin: { horizontal: 10 } },
+        tooltip: { shared: true, intersect: false, y: { formatter: function (v, o) {
+            if (v === null || v === undefined) return '—';
+            return o.seriesIndex === 0 ? v + ' % · ' + nb[o.dataPointIndex] + ' sur ' + total + ' structures' : v + ' % depuis le début de l\'année';
+        } } },
+        noData: { text: 'Aucune donnée' }
+    });
+    graphe.render();
 })();
 </script>
 {% endblock %}

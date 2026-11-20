@@ -476,6 +476,8 @@ gestionnaire_url_patterns = [
    path('completude-collecte/<int:id>/', views.completude_collecte, name='completude-collecte'),
 
    path('completude-collecte/<int:id>/', views.completude_collecte, name='completude_collecte'),
+
+   path('count_transaction_a_valider/', views.count_transaction_a_valider,name='count_transaction_a_valider')
    
 ]  
 ajax_urls_patterns = [

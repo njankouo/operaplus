@@ -4,11 +4,36 @@
 {% block style %}{{ block.super }}{% endblock %}
 
 {% block design %}
-<style>.ds-search{background:#fff;border-radius:18px;padding:6px;display:flex;align-items:center;gap:6px;margin-bottom:2.5rem}</style>
-<div class="flex flex-col md:flex-row justify-between items-end gap-6 mb-8">
+<style>.ds-search{background:#fff;border-radius:10px;padding:5px;display:flex;align-items:center;gap:6px;margin-bottom:2rem}</style>
+<style>
+  .ds-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:1.2rem 2rem;margin-bottom:1.6rem;color:#fff}
+  .ds-crumb{font-size:.75rem;color:rgba(255,255,255,.7);display:flex;gap:.45rem;flex-wrap:wrap}
+  .ds-crumb b{color:#fff;font-weight:600}
+  .ds-top h2{font-size:1.75rem;font-weight:800;letter-spacing:-.01em;margin-top:.35rem;line-height:1.2}
+  .ds-top p{font-size:.88rem;color:rgba(255,255,255,.78);margin-top:.25rem}
+  .ds-top-actions{display:flex;flex-wrap:wrap;gap:.5rem}
+  .ds-top-btn{display:inline-flex;align-items:center;gap:.45rem;height:2.4rem;padding:0 1rem;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;
+              border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-family:inherit;transition:background .15s}
+  .ds-top-btn:hover{background:rgba(255,255,255,.22)}
+  .ds-top-btn.is-main{background:#fff;color:#1d4e74;border-color:#fff}
+  .ds-top-btn.is-main:hover{background:#eef3f8}
+  .ds-top-btn svg{width:17px;height:17px}
+</style>
+<div class="ds-top">{# ← ajout : en-tête avec fil d'Ariane et actions visibles #}
   <div class="text-white">
+    <nav class="ds-crumb"><span>Accueil</span><span>/</span><b>Collecte des données</b></nav>
     <h2 class="text-3xl font-extrabold tracking-tight">Formulaires {{ actual_institution.nom }}</h2>
     <p class="text-blue-100/70 text-sm font-medium mt-1">Saisissez les données et suivez qui a déjà saisi, période par période</p>
+  </div>
+  <div class="ds-top-actions">
+    <button type="button" class="ds-top-btn" onclick="openIndicatorModal()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path stroke-linecap="round" d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>
+      Calculer les indicateurs
+    </button>
+    <button type="button" class="ds-top-btn is-main" onclick="openModal('CSV')">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      Importer un fichier
+    </button>
   </div>
 </div>
 
@@ -34,63 +59,108 @@
   .ds-link{background:none}
 
   /* Recherche */
-  .ds-search{background:#fff;border-radius:18px;padding:6px;box-shadow:0 18px 40px -18px rgba(15,40,70,.35);
-             display:flex;align-items:center;gap:6px;margin-bottom:2.5rem}
+  .ds-search{background:#fff;border-radius:10px;padding:5px;box-shadow:0 10px 30px -18px rgba(15,40,70,.45);
+             display:flex;align-items:center;gap:6px;margin-bottom:2rem}
   .ds-search label{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:0 14px;color:#94a0b0}
   .ds-search input{flex:1;min-width:0;border:0;outline:0;background:transparent;padding:12px 0;font-size:.9rem;color:#1f2a37}
   .ds-search button{background:#eef3f8;color:#2c6693;font-weight:700;font-size:.75rem;letter-spacing:.06em;
-             padding:12px 22px;border-radius:13px;transition:background .2s}
+             padding:12px 22px;border-radius:7px;transition:background .2s}
   .ds-search button:hover{background:#dde8f2}
 
   /* Compteurs */
-  .ds-stats{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 1.4rem;padding-top:1.4rem}
-  .ds-stat{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--ds-line);border-radius:14px;padding:10px 16px}
-  .ds-stat b{font-size:1.15rem;color:var(--ds-ink)}
-  .ds-stat span{font-size:.75rem;color:var(--ds-muted)}
-  .ds-stat i{width:32px;height:32px;border-radius:10px;display:grid;place-items:center}
+  .ds-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0 0 1rem;padding:0;background:#fff;border:1px solid var(--ds-line);border-radius:8px}
+  @media (max-width:900px){.ds-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .ds-stat{display:flex;align-items:center;gap:12px;padding:14px 18px;border-left:1px solid #eef1f5}
+  .ds-stat:first-child{border-left:0}
+  @media (max-width:900px){.ds-stat:nth-child(3){border-left:0}.ds-stat:nth-child(n+3){border-top:1px solid #eef1f5}}
+  .ds-stat b{font-size:1.35rem;font-weight:800;color:var(--ds-ink);font-variant-numeric:tabular-nums;line-height:1.1;display:block}
+  .ds-stat span{font-size:.74rem;color:var(--ds-muted)}
+  .ds-stat i{flex:none;width:36px;height:36px;border-radius:8px;display:grid;place-items:center}
+
+  /* Barre d'outils (ajout) */
+  .ds-toolbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+  .ds-toolbar-l{font-size:.8rem;color:var(--ds-muted)}
+  .ds-toolbar-l b{color:var(--ds-ink)}
+  .ds-toolbar-r{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .ds-sel{height:36px;border:1px solid #dbe2ea;border-radius:6px;background:#fff;font-size:.8rem;color:var(--ds-ink);padding:0 28px 0 10px;font-family:inherit;cursor:pointer}
+  .ds-sel:focus{outline:2px solid #9cc3e2;outline-offset:0}
+  .ds-view{display:inline-flex;border:1px solid #dbe2ea;border-radius:6px;overflow:hidden;background:#fff}
+  .ds-view button{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;font-size:.78rem;font-weight:600;color:var(--ds-muted);background:#fff;border:0;cursor:pointer;font-family:inherit}
+  .ds-view button + button{border-left:1px solid #dbe2ea}
+  .ds-view button.is-on{background:var(--ds-brand);color:#fff}
+  .ds-view svg{width:15px;height:15px}
 
   /* Cartes */
   .ds-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
-  .ds-card{position:relative;background:#fff;border:1px solid var(--ds-line);border-radius:18px;padding:20px;
-           display:flex;flex-direction:column;gap:14px;overflow:hidden;
-           transition:transform .25s ease,box-shadow .25s ease,border-color .25s;
-           animation:ds-in .45s ease both;animation-delay:calc(var(--i,0) * 45ms)}
-  .ds-card::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,var(--ds-brand),#5aa6d6)}
-  .ds-card:hover{transform:translateY(-3px);box-shadow:0 18px 34px -20px rgba(44,102,147,.55);border-color:#c9d9e8}
+  .ds-card{position:relative;background:#fff;border:1px solid var(--ds-line);border-radius:8px;padding:18px;
+           display:flex;flex-direction:column;gap:14px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+  .ds-card:hover{border-color:#b9cfe2;box-shadow:0 6px 18px -12px rgba(44,102,147,.5)}
   @keyframes ds-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
   .ds-head{display:flex;gap:12px;align-items:flex-start}
-  .ds-ico{flex:none;width:42px;height:42px;border-radius:12px;background:#eaf2f9;color:var(--ds-brand);display:grid;place-items:center}
+  .ds-ico{flex:none;width:40px;height:40px;border-radius:8px;background:#eaf2f9;color:var(--ds-brand);display:grid;place-items:center}
   .ds-name{font-weight:700;color:var(--ds-ink);font-size:.95rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .ds-id{font-family:ui-monospace,monospace;font-size:.68rem;color:#9aa5b4;margin-top:2px}
 
   .ds-chips{display:flex;flex-wrap:wrap;gap:6px}
-  .ds-chip{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;padding:4px 9px;border-radius:999px;background:#f3f6f9;color:#4b5767}
+  .ds-chip{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;padding:4px 9px;border-radius:4px;background:#f3f6f9;color:#4b5767}
+  .ds-chip.is-none{display:none}
   .ds-chip svg{width:13px;height:13px}
   .ds-chip.per{background:#fff6e6;color:#a86d10}
 
   .ds-actions{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:auto}
   .ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:.82rem;font-weight:600;
-          border-radius:12px;padding:10px 14px;transition:background .2s,color .2s,transform .15s}
+          border-radius:6px;padding:9px 14px;transition:background .2s,color .2s,transform .15s}
   .ds-btn:active{transform:scale(.97)}
   .ds-btn svg{width:17px;height:17px}
   .ds-btn-primary{background:var(--ds-brand);color:#fff}
   .ds-btn-primary:hover{background:var(--ds-brand-d)}
-  .ds-btn-soft{background:#eef6f1;color:#2f7a55}
-  .ds-btn-soft:hover{background:#ddefe4}
+  .ds-btn-soft{background:#eef6f1;color:#2f7a55;border:1px solid #a9d3ba}
+  .ds-btn-soft:hover{background:#ddefe4;border-color:#7fbf98}
+  /* ← corrigé : boutons plus faciles à viser (au moins 40 px de haut) */
+  .ds-btn{min-height:40px}
+  .ds-btn:focus-visible{outline:2px solid var(--ds-brand);outline-offset:2px}
 
-  .ds-empty{grid-column:1/-1;text-align:center;padding:70px 20px;background:#fff;border:1.5px dashed #cfd8e3;border-radius:18px;color:#8794a5}
+  .ds-empty{grid-column:1/-1;text-align:center;padding:60px 20px;background:#fff;border:1.5px dashed #cfd8e3;border-radius:8px;color:#8794a5}
+
+  /* ====== Vue liste (ajout) : une ligne par formulaire, colonnes alignées ====== */
+  .ds-list-head{display:none}
+  .ds-grid.is-list{display:block;background:#fff;border:1px solid var(--ds-line);border-radius:8px;overflow:hidden}
+  .ds-grid.is-list .ds-list-head{display:grid}
+  .ds-list-head,.ds-grid.is-list .ds-card{grid-template-columns:minmax(0,1fr) 9rem 8rem 8rem 19.5rem;align-items:center;column-gap:16px}
+  .ds-list-head{padding:10px 18px;background:#f7f9fb;border-bottom:1px solid var(--ds-line);font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8794a5}
+  .ds-grid.is-list .ds-card{display:grid;border:0;border-bottom:1px solid #eef1f5;border-radius:0;padding:12px 18px;gap:0}
+  .ds-grid.is-list .ds-card:last-of-type{border-bottom:0}
+  .ds-grid.is-list .ds-card:hover{box-shadow:none;background:#f8fbfe}
+  .ds-grid.is-list .ds-chips{display:contents}
+  .ds-grid.is-list .ds-chip{justify-self:start;background:none;padding:0;font-size:.8rem;font-weight:500;color:var(--ds-ink)}
+  .ds-grid.is-list .ds-chip svg{color:#9aa5b4}
+  .ds-grid.is-list .ds-chip.per{background:#fff6e6;padding:3px 8px;font-weight:600;color:#a86d10}
+  .ds-grid.is-list .ds-chip.is-none{display:inline-flex;background:none;color:#b3bdc9}
+  .ds-grid.is-list .ds-actions{margin:0;grid-template-columns:1fr auto}
+  .ds-grid.is-list .ds-btn{padding:7px 12px;font-size:.8rem;white-space:nowrap;min-height:38px}
+  .ds-grid.is-list .ds-ico{width:34px;height:34px}
+  .ds-grid.is-list .ds-name{-webkit-line-clamp:1}
+  .ds-grid.is-list .ds-empty{border:0;border-radius:0}
+  @media (max-width:980px){
+    .ds-list-head{display:none!important}
+    .ds-grid.is-list .ds-card{grid-template-columns:minmax(0,1fr);row-gap:10px}
+    .ds-grid.is-list .ds-chips{display:flex;flex-wrap:wrap;gap:12px}
+  }
   .ds-empty svg{width:56px;height:56px;margin:0 auto 12px;color:#c4cfdc}
 
   /* Bouton flottant */
   .ds-fab{position:fixed;right:28px;bottom:28px;z-index:100;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+  /* ← corrigé : le bouton flottant recouvrait le bouton « Complétude » de la colonne de droite et captait les clics.
+     Ses deux actions sont maintenant dans l'en-tête : on le masque (le code reste en place). */
+  .ds-fab{display:none!important}
   .ds-fab-menu{display:flex;flex-direction:column;gap:10px;opacity:0;transform:translateY(10px);pointer-events:none;transition:all .22s ease}
   .ds-fab.open .ds-fab-menu{opacity:1;transform:none;pointer-events:auto}
   .ds-fab-item{display:flex;align-items:center;gap:10px}
   .ds-fab-item span{background:#1f2a37;color:#fff;font-size:.7rem;font-weight:700;letter-spacing:.04em;padding:6px 10px;border-radius:8px;box-shadow:0 8px 20px -8px rgba(0,0,0,.4)}
   .ds-fab-item i{width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid var(--ds-line);display:grid;place-items:center;box-shadow:0 10px 24px -10px rgba(0,0,0,.35);transition:transform .2s}
   .ds-fab-item:hover i{transform:scale(1.07)}
-  .ds-fab-main{width:60px;height:60px;border-radius:50%;background:var(--ds-brand);color:#fff;display:grid;place-items:center;
+  .ds-fab-main{width:54px;height:54px;border-radius:50%;background:var(--ds-brand);color:#fff;display:grid;place-items:center;
                box-shadow:0 16px 30px -12px rgba(44,102,147,.8);transition:background .2s}
   .ds-fab-main:hover{background:var(--ds-brand-d)}
   .ds-fab-main svg{transition:transform .3s}
@@ -156,13 +226,46 @@
         <i style="background:#eaf2f9;color:#2c6693"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path stroke-linecap="round" d="M8 8h8M8 12h8M8 16h5"/></svg></i>
         <div><b id="dsVisible">{{ total }}</b> <span>formulaire{% if total > 1 %}s{% endif %}</span></div>
       </div>
+      {# ← ajout : totaux calculés dans la page à partir des formulaires affichés #}
+      <div class="ds-stat">
+        <i style="background:#eef6f1;color:#2f7a55"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></i>
+        <div><b id="dsNbInd">—</b> <span>indicateurs collectés</span></div>
+      </div>
+      <div class="ds-stat">
+        <i style="background:#fff6e6;color:#a86d10"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M3 10h18M8 3v4M16 3v4"/></svg></i>
+        <div><b id="dsNbPer">—</b> <span>périodicités</span></div>
+      </div>
+      <div class="ds-stat">
+        <i style="background:#f3f0fb;color:#5b4bb0"><svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linejoin="round" d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg></i>
+        <div><b id="dsNbStr">—</b> <span>structures rattachées (cumul)</span></div>
+      </div>
     </div>
     {% endwith %}
 
-    <div class="ds-grid" id="dsGrid">
+    <div class="ds-toolbar">{# ← ajout #}
+      <div class="ds-toolbar-l"><b id="dsShown">{{ dataset|length }}</b> formulaire(s) affiché(s)</div>
+      <div class="ds-toolbar-r">
+        <select class="ds-sel" id="dsPerFilter" aria-label="Filtrer par périodicité"><option value="">Toutes les périodicités</option></select>
+        <select class="ds-sel" id="dsSort" aria-label="Trier">
+          <option value="nom">Trier : nom (A → Z)</option>
+          <option value="ind">Trier : plus d'indicateurs</option>
+          <option value="str">Trier : plus de structures</option>
+          <option value="id">Trier : plus récents</option>
+        </select>
+        <div class="ds-view" role="group" aria-label="Affichage">
+          <button type="button" data-view="list" class="is-on"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Liste</button>
+          <button type="button" data-view="grid"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Cartes</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-grid is-list" id="dsGrid">
+      <div class="ds-list-head" aria-hidden="true"><span>Formulaire</span><span>Périodicité</span><span>Indicateurs</span><span>Structures</span><span>Actions</span></div>{# ← ajout #}
       {% for datasets in dataset %}
+      {% with ni=datasets.m_indicateurs.count ns=datasets.m_structures.count %}
       <article class="ds-card dhis2-card" style="--i:{{ forloop.counter0 }}"
-               data-search="{{ datasets.m_name|lower }} {{ datasets.id }}">
+               data-search="{{ datasets.m_name|lower }} {{ datasets.id }}"
+               data-nom="{{ datasets.m_name|lower }}" data-id="{{ datasets.id }}" data-ni="{{ ni }}" data-ns="{{ ns }}" data-per="{{ datasets.periodicite|default:'' }}">{# ← ajout : données pour trier / filtrer #}
         <div class="ds-head">
           <div class="ds-ico">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path stroke-linecap="round" d="M8 8h8M8 12h8M8 16h5"/></svg>
@@ -179,8 +282,8 @@
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M3 10h18M8 3v4M16 3v4"/></svg>
             {{ datasets.periodicite }}
           </span>
+          {% else %}<span class="ds-chip per is-none">—</span>{# ← ajout : garde les colonnes alignées #}
           {% endif %}
-          {% with ni=datasets.m_indicateurs.count ns=datasets.m_structures.count %}
           <span class="ds-chip">
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
             {{ ni }} indicateur{% if ni > 1 %}s{% endif %}
@@ -189,7 +292,6 @@
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linejoin="round" d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
             {{ ns }} structure{% if ns > 1 %}s{% endif %}
           </span>
-          {% endwith %}
         </div>
 
         <div class="ds-actions">
@@ -203,6 +305,7 @@
           </a>
         </div>
       </article>
+      {% endwith %}
       {% empty %}
       <div class="ds-empty">
         <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linejoin="round" d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
@@ -392,15 +495,48 @@
   /* ---------- Recherche instantanée ---------- */
   const search = $('searchInput');
   const cards = Array.from(document.querySelectorAll('#dsGrid .ds-card'));
+  const perFilter = $('dsPerFilter'), sortSel = $('dsSort'), grid = $('dsGrid');     // ← ajout
   function filterCards() {
     const q = search.value.trim().toLowerCase();
+    const per = perFilter ? perFilter.value : '';                                    // ← ajout : filtre périodicité
     let n = 0;
-    cards.forEach(c => { const ok = !q || c.dataset.search.includes(q); c.hidden = !ok; if (ok) n++; });
+    cards.forEach(c => { const ok = (!q || c.dataset.search.includes(q)) && (!per || c.dataset.per === per); c.hidden = !ok; if (ok) n++; });
     $('dsVisible').textContent = n;
+    if ($('dsShown')) $('dsShown').textContent = n;                                  // ← ajout
     $('dsNoMatch').hidden = !(cards.length && n === 0);
     $('dsTerm').textContent = search.value;
   }
   if (search) { search.addEventListener('input', filterCards); if (search.value) filterCards(); }
+
+  /* ---------- ← ajout : totaux, filtre périodicité, tri, vue liste / cartes ---------- */
+  const somme = k => cards.reduce((t, c) => t + (parseInt(c.dataset[k], 10) || 0), 0);
+  const perios = Array.from(new Set(cards.map(c => c.dataset.per).filter(Boolean))).sort();
+  if ($('dsNbInd')) $('dsNbInd').textContent = somme('ni');
+  if ($('dsNbStr')) $('dsNbStr').textContent = somme('ns');
+  if ($('dsNbPer')) $('dsNbPer').textContent = perios.length;
+  if (perFilter) {
+    perios.forEach(p => perFilter.add(new Option(p, p)));
+    perFilter.addEventListener('change', filterCards);
+  }
+  function trier() {
+    const k = sortSel.value, fin = $('dsNoMatch');
+    const ordre = cards.slice().sort((a, b) =>
+      k === 'ind' ? b.dataset.ni - a.dataset.ni :
+      k === 'str' ? b.dataset.ns - a.dataset.ns :
+      k === 'id'  ? b.dataset.id - a.dataset.id :
+      a.dataset.nom.localeCompare(b.dataset.nom, 'fr'));
+    ordre.forEach(c => grid.insertBefore(c, fin));
+  }
+  if (sortSel && cards.length) sortSel.addEventListener('change', trier);
+  function vue(v) {
+    grid.classList.toggle('is-list', v === 'list');
+    document.querySelectorAll('.ds-view button').forEach(b => b.classList.toggle('is-on', b.dataset.view === v));
+    try { localStorage.setItem('ds-vue', v); } catch (e) {}
+  }
+  document.querySelectorAll('.ds-view button').forEach(b => b.addEventListener('click', () => vue(b.dataset.view)));
+  let vueMemo = 'list';
+  try { vueMemo = localStorage.getItem('ds-vue') || 'list'; } catch (e) {}
+  vue(vueMemo);
 
   /* ---------- Bouton flottant : fermer au clic à l'extérieur ---------- */
   document.addEventListener('click', e => {
