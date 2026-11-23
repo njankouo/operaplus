@@ -4,6 +4,8 @@
 {% comment %}
     TABLEAU DE BORD TECHNIQUE (TET) — v91 : mise en page de type ERP.
     v92 : ligne de base, projection fin d'année, comparaison N-1, qualité des données, actions correctives.
+    v94 : design vivant — bandeau en dégradé avec TET et courbe, chiffres qui défilent, aiguille et barres animées,
+          onglets à soulignement glissant, cartes qui apparaissent en cascade (tout est coupé si « réduire les animations »).
     - Bandeau compact + barre d'onglets fixe : Synthèse · Programme · Indicateurs · Structures (rien n'est empilé sur 3 écrans).
     - Grille de 12 colonnes, cartes à en-tête (titre + sous-titre + action), espacements réguliers de 12 px.
     - Noms longs : jamais sur plus de 2 lignes (points de suspension), nom complet au survol (attribut title).
@@ -241,7 +243,71 @@
     @media (max-width: 520px) { .tb-dlg .corps { grid-template-columns: 1fr; } }
     @media (max-width: 640px) { .tb-hd { padding: 12px; } .tb-hd h1 { font-size: 17px; flex-wrap: wrap; } .tb-q { width: 100%; } }
     @media (max-width: 640px) { .tb-kpi small, .tb-kpi span { white-space: normal; } .tb-kpi b { font-size: 22px; } }
-    @media print { .tb-tabs, .tb-hd-a { display: none; } .tb-pane[hidden] { display: block; } }
+    /* ===================== v94 : design vivant ← ajout ===================== */
+    /* bandeau en dégradé de la couleur du profil */
+    .tb-hd { position: relative; overflow: hidden; padding: 18px 20px; border: 0; border-radius: 12px; color: #fff;
+             background: radial-gradient(120% 140% at 100% 0%, rgba(255,255,255,.14) 0%, transparent 55%),
+                         linear-gradient(120deg, var(--hd) 0%, color-mix(in srgb, var(--hd) 72%, #000) 100%);
+             box-shadow: 0 14px 30px -22px color-mix(in srgb, var(--hd) 80%, #000); }
+    .tb-hd::after { content: ""; position: absolute; right: -60px; top: -80px; width: 260px; height: 260px; border-radius: 50%; border: 40px solid rgba(255,255,255,.05); pointer-events: none; }
+    .tb-hd > * { position: relative; z-index: 1; }
+    .tb-hd nav, .tb-hd-m { color: rgba(255,255,255,.72); }
+    .tb-hd nav a:hover { color: #fff; }
+    .tb-hd h1 { color: #fff; font-size: 21px; }
+    .tb-hd h1 .inst { color: rgba(255,255,255,.7); }
+    .tb-hd-m b { color: #fff; }
+    .tb-hd .tb-ctl { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.22); color: #fff; }
+    .tb-hd .tb-ctl:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.4); color: #fff; }
+    .tb-hd .tb-ctl option { color: var(--ink); }
+    .tb-hd .tb-ctl.prim { background: var(--ac); border-color: var(--ac); }
+    .tb-hd .tb-ctl.prim:hover { filter: brightness(1.08); }
+    .tb-hd-a label, .tb-hd .tb-choix-l { color: rgba(255,255,255,.72); }
+    .tb-hd .tb-seg { border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.06); }
+    .tb-hd .tb-seg button { background: transparent; color: rgba(255,255,255,.78); border-left-color: rgba(255,255,255,.18); }
+    .tb-hd .tb-seg button:hover { color: #fff; }
+    .tb-hd .tb-seg button.on { background: #fff; color: var(--hd); }
+    .tb-hd-inst { margin-top: 2px; font-size: 14px; font-weight: 600; color: rgba(255,255,255,.82); }
+    .tb-hd-tet { display: flex; align-items: center; gap: 14px; padding: 8px 14px; border-radius: 10px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); }
+    .tb-hd-tet small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+    .tb-hd-tet b { display: block; font-size: 30px; font-weight: 800; line-height: 1.05; letter-spacing: -.02em; color: #fff; }
+    .tb-hd-pill { display: inline-block; margin-top: 3px; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,.16); color: #fff; }
+    #tbSpark { width: 150px; height: 46px; overflow: visible; }
+    @media (max-width: 640px) { .tb-hd-tet { width: 100%; justify-content: space-between; } #tbSpark { width: 120px; } }
+
+    /* chiffres clés : icône, survol */
+    .tb-kpi { position: relative; --k: var(--hd); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .tb-kpi.ok { --k: var(--atteint); } .tb-kpi.ko { --k: var(--retard); }
+    .tb-kpi .ico { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-size: 18px;
+                   background: color-mix(in srgb, var(--k) 12%, #fff); color: var(--k); }
+    .tb-kpi small { padding-right: 38px; }
+    .tb-kpi:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -18px rgba(15,23,42,.45); }
+    .tb-card { transition: box-shadow .2s ease, border-color .2s ease; }
+    .tb-card:hover { border-color: #d6dae1; box-shadow: 0 10px 26px -20px rgba(15,23,42,.4); }
+
+    /* onglets : soulignement qui glisse */
+    .tb-tabs button[aria-selected="true"] { border-bottom-color: transparent; }
+    .tb-ind { position: absolute; bottom: 0; left: 0; height: 2px; width: 0; border-radius: 2px; background: var(--hd); transition: transform .32s cubic-bezier(.22,1,.36,1), width .32s cubic-bezier(.22,1,.36,1); }
+
+    /* barres qui se remplissent, cartes qui apparaissent */
+    .tb-jauge i { transition: width .9s cubic-bezier(.22,1,.36,1); }
+    @keyframes tbIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes tbPop { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+    .tb-pane.anim .tb-kpi, .tb-pane.anim .tb-card { animation: tbIn .5s cubic-bezier(.22,1,.36,1) both; animation-delay: calc(var(--i, 0) * 55ms); }
+    .tb-pane.anim .tb-mat td, .tb-pane.anim .tb-grille td { animation: tbPop .45s cubic-bezier(.22,1,.36,1) both; animation-delay: calc(200ms + var(--j, 0) * 25ms); }
+    .tb-pane.anim .tb-tab tbody tr { animation: tbIn .4s ease both; animation-delay: calc(150ms + var(--j, 0) * 22ms); }
+
+    /* alerte grave : signal qui respire */
+    @keyframes tbPouls { 0% { box-shadow: 0 0 0 0 rgba(220,38,38,.45); } 70% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); } }
+    .al-danger > i { animation: tbPouls 2.2s ease-out infinite; }
+
+    /* baromètre animé */
+    #tbBaro .arc-val { transition: stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1); }
+    #tbBaro .aiguille { transform-box: view-box; transform-origin: 160px 160px; transition: transform 1.2s cubic-bezier(.34,1.3,.5,1); }
+
+    @media (prefers-reduced-motion: reduce) {
+        .tb *, .tb *::before, .tb *::after { animation: none !important; transition: none !important; }
+    }
+    @media print { .tb-tabs, .tb-hd-a { display: none; } .tb-pane[hidden] { display: block; } .tb-hd { color: #000; background: #fff; box-shadow: none; } }
 </style>
 
 <div class="tb" id="tb">
@@ -250,9 +316,17 @@
     <header class="tb-hd">
         <div class="tb-hd-t">
             <nav aria-label="Fil d'Ariane"><a href="/?accueil=1" title="Voir l'accueil sans changer de tableau de bord">Accueil</a> › Tableaux de bord › Exécution technique</nav>
-            <h1><span>Exécution technique {{ annee|unlocalize }}</span><span class="inst clamp1" title="{{ actual_institution.nom }}">· {{ actual_institution.nom }}</span></h1>
+            <h1><span>Exécution technique {{ annee|unlocalize }}</span></h1>
+            <div class="tb-hd-inst clamp1" title="{{ actual_institution.nom }}">{{ actual_institution.nom }}</div>
             <div class="tb-hd-m"><span>Situation au <b>{{ date_situation|date:"d/m/Y" }}</b></span><span><b class="num">{{ nb_declarations }}</b> déclaration{{ nb_declarations|pluralize }}</span><span>TET = réalisé / cible des périodes déjà commencées</span></div>
         </div>
+        {% if nb_indicateurs %}
+        <div class="tb-hd-tet" aria-label="Taux d'exécution technique">{% comment %} ← ajout (v94) {% endcomment %}
+            <div><small>TET à date</small><b class="num" data-compte>{% if tet is not None %}{{ tet|floatformat:"-1" }} %{% else %}—{% endif %}</b>
+                <span class="tb-hd-pill">{% if tet is None %}sans cible{% elif tet >= 100 %}cibles atteintes{% elif tet >= 75 %}en bonne voie{% elif tet >= 50 %}à surveiller{% else %}en retard{% endif %}</span></div>
+            <svg id="tbSpark" viewBox="0 0 160 48" aria-hidden="true"></svg>
+        </div>
+        {% endif %}
         <div class="tb-hd-a">
             {% comment %} ← ajout (v93) : tableau de bord affiché par défaut à l'accueil (Personnel.is_technic / is_process / is_finance) {% endcomment %}
             <form method="post" class="tb-choix" aria-label="Tableau de bord par défaut">{% csrf_token %}
@@ -284,17 +358,18 @@
         <button type="button" role="tab" data-onglet="structures" aria-selected="false">Structures <em>{{ structures_tet|length }}</em></button>
         <button type="button" role="tab" data-onglet="qualite" aria-selected="false">Qualité des données{% if score_qualite is not None %} <em class="{% if score_qualite < 70 %}ko{% endif %}">{{ score_qualite }}/100</em>{% endif %}</button>
         <button type="button" role="tab" data-onglet="actions" aria-selected="false">Actions <em>{{ nb_actions_ouvertes }}</em>{% if nb_actions_retard %}<em class="ko">{{ nb_actions_retard }} en retard</em>{% endif %}</button>
+        <span class="tb-ind" aria-hidden="true"></span>
     </div>
 
     <!-- ========== SYNTHÈSE ========== -->
     <section class="tb-pane" data-pane="synthese" role="tabpanel">
         <div class="tb-kpis">
-            <div class="tb-kpi"><small>Indicateurs suivis</small><b class="num">{{ nb_indicateurs }}</b><span>{{ nb_avec_cible }} avec cible en {{ annee|unlocalize }}</span></div>
-            <div class="tb-kpi"><small>Taux moyen de réalisation</small><b class="num" data-couleur-taux="{{ tet|default_if_none:''|unlocalize }}">{% if tet is not None %}{{ tet|floatformat:"-1" }} %{% else %}—{% endif %}</b><div class="tb-jauge seuil"><i data-taux="{{ tet|default_if_none:''|unlocalize }}"></i></div></div>
-            <div class="tb-kpi"><small>Projection fin d'année</small><b class="num" data-couleur-taux="{{ tet_projection|default_if_none:''|unlocalize }}">{% if tet_projection is not None %}≈ {{ tet_projection|floatformat:"0" }} %{% else %}—{% endif %}</b><span>{% if nb_hors %}{{ nb_hors }} hors d'atteinte{% if nb_risque %} · {{ nb_risque }} à risque{% endif %}{% elif nb_risque %}{{ nb_risque }} à risque{% else %}au rythme actuel{% endif %}</span></div>
-            <div class="tb-kpi ok"><small>Indicateurs atteints</small><b class="num">{{ statuts.atteint|default:0 }}</b><span>réalisé ≥ cible à date</span></div>
-            <div class="tb-kpi ko"><small>Indicateurs en retard</small><b class="num">{{ statuts.retard|default:0 }}</b><span>moins de 50 % de la cible</span></div>
-            <div class="tb-kpi"><small>Complétude des données</small><b class="num" data-couleur-taux="{{ completude|default_if_none:''|unlocalize }}">{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span class="num">{{ nb_recus }} / {{ nb_attendus }} saisies reçues</span></div>
+            <div class="tb-kpi"><i class="ico bx bx-list-check" aria-hidden="true"></i><small>Indicateurs suivis</small><b class="num">{{ nb_indicateurs }}</b><span>{{ nb_avec_cible }} avec cible en {{ annee|unlocalize }}</span></div>
+            <div class="tb-kpi"><i class="ico bx bx-tachometer" aria-hidden="true"></i><small>Taux moyen de réalisation</small><b class="num" data-couleur-taux="{{ tet|default_if_none:''|unlocalize }}">{% if tet is not None %}{{ tet|floatformat:"-1" }} %{% else %}—{% endif %}</b><div class="tb-jauge seuil"><i data-taux="{{ tet|default_if_none:''|unlocalize }}"></i></div></div>
+            <div class="tb-kpi"><i class="ico bx bx-trending-up" aria-hidden="true"></i><small>Projection fin d'année</small><b class="num" data-couleur-taux="{{ tet_projection|default_if_none:''|unlocalize }}">{% if tet_projection is not None %}≈ {{ tet_projection|floatformat:"0" }} %{% else %}—{% endif %}</b><span>{% if nb_hors %}{{ nb_hors }} hors d'atteinte{% if nb_risque %} · {{ nb_risque }} à risque{% endif %}{% elif nb_risque %}{{ nb_risque }} à risque{% else %}au rythme actuel{% endif %}</span></div>
+            <div class="tb-kpi ok"><i class="ico bx bx-check-circle" aria-hidden="true"></i><small>Indicateurs atteints</small><b class="num">{{ statuts.atteint|default:0 }}</b><span>réalisé ≥ cible à date</span></div>
+            <div class="tb-kpi ko"><i class="ico bx bx-error-circle" aria-hidden="true"></i><small>Indicateurs en retard</small><b class="num">{{ statuts.retard|default:0 }}</b><span>moins de 50 % de la cible</span></div>
+            <div class="tb-kpi"><i class="ico bx bx-data" aria-hidden="true"></i><small>Complétude des données</small><b class="num" data-couleur-taux="{{ completude|default_if_none:''|unlocalize }}">{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span class="num">{{ nb_recus }} / {{ nb_attendus }} saisies reçues</span></div>
         </div>
 
         <div class="tb-row">
@@ -457,10 +532,10 @@
     <!-- ========== QUALITÉ DES DONNÉES (v92) ========== -->
     <section class="tb-pane" data-pane="qualite" role="tabpanel" hidden>
         <div class="tb-kpis tb-kpis4">
-            <div class="tb-kpi"><small>Score de qualité</small><b class="num" data-couleur-taux="{{ score_qualite|default_if_none:''|unlocalize }}">{% if score_qualite is not None %}{{ score_qualite }}/100{% else %}—{% endif %}</b><span>complétude, validation, cohérence</span></div>
-            <div class="tb-kpi"><small>Complétude</small><b class="num" data-couleur-taux="{{ completude|default_if_none:''|unlocalize }}">{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span class="num">{{ nb_recus }} / {{ nb_attendus }} saisies attendues</span></div>
-            <div class="tb-kpi"><small>Déclarations validées</small><b class="num" data-couleur-taux="{{ pct_valide|default_if_none:''|unlocalize }}">{% if pct_valide is not None %}{{ pct_valide }} %{% else %}—{% endif %}</b><span class="num">sur {{ nb_declarations }} déclarations</span></div>
-            <div class="tb-kpi {% if aberrantes %}ko{% else %}ok{% endif %}"><small>Valeurs anormales</small><b class="num">{{ aberrantes|length }}</b><span>négatives ou plus de 4 × la médiane</span></div>
+            <div class="tb-kpi"><i class="ico bx bx-shield-quarter" aria-hidden="true"></i><small>Score de qualité</small><b class="num" data-couleur-taux="{{ score_qualite|default_if_none:''|unlocalize }}">{% if score_qualite is not None %}{{ score_qualite }}/100{% else %}—{% endif %}</b><span>complétude, validation, cohérence</span></div>
+            <div class="tb-kpi"><i class="ico bx bx-data" aria-hidden="true"></i><small>Complétude</small><b class="num" data-couleur-taux="{{ completude|default_if_none:''|unlocalize }}">{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span class="num">{{ nb_recus }} / {{ nb_attendus }} saisies attendues</span></div>
+            <div class="tb-kpi"><i class="ico bx bx-badge-check" aria-hidden="true"></i><small>Déclarations validées</small><b class="num" data-couleur-taux="{{ pct_valide|default_if_none:''|unlocalize }}">{% if pct_valide is not None %}{{ pct_valide }} %{% else %}—{% endif %}</b><span class="num">sur {{ nb_declarations }} déclarations</span></div>
+            <div class="tb-kpi {% if aberrantes %}ko{% else %}ok{% endif %}"><i class="ico bx bx-error" aria-hidden="true"></i><small>Valeurs anormales</small><b class="num">{{ aberrantes|length }}</b><span>négatives ou plus de 4 × la médiane</span></div>
         </div>
         <div class="tb-row">
             <div class="tb-card c12">
@@ -600,8 +675,8 @@
 
     /* --- Jauges et couleurs --- */
     root.querySelectorAll('.tb-jauge i[data-taux]').forEach(function (i) {
-        var t = parseFloat(i.dataset.taux); if (!isFinite(t)) { i.style.width = 0; return; }
-        i.style.background = couleurTaux(t); i.style.width = Math.min(100, Math.max(0, t)) + '%';
+        var t = parseFloat(i.dataset.taux); i.style.width = 0;                          /* ← v94 : rempli à l'ouverture de l'onglet */
+        if (isFinite(t)) i.style.background = couleurTaux(t);
     });
     root.querySelectorAll('[data-couleur-taux]').forEach(function (b) { var t = parseFloat(b.dataset.couleurTaux); if (isFinite(t)) b.style.color = couleurTaux(t); });
     root.querySelectorAll('.tb-mat td[data-taux]').forEach(function (td) {
@@ -617,15 +692,31 @@
         var arc = function (p1, p2, r) { var a = pt(p1, r), b = pt(p2, r); return 'M' + a[0] + ' ' + a[1] + ' A' + r + ' ' + r + ' 0 0 1 ' + b[0] + ' ' + b[1]; };
         var el = function (n, at) { var x = document.createElementNS(NS, n); for (var k in at) x.setAttribute(k, at[k]); svg.appendChild(x); return x; };
         [[0, 50, COUL.retard], [50, 75, COUL.surveiller], [75, 100, COUL.voie]].forEach(function (z) { el('path', { d: arc(z[0], z[1], R), fill: 'none', stroke: z[2], 'stroke-width': 18, 'stroke-opacity': .2 }); });
-        if (tet !== null) el('path', { d: arc(0, Math.max(.5, Math.min(100, tet)), R), fill: 'none', stroke: couleurTaux(tet), 'stroke-width': 18, 'stroke-linecap': 'round' });
+        var arcVal = null, aiguille = null;
+        if (tet !== null) {                                                             /* ← v94 : l'arc se dessine progressivement */
+            el('defs', {}).innerHTML = '<linearGradient id="tbGradArc" x1="0" x2="1"><stop offset="0" stop-color="' + COUL.retard + '"/><stop offset=".55" stop-color="' + COUL.surveiller + '"/><stop offset="1" stop-color="' + COUL.voie + '"/></linearGradient>';
+            arcVal = el('path', { d: arc(0, 100, R), fill: 'none', stroke: 'url(#tbGradArc)', 'stroke-width': 18, 'stroke-linecap': 'round', pathLength: 100, 'class': 'arc-val' });
+            arcVal.style.strokeDasharray = '100 200'; arcVal.style.strokeDashoffset = 100;
+        }
         [0, 25, 50, 75, 100].forEach(function (p) {
             var a = pt(p, R - 22), b = pt(p, R - 14), t = pt(p, R + 22);
             el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: '#9ca3af', 'stroke-width': 2 });
             el('text', { x: t[0], y: t[1] + 4, 'text-anchor': 'middle', 'font-size': 11, fill: '#6b7280', 'font-weight': 600 }).textContent = p;
         });
-        if (tet !== null) { var n = pt(Math.min(100, tet), R - 30); el('line', { x1: cx, y1: cy, x2: n[0], y2: n[1], stroke: '#111827', 'stroke-width': 3, 'stroke-linecap': 'round' }); }
+        if (tet !== null) {                                                             /* ← v94 : l'aiguille part de 0 et balaie le cadran */
+            aiguille = el('g', { 'class': 'aiguille' });
+            var bout = pt(0, R - 30), ligne = document.createElementNS(NS, 'line');
+            [['x1', cx], ['y1', cy], ['x2', bout[0]], ['y2', bout[1]], ['stroke', '#111827'], ['stroke-width', 3], ['stroke-linecap', 'round']].forEach(function (a) { ligne.setAttribute(a[0], a[1]); });
+            aiguille.appendChild(ligne);
+        }
         el('circle', { cx: cx, cy: cy, r: 7, fill: '#111827' });
-        el('text', { x: cx, y: cy + 46, 'text-anchor': 'middle', 'font-size': 36, 'font-weight': 800, fill: '#111827' }).textContent = tet === null ? '—' : fr(tet) + ' %';
+        var valeurBaro = el('text', { x: cx, y: cy + 46, 'text-anchor': 'middle', 'font-size': 36, 'font-weight': 800, fill: '#111827' });
+        valeurBaro.textContent = tet === null ? '—' : fr(tet) + ' %';
+        if (tet !== null) valeurBaro.setAttribute('data-compte', '');
+        svg._animer = function () {
+            if (arcVal) { arcVal.style.strokeDashoffset = 100; requestAnimationFrame(function () { requestAnimationFrame(function () { arcVal.style.strokeDashoffset = 100 - Math.max(.5, Math.min(100, tet)); }); }); }
+            if (aiguille) { aiguille.style.transform = 'rotate(0deg)'; requestAnimationFrame(function () { requestAnimationFrame(function () { aiguille.style.transform = 'rotate(' + (1.8 * Math.min(100, Math.max(0, tet))) + 'deg)'; }); }); }
+        };
         el('text', { x: cx, y: cy + 66, 'text-anchor': 'middle', 'font-size': 11.5, fill: '#6b7280', 'font-weight': 600 }).textContent = 'TET à date';
     }
     var verdict = document.getElementById('tbVerdict');
@@ -655,12 +746,14 @@
             if (!e || !window.ApexCharts) return;
             if (!evo.length) { e.innerHTML = '<p class="tb-vide">Aucune cible par période pour cette année.</p>'; return; }
             new ApexCharts(e, {
-                chart: { type: 'bar', height: 280, toolbar: { show: false }, fontFamily: 'inherit' },
+                chart: { type: 'bar', height: 280, toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, easing: 'easeout', speed: 900, animateGradually: { enabled: true, delay: 90 } } },
                 series: [{ name: 'TET', data: evo.map(function (p) { return p.tet === null ? null : p.tet; }) }],
                 xaxis: { categories: evo.map(function (p) { return p.periode; }), labels: { rotate: -35, hideOverlappingLabels: true, trim: true, maxHeight: 60, style: { fontSize: '11px' } } },
                 yaxis: { min: 0, max: 100, tickAmount: 4, labels: { formatter: function (v) { return Math.round(v) + ' %'; } } },
                 colors: [function (o) { var t = o.value; return t == null ? COUL.sans : couleurTaux(t); }],
-                plotOptions: { bar: { borderRadius: 3, columnWidth: evo.length > 20 ? '80%' : '50%' } },
+                plotOptions: { bar: { borderRadius: 5, borderRadiusApplication: 'end', columnWidth: evo.length > 20 ? '80%' : '48%' } },
+                fill: { type: 'gradient', gradient: { shade: 'light', type: 'vertical', shadeIntensity: .25, opacityFrom: 1, opacityTo: .8, stops: [0, 100] } },
+                states: { hover: { filter: { type: 'darken', value: .9 } } },
                 dataLabels: { enabled: evo.length <= 12, formatter: function (v) { return v == null ? '' : Math.round(v) + '%'; }, offsetY: -18, style: { fontSize: '11px', colors: ['#374151'] } },
                 annotations: { yaxis: [{ y: 75, borderColor: '#6b7280', strokeDashArray: 4, label: { text: '75 %', style: { background: '#6b7280', color: '#fff', fontSize: '10px' } } }] },
                 tooltip: { y: { formatter: function (v, o) { var p = evo[o.dataPointIndex]; return v == null ? 'pas de cible' : fr(v) + ' % (' + p.nb + ' indicateur' + (p.nb > 1 ? 's' : '') + ')' + (p.commencee ? '' : ' · à venir'); } } },
@@ -697,10 +790,65 @@
         root.querySelectorAll('[data-pane]').forEach(function (p) { p.hidden = p.dataset.pane !== nom; });
         try { history.replaceState(null, '', '#' + nom); } catch (e) {}
         dessiner(nom);
+        animerOnglet(nom);                                                              /* ← v94 */
     }
     onglets.forEach(function (b) { b.addEventListener('click', function () { ouvrir(b.dataset.onglet); }); });
+    window.addEventListener('resize', function () { placerIndicateur(); });
     root.querySelectorAll('[data-aller]').forEach(function (b) { b.addEventListener('click', function () { ouvrir(b.dataset.aller); }); });
     window.addEventListener('beforeprint', function () { Object.keys(graphiques).forEach(dessiner); });
+
+    /* ===== v94 : animations ← ajout ===== */
+    var calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function placerIndicateur() {
+        var ind = root.querySelector('.tb-ind'), b = root.querySelector('.tb-tabs [aria-selected="true"]');
+        if (!ind || !b) return;
+        ind.style.width = b.offsetWidth + 'px'; ind.style.transform = 'translateX(' + b.offsetLeft + 'px)';
+    }
+    /* un nombre « 66,4 % », « ≈ 66 % », « 75/100 », « 9 » défile de 0 à sa valeur */
+    function compter(el) {
+        if (el._compte) return; el._compte = true;
+        var texte = el.textContent.trim(), m = texte.match(/^(≈\s*)?(-?[\d\s\u202f\u00a0]*[\d](?:[.,]\d+)?)(.*)$/);
+        if (!m || calme) return;
+        var brut = m[2].replace(/[\s\u202f\u00a0]/g, ''), dec = (brut.split(/[.,]/)[1] || '').length, cible = parseFloat(brut.replace(',', '.'));
+        if (!isFinite(cible)) return;
+        var debut = performance.now(), duree = 1000;
+        (function pas(t) {
+            var f = Math.min(1, (t - debut) / duree), e = 1 - Math.pow(1 - f, 3);
+            el.textContent = (m[1] || '') + (cible * e).toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + m[3];
+            if (f < 1) requestAnimationFrame(pas); else el.textContent = texte;
+        })(debut);
+    }
+    function animerOnglet(nom) {
+        var pane = root.querySelector('[data-pane="' + nom + '"]'); if (!pane) return;
+        placerIndicateur();
+        pane.querySelectorAll('.tb-kpi, .tb-card').forEach(function (c, k) { c.style.setProperty('--i', k); });
+        pane.querySelectorAll('.tb-mat td, .tb-grille td, .tb-tab tbody tr').forEach(function (c, k) { c.style.setProperty('--j', Math.min(k, 30)); });
+        pane.classList.remove('anim'); void pane.offsetWidth; pane.classList.add('anim');
+        var barres = pane.querySelectorAll('.tb-jauge i[data-taux]');
+        barres.forEach(function (i) { i.style.width = 0; });
+        requestAnimationFrame(function () { requestAnimationFrame(function () {
+            barres.forEach(function (i) { var t = parseFloat(i.dataset.taux); i.style.width = isFinite(t) ? Math.min(100, Math.max(0, t)) + '%' : 0; });
+        }); });
+        pane.querySelectorAll('.tb-kpi b.num, .tb-baro-pied b.num, .tb-mat td b.num, [data-compte]').forEach(compter);
+        if (nom === 'synthese' && svg && svg._animer) svg._animer();
+    }
+    /* bandeau : TET à date qui défile + courbe d'évolution */
+    root.querySelectorAll('.tb-hd [data-compte]').forEach(compter);
+    var spark = document.getElementById('tbSpark');
+    if (spark) {
+        var pts = (data.evolution || []).filter(function (p) { return p.tet !== null && p.commencee; });
+        if (pts.length >= 2) {
+            var W = 160, H = 48, pad = 4, xs = function (k) { return pad + k * (W - 2 * pad) / (pts.length - 1); }, ys = function (v) { return H - pad - Math.min(100, v) * (H - 2 * pad) / 100; };
+            var ligne = pts.map(function (p, k) { return xs(k).toFixed(1) + ',' + ys(p.tet).toFixed(1); }).join(' ');
+            var dernier = pts[pts.length - 1];
+            spark.innerHTML = '<defs><linearGradient id="tbSparkG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>'
+                + '<line x1="' + pad + '" x2="' + (W - pad) + '" y1="' + ys(75) + '" y2="' + ys(75) + '" stroke="rgba(255,255,255,.35)" stroke-dasharray="3 3"/>'
+                + '<polygon points="' + xs(0) + ',' + (H - pad) + ' ' + ligne + ' ' + xs(pts.length - 1) + ',' + (H - pad) + '" fill="url(#tbSparkG)"/>'
+                + '<polyline class="sp-l" points="' + ligne + '" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" pathLength="100" style="stroke-dasharray:100;stroke-dashoffset:' + (calme ? 0 : 100) + ';transition:stroke-dashoffset 1.4s cubic-bezier(.22,1,.36,1)"/>'
+                + '<circle cx="' + xs(pts.length - 1) + '" cy="' + ys(dernier.tet) + '" r="3.6" fill="#fff"><title>' + esc(dernier.periode) + ' : ' + fr(dernier.tet) + ' %</title></circle>';
+            requestAnimationFrame(function () { requestAnimationFrame(function () { var l = spark.querySelector('.sp-l'); if (l) l.style.strokeDashoffset = 0; }); });
+        } else { spark.style.display = 'none'; }
+    }
 
     /* --- Arbre hiérarchique --- */
     var arbreEl = document.getElementById('tbArbre');
