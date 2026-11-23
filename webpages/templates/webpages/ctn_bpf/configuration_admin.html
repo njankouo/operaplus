@@ -6,6 +6,7 @@
 <title>Paramètres · {{ actual_institution.nom }} · OperaPlus</title>
 <meta name="csrf-token" content="{{ csrf_token }}">
 {% comment %}
+    v79 ← ajout : bandeau d'identité, raccourcis, icônes de rubriques, liens Héritage institution et Flux de transfert.
     PARAMÈTRES DE L'INSTITUTION — Material Design (style Material UI), sans Bootstrap.
     Inchangés : toutes les fenêtres (formulaires, natures/catégories, financement, périodes, étapes, devises), leurs formulaires,
     leurs scripts (htmx, fetch), les ids is_step_checkbox / is_frequency_checkbox / status-form et toutes les URLs.
@@ -180,6 +181,62 @@ hr { border: 0; border-top: 1px solid var(--md-divider); margin: 12px 0; }
     #status-form { grid-template-columns: 1fr; }
     .md-appchip.mode { display: none; }
 }
+
+/* ========================================================================
+   2 bis. AMÉLIORATIONS DU DESIGN  ← ajout
+   ======================================================================== */
+/* Bandeau d'identité sous la barre d'application */
+.md-hero { background: var(--md-primary); color: #fff; }
+.md-hero-in { max-width: 1280px; margin: 0 auto; padding: 4px 16px 56px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.md-hero-logo { width: 56px; height: 56px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; background: #fff; color: var(--md-primary); font-weight: 700; font-size: 1.2rem; overflow: hidden; }
+.md-hero-logo img { width: 100%; height: 100%; object-fit: contain; }
+.md-hero-t { flex: 1; min-width: 220px; }
+.md-hero-t b { display: block; font-size: 1.35rem; font-weight: 500; line-height: 1.25; }
+.md-hero-t span { display: block; opacity: .8; font-size: .875rem; }
+.md-hero .md-appchip { background: rgba(255,255,255,.14); }
+/* La page remonte sur le bandeau : effet « carte posée » */
+.md-page { margin-top: -40px; }
+.md-nav { top: 80px; }
+/* Raccourcis */
+.md-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.md-tile { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 10px; padding: 16px; min-height: 118px; border-radius: 8px; border: 0; background: var(--md-surface);
+           box-shadow: var(--md-e1); color: var(--md-text); text-decoration: none; text-align: left; font: inherit; cursor: pointer; transition: box-shadow .2s var(--md-ease), transform .2s var(--md-ease); }
+.md-tile:hover { box-shadow: var(--md-e4); transform: translateY(-2px); color: var(--md-text); }
+.md-tile:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+.md-tile .md-avatar { border-radius: 10px; }
+.md-tile b { display: block; font-weight: 500; font-size: .98rem; }
+.md-tile small { display: block; color: var(--md-text2); font-size: .8125rem; line-height: 1.35; }
+.md-tile.vedette { background: color-mix(in srgb, var(--md-secondary) 10%, #fff); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--md-secondary) 55%, transparent), var(--md-e1); }
+.md-tile.vedette .md-avatar { background: var(--md-secondary); color: #fff; }
+.md-tile .md-chip-new { position: absolute; top: 12px; right: 12px; margin: 0; }
+/* Titres de section avec icône */
+.md-section-tete > div { display: flex; align-items: center; gap: 12px; }
+.md-section-ico { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center; background: var(--md-surface); box-shadow: var(--md-e1); color: var(--md-primary); }
+.md-section-ico .ms { font-variation-settings: 'FILL' 1; }
+#danger .md-section-ico { color: var(--md-error); }
+/* Une couleur discrète par rubrique (repérage rapide) */
+#planification .md-avatar { background: #ede7f6; color: #5e35b1; }
+#finances .md-avatar { background: #e8f5e9; color: #2e7d32; }
+#notifications .md-avatar { background: #fff3e0; color: #e65100; }
+#acces .md-avatar { background: #e0f2f1; color: #00796b; }
+#acces .md-item.heritage .md-avatar { background: var(--md-secondary); color: #fff; }
+.md-paper { border-radius: 8px; }
+.md-item > .ms:last-child { transition: transform .2s var(--md-ease); }
+.md-item:hover > .ms:last-child { transform: translateX(3px); color: var(--md-primary); }
+/* Encadré d'explication de l'héritage */
+.md-note { display: flex; gap: 10px; align-items: flex-start; margin: 4px 16px 16px; padding: 10px 12px; border-radius: 6px; background: #f5f7fa; color: var(--md-text2); font-size: .8125rem; line-height: 1.45; }
+.md-note .ms { font-size: 18px; color: var(--md-primary); }
+/* Lien externe dans la navigation */
+.md-navlist a.md-nav-ext .ms:last-child { margin-left: auto; font-size: 16px; color: var(--md-text3); }
+@media (max-width: 1100px) { .md-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 960px) {
+    .md-hero-in { padding-bottom: 48px; }
+    .md-page { margin-top: -36px; }
+    .md-nav { top: 64px; background: transparent; }
+    .md-navlist a.md-nav-ext .ms:last-child { display: none; }
+}
+@media (max-width: 600px) { .md-hero .md-appchip, .md-hero-t span, .md-appbar small { display: none; } .md-hero-in { padding-top: 8px; } }
+@media (max-width: 480px) { .md-quick { grid-template-columns: 1fr 1fr; gap: 8px; } .md-tile { min-height: 104px; padding: 12px; } .md-hero-logo { width: 44px; height: 44px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 /* ========================================================================
@@ -316,6 +373,15 @@ textarea.form-control { min-height: 88px; resize: vertical; }
     </div>
 </header>
 
+<!-- ===================== Bandeau d'identité  ← ajout ===================== -->
+<div class="md-hero">
+    <div class="md-hero-in">
+        <span class="md-hero-logo">{% if actual_institution.img %}<img src="{{ actual_institution.img.url }}" alt="">{% else %}{{ actual_institution.nom|slice:":2"|upper }}{% endif %}</span>
+        <div class="md-hero-t"><b>{{ actual_institution.nom }}</b><span>Configurez la collecte, la planification, les finances et le partage entre institutions.</span></div>
+        <a class="md-appchip" href="{% url 'heritage_institution' %}" style="color:#fff;text-decoration:none"><span class="ms">account_tree</span>Héritage entre institutions</a>
+    </div>
+</div>
+
 <div class="md-page">
 
     <!-- ===================== Navigation ===================== -->
@@ -327,6 +393,7 @@ textarea.form-control { min-height: 88px; resize: vertical; }
             <li><a href="#finances"><span class="ms">payments</span>Finances</a></li>
             <li><a href="#notifications"><span class="ms">notifications</span>Notifications</a></li>
             <li><a href="#acces"><span class="ms">admin_panel_settings</span>Institution et accès</a></li>
+            <li><a href="{% url 'heritage_institution' %}" class="md-nav-ext"><span class="ms">account_tree</span>Héritage<span class="ms">open_in_new</span></a></li>{% comment %} ← ajout {% endcomment %}
             <li><hr></li>
             <li><a href="#danger" class="danger"><span class="ms">warning</span>Zone de danger</a></li>
         </ul>
@@ -334,9 +401,30 @@ textarea.form-control { min-height: 88px; resize: vertical; }
 
     <main class="md-main" id="mdMain">
 
+        <!-- ===================== Raccourcis  ← ajout ===================== -->
+        <div class="md-quick" id="mdQuick" aria-label="Raccourcis">
+            <button type="button" class="md-tile" data-bs-toggle="modal" data-bs-target="#exampleModal_dataform">
+                <span class="md-avatar"><span class="ms">dynamic_form</span></span>
+                <span><b>Formulaires</b><small>Fiches de collecte</small></span>
+            </button>
+            <button type="button" class="md-tile" data-bs-toggle="modal" data-bs-target="#exampleModals">
+                <span class="md-avatar"><span class="ms">calendar_month</span></span>
+                <span><b>Périodes</b><small>Calendrier de suivi</small></span>
+            </button>
+            <a class="md-tile" href="/roles_personnels/">
+                <span class="md-avatar"><span class="ms">shield_person</span></span>
+                <span><b>Rôles</b><small>Qui voit, saisit, valide</small></span>
+            </a>
+            <a class="md-tile vedette" href="{% url 'heritage_institution' %}">
+                <span class="md-chip-new">Nouveau</span>
+                <span class="md-avatar"><span class="ms">account_tree</span></span>
+                <span><b>Héritage</b><small>Transmettre la configuration à une autre institution</small></span>
+            </a>
+        </div>
+
         <!-- ===================== Collecte et indicateurs ===================== -->
         <section class="md-section" id="collecte" aria-labelledby="t-collecte">
-            <div class="md-section-tete"><div><h2 id="t-collecte">Collecte et indicateurs</h2><p>Ce que les équipes saisissent et comment les indicateurs sont décrits.</p></div></div>
+            <div class="md-section-tete"><div><span class="md-section-ico" aria-hidden="true"><span class="ms">assignment</span></span><span><h2 id="t-collecte">Collecte et indicateurs</h2><p>Ce que les équipes saisissent et comment les indicateurs sont décrits.</p></span></div></div>
             <div class="md-paper">
                 <div class="md-subheader">Formulaires</div>
                 <button type="button" class="md-item" data-bs-toggle="modal" data-bs-target="#exampleModal_dataform">
@@ -376,7 +464,7 @@ textarea.form-control { min-height: 88px; resize: vertical; }
 
         <!-- ===================== Planification ===================== -->
         <section class="md-section" id="planification" aria-labelledby="t-planification">
-            <div class="md-section-tete"><div><h2 id="t-planification">Planification</h2><p>Comment les activités sont planifiées et suivies dans le temps.</p></div></div>
+            <div class="md-section-tete"><div><span class="md-section-ico" aria-hidden="true"><span class="ms">event_note</span></span><span><h2 id="t-planification">Planification</h2><p>Comment les activités sont planifiées et suivies dans le temps.</p></span></div></div>
             <div class="md-paper">
                 <div class="md-subheader">Mode de planification · un seul à la fois</div>
                 <form action="/changeStatus/" method="POST" id="status-form">
@@ -418,7 +506,7 @@ textarea.form-control { min-height: 88px; resize: vertical; }
 
         <!-- ===================== Finances ===================== -->
         <section class="md-section" id="finances" aria-labelledby="t-finances">
-            <div class="md-section-tete"><div><h2 id="t-finances">Finances</h2><p>Bailleurs, lignes de financement et monnaies des budgets.</p></div></div>
+            <div class="md-section-tete"><div><span class="md-section-ico" aria-hidden="true"><span class="ms">payments</span></span><span><h2 id="t-finances">Finances</h2><p>Bailleurs, lignes de financement et monnaies des budgets.</p></span></div></div>
             <div class="md-paper">
                 <button type="button" class="md-item" data-bs-toggle="modal" data-bs-target="#exampleModal_sourcefinancement">
                     <span class="md-avatar"><span class="ms">account_balance</span></span>
@@ -435,7 +523,7 @@ textarea.form-control { min-height: 88px; resize: vertical; }
 
         <!-- ===================== Notifications ===================== -->
         <section class="md-section" id="notifications" aria-labelledby="t-notifications">
-            <div class="md-section-tete"><div><h2 id="t-notifications">Notifications</h2><p>Qui est prévenu, de quoi, et quand.</p></div></div>
+            <div class="md-section-tete"><div><span class="md-section-ico" aria-hidden="true"><span class="ms">notifications</span></span><span><h2 id="t-notifications">Notifications</h2><p>Qui est prévenu, de quoi, et quand.</p></span></div></div>
             <div class="md-paper">
                 <a class="md-item" href="{% url 'notifications-system' %}">
                     <span class="md-avatar"><span class="ms">notifications_active</span></span>
@@ -447,13 +535,15 @@ textarea.form-control { min-height: 88px; resize: vertical; }
 
         <!-- ===================== Institution et accès ===================== -->
         <section class="md-section" id="acces" aria-labelledby="t-acces">
-            <div class="md-section-tete"><div><h2 id="t-acces">Institution et accès</h2><p>Qui peut voir, saisir et valider ; gestion des institutions.</p></div></div>
+            <div class="md-section-tete"><div><span class="md-section-ico" aria-hidden="true"><span class="ms">admin_panel_settings</span></span><span><h2 id="t-acces">Institution et accès</h2><p>Qui peut voir, saisir et valider ; gestion des institutions.</p></span></div></div>
             <div class="md-paper">
+                <div class="md-subheader">Accès des équipes</div>{% comment %} ← ajout {% endcomment %}
                 <a class="md-item" href="/roles_personnels/">
                     <span class="md-avatar"><span class="ms">shield_person</span></span>
                     <span class="md-item-txt"><b>Rôles et permissions</b><span>Qui peut voir, saisir et valider</span></span>
                     <span class="ms">chevron_right</span>
                 </a>
+                <div class="md-subheader">Institutions</div>{% comment %} ← ajout {% endcomment %}
                 <a class="md-item" href="/admin_institution">
                     <span class="md-avatar"><span class="ms">domain_add</span></span>
                     <span class="md-item-txt"><b>Ajouter une institution</b><span>Créer une nouvelle institution</span></span>
@@ -464,12 +554,26 @@ textarea.form-control { min-height: 88px; resize: vertical; }
                     <span class="md-item-txt"><b>Dupliquer {{ actual_institution.nom }}</b><span>Copier toute la configuration actuelle dans une nouvelle institution</span></span>
                     <span class="ms">chevron_right</span>
                 </a>
+
+                {% comment %} ← ajout : liens vers l'héritage entre institutions {% endcomment %}
+                <div class="md-subheader">Héritage entre institutions</div>
+                <a class="md-item heritage" href="{% url 'heritage_institution' %}">
+                    <span class="md-avatar"><span class="ms">account_tree</span></span>
+                    <span class="md-item-txt"><b>Héritage institution <span class="md-chip-new">Nouveau</span></b><span>Une institution mère transmet ses niveaux, structures, indicateurs, formulaires et affectations à une institution fille</span></span>
+                    <span class="ms">chevron_right</span>
+                </a>
+                <a class="md-item" href="{% url 'flux_transfert_institution' %}">
+                    <span class="md-avatar"><span class="ms">hub</span></span>
+                    <span class="md-item-txt"><b>Flux de transfert</b><span>Voir le réseau des institutions liées et ce qui a été transféré</span></span>
+                    <span class="ms">chevron_right</span>
+                </a>
+                <div class="md-note"><span class="ms">info</span><span>L'héritage copie la configuration, pas les données saisies. Relancer un héritage ne crée pas de doublons : ce qui existe déjà est ignoré.</span></div>
             </div>
         </section>
 
         <!-- ===================== Zone de danger ===================== -->
         <section class="md-section" id="danger" aria-labelledby="t-danger">
-            <div class="md-section-tete"><div><h2 id="t-danger" style="color:var(--md-error)">Zone de danger</h2><p>Action irréversible.</p></div></div>
+            <div class="md-section-tete"><div><span class="md-section-ico" aria-hidden="true"><span class="ms">warning</span></span><span><h2 id="t-danger" style="color:var(--md-error)">Zone de danger</h2><p>Action irréversible.</p></span></div></div>
             <div class="md-paper md-danger">
                 <div class="md-item" style="cursor:default">
                     <span class="md-avatar"><span class="ms">delete_forever</span></span>
@@ -1639,10 +1743,11 @@ document.addEventListener('pointerdown', function (e) {
     var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
     champ.addEventListener('input', function () {
         var q = norm(champ.value.trim());
+        var raccourcis = document.getElementById('mdQuick'); if (raccourcis) raccourcis.style.display = q ? 'none' : '';   /* ← ajout */
         document.querySelectorAll('.md-section').forEach(function (s) {
             var vus = 0;
             s.querySelectorAll('.md-item').forEach(function (it) { var ok = !q || norm(it.textContent).indexOf(q) > -1; it.style.display = ok ? '' : 'none'; if (ok) vus++; });
-            s.querySelectorAll('.md-subheader, .md-chips, #status-form').forEach(function (x) { x.style.display = q ? 'none' : ''; });
+            s.querySelectorAll('.md-subheader, .md-chips, #status-form, .md-note').forEach(function (x) { x.style.display = q ? 'none' : ''; });
             s.style.display = !q || vus || norm(s.querySelector('h2').textContent).indexOf(q) > -1 ? '' : 'none';
         });
     });

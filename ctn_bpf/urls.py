@@ -361,6 +361,19 @@ gestionnaire_url_patterns = [
 
    path('editer-tache/<int:id>/',views.file_duplik,name='editer-tache'),
 
+   path('heritage_institution', views.heritage_institution, name='heritage_institution'),
+
+   path("institutions/heritage/", views.heritage_institutions, name="heritage_institutions"),
+   path("institutions/flux-transfert/", views.flux_transfert_institution, name="flux_transfert_institution"),
+
+   path('structures/indicateurs/<int:id>/', views.save_structure_indicateur,name='save_structure_indicateur'),
+
+   path('dashboard-technics/', views.technics_dashboard, name='dashboard-technics'),
+
+   path('actions-correctives/creer/', views.action_creer, name='action_creer'),
+   
+   path('actions-correctives/<int:id>/statut/', views.action_statut, name='action_statut'),
+
 
    path('forms/',views.forms_data,name='forms'),
    # path('set_language/', views.set_language, name='set_language'),

@@ -1,0 +1,773 @@
+{%extends './index.html'%}
+{% load l10n %}
+{%block main%}
+{% comment %}
+    TABLEAU DE BORD TECHNIQUE (TET) — v91 : mise en page de type ERP.
+    v92 : ligne de base, projection fin d'année, comparaison N-1, qualité des données, actions correctives.
+    - Bandeau compact + barre d'onglets fixe : Synthèse · Programme · Indicateurs · Structures (rien n'est empilé sur 3 écrans).
+    - Grille de 12 colonnes, cartes à en-tête (titre + sous-titre + action), espacements réguliers de 12 px.
+    - Noms longs : jamais sur plus de 2 lignes (points de suspension), nom complet au survol (attribut title).
+    - Graphiques des onglets cachés : dessinés à la première ouverture de l'onglet (sinon largeur nulle).
+    Données : vue technics_dashboard (backend/dashboard_technics.py) — inchangée.
+    Ids conservés : tbBaro, tbVerdict, tbDonut, tbStatuts, tbEvo, tbArbre, tbCR, tbFiltres, tbQ, tbListe, tbTet, tbData.
+{% endcomment %}
+<style>
+    .tb { --hd: {{ request.user.personnel.color_fond|default:'#123A37' }}; --ac: {{ request.user.personnel.color|default:'#E48B0C' }};
+          --ink: #111827; --txt: #374151; --mut: #6b7280; --line: #e5e7eb; --line2: #f0f2f5; --soft: #f8fafc; --bg: #f3f5f8;
+          --atteint: #047857; --voie: #16a34a; --surveiller: #d97706; --retard: #dc2626; --sans: #9ca3af;
+          --r: 8px; color: var(--txt); font-size: 13px; line-height: 1.45; padding-bottom: 32px; }
+    .tb *, .tb *::before { box-sizing: border-box; }
+    .tb .clamp1 { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tb .clamp2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+    .tb .num { font-variant-numeric: tabular-nums; }
+
+    /* ---------- Bandeau ---------- */
+    .tb-hd { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; padding: 14px 16px; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--hd); border-radius: var(--r); }
+    .tb-hd-t { flex: 1 1 360px; min-width: 0; }
+    .tb-hd nav { font-size: 11.5px; color: var(--mut); }
+    .tb-hd nav a { color: inherit; text-decoration: none; } .tb-hd nav a:hover { color: var(--hd); }
+    .tb-hd h1 { margin: 2px 0 0; display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 19px; font-weight: 800; letter-spacing: -.01em; color: var(--ink); }
+    .tb-hd h1 > span:first-child { flex: none; }
+    .tb-hd h1 .inst { font-weight: 600; color: var(--mut); }
+    .tb-hd-m { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; font-size: 12px; color: var(--mut); }
+    .tb-hd-m b { color: var(--ink); font-weight: 700; }
+    .tb-hd-a { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .tb-hd-a form { margin: 0; display: flex; align-items: center; gap: 6px; }
+    .tb-hd-a label { font-size: 12px; font-weight: 600; color: var(--mut); }
+    .tb-ctl { height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); font: 600 13px/1 inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+    .tb-ctl:hover { border-color: var(--hd); color: var(--hd); }
+
+    /* ---------- Onglets ---------- */
+    .tb-tabs { position: sticky; top: 0; z-index: 20; display: flex; gap: 2px; margin: 12px 0; padding: 0 4px; background: var(--bg); border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+    .tb-tabs::-webkit-scrollbar { display: none; }
+    .tb-tabs button { flex: none; height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; font: 700 13px/1 inherit; color: var(--mut); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .tb-tabs button:hover { color: var(--ink); }
+    .tb-tabs button[aria-selected="true"] { color: var(--hd); border-bottom-color: var(--hd); }
+    .tb-tabs em { font-style: normal; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 99px; background: #e5e7eb; color: var(--txt); }
+    .tb-tabs em.ko { background: #fee2e2; color: var(--retard); }
+    .tb-pane[hidden] { display: none; }
+
+    /* ---------- Grille + cartes ---------- */
+    .tb-row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; align-items: stretch; }
+    .c4 { grid-column: span 4; } .c8 { grid-column: span 8; } .c12 { grid-column: span 12; }
+    @media (max-width: 1280px) { .tb-row > .c4:first-child { grid-column: span 12; } .tb-row > .c4 { grid-column: span 6; } .c8 { grid-column: span 12; } .tb-row > .c8 + .c4 { grid-column: span 12; } }
+    @media (max-width: 760px)  { .tb-row > .c4, .tb-row > .c8 { grid-column: span 12; } }
+    .tb-card { display: flex; flex-direction: column; min-width: 0; background: #fff; border: 1px solid var(--line); border-radius: var(--r); }
+    .tb-card-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 11px 14px 10px; border-bottom: 1px solid var(--line2); }
+    .tb-card-h > div { min-width: 0; }
+    .tb-t { position: relative; margin: 0; padding-left: 10px; font-size: 13.5px; font-weight: 800; color: var(--ink); line-height: 1.3; }
+    .tb-t::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--ac); }
+    .tb-s { margin: 2px 0 0 10px; font-size: 11.5px; color: var(--mut); }
+    .tb-lien { flex: none; font: 700 12px/1.3 inherit; color: var(--hd); text-decoration: none; background: none; border: 0; cursor: pointer; padding: 0; }
+    .tb-lien:hover { text-decoration: underline; }
+    .tb-card-b { flex: 1; padding: 12px 14px; min-width: 0; }
+    .tb-card-b.flush { padding: 0; }
+    .tb-vide { padding: 22px 8px; text-align: center; font-size: 12.5px; color: var(--mut); }
+
+    /* ---------- Chiffres clés ---------- */
+    .tb-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+    @media (max-width: 1180px) { .tb-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 640px)  { .tb-kpis { grid-template-columns: 1fr 1fr; } .tb-kpis > :last-child { grid-column: 1 / -1; } }
+    .tb-kpi { display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--hd); border-radius: var(--r); min-height: 88px; min-width: 0; }
+    .tb-kpi.ok { border-left-color: var(--atteint); } .tb-kpi.ko { border-left-color: var(--retard); }
+    .tb-kpi small { font-size: 11px; font-weight: 700; color: var(--mut); text-transform: uppercase; letter-spacing: .04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tb-kpi b { font-size: 26px; font-weight: 800; line-height: 1.1; color: var(--ink); }
+    .tb-kpi.ok b { color: var(--atteint); } .tb-kpi.ko b { color: var(--retard); }
+    .tb-kpi span { font-size: 11.5px; color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tb-kpi .tb-jauge { margin-top: 5px; height: 4px; }
+
+    /* ---------- Jauges ---------- */
+    .tb-jauge { position: relative; height: 6px; border-radius: 6px; background: #eef0f3; overflow: hidden; }
+    .tb-jauge i { position: absolute; inset: 0 auto 0 0; border-radius: 6px; }
+    .tb-jauge.seuil::after { content: ""; position: absolute; top: 0; bottom: 0; left: 75%; width: 2px; background: rgba(17,24,39,.22); }
+
+    /* ---------- Baromètre ---------- */
+    .tb-baro svg { width: 100%; max-width: 290px; height: auto; display: block; margin: 0 auto; }
+    .tb-verdict { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 800; }
+    .tb-baro-pied { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .tb-baro-pied div { padding: 7px 10px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line2); }
+    .tb-baro-pied small { display: block; font-size: 11px; color: var(--mut); }
+    .tb-baro-pied b { font-size: 15px; color: var(--ink); }
+
+    /* ---------- Chaîne des résultats ---------- */
+    .tb-chaine { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .tb-chaine .l { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+    .tb-chaine .l b { font-size: 13px; color: var(--ink); }
+    .tb-chaine .l small { color: var(--mut); font-size: 11px; }
+    .tb-chaine .l em { font-style: normal; font-size: 16px; font-weight: 800; color: var(--ink); }
+    .tb-chaine .tb-jauge { height: 8px; margin: 5px 0 3px; }
+    .tb-chaine .m { font-size: 11px; color: var(--mut); } .tb-chaine .r { color: var(--retard); font-weight: 700; }
+
+    /* ---------- Points d'attention ---------- */
+    .tb-alertes { list-style: none; margin: 0; padding: 0; }
+    .tb-alertes li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; padding: 9px 14px 9px 11px; border-bottom: 1px solid var(--line2); border-left: 3px solid transparent; }
+    .tb-alertes li:last-child { border-bottom: 0; }
+    .tb-alertes li > i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font: 800 10.5px/1 system-ui, sans-serif; font-style: normal; color: #fff; background: var(--sans); }
+    .tb-alertes li > div { min-width: 0; }
+    .tb-alertes b { display: block; font-size: 12.5px; color: var(--ink); }
+    .tb-alertes span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 1px; font-size: 12px; color: var(--txt); }
+    .tb-alertes button { margin-top: 3px; padding: 0; border: 0; background: none; font: 700 11.5px/1.2 inherit; color: var(--hd); cursor: pointer; }
+    .tb-alertes button:hover { text-decoration: underline; }
+    .al-danger { border-left-color: var(--retard) !important; } .al-danger > i { background: var(--retard) !important; }
+    .al-warn { border-left-color: var(--surveiller) !important; } .al-warn > i { background: var(--surveiller) !important; }
+    .al-info { border-left-color: #0284c7 !important; } .al-info > i { background: #0284c7 !important; }
+    .al-ok { border-left-color: var(--atteint) !important; } .al-ok > i { background: var(--atteint) !important; }
+
+    /* ---------- Statuts ---------- */
+    .tb-etat { display: grid; grid-template-columns: 170px minmax(0, 1fr); align-items: center; gap: 12px; }
+    @media (max-width: 420px) { .tb-etat { grid-template-columns: 1fr; } }
+    .tb-statuts { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+    .tb-statuts li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 12.5px; }
+    .tb-statuts li i { width: 10px; height: 10px; border-radius: 3px; }
+    .tb-statuts li b { color: var(--ink); }
+
+    /* ---------- Tableaux (style ERP) ---------- */
+    .tb-tw { overflow-x: auto; }
+    .tb-tab { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12.5px; }
+    .tb-tab th { height: 34px; padding: 0 10px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--mut); background: var(--soft); border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tb-tab td { padding: 8px 10px; border-bottom: 1px solid var(--line2); vertical-align: middle; overflow: hidden; }
+    .tb-tab tbody tr:last-child td { border-bottom: 0; }
+    .tb-tab tbody tr:hover td { background: #fafbfc; }
+    .tb-tab tr[hidden] { display: none; }
+    .tb-tab .n { text-align: right; }
+    .tb-tab a { color: var(--ink); font-weight: 700; text-decoration: none; } .tb-tab a:hover { color: var(--hd); text-decoration: underline; }
+    .tb-tab .sub { display: block; font-size: 11px; color: var(--mut); }
+    .tb-chip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 2px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+    .tb-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+    .s-atteint { color: var(--atteint); background: #ecfdf5; } .s-voie { color: var(--voie); background: #f0fdf4; }
+    .s-surveiller { color: var(--surveiller); background: #fffbeb; } .s-retard { color: var(--retard); background: #fef2f2; } .s-sans { color: #6b7280; background: #f3f4f6; }
+    .tb-niv { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; background: color-mix(in srgb, var(--hd) 8%, #fff); color: var(--hd); white-space: nowrap; }
+    .tb-taux { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 8px; }
+    .tb-taux b { text-align: right; color: var(--ink); }
+
+    /* barre d'outils du tableau */
+    .tb-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line2); }
+    .tb-seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+    .tb-seg button { height: 30px; padding: 0 10px; border: 0; border-left: 1px solid var(--line); background: #fff; font: 700 12px/1 inherit; color: var(--mut); cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+    .tb-seg button:first-child { border-left: 0; }
+    .tb-seg button i { width: 7px; height: 7px; border-radius: 50%; }
+    .tb-seg button.on { background: var(--hd); color: #fff; }
+    .tb-q { height: 30px; width: 260px; max-width: 100%; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 12.5px; }
+    .tb-q:focus { outline: none; border-color: var(--hd); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hd) 15%, transparent); }
+    .tb-compte { flex: none; font-size: 11.5px; color: var(--mut); padding-top: 2px; }
+
+    /* matrice */
+    .tb-mat { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12.5px; min-width: 640px; }
+    .tb-mat th, .tb-mat td { border-bottom: 1px solid var(--line2); border-right: 1px solid var(--line2); }
+    .tb-mat tbody tr:last-child > * { border-bottom: 0; }
+    .tb-mat thead th { height: 34px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--mut); background: var(--soft); text-align: center; padding: 0 6px; border-bottom-color: var(--line); }
+    .tb-mat thead th:first-child { text-align: left; padding-left: 14px; width: 30%; }
+    .tb-mat tbody th { text-align: left; padding: 8px 14px; font-weight: 700; color: var(--ink); }
+    .tb-mat td { text-align: center; padding: 6px; height: 52px; }
+    .tb-mat td b { display: block; font-size: 15px; font-weight: 800; }
+    .tb-mat td small { font-size: 10.5px; color: var(--mut); }
+    .tb-mat td .vide { color: #d1d5db; }
+    .tb-mat .tot { border-left: 2px solid var(--line); }
+    .tb-mat tr > :last-child { border-right: 0; }
+
+    /* arbre */
+    .tb-arbre { font-size: 12.5px; }
+    .tb-arbre details details { margin-left: 16px; border-left: 1px dashed var(--line); }
+    .tb-arbre summary, .tb-arbre .ind, .tb-arbre-h { display: grid; grid-template-columns: 14px minmax(0, 1fr) 80px 140px 56px; align-items: center; gap: 10px; padding: 6px 14px 6px 10px; }
+    .tb-arbre summary, .tb-arbre .ind { border-bottom: 1px solid var(--line2); }
+    .tb-arbre summary { list-style: none; cursor: pointer; font-weight: 700; color: var(--ink); }
+    .tb-arbre summary::-webkit-details-marker { display: none; }
+    .tb-arbre summary::before { content: "▸"; font-size: 11px; color: var(--mut); transition: transform .15s; }
+    .tb-arbre details[open] > summary::before { transform: rotate(90deg); }
+    .tb-arbre summary:hover, .tb-arbre .ind:hover { background: #fafbfc; }
+    .tb-arbre .c-nb { font-size: 11px; color: var(--mut); font-weight: 500; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tb-arbre b.t { text-align: right; color: var(--ink); }
+    .tb-arbre .inds { list-style: none; margin: 0; padding: 0; }
+    .tb-arbre .ind { font-weight: 500; }
+    .tb-arbre .ind > i { width: 8px; height: 8px; border-radius: 50%; justify-self: center; }
+    .tb-arbre .ind a { color: var(--txt); text-decoration: none; } .tb-arbre .ind a:hover { color: var(--hd); text-decoration: underline; }
+    .tb-arbre-h { height: 32px; padding-top: 0; padding-bottom: 0; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--mut); background: var(--soft); border-bottom: 1px solid var(--line); }
+    .tb-arbre-h span:nth-child(3), .tb-arbre-h span:last-child { text-align: right; }
+    @media (max-width: 640px) { .tb-arbre summary, .tb-arbre .ind, .tb-arbre-h { grid-template-columns: 14px minmax(0, 1fr) 64px 48px; } .tb-arbre .c-j, .tb-arbre-h .c-j { display: none; } }
+
+    #tbEvo { min-height: 280px; } #tbCR { min-height: 240px; }
+
+    /* ===== v92 ← ajout ===== */
+    .tb-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    @media (max-width: 1280px) { .tb-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (max-width: 640px)  { .tb-kpis { grid-template-columns: 1fr 1fr; } .tb-kpis > :last-child { grid-column: auto; } }
+    .tb-kpis.tb-kpis4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    @media (max-width: 900px) { .tb-kpis.tb-kpis4 { grid-template-columns: 1fr 1fr; } }
+    .tb-ctl { white-space: nowrap; }
+    .tb-ctl.prim { background: var(--hd); border-color: var(--hd); color: #fff; } .tb-ctl.prim:hover { color: #fff; filter: brightness(1.1); }
+    .tb-alertes li.plus { display: none; } .tb-alertes.tout li.plus { display: grid; }
+    .tb-plus { width: 100%; height: 36px; border: 0; border-top: 1px solid var(--line2); background: var(--soft); font: 700 12px/1 inherit; color: var(--hd); cursor: pointer; border-radius: 0 0 var(--r) var(--r); }
+    .tb-plus:hover { background: #eef2f6; }
+    .tb-alertes .go { margin-top: 3px; padding: 0; border: 0; background: none; font: 700 11.5px/1.2 inherit; color: var(--hd); cursor: pointer; }
+    .tb-proj { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; white-space: nowrap; }
+    .tb-proj::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .p-ok { color: var(--atteint); } .p-risque { color: var(--surveiller); } .p-hors { color: var(--retard); }
+    .tb-evol { font-weight: 700; white-space: nowrap; } .tb-evol.up { color: var(--atteint); } .tb-evol.down { color: var(--retard); }
+    .tb-mini { width: 26px; height: 26px; border-radius: 6px; border: 1px solid var(--line); background: #fff; color: var(--mut); cursor: pointer; font: 700 15px/1 inherit; display: inline-grid; place-items: center; }
+    .tb-mini:hover { border-color: var(--hd); color: var(--hd); }
+    .tb-legende { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 8px 14px; border-top: 1px solid var(--line2); font-size: 11.5px; color: var(--mut); }
+    .tb-legende i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+    /* qualité */
+    .tb-score { display: inline-grid; place-items: center; min-width: 44px; height: 24px; padding: 0 6px; border-radius: 4px; font-weight: 800; font-size: 12px; color: #fff; }
+    .tb-grille { border-collapse: separate; border-spacing: 3px; font-size: 11.5px; min-width: 100%; }
+    .tb-grille th { font-weight: 700; color: var(--mut); padding: 4px 6px; white-space: nowrap; font-size: 11px; text-align: center; }
+    .tb-grille th:first-child { text-align: left; min-width: 180px; max-width: 260px; }
+    .tb-grille td { min-width: 54px; height: 30px; text-align: center; border-radius: 4px; font-weight: 700; background: #f3f4f6; color: var(--mut); }
+    .tb-grille tbody th { font-weight: 700; color: var(--ink); }
+    /* actions */
+    .tb-statut { height: 28px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; font: 600 12px/1 inherit; background: #fff; color: var(--ink); max-width: 100%; }
+    .tb-statut.a_faire { border-color: #cbd5e1; } .tb-statut.en_cours { border-color: #0284c7; color: #0369a1; }
+    .tb-statut.terminee { border-color: var(--atteint); color: var(--atteint); } .tb-statut.abandonnee { color: var(--mut); }
+    .tb-ech.retard { color: var(--retard); font-weight: 800; }
+    .tb-tab tr.fini td { color: var(--mut); } .tb-tab tr.fini a { color: var(--mut); }
+    .tb-note { margin: 0; padding: 14px; font-size: 12.5px; color: var(--txt); background: #fffbeb; border-top: 1px solid #fde68a; }
+    .tb-note code { font-size: 11.5px; background: #fff; padding: 1px 5px; border-radius: 4px; border: 1px solid #fde68a; }
+    /* formulaire d'action (fenêtre) */
+    .tb-dlg { width: min(560px, calc(100vw - 24px)); padding: 0; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 24px 60px -20px rgba(15,23,42,.45); color: var(--txt); }
+    .tb-dlg::backdrop { background: rgba(15,23,42,.35); }
+    .tb-dlg form { margin: 0; }
+    .tb-dlg header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line2); }
+    .tb-dlg header b { font-size: 14px; color: var(--ink); }
+    .tb-dlg .corps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; padding: 14px 16px; }
+    .tb-dlg .corps .l2 { grid-column: 1 / -1; }
+    .tb-dlg label { display: block; font-size: 11.5px; font-weight: 700; color: var(--mut); margin-bottom: 4px; }
+    .tb-dlg input, .tb-dlg select, .tb-dlg textarea { width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; font: inherit; font-size: 13px; color: var(--ink); background: #fff; }
+    .tb-dlg textarea { height: 72px; padding: 8px 10px; resize: vertical; }
+    .tb-dlg input:focus, .tb-dlg select:focus, .tb-dlg textarea:focus { outline: none; border-color: var(--hd); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hd) 15%, transparent); }
+    .tb-dlg footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line2); background: var(--soft); border-radius: 0 0 10px 10px; }
+    @media (max-width: 520px) { .tb-dlg .corps { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .tb-hd { padding: 12px; } .tb-hd h1 { font-size: 17px; flex-wrap: wrap; } .tb-q { width: 100%; } }
+    @media (max-width: 640px) { .tb-kpi small, .tb-kpi span { white-space: normal; } .tb-kpi b { font-size: 22px; } }
+    @media print { .tb-tabs, .tb-hd-a { display: none; } .tb-pane[hidden] { display: block; } }
+</style>
+
+<div class="tb" id="tb">
+
+    <!-- ===== Bandeau ===== -->
+    <header class="tb-hd">
+        <div class="tb-hd-t">
+            <nav aria-label="Fil d'Ariane"><a href="/">Accueil</a> › Tableaux de bord › Exécution technique</nav>
+            <h1><span>Exécution technique {{ annee|unlocalize }}</span><span class="inst clamp1" title="{{ actual_institution.nom }}">· {{ actual_institution.nom }}</span></h1>
+            <div class="tb-hd-m"><span>Situation au <b>{{ date_situation|date:"d/m/Y" }}</b></span><span><b class="num">{{ nb_declarations }}</b> déclaration{{ nb_declarations|pluralize }}</span><span>TET = réalisé / cible des périodes déjà commencées</span></div>
+        </div>
+        <div class="tb-hd-a">
+            <form method="get"><label for="tbAnnee">Année</label>
+                <select id="tbAnnee" name="annee" class="tb-ctl" onchange="this.form.submit()">
+                    {% for a in annees %}<option value="{{ a|unlocalize }}"{% if a == annee %} selected{% endif %}>{{ a|unlocalize }}</option>{% endfor %}
+                </select></form>
+            <button type="button" class="tb-ctl" onclick="window.print()"><i class="bx bx-printer"></i> Imprimer</button>
+            {% if actions_actives %}<button type="button" class="tb-ctl prim" data-action-ind=""><i class="bx bx-plus"></i> Action corrective</button>{% endif %}
+        </div>
+    </header>
+
+    {% if not nb_indicateurs %}
+    <div class="tb-card" style="margin-top:12px"><div class="tb-vide">Aucun indicateur pour votre institution. Créez des indicateurs et leurs cibles pour suivre l'exécution technique.</div></div>
+    {% else %}
+
+    <!-- ===== Onglets ===== -->
+    <div class="tb-tabs" role="tablist" aria-label="Sections du tableau de bord">
+        <button type="button" role="tab" data-onglet="synthese" aria-selected="true">Synthèse</button>
+        <button type="button" role="tab" data-onglet="programme" aria-selected="false">Programme <em>{{ matrice|length }}</em></button>
+        <button type="button" role="tab" data-onglet="indicateurs" aria-selected="false">Indicateurs <em>{{ nb_indicateurs }}</em>{% if statuts.retard %}<em class="ko">{{ statuts.retard }} en retard</em>{% endif %}</button>
+        <button type="button" role="tab" data-onglet="structures" aria-selected="false">Structures <em>{{ structures_tet|length }}</em></button>
+        <button type="button" role="tab" data-onglet="qualite" aria-selected="false">Qualité des données{% if score_qualite is not None %} <em class="{% if score_qualite < 70 %}ko{% endif %}">{{ score_qualite }}/100</em>{% endif %}</button>
+        <button type="button" role="tab" data-onglet="actions" aria-selected="false">Actions <em>{{ nb_actions_ouvertes }}</em>{% if nb_actions_retard %}<em class="ko">{{ nb_actions_retard }} en retard</em>{% endif %}</button>
+    </div>
+
+    <!-- ========== SYNTHÈSE ========== -->
+    <section class="tb-pane" data-pane="synthese" role="tabpanel">
+        <div class="tb-kpis">
+            <div class="tb-kpi"><small>Indicateurs suivis</small><b class="num">{{ nb_indicateurs }}</b><span>{{ nb_avec_cible }} avec cible en {{ annee|unlocalize }}</span></div>
+            <div class="tb-kpi"><small>Taux moyen de réalisation</small><b class="num" data-couleur-taux="{{ tet|default_if_none:''|unlocalize }}">{% if tet is not None %}{{ tet|floatformat:"-1" }} %{% else %}—{% endif %}</b><div class="tb-jauge seuil"><i data-taux="{{ tet|default_if_none:''|unlocalize }}"></i></div></div>
+            <div class="tb-kpi"><small>Projection fin d'année</small><b class="num" data-couleur-taux="{{ tet_projection|default_if_none:''|unlocalize }}">{% if tet_projection is not None %}≈ {{ tet_projection|floatformat:"0" }} %{% else %}—{% endif %}</b><span>{% if nb_hors %}{{ nb_hors }} hors d'atteinte{% if nb_risque %} · {{ nb_risque }} à risque{% endif %}{% elif nb_risque %}{{ nb_risque }} à risque{% else %}au rythme actuel{% endif %}</span></div>
+            <div class="tb-kpi ok"><small>Indicateurs atteints</small><b class="num">{{ statuts.atteint|default:0 }}</b><span>réalisé ≥ cible à date</span></div>
+            <div class="tb-kpi ko"><small>Indicateurs en retard</small><b class="num">{{ statuts.retard|default:0 }}</b><span>moins de 50 % de la cible</span></div>
+            <div class="tb-kpi"><small>Complétude des données</small><b class="num" data-couleur-taux="{{ completude|default_if_none:''|unlocalize }}">{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span class="num">{{ nb_recus }} / {{ nb_attendus }} saisies reçues</span></div>
+        </div>
+
+        <div class="tb-row">
+            <div class="tb-card c4">
+                <div class="tb-card-h"><div><h2 class="tb-t">Taux d'exécution technique</h2><p class="tb-s">Chaque indicateur compte au plus pour 100 %</p></div></div>
+                <div class="tb-card-b tb-baro">
+                    <svg id="tbBaro" viewBox="0 0 320 236" role="img" aria-label="TET {{ tet|default_if_none:'non calculable' }} %"></svg>
+                    <div style="text-align:center"><span class="tb-verdict" id="tbVerdict"></span></div>
+                    <div class="tb-baro-pied">
+                        <div><small>À date</small><b class="num">{% if tet is not None %}{{ tet|floatformat:"-1" }} %{% else %}—{% endif %}</b></div>
+                        <div><small>Sur l'année</small><b class="num">{% if tet_annuel is not None %}{{ tet_annuel|floatformat:"-1" }} %{% else %}—{% endif %}</b></div>
+                    </div>
+                </div>
+            </div>
+            <div class="tb-card c4">
+                <div class="tb-card-h"><div><h2 class="tb-t">Performance par niveau de la chaîne des résultats</h2><p class="tb-s">De l'impact visé aux activités réalisées</p></div></div>
+                <div class="tb-card-b">
+                    <ul class="tb-chaine">
+                        {% for n in par_niveau %}
+                        <li><div class="l"><span class="clamp1"><b>{{ n.niveau }}</b> <small>{% if n.niveau == 'Impact' %}changement durable{% elif n.niveau == 'Effet' %}changement chez les bénéficiaires{% elif n.niveau == 'Produit' %}biens et services livrés{% elif n.niveau == 'Activité' %}actions réalisées{% else %}niveau à préciser{% endif %}</small></span>
+                                <em class="num">{% if n.tet is not None %}{{ n.tet|floatformat:"-1" }} %{% else %}—{% endif %}</em></div>
+                            <div class="tb-jauge seuil"><i data-taux="{{ n.tet|default_if_none:''|unlocalize }}"></i></div>
+                            <span class="m">{{ n.nb }} indicateur{{ n.nb|pluralize }}{% if n.atteint %} · {{ n.atteint }} atteint{{ n.atteint|pluralize }}{% endif %}{% if n.retard %} · <span class="r">{{ n.retard }} en retard</span>{% endif %}</span></li>
+                        {% empty %}<li class="tb-vide">Aucun indicateur</li>{% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="tb-card c4">
+                <div class="tb-card-h"><div><h2 class="tb-t">Points d'attention</h2><p class="tb-s">Détectés automatiquement</p></div></div>
+                <div class="tb-card-b flush">
+                    <ul class="tb-alertes">
+                        {% for a in alertes %}
+                        <li class="al-{{ a.niveau }}{% if forloop.counter > 5 %} plus{% endif %}"><i aria-hidden="true">{% if a.niveau == 'danger' %}!{% elif a.niveau == 'warn' %}▲{% elif a.niveau == 'ok' %}✓{% else %}i{% endif %}</i>
+                            <div><b>{{ a.titre }}</b><span title="{{ a.texte }}">{{ a.texte }}</span>{% if a.filtre %}<button type="button" data-voir="{{ a.filtre }}">Voir la liste ›</button>{% elif a.onglet %}<button type="button" class="go" data-aller="{{ a.onglet }}">Ouvrir ›</button>{% endif %}</div></li>
+                        {% endfor %}
+                    </ul>
+                    {% if alertes|length > 5 %}<button type="button" class="tb-plus" id="tbPlus" data-n="{{ alertes|length|add:'-5' }}">Voir les {{ alertes|length|add:'-5' }} autres points ›</button>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tb-row">
+            <div class="tb-card c8">
+                <div class="tb-card-h"><div><h2 class="tb-t">Évolution par période</h2><p class="tb-s">TET de chaque période · seuil « en bonne voie » à 75 %</p></div></div>
+                <div class="tb-card-b"><div id="tbEvo"></div></div>
+            </div>
+            <div class="tb-card c4">
+                <div class="tb-card-h"><div><h2 class="tb-t">État des indicateurs</h2><p class="tb-s">Réalisé comparé à la cible à date</p></div>
+                    <button type="button" class="tb-lien" data-aller="indicateurs">Détail ›</button></div>
+                <div class="tb-card-b"><div class="tb-etat"><div id="tbDonut"></div><ul class="tb-statuts" id="tbStatuts"></ul></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PROGRAMME ========== -->
+    <section class="tb-pane" data-pane="programme" role="tabpanel" hidden>
+        <div class="tb-row">
+            <div class="tb-card c12">
+                <div class="tb-card-h"><div><h2 class="tb-t">Matrice composantes × chaîne des résultats</h2><p class="tb-s">Taux moyen de réalisation à date ; nombre d'indicateurs sous chaque taux</p></div></div>
+                <div class="tb-card-b flush tb-tw">
+                    <table class="tb-mat">
+                        <thead><tr><th>Composante</th>{% for n in niveaux_presents %}<th>{{ n }}</th>{% endfor %}<th class="tot">Ensemble</th></tr></thead>
+                        <tbody>
+                        {% for m in matrice %}
+                        <tr><th scope="row"><span class="clamp2" title="{{ m.composante }}">{{ m.composante }}</span></th>
+                            {% for c in m.cellules %}<td data-taux="{{ c.tet|default_if_none:''|unlocalize }}">{% if c.nb %}<b class="num">{% if c.tet is not None %}{{ c.tet|floatformat:"0" }} %{% else %}—{% endif %}</b><small>{{ c.nb }} ind.</small>{% else %}<span class="vide">—</span>{% endif %}</td>{% endfor %}
+                            <td class="tot" data-taux="{{ m.tet|default_if_none:''|unlocalize }}"><b class="num">{% if m.tet is not None %}{{ m.tet|floatformat:"0" }} %{% else %}—{% endif %}</b><small>{{ m.nb }} ind.</small></td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="tb-row">
+            <div class="tb-card c12">
+                <div class="tb-card-h"><div><h2 class="tb-t">Arbre hiérarchique du programme</h2><p class="tb-s">Composantes, objectifs et indicateurs · taux moyen de chaque branche</p></div>
+                    <button type="button" class="tb-lien" id="tbToutDeplier">Tout déplier</button></div>
+                <div class="tb-card-b flush">
+                    <div class="tb-arbre-h" aria-hidden="true"><span></span><span>Élément</span><span>Indicateurs</span><span class="c-j">Réalisation</span><span>Taux</span></div>
+                    <div class="tb-arbre" id="tbArbre"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== INDICATEURS ========== -->
+    <section class="tb-pane" data-pane="indicateurs" role="tabpanel" hidden>
+        <div class="tb-row">
+            <div class="tb-card c12" id="tbListe">
+                <div class="tb-card-h"><div><h2 class="tb-t">Indicateurs suivis</h2><p class="tb-s">Du plus en retard au plus avancé · base renseignée pour {{ avec_base }}, comparaison N-1 pour {{ avec_n1 }}</p></div><span class="tb-compte num" id="tbCompte"></span></div>
+                <div class="tb-tools">
+                    <div class="tb-seg" id="tbFiltres">
+                        <button type="button" class="on" data-s="">Tous</button>
+                        <button type="button" data-s="retard"><i style="background:var(--retard)"></i>En retard</button>
+                        <button type="button" data-s="surveiller"><i style="background:var(--surveiller)"></i>À surveiller</button>
+                        <button type="button" data-s="voie"><i style="background:var(--voie)"></i>Bonne voie</button>
+                        <button type="button" data-s="atteint"><i style="background:var(--atteint)"></i>Atteints</button>
+                        <button type="button" data-s="sans"><i style="background:var(--sans)"></i>Sans cible</button>
+                        <button type="button" data-s="hors" title="Projection de fin d'année sous 75 %"><i style="background:var(--retard);border-radius:2px"></i>Hors d'atteinte</button>
+                    </div>
+                    <input type="search" class="tb-q" id="tbQ" placeholder="Rechercher un indicateur, un objectif…" aria-label="Rechercher un indicateur">
+                </div>
+                <div class="tb-card-b flush tb-tw">
+                    <table class="tb-tab" style="min-width:1180px">
+                        <colgroup><col style="width:25%"><col style="width:8%"><col style="width:7%"><col style="width:8%"><col style="width:8%"><col style="width:12%"><col style="width:10%"><col style="width:7%"><col style="width:10%"><col style="width:44px"></colgroup>
+                        <thead><tr><th>Indicateur</th><th>Niveau</th><th class="n" title="Ligne de base (valeur de départ)">Base</th><th class="n">Cible à date</th><th class="n">Réalisé</th><th>Atteinte</th><th title="Au rythme actuel, en fin d'année">Projection</th><th class="n" title="Réalisé comparé aux mêmes périodes de l'année précédente">vs N-1</th><th>État</th><th></th></tr></thead>
+                        <tbody>
+                        {% for x in indicateurs_tet %}
+                        <tr data-s="{{ x.statut }}" data-p="{{ x.statut_proj|default:'' }}" data-q="{{ x.nom|lower }} {{ x.code|lower }} {{ x.objectif|lower }} {{ x.niveau|lower }}">
+                            <td><a href="/analyse_data_indicateur/{{ x.id }}/" class="clamp2" title="{{ x.nom }}">{{ x.nom }}</a><span class="sub clamp1" title="{{ x.objectif }}">{{ x.objectif }} · {{ x.frequence|default:"fréquence non définie" }}</span></td>
+                            <td><span class="tb-niv" title="{{ x.niveau }}">{{ x.niveau }}</span></td>
+                            <td class="n num">{% if x.base is not None %}{{ x.base|floatformat:"-2" }}{% else %}<span class="sub">—</span>{% endif %}</td>
+                            <td class="n num">{% if x.cible_date is not None %}{{ x.cible_date|floatformat:"-2" }}{% else %}—{% endif %}</td>
+                            <td class="n num">{% if x.realise is not None %}{{ x.realise|floatformat:"-2" }}{% else %}0{% endif %}</td>
+                            <td>{% if x.taux_date is not None %}<div class="tb-taux"><b class="num">{{ x.taux_date|floatformat:"0" }} %</b><div class="tb-jauge seuil"><i data-taux="{{ x.taux_date|unlocalize }}"></i></div></div>{% if x.progres is not None and x.base %}<span class="sub" title="Progrès depuis la ligne de base">{{ x.progres|floatformat:"0" }} % du chemin depuis la base</span>{% endif %}{% else %}<span class="sub">Pas de cible</span>{% endif %}</td>
+                            <td>{% if x.taux_proj is not None %}<span class="tb-proj p-{{ x.statut_proj }}" title="{% if x.statut_proj == 'ok' %}Cible atteignable{% elif x.statut_proj == 'risque' %}Cible à risque{% else %}Cible hors d'atteinte{% endif %} au rythme actuel">≈ {{ x.taux_proj|floatformat:"0" }} %</span>{% else %}<span class="sub">—</span>{% endif %}</td>
+                            <td class="n">{% if x.evol_n1 is not None %}<span class="tb-evol num {% if x.evol_n1 >= 0 %}up{% else %}down{% endif %}" title="N-1 : {{ x.realise_n1|floatformat:'-2' }}">{% if x.evol_n1 >= 0 %}+{% endif %}{{ x.evol_n1|floatformat:"0" }} %</span>{% else %}<span class="sub">—</span>{% endif %}</td>
+                            <td><span class="tb-chip s-{{ x.statut }}">{% if x.statut == 'atteint' %}Atteint{% elif x.statut == 'voie' %}Bonne voie{% elif x.statut == 'surveiller' %}À surveiller{% elif x.statut == 'retard' %}En retard{% else %}Sans cible{% endif %}</span></td>
+                            <td>{% if actions_actives %}<button type="button" class="tb-mini" data-action-ind="{{ x.id }}" title="Créer une action corrective pour cet indicateur" aria-label="Créer une action corrective pour {{ x.nom }}">+</button>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="tb-row">
+            <div class="tb-card c12">
+                <div class="tb-card-h"><div><h2 class="tb-t">Indicateurs : cibles et réalisations</h2><p class="tb-s">Cible à date et réalisé · survolez une barre pour le nom complet et le taux</p></div></div>
+                <div class="tb-card-b"><div id="tbCR"></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== STRUCTURES ========== -->
+    <section class="tb-pane" data-pane="structures" role="tabpanel" hidden>
+        <div class="tb-row">
+            <div class="tb-card c12">
+                <div class="tb-card-h"><div><h2 class="tb-t">Classement des structures</h2><p class="tb-s">TET des structures ayant des cibles en {{ annee|unlocalize }}</p></div></div>
+                <div class="tb-card-b flush tb-tw">
+                    {% if structures_tet %}
+                    <table class="tb-tab" style="min-width:560px">
+                        <colgroup><col style="width:64px"><col style="width:40%"><col style="width:14%"><col></colgroup>
+                        <thead><tr><th class="n">Rang</th><th>Structure</th><th class="n">Indicateurs</th><th>Taux d'exécution</th></tr></thead>
+                        <tbody>
+                        {% for s in structures_tet %}
+                        <tr><td class="n num">{{ forloop.counter }}</td>
+                            <td><span class="clamp1" title="{{ s.nom }}" style="font-weight:700;color:var(--ink)">{{ s.nom }}</span></td>
+                            <td class="n num">{{ s.nb }}</td>
+                            <td><div class="tb-taux" style="grid-template-columns:56px minmax(0,1fr)"><b class="num">{{ s.tet|floatformat:"-1" }} %</b><div class="tb-jauge seuil"><i data-taux="{{ s.tet|unlocalize }}"></i></div></div></td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}<div class="tb-vide">Aucune cible par structure pour cette année. Définissez-les depuis « Cibles » dans le registre des indicateurs.</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== QUALITÉ DES DONNÉES (v92) ========== -->
+    <section class="tb-pane" data-pane="qualite" role="tabpanel" hidden>
+        <div class="tb-kpis tb-kpis4">
+            <div class="tb-kpi"><small>Score de qualité</small><b class="num" data-couleur-taux="{{ score_qualite|default_if_none:''|unlocalize }}">{% if score_qualite is not None %}{{ score_qualite }}/100{% else %}—{% endif %}</b><span>complétude, validation, cohérence</span></div>
+            <div class="tb-kpi"><small>Complétude</small><b class="num" data-couleur-taux="{{ completude|default_if_none:''|unlocalize }}">{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span class="num">{{ nb_recus }} / {{ nb_attendus }} saisies attendues</span></div>
+            <div class="tb-kpi"><small>Déclarations validées</small><b class="num" data-couleur-taux="{{ pct_valide|default_if_none:''|unlocalize }}">{% if pct_valide is not None %}{{ pct_valide }} %{% else %}—{% endif %}</b><span class="num">sur {{ nb_declarations }} déclarations</span></div>
+            <div class="tb-kpi {% if aberrantes %}ko{% else %}ok{% endif %}"><small>Valeurs anormales</small><b class="num">{{ aberrantes|length }}</b><span>négatives ou plus de 4 × la médiane</span></div>
+        </div>
+        <div class="tb-row">
+            <div class="tb-card c12">
+                <div class="tb-card-h"><div><h2 class="tb-t">Qualité des données par structure</h2><p class="tb-s">Score = moyenne de la complétude, du taux de validation et de la part de valeurs cohérentes · de la plus fragile à la plus fiable</p></div></div>
+                <div class="tb-card-b flush tb-tw">
+                    {% if qualite %}
+                    <table class="tb-tab" style="min-width:760px">
+                        <colgroup><col style="width:34%"><col style="width:11%"><col style="width:19%"><col style="width:15%"><col style="width:11%"><col style="width:10%"></colgroup>
+                        <thead><tr><th>Structure</th><th>Score</th><th>Complétude</th><th class="n">Validées</th><th class="n">Anormales</th><th class="n">Déclarations</th></tr></thead>
+                        <tbody>
+                        {% for q in qualite %}
+                        <tr><td><span class="clamp1" title="{{ q.nom }}" style="font-weight:700;color:var(--ink)">{{ q.nom }}</span></td>
+                            <td>{% if q.score is not None %}<span class="tb-score" data-fond-taux="{{ q.score }}">{{ q.score }}</span>{% else %}—{% endif %}</td>
+                            <td>{% if q.completude is not None %}<div class="tb-taux"><b class="num">{{ q.completude|floatformat:"0" }} %</b><div class="tb-jauge"><i data-taux="{{ q.completude|unlocalize }}"></i></div></div><span class="sub num">{{ q.recus }} / {{ q.attendus }}</span>{% else %}<span class="sub">Aucune cible</span>{% endif %}</td>
+                            <td class="n num">{% if q.validation is not None %}{{ q.validation|floatformat:"0" }} %{% else %}—{% endif %}</td>
+                            <td class="n num">{% if q.aberrantes %}<b style="color:var(--retard)">{{ q.aberrantes }}</b>{% else %}0{% endif %}</td>
+                            <td class="n num">{{ q.declarations }}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}<div class="tb-vide">Aucune structure avec des cibles ou des déclarations pour {{ annee|unlocalize }}.</div>{% endif %}
+                </div>
+            </div>
+        </div>
+        {% if qualite and periodes_echues %}
+        <div class="tb-row">
+            <div class="tb-card c12">
+                <div class="tb-card-h"><div><h2 class="tb-t">Remontée des données : structures × périodes</h2><p class="tb-s">Part des saisies attendues reçues pour chaque période déjà commencée</p></div></div>
+                <div class="tb-card-b tb-tw" style="padding:8px 10px">
+                    <table class="tb-grille">
+                        <thead><tr><th>Structure</th>{% for p in periodes_echues %}<th title="{{ p }}">{{ p|truncatechars:12 }}</th>{% endfor %}</tr></thead>
+                        <tbody>
+                        {% for q in qualite %}
+                        <tr><th scope="row"><span class="clamp1" title="{{ q.nom }}">{{ q.nom }}</span></th>
+                            {% for c in q.cellules %}<td data-fond-taux="{{ c|default_if_none:'' }}">{% if c is not None %}{{ c }} %{% else %}·{% endif %}</td>{% endfor %}</tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tb-legende"><span><i style="background:var(--atteint)"></i>100 %</span><span><i style="background:var(--voie)"></i>75–99 %</span><span><i style="background:var(--surveiller)"></i>50–74 %</span><span><i style="background:var(--retard)"></i>moins de 50 %</span><span><i style="background:#f3f4f6"></i>rien d'attendu</span></div>
+            </div>
+        </div>
+        {% endif %}
+        {% if aberrantes %}
+        <div class="tb-row">
+            <div class="tb-card c12">
+                <div class="tb-card-h"><div><h2 class="tb-t">Valeurs anormales à vérifier</h2><p class="tb-s">Valeur négative ou plus de 4 fois la médiane des déclarations du même indicateur : erreur de saisie probable</p></div></div>
+                <div class="tb-card-b flush tb-tw">
+                    <table class="tb-tab" style="min-width:720px">
+                        <colgroup><col style="width:36%"><col style="width:28%"><col style="width:14%"><col style="width:11%"><col style="width:11%"></colgroup>
+                        <thead><tr><th>Indicateur</th><th>Structure</th><th>Période</th><th class="n">Valeur</th><th class="n">Médiane</th></tr></thead>
+                        <tbody>
+                        {% for a in aberrantes %}
+                        <tr><td><span class="clamp2" title="{{ a.indicateur }}" style="font-weight:700;color:var(--ink)">{{ a.indicateur }}</span></td>
+                            <td><span class="clamp1" title="{{ a.structure }}">{{ a.structure }}</span></td><td><span class="clamp1">{{ a.periode }}</span></td>
+                            <td class="n num"><b style="color:var(--retard)">{{ a.valeur|floatformat:"-2" }}</b></td><td class="n num">{% if a.mediane %}{{ a.mediane|floatformat:"-2" }}{% else %}—{% endif %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- ========== ACTIONS CORRECTIVES (v92) ========== -->
+    <section class="tb-pane" data-pane="actions" role="tabpanel" hidden>
+        <div class="tb-row">
+            <div class="tb-card c12">
+                <div class="tb-card-h"><div><h2 class="tb-t">Actions correctives</h2><p class="tb-s">Chaque écart important doit déboucher sur une action, un responsable et une échéance · les actions en retard en premier</p></div>
+                    {% if actions_actives %}<button type="button" class="tb-ctl prim" data-action-ind=""><i class="bx bx-plus"></i> Nouvelle action</button>{% endif %}</div>
+                {% if not actions_actives %}
+                <p class="tb-note">Le suivi des actions correctives n'est pas encore activé. Ajoutez le modèle <code>ActionCorrective</code> à votre <code>models.py</code> (voir <code>backend/actions_correctives.py</code>), lancez <code>makemigrations</code> puis <code>migrate</code>, et ajoutez les deux URL indiquées.</p>
+                {% elif actions %}
+                <div class="tb-card-b flush tb-tw">
+                    <table class="tb-tab" style="min-width:980px">
+                        <colgroup><col style="width:28%"><col style="width:20%"><col style="width:15%"><col style="width:14%"><col style="width:10%"><col style="width:13%"></colgroup>
+                        <thead><tr><th>Action</th><th>Indicateur</th><th>Structure</th><th>Responsable</th><th>Échéance</th><th>Statut</th></tr></thead>
+                        <tbody>
+                        {% for x in actions %}{% with a=x.obj %}
+                        <tr class="{% if not x.ouverte %}fini{% endif %}">
+                            <td><span class="clamp2" title="{{ a.titre }}" style="font-weight:700;color:var(--ink)">{{ a.titre }}</span>{% if a.description %}<span class="sub clamp1" title="{{ a.description }}">{{ a.description }}</span>{% endif %}</td>
+                            <td>{% if a.indicateur %}<a href="/analyse_data_indicateur/{{ a.indicateur_id }}/" class="clamp2" title="{{ a.indicateur.nicename|default:a.indicateur.m_name }}" style="font-weight:600">{{ a.indicateur.nicename|default:a.indicateur.m_name }}</a>{% else %}<span class="sub">—</span>{% endif %}</td>
+                            <td><span class="clamp1" title="{{ a.structure.nom|default:a.structure }}">{% if a.structure %}{{ a.structure.nom|default:a.structure }}{% else %}—{% endif %}</span></td>
+                            <td><span class="clamp1" title="{{ x.responsable }}">{{ x.responsable|default:"Non désigné" }}</span></td>
+                            <td><span class="tb-ech num {% if x.en_retard %}retard{% endif %}">{% if a.echeance %}{{ a.echeance|date:"d/m/Y" }}{% else %}—{% endif %}</span>{% if x.en_retard %}<span class="sub" style="color:var(--retard)">en retard</span>{% endif %}</td>
+                            <td><form method="post" action="/actions-correctives/{{ a.id }}/statut/">{% csrf_token %}
+                                <select name="statut" class="tb-statut {{ a.statut }}" onchange="this.form.submit()" aria-label="Statut de l'action">
+                                    {% for code, lib in a.STATUTS %}<option value="{{ code }}"{% if code == a.statut %} selected{% endif %}>{{ lib }}</option>{% endfor %}
+                                </select></form></td>
+                        </tr>
+                        {% endwith %}{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="tb-vide">Aucune action corrective pour l'instant. Créez-en une depuis un point d'attention ou avec le bouton « + » d'un indicateur.</div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    {% if actions_actives %}
+    <!-- Fenêtre : nouvelle action corrective -->
+    <dialog class="tb-dlg" id="tbDlg" aria-labelledby="tbDlgT">
+        <form method="post" action="/actions-correctives/creer/">{% csrf_token %}
+            <header><b id="tbDlgT">Nouvelle action corrective</b><button type="button" class="tb-mini" data-fermer aria-label="Fermer">×</button></header>
+            <div class="corps">
+                <div class="l2"><label for="tbATitre">Action à mener *</label><input id="tbATitre" name="titre" required maxlength="255" placeholder="Ex. : supervision formative des agents de saisie"></div>
+                <div class="l2"><label for="tbAInd">Indicateur concerné</label><select id="tbAInd" name="indicateur"><option value="">— Aucun —</option>{% for x in indicateurs_tet %}<option value="{{ x.id }}">{{ x.nom|truncatechars:90 }}</option>{% endfor %}</select></div>
+                <div><label for="tbAStr">Structure</label><select id="tbAStr" name="structure"><option value="">— Toutes —</option>{% for s in structures_choix %}<option value="{{ s.id }}">{{ s.nom|truncatechars:60 }}</option>{% endfor %}</select></div>
+                <div><label for="tbAResp">Responsable</label><select id="tbAResp" name="responsable"><option value="">— À désigner —</option>{% for p in personnels %}<option value="{{ p.id }}">{{ p.nom|truncatechars:50 }}</option>{% endfor %}</select></div>
+                <div><label for="tbAEch">Échéance</label><input id="tbAEch" type="date" name="echeance" min="{{ aujourd_hui|date:'Y-m-d' }}"></div>
+                <div class="l2"><label for="tbADesc">Détails</label><textarea id="tbADesc" name="description" placeholder="Constat, cause probable, résultat attendu…"></textarea></div>
+            </div>
+            <footer><button type="button" class="tb-ctl" data-fermer>Annuler</button><button type="submit" class="tb-ctl prim">Enregistrer l'action</button></footer>
+        </form>
+    </dialog>
+    {% endif %}
+    {% endif %}
+</div>
+
+{{ tet|json_script:"tbTet" }}
+{{ tet_json|json_script:"tbData" }}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
+<script>
+(function () {
+    var root = document.getElementById('tb'); if (!root) return;
+    var lire = function (id) { try { return JSON.parse(document.getElementById(id).textContent); } catch (e) { return null; } };
+    var tet = lire('tbTet'), data = lire('tbData') || {};
+    var css = getComputedStyle(root), V = function (n) { return css.getPropertyValue(n).trim(); };
+    var COUL = { atteint: V('--atteint'), voie: V('--voie'), surveiller: V('--surveiller'), retard: V('--retard'), sans: V('--sans') };
+    var NOMS = { retard: 'En retard (< 50 %)', surveiller: 'À surveiller (50–74 %)', voie: 'En bonne voie (75–99 %)', atteint: 'Atteints (≥ 100 %)', sans: 'Sans cible' };
+    var couleurTaux = function (t) { return t >= 100 ? COUL.atteint : t >= 75 ? COUL.voie : t >= 50 ? COUL.surveiller : COUL.retard; };
+    var fr = function (n) { return Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 1 }); };
+    var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+
+    /* --- Jauges et couleurs --- */
+    root.querySelectorAll('.tb-jauge i[data-taux]').forEach(function (i) {
+        var t = parseFloat(i.dataset.taux); if (!isFinite(t)) { i.style.width = 0; return; }
+        i.style.background = couleurTaux(t); i.style.width = Math.min(100, Math.max(0, t)) + '%';
+    });
+    root.querySelectorAll('[data-couleur-taux]').forEach(function (b) { var t = parseFloat(b.dataset.couleurTaux); if (isFinite(t)) b.style.color = couleurTaux(t); });
+    root.querySelectorAll('.tb-mat td[data-taux]').forEach(function (td) {
+        var t = parseFloat(td.dataset.taux); if (!isFinite(t)) return;
+        var c = couleurTaux(t); td.style.background = 'color-mix(in srgb, ' + c + ' 12%, #fff)'; var b = td.querySelector('b'); if (b) b.style.color = c;
+    });
+
+    /* --- Baromètre --- */
+    var svg = document.getElementById('tbBaro');
+    if (svg) {
+        var NS = 'http://www.w3.org/2000/svg', cx = 160, cy = 160, R = 120;
+        var pt = function (p, r) { var a = Math.PI * (1 - p / 100); return [cx + r * Math.cos(a), cy - r * Math.sin(a)]; };
+        var arc = function (p1, p2, r) { var a = pt(p1, r), b = pt(p2, r); return 'M' + a[0] + ' ' + a[1] + ' A' + r + ' ' + r + ' 0 0 1 ' + b[0] + ' ' + b[1]; };
+        var el = function (n, at) { var x = document.createElementNS(NS, n); for (var k in at) x.setAttribute(k, at[k]); svg.appendChild(x); return x; };
+        [[0, 50, COUL.retard], [50, 75, COUL.surveiller], [75, 100, COUL.voie]].forEach(function (z) { el('path', { d: arc(z[0], z[1], R), fill: 'none', stroke: z[2], 'stroke-width': 18, 'stroke-opacity': .2 }); });
+        if (tet !== null) el('path', { d: arc(0, Math.max(.5, Math.min(100, tet)), R), fill: 'none', stroke: couleurTaux(tet), 'stroke-width': 18, 'stroke-linecap': 'round' });
+        [0, 25, 50, 75, 100].forEach(function (p) {
+            var a = pt(p, R - 22), b = pt(p, R - 14), t = pt(p, R + 22);
+            el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: '#9ca3af', 'stroke-width': 2 });
+            el('text', { x: t[0], y: t[1] + 4, 'text-anchor': 'middle', 'font-size': 11, fill: '#6b7280', 'font-weight': 600 }).textContent = p;
+        });
+        if (tet !== null) { var n = pt(Math.min(100, tet), R - 30); el('line', { x1: cx, y1: cy, x2: n[0], y2: n[1], stroke: '#111827', 'stroke-width': 3, 'stroke-linecap': 'round' }); }
+        el('circle', { cx: cx, cy: cy, r: 7, fill: '#111827' });
+        el('text', { x: cx, y: cy + 46, 'text-anchor': 'middle', 'font-size': 36, 'font-weight': 800, fill: '#111827' }).textContent = tet === null ? '—' : fr(tet) + ' %';
+        el('text', { x: cx, y: cy + 66, 'text-anchor': 'middle', 'font-size': 11.5, fill: '#6b7280', 'font-weight': 600 }).textContent = 'TET à date';
+    }
+    var verdict = document.getElementById('tbVerdict');
+    if (verdict) {
+        var st = tet === null ? 'sans' : tet >= 100 ? 'atteint' : tet >= 75 ? 'voie' : tet >= 50 ? 'surveiller' : 'retard';
+        verdict.className = 'tb-verdict s-' + st;
+        verdict.textContent = { sans: 'Aucune cible pour calculer le TET', atteint: 'Cibles atteintes', voie: 'Exécution en bonne voie', surveiller: 'Exécution à surveiller', retard: 'Exécution en retard' }[st];
+    }
+
+    /* --- Légende des statuts --- */
+    var ordre = ['retard', 'surveiller', 'voie', 'atteint', 'sans'], stats = data.statuts || {};
+    var ul = document.getElementById('tbStatuts');
+    if (ul) ordre.forEach(function (k) { ul.insertAdjacentHTML('beforeend', '<li><i style="background:' + COUL[k] + '"></i><span class="clamp1">' + NOMS[k] + '</span><b class="num">' + (stats[k] || 0) + '</b></li>'); });
+
+    /* --- Graphiques (dessinés quand leur onglet est visible) --- */
+    var dessines = {};
+    var graphiques = {
+        synthese: function () {
+            var d = document.getElementById('tbDonut');
+            if (d && window.ApexCharts) new ApexCharts(d, {
+                chart: { type: 'donut', height: 180, fontFamily: 'inherit' }, series: ordre.map(function (k) { return stats[k] || 0; }),
+                labels: ordre.map(function (k) { return NOMS[k]; }), colors: ordre.map(function (k) { return COUL[k]; }),
+                legend: { show: false }, dataLabels: { enabled: false }, stroke: { width: 2 },
+                plotOptions: { pie: { donut: { size: '72%', labels: { show: true, total: { show: true, label: 'indicateurs', fontSize: '11px', color: '#6b7280' }, value: { fontSize: '22px', fontWeight: 800, color: '#111827' } } } } }
+            }).render();
+            var evo = data.evolution || [], e = document.getElementById('tbEvo');
+            if (!e || !window.ApexCharts) return;
+            if (!evo.length) { e.innerHTML = '<p class="tb-vide">Aucune cible par période pour cette année.</p>'; return; }
+            new ApexCharts(e, {
+                chart: { type: 'bar', height: 280, toolbar: { show: false }, fontFamily: 'inherit' },
+                series: [{ name: 'TET', data: evo.map(function (p) { return p.tet === null ? null : p.tet; }) }],
+                xaxis: { categories: evo.map(function (p) { return p.periode; }), labels: { rotate: -35, hideOverlappingLabels: true, trim: true, maxHeight: 60, style: { fontSize: '11px' } } },
+                yaxis: { min: 0, max: 100, tickAmount: 4, labels: { formatter: function (v) { return Math.round(v) + ' %'; } } },
+                colors: [function (o) { var t = o.value; return t == null ? COUL.sans : couleurTaux(t); }],
+                plotOptions: { bar: { borderRadius: 3, columnWidth: evo.length > 20 ? '80%' : '50%' } },
+                dataLabels: { enabled: evo.length <= 12, formatter: function (v) { return v == null ? '' : Math.round(v) + '%'; }, offsetY: -18, style: { fontSize: '11px', colors: ['#374151'] } },
+                annotations: { yaxis: [{ y: 75, borderColor: '#6b7280', strokeDashArray: 4, label: { text: '75 %', style: { background: '#6b7280', color: '#fff', fontSize: '10px' } } }] },
+                tooltip: { y: { formatter: function (v, o) { var p = evo[o.dataPointIndex]; return v == null ? 'pas de cible' : fr(v) + ' % (' + p.nb + ' indicateur' + (p.nb > 1 ? 's' : '') + ')' + (p.commencee ? '' : ' · à venir'); } } },
+                grid: { borderColor: '#f0f2f5' }
+            }).render();
+        },
+        indicateurs: function () {
+            var cr = data.cibles_real || [], c = document.getElementById('tbCR');
+            if (!c || !window.ApexCharts) return;
+            if (!cr.length) { c.innerHTML = '<p class="tb-vide">Aucun indicateur avec cible pour cette année.</p>'; return; }
+            var large = c.clientWidth || 800, lim = large < 560 ? 18 : 34;                            /* téléphone : noms plus courts */
+            var court = function (t) { return t.length > lim ? t.slice(0, lim - 1) + '…' : t; };
+            new ApexCharts(c, {
+                chart: { type: 'bar', height: Math.max(240, 60 + cr.length * 38), toolbar: { show: false }, fontFamily: 'inherit' },
+                series: [{ name: 'Cible à date', data: cr.map(function (x) { return x.cible; }) }, { name: 'Réalisé', data: cr.map(function (x) { return x.realise; }) }],
+                xaxis: { categories: cr.map(function (x) { return court(x.nom); }), labels: { formatter: function (v) { return fr(v); } } },
+                yaxis: { labels: { maxWidth: Math.min(230, Math.round(large * .4)), style: { fontSize: large < 560 ? '11px' : '12px' } } },
+                plotOptions: { bar: { horizontal: true, borderRadius: 2, barHeight: '68%' } },
+                colors: ['#d1d5db', V('--hd') || '#123A37'], dataLabels: { enabled: false },
+                legend: { position: 'top', horizontalAlign: 'left', fontSize: '12px' }, grid: { borderColor: '#f0f2f5' },
+                tooltip: { shared: true, intersect: false,
+                    x: { formatter: function (v, o) { return o && cr[o.dataPointIndex] ? cr[o.dataPointIndex].nom : v; } },    /* nom complet */
+                    y: { formatter: function (v, o) { var x = cr[o.dataPointIndex]; return fr(v) + (o.seriesIndex === 1 && x.taux != null ? ' (' + fr(x.taux) + ' % de la cible)' : ''); } } }
+            }).render();
+        }
+    };
+    function dessiner(nom) { if (graphiques[nom] && !dessines[nom]) { dessines[nom] = true; graphiques[nom](); } }
+
+    /* --- Onglets (mémorisés dans l'adresse : #indicateurs…) --- */
+    var onglets = [].slice.call(root.querySelectorAll('.tb-tabs [data-onglet]'));
+    function ouvrir(nom) {
+        if (!root.querySelector('[data-pane="' + nom + '"]')) nom = 'synthese';
+        onglets.forEach(function (b) { b.setAttribute('aria-selected', b.dataset.onglet === nom ? 'true' : 'false'); });
+        root.querySelectorAll('[data-pane]').forEach(function (p) { p.hidden = p.dataset.pane !== nom; });
+        try { history.replaceState(null, '', '#' + nom); } catch (e) {}
+        dessiner(nom);
+    }
+    onglets.forEach(function (b) { b.addEventListener('click', function () { ouvrir(b.dataset.onglet); }); });
+    root.querySelectorAll('[data-aller]').forEach(function (b) { b.addEventListener('click', function () { ouvrir(b.dataset.aller); }); });
+    window.addEventListener('beforeprint', function () { Object.keys(graphiques).forEach(dessiner); });
+
+    /* --- Arbre hiérarchique --- */
+    var arbreEl = document.getElementById('tbArbre');
+    function jaugeHtml(t) { return '<div class="tb-jauge seuil c-j"><i style="width:' + (t == null ? 0 : Math.min(100, t)) + '%;background:' + (t == null ? 'transparent' : couleurTaux(t)) + '"></i></div>'; }
+    function brancheHtml(n, prof) {
+        var h = '<details' + (prof < 1 ? ' open' : '') + '><summary><span class="clamp1" title="' + esc(n.nom) + '">' + esc(n.nom) + '</span><span class="c-nb">' + n.nb + ' ind.</span>' + jaugeHtml(n.tet) + '<b class="t num">' + (n.tet == null ? '—' : fr(n.tet) + ' %') + '</b></summary>';
+        (n.enfants || []).forEach(function (e) { h += brancheHtml(e, prof + 1); });
+        if (n.indicateurs && n.indicateurs.length) {
+            h += '<ul class="inds">';
+            n.indicateurs.forEach(function (i) {
+                h += '<li class="ind"><i style="background:' + (COUL[i.statut] || COUL.sans) + '"></i><a class="clamp1" href="/analyse_data_indicateur/' + i.id + '/" title="' + esc(i.nom) + '">' + esc(i.nom) + '</a><span class="c-nb">' + esc(i.niveau) + '</span>' + jaugeHtml(i.taux) + '<b class="t num">' + (i.taux == null ? '—' : fr(i.taux) + ' %') + '</b></li>';
+            });
+            h += '</ul>';
+        }
+        return h + '</details>';
+    }
+    if (arbreEl && data.arbre) {
+        var racines = data.arbre.enfants || [];
+        arbreEl.innerHTML = racines.length ? racines.map(function (r) { return brancheHtml(r, 0); }).join('') : '<p class="tb-vide">Aucun objectif rattaché.</p>';
+    }
+    var tout = document.getElementById('tbToutDeplier');
+    if (tout && arbreEl) tout.addEventListener('click', function () {
+        var ouvrirTout = tout.textContent.indexOf('déplier') > -1;
+        arbreEl.querySelectorAll('details').forEach(function (d) { d.open = ouvrirTout; });
+        tout.textContent = ouvrirTout ? 'Tout replier' : 'Tout déplier';
+    });
+
+    /* --- Liste des indicateurs : filtre + recherche --- */
+    var filtre = '', lignes = [].slice.call(root.querySelectorAll('#tbListe tbody tr'));
+    var norm = function (x) { return (x || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+    function appliquer() {
+        var q = norm((document.getElementById('tbQ') || {}).value || ''), vus = 0;
+        lignes.forEach(function (tr) {
+            var ok = !filtre || (filtre === 'hors' ? tr.dataset.p === 'hors' : tr.dataset.s === filtre);            /* ← v92 : filtre « hors d'atteinte » */
+            tr.hidden = !ok || (q && norm(tr.dataset.q).indexOf(q) < 0); if (!tr.hidden) vus++;
+        });
+        var c = document.getElementById('tbCompte'); if (c) c.textContent = vus + ' / ' + lignes.length + ' indicateurs';
+    }
+    root.querySelectorAll('#tbFiltres button').forEach(function (b) {
+        b.addEventListener('click', function () { filtre = b.dataset.s; root.querySelectorAll('#tbFiltres button').forEach(function (x) { x.classList.toggle('on', x === b); }); appliquer(); });
+    });
+    var q = document.getElementById('tbQ'); if (q) q.addEventListener('input', appliquer);
+    root.querySelectorAll('[data-voir]').forEach(function (bt) {
+        bt.addEventListener('click', function () {
+            ouvrir('indicateurs');
+            var cible = root.querySelector('#tbFiltres button[data-s="' + bt.dataset.voir + '"]'); if (cible) cible.click();
+        });
+    });
+    /* ===== v92 ← ajout ===== */
+    /* couleurs de fond (scores de qualité, grille de remontée) */
+    root.querySelectorAll('[data-fond-taux]').forEach(function (el) {
+        var t = parseFloat(el.dataset.fondTaux); if (!isFinite(t)) return;
+        var c = couleurTaux(t);
+        if (el.classList.contains('tb-score')) { el.style.background = c; return; }
+        el.style.background = 'color-mix(in srgb, ' + c + ' 16%, #fff)'; el.style.color = c;
+    });
+    /* points d'attention : 5 visibles, le reste sur demande */
+    var plus = document.getElementById('tbPlus');
+    if (plus) plus.addEventListener('click', function () {
+        var ul = root.querySelector('.tb-alertes'), tout = ul.classList.toggle('tout');
+        plus.textContent = tout ? 'Réduire ›' : 'Voir les ' + plus.dataset.n + ' autres points ›';
+    });
+    /* fenêtre « nouvelle action corrective », pré-remplie avec l'indicateur de la ligne */
+    var dlg = document.getElementById('tbDlg');
+    if (dlg) {
+        root.querySelectorAll('[data-action-ind]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var sel = document.getElementById('tbAInd'); if (sel) sel.value = b.dataset.actionInd || '';
+                var titre = document.getElementById('tbATitre');
+                if (titre && b.dataset.actionInd && !titre.value) { var opt = sel.options[sel.selectedIndex]; titre.placeholder = 'Ex. : plan de rattrapage pour « ' + (opt ? opt.text.slice(0, 50) : '') + ' »'; }
+                if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+                setTimeout(function () { titre && titre.focus(); }, 30);
+            });
+        });
+        dlg.addEventListener('click', function (e) { if (e.target.closest('[data-fermer]') || e.target === dlg) dlg.close(); });
+    }
+
+    appliquer();
+    ouvrir((location.hash || '#synthese').slice(1));
+})();
+</script>
+{%endblock%}

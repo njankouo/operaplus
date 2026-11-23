@@ -135,6 +135,9 @@ class Institution(models.Model):
     date_debut = models.DateField(null=True, verbose_name=_("date de début"))
     date_fin = models.DateField(null=True, verbose_name=_("date de fin"))
 
+    is_copied = models.BooleanField(default=False)
+
+
     # 2. TRADUCTION DU NOM DU MODÈLE LUI-MÊME (Pour l'admin Django)
     class Meta:
         verbose_name = _("institution")
@@ -3784,3 +3787,36 @@ class ChampDynamiqueValue(models.Model):
         if t == 'file':
             return ''
         return self.texte
+
+
+class HeritageInstitution(models.Model):
+  
+    is_parent = models.ForeignKey(Institution, on_delete=models.CASCADE, null=True, related_name='parent')
+    is_children = models.ForeignKey(Institution, on_delete=models.CASCADE, null=True, related_name='children')
+
+class IndicateurStructure(models.Model):
+    structure=models.ForeignKey(Structure,on_delete=models.SET_NULL,null=True,related_name='structures')
+    indicateur=models.ForeignKey(Indicateur,on_delete=models.SET_NULL,null=True,related_name='indicateur')
+
+
+
+
+class ActionCorrective(models.Model):
+     STATUTS = [('a_faire', 'À faire'), ('en_cours', 'En cours'), ('terminee', 'Terminée'), ('abandonnee', 'Abandonnée')]
+     institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='actions_correctives')
+     indicateur = models.ForeignKey(Indicateur, on_delete=models.SET_NULL, null=True, blank=True, related_name='actions_correctives')
+     structure = models.ForeignKey(Structure, on_delete=models.SET_NULL, null=True, blank=True, related_name='actions_correctives')
+     titre = models.CharField(max_length=255)
+     description = models.TextField(blank=True, default='')
+     responsable = models.ForeignKey(Personnel, on_delete=models.SET_NULL, null=True, blank=True, related_name='actions_a_mener')
+     echeance = models.DateField(null=True, blank=True)
+     statut = models.CharField(max_length=20, choices=STATUTS, default='a_faire')
+     cree_par = models.ForeignKey(Personnel, on_delete=models.SET_NULL, null=True, blank=True, related_name='actions_creees')
+     date_creation = models.DateTimeField(auto_now_add=True)
+     date_maj = models.DateTimeField(auto_now=True)
+
+     class Meta:
+         ordering = ['statut', 'echeance']
+
+     def __str__(self):
+         return self.titre

@@ -1,0 +1,425 @@
+{% extends './index.html' %}
+
+{% block main %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- En-tête -->
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-indigo-600 mb-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+                Configuration & Migration Organisationnelle
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Hiérarchie & Héritage des Institutions</h1>
+            <p class="text-sm text-slate-500 mt-1">
+                Associez une institution parente à ses enfants et transmettez les données (<span class="font-medium text-slate-700">Niveaux de structures, Structure, Affectations du personnel, DataElement, Indicateur, DataSet</span>).
+            </p>
+        </div>
+
+        <div class="flex items-center gap-3 self-start sm:self-auto">
+            <div class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 shadow-2xs text-right">
+                <span class="block text-[11px] font-medium uppercase tracking-wide text-slate-400">Catalogue</span>
+                <span class="text-sm font-bold text-slate-800">{{ institution|length }} institution(s)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Django -->
+    {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+                <div class="rounded-xl px-4 py-3 text-sm font-medium border
+                    {% if message.tags == 'success' %}bg-emerald-50 text-emerald-800 border-emerald-200
+                    {% elif message.tags == 'error' %}bg-rose-50 text-rose-800 border-rose-200
+                    {% else %}bg-amber-50 text-amber-800 border-amber-200{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="POST" action="" id="heritageForm">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            <!-- COLONNE GAUCHE : PARENT, DONNÉES MIGRÉES & APERÇU (4 colonnes) -->
+            <div class="lg:col-span-4 lg:sticky lg:top-6 space-y-6">
+                <div class="bg-white rounded-2xl shadow-xs border border-slate-200/90 p-6">
+                    <!-- Étape 1 -->
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                            1
+                        </div>
+                        <div>
+                            <h2 class="text-base font-semibold text-slate-900">Institution Parente</h2>
+                            <p class="text-xs text-slate-500">Source des données à transmettre</p>
+                        </div>
+                    </div>
+
+                    <label for="parent_select" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
+                        Parent <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <select id="parent_select" name="parent_institution" required
+                            class="w-full appearance-none rounded-xl border border-slate-300 bg-slate-50/70 pl-3.5 pr-10 py-2.5 text-sm font-medium text-slate-800 hover:bg-white focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition">
+                            <option value="" disabled {% if not actual_institution %}selected{% endif %}>-- Sélectionner une institution --</option>
+                            {% for inst in institution %}
+                                <option value="{{ inst.id }}" {% if actual_institution and actual_institution.id == inst.id %}selected{% endif %}>
+                                    {{ inst.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Périmètre des données transmises -->
+                    <div class="mt-5">
+                        <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                            Données qui seront migrées
+                        </span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80">Niveaux de structures</span>{# ← ajout #}
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80">Structure</span>
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80">Affectations du personnel</span>{# ← ajout #}
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80">DataElement</span>
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80">Indicateur</span>
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80">DataSet</span>
+                        </div>
+                        {# ← ajout : ce que fait exactement le transfert #}
+                        <ul class="mt-3 space-y-1 text-[11.5px] leading-snug text-slate-500">
+                            <li>• Les éléments sont <b class="text-slate-700">copiés</b> : le parent n'est pas modifié.</li>
+                            <li>• Un élément qui existe déjà chez l'enfant (même nom) n'est pas recopié : vous pouvez relancer sans doublon.</li>
+                            <li>• Les structures gardent leur <b class="text-slate-700">niveau</b> (district, aire de santé…) et leur structure mère.</li>
+                            <li>• Le <b class="text-slate-700">personnel</b> est affecté aux structures copiées (responsable compris), sans créer de second compte.</li>
+                            <li>• Les indicateurs copiés sont à rattacher au cadre logique de l'enfant.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Aperçu dynamique de la hiérarchie -->
+                    <div class="mt-6 rounded-xl bg-gradient-to-br from-slate-50 to-indigo-50/40 border border-slate-200/80 p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Aperçu du transfert</span>
+                            <span id="selected_badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                                <span id="selected_count">0</span> enfant(s)
+                            </span>
+                        </div>
+
+                        <!-- Nœud Parent -->
+                        <div class="flex items-center gap-2.5 p-2.5 rounded-lg bg-white border border-indigo-200/80 shadow-2xs">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0"></span>
+                            <span id="preview_parent_name" class="text-sm font-semibold text-slate-800 truncate">
+                                {% if actual_institution %}{{ actual_institution.nom }}{% else %}Aucun parent sélectionné{% endif %}
+                            </span>
+                        </div>
+
+                        <!-- Liste des enfants sélectionnés -->
+                        <div id="preview_children_list" class="mt-2.5 ml-4 pl-3.5 border-l-2 border-indigo-200 space-y-1.5 max-h-44 overflow-y-auto">
+                            <p id="empty_preview_msg" class="text-xs italic text-slate-400 py-1">
+                                Aucune institution enfant sélectionnée.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Bouton Valider (Desktop) -->
+                    <button type="submit" id="submitBtn"
+                        class="hidden lg:flex mt-6 w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold py-3 px-4 rounded-xl shadow-sm hover:shadow transition items-center justify-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                        Enregistrer & Transférer
+                    </button>
+                </div>
+            </div>
+
+            <!-- COLONNE DROITE : SÉLECTION DES ENFANTS (8 colonnes) -->
+            <div class="lg:col-span-8">
+                <div class="bg-white rounded-2xl shadow-xs border border-slate-200/90 p-6">
+
+                    <!-- En-tête de section + outils de filtrage -->
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                                2
+                            </div>
+                            <div>
+                                <h2 class="text-base font-semibold text-slate-900">Institutions Enfants</h2>
+                                <p class="text-xs text-slate-500">Sélectionnez les entités destinataires des données</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2">
+                            <!-- Champ de recherche -->
+                            <div class="relative flex-1 sm:flex-initial">
+                                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                <input type="text" id="search_children" placeholder="Rechercher..."
+                                    class="w-full sm:w-48 rounded-xl border border-slate-300 bg-slate-50/60 pl-9 pr-7 py-1.5 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition">
+                                <button type="button" id="clear_search" title="Effacer la recherche"
+                                    class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Tout cocher / décocher -->
+                            <button type="button" id="toggle_all"
+                                class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/70 px-3 py-2 rounded-xl transition whitespace-nowrap cursor-pointer">
+                                Tout cocher
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Grille des institutions -->
+                    <div id="children_grid" class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[540px] overflow-y-auto pr-1">
+                        {% for inst in institution %}
+                        <label data-id="{{ inst.id }}" data-name="{{ inst.nom|lower }}"
+                            class="child-card group relative flex items-center gap-3.5 p-3.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/30 cursor-pointer transition-all select-none">
+
+                            <input type="checkbox" name="children_institutions" value="{{ inst.id }}"
+                                class="child-checkbox sr-only">
+
+                            <!-- Indicateur visuel personnalisé -->
+                            <span class="check-box w-5 h-5 rounded-md border border-slate-300 bg-white flex items-center justify-center shrink-0 transition">
+                                <svg class="check-icon hidden w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </span>
+
+                            <div class="flex-1 min-w-0">
+                                <p class="card-title text-sm font-medium text-slate-800 group-hover:text-indigo-700 truncate transition">
+                                    {{ inst.nom }}
+                                </p>
+                                {% if inst.code %}
+                                <p class="text-xs text-slate-400 mt-0.5 truncate">Code : {{ inst.code }}</p>
+                                {% endif %}
+                            </div>
+
+                            <span class="parent-badge hidden shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200">
+                                Parent
+                            </span>
+                            <span class="linked-badge hidden shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200" title="Déjà enfant de l'institution parente choisie : un nouveau transfert n'ajoutera que les éléments manquants">
+                                Déjà liée
+                            </span>{# ← ajout #}
+                        </label>
+                        {% empty %}
+                        <div class="col-span-full text-center py-14 px-4">
+                            <p class="text-sm font-medium text-slate-500">Aucune institution disponible.</p>
+                            <p class="text-xs text-slate-400 mt-1">Vérifiez les institutions marquées comme copiées.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Message si aucun résultat de recherche -->
+                    <div id="no_search_results" class="hidden text-center py-12">
+                        <p class="text-sm font-medium text-slate-600">Aucune institution ne correspond à votre recherche.</p>
+                        <button type="button" id="reset_filter_btn" class="mt-2 text-xs font-semibold text-indigo-600 hover:underline cursor-pointer">
+                            Réinitialiser le filtre
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Barre d'action fixe en bas sur mobile/tablette -->
+        <div class="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-slate-200 p-4 z-30 flex items-center justify-between gap-4">
+            <div class="text-xs text-slate-600">
+                <span id="mobile_selected_count" class="font-bold text-indigo-600 text-sm">0</span> enfant(s) sélectionné(s)
+            </div>
+            <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 px-5 rounded-xl shadow-sm transition cursor-pointer">
+                Transférer
+            </button>
+        </div>
+        <div class="h-20 lg:hidden"></div>
+    </form>
+</div>
+
+{{ liens_existants|json_script:"heritageLiens" }}{# ← ajout : liens parent → enfants déjà enregistrés #}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const parentSelect = document.getElementById('parent_select');
+    const previewParentName = document.getElementById('preview_parent_name');
+    const previewChildrenList = document.getElementById('preview_children_list');
+    const emptyPreviewMsg = document.getElementById('empty_preview_msg');
+    const selectedCountEl = document.getElementById('selected_count');
+    const mobileSelectedCountEl = document.getElementById('mobile_selected_count');
+    const searchInput = document.getElementById('search_children');
+    const clearSearchBtn = document.getElementById('clear_search');
+    const resetFilterBtn = document.getElementById('reset_filter_btn');
+    const noSearchResults = document.getElementById('no_search_results');
+    const toggleAllBtn = document.getElementById('toggle_all');
+    const childCards = Array.from(document.querySelectorAll('.child-card'));
+
+    function removeChildSelection(id) {
+        const card = childCards.find(c => c.getAttribute('data-id') === id);
+        if (card) {
+            const cb = card.querySelector('.child-checkbox');
+            cb.checked = false;
+            updateUI();
+        }
+    }
+
+    function updateUI() {
+        const selectedParentId = parentSelect.value;
+        const selectedOption = parentSelect.options[parentSelect.selectedIndex];
+        previewParentName.textContent = (selectedParentId && selectedOption)
+            ? selectedOption.text.trim()
+            : 'Aucun parent sélectionné';
+
+        const selectedItems = [];
+        /* ← ajout : institutions déjà liées au parent choisi */
+        let liens = {};
+        try { liens = JSON.parse(document.getElementById('heritageLiens').textContent) || {}; } catch (e) {}
+        const dejaLiees = liens[selectedParentId] || [];
+        childCards.forEach(card => {
+            const b = card.querySelector('.linked-badge');
+            if (b) b.classList.toggle('hidden', !dejaLiees.includes(card.getAttribute('data-id')) || card.getAttribute('data-id') === selectedParentId);
+        });
+
+        childCards.forEach(card => {
+            const cardId = card.getAttribute('data-id');
+            const checkbox = card.querySelector('.child-checkbox');
+            const checkBoxEl = card.querySelector('.check-box');
+            const checkIcon = card.querySelector('.check-icon');
+            const cardTitle = card.querySelector('.card-title');
+            const badge = card.querySelector('.parent-badge');
+
+            if (cardId === selectedParentId) {
+                checkbox.checked = false;
+                checkbox.disabled = true;
+                card.classList.add('opacity-50', 'bg-slate-100/80', 'pointer-events-none');
+                card.classList.remove('border-indigo-500', 'bg-indigo-50/60', 'ring-1', 'ring-indigo-500/20');
+                checkBoxEl.classList.remove('bg-indigo-600', 'border-indigo-600');
+                checkBoxEl.classList.add('bg-white', 'border-slate-300');
+                checkIcon.classList.add('hidden');
+                badge.classList.remove('hidden');
+            } else {
+                checkbox.disabled = false;
+                card.classList.remove('opacity-50', 'bg-slate-100/80', 'pointer-events-none');
+                badge.classList.add('hidden');
+
+                if (checkbox.checked) {
+                    selectedItems.push({
+                        id: cardId,
+                        name: cardTitle.textContent.trim()
+                    });
+                    card.classList.add('border-indigo-500', 'bg-indigo-50/60', 'ring-1', 'ring-indigo-500/20');
+                    card.classList.remove('border-slate-200', 'bg-white');
+                    checkBoxEl.classList.add('bg-indigo-600', 'border-indigo-600');
+                    checkBoxEl.classList.remove('bg-white', 'border-slate-300');
+                    checkIcon.classList.remove('hidden');
+                } else {
+                    card.classList.remove('border-indigo-500', 'bg-indigo-50/60', 'ring-1', 'ring-indigo-500/20');
+                    card.classList.add('border-slate-200', 'bg-white');
+                    checkBoxEl.classList.remove('bg-indigo-600', 'border-indigo-600');
+                    checkBoxEl.classList.add('bg-white', 'border-slate-300');
+                    checkIcon.classList.add('hidden');
+                }
+            }
+        });
+
+        selectedCountEl.textContent = selectedItems.length;
+        if (mobileSelectedCountEl) mobileSelectedCountEl.textContent = selectedItems.length;
+
+        previewChildrenList.innerHTML = '';
+        if (selectedItems.length === 0) {
+            previewChildrenList.appendChild(emptyPreviewMsg);
+        } else {
+            selectedItems.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between gap-2 text-xs bg-white/90 border border-slate-200/80 rounded-lg px-2.5 py-1.5 text-slate-700';
+
+                const label = document.createElement('span');
+                label.className = 'truncate font-medium';
+                label.textContent = item.name;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.title = 'Retirer';
+                removeBtn.className = 'text-slate-400 hover:text-rose-600 shrink-0 cursor-pointer';
+                removeBtn.innerHTML = '&times;';
+                removeBtn.addEventListener('click', () => removeChildSelection(item.id));
+
+                row.appendChild(label);
+                row.appendChild(removeBtn);
+                previewChildrenList.appendChild(row);
+            });
+        }
+
+        const activeVisibleCards = childCards.filter(c => !c.querySelector('.child-checkbox').disabled && c.style.display !== 'none');
+        const allActiveChecked = activeVisibleCards.length > 0 && activeVisibleCards.every(c => c.querySelector('.child-checkbox').checked);
+        toggleAllBtn.textContent = allActiveChecked ? 'Tout décocher' : 'Tout cocher';
+    }
+
+    function applySearchFilter() {
+        const query = searchInput.value.toLowerCase().trim();
+        clearSearchBtn.classList.toggle('hidden', query.length === 0);
+
+        let visibleCount = 0;
+        childCards.forEach(card => {
+            const name = card.getAttribute('data-name') || '';
+            const matches = name.includes(query);
+            card.style.display = matches ? 'flex' : 'none';
+            if (matches) visibleCount++;
+        });
+
+        if (childCards.length > 0) {
+            noSearchResults.classList.toggle('hidden', visibleCount > 0);
+        }
+        updateUI();
+    }
+
+    parentSelect.addEventListener('change', updateUI);
+
+    document.querySelectorAll('.child-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateUI);
+    });
+
+    /* ← ajout : confirmation et pas de double envoi (le transfert peut créer beaucoup d'éléments) */
+    document.getElementById('heritageForm').addEventListener('submit', function (e) {
+        const n = childCards.filter(c => c.querySelector('.child-checkbox').checked).length;
+        const parentNom = parentSelect.options[parentSelect.selectedIndex] ? parentSelect.options[parentSelect.selectedIndex].text.trim() : '';
+        if (!n) { e.preventDefault(); alert('Sélectionnez au moins une institution enfant.'); return; }
+        if (!confirm('Copier les structures, éléments de données, indicateurs et jeux de données de « ' + parentNom + ' » vers ' + n + ' institution(s) ?')) { e.preventDefault(); return; }
+        this.querySelectorAll('button[type=submit]').forEach(b => { b.disabled = true; b.classList.add('opacity-60'); });
+    });
+
+    searchInput.addEventListener('input', applySearchFilter);
+
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        applySearchFilter();
+        searchInput.focus();
+    });
+
+    if (resetFilterBtn) {
+        resetFilterBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            applySearchFilter();
+        });
+    }
+
+    toggleAllBtn.addEventListener('click', function () {
+        const activeVisibleCards = childCards.filter(c => !c.querySelector('.child-checkbox').disabled && c.style.display !== 'none');
+        const shouldCheck = !activeVisibleCards.every(c => c.querySelector('.child-checkbox').checked);
+
+        activeVisibleCards.forEach(card => {
+            card.querySelector('.child-checkbox').checked = shouldCheck;
+        });
+        updateUI();
+    });
+
+    updateUI();
+});
+</script>
+{% endblock %}

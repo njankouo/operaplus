@@ -30278,45 +30278,585 @@ def add_transaction(request):
             return JsonResponse({"erreur survenue  au cour de l'enregistrement": str(e)}, status=500)
     return redirect(request.META.get('HTTP_REFERER','/'))
         
+# =====================================================================
+#  OperaPlus — Tableau de bord TET (taux d'exécution technique)
+#  VOS vues gest_dashboard_data et technics_dashboard, corrigées et complétées.
+#  Template : dashboard-technics.html (même dossier que index.html)
+#
+#  Corrigé dans gest_dashboard_data :
+#   - « technics » : le return redirect(...) arrivait AVANT persons.save() → le choix TET n'était jamais enregistré.
+#   - Personnel.objects.get(id=…) inutile : request.user.personnel est déjà le bon objet.
+#   - un sélecteur inconnu ne passe plus en silence.
+#
+#  Ajouté dans technics_dashboard (aucun nouveau modèle) :
+#   - lit les CIBLES (IndicateurValeur type_donnee="valeur") et les RÉALISATIONS (type_donnee="valeur_form")
+#     de l'année choisie (?annee=2026), pour l'institution active ;
+#   - taux par indicateur = réalisé / cible, en respectant type_aggregation (Somme, Moyenne, Dernière valeur…) ;
+#   - TET = moyenne des taux des indicateurs ayant une cible, chaque taux plafonné à 100 %
+#     (un indicateur à 300 % ne doit pas masquer un indicateur à 10 %) ;
+#   - « à date » : comparé aux cibles des périodes déjà commencées (on ne reproche pas en mars la cible de décembre).
+#
+#  Imports (à fusionner avec les vôtres) :
+#      import datetime
+#      from collections import defaultdict
+#      from django.contrib import messages
+#      from django.contrib.auth.decorators import login_required
+#      from django.shortcuts import redirect, render
+#
+#  v89b : toutes les fonctions utilitaires sont préfixées _tet_ : votre views.py contient déjà _lib(obj)
+#         (complétude) et un nom identique écrasait l'autre (« _lib() takes 1 positional argument but 2 were given »).
+# =====================================================================
+
+from collections import defaultdict
+
+TET_SELECTEURS = {                                  # sélecteur → (champ activé, message, page)
+    'financial': ('is_finance', 'Suivi du TEF activé', None),
+    'process':   ('is_process', 'Suivi du TEP activé', None),
+    'technics':  ('is_technic', 'Suivi du TET activé', '/dashboard-technics/'),
+}
+
+
+@login_required(login_url='/log_account')
 def gest_dashboard_data(request):
     if request.method == 'POST':
+        selector = request.POST.get('selector', '')
+        personnel = getattr(request.user, 'personnel', None)
+        if personnel is None:
+            messages.error(request, "Votre compte n'est lié à aucun personnel.")
+        elif selector not in TET_SELECTEURS:
+            messages.error(request, "Tableau de bord inconnu.")                     # ← ajout
+        else:
+            champ, texte, page = TET_SELECTEURS[selector]
+            personnel.is_finance = champ == 'is_finance'
+            personnel.is_process = champ == 'is_process'
+            personnel.is_technic = champ == 'is_technic'
+            personnel.save(update_fields=['is_finance', 'is_process', 'is_technic'])  # ← corrigé : enregistré AVANT la redirection
+            messages.success(request, texte)
+            if page:
+                return redirect(page)
+    return redirect(request.META.get('HTTP_REFERER', '/'))
+
+
+# ---------------------------------------------------------------------
+#  Calculs du TET
+# ---------------------------------------------------------------------
+def _tet_date(d):
+    return d.date() if d and hasattr(d, 'date') else d
+
+
+def _tet_lib(obj, *champs):
+    for c in champs + ('nicename', 'nom', 'm_nom', 'libelle', 'm_name'):
+        v = getattr(obj, c, None)
+        if v:
+            return str(v)
+    return str(obj) if obj else ''
+
+
+def _tet_agreger(valeurs, mode):
+    """valeurs = [(ordre_periode, nombre), …] → un total selon type_aggregation de l'indicateur."""
+    if not valeurs:
+        return None
+    mode = (mode or '').lower()
+    nombres = [v for _, v in valeurs]
+    if 'moy' in mode or mode in ('avg', 'average'):
+        return sum(nombres) / len(nombres)
+    if 'dern' in mode or 'last' in mode:
+        return sorted(valeurs, key=lambda x: x[0])[-1][1]
+    if 'max' in mode:
+        return max(nombres)
+    if 'min' in mode:
+        return min(nombres)
+    return sum(nombres)                                               # Somme (par défaut), Compteur
+
+
+def _tet_statut(taux):
+    if taux is None:
+        return 'sans'
+    if taux >= 100:
+        return 'atteint'
+    if taux >= 75:
+        return 'voie'
+    if taux >= 50:
+        return 'surveiller'
+    return 'retard'
+
+
+def _tet_moyenne(taux):
+    taux = [min(t, 100) for t in taux if t is not None]
+    return round(sum(taux) / len(taux), 1) if taux else None
+
+
+def _tet_fr(n):
+    """12.5 → « 12,5 » (affichage français)."""
+    return ('%g' % n).replace('.', ',')
+
+
+TET_NIVEAUX = ('Impact', 'Effet', 'Produit', 'Activité')              # chaîne des résultats (Indicateur.niveau_pyramide)
+
+
+def _tet_niveau(ind):
+    n = (getattr(ind, 'niveau_pyramide', '') or '').strip()
+    for niv in TET_NIVEAUX:
+        if n.lower() == niv.lower() or n.lower().rstrip('s') == niv.lower():
+            return niv
+    return 'Non précisé'
+
+
+def _tet_chemin(entite, cache):
+    """Chemin de l'objectif dans l'arbre du programme : [racine, …, entité] (via Entity.sup_hierachie)."""
+    if entite is None:
+        return []
+    if entite.pk not in cache:
         try:
-            selector = request.POST['selector']
-           
-            
-            personnel = request.user.personnel.id
-            
-            persons = Personnel.objects.get(id=int(personnel))
-            if selector == 'financial':
+            ancetres = [e for e in entite.sup_hierachie() if e is not None and e.pk != entite.pk]
+        except Exception:
+            ancetres = []
+        cache[entite.pk] = ancetres + [entite]
+    return cache[entite.pk]
 
 
-                persons.is_finance = True
-                persons.is_process=False
-                persons.is_technic = False
-                messages.success(request, 'Suivi Du TEF  Activé ')
-            if selector == 'process':
-                persons.is_process = True 
-                persons.is_finance = False
-                persons.is_technic = False 
-                messages.success(request, 'Suivi Du TEP Activé')
+@login_required(login_url='/log_account')
+def technics_dashboard(request):
+    template = 'dashboard-technics.html'
+    context = basis(request)
+    inst = context.get('actual_institution')
+    if not inst:
+        return redirect('/')
+    aujourd_hui = datetime.date.today()
 
-            if selector == 'technics':
-                persons.is_process = False 
-                persons.is_finance = False
-                persons.is_technic = True 
-                messages.success(request, 'Suivi Du TET Activé')
+    # --- année ---
+    valeurs_inst = IndicateurValeur.objects.filter(institution=inst, periode_ok__isnull=False,
+                                                   type_donnee__in=('valeur', 'valeur_form'))
+    annees = sorted({a for a in valeurs_inst.values_list('periode_ok__annee', flat=True).distinct() if a}, reverse=True)
+    annee = request.GET.get('annee', '')
+    annee = int(annee) if annee.isdigit() and int(annee) in annees else (
+        aujourd_hui.year if aujourd_hui.year in annees else (annees[0] if annees else aujourd_hui.year))
 
-               
+    # --- données de l'année (une seule requête) ---
+    lignes = (valeurs_inst.filter(periode_ok__annee=annee, valeur__isnull=False)
+              .values('indicateur_id', 'structure_id', 'periode_ok_id', 'type_donnee', 'valeur', 'reference_cible', 'etat_validation'))
+    periodes = {p.id: p for p in PeriodeOk.objects.filter(id__in={l['periode_ok_id'] for l in lignes})}
+    ordre = {pid: (p.numero_ordre or 0, _tet_date(p.date_debut) or datetime.date.min, pid) for pid, p in periodes.items()}
+    commencee = {pid: (_tet_date(p.date_debut) or datetime.date.min) <= aujourd_hui for pid, p in periodes.items()}
+
+    indicateurs = {i.id: i for i in Indicateur.objects.filter(m_institution=inst).select_related('m_enti')}
+    structures = {s.id: s for s in Structure.objects.filter(institution=inst)}
+
+    # cible / réalisé par indicateur, par période et par structure
+    cible = defaultdict(list)          # ind → [(ordre, v)]
+    reel = defaultdict(list)
+    cible_p = defaultdict(float)       # (ind, période) → v
+    reel_p = defaultdict(float)
+    cible_s = defaultdict(float)       # (ind, structure) → v
+    reel_s = defaultdict(float)
+    nb_decl, nb_valid = 0, 0
+    attendus, recus = set(), set()     # ← ajout (v90) : complétude = (indicateur, structure, période échue) ciblés et déclarés
+    decl_s = defaultdict(lambda: [0, 0])                               # ← ajout (v92) : structure → [déclarations, validées]
+    valeurs_decl = defaultdict(list)                                   # ← ajout (v92) : indicateur → [(structure, période, valeur)]
+    for l in lignes:
+        iid, pid = l['indicateur_id'], l['periode_ok_id']
+        if iid not in indicateurs:
+            continue
+        v = float(l['valeur'] or 0)
+        if l['type_donnee'] == 'valeur':
+            cible[iid].append((ordre[pid], v, pid)); cible_p[(iid, pid)] += v
+            if l['structure_id']: cible_s[(iid, l['structure_id'])] += v
+            if commencee[pid]: attendus.add((iid, l['structure_id'], pid))
+        elif not l['reference_cible']:
+            reel[iid].append((ordre[pid], v, pid)); reel_p[(iid, pid)] += v
+            if l['structure_id']: reel_s[(iid, l['structure_id'])] += v
+            nb_decl += 1
+            nb_valid += 1 if l['etat_validation'] else 0
+            recus.add((iid, l['structure_id'], pid))
+            decl_s[l['structure_id']][0] += 1
+            decl_s[l['structure_id']][1] += 1 if l['etat_validation'] else 0
+            valeurs_decl[iid].append((l['structure_id'], pid, v))
+
+    # ← ajout (v92) : LIGNE DE BASE = cible enregistrée sans période (page « Cibles », colonne Départ)
+    base_brute = defaultdict(list)
+    for l in IndicateurValeur.objects.filter(institution=inst, type_donnee='valeur', periode_ok__isnull=True,
+                                             valeur__isnull=False, indicateur_id__in=list(indicateurs)).values('indicateur_id', 'valeur'):
+        base_brute[l['indicateur_id']].append((0, float(l['valeur'])))
+
+    # ← ajout (v92) : ANNÉE PRÉCÉDENTE, aux mêmes périodes (mêmes numéros d'ordre que les périodes déjà commencées)
+    ordres = {periodes[p].numero_ordre for p in periodes if commencee[p] and periodes[p].numero_ordre is not None}
+    reel_n1 = defaultdict(list)
+    if ordres:
+        for l in IndicateurValeur.objects.filter(institution=inst, type_donnee='valeur_form', reference_cible=False, valeur__isnull=False,
+                                                 periode_ok__annee=annee - 1, periode_ok__numero_ordre__in=ordres,
+                                                 indicateur_id__in=list(indicateurs)).values('indicateur_id', 'valeur', 'periode_ok__numero_ordre'):
+            reel_n1[l['indicateur_id']].append((l['periode_ok__numero_ordre'] or 0, float(l['valeur'])))
+
+    # --- par indicateur ---
+    lignes_ind = []
+    chemins = {}                                                       # ← ajout (v90) : cache des chemins d'objectifs
+    for iid, ind in indicateurs.items():
+        mode = getattr(ind, 'type_aggregation', '')
+        c_an = _tet_agreger([(o, v) for o, v, _ in cible[iid]], mode)
+        if not c_an and getattr(ind, 'cible_contractuelle', None):
+            c_an = float(ind.cible_contractuelle)                       # pas de cible par période : cible de la fiche
+        c_date = _tet_agreger([(o, v) for o, v, p in cible[iid] if commencee[p]], mode) if cible[iid] else c_an
+        r = _tet_agreger([(o, v) for o, v, _ in reel[iid]], mode)
+        taux_an = round(r * 100 / c_an, 1) if c_an and r is not None else (0.0 if c_an else None)
+        taux_date = round(r * 100 / c_date, 1) if c_date and r is not None else (0.0 if c_date else None)
+
+        # ← ajout (v92) : ligne de base et progrès réel depuis le départ
+        cumul = not any(k in (mode or '').lower() for k in ('moy', 'dern', 'last', 'max', 'min', 'avg'))   # indicateur qui s'additionne
+        #   base de toutes les structures : additionnée pour un indicateur cumulatif, moyenne pour un taux
+        base = _tet_agreger(base_brute.get(iid, []), 'Somme' if cumul else 'Moyenne') if base_brute.get(iid) else None
+        progres = round((r - base) * 100 / (c_date - base), 1) if (base is not None and r is not None and c_date is not None and c_date != base) else None
+
+        # ← ajout (v92) : projection en fin d'année au rythme actuel
+        p_tot = {p for _, _, p in cible[iid]}
+        p_ech = {p for p in p_tot if commencee[p]}
+        if r is None or not c_an:
+            proj = None
+        elif cumul and p_tot and p_ech:
+            proj = r * len(p_tot) / len(p_ech)                         # même rythme sur les périodes restantes
+        else:
+            proj = r                                                   # taux, moyenne, dernière valeur : on garde le niveau actuel
+        taux_proj = round(proj * 100 / c_an, 1) if proj is not None and c_an else None
+        statut_proj = None if taux_proj is None else ('ok' if taux_proj >= 100 else 'risque' if taux_proj >= 75 else 'hors')
+
+        # ← ajout (v92) : évolution par rapport à l'année précédente (mêmes périodes)
+        r_n1 = _tet_agreger(reel_n1.get(iid, []), mode) if reel_n1.get(iid) else None
+        evol_n1 = round((r - r_n1) * 100 / abs(r_n1), 1) if (r is not None and r_n1) else None
+
+        lignes_ind.append({
+            'id': iid, 'nom': ind.nicename or ind.m_name, 'code': ind.m_name,
+            'objectif': _tet_lib(ind.m_enti, 'm_nom') if ind.m_enti_id else 'Sans objectif',
+            'objectif_id': ind.m_enti_id or 0,
+            'cible': c_an, 'cible_date': c_date, 'realise': r,
+            'taux': taux_an, 'taux_date': taux_date, 'statut': _tet_statut(taux_date),
+            'frequence': getattr(ind, 'frequence_collecte', '') or '',
+            'niveau': _tet_niveau(ind),                                                 # ← ajout (v90)
+            'chemin': [(e.pk, _tet_lib(e, 'm_nom')) for e in _tet_chemin(ind.m_enti, chemins)] if ind.m_enti_id else [],
+            'a_donnees': r is not None,
+            'base': base, 'progres': progres,                                           # ← ajout (v92)
+            'projection': proj, 'taux_proj': taux_proj, 'statut_proj': statut_proj,
+            'realise_n1': r_n1, 'evol_n1': evol_n1,
+        })
+    lignes_ind.sort(key=lambda x: (x['taux_date'] is None, x['taux_date'] if x['taux_date'] is not None else 0))
+
+    # --- par objectif ---
+    par_obj = defaultdict(list)
+    for x in lignes_ind:
+        par_obj[(x['objectif_id'], x['objectif'])].append(x)
+    objectifs = sorted(({'nom': nom, 'nb': len(xs), 'tet': _tet_moyenne([x['taux_date'] for x in xs]),
+                         'retard': sum(1 for x in xs if x['statut'] == 'retard')}
+                        for (oid, nom), xs in par_obj.items()), key=lambda o: (o['tet'] is None, -(o['tet'] or 0)))
+
+    # --- par période (TET de chaque période) ---
+    evolution = []
+    for pid in sorted(periodes, key=lambda p: ordre[p]):
+        taux = [reel_p.get((iid, pid), 0) * 100 / cible_p[(iid, pid)] for iid in indicateurs if cible_p.get((iid, pid))]
+        evolution.append({'periode': _tet_lib(periodes[pid]), 'tet': _tet_moyenne(taux), 'nb': len(taux),
+                          'commencee': commencee[pid]})
+
+    # --- par structure ---
+    par_struct = []
+    for sid, s in structures.items():
+        taux = [reel_s.get((iid, sid), 0) * 100 / c for (iid, s2), c in cible_s.items() if s2 == sid and c]
+        if taux:
+            par_struct.append({'nom': _tet_lib(s), 'tet': _tet_moyenne(taux), 'nb': len(taux)})
+    par_struct.sort(key=lambda s: -s['tet'])
+
+    statuts = defaultdict(int)
+    for x in lignes_ind:
+        statuts[x['statut']] += 1
+    avec_cible = [x for x in lignes_ind if x['taux_date'] is not None]
+
+    # ===== v90 ← ajout =====
+    # 1. Performance par niveau de la chaîne des résultats
+    niveaux_presents = [n for n in TET_NIVEAUX + ('Non précisé',) if any(x['niveau'] == n for x in lignes_ind)]
+    par_niveau = []
+    for n in niveaux_presents:
+        xs = [x for x in lignes_ind if x['niveau'] == n]
+        par_niveau.append({'niveau': n, 'nb': len(xs), 'tet': _tet_moyenne([x['taux_date'] for x in xs]),
+                           'atteint': sum(1 for x in xs if x['statut'] == 'atteint'),
+                           'retard': sum(1 for x in xs if x['statut'] == 'retard')})
+
+    # 2. Matrice composantes × chaîne des résultats (composante = premier niveau de l'arbre du programme)
+    compo = defaultdict(list)
+    for x in lignes_ind:
+        racine = x['chemin'][0] if x['chemin'] else (0, 'Sans composante')
+        compo[racine].append(x)
+    matrice = []
+    for (cid, cnom), xs in sorted(compo.items(), key=lambda kv: kv[0][1]):
+        cellules = []
+        for n in niveaux_presents:
+            ys = [x for x in xs if x['niveau'] == n]
+            cellules.append({'tet': _tet_moyenne([y['taux_date'] for y in ys]), 'nb': len(ys)})
+        matrice.append({'composante': cnom, 'cellules': cellules, 'tet': _tet_moyenne([x['taux_date'] for x in xs]), 'nb': len(xs)})
+
+    # 3. Arbre hiérarchique du programme : composante → … → objectif → indicateurs
+    def noeud(nid, nom):
+        return {'id': nid, 'nom': nom, 'enfants': {}, 'indicateurs': []}
+    arbre = noeud(0, 'Programme')
+    for x in lignes_ind:
+        n = arbre
+        for eid, enom in (x['chemin'] or [(0, 'Sans objectif')]):
+            n = n['enfants'].setdefault(eid, noeud(eid, enom))
+        n['indicateurs'].append({'id': x['id'], 'nom': x['nom'], 'taux': x['taux_date'], 'statut': x['statut'], 'niveau': x['niveau']})
+
+    def finaliser(n):
+        enfants = [finaliser(e) for e in sorted(n['enfants'].values(), key=lambda e: e['nom'])]
+        taux = [i['taux'] for i in n['indicateurs']]
+        for e in enfants:
+            taux += e['_taux']
+        return {'nom': n['nom'], 'enfants': enfants, 'indicateurs': n['indicateurs'], '_taux': taux,
+                'tet': _tet_moyenne(taux), 'nb': len(taux)}
+    arbre = finaliser(arbre)
+
+    # 4. Complétude des données (périodes déjà commencées)
+    completude = round(len(attendus & recus) * 100 / len(attendus), 1) if attendus else None
+    manquants_p = defaultdict(int)
+    for (iid, sid, pid) in attendus - recus:
+        manquants_p[pid] += 1
+
+    # 4 bis. ← ajout (v92) : QUALITÉ DES DONNÉES par structure
+    #   valeur anormale = négative, ou plus de 4 fois la médiane des déclarations du même indicateur
+    aberrantes = defaultdict(int)
+    liste_aberrantes = []
+    for iid, vals in valeurs_decl.items():
+        positives = sorted(v for _, _, v in vals if v > 0)
+        med = positives[len(positives) // 2] if len(positives) >= 4 else None
+        for sid, pid, v in vals:
+            if v < 0 or (med and v > 4 * med):
+                aberrantes[sid] += 1
+                liste_aberrantes.append({'indicateur': indicateurs[iid].nicename or indicateurs[iid].m_name,
+                                         'structure': _tet_lib(structures[sid]) if sid in structures else '—',
+                                         'periode': _tet_lib(periodes[pid]), 'valeur': v, 'mediane': med})
+    periodes_echues = [p for p in sorted(periodes, key=lambda p: ordre[p]) if commencee[p]]
+    qualite = []
+    for sid, s in structures.items():
+        att = {(i, p) for (i, s2, p) in attendus if s2 == sid}
+        if not att and not decl_s.get(sid):
+            continue
+        rec = {(i, p) for (i, s2, p) in attendus & recus if s2 == sid}
+        nd, nv = decl_s.get(sid, [0, 0])
+        compl = round(len(rec) * 100 / len(att), 1) if att else None
+        valid = round(nv * 100 / nd, 1) if nd else None
+        pct_ab = round(aberrantes.get(sid, 0) * 100 / nd, 1) if nd else 0
+        morceaux = [x for x in (compl, valid, 100 - pct_ab if nd else None) if x is not None]
+        cellules = []
+        for p in periodes_echues:
+            a = sum(1 for (i, s2, p2) in attendus if s2 == sid and p2 == p)
+            r_ = sum(1 for (i, s2, p2) in attendus & recus if s2 == sid and p2 == p)
+            cellules.append(round(r_ * 100 / a) if a else None)
+        qualite.append({'nom': _tet_lib(s), 'attendus': len(att), 'recus': len(rec), 'completude': compl,
+                        'validation': valid, 'aberrantes': aberrantes.get(sid, 0), 'declarations': nd,
+                        'score': round(sum(morceaux) / len(morceaux)) if morceaux else None, 'cellules': cellules})
+    qualite.sort(key=lambda q: (q['score'] is None, q['score'] if q['score'] is not None else 0))
+    score_qualite = round(sum(q['score'] for q in qualite if q['score'] is not None) / max(1, sum(1 for q in qualite if q['score'] is not None))) if qualite else None
+
+    # 4 ter. ← ajout (v92) : ACTIONS CORRECTIVES (modèle ActionCorrective ; ignoré tant qu'il n'est pas migré)
+    actions, nb_actions_retard, nb_actions_ouvertes, personnels = [], 0, 0, []
+    Modele = globals().get('ActionCorrective')
+    if Modele is not None:
+        try:
+            for a in (Modele.objects.filter(institution=inst).select_related('indicateur', 'structure', 'responsable')
+                      .order_by('statut', 'echeance', '-id')[:200]):
+                ouverte = a.statut in ('a_faire', 'en_cours')
+                en_retard = bool(ouverte and a.echeance and a.echeance < aujourd_hui)
+                nb_actions_ouvertes += 1 if ouverte else 0
+                nb_actions_retard += 1 if en_retard else 0
+                actions.append({'obj': a, 'ouverte': ouverte, 'en_retard': en_retard,
+                                'responsable': (' '.join(x for x in (getattr(a.responsable, 'prenom', ''), getattr(a.responsable, 'nom', '')) if x)
+                                                or str(a.responsable)) if a.responsable_id else ''})
+            actions.sort(key=lambda x: (not x['en_retard'], not x['ouverte'], x['obj'].echeance or datetime.date.max))
+        except Exception:                                              # table pas encore créée (migration à faire)
+            actions, Modele = [], None
+        try:
+            personnels = [{'id': p.id, 'nom': ' '.join(x for x in (getattr(p, 'prenom', ''), getattr(p, 'nom', '')) if x) or str(p)}
+                          for p in Personnel.objects.filter(actual_institution=inst)]
+        except Exception:
+            personnels = []
+
+    # 5. Points d'attention (calculés à partir des chiffres ci-dessus)
+    alertes = []
+    retards = [x for x in lignes_ind if x['statut'] == 'retard']
+    if retards:
+        alertes.append({'niveau': 'danger', 'titre': f"{len(retards)} indicateur{'s' if len(retards) > 1 else ''} en retard",
+                        'texte': ', '.join(f"{x['nom']} ({_tet_fr(x['taux_date'])} %)" for x in retards[:3]) + ('…' if len(retards) > 3 else ''),
+                        'filtre': 'retard'})
+    sans_donnees = [x for x in lignes_ind if x['taux_date'] is not None and not x['a_donnees']]
+    if sans_donnees:
+        alertes.append({'niveau': 'danger', 'titre': f"{len(sans_donnees)} indicateur{'s' if len(sans_donnees) > 1 else ''} avec cible mais sans aucune donnée",
+                        'texte': ', '.join(x['nom'] for x in sans_donnees[:3]) + ('…' if len(sans_donnees) > 3 else '')})
+    if completude is not None and completude < 80:
+        pire = max(manquants_p, key=manquants_p.get) if manquants_p else None
+        alertes.append({'niveau': 'warn', 'titre': f"Complétude des données à {_tet_fr(completude)} %",
+                        'texte': f"{len(attendus - recus)} saisie(s) attendue(s) manquante(s)"
+                                 + (f", surtout sur {_tet_lib(periodes[pire])} ({manquants_p[pire]})" if pire else '') + '.'})
+    hauts = [p for p in par_niveau if p['niveau'] in ('Activité', 'Produit') and p['tet'] is not None]
+    bas = [p for p in par_niveau if p['niveau'] in ('Effet', 'Impact') and p['tet'] is not None]
+    if hauts and bas:
+        h, b = max(hauts, key=lambda p: p['tet']), min(bas, key=lambda p: p['tet'])
+        if h['tet'] - b['tet'] >= 25:
+            alertes.append({'niveau': 'warn', 'titre': "Les réalisations ne se traduisent pas encore en résultats",
+                            'texte': f"{h['niveau']} : {_tet_fr(h['tet'])} % contre {b['niveau']} : {_tet_fr(b['tet'])} %. "
+                                     f"Vérifiez la logique d'intervention ou le calendrier des effets attendus."})
+    faibles = [s for s in par_struct if s['tet'] < 50]
+    if faibles:
+        alertes.append({'niveau': 'warn', 'titre': f"{len(faibles)} structure{'s' if len(faibles) > 1 else ''} sous 50 %",
+                        'texte': ', '.join(f"{s['nom']} ({_tet_fr(s['tet'])} %)" for s in sorted(faibles, key=lambda s: s['tet'])[:3])})
+    sans_cible = [x for x in lignes_ind if x['statut'] == 'sans']
+    if sans_cible:
+        alertes.append({'niveau': 'info', 'titre': f"{len(sans_cible)} indicateur{'s' if len(sans_cible) > 1 else ''} sans cible pour {annee}",
+                        'texte': "Ils ne comptent pas dans le TET. Définissez leurs cibles depuis le registre des indicateurs.", 'filtre': 'sans'})
+    if nb_decl and nb_valid * 100 / nb_decl < 70:
+        alertes.append({'niveau': 'info', 'titre': f"{round(100 - nb_valid * 100 / nb_decl)} % des déclarations ne sont pas validées",
+                        'texte': "Le TET les inclut ; faites-les valider pour fiabiliser le chiffre."})
+    hors = [x for x in lignes_ind if x['statut_proj'] == 'hors']           # ← ajout (v92)
+    if hors:
+        alertes.insert(1, {'niveau': 'danger', 'titre': f"{len(hors)} indicateur{'s' if len(hors) > 1 else ''} hors d'atteinte d'ici la fin de l'année",
+                           'texte': "Au rythme actuel : " + ', '.join(f"{x['nom']} (≈ {_tet_fr(x['taux_proj'])} %)" for x in sorted(hors, key=lambda x: x['taux_proj'])[:3]) + ('…' if len(hors) > 3 else ''),
+                           'filtre': 'hors'})
+    if nb_actions_retard:
+        alertes.insert(0, {'niveau': 'danger', 'titre': f"{nb_actions_retard} action{'s' if nb_actions_retard > 1 else ''} corrective{'s' if nb_actions_retard > 1 else ''} en retard",
+                           'texte': "Échéance dépassée sans clôture. Relancez les responsables.", 'onglet': 'actions'})
+    if liste_aberrantes:
+        alertes.append({'niveau': 'warn', 'titre': f"{len(liste_aberrantes)} valeur{'s' if len(liste_aberrantes) > 1 else ''} anormale{'s' if len(liste_aberrantes) > 1 else ''} à vérifier",
+                        'texte': ', '.join(f"{a['indicateur']} · {a['structure']} ({_tet_fr(a['valeur'])})" for a in liste_aberrantes[:2]) + ('…' if len(liste_aberrantes) > 2 else ''),
+                        'onglet': 'qualite'})
+    if not alertes:
+        alertes.append({'niveau': 'ok', 'titre': "Aucun point d'attention", 'texte': "Les indicateurs avancent conformément aux cibles."})
+
+    # 6. Indicateurs : cibles et réalisations (graphique)
+    cibles_real = [{'nom': x['nom'], 'cible': x['cible_date'], 'realise': x['realise'] or 0, 'taux': x['taux_date']}
+                   for x in sorted(avec_cible, key=lambda x: x['nom'])]
+
+    context.update({
+        'annee': annee, 'annees': annees or [annee],
+        'tet': _tet_moyenne([x['taux_date'] for x in avec_cible]),
+        'tet_annuel': _tet_moyenne([x['taux'] for x in avec_cible]),
+        'nb_indicateurs': len(lignes_ind), 'nb_avec_cible': len(avec_cible),
+        'statuts': dict(statuts),
+        'nb_declarations': nb_decl, 'pct_valide': round(nb_valid * 100 / nb_decl) if nb_decl else None,
+        'indicateurs_tet': lignes_ind, 'objectifs_tet': objectifs, 'structures_tet': par_struct,
+        'tet_json': {'evolution': evolution, 'statuts': dict(statuts),
+                     'structures': par_struct[:12], 'objectifs': objectifs,
+                     'arbre': arbre, 'cibles_real': cibles_real},                 # ← ajout (v90)
+        'par_niveau': par_niveau, 'niveaux_presents': niveaux_presents,         # ← ajout (v90)
+        'matrice': matrice, 'alertes': alertes,
+        'completude': completude, 'nb_attendus': len(attendus), 'nb_recus': len(attendus & recus),
+        # ← ajout (v92)
+        'tet_projection': _tet_moyenne([x['taux_proj'] for x in lignes_ind if x['taux_proj'] is not None]),
+        'nb_hors': len(hors), 'nb_risque': sum(1 for x in lignes_ind if x['statut_proj'] == 'risque'),
+        'avec_base': sum(1 for x in lignes_ind if x['base'] is not None),
+        'avec_n1': sum(1 for x in lignes_ind if x['realise_n1'] is not None),
+        'qualite': qualite, 'score_qualite': score_qualite, 'aberrantes': liste_aberrantes[:30],
+        'periodes_echues': [_tet_lib(periodes[p]) for p in periodes_echues],
+        'actions': actions, 'nb_actions_retard': nb_actions_retard, 'nb_actions_ouvertes': nb_actions_ouvertes,
+        'actions_actives': Modele is not None, 'personnels': personnels,
+        'structures_choix': [{'id': sid, 'nom': _tet_lib(s)} for sid, s in sorted(structures.items(), key=lambda kv: _tet_lib(kv[1]))],
+        'aujourd_hui': aujourd_hui,
+        'date_situation': aujourd_hui,
+    })
+    return render(request, template, context)
+
+# =====================================================================
+#  OperaPlus — ACTIONS CORRECTIVES (v92)
+#  Ferme la boucle du suivi-évaluation : un écart constaté → une action, un responsable, une échéance, un statut.
+#  Visibles dans l'onglet « Actions » du tableau de bord technique (dashboard-technics.html).
+#
+#  1) MODÈLE — à coller dans models.py (après Institution, Indicateur, Structure et Personnel), puis :
+#        python manage.py makemigrations
+#        python manage.py migrate
+#
+#  class ActionCorrective(models.Model):
+#      STATUTS = [('a_faire', 'À faire'), ('en_cours', 'En cours'), ('terminee', 'Terminée'), ('abandonnee', 'Abandonnée')]
+#      institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='actions_correctives')
+#      indicateur = models.ForeignKey(Indicateur, on_delete=models.SET_NULL, null=True, blank=True, related_name='actions_correctives')
+#      structure = models.ForeignKey(Structure, on_delete=models.SET_NULL, null=True, blank=True, related_name='actions_correctives')
+#      titre = models.CharField(max_length=255)
+#      description = models.TextField(blank=True, default='')
+#      responsable = models.ForeignKey(Personnel, on_delete=models.SET_NULL, null=True, blank=True, related_name='actions_a_mener')
+#      echeance = models.DateField(null=True, blank=True)
+#      statut = models.CharField(max_length=20, choices=STATUTS, default='a_faire')
+#      cree_par = models.ForeignKey(Personnel, on_delete=models.SET_NULL, null=True, blank=True, related_name='actions_creees')
+#      date_creation = models.DateTimeField(auto_now_add=True)
+#      date_maj = models.DateTimeField(auto_now=True)
+#
+#      class Meta:
+#          ordering = ['statut', 'echeance']
+#
+#      def __str__(self):
+#          return self.titre
+#
+#  2) URLS — à ajouter dans urls.py :
+#        path('actions-correctives/creer/', views.action_creer, name='action_creer'),
+#        path('actions-correctives/<int:id>/statut/', views.action_statut, name='action_statut'),
+#
+#  3) VUES — ci-dessous, à coller dans views.py. Imports (à fusionner) :
+#        import datetime
+#        from django.contrib import messages
+#        from django.contrib.auth.decorators import login_required
+#        from django.shortcuts import redirect
+#        from django.views.decorators.http import require_POST
+# =====================================================================
+
+ACTION_STATUTS = ('a_faire', 'en_cours', 'terminee', 'abandonnee')
 
 
-           
-            
-            persons.save()
-        except Exception as e:
-            messages.error(request,f'erreur de migration survenue:{e}')
-    return redirect(request.META.get('HTTP_REFERER','/'))
-            
+def _action_retour(request, onglet='actions'):
+    """Retour au tableau de bord, sur l'onglet Actions."""
+    retour = (request.META.get('HTTP_REFERER') or '/dashboard-technics/').split('#')[0]
+    return redirect(retour + '#' + onglet)
 
+
+@login_required(login_url='/log_account')
+@require_POST
+def action_creer(request):
+    context = basis(request)
+    inst = context.get('actual_institution')
+    if not inst:
+        return redirect('/')
+    titre = (request.POST.get('titre') or '').strip()
+    if not titre:
+        messages.error(request, "Donnez un titre à l'action corrective.")
+        return _action_retour(request)
+
+    def _id(nom):
+        v = request.POST.get(nom, '')
+        return int(v) if v.isdigit() else None
+
+    # chaque lien est vérifié : uniquement des objets de l'institution active
+    indicateur = Indicateur.objects.filter(id=_id('indicateur'), m_institution=inst).first() if _id('indicateur') else None
+    structure = Structure.objects.filter(id=_id('structure'), institution=inst).first() if _id('structure') else None
+    responsable = Personnel.objects.filter(id=_id('responsable'), actual_institution=inst).first() if _id('responsable') else None
+    echeance = None
+    try:
+        if request.POST.get('echeance'):
+            echeance = datetime.date.fromisoformat(request.POST['echeance'])
+    except ValueError:
+        messages.warning(request, "Date d'échéance invalide : l'action est enregistrée sans échéance.")
+
+    ActionCorrective.objects.create(
+        institution=inst, indicateur=indicateur, structure=structure, titre=titre[:255],
+        description=(request.POST.get('description') or '').strip(), responsable=responsable, echeance=echeance,
+        cree_par=getattr(request.user, 'personnel', None))
+    messages.success(request, f"Action « {titre[:60]} » enregistrée.")
+    return _action_retour(request)
+
+
+@login_required(login_url='/log_account')
+@require_POST
+def action_statut(request, id):
+    context = basis(request)
+    inst = context.get('actual_institution')
+    action = ActionCorrective.objects.filter(id=int(id), institution=inst).first()
+    statut = request.POST.get('statut', '')
+    if action is None:
+        messages.error(request, "Action introuvable dans votre institution.")
+    elif statut not in ACTION_STATUTS:
+        messages.error(request, "Statut inconnu.")
+    else:
+        action.statut = statut
+        action.save(update_fields=['statut', 'date_maj'])
+        messages.success(request, f"« {action.titre[:60]} » : {dict(ActionCorrective.STATUTS)[statut].lower()}.")
+    return _action_retour(request)
 def technicals(request):
 
     template = 'technicals.html'
@@ -33872,31 +34412,69 @@ def check_import_status(request, task_id):
         # res.result contient le dictionnaire {'created': 15303, ...}
         return JsonResponse({"status": "done", "result": res.result})
     return JsonResponse({"status": "pending"})
+# =====================================================================
+#  OperaPlus — VOTRE vue dynamic_cible, corrigée.
+#  Les structures affichées sont maintenant celles choisies sur la page « structures applicables »
+#  (modèle IndicateurStructure). Template : indicateurs/dynamic-cible.html
+#  Imports (déjà chez vous en principe) :  from django.db.models import Q  ·  from django.shortcuts import get_object_or_404
+# =====================================================================
+
+
 def dynamic_cible(request, id):
     context = basis(request)
     actual_institution = context.get('actual_institution')
     template = "dynamic-cible.html"
-    
-    indicateur = Indicateur.objects.get(id=int(id))
-    structures = Structure.objects.filter(institution=actual_institution)
-    periodes = actual_institution.get_periodes_actif()
 
-    valeurs_existantes = IndicateurValeur.objects.filter(indicateur=indicateur, type_donnee="valeur")
-    
+    # ← corrigé : 404 propre ; et un indicateur d'une autre institution n'est pas accessible (Indicateur.m_institution)
+    indicateur = get_object_or_404(Indicateur, Q(m_institution=actual_institution) | Q(m_institution__isnull=True), id=int(id))
+
+    # ← corrigé : on envoie les STRUCTURES (et non les lignes IndicateurStructure) :
+    #   le template lit s.id et s.nom ; avec IndicateurStructure, s.id était l'id de la ligne de liaison
+    #   (les cibles auraient été publiées sur de mauvaises structures) et s.nom était vide.
+    structures = (Structure.objects
+                  .filter(structures__indicateur=indicateur, institution=actual_institution)   # related_name='structures'
+                  .distinct().order_by('nom'))
+
+    frequence_collecte = indicateur.frequence_collecte
+    # ← corrigé : « periodicite.m_value= » est une erreur de syntaxe Python ; Django s'écrit periodicite__m_value=
+    periodes = (PeriodeOk.objects
+                .filter(periodicite__m_value__iexact=frequence_collecte or '')                   # « Trimestrielle » = « trimestrielle »
+                .filter(Q(institution=actual_institution) | Q(institution__isnull=True))      # ← ajout : périodes de l'institution
+                .order_by('annee', 'numero_ordre', 'date_debut', 'id'))                       # ← ajout : ordre chronologique
+
+    # ← ajout : choix de l'année applicable (?annee=2026). Par défaut : l'année en cours si elle existe, sinon la plus récente.
+    annees = sorted({a for a in periodes.values_list('annee', flat=True) if a}, reverse=True)
+    annee = request.GET.get('annee', '')
+    if not annee.isdigit() or int(annee) not in annees:
+        annee_courante = datetime.datetime.now().year       # views.py importe le module datetime
+        annee = annee_courante if annee_courante in annees else (annees[0] if annees else None)
+    else:
+        annee = int(annee)
+    if annee:
+        periodes = periodes.filter(annee=annee)
+
+    valeurs_existantes = IndicateurValeur.objects.filter(
+        indicateur=indicateur, type_donnee="valeur",
+        structure__in=structures).filter(
+        Q(periode_ok__in=periodes) | Q(periode_ok__isnull=True))                              # ← ajout : l'année choisie + le départ
+
     # On crée un dictionnaire : {(structure_id, periode_id): valeur}
-    mapping_valeurs = {
-        (int(v.structure_id), int(v.periode_ok_id)): v.valeur
-        for v in valeurs_existantes
-    }
- 
+    # ← corrigé : une valeur sans période (situation de départ) faisait planter int(None) ; elle devient la clé « baseline »
+    mapping_valeurs = {}
+    for v in valeurs_existantes:
+        if v.structure_id is None:
+            continue
+        cle_periode = int(v.periode_ok_id) if v.periode_ok_id is not None else 'baseline'
+        mapping_valeurs[(int(v.structure_id), cle_periode)] = v.valeur
 
     context['periodes'] = periodes
     context['structures'] = structures
     context['indicateur'] = indicateur
     context['mapping_valeurs'] = mapping_valeurs
+    context['annees'] = annees                                                                # ← ajout
+    context['annee'] = annee
 
     return render(request, template, context)
-
 
 import json
 from django.http import JsonResponse
@@ -37096,4 +37674,617 @@ def sans_institution(request):
         'personnel': personnel,
         'lien_deconnexion': URL_DECONNEXION,
         'courriel_support': getattr(settings, 'DEFAULT_FROM_EMAIL', ''),
-    })   # ← corrigé : code 200 (page d'information) — le 403 faisait écrire « Forbidden » dans les journaux à chaque visite
+    })
+
+
+
+
+# =====================================================================
+#  OperaPlus — structures applicables à un indicateur (modèle IndicateurStructure).
+#  VOTRE vue structure_indicateur, complétée : affichage (GET) + enregistrement (POST).
+#  Template : indicateurs/structure-indicateur.html
+#  Imports (à ne pas dupliquer s'ils existent déjà dans views.py) :
+#      from django.contrib import messages
+#      from django.db import transaction as db_transaction
+#      from django.shortcuts import get_object_or_404, redirect, render
+#      from django.db.models import Q
+# =====================================================================
+
+# =====================================================================
+#  OperaPlus — structures applicables à un indicateur (modèle IndicateurStructure).
+#  VOTRE vue structure_indicateur, complétée : affichage (GET) + enregistrement (POST).
+#  Template : indicateurs/structure-indicateur.html
+#  Imports (à ne pas dupliquer s'ils existent déjà dans views.py) :
+#      from django.contrib import messages
+#      from django.db import transaction as db_transaction
+#      from django.shortcuts import get_object_or_404, redirect, render
+#      from django.db.models import Q
+#      from django.http import Http404                                    ← ajout (v88)
+#
+#  v88 : renommée save_structure_indicateur (votre nom) ; redirection vers /dynamic-cible/ après l'enregistrement (votre choix) ;
+#        un indicateur d'une AUTRE institution (ex. copie héritée par une institution fille) n'affiche plus
+#        « 404 No Indicateur matches the given query » mais un message clair + retour à la page précédente.
+# =====================================================================
+
+
+def save_structure_indicateur(request, id):
+    template = 'structure-indicateur.html'
+    context = basis(request)
+    actual_institution = context.get('actual_institution')
+    # ← corrigé (v88) : un indicateur d'une autre institution n'est pas accessible, mais on explique pourquoi
+    indicateur = Indicateur.objects.filter(Q(m_institution=actual_institution) | Q(m_institution__isnull=True), id=int(id)).first()
+    if indicateur is None:
+        autre = Indicateur.objects.select_related('m_institution').filter(id=int(id)).first()
+        if autre is None:
+            raise Http404("Cet indicateur n'existe pas (ou a été supprimé).")
+        nom_inst = autre.m_institution.nom if autre.m_institution else "une autre institution"
+        messages.warning(request, f"« {autre.nicename or autre.m_name} » appartient à {nom_inst}. "
+                                  f"Pour définir ses structures et ses cibles, basculez sur {nom_inst}.")
+        return redirect(request.META.get('HTTP_REFERER') or '/')
+    context['indicateur'] = indicateur
+    structure = Structure.objects.filter(institution=actual_institution).order_by('nom')
+
+    # structures déjà rattachées à l'indicateur (dans cette institution)
+    deja = set(IndicateurStructure.objects
+               .filter(indicateur=indicateur, structure__institution=actual_institution)
+               .values_list('structure_id', flat=True))
+
+    if request.method == 'POST':                                       # ← ajout : enregistrement
+        ids_valides = set(structure.values_list('id', flat=True))
+        # on ne garde que des structures de l'institution active (sécurité)
+        choisies = {int(x) for x in request.POST.getlist('structures') if x.isdigit()} & ids_valides
+
+        with db_transaction.atomic():                                 # tout ou rien
+            # 1. retirer les structures décochées (et les lignes orphelines sans structure)
+            retirees = IndicateurStructure.objects.filter(indicateur=indicateur, structure_id__in=ids_valides - choisies).delete()[0]
+            IndicateurStructure.objects.filter(indicateur=indicateur, structure__isnull=True).delete()
+            # 2. ajouter les nouvelles, en une seule requête
+            nouvelles = choisies - deja
+            IndicateurStructure.objects.bulk_create(
+                [IndicateurStructure(indicateur=indicateur, structure_id=s) for s in nouvelles])
+
+        if nouvelles or retirees:
+            messages.success(request, f"{len(choisies)} structure{'s' if len(choisies) > 1 else ''} applicable{'s' if len(choisies) > 1 else ''} "
+                                      f"à cet indicateur ({len(nouvelles)} ajoutée{'s' if len(nouvelles) > 1 else ''}, "
+                                      f"{retirees} retirée{'s' if retirees > 1 else ''}).")
+        else:
+            messages.info(request, "Aucun changement : la sélection était déjà enregistrée.")
+        return redirect(f'/dynamic-cible/{indicateur.id}/')   # évite le double envoi si on actualise la page
+
+    context['structure'] = structure                                  # ← corrigé : la liste n'était pas envoyée au template
+    context['structures_choisies'] = deja
+    context['nb_choisies'] = len(deja)
+    return render(request, template, context)
+
+
+# Conseil (optionnel) : empêcher les doublons dans la base — à ajouter dans IndicateurStructure, puis makemigrations :
+#     class Meta:
+#         constraints = [models.UniqueConstraint(fields=['indicateur', 'structure'], name='unique_indicateur_structure')]
+
+
+
+
+
+# =====================================================================
+#  OperaPlus — Héritage entre institutions : VOS vues, corrigées et complétées.
+#  Chaque modification est marquée « ← corrigé » ou « ← ajout ».
+#
+#  Ce qui manquait / plantait :
+#   - _migrer_model_vers_enfant n'existait pas → chaque transfert finissait en « Erreur lors du transfert ».
+#   - le formulaire (action="") était envoyé à heritage_institution, qui ignorait le POST : rien ne se passait.
+#   - Indicateur et DataSet n'ont pas de champ « institution » (c'est m_institution) → erreur de champ.
+#   - copier un Personnel = dupliquer un compte (lié à un utilisateur) → on copie ses affectations (Personnel_Structure).
+#   - relancer un transfert dupliquait tout une seconde fois.
+#   - n'importe quel utilisateur pouvait pousser des données dans n'importe quelle institution.
+#
+#  Imports (à ne pas dupliquer s'ils existent déjà dans views.py) :
+#      from urllib.parse import urlencode
+#      from django.contrib import messages
+#      from django.db import transaction as db_transaction
+#      from django.shortcuts import get_object_or_404, redirect, render
+#      from django.urls import reverse
+# =====================================================================
+
+# Modèles copiés, dans cet ordre (les suivants peuvent pointer vers les précédents).
+# ← ajout : Structure_Hierachy (niveaux de structures) avant Structure, pour que Structure.hierachy pointe vers la copie.
+# Personnel : la personne n'est pas dupliquée (elle est liée à un compte utilisateur, OneToOne bd_user) ;
+#             ses AFFECTATIONS (Personnel_Structure) sont recopiées vers les structures copiées — voir _copier_affectations.
+def _modeles_a_copier():
+    return [Structure_Hierachy, Structure, DataElement, Indicateur, DataSet]
+
+
+# ← ajout : formules des indicateurs.
+# Vos formules désignent les éléments de données par leur identifiant entre $ : « $12$ * 100 / $13$ ».
+# Après l'héritage, l'institution fille a ses PROPRES copies des éléments (nouveaux identifiants) :
+# on remplace chaque $ancien_id$ par $id_de_la_copie$. Les identifiants étant uniques dans toute la base,
+# seul un identifiant d'élément de la mère peut être remplacé ; le reste de la formule n'est pas touché.
+import re as _re
+_JETON_ELEMENT = _re.compile(r'\$(\d+)\$')
+CHAMPS_FORMULE = ('m_numerateur', 'm_denominateur')
+
+
+def _corriger_formules(enfant, correspondances):
+    """Réécrit les formules de TOUS les indicateurs de l'enfant (nouvelles copies et indicateurs d'un
+    ancien transfert). Renvoie (nb_indicateurs_corriges, ids_introuvables)."""
+    copies = {ancien: nouveau.pk for ancien, nouveau in correspondances.get(DataElement, {}).items()}
+    champs = [c for c in CHAMPS_FORMULE if _champ(Indicateur, (c,))]
+    if not copies or not champs:
+        return 0, set()
+    ids_enfant = set(DataElement.objects.filter(**{_champ_institution(DataElement): enfant}).values_list('pk', flat=True)) \
+        if _champ_institution(DataElement) else set()
+    corriges, introuvables = 0, set()
+
+    def remplacer(m):
+        ancien = int(m.group(1))
+        if ancien in copies:
+            return '$%d$' % copies[ancien]
+        if ids_enfant and ancien not in ids_enfant:
+            introuvables.add(ancien)                                   # à classer ensuite (commun / mère / autre / supprimé)
+        return m.group(0)
+
+    # ← ajout : indicateur de l'enfant → indicateur de la mère dont il est la copie
+    mere_de = {copie.pk: ancien for ancien, copie in correspondances.get(Indicateur, {}).items()}
+    formules_mere = {i.pk: i for i in Indicateur.objects.filter(pk__in=list(mere_de.values()))} if mere_de else {}
+
+    def squelette(t):                                                  # formule sans ses identifiants
+        t = (t or '').strip()
+        return '?' if t.isdigit() else _JETON_ELEMENT.sub('$?$', t)
+
+    for indi in Indicateur.objects.filter(**{_champ_institution(Indicateur): enfant}):
+        modifies = []
+        mere = formules_mere.get(mere_de.get(indi.pk))
+        for c in champs:
+            avant = getattr(indi, c) or ''
+            source = avant
+            # ← corrigé : si la formule de l'enfant est la formule héritée (mêmes opérations, seuls les identifiants changent),
+            #   on la reconstruit depuis celle de la mère : cela répare aussi les formules d'un ancien transfert
+            #   qui pointaient vers un mauvais élément (éléments homonymes fusionnés).
+            #   Une formule que l'enfant a réellement modifiée (autres opérations) n'est pas écrasée.
+            if mere is not None and squelette(getattr(mere, c)) == squelette(avant):
+                source = getattr(mere, c) or ''
+            apres = _JETON_ELEMENT.sub(remplacer, source)
+            # m_denominateur peut contenir l'identifiant nu (« 13 », sans $) : voir save_indicateur
+            if c == 'm_denominateur' and source.strip().isdigit() and int(source.strip()) in copies:
+                apres = str(copies[int(source.strip())])
+            if apres != avant:
+                setattr(indi, c, apres)
+                modifies.append(c)
+        if modifies:
+            indi.save(update_fields=modifies)
+            corriges += 1
+
+    # ← ajout : un élément COMMUN (sans institution) est utilisable par toutes les institutions : ce n'est pas une erreur.
+    if introuvables and _champ_institution(DataElement):
+        champ = _champ_institution(DataElement)
+        communs = set(DataElement.objects.filter(pk__in=introuvables, **{champ + '__isnull': True}).values_list('pk', flat=True))
+        introuvables -= communs
+    return corriges, introuvables
+
+
+def _expliquer_introuvables(ids, parent):
+    """← ajout : classe les éléments introuvables pour dire QUOI faire. Renvoie une liste de phrases."""
+    if not ids:
+        return []
+    champ = _champ_institution(DataElement)
+    existants = {pk: inst for pk, inst in DataElement.objects.filter(pk__in=ids).values_list('pk', champ)} if champ else {}
+    de_la_mere = sorted(i for i, inst in existants.items() if inst == parent.pk)
+    autres = sorted(i for i, inst in existants.items() if inst != parent.pk)
+    supprimes = sorted(set(ids) - set(existants))
+    apercu = lambda l: ', '.join(str(i) for i in l[:8]) + ('…' if len(l) > 8 else '')
+    phrases = []
+    if de_la_mere:
+        phrases.append(f"{len(de_la_mere)} appartiennent à {parent.nom} mais n'ont pas pu être copiés ({apercu(de_la_mere)}) : voir le détail ci-dessous")
+    if autres:
+        phrases.append(f"{len(autres)} appartiennent à une autre institution ({apercu(autres)}) : ces formules utilisaient déjà des données qui ne sont pas les leurs")
+    if supprimes:
+        phrases.append(f"{len(supprimes)} n'existent plus dans la base ({apercu(supprimes)}) : éléments supprimés, formules à corriger")
+    return phrases
+
+
+def _copier_affectations(parent, enfant, correspondances):
+    """← ajout : chaque personnel affecté à une structure du parent est affecté à la COPIE de cette structure chez l'enfant."""
+    copies = correspondances.get(Structure, {})
+    crees = 0
+    deja_vus = set()                                                   # ← ajout : (personnel, structure) déjà traités dans ce transfert
+    for ps in (Personnel_Structure.objects
+               .filter(m_structure__institution=parent, m_personnel__isnull=False)
+               .select_related('m_personnel')):
+        nouvelle = copies.get(ps.m_structure_id)
+        if nouvelle is None:
+            continue
+        cle = (ps.m_personnel_id, nouvelle.pk)
+        if cle in deja_vus:
+            continue
+        deja_vus.add(cle)
+        # ← corrigé : get_or_create plantait (« returned 2 ») quand l'affectation existait déjà en double.
+        #   On vérifie simplement l'existence : 0, 1 ou plusieurs lignes, aucune erreur, aucun nouveau doublon.
+        if Personnel_Structure.objects.filter(m_personnel_id=ps.m_personnel_id, m_structure=nouvelle).exists():
+            continue
+        Personnel_Structure.objects.create(m_personnel=ps.m_personnel, m_structure=nouvelle, m_responsable=ps.m_responsable)
+        crees += 1
+    return crees
+
+CHAMPS_INSTITUTION = ('institution', 'm_institution', 'actual_institution')   # le premier qui existe sur le modèle
+CHAMPS_NOM = ('nom', 'm_name', 'name', 'm_nom', 'libelle', 'intitule')        # sert à éviter les doublons
+
+
+def _droit_heritage(request, context):
+    """← ajout : seul le propriétaire de l'institution (permissions 100) ou un super-administrateur peut transférer."""
+    return request.user.is_superuser or context.get('permissions') == 100
+
+
+def _champ(model, candidats):
+    noms = {f.name for f in model._meta.get_fields()}
+    return next((c for c in candidats if c in noms), None)
+
+
+def _champ_institution(model):
+    for c in CHAMPS_INSTITUTION:
+        try:
+            f = model._meta.get_field(c)
+        except Exception:
+            continue
+        if getattr(f, 'related_model', None) is Institution:
+            return c
+    return None
+
+
+def _compter_elements(model_class, institution, institution_field=None):
+    if model_class is None or institution is None:
+        return 0
+    champ = institution_field if institution_field and _champ(model_class, (institution_field,)) else _champ_institution(model_class)   # ← corrigé
+    if not champ:
+        return 0
+    return model_class.objects.filter(**{champ: institution}).count()
+
+
+def _institution_de(obj):
+    """← ajout : id de l'institution d'un objet (None si l'objet est commun à toutes les institutions)."""
+    champ = _champ_institution(type(obj))
+    return getattr(obj, champ + '_id', None) if champ else None
+
+
+def _valeur_unique(model, champ, valeur, enfant):
+    """← ajout : une valeur unique (code, uid…) ne peut pas être recopiée telle quelle : on la suffixe pour l'enfant."""
+    f = model._meta.get_field(champ)
+    base, suffixe, n = str(valeur), '-%s' % enfant.pk, 1
+    taille = getattr(f, 'max_length', None) or 255
+    while True:
+        v = (base[:taille - len(suffixe)] + suffixe) if len(base) + len(suffixe) > taille else base + suffixe
+        if not model.objects.filter(**{champ: v}).exists():
+            return v
+        n += 1
+        suffixe = '-%s-%s' % (enfant.pk, n)
+
+
+def _copier_dependance(cible, id_cible, parent, enfant, correspondances, profondeur=0):
+    """← ajout : un objet lié (groupe, catégorie, entité…) n'est pas dans la liste des modèles copiés.
+       - objet commun (sans institution) ou d'une autre institution : on garde le lien tel quel ;
+       - objet de la MÈRE : on le retrouve chez l'enfant (même nom) ou on le copie, puis on pointe vers lui.
+       Renvoie l'id à utiliser, ou None si la copie est impossible."""
+    corr = correspondances.setdefault(cible, {})
+    if id_cible in corr:
+        return corr[id_cible].pk
+    obj = cible.objects.filter(pk=id_cible).first()
+    if obj is None:
+        return None
+    if _institution_de(obj) != parent.pk:
+        return id_cible                                                # commun ou autre institution : inchangé
+    if profondeur > 3:
+        return None
+    champ_inst, champ_nom = _champ_institution(cible), _champ(cible, CHAMPS_NOM)
+    if champ_nom and getattr(obj, champ_nom):
+        existant = cible.objects.filter(**{champ_inst: enfant, champ_nom: getattr(obj, champ_nom)}).first()
+        if existant:
+            corr[id_cible] = existant
+            return existant.pk
+    valeurs = {}
+    for f in cible._meta.concrete_fields:
+        if f.primary_key:
+            continue
+        v = getattr(obj, f.attname)
+        if f.is_relation and v is not None:
+            if f.related_model is Institution:
+                v = enfant.pk
+            elif f.related_model is cible:
+                v = None if f.null else v
+            else:
+                v2 = _copier_dependance(f.related_model, v, parent, enfant, correspondances, profondeur + 1)
+                if v2 is None and not f.null:
+                    return None
+                v = v2
+            if f.one_to_one and v is not None:
+                return None
+        elif f.unique and v is not None:
+            v = _valeur_unique(cible, f.attname, v, enfant) if f.get_internal_type() in ('CharField', 'SlugField', 'TextField') else (None if f.null else '__stop__')
+            if v == '__stop__':
+                return None
+        valeurs[f.attname] = v
+    copie = cible(**valeurs)
+    copie.save()
+    corr[id_cible] = copie
+    return copie.pk
+
+
+def _noter_ignore(correspondances, model, raison):
+    """← ajout : garde la trace des objets non copiés (pour l'expliquer à l'utilisateur)."""
+    ign = correspondances.setdefault('_ignores', {})
+    cle = (model._meta.verbose_name, raison)
+    ign[cle] = ign.get(cle, 0) + 1
+
+
+def _migrer_model_vers_enfant(model, parent, enfant, correspondances):
+    """
+    ← ajout : copie les objets de `model` de l'institution `parent` vers `enfant`.
+      - les liens vers des objets déjà copiés (structure, indicateur, jeu de données…) pointent vers les COPIES ;
+      - un lien vers un objet propre au parent qui n'a pas d'équivalent chez l'enfant (ex. entité du cadre logique) est vidé ;
+      - un objet portant déjà le même nom chez l'enfant n'est pas recopié (transfert relançable sans doublon).
+    Renvoie le nombre d'objets créés.
+    """
+    champ_inst = _champ_institution(model)
+    if not champ_inst:
+        return 0
+    champ_nom = _champ(model, CHAMPS_NOM)
+    corr = correspondances.setdefault(model, {})
+    crees, auto_liens = 0, []
+
+    pris = {o.pk for o in corr.values()}                               # ← ajout : copies déjà attribuées dans ce transfert
+    for ancien in model.objects.filter(**{champ_inst: parent}).order_by('pk'):
+        # déjà présent chez l'enfant (même nom) : on réutilise
+        # ← corrigé : plusieurs objets de la mère peuvent porter le même nom (ex. DataElement.m_name vaut '255' par défaut).
+        #   Avant, ils étaient tous fusionnés dans UNE seule copie (et leurs formules pointaient vers elle).
+        #   Maintenant, chaque objet de la mère reçoit sa propre copie : on prend le premier homonyme pas encore attribué.
+        if champ_nom and getattr(ancien, champ_nom):
+            existant = (model.objects.filter(**{champ_inst: enfant, champ_nom: getattr(ancien, champ_nom)})
+                        .exclude(pk__in=pris).order_by('pk').first())
+            if existant:
+                corr[ancien.pk] = existant
+                pris.add(existant.pk)
+                continue
+
+        valeurs, a_ignorer, liens_internes = {}, False, []
+        for f in model._meta.concrete_fields:
+            if f.primary_key:
+                continue
+            if f.is_relation:
+                cible, id_cible = f.related_model, getattr(ancien, f.attname)
+                if cible is Institution:
+                    valeurs[f.attname] = enfant.pk
+                elif id_cible is None:
+                    valeurs[f.attname] = None
+                elif cible is model:                                   # lien vers le même modèle (ex. structure parente)
+                    valeurs[f.attname] = None
+                    liens_internes.append((f.name, f.attname, id_cible))
+                elif cible in correspondances and id_cible in correspondances[cible]:
+                    valeurs[f.attname] = correspondances[cible][id_cible].pk
+                elif _champ_institution(cible):                        # ← corrigé : objet lié qui a une institution
+                    # commun (sans institution) ou d'une autre institution → lien gardé.
+                    # objet de la mère : lien FACULTATIF (tache, période…) → vidé comme avant, sans copie en cascade ;
+                    #                    lien OBLIGATOIRE → l'objet est retrouvé (même nom) ou copié chez l'enfant.
+                    obj_lie = cible.objects.filter(pk=id_cible).first()
+                    if obj_lie is not None and _institution_de(obj_lie) != parent.pk:
+                        nouvel_id = id_cible
+                    elif f.null:
+                        nouvel_id = None
+                    else:
+                        nouvel_id = _copier_dependance(cible, id_cible, parent, enfant, correspondances)
+                    if nouvel_id is not None:
+                        valeurs[f.attname] = nouvel_id
+                    elif f.null:
+                        valeurs[f.attname] = None
+                    else:
+                        a_ignorer = True
+                        _noter_ignore(correspondances, model, "lien obligatoire vers « %s » impossible à copier" % cible._meta.verbose_name)
+                else:                                                  # objet commun (périodicité, utilisateur…) : on garde
+                    valeurs[f.attname] = id_cible
+                if f.one_to_one and valeurs.get(f.attname) is not None:
+                    a_ignorer = True                                   # un lien 1-pour-1 ne se duplique pas
+                    _noter_ignore(correspondances, model, "lien 1-pour-1 (« %s ») qui ne peut pas être dupliqué" % f.verbose_name)
+            else:
+                v = getattr(ancien, f.attname)
+                if f.unique and v is not None:
+                    # ← corrigé : avant, un code unique obligatoire faisait IGNORER l'objet (cause des éléments « introuvables »).
+                    if f.get_internal_type() in ('CharField', 'SlugField', 'TextField'):
+                        v = _valeur_unique(model, f.attname, v, enfant)   # ex. « CPN01 » → « CPN01-7 » chez l'enfant
+                    elif f.null:
+                        v = None
+                    else:
+                        a_ignorer = True
+                        _noter_ignore(correspondances, model, "valeur unique « %s » impossible à dupliquer" % f.verbose_name)
+                valeurs[f.attname] = v
+        if a_ignorer:
+            continue
+
+        nouveau = model(**valeurs)
+        nouveau.save()
+        corr[ancien.pk] = nouveau
+        pris.add(nouveau.pk)                                           # ← ajout
+        crees += 1
+        auto_liens.extend((nouveau,) + lien for lien in liens_internes)
+
+        # relations plusieurs-à-plusieurs (ex. DataSet.m_indicateurs, DataSet.m_structures)
+        for m2m in model._meta.many_to_many:
+            if not m2m.remote_field.through._meta.auto_created:
+                continue
+            cible = m2m.related_model
+            cibles = list(getattr(ancien, m2m.name).all())
+            if cible in correspondances:
+                cibles = [correspondances[cible][c.pk] for c in cibles if c.pk in correspondances[cible]]
+            elif _champ_institution(cible):                            # ← corrigé : objets communs gardés, ceux de la mère retirés
+                cibles = [c for c in cibles if _institution_de(c) != parent.pk]
+            getattr(nouveau, m2m.name).set(cibles)
+
+    # 2e passage : liens internes (ex. structure parente → copie de la structure parente)
+    for nouveau, nom_champ, attname, id_cible in auto_liens:
+        if id_cible in corr:
+            setattr(nouveau, attname, corr[id_cible].pk)
+            nouveau.save(update_fields=[nom_champ])
+    return crees
+
+
+def heritage_institution(request):
+    context = basis(request)
+    actual_institution = context.get('actual_institution')
+
+    if request.method == 'POST':                                       # ← corrigé : le formulaire est envoyé ici
+        return heritage_institutions(request)
+    if not _droit_heritage(request, context):                          # ← ajout
+        messages.error(request, "Seul l'administrateur principal peut gérer l'héritage entre institutions.")
+        return redirect('/')
+
+    template = 'heritage.html'
+    context['institution'] = Institution.objects.filter(is_copied=True).order_by('nom')
+    # ← ajout : liens déjà existants, pour signaler « déjà liée » dans la page
+    liens = {}
+    for p_id, e_id in HeritageInstitution.objects.exclude(is_parent__isnull=True).exclude(is_children__isnull=True).values_list('is_parent_id', 'is_children_id'):
+        liens.setdefault(str(p_id), []).append(str(e_id))
+    context['liens_existants'] = liens
+    return render(request, template, context)
+
+
+def heritage_institutions(request):
+    context = basis(request)
+    actual_institution = context.get("actual_institution")
+    if not _droit_heritage(request, context):                          # ← ajout
+        messages.error(request, "Seul l'administrateur principal peut gérer l'héritage entre institutions.")
+        return redirect('/')
+
+    if request.method == "POST":
+        parent_id = request.POST.get("parent_institution")
+        children_ids = [c for c in request.POST.getlist("children_institutions") if c.isdigit()]
+
+        if not parent_id or not parent_id.isdigit():
+            messages.error(request, "Veuillez sélectionner une institution parente.")
+            return redirect("heritage_institution")
+
+        if not children_ids:
+            messages.warning(request, "Veuillez sélectionner au moins une institution enfant.")
+            return redirect("heritage_institution")
+
+        parent_inst = get_object_or_404(Institution, id=parent_id, is_copied=True)          # ← corrigé : même liste que la page
+        enfants_qs = Institution.objects.filter(id__in=children_ids, is_copied=True).exclude(id=parent_id)
+
+        total_relations = 0
+        total_copies = 0
+        total_formules, introuvables = 0, set()                       # ← ajout
+        ignores = {}                                                   # ← ajout : (modèle, raison) → nombre
+        enfants_traites_ids = []
+
+        try:
+            with db_transaction.atomic():
+                for enfant in enfants_qs:
+                    enfants_traites_ids.append(str(enfant.id))
+
+                    # ← corrigé : même protection contre les doublons existants (get_or_create planterait aussi)
+                    if not HeritageInstitution.objects.filter(is_parent=parent_inst, is_children=enfant).exists():
+                        HeritageInstitution.objects.create(is_parent=parent_inst, is_children=enfant)
+                        total_relations += 1
+
+                    correspondances = {}                               # ← ajout : ancien id → copie, par modèle
+                    for modele in _modeles_a_copier():
+                        total_copies += _migrer_model_vers_enfant(modele, parent_inst, enfant, correspondances)
+                    total_copies += _copier_affectations(parent_inst, enfant, correspondances)   # ← ajout : personnel affecté
+                    nb, manquants = _corriger_formules(enfant, correspondances)              # ← ajout : formules → éléments de l'enfant
+                    total_formules += nb
+                    introuvables |= manquants
+                    for cle, n in correspondances.get('_ignores', {}).items():
+                        ignores[cle] = ignores.get(cle, 0) + n
+
+            messages.success(
+                request,
+                f"Transfert effectué : {total_relations} nouvelle(s) liaison(s) et {total_copies} élément(s) transmis depuis {parent_inst.nom}. "
+                f"Les éléments déjà présents (même nom) n'ont pas été recopiés ; le personnel est affecté aux structures copiées (sans doublon de compte). "
+                f"{total_formules} formule(s) d'indicateur mise(s) à jour automatiquement : elles utilisent les éléments de données de l'institution fille."   # ← ajout
+            )
+            if introuvables:                                           # ← corrigé : message classé (quoi, pourquoi, que faire)
+                messages.warning(
+                    request,
+                    f"Formules : {len(introuvables)} élément(s) de données cité(s) sont absents chez l'institution fille. "
+                    + " ; ".join(_expliquer_introuvables(introuvables, parent_inst)) + "."
+                )
+            for (nom_modele, raison), nb in sorted(ignores.items()):   # ← ajout : pourquoi certains objets n'ont pas été copiés
+                messages.warning(request, f"{nb} {nom_modele}(s) non copié(s) : {raison}.")
+
+            query_string = urlencode({
+                "parent": parent_inst.id,
+                "children": ",".join(enfants_traites_ids),
+            })
+            return redirect(f"{reverse('flux_transfert_institution')}?{query_string}")
+
+        except Exception as e:
+            messages.error(request, f"Erreur lors du transfert des données : {e}. Rien n'a été modifié.")
+            return redirect("heritage_institution")
+
+    return redirect("heritage_institution")                            # ← corrigé : la page est servie par heritage_institution
+
+
+def flux_transfert_institution(request):
+    context = basis(request)
+    if not _droit_heritage(request, context):                          # ← ajout
+        messages.error(request, "Seul l'administrateur principal peut consulter les transferts entre institutions.")
+        return redirect('/')
+
+    parent_id = request.GET.get("parent")
+    children_param = request.GET.get("children", "")
+    highlighted_children_ids = {
+        int(cid) for cid in children_param.split(",") if cid.strip().isdigit()
+    }
+
+    relations_qs = HeritageInstitution.objects.select_related("is_parent", "is_children").exclude(
+        is_parent__isnull=True
+    ).exclude(is_children__isnull=True)
+
+    if parent_id and parent_id.isdigit():
+        relations_qs = relations_qs.filter(is_parent_id=int(parent_id))
+
+    parent_selectionne = None
+    if parent_id and parent_id.isdigit():
+        parent_selectionne = Institution.objects.filter(id=int(parent_id)).first()
+
+    def _compter_tout(inst):                                           # ← ajout : mêmes comptages pour la mère et la fille
+        # ← corrigé : bon champ d'institution pour chaque modèle (Indicateur/DataSet : m_institution)
+        return {
+            "structure": _compter_elements(Structure, inst),
+            "personnel": Personnel_Structure.objects.filter(m_structure__institution=inst, m_personnel__isnull=False)
+                                                    .values('m_personnel').distinct().count(),   # ← corrigé : personnel affecté à ses structures
+            "data_element": _compter_elements(DataElement, inst),
+            "indicateur": _compter_elements(Indicateur, inst),
+            "data_set": _compter_elements(DataSet, inst),
+        }
+
+    comptes_parents = {}                                               # ← ajout : une mère n'est comptée qu'une fois
+    flux_liste = []
+    for rel in relations_qs:
+        parent = rel.is_parent
+        enfant = rel.is_children
+
+        counts = _compter_tout(enfant)
+        total_enfant = sum(counts.values())
+
+        # ← ajout : écarts mère → fille (ce que la mère possède et que la fille n'a pas encore)
+        if parent.id not in comptes_parents:
+            comptes_parents[parent.id] = _compter_tout(parent)
+        counts_parent = comptes_parents[parent.id]
+        ecarts = {cle: max(0, counts_parent[cle] - counts[cle]) for cle in counts}
+        manque = sum(ecarts.values())
+
+        flux_liste.append({
+            "relation": rel,
+            "parent": parent,
+            "enfant": enfant,
+            "counts": counts,
+            "total": total_enfant,
+            "is_recent": enfant.id in highlighted_children_ids,
+            "counts_parent": counts_parent,                            # ← ajout
+            "ecarts": ecarts,                                          # ← ajout
+            "manque": manque,                                          # ← ajout : 0 = héritage complet
+        })
+
+    context.update({
+        "parent_selectionne": parent_selectionne,
+        "flux_liste": flux_liste,
+        "nb_incompletes": sum(1 for f in flux_liste if f["manque"]),  # ← ajout
+        "toutes_institutions": Institution.objects.filter(is_copied=True),
+        "parent_filtre_id": int(parent_id) if (parent_id and parent_id.isdigit()) else None,
+    })
+    return render(request, "flux_transfert.html", context)

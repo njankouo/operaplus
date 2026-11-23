@@ -1,0 +1,627 @@
+{% extends './index.html' %}
+
+{% block main %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fx-page">{% comment %} ← ajout : classe fx-page (v80 : design « salle de contrôle », sans effets superflus) {% endcomment %}
+
+    <!-- En-tête -->
+    <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-5 fx-top">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 mb-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse fx-dot"></span>
+                Réseau & Flux de Transmission{% if actual_institution %} · {{ actual_institution.nom }}{% endif %}{% comment %} ← corrigé : titre dynamique {% endcomment %}
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight fx-h1">
+                {% if parent_selectionne %}Transferts depuis {{ parent_selectionne.nom }}{% else %}Transfert de Données entre Institutions{% endif %}
+            </h1>
+            {% if flux_liste %}{% comment %} ← ajout : résumé chiffré, calculé à partir des données {% endcomment %}
+            <div class="fx-resume">
+                <span><b>{{ flux_liste|length }}</b> liaison{{ flux_liste|length|pluralize }}</span>
+                {% if nb_incompletes %}<span class="ko"><b>{{ nb_incompletes }}</b> incomplète{{ nb_incompletes|pluralize }}</span>{% else %}<span class="ok">Tous les héritages sont complets</span>{% endif %}
+                {% if parent_selectionne %}<a href="?">Voir toutes les institutions</a>{% endif %}
+            </div>
+            {% endif %}
+            <p class="text-sm text-slate-500 mt-1">
+                Visualisation des flux d'héritage de l'institution parente vers les institutions enfants (<span class="font-medium text-slate-700">Structure, Personnel, DataElement, Indicateur, DataSet</span>).
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Filtre par parent -->
+            <form method="GET" action="" class="flex items-center gap-2">
+                <select name="parent" onchange="this.form.submit()"
+                    class="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none fx-select">
+                    <option value="">Toutes les institutions parentes</option>
+                    {% for inst in toutes_institutions %}
+                        <option value="{{ inst.id }}" {% if parent_filtre_id == inst.id %}selected{% endif %}>
+                            {{ inst.nom }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <a href="{% url 'heritage_institution' %}"{# ← corrigé : le lien était vide #}
+                class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 shadow-xs transition fx-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Nouveau transfert
+            </a>
+        </div>
+    </div>
+
+    <!-- Messages Django -->
+    {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+                <div class="rounded-xl px-4 py-3 text-sm font-medium border
+                    {% if message.tags == 'success' %}bg-emerald-50 text-emerald-800 border-emerald-200
+                    {% elif message.tags == 'error' %}bg-rose-50 text-rose-800 border-rose-200
+                    {% else %}bg-amber-50 text-amber-800 border-amber-200{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if flux_liste %}
+    <!-- ← ajout : le réseau de transmission (chaque point lumineux = des données qui circulent du parent vers l'enfant) -->
+    <section class="fx-card">
+        <div class="fx-head">
+            <div>
+                <h2>{% if parent_selectionne %}Réseau de {{ parent_selectionne.nom }}{% else %}Réseau de transmission{% endif %}</h2>{% comment %} ← corrigé : titre dynamique, souligné à la couleur du thème {% endcomment %}
+                <p>Chaque ligne relie une institution source à une institution réceptrice ; l'épaisseur indique le volume transmis. Survolez une ligne pour le détail, cliquez sur une source pour filtrer.</p>
+            </div>
+            <div class="fx-leg">
+                <span data-leg="src"><i class="fx-leg-src"></i>Source</span>
+                <span data-leg="rel"><i class="fx-leg-rel"></i>Relais (reçoit et retransmet)</span>
+                <span data-leg="dst"><i class="fx-leg-dst"></i>Réceptrice</span>
+                <span data-leg="new"><i class="fx-leg-new"></i>Transfert en cours</span>
+                <span data-leg="ok"><i class="fx-leg-ok"></i>Transfert terminé</span>
+                <span data-leg="ko"><i class="fx-leg-ko"></i>Héritage incomplet</span>{% comment %} ← ajout {% endcomment %}
+            </div>
+        </div>
+        <!-- ← ajout : filtre par modèle + aide -->
+        <div class="fx-outils">
+            <div class="fx-filtres" id="fxFiltres" role="group" aria-label="Afficher le volume de">
+                <button type="button" class="fx-f on" data-modele="">Tout</button>
+                <button type="button" class="fx-f" data-modele="Structures"><i class="fx-m1"></i>Structures</button>
+                <button type="button" class="fx-f" data-modele="Personnels"><i class="fx-m2"></i>Personnel</button>
+                <button type="button" class="fx-f" data-modele="Éléments de données"><i class="fx-m3"></i>Éléments de données</button>
+                <button type="button" class="fx-f" data-modele="Indicateurs"><i class="fx-m4"></i>Indicateurs</button>
+                <button type="button" class="fx-f" data-modele="Jeux de données"><i class="fx-m5"></i>Jeux de données</button>
+            </div>
+            <span class="fx-aide">Survolez une institution pour suivre tout son chemin.</span>
+        </div>
+        <div class="fx-etat" id="fxEtat" hidden>{# ← ajout : progression puis « tout a été transféré » #}
+            <span class="fx-etat-ico" id="fxEtatIco"></span>
+            <div class="fx-etat-txt"><b id="fxEtatTitre">Transfert en cours…</b><span id="fxEtatSous"></span></div>
+            <div class="fx-etat-barre"><i id="fxEtatBarre"></i></div>
+        </div>
+        <div class="fx-stage" id="fxStage">
+            <svg id="fxSvg" role="img" aria-label="Réseau des transferts de données entre institutions"></svg>
+            <div class="fx-tip" id="fxTip" hidden></div>
+        </div>
+        <div class="fx-stats" id="fxStats"></div>
+    </section>
+
+    <script type="application/json" id="fxData">[{% for item in flux_liste %}{"p": {{ item.parent.id }}, "pn": "{{ item.parent.nom|escapejs }}", "e": {{ item.enfant.id }}, "en": "{{ item.enfant.nom|escapejs }}", "t": {{ item.total|default:0 }}, "r": {% if item.is_recent %}true{% else %}false{% endif %}, "c": {"Structures": {{ item.counts.structure|default:0 }}, "Personnels": {{ item.counts.personnel|default:0 }}, "Éléments de données": {{ item.counts.data_element|default:0 }}, "Indicateurs": {{ item.counts.indicateur|default:0 }}, "Jeux de données": {{ item.counts.data_set|default:0 }}}, "cp": {"Structures": {{ item.counts_parent.structure|default:0 }}, "Personnels": {{ item.counts_parent.personnel|default:0 }}, "Éléments de données": {{ item.counts_parent.data_element|default:0 }}, "Indicateurs": {{ item.counts_parent.indicateur|default:0 }}, "Jeux de données": {{ item.counts_parent.data_set|default:0 }}}, "m": {{ item.manque|default:0 }}}{% if not forloop.last %},{% endif %}{% endfor %}]</script>
+    {% endif %}
+
+    <!-- Vue Réseau : Parent -> Canal -> Enfant -->
+    <h2 class="fx-list-title">{% if flux_liste %}Détail des liaisons <span class="fx-compte">{{ flux_liste|length }}</span>{% if parent_selectionne %} <small>depuis {{ parent_selectionne.nom }}</small>{% endif %}{% endif %}</h2>{% comment %} ← corrigé : titre dynamique {% endcomment %}
+    <div class="space-y-5">
+        {% for item in flux_liste %}
+        <div class="bg-white rounded-2xl border {% if item.is_recent %}border-emerald-400 ring-2 ring-emerald-500/15{% else %}border-slate-200{% endif %} p-5 shadow-2xs transition fx-row{% if item.is_recent %} fx-row-new{% endif %}">
+            
+            {% comment %} ← ajout : état de l'héritage (comparaison mère / fille) {% endcomment %}
+            <div class="fx-statut{% if item.manque %} ko{% endif %}">
+                {% if item.manque %}
+                <span class="fx-statut-t"><b>Héritage incomplet</b> : {{ item.manque }} élément{{ item.manque|pluralize }} de {{ item.parent.nom }} absent{{ item.manque|pluralize }} chez {{ item.enfant.nom }}</span>
+                <form method="post" action="{% url 'heritage_institution' %}" class="fx-completer" onsubmit="this.querySelector('button').disabled=true">
+                    {% csrf_token %}
+                    <input type="hidden" name="parent_institution" value="{{ item.parent.id }}">
+                    <input type="hidden" name="children_institutions" value="{{ item.enfant.id }}">
+                    <button type="submit">Compléter l'héritage</button>
+                </form>
+                {% else %}
+                <span class="fx-statut-t"><b>Héritage complet</b> : {{ item.enfant.nom }} possède tout ce que possède {{ item.parent.nom }}</span>
+                {% endif %}
+            </div>
+            {% if item.is_recent %}
+                <div class="mb-3">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 fx-pill-new">
+                        ✓ Transmis lors de cette session
+                    </span>
+                </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                
+                <!-- NŒUD SOURCE (PARENT) -->
+                <div class="lg:col-span-3 rounded-xl bg-indigo-50/70 border border-indigo-200/80 p-4 fx-box-src">
+                    <span class="block text-[10px] font-bold uppercase tracking-wider text-indigo-600 fx-lbl-src">Source (Parent)</span>
+                    <p class="text-base font-bold text-slate-900 mt-0.5 truncate">{{ item.parent.nom }}</p>
+                    <p class="text-xs text-slate-500 mt-1">Émetteur des données · {{ item.counts_parent.structure|default:0 }} structure{{ item.counts_parent.structure|default:0|pluralize }}, {{ item.counts_parent.indicateur|default:0 }} indicateur{{ item.counts_parent.indicateur|default:0|pluralize }}</p>{% comment %} ← corrigé {% endcomment %}
+                </div>
+
+                <!-- CANAL DE TRANSMISSION (DONNÉES MIGRÉES) -->
+                <div class="lg:col-span-6 flex flex-col items-center justify-center px-2 fx-canal">
+                    <div class="w-full flex items-center gap-2 text-indigo-500">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0"></span>
+                        <div class="flex-1 border-t-2 border-dashed border-indigo-300 relative">
+                            <span class="sr-only">Flux de données</span>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-900 text-white shadow-2xs shrink-0 fx-total">
+                            {{ item.total }} élément(s) actif(s)
+                        </span>
+                        <div class="flex-1 border-t-2 border-dashed border-emerald-400"></div>
+                        <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </div>
+
+                    <!-- Badges des 5 modèles -->
+                    <!-- ← ajout : répartition visuelle des 5 modèles (la largeur de chaque couleur suit le nombre transmis) -->
+                    <div class="fx-mix" aria-hidden="true">
+                        <i class="fx-m1" style="flex-grow: {{ item.counts.structure|default:0 }}"></i>
+                        <i class="fx-m2" style="flex-grow: {{ item.counts.personnel|default:0 }}"></i>
+                        <i class="fx-m3" style="flex-grow: {{ item.counts.data_element|default:0 }}"></i>
+                        <i class="fx-m4" style="flex-grow: {{ item.counts.indicateur|default:0 }}"></i>
+                        <i class="fx-m5" style="flex-grow: {{ item.counts.data_set|default:0 }}"></i>
+                    </div>
+                    <div class="mt-3 flex flex-wrap items-center justify-center gap-1.5 fx-badges">
+                        <span class="px-2 py-0.5 rounded-md text-xs bg-slate-100 text-slate-700 border border-slate-200 fx-b fx-m1">
+                            Structure : <strong>{{ item.counts.structure }}</strong>{% if item.ecarts.structure %}<em class="fx-sur" title="{{ item.ecarts.structure }} manquant(s)">/ {{ item.counts_parent.structure }}</em>{% endif %}
+                        </span>
+                        <span class="px-2 py-0.5 rounded-md text-xs bg-slate-100 text-slate-700 border border-slate-200 fx-b fx-m2">
+                            Personnel : <strong>{{ item.counts.personnel }}</strong>{% if item.ecarts.personnel %}<em class="fx-sur" title="{{ item.ecarts.personnel }} manquant(s)">/ {{ item.counts_parent.personnel }}</em>{% endif %}
+                        </span>
+                        <span class="px-2 py-0.5 rounded-md text-xs bg-slate-100 text-slate-700 border border-slate-200 fx-b fx-m3">
+                            DataElement : <strong>{{ item.counts.data_element }}</strong>{% if item.ecarts.data_element %}<em class="fx-sur" title="{{ item.ecarts.data_element }} manquant(s)">/ {{ item.counts_parent.data_element }}</em>{% endif %}
+                        </span>
+                        <span class="px-2 py-0.5 rounded-md text-xs bg-slate-100 text-slate-700 border border-slate-200 fx-b fx-m4">
+                            Indicateur : <strong>{{ item.counts.indicateur }}</strong>{% if item.ecarts.indicateur %}<em class="fx-sur" title="{{ item.ecarts.indicateur }} manquant(s)">/ {{ item.counts_parent.indicateur }}</em>{% endif %}
+                        </span>
+                        <span class="px-2 py-0.5 rounded-md text-xs bg-slate-100 text-slate-700 border border-slate-200 fx-b fx-m5">
+                            DataSet : <strong>{{ item.counts.data_set }}</strong>{% if item.ecarts.data_set %}<em class="fx-sur" title="{{ item.ecarts.data_set }} manquant(s)">/ {{ item.counts_parent.data_set }}</em>{% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- NŒUD CIBLE (ENFANT) -->
+                <div class="lg:col-span-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 p-4 fx-box-dst">
+                    <span class="block text-[10px] font-bold uppercase tracking-wider text-emerald-700 fx-lbl-dst">Cible (Enfant)</span>
+                    <p class="text-base font-bold text-slate-900 mt-0.5 truncate">{{ item.enfant.nom }}</p>
+                    <p class="text-xs text-slate-500 mt-1">{% if item.manque %}Il manque {{ item.manque }} élément{{ item.manque|pluralize }}{% else %}Récepteur synchronisé{% endif %}</p>{% comment %} ← corrigé : texte selon l'état réel {% endcomment %}
+                </div>
+
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center fx-vide">
+            <p class="text-base font-semibold text-slate-700">Aucun flux de transfert enregistré pour le moment.</p>
+            <p class="text-sm text-slate-400 mt-1">Rattachez une institution parente à des enfants pour visualiser le réseau.</p>
+            <a href="{% url 'heritage_institution' %}"
+                class="inline-flex items-center gap-2 mt-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 transition">
+                Configurer une hiérarchie
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<style>
+/* ======================================================================
+   Flux de transfert — v80 « salle de contrôle »  ← corrigé
+   Mêmes classes et ids qu'avant ; seul l'aspect change.
+   Retirés : point qui pulse, halos, ombres lumineuses, anneaux colorés.
+   ====================================================================== */
+.fx-page { /* ← corrigé (v83) : tout le design suit les couleurs du profil (color_fond / color), comme les autres pages */
+           --fx-c1: {{ request.user.personnel.color_fond|default:'#4f46e5' }};
+           --fx-c2: {{ request.user.personnel.color|default:'#10b981' }};
+           --fx-bg: color-mix(in srgb, var(--fx-c1) 16%, #070b14);
+           --fx-panel: color-mix(in srgb, var(--fx-c1) 22%, #0b1220);
+           --fx-line: color-mix(in srgb, var(--fx-c1) 30%, #1e293b);
+           --fx-txt: #e2e8f0; --fx-txt2: #a3b0c2;
+           --fx-src: color-mix(in srgb, var(--fx-c1) 55%, #fff);          /* éclaircie : lisible sur fond sombre */
+           --fx-dst: color-mix(in srgb, var(--fx-c2) 80%, #fff);
+           --fx-rel: color-mix(in srgb, var(--fx-src) 50%, var(--fx-dst));
+           --fx-new: #fbbf24; --fx-ok: #10b981; --fx-ko: #f43f5e;          /* états : couleurs fixes, faciles à reconnaître */
+           --m1: #6366f1; --m2: #0ea5e9; --m3: #14b8a6; --m4: #f59e0b; --m5: #a855f7; }
+.fx-page .fx-dot { animation: none; }
+.fx-page .fx-h1 { font-size: clamp(1.5rem, 2.6vw, 2.1rem); letter-spacing: -.025em; }
+
+/* Carte réseau sombre */
+.fx-card { display: flex; flex-direction: column; margin-bottom: 2rem; background: var(--fx-bg); border: 1px solid var(--fx-line); border-radius: 1.25rem; overflow: hidden; color: var(--fx-txt); }
+.fx-head { order: 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: .8rem 1.5rem; padding: 1.4rem 1.6rem 1rem; }
+.fx-head h2 { margin: 0; font-size: 1.15rem; font-weight: 700; color: #fff; letter-spacing: -.01em; }
+.fx-head p { margin: .3rem 0 0; max-width: 44rem; font-size: .82rem; color: var(--fx-txt2); line-height: 1.55; }
+.fx-leg { display: flex; flex-wrap: wrap; gap: .45rem 1.1rem; font-size: .74rem; color: var(--fx-txt2); }
+.fx-leg span { display: inline-flex; align-items: center; gap: .45rem; }
+.fx-leg i { width: .7rem; height: .7rem; border-radius: 3px; }
+.fx-leg-src { background: var(--fx-src); } .fx-leg-rel { background: var(--fx-rel); } .fx-leg-dst { background: var(--fx-dst); }
+.fx-leg-new { background: var(--fx-new); border-radius: 50% !important; } .fx-leg-ok { background: var(--fx-ok); border-radius: 50% !important; }
+
+/* Chiffres clés : en haut, en grand */
+.fx-stats { order: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 0 1.6rem 1.2rem; border: 1px solid var(--fx-line); border-radius: .9rem; overflow: hidden; }
+.fx-stats div { padding: .9rem 1.1rem; border-left: 1px solid var(--fx-line); background: var(--fx-panel); }
+.fx-stats div:first-child { border-left: 0; }
+.fx-stats b { display: block; font-size: clamp(1.6rem, 3vw, 2.3rem); line-height: 1.05; font-weight: 800; color: #fff; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.fx-stats span { display: block; margin-top: .25rem; font-size: .72rem; font-weight: 600; color: var(--fx-txt2); text-transform: uppercase; letter-spacing: .06em; }
+.fx-st-new b { color: var(--fx-new) !important; }
+
+/* Bandeau d'état du transfert */
+.fx-etat { order: 2; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .5rem .85rem; margin: 0 1.6rem 1.2rem; padding: .85rem 1rem; border-radius: .9rem;
+           background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.35); transition: background .4s, border-color .4s; }
+.fx-etat[hidden] { display: none; }
+.fx-etat.fini { background: rgba(16,185,129,.1); border-color: rgba(16,185,129,.45); }
+.fx-etat-ico { width: 2.1rem; height: 2.1rem; border-radius: 50%; display: grid; place-items: center; background: var(--fx-new); color: var(--fx-bg); }
+.fx-etat-ico svg { width: 1.1rem; height: 1.1rem; }
+.fx-etat:not(.fini) .fx-etat-ico svg { animation: fxTourne 1s linear infinite; }
+.fx-etat.fini .fx-etat-ico { background: var(--fx-ok); color: #fff; }
+@keyframes fxTourne { to { transform: rotate(360deg); } }
+.fx-etat-txt b { display: block; font-size: .95rem; color: #fff; }
+.fx-etat-txt span { display: block; font-size: .8rem; color: var(--fx-txt2); }
+.fx-etat-barre { grid-column: 1 / -1; height: .3rem; border-radius: 99px; background: rgba(251,191,36,.18); overflow: hidden; }
+.fx-etat-barre i { display: block; height: 100%; width: 0; background: var(--fx-new); transition: width .2s linear; }
+.fx-etat.fini .fx-etat-barre { background: rgba(16,185,129,.2); }
+.fx-etat.fini .fx-etat-barre i { background: var(--fx-ok); }
+
+/* Scène du réseau : quadrillage fin */
+.fx-stage { order: 3; position: relative; overflow-x: auto; border-top: 1px solid var(--fx-line);
+            background: linear-gradient(rgba(148,163,184,.06) 1px, transparent 1px) 0 0 / 40px 40px,
+                        linear-gradient(90deg, rgba(148,163,184,.06) 1px, transparent 1px) 0 0 / 40px 40px, var(--fx-bg); }
+.fx-stage svg { display: block; width: 100%; min-width: 680px; height: auto; }
+.fx-link { fill: none; stroke-linecap: round; transition: stroke-opacity .15s; cursor: pointer; }
+.fx-link-glow { fill: none; stroke-linecap: round; pointer-events: none; }
+.fx-hit { fill: none; stroke: transparent; stroke-width: 18; cursor: pointer; }
+.fx-node { cursor: default; }
+.fx-node.is-src { cursor: pointer; }
+.fx-node.is-src:hover rect.fx-box { stroke-width: 2.5; }
+.fx-name { font: 700 13.5px/1 system-ui, -apple-system, "Segoe UI", sans-serif; fill: #f8fafc; }
+.fx-sub { font: 500 11px/1 system-ui, -apple-system, "Segoe UI", sans-serif; fill: #94a3b8; }
+.fx-col { font: 700 10.5px/1 system-ui, sans-serif; letter-spacing: .12em; fill: #64748b; text-transform: uppercase; }
+.fx-dim .fx-link { stroke-opacity: .12 !important; }
+.fx-dim .fx-node { opacity: .3; }
+.fx-dim .fx-on, .fx-dim .fx-node.fx-on { opacity: 1 !important; }
+.fx-dim .fx-on .fx-link { stroke-opacity: 1 !important; }
+.fx-tip { position: absolute; z-index: 5; min-width: 14rem; padding: .75rem .9rem; border-radius: .7rem; background: #fff; color: #0f172a; font-size: .78rem; line-height: 1.5;
+          box-shadow: 0 12px 28px -12px rgba(0,0,0,.6); pointer-events: none; }
+.fx-tip b { display: block; margin-bottom: .35rem; font-size: .84rem; }
+.fx-tip div { display: flex; justify-content: space-between; gap: 1rem; color: #475569; }
+.fx-tip div span:last-child { color: #0f172a; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fx-ok-badge { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .fx-etat-ico svg { animation: none !important; } }
+@media (max-width: 640px) { .fx-head, .fx-stats, .fx-etat { margin-left: 1rem; margin-right: 1rem; } .fx-head { padding: 1.1rem 1rem .9rem; }
+    .fx-stats { grid-template-columns: 1fr 1fr; } .fx-stats div { padding: .7rem .85rem; border-top: 1px solid var(--fx-line); } .fx-stats div:nth-child(odd) { border-left: 0; } .fx-stats div:nth-child(-n+2) { border-top: 0; } }
+
+/* Détail des liaisons */
+.fx-list-title { margin: 0 0 .9rem; font-size: 1rem; font-weight: 700; color: #0f172a; }
+.fx-page .fx-row { position: relative; padding: 1.1rem 1.25rem; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: none; transition: border-color .15s; }
+.fx-page .fx-row:hover { border-color: #cbd5e1; }
+.fx-page .fx-row.fx-row-new { border-color: #e2e8f0; box-shadow: inset 4px 0 0 var(--fx-ok); }
+.fx-page .fx-pill-new { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.fx-page .fx-box-src, .fx-page .fx-box-dst { background: #fff; border: 1px solid #e2e8f0; border-left: 4px solid var(--fx-src); border-radius: .75rem; }
+.fx-page .fx-box-dst { border-left-color: var(--fx-dst); }
+.fx-page .fx-box-src p:first-of-type, .fx-page .fx-box-dst p:first-of-type { font-size: 1.05rem; }
+.fx-page .fx-canal .border-dashed { border-top-style: solid; }
+.fx-page .fx-total { background: #0f172a; font-size: .74rem; padding: .3rem .75rem; font-variant-numeric: tabular-nums; }
+.fx-mix { display: flex; gap: 2px; width: 100%; height: .5rem; margin-top: .85rem; border-radius: 99px; overflow: hidden; background: #f1f5f9; }
+.fx-mix i { flex-basis: 0; min-width: 0; }
+.fx-mix i[style="flex-grow: 0"] { display: none; }
+.fx-mix .fx-m1, .fx-b.fx-m1::before { background: var(--m1); } .fx-mix .fx-m2, .fx-b.fx-m2::before { background: var(--m2); }
+.fx-mix .fx-m3, .fx-b.fx-m3::before { background: var(--m3); } .fx-mix .fx-m4, .fx-b.fx-m4::before { background: var(--m4); }
+.fx-mix .fx-m5, .fx-b.fx-m5::before { background: var(--m5); }
+.fx-page .fx-b { display: inline-flex; align-items: center; gap: .4rem; background: #fff; border-color: #e2e8f0; color: #475569; font-variant-numeric: tabular-nums; }
+.fx-page .fx-b::before { content: ""; width: .5rem; height: .5rem; border-radius: 2px; }
+.fx-page .fx-b strong { color: #0f172a; }
+.fx-page .fx-vide { border-style: dashed; }
+
+/* ---------- v81 ← ajout : filtre par modèle, chemin, écarts mère / fille ---------- */
+.fx-outils { order: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem 1rem; margin: 0 1.6rem 1rem; }
+.fx-filtres { display: flex; flex-wrap: wrap; gap: .4rem; }
+.fx-f { display: inline-flex; align-items: center; gap: .45rem; height: 2rem; padding: 0 .8rem; border-radius: 99px; border: 1px solid var(--fx-line); background: var(--fx-panel);
+        color: var(--fx-txt2); font: 600 .78rem/1 system-ui, -apple-system, "Segoe UI", sans-serif; cursor: pointer; transition: border-color .15s, color .15s, background .15s; }
+.fx-f:hover { color: #fff; border-color: #334155; }
+.fx-f.on { background: #fff; border-color: #fff; color: #0f172a; }
+.fx-f i { width: .55rem; height: .55rem; border-radius: 2px; }
+.fx-f .fx-m1 { background: var(--m1); } .fx-f .fx-m2 { background: var(--m2); } .fx-f .fx-m3 { background: var(--m3); } .fx-f .fx-m4 { background: var(--m4); } .fx-f .fx-m5 { background: var(--m5); }
+.fx-f:focus-visible { outline: 2px solid #818cf8; outline-offset: 2px; }
+.fx-aide { font-size: .75rem; color: #64748b; }
+.fx-stats { order: 2; } .fx-etat { order: 3; } .fx-stage { order: 4; }
+.fx-leg-ko { background: var(--fx-ko); border-radius: 50% !important; }
+.fx-st-ko b { color: var(--fx-ko) !important; }
+.fx-etat.reste { background: rgba(244,63,94,.1); border-color: rgba(244,63,94,.45); }
+.fx-etat.reste .fx-etat-ico, .fx-etat.reste .fx-etat-barre i { background: var(--fx-ko); }
+.fx-etat.reste .fx-etat-barre { background: rgba(244,63,94,.2); }
+.fx-ko-badge { pointer-events: none; }
+.fx-dim [data-p]:not(.fx-on) .fx-ok-badge, .fx-dim [data-p]:not(.fx-on) .fx-ko-badge { opacity: .2; }
+.fx-g-off { opacity: .18; }
+
+/* État de l'héritage dans chaque liaison */
+.fx-statut { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; margin: 0 0 .9rem; padding: .55rem .8rem; border-radius: .6rem;
+             background: #f0fdf4; color: #166534; font-size: .82rem; }
+.fx-statut b { font-weight: 700; }
+.fx-statut.ko { background: #fff1f2; color: #9f1239; }
+.fx-completer { margin: 0; }
+.fx-completer button { height: 2rem; padding: 0 .9rem; border: 0; border-radius: .5rem; background: #e11d48; color: #fff; font: 600 .8rem/1 system-ui, -apple-system, "Segoe UI", sans-serif; cursor: pointer; }
+.fx-completer button:hover { background: #be123c; }
+.fx-completer button:disabled { opacity: .6; cursor: wait; }
+.fx-sur { margin-left: .2rem; font-style: normal; font-weight: 700; color: #e11d48; }
+
+/* Filtre actif : on met en avant le modèle choisi dans la liste */
+.fx-page[data-modele="m1"] .fx-mix i:not(.fx-m1), .fx-page[data-modele="m2"] .fx-mix i:not(.fx-m2), .fx-page[data-modele="m3"] .fx-mix i:not(.fx-m3),
+.fx-page[data-modele="m4"] .fx-mix i:not(.fx-m4), .fx-page[data-modele="m5"] .fx-mix i:not(.fx-m5) { opacity: .15; }
+.fx-page[data-modele="m1"] .fx-b:not(.fx-m1), .fx-page[data-modele="m2"] .fx-b:not(.fx-m2), .fx-page[data-modele="m3"] .fx-b:not(.fx-m3),
+.fx-page[data-modele="m4"] .fx-b:not(.fx-m4), .fx-page[data-modele="m5"] .fx-b:not(.fx-m5) { opacity: .35; }
+.fx-page[data-modele="m1"] .fx-b.fx-m1, .fx-page[data-modele="m2"] .fx-b.fx-m2, .fx-page[data-modele="m3"] .fx-b.fx-m3,
+.fx-page[data-modele="m4"] .fx-b.fx-m4, .fx-page[data-modele="m5"] .fx-b.fx-m5 { border-color: #0f172a; box-shadow: 0 0 0 1px #0f172a; }
+@media (max-width: 640px) { .fx-outils { margin-left: 1rem; margin-right: 1rem; } .fx-aide { display: none; } }
+
+/* ---------- v83 ← ajout : thème dynamique + titres soulignés ---------- */
+.fx-page .fx-dot { background: var(--fx-c2); }
+.fx-page .fx-top > div:first-child > div:first-child { color: var(--fx-c1); }
+.fx-page .fx-h1 { position: relative; padding-bottom: .55rem; margin-bottom: .2rem; }
+.fx-page .fx-h1::after { content: ""; position: absolute; left: 0; bottom: 0; width: 3.5rem; height: 4px; border-radius: 4px; background: var(--fx-c2); }
+.fx-resume { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .9rem; margin-top: .5rem; font-size: .82rem; color: #475569; }
+.fx-resume b { color: #0f172a; font-variant-numeric: tabular-nums; }
+.fx-resume .ko, .fx-resume .ko b { color: #be123c; }
+.fx-resume .ok { color: #047857; font-weight: 600; }
+.fx-resume a { color: var(--fx-c1); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.fx-page .fx-btn { background: var(--fx-c1); }
+.fx-page .fx-btn:hover { background: color-mix(in srgb, var(--fx-c1) 82%, #000); }
+.fx-page .fx-select:focus { border-color: var(--fx-c1); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fx-c1) 20%, transparent); }
+.fx-head h2 { display: inline-block; padding-bottom: .4rem; border-bottom: 3px solid var(--fx-dst); }
+.fx-list-title { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; padding-bottom: .45rem; border-bottom: 2px solid #e2e8f0; position: relative; }
+.fx-list-title::after { content: ""; position: absolute; left: 0; bottom: -2px; width: 3.5rem; height: 2px; background: var(--fx-c1); }
+.fx-list-title small { font-size: .8rem; font-weight: 500; color: #64748b; }
+.fx-compte { display: inline-grid; place-items: center; min-width: 1.6rem; height: 1.4rem; padding: 0 .45rem; border-radius: 99px; font-size: .75rem; background: var(--fx-c1); color: #fff; }
+.fx-page .fx-box-src { border-left-color: var(--fx-c1); }
+.fx-page .fx-box-dst { border-left-color: var(--fx-c2); }
+.fx-page .fx-lbl-src { color: var(--fx-c1); }
+.fx-page .fx-lbl-dst { color: color-mix(in srgb, var(--fx-c2) 80%, #000); }
+.fx-page .fx-canal .bg-indigo-600 { background: var(--fx-c1); }
+.fx-page .fx-canal .border-indigo-300 { border-color: color-mix(in srgb, var(--fx-c1) 45%, #fff); }
+.fx-page .fx-canal .border-emerald-400 { border-color: color-mix(in srgb, var(--fx-c2) 60%, #fff); }
+.fx-page .fx-canal .text-emerald-600 { color: var(--fx-c2); }
+.fx-f.on { color: var(--fx-c1); }
+.fx-leg [hidden] { display: none; }
+</style>
+
+<script>
+(function () {
+  var src = document.getElementById('fxData'), svg = document.getElementById('fxSvg');
+  if (!src || !svg) return;
+  var liens; try { liens = JSON.parse(src.textContent); } catch (e) { return; }
+  if (!liens.length) return;
+  var NS = 'http://www.w3.org/2000/svg', calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var el = function (n, a, p) { var x = document.createElementNS(NS, n); for (var k in a) x.setAttribute(k, a[k]); if (p) p.appendChild(x); return x; };
+  var css = function (x, regles) { for (var k in regles) x.style.setProperty(k, regles[k]); return x; };   /* ← ajout : couleurs du thème (variables CSS) */
+  /* ← ajout : pastille orange « ! » au milieu d'une liaison incomplète */
+  function alerte(l) {
+    var b = el('g', { 'class': 'fx-ko-badge', transform: 'translate(' + l._x + ',' + l._y + ')' }, l._g);
+    css(el('circle', { r: 11, 'stroke-width': 3 }, b), { fill: 'var(--fx-ko)', stroke: 'var(--fx-bg)' });
+    var t = el('text', { y: 4.5, 'text-anchor': 'middle', fill: '#fff', 'font-size': 13, 'font-weight': 800, 'font-family': 'system-ui, sans-serif' }, b); t.textContent = '!';
+  }
+  /* ← ajout : allume une institution, tous ses ascendants et tous ses descendants */
+  function suivreChemin(id) {
+    var vus = {}; vus[id] = true;
+    var monter = [String(id)], descendre = [String(id)];
+    while (monter.length) { var x = monter.pop(); liens.forEach(function (l) { if (String(l.e) === x && !vus['h' + l.p]) { vus['h' + l.p] = vus[l.p] = true; l._g.classList.add('fx-on'); monter.push(String(l.p)); } else if (String(l.e) === x) l._g.classList.add('fx-on'); }); }
+    while (descendre.length) { var y = descendre.pop(); liens.forEach(function (l) { if (String(l.p) === y && !vus['b' + l.e]) { vus['b' + l.e] = vus[l.e] = true; l._g.classList.add('fx-on'); descendre.push(String(l.e)); } else if (String(l.p) === y) l._g.classList.add('fx-on'); }); }
+    svg.classList.add('fx-dim');
+    Object.keys(vus).forEach(function (k) { if (/^\d+$/.test(k)) { var n = svg.querySelector('.fx-node[data-id="' + k + '"]'); if (n) n.classList.add('fx-on'); } });
+  }
+
+  /* --- nœuds et niveaux (une institution peut être enfant puis parent d'une autre) --- */
+  var noeuds = {}, enfantsDe = {};
+  liens.forEach(function (l) {
+    noeuds[l.p] = noeuds[l.p] || { id: l.p, nom: l.pn, recu: 0, envoie: 0 };
+    noeuds[l.e] = noeuds[l.e] || { id: l.e, nom: l.en, recu: 0, envoie: 0 };
+    noeuds[l.p].envoie++; noeuds[l.e].recu += l.t;
+    (enfantsDe[l.p] = enfantsDe[l.p] || []).push(l.e);
+  });
+  var estEnfant = {}; liens.forEach(function (l) { estEnfant[l.e] = true; });
+  var niveau = {}, file = Object.keys(noeuds).filter(function (id) { return !estEnfant[id]; });
+  if (!file.length) file = [String(liens[0].p)];                                  /* cycle : on part du premier parent */
+  file.forEach(function (id) { niveau[id] = 0; });
+  for (var i = 0; i < file.length; i++) {
+    (enfantsDe[file[i]] || []).forEach(function (e) {
+      if (niveau[e] === undefined || niveau[e] < niveau[file[i]] + 1) { if (niveau[file[i]] + 1 < 8) { niveau[e] = niveau[file[i]] + 1; file.push(String(e)); } }
+    });
+  }
+  Object.keys(noeuds).forEach(function (id) { if (niveau[id] === undefined) niveau[id] = 1; });
+  var colonnes = {};
+  Object.keys(noeuds).forEach(function (id) { (colonnes[niveau[id]] = colonnes[niveau[id]] || []).push(noeuds[id]); });
+  var nbCol = Math.max.apply(null, Object.keys(colonnes).map(Number)) + 1;
+
+  /* --- géométrie --- */
+  var W = 1000, NW = 220, NH = 58, GAP = 22, M = 40;   /* ← corrigé : nœuds un peu plus grands */
+  var maxParCol = Math.max.apply(null, Object.keys(colonnes).map(function (k) { return colonnes[k].length; }));
+  var H = Math.max(300, M * 2 + 18 + maxParCol * NH + (maxParCol - 1) * GAP);
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  var xCol = function (c) { return nbCol === 1 ? (W - NW) / 2 : M + c * ((W - 2 * M - NW) / (nbCol - 1)); };
+  Object.keys(colonnes).forEach(function (c) {
+    var liste = colonnes[c].sort(function (a, b) { return a.nom.localeCompare(b.nom, 'fr'); });
+    var hTot = liste.length * NH + (liste.length - 1) * GAP, y0 = (H - hTot) / 2 + 9;
+    liste.forEach(function (n, k) { n.x = xCol(+c); n.y = y0 + k * (NH + GAP); n.col = +c; });
+  });
+
+  var defs = el('defs', {}, svg);
+  var gLiens = el('g', {}, svg), gNoeuds = el('g', {}, svg);
+  /* titres de colonnes */
+  for (var c = 0; c < nbCol; c++) {
+    var t = el('text', { x: xCol(c) + NW / 2, y: 26, 'text-anchor': 'middle', 'class': 'fx-col' }, svg);
+    var nbC = (colonnes[c] || []).length;                                         /* ← corrigé : titres avec le nombre d'institutions */
+    t.textContent = (c === 0 ? (nbC > 1 ? 'Sources' : 'Source') : (c === nbCol - 1 ? (nbC > 1 ? 'Réceptrices' : 'Réceptrice') : 'Relais · niveau ' + c)) + ' (' + nbC + ')';
+  }
+
+  var maxT = Math.max.apply(null, liens.map(function (l) { return l.t; }).concat([1]));
+  var tip = document.getElementById('fxTip'), stage = document.getElementById('fxStage');
+  var fmt = function (n) { return Number(n).toLocaleString('fr-FR'); };
+
+  liens.forEach(function (l, idx) {
+    var a = noeuds[l.p], b = noeuds[l.e];
+    var x1 = a.x + NW, y1 = a.y + NH / 2, x2 = b.x, y2 = b.y + NH / 2;
+    if (b.col <= a.col) { x1 = a.x + NW / 2; x2 = b.x + NW / 2; }                 /* lien vers une colonne précédente : rare */
+    var dx = Math.max(60, (x2 - x1) * .5);
+    var d = 'M' + x1 + ' ' + y1 + ' C' + (x1 + dx) + ' ' + y1 + ' ' + (x2 - dx) + ' ' + y2 + ' ' + x2 + ' ' + y2;
+    var couleur = 'var(--fx-bg)';   /* ← corrigé : piste de la couleur du fond sous le lien (sépare les croisements) */
+    var largeur = 1.6 + 5 * (l.t / maxT);
+    var g = el('g', { 'data-p': l.p, 'data-e': l.e }, gLiens);
+    var grad = el('linearGradient', { id: 'fxG' + idx, gradientUnits: 'userSpaceOnUse', x1: x1, y1: y1, x2: x2, y2: y2 }, defs);
+    css(el('stop', { offset: '0' }, grad), { 'stop-color': l.r ? 'var(--fx-new)' : 'var(--fx-src)' });
+    css(el('stop', { offset: '1' }, grad), { 'stop-color': l.r ? 'var(--fx-new)' : 'var(--fx-dst)' });
+    var piste = css(el('path', { d: d, 'class': 'fx-link-glow', 'stroke-width': largeur + 5, 'stroke-opacity': 1 }, g), { stroke: couleur });
+    var chemin = el('path', { d: d, id: 'fxP' + idx, 'class': 'fx-link', stroke: 'url(#fxG' + idx + ')', 'stroke-width': largeur, 'stroke-opacity': .95 }, g);
+    var hit = el('path', { d: d, 'class': 'fx-hit' }, g);
+
+    l._chemin = chemin; l._g = g; l._x = (x1 + x2) / 2; l._y = (y1 + y2) / 2;
+    l._piste = piste;                                                              /* ← ajout : pour le filtre par modèle */
+    if (l.m > 0) { chemin.setAttribute('stroke-dasharray', '8 6'); if (!l.r) alerte(l); }   /* ← ajout : héritage incomplet */
+    /* ← corrigé : les paquets ne circulent que sur les liaisons en cours de transfert (transmises à l'instant),
+       puis s'arrêtent quand le transfert est terminé (voir terminer()). Les liaisons anciennes restent fixes. */
+    if (!calme && l.r && l.t > 0) {
+      var nb = Math.min(4, 1 + Math.round(3 * l.t / maxT)), duree = (3.2 - 1.2 * l.t / maxT).toFixed(2);
+      for (var k = 0; k < nb; k++) {
+        var paquet = css(el('circle', { r: 4.5, 'stroke-width': 2, 'class': 'fx-paquet' }, g), { fill: 'var(--fx-new)', stroke: 'var(--fx-bg)' });
+        var anim = el('animateMotion', { dur: duree + 's', repeatCount: 'indefinite', begin: (-k * duree / nb).toFixed(2) + 's', rotate: 'auto' }, paquet);
+        el('mpath', { href: '#fxP' + idx }, anim).setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', '#fxP' + idx);
+      }
+    }
+
+    /* survol : détail du flux */
+    function montrer(e) {
+      svg.classList.add('fx-dim'); g.classList.add('fx-on');
+      [l.p, l.e].forEach(function (id) { var n = gNoeuds.querySelector('[data-id="' + id + '"]'); if (n) n.classList.add('fx-on'); });
+      var html = '<b>' + a.nom.replace(/</g, '&lt;') + ' → ' + b.nom.replace(/</g, '&lt;') + '</b>';
+      Object.keys(l.c).forEach(function (k) {                                     /* ← corrigé : « reçu / chez la mère » s'il manque des éléments */
+        var mere = (l.cp || {})[k] || 0;
+        if (l.c[k] || mere) html += '<div><span>' + k + '</span><span>' + fmt(l.c[k]) + (mere > l.c[k] ? ' <em style="color:#e11d48;font-style:normal">/ ' + fmt(mere) + '</em>' : '') + '</span></div>';
+      });
+      if (l.m > 0) html += '<div style="color:#e11d48"><span>Manquants</span><span style="color:#e11d48">' + fmt(l.m) + '</span></div>';
+      html += '<div style="margin-top:.3rem;border-top:1px solid rgba(255,255,255,.15);padding-top:.3rem"><span>Total chez la réceptrice</span><span>' + fmt(l.t) + '</span></div>';
+      tip.innerHTML = html; tip.hidden = false; placer(e);
+    }
+    function placer(e) {
+      var r = stage.getBoundingClientRect(), x = e.clientX - r.left + stage.scrollLeft + 14, y = e.clientY - r.top + 14;
+      tip.style.left = Math.min(x, stage.scrollWidth - tip.offsetWidth - 8) + 'px'; tip.style.top = y + 'px';
+    }
+    function cacher() { svg.classList.remove('fx-dim'); svg.querySelectorAll('.fx-on').forEach(function (x) { x.classList.remove('fx-on'); }); tip.hidden = true; }
+    hit.addEventListener('mouseenter', montrer); hit.addEventListener('mousemove', placer); hit.addEventListener('mouseleave', cacher);
+    hit.addEventListener('click', montrer);
+  });
+
+  /* nœuds */
+  var parentFiltre = new URLSearchParams(location.search).get('parent');
+  Object.keys(noeuds).forEach(function (id) {
+    var n = noeuds[id], estSource = n.envoie > 0, estRecept = n.recu > 0 || estEnfant[id];
+    var couleur = estSource && !estEnfant[id] ? 'var(--fx-src)' : (estSource ? 'var(--fx-rel)' : 'var(--fx-dst)');   /* ← corrigé : couleurs du thème */
+    var g = el('g', { 'class': 'fx-node' + (estSource ? ' is-src' : ''), 'data-id': id, transform: 'translate(' + n.x + ',' + n.y + ')' }, gNoeuds);
+    css(el('rect', { width: NW, height: NH, rx: 12, 'stroke-width': 1.5, 'class': 'fx-box' }, g), { fill: 'var(--fx-panel)', stroke: couleur });   /* carte bordée de la couleur du rôle */
+    css(el('rect', { x: 10, y: 14, width: 4, height: NH - 28, rx: 2 }, g), { fill: couleur });
+    var nom = n.nom.length > 25 ? n.nom.slice(0, 24) + '…' : n.nom;
+    var t1 = el('text', { x: 24, y: 25, 'class': 'fx-name' }, g); t1.textContent = nom;
+    var t2 = el('text', { x: 24, y: 43, 'class': 'fx-sub' }, g);
+    t2.textContent = (estSource && estEnfant[id]) ? (fmt(n.recu) + ' reçus · émet vers ' + n.envoie) : estSource ? ('Émet vers ' + n.envoie + ' institution' + (n.envoie > 1 ? 's' : '')) : (fmt(n.recu) + ' élément' + (n.recu > 1 ? 's' : '') + ' reçu' + (n.recu > 1 ? 's' : ''));
+    el('title', {}, g).textContent = n.nom;
+    n._t2 = t2; n._src = estSource; n._enf = !!estEnfant[id];                        /* ← ajout : texte mis à jour par le filtre */
+    g.addEventListener('mouseenter', function () { suivreChemin(id); });             /* ← ajout : tout le chemin s'allume */
+    g.addEventListener('mouseleave', function () { svg.classList.remove('fx-dim'); svg.querySelectorAll('.fx-on').forEach(function (x) { x.classList.remove('fx-on'); }); });
+    if (estSource) g.addEventListener('click', function () {
+      var u = new URL(location.href); u.searchParams.set('parent', id); u.searchParams.delete('children'); location.href = u.toString();
+    });
+    if (parentFiltre && String(parentFiltre) === String(id)) el('rect', { x: -4, y: -4, width: NW + 8, height: NH + 8, rx: 15, fill: 'none', 'stroke-width': 2, 'stroke-dasharray': '4 4', style: 'stroke: var(--fx-src)' }, g);
+  });
+
+  /* ← ajout : la légende ne montre que ce qui est présent dans le réseau */
+  var presents = {
+    src: true, dst: true,
+    rel: Object.keys(noeuds).some(function (id) { return noeuds[id].envoie > 0 && estEnfant[id]; }),
+    'new': liens.some(function (l) { return l.r; }), ok: liens.some(function (l) { return l.r && !(l.m > 0); }),
+    ko: liens.some(function (l) { return l.m > 0; })
+  };
+  document.querySelectorAll('.fx-leg [data-leg]').forEach(function (sp) { sp.hidden = !presents[sp.getAttribute('data-leg')]; });
+
+  /* chiffres du réseau */
+  var total = liens.reduce(function (s, l) { return s + l.t; }, 0);
+  var sources = Object.keys(noeuds).filter(function (id) { return noeuds[id].envoie > 0; }).length;
+  var recepts = Object.keys(noeuds).filter(function (id) { return estEnfant[id]; }).length;
+  var recents = liens.filter(function (l) { return l.r; }).length;
+  var incompletes = liens.filter(function (l) { return l.m > 0; }).length, stTotal = null;   /* ← ajout */
+  document.getElementById('fxStats').innerHTML =
+    '<div><b>' + sources + '</b><span>institution' + (sources > 1 ? 's' : '') + ' source' + (sources > 1 ? 's' : '') + '</span></div>' +
+    '<div><b>' + recepts + '</b><span>institution' + (recepts > 1 ? 's' : '') + ' réceptrice' + (recepts > 1 ? 's' : '') + '</span></div>' +
+    '<div><b>' + liens.length + '</b><span>liaison' + (liens.length > 1 ? 's' : '') + '</span></div>' +
+    '<div><b>' + fmt(total) + '</b><span>éléments chez les réceptrices</span></div>' +
+    (recents ? '<div class="fx-st-new"><b>' + recents + '</b><span>transmise' + (recents > 1 ? 's' : '') + ' à l\'instant</span></div>' : '') +
+    (incompletes ? '<div class="fx-st-ko"><b>' + incompletes + '</b><span>liaison' + (incompletes > 1 ? 's' : '') + ' incomplète' + (incompletes > 1 ? 's' : '') + '</span></div>' : '');   /* ← ajout */
+  stTotal = document.querySelector('#fxStats div:nth-child(4) b');
+
+  /* ← ajout : filtre par modèle (Structures, Personnel…) : épaisseur des liens, textes des nœuds, chiffres, liste */
+  var page = document.querySelector('.fx-page'), CLASSES = { 'Structures': 'm1', 'Personnels': 'm2', 'Éléments de données': 'm3', 'Indicateurs': 'm4', 'Jeux de données': 'm5' };
+  function appliquerModele(cle) {
+    var val = function (l) { return cle ? (l.c[cle] || 0) : l.t; };
+    var maxV = Math.max.apply(null, liens.map(val).concat([1]));
+    Object.keys(noeuds).forEach(function (id) { noeuds[id]._recu = 0; });
+    liens.forEach(function (l) {
+      var v = val(l), larg = 1.6 + 5 * (v / maxV);
+      l._chemin.setAttribute('stroke-width', larg); l._piste.setAttribute('stroke-width', larg + 5);
+      l._g.style.opacity = v ? '' : '.18';
+      noeuds[l.e]._recu += v;
+    });
+    Object.keys(noeuds).forEach(function (id) {
+      var n = noeuds[id], r = n._recu, mot = cle ? cle.toLowerCase() : 'élément' + (r > 1 ? 's' : '');
+      if (cle && r <= 1) mot = mot.replace(/s(\b|$)/g, '$1');
+      if (n._src && n._enf) n._t2.textContent = fmt(r) + ' reçus · émet vers ' + n.envoie;
+      else if (!n._src) n._t2.textContent = fmt(r) + ' ' + mot + ' reçu' + (r > 1 ? 's' : '');
+    });
+    if (stTotal) { stTotal.textContent = fmt(liens.reduce(function (s, l) { return s + val(l); }, 0)); stTotal.nextElementSibling.textContent = cle ? cle.toLowerCase() + ' chez les réceptrices' : 'éléments chez les réceptrices'; }
+    if (page) page.setAttribute('data-modele', cle ? CLASSES[cle] : '');
+  }
+  document.querySelectorAll('#fxFiltres .fx-f').forEach(function (bt) {
+    bt.addEventListener('click', function () {
+      document.querySelectorAll('#fxFiltres .fx-f').forEach(function (x) { x.classList.toggle('on', x === bt); x.setAttribute('aria-pressed', x === bt ? 'true' : 'false'); });
+      appliquerModele(bt.getAttribute('data-modele'));
+    });
+  });
+
+  /* ← ajout : déroulé du transfert puis arrêt + « tout a été transféré » */
+  var enCours = liens.filter(function (l) { return l.r; });
+  if (!enCours.length) return;                                     /* simple consultation : rien ne circule */
+  var etat = document.getElementById('fxEtat'), barre = document.getElementById('fxEtatBarre');
+  var ICO_TOUR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg>';
+  var ICO_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+  var volume = enCours.reduce(function (s, l) { return s + l.t; }, 0);
+  var cibles = enCours.map(function (l) { return noeuds[l.e].nom; });
+  etat.hidden = false;
+  document.getElementById('fxEtatIco').innerHTML = ICO_TOUR;
+  document.getElementById('fxEtatSous').textContent = 'Transmission vers ' + cibles.length + ' institution' + (cibles.length > 1 ? 's' : '') + ' : ' + cibles.join(', ');
+
+  function terminer() {
+    svg.querySelectorAll('.fx-paquet').forEach(function (p) { p.remove(); });          /* on coupe le flux */
+    enCours.forEach(function (l) {
+      css(l._chemin, { stroke: 'var(--fx-ok)' });
+      if (l.m > 0) { alerte(l); return; }                                          /* ← ajout : encore incomplet → pastille orange */
+      var b = el('g', { 'class': 'fx-ok-badge', transform: 'translate(' + l._x + ',' + l._y + ')' }, l._g);
+      css(el('circle', { r: 11, 'stroke-width': 3 }, b), { fill: 'var(--fx-ok)', stroke: 'var(--fx-bg)' });
+      el('path', { d: 'M-4.5 0.5l3 3 6-6.5', fill: 'none', stroke: '#fff', 'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, b);
+    });
+    etat.classList.add('fini'); barre.style.width = '100%';
+    if (enCours.some(function (l) { return l.m > 0; })) etat.classList.add('reste');   /* ← ajout */
+    document.getElementById('fxEtatIco').innerHTML = ICO_OK;
+    var reste = enCours.reduce(function (s, l) { return s + (l.m || 0); }, 0);      /* ← ajout : on ne dit « tout » que si c'est vrai */
+    document.getElementById('fxEtatTitre').textContent = reste ? 'Transfert terminé : ' + fmt(reste) + ' élément' + (reste > 1 ? 's' : '') + ' restent à compléter' : 'Transfert terminé : tout a été transféré';
+    document.getElementById('fxEtatSous').textContent = fmt(volume) + ' élément' + (volume > 1 ? 's' : '') + ' disponibles chez ' + cibles.join(', ') + '.';
+  }
+  if (calme) { terminer(); return; }
+  var DUREE = 4500, debut = performance.now();
+  (function avancer(t) {
+    var f = Math.min(1, (t - debut) / DUREE);
+    barre.style.width = Math.round(f * 100) + '%';
+    if (f < 1) requestAnimationFrame(avancer); else terminer();
+  })(debut);
+})();
+</script>
+{% endblock %}
