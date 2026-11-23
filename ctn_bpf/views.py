@@ -30334,7 +30334,10 @@ def gest_dashboard_data(request):
             messages.success(request, texte)
             if page:
                 return redirect(page)
-    return redirect(request.META.get('HTTP_REFERER', '/'))
+    retour = request.META.get('HTTP_REFERER', '/')
+    if '/dashboard-technics/' in retour:                               # ← ajout (v93) : on quitte le TET → retour à l'accueil
+        retour = '/'
+    return redirect(retour)
 
 
 # ---------------------------------------------------------------------
@@ -30386,6 +30389,14 @@ def _tet_moyenne(taux):
     return round(sum(taux) / len(taux), 1) if taux else None
 
 
+def _tet_nom_personnel(p):
+    """← ajout (v92b) : « Prénom Nom ». Personnel.__str__ renvoie la PHOTO : on ne l'utilise jamais pour un nom."""
+    if p is None:
+        return ''
+    nom = ' '.join(x for x in ((p.prenom or '').strip(), (p.nom or '').strip()) if x)
+    return nom or (p.mail or '').strip() or (p.code or '').strip() or f'Personnel n° {p.pk}'
+
+
 def _tet_fr(n):
     """12.5 → « 12,5 » (affichage français)."""
     return ('%g' % n).replace('.', ',')
@@ -30418,6 +30429,8 @@ def _tet_chemin(entite, cache):
 @login_required(login_url='/log_account')
 def technics_dashboard(request):
     template = 'dashboard-technics.html'
+    if request.method == 'POST':                                       # ← ajout (v93) : sélecteur Processus / Financier / Technique du bandeau
+        return gest_dashboard_data(request)
     context = basis(request)
     inst = context.get('actual_institution')
     if not inst:
@@ -30662,14 +30675,14 @@ def technics_dashboard(request):
                 nb_actions_ouvertes += 1 if ouverte else 0
                 nb_actions_retard += 1 if en_retard else 0
                 actions.append({'obj': a, 'ouverte': ouverte, 'en_retard': en_retard,
-                                'responsable': (' '.join(x for x in (getattr(a.responsable, 'prenom', ''), getattr(a.responsable, 'nom', '')) if x)
-                                                or str(a.responsable)) if a.responsable_id else ''})
+                                'responsable': _tet_nom_personnel(a.responsable) if a.responsable_id else ''})   # ← corrigé (v92b)
             actions.sort(key=lambda x: (not x['en_retard'], not x['ouverte'], x['obj'].echeance or datetime.date.max))
         except Exception:                                              # table pas encore créée (migration à faire)
             actions, Modele = [], None
         try:
-            personnels = [{'id': p.id, 'nom': ' '.join(x for x in (getattr(p, 'prenom', ''), getattr(p, 'nom', '')) if x) or str(p)}
-                          for p in Personnel.objects.filter(actual_institution=inst)]
+            # ← corrigé (v92b) : comptes actifs d'abord, puis par nom ; « (inactif) » signalé
+            personnels = [{'id': p.id, 'nom': _tet_nom_personnel(p) + ('' if p.is_active else ' (inactif)'), 'actif': p.is_active}
+                          for p in Personnel.objects.filter(actual_institution=inst).order_by('-is_active', 'nom', 'prenom')]
         except Exception:
             personnels = []
 
@@ -30755,6 +30768,7 @@ def technics_dashboard(request):
         'date_situation': aujourd_hui,
     })
     return render(request, template, context)
+
 
 # =====================================================================
 #  OperaPlus — ACTIONS CORRECTIVES (v92)

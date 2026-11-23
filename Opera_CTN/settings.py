@@ -183,6 +183,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',  
     'allauth.account.middleware.AccountMiddleware',
     'archive.middleware.RequeteCouranteMiddleware',
+    'ctn_bpf.tableau_de_bord_prefere.TableauDeBordPrefereMiddleware',
   
 ]
 

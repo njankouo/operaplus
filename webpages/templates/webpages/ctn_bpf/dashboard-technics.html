@@ -191,6 +191,9 @@
     .tb-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); }
     @media (max-width: 1280px) { .tb-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
     @media (max-width: 640px)  { .tb-kpis { grid-template-columns: 1fr 1fr; } .tb-kpis > :last-child { grid-column: auto; } }
+    .tb-choix { display: flex; align-items: center; gap: 6px; }
+    .tb-choix-l { font-size: 12px; font-weight: 600; color: var(--mut); }
+    .tb-choix .tb-seg button { height: 32px; }
     .tb-kpis.tb-kpis4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     @media (max-width: 900px) { .tb-kpis.tb-kpis4 { grid-template-columns: 1fr 1fr; } }
     .tb-ctl { white-space: nowrap; }
@@ -246,11 +249,20 @@
     <!-- ===== Bandeau ===== -->
     <header class="tb-hd">
         <div class="tb-hd-t">
-            <nav aria-label="Fil d'Ariane"><a href="/">Accueil</a> › Tableaux de bord › Exécution technique</nav>
+            <nav aria-label="Fil d'Ariane"><a href="/?accueil=1" title="Voir l'accueil sans changer de tableau de bord">Accueil</a> › Tableaux de bord › Exécution technique</nav>
             <h1><span>Exécution technique {{ annee|unlocalize }}</span><span class="inst clamp1" title="{{ actual_institution.nom }}">· {{ actual_institution.nom }}</span></h1>
             <div class="tb-hd-m"><span>Situation au <b>{{ date_situation|date:"d/m/Y" }}</b></span><span><b class="num">{{ nb_declarations }}</b> déclaration{{ nb_declarations|pluralize }}</span><span>TET = réalisé / cible des périodes déjà commencées</span></div>
         </div>
         <div class="tb-hd-a">
+            {% comment %} ← ajout (v93) : tableau de bord affiché par défaut à l'accueil (Personnel.is_technic / is_process / is_finance) {% endcomment %}
+            <form method="post" class="tb-choix" aria-label="Tableau de bord par défaut">{% csrf_token %}
+                <span class="tb-choix-l">Par défaut</span>
+                <div class="tb-seg">
+                    <button type="submit" name="selector" value="process" title="Revenir au tableau de bord des processus (TEP) à l'accueil">Processus</button>
+                    <button type="submit" name="selector" value="financial" title="Tableau de bord financier (TEF) à l'accueil">Financier</button>
+                    <button type="submit" name="selector" value="technics" class="{% if request.user.personnel.is_technic %}on{% endif %}" title="Ouvrir ce tableau de bord à chaque retour à l'accueil">Technique</button>
+                </div>
+            </form>
             <form method="get"><label for="tbAnnee">Année</label>
                 <select id="tbAnnee" name="annee" class="tb-ctl" onchange="this.form.submit()">
                     {% for a in annees %}<option value="{{ a|unlocalize }}"{% if a == annee %} selected{% endif %}>{{ a|unlocalize }}</option>{% endfor %}

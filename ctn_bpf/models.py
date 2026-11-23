@@ -449,6 +449,11 @@ class Personnel(models.Model):
 
     def __str__(self):
         return str(self.photo)
+
+    def redirect(self):
+        if self.is_technic:
+            return redirect('/dashboard-technics/')
+        return redirect('/')
     def backgrounds_tat(self):
         colors = {
                 "1":"blue","2":"green","3":"red","4":"blue","5":"blue","6":"blue","7":"blue","8":"blue","9":"blue","0":"blue",
