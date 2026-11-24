@@ -1,0 +1,187 @@
+{%extends './index.html'%}
+{%block main%}
+{% comment %}
+    RAPPORTS BAILLEURS — créer / modifier un modèle (v103). Vue : rapport_modele (rapports_bailleurs.py).
+{% endcomment %}
+<style>
+    .rm { --hd: {{ request.user.personnel.color_fond|default:'#123A37' }}; --ac: {{ request.user.personnel.color|default:'#E48B0C' }};
+          --encre: #1f2937; --doux: #6b7280; --trait: #e5e7eb; color: var(--encre); font-size: 14px; line-height: 1.5; max-width: 980px; margin: 0 auto; }
+    .rm *, .rm *::before, .rm *::after { box-sizing: border-box; }
+    .rm-hd { margin-bottom: 18px; }
+    .rm-fil { font-size: 12.5px; color: var(--doux); }
+    .rm-fil a { color: inherit; text-decoration: none; } .rm-fil a:hover { color: var(--hd); }
+    .rm-hd h1 { margin: 4px 0 2px; font-size: 22px; font-weight: 800; color: var(--encre); }
+    .rm-hd p { margin: 0; color: var(--doux); }
+    .rm-bloc { background: #fff; border: 1px solid var(--trait); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+    .rm-bloc > h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; font-size: 16px; font-weight: 800; color: var(--encre); }
+    .rm-bloc > h2 span { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; font-size: 13px; color: #fff; background: var(--hd); }
+    .rm-bloc > p { margin: 0 0 14px; color: var(--doux); font-size: 13px; }
+    .rm-champs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+    .rm-champ { display: grid; gap: 5px; align-content: start; }
+    .rm-champ.large { grid-column: 1 / -1; }
+    .rm-champ label, .rm-champ > span { font-size: 13px; font-weight: 700; }
+    .rm-champ small { color: var(--doux); font-size: 12px; }
+    .rm input[type=text], .rm textarea { width: 100%; font: inherit; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 9px; background: #fff; color: var(--encre); }
+    .rm textarea { min-height: 90px; resize: vertical; }
+    .rm input[type=text]:focus, .rm textarea:focus { outline: none; border-color: var(--hd); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hd) 15%, transparent); }
+    .rm-logo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .rm-logo img { max-height: 48px; max-width: 140px; object-fit: contain; border: 1px solid var(--trait); border-radius: 8px; padding: 4px; background: #fff; }
+
+    /* sections : à cocher et à ordonner */
+    .rm-sections { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .rm-sec { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--trait); background: #fafafa;
+              transition: border-color .15s, background .15s; }
+    .rm-sec.on { background: #fff; border-color: color-mix(in srgb, var(--hd) 35%, #fff); }
+    .rm-sec label { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; min-width: 0; }
+    .rm-sec input[type=checkbox] { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--hd); flex: none; }
+    .rm-sec b { display: block; font-size: 14px; }
+    .rm-sec small { display: block; color: var(--doux); font-size: 12.5px; }
+    .rm-num { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; font-size: 12px; font-weight: 800; color: #fff; background: var(--ac); }
+    .rm-sec:not(.on) .rm-num { background: #d1d5db; color: #fff; }
+    .rm-fleches { display: flex; gap: 4px; }
+    .rm-fleches button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--trait); background: #fff; color: var(--encre); cursor: pointer; font-size: 14px; line-height: 1; }
+    .rm-fleches button:hover { border-color: var(--hd); color: var(--hd); }
+    .rm-fleches button:disabled { opacity: .35; cursor: default; }
+
+    /* puces à cocher (colonnes, niveaux) */
+    .rm-puces { display: flex; flex-wrap: wrap; gap: 8px; }
+    .rm-puce { position: relative; }
+    .rm-puce input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+    .rm-puce span { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 99px; border: 1px solid #d1d5db; background: #fff; font-size: 13px; font-weight: 600; transition: all .15s; }
+    .rm-puce span::before { content: ""; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid #9ca3af; flex: none; }
+    .rm-puce input:checked + span { border-color: var(--hd); background: color-mix(in srgb, var(--hd) 9%, #fff); color: var(--hd); }
+    .rm-puce input:checked + span::before { border-color: var(--hd); background: var(--hd) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L19 7'/%3E%3C/svg%3E") center/11px no-repeat; }
+    .rm-puce input:focus-visible + span { outline: 2px solid var(--hd); outline-offset: 2px; }
+
+    .rm-pied { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; margin-top: 4px; border-radius: 14px;
+               background: rgba(255,255,255,.94); backdrop-filter: blur(6px); border: 1px solid var(--trait); box-shadow: 0 -8px 24px -18px rgba(0,0,0,.35); }
+    .rm-pied small { color: var(--doux); margin-right: auto; }
+    .rm-btn { display: inline-flex; align-items: center; height: 40px; padding: 0 18px; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; border: 1px solid transparent; }
+    .rm-btn.plein { background: var(--hd); color: #fff; } .rm-btn.plein:hover { background: color-mix(in srgb, var(--hd) 85%, #000); }
+    .rm-btn.trait { background: #fff; color: var(--encre); border-color: var(--trait); } .rm-btn.trait:hover { border-color: var(--hd); }
+    @media (max-width: 640px) {
+        .rm-champs { grid-template-columns: 1fr; }
+        .rm-bloc { padding: 14px; }
+        .rm-sec { grid-template-columns: auto 1fr; }
+        .rm-fleches { grid-column: 1 / -1; justify-content: flex-end; }
+        .rm-pied small { flex-basis: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) { .rm-sec, .rm-puce span { transition: none; } }
+</style>
+
+<form method="post" enctype="multipart/form-data" class="rm" id="rmForm">{% csrf_token %}
+    <header class="rm-hd">
+        <div class="rm-fil"><a href="/rapports/">Rapports</a> › {% if modele %}{{ modele.nom }}{% else %}Nouveau modèle{% endif %}</div>
+        <h1>{% if modele %}Modifier le modèle{% else %}Nouveau modèle de rapport{% endif %}</h1>
+        <p>Ce que vous choisissez ici sert pour toutes les périodes. Les chiffres, eux, se remplissent tout seuls.</p>
+    </header>
+
+    <section class="rm-bloc">
+        <h2><span>1</span>Identité du rapport</h2>
+        <p>Ce qui apparaît sur la page de garde et en haut du rapport.</p>
+        <div class="rm-champs">
+            <div class="rm-champ"><label for="rmNom">Nom du modèle *</label>
+                <input type="text" id="rmNom" name="nom" required maxlength="150" value="{{ modele.nom|default:'' }}" placeholder="ex. Rapport trimestriel UE">
+                <small>Pour le retrouver dans la liste.</small></div>
+            <div class="rm-champ"><label for="rmBail">Bailleur</label>
+                <input type="text" id="rmBail" name="bailleur" maxlength="150" value="{{ modele.bailleur|default:'' }}" placeholder="ex. Union européenne"></div>
+            <div class="rm-champ"><label for="rmTitre">Titre imprimé sur le rapport</label>
+                <input type="text" id="rmTitre" name="titre_rapport" maxlength="200" value="{{ modele.titre_rapport|default:"Rapport d'avancement" }}"></div>
+            <div class="rm-champ"><label for="rmPied">Mention en bas de page</label>
+                <input type="text" id="rmPied" name="mention_pied" maxlength="255" value="{{ modele.mention_pied|default:'' }}" placeholder="ex. Projet financé par …"></div>
+            <div class="rm-champ large"><span>Logo du bailleur</span>
+                <div class="rm-logo">
+                    {% if modele.logo %}<img src="{{ modele.logo.url }}" alt="Logo actuel"><label><input type="checkbox" name="retirer_logo" value="1"> Retirer le logo</label>{% endif %}
+                    <input type="file" name="logo" accept="image/*">
+                </div>
+                <small>Image PNG ou JPG de moins de 2 Mo.</small></div>
+        </div>
+    </section>
+
+    <section class="rm-bloc">
+        <h2><span>2</span>Sections et ordre</h2>
+        <p>Cochez les sections à inclure. Les flèches changent leur ordre dans le rapport.</p>
+        <ol class="rm-sections" id="rmSections">
+            {% for s in sections_form %}
+            <li class="rm-sec{% if s.cochee %} on{% endif %}">
+                <span class="rm-num" aria-hidden="true">{{ s.ordre|default:"–" }}</span>
+                <label><input type="checkbox" name="sections" value="{{ s.cle }}"{% if s.cochee %} checked{% endif %}>
+                    <span><b>{{ s.titre }}</b><small>{{ s.aide }}</small></span></label>
+                <input type="hidden" name="ordre_{{ s.cle }}" value="{{ s.ordre }}">
+                <span class="rm-fleches"><button type="button" data-sens="-1" aria-label="Monter « {{ s.titre }} »">↑</button><button type="button" data-sens="1" aria-label="Descendre « {{ s.titre }} »">↓</button></span>
+            </li>
+            {% endfor %}
+        </ol>
+    </section>
+
+    <section class="rm-bloc">
+        <h2><span>3</span>Colonnes du tableau des indicateurs</h2>
+        <p>Le nom de l'indicateur est toujours affiché. La colonne « Commentaire » se remplit dans le rapport.</p>
+        <div class="rm-puces">
+            {% for c in colonnes_form %}<label class="rm-puce"><input type="checkbox" name="colonnes" value="{{ c.cle }}"{% if c.cochee %} checked{% endif %}><span>{{ c.titre }}</span></label>{% endfor %}
+        </div>
+    </section>
+
+    <section class="rm-bloc">
+        <h2><span>4</span>Niveaux de résultats</h2>
+        <p>Ne rien cocher = tous les indicateurs. Par exemple, un bailleur peut ne demander que les effets et les produits.</p>
+        <div class="rm-puces">
+            {% for n in niveaux_form %}<label class="rm-puce"><input type="checkbox" name="niveaux" value="{{ n.nom }}"{% if n.coche %} checked{% endif %}><span>{{ n.nom }}</span></label>{% endfor %}
+        </div>
+    </section>
+
+    <section class="rm-bloc">
+        <h2><span>5</span>Textes proposés par défaut</h2>
+        <p>Repris au départ de chaque nouvelle période, puis modifiables dans le rapport.</p>
+        <div class="rm-champs">
+            <div class="rm-champ large"><label for="rmRes">Synthèse</label>
+                <textarea id="rmRes" name="texte_resume" placeholder="ex. Au cours de la période, le projet a…">{{ modele.texte_resume|default:'' }}</textarea></div>
+            <div class="rm-champ large"><label for="rmPers">Difficultés et perspectives</label>
+                <textarea id="rmPers" name="texte_perspectives" placeholder="ex. Pour la prochaine période, l'équipe prévoit…">{{ modele.texte_perspectives|default:'' }}</textarea></div>
+        </div>
+    </section>
+
+    <div class="rm-pied">
+        <small id="rmResume"></small>
+        <a class="rm-btn trait" href="{% if modele %}/rapports/{{ modele.id }}/{% else %}/rapports/{% endif %}">Annuler</a>
+        <button type="submit" class="rm-btn plein">Enregistrer et voir le rapport</button>
+    </div>
+</form>
+
+<script>
+(function () {
+    var liste = document.getElementById('rmSections'), resume = document.getElementById('rmResume');
+    if (!liste) return;
+    /* renumérote : les sections cochées reçoivent 1, 2, 3… dans l'ordre affiché */
+    function numeroter() {
+        var n = 0, items = liste.querySelectorAll('.rm-sec');
+        items.forEach(function (li, i) {
+            var on = li.querySelector('input[type=checkbox]').checked;
+            li.classList.toggle('on', on);
+            if (on) n += 1;
+            li.querySelector('.rm-num').textContent = on ? n : '–';
+            li.querySelector('input[type=hidden]').value = on ? n : '';
+            li.querySelector('[data-sens="-1"]').disabled = i === 0;
+            li.querySelector('[data-sens="1"]').disabled = i === items.length - 1;
+        });
+        var cols = document.querySelectorAll('input[name=colonnes]:checked').length;
+        resume.textContent = n + ' section' + (n > 1 ? 's' : '') + ' · ' + cols + ' colonne' + (cols > 1 ? 's' : '') + ' dans le tableau';
+    }
+    liste.addEventListener('change', numeroter);
+    document.querySelectorAll('input[name=colonnes]').forEach(function (c) { c.addEventListener('change', numeroter); });
+    liste.addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-sens]');
+        if (!b) return;
+        var li = b.closest('.rm-sec');
+        if (b.dataset.sens === '-1' && li.previousElementSibling) liste.insertBefore(li, li.previousElementSibling);
+        if (b.dataset.sens === '1' && li.nextElementSibling) liste.insertBefore(li.nextElementSibling, li);
+        numeroter();
+        b.focus();
+    });
+    numeroter();
+    document.getElementById('rmForm').addEventListener('submit', function (e) {
+        if (!liste.querySelector('input[type=checkbox]:checked')) { e.preventDefault(); resume.textContent = 'Cochez au moins une section.'; resume.style.color = '#b91c1c'; }
+    });
+})();
+</script>
+{%endblock%}

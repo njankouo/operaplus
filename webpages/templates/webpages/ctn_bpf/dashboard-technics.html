@@ -504,6 +504,10 @@
                                box-shadow: 0 0 0 2px var(--n); transition: transform .2s ease; }
     .tb-frise-l2 a.future i::before { background: var(--hd); box-shadow: 0 0 0 2px rgba(255,255,255,.45); }
     .tb-frise-l2 a span { font-size: 12.5px; font-weight: 700; white-space: nowrap; line-height: 1.2; padding: 2px 8px; border-radius: 99px; }
+    /* ← corrigé (v103c) : bouton « Rapport bailleur » bien visible sur le bandeau sombre */
+    .tb-hd .tb-rapport { background: #fff; border-color: #fff; color: var(--hd); font-weight: 700; padding-left: 6px; }
+    .tb-hd .tb-rapport .bi { width: 24px; height: 24px; padding: 4px; border-radius: 6px; color: #fff; background: var(--ac); stroke-width: 2.4; }
+    .tb-hd .tb-rapport:hover { background: #fff; border-color: #fff; color: var(--hd); box-shadow: 0 6px 16px -8px rgba(0,0,0,.5); transform: translateY(-1px); }
     .tb-frise-l2 a time { margin-top: -3px; font-size: 10.5px; font-weight: 600; white-space: nowrap; color: rgba(255,255,255,.62); }   /* ← ajout (v102) : dates de la période */
     .tb-frise-l2 a.choisie time { color: #fff; }
     .tb-frise-l2 a span { max-width: 104px; overflow: hidden; text-overflow: ellipsis; }
@@ -554,7 +558,7 @@
 <div class="tb" id="tb">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">{% comment %} ← v97 : icônes SVG intégrées {% endcomment %}
     <defs>
-        <symbol id="tbi-liste" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/></symbol>
+        <symbol id="tbi-rapport" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol><symbol id="tbi-liste" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/></symbol>
         <symbol id="tbi-jauge" viewBox="0 0 24 24"><path d="M4.9 18A9 9 0 1 1 19.1 18"/><path d="m12 13 3.5-4.5"/><circle cx="12" cy="13.5" r="1.4"/></symbol>
         <symbol id="tbi-tendance" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
         <symbol id="tbi-cible" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.7 2.7L16.5 9.5"/></symbol>
@@ -593,6 +597,7 @@
                     <button type="submit" name="selector" value="technics" class="{% if request.user.personnel.is_technic %}on{% endif %}" title="Ouvrir ce tableau de bord à chaque retour à l'accueil">Technique</button>
                 </div>
             </form>
+            <a class="tb-ctl tb-rapport" href="/rapports/{% if periode_choisie %}?periode={{ periode_choisie.id }}{% endif %}" title="Rapports bailleurs : PDF, Word, Excel">{% comment %} ← ajout (v103) {% endcomment %}<svg class="bi" aria-hidden="true"><use href="#tbi-rapport"/></svg> Rapport bailleur</a>
             <button type="button" class="tb-ctl" onclick="window.print()"><svg class="bi" aria-hidden="true"><use href="#tbi-imprimer"/></svg> Imprimer</button>
             {% if actions_actives %}<button type="button" class="tb-ctl prim" data-action-ind=""><svg class="bi" aria-hidden="true"><use href="#tbi-plus"/></svg> Action corrective</button>{% endif %}
         </div>

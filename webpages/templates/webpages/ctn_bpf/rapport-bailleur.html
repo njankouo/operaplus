@@ -1,0 +1,518 @@
+{%extends './index.html'%}
+{% load l10n %}
+{%block main%}
+{% comment %}
+    RAPPORT BAILLEUR (v103) — un modèle de rapport rempli avec les chiffres du tableau de bord technique.
+    Vue : rapport_bailleur (rapports_bailleurs.py). Données : _tet_contexte + _rapport_donnees.
+    Les zones « à écrire » (résumé, écarts, commentaires, perspectives) s'enregistrent toutes seules, par période.
+    Exports : PDF = bouton Imprimer (choisir « Enregistrer au format PDF ») ; Word = fichier .doc fait dans le navigateur ;
+    Excel = /rapports/<id>/excel/?periode=…
+{% endcomment %}
+<style>
+    .rb { --hd: {{ request.user.personnel.color_fond|default:'#123A37' }}; --ac: {{ request.user.personnel.color|default:'#E48B0C' }};
+          --encre: #1f2937; --doux: #6b7280; --trait: #e5e7eb; --fond: #eef0f3;
+          --atteint: #047857; --voie: #16a34a; --surveiller: #d97706; --retard: #dc2626; --sans: #9ca3af;
+          color: var(--encre); font-size: 14px; line-height: 1.5; }
+    .rb *, .rb *::before, .rb *::after { box-sizing: border-box; }
+
+    /* ---------- barre d'outils ---------- */
+    .rb-barre { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+                padding: 12px 16px; margin: 0 0 14px; border-radius: 14px; color: #fff;
+                background: linear-gradient(120deg, var(--hd), color-mix(in srgb, var(--hd) 70%, #000)); box-shadow: 0 10px 24px -16px rgba(0,0,0,.6); }
+    .rb-retour { color: rgba(255,255,255,.8); text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .rb-retour:hover { color: #fff; }
+    .rb-nom { min-width: 0; flex: 1 1 220px; }
+    .rb-nom b { display: block; font-size: 16px; font-weight: 800; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rb-nom small { display: block; font-size: 12px; color: rgba(255,255,255,.72); }
+    .rb-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+    .rb-btn { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: 9px; font: inherit; font-size: 13px; font-weight: 700;
+              color: #fff; text-decoration: none; cursor: pointer; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.08); transition: background .15s; }
+    .rb-btn:hover { background: rgba(255,255,255,.18); }
+    .rb-btn svg { width: 16px; height: 16px; flex: none; }
+    .rb-btn.principal { background: var(--ac); border-color: var(--ac); }
+    .rb-btn.principal:hover { background: color-mix(in srgb, var(--ac) 85%, #000); }
+    .rb-etat { flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,.78); }
+    .rb-etat i { width: 8px; height: 8px; border-radius: 50%; background: #34d399; flex: none; }
+    .rb-etat.attente i { background: #fbbf24; }
+    .rb-etat.erreur i { background: #f87171; }
+
+    /* ---------- choix de la période ---------- */
+    .rb-per { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
+    .rb-per > span { flex: none; font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--doux); }
+    .rb-per ol { display: flex; gap: 6px; margin: 0; padding: 2px; list-style: none; overflow-x: auto; scrollbar-width: thin; min-width: 0; }
+    .rb-per a { display: grid; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--trait); background: #fff; text-decoration: none; color: var(--encre); white-space: nowrap; line-height: 1.2; }
+    .rb-per a b { font-size: 13px; }
+    .rb-per a small { font-size: 11px; color: var(--doux); }
+    .rb-per a:hover { border-color: var(--hd); }
+    .rb-per a.choisie { background: var(--hd); border-color: var(--hd); color: #fff; }
+    .rb-per a.choisie small { color: rgba(255,255,255,.75); }
+
+    /* ---------- la feuille ---------- */
+    .rb-table-fond { background: var(--fond); border-radius: 14px; padding: 28px 16px; }
+    .rb-doc { max-width: 232mm; margin: 0 auto; background: #fff; padding: 18mm 18mm 14mm; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 18px 40px -24px rgba(0,0,0,.35);
+              counter-reset: sec; font-size: 10.5pt; }
+    .rb-doc h1, .rb-doc h2, .rb-doc h3 { color: var(--hd); line-height: 1.25; margin: 0; }
+    .rb-sec { margin: 0 0 26px; break-inside: auto; }
+    .rb-sec > h2 { counter-increment: sec; display: flex; align-items: baseline; gap: 10px; font-size: 15pt; font-weight: 800; padding-bottom: 6px; margin-bottom: 12px;
+                   border-bottom: 2px solid var(--hd); break-after: avoid; }
+    .rb-sec > h2::before { content: counter(sec); display: inline-grid; place-items: center; min-width: 26px; height: 26px; border-radius: 7px; font-size: 11pt; color: #fff; background: var(--ac); }
+    .rb-sec h3 { font-size: 11.5pt; margin: 14px 0 6px; }
+    .rb-p { margin: 0 0 8px; color: var(--doux); font-size: 9.5pt; }
+
+    /* en-tête simple quand il n'y a pas de page de garde */
+    .rb-entete { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--trait); }
+    .rb-entete h1 { font-size: 17pt; font-weight: 800; }
+    .rb-entete p { margin: 2px 0 0; color: var(--doux); font-size: 9.5pt; }
+    .rb-entete img { max-height: 46px; max-width: 140px; object-fit: contain; }
+
+    /* page de garde */
+    .rb-garde { min-height: 170mm; display: flex; flex-direction: column; break-after: page; margin: 0 0 26px; }
+    .rb-garde-haut { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--trait); }
+    .rb-garde-haut span { font-size: 10pt; font-weight: 700; color: var(--doux); }
+    .rb-garde-haut img { max-height: 64px; max-width: 180px; object-fit: contain; }
+    .rb-garde-centre { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 18mm 0; }
+    .rb-garde-centre .bande { width: 64px; height: 6px; border-radius: 3px; background: var(--ac); }
+    .rb-garde-centre h1 { font-size: 28pt; font-weight: 800; letter-spacing: -.01em; }
+    .rb-garde-centre .inst { font-size: 14pt; font-weight: 700; color: var(--encre); }
+    .rb-garde-centre .per { display: inline-block; align-self: flex-start; padding: 6px 14px; border-radius: 99px; background: color-mix(in srgb, var(--hd) 10%, #fff); color: var(--hd); font-weight: 800; font-size: 12pt; }
+    .rb-garde-infos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding-top: 14px; border-top: 1px solid var(--trait); font-size: 9.5pt; }
+    .rb-garde-infos dt { color: var(--doux); font-size: 8.5pt; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+    .rb-garde-infos dd { margin: 2px 0 0; font-weight: 700; }
+
+    /* chiffres clés */
+    .rb-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+    .rb-kpi { border: 1px solid var(--trait); border-radius: 10px; padding: 10px 12px; break-inside: avoid; }
+    .rb-kpi b { display: block; font-size: 20pt; font-weight: 800; line-height: 1.1; color: var(--hd); font-variant-numeric: tabular-nums; }
+    .rb-kpi span { display: block; font-size: 8.5pt; color: var(--doux); font-weight: 600; }
+    .rb-kpi.vert b { color: var(--atteint); } .rb-kpi.rouge b { color: var(--retard); }
+    .rb-phrase { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: #f8fafc; border-left: 3px solid var(--ac); font-size: 10pt; }
+
+    /* zones à écrire */
+    .rb-edit { min-height: 2.6em; padding: 8px 10px; border-radius: 8px; border: 1px dashed color-mix(in srgb, var(--ac) 60%, #fff); background: color-mix(in srgb, var(--ac) 5%, #fff);
+               white-space: pre-wrap; outline: none; transition: border-color .15s, background .15s; }
+    .rb-edit:hover { border-color: var(--ac); }
+    .rb-edit:focus { border-style: solid; border-color: var(--ac); background: #fff; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac) 18%, transparent); }
+    .rb-edit:empty::before { content: attr(data-vide); color: #9ca3af; font-style: italic; }
+    .rb-edit-l { display: block; margin: 8px 0 4px; font-size: 8.5pt; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--doux); }
+
+    /* tableaux */
+    .rb-tab-ext { overflow-x: auto; }
+    .rb-tab { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+    .rb-tab th { text-align: left; font-size: 7.8pt; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: #fff; background: var(--hd); padding: 6px 7px; vertical-align: bottom; }
+    .rb-tab td { padding: 5px 7px; border-bottom: 1px solid var(--trait); vertical-align: top; }
+    .rb-tab tr { break-inside: avoid; }
+    .rb-tab thead { display: table-header-group; }
+    .rb-tab .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .rb-tab tr.g-compo td { background: color-mix(in srgb, var(--hd) 12%, #fff); font-weight: 800; color: var(--hd); }
+    .rb-tab tr.g-obj td { background: #f8fafc; font-weight: 700; font-size: 8.5pt; }
+    .rb-tab td.com { min-width: 140px; }
+    .rb-tab td.com .rb-edit { min-height: 2em; padding: 3px 6px; font-size: 8.5pt; }
+    .rb-tab td.ind { min-width: 160px; }
+    .rb-itt { table-layout: auto; }
+    .rb-itt th { white-space: normal; }                                  /* les titres de colonnes passent à la ligne */
+    .rb-itt td.ind { width: 30%; min-width: 130px; }
+    .rb-itt .rb-pill { font-size: 7pt; padding: 1px 6px; }
+    .rb-itt { font-size: 8pt; }                                          /* tableau compact : tient dans la largeur A4 */
+    .rb-itt th { font-size: 7pt; padding: 5px 4px; }
+    .rb-itt td { padding: 4px 4px; }
+    .rb-itt tr.g-obj td { font-size: 8pt; }
+    .rb-itt td.com { width: 20%; min-width: 90px; }
+    .rb-pill { display: inline-block; padding: 1px 7px; border-radius: 99px; font-size: 7.8pt; font-weight: 800; white-space: nowrap; color: #fff; background: var(--sans); }
+    .s-atteint .rb-pill, .rb-pill.s-atteint { background: var(--atteint); } .s-voie .rb-pill, .rb-pill.s-voie { background: var(--voie); }
+    .s-surveiller .rb-pill, .rb-pill.s-surveiller { background: var(--surveiller); } .s-retard .rb-pill, .rb-pill.s-retard { background: var(--retard); }
+    .rb-barre-t { display: flex; align-items: center; gap: 8px; }
+    .rb-barre-t i { flex: 1; min-width: 50px; height: 7px; border-radius: 4px; background: #eef0f3; overflow: hidden; }
+    .rb-barre-t i::after { content: ""; display: block; height: 100%; width: var(--l, 0%); background: var(--c, var(--hd)); border-radius: 4px; }
+    .rb-barre-t span { min-width: 46px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+    /* écarts */
+    .rb-ecart { border: 1px solid var(--trait); border-left: 4px solid var(--c, var(--retard)); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; break-inside: avoid; }
+    .rb-ecart-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .rb-ecart-h b { font-size: 10.5pt; }
+    .rb-ecart-h small { display: block; color: var(--doux); font-size: 8.5pt; }
+    .rb-ecart-t { font-size: 15pt; font-weight: 800; color: var(--c, var(--retard)); white-space: nowrap; }
+    .rb-ecart ul { margin: 4px 0 0; padding-left: 18px; font-size: 9pt; }
+    .rb-vide { padding: 14px; border-radius: 8px; background: #f8fafc; color: var(--doux); font-size: 9.5pt; text-align: center; }
+
+    .rb-pied { margin-top: 30px; padding-top: 10px; border-top: 1px solid var(--trait); display: flex; justify-content: space-between; gap: 12px; font-size: 8pt; color: var(--doux); }
+
+    @media (max-width: 760px) {
+        .rb-table-fond { padding: 10px 0; background: transparent; }
+        .rb-doc { padding: 18px 14px; font-size: 10pt; }
+        .rb-kpis { grid-template-columns: repeat(2, 1fr); }
+        .rb-garde { min-height: 0; }
+        .rb-garde-centre { padding: 30px 0; }
+        .rb-garde-centre h1 { font-size: 21pt; }
+        .rb-garde-infos { grid-template-columns: 1fr 1fr; }
+        .rb-per { flex-wrap: wrap; }
+        .rb-btn { height: 34px; padding: 0 10px; }
+        .rb-btn span.txt { display: none; }
+        .rb-btn.principal span.txt { display: inline; }
+        .rb-entete { flex-direction: column-reverse; }
+    }
+
+    /* ---------- impression / PDF : seule la feuille sort ---------- */
+    @page { size: A4; margin: 14mm 14mm 16mm; }
+    @media print {
+        body * { visibility: hidden !important; }
+        .rb-doc, .rb-doc * { visibility: visible !important; }
+        .rb-doc { position: absolute; left: 0; top: 0; width: 100%; max-width: none; margin: 0; padding: 0; box-shadow: none; }
+        .rb-table-fond { padding: 0; background: none; }
+        .rb-edit { border: 0; background: none; padding: 0; min-height: 0; box-shadow: none; }
+        .rb-edit:empty { display: none; }
+        .rb-edit:empty + .rb-sans-texte { display: block; }
+        .rb-tab th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .rb-doc * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .rb-garde { min-height: 250mm; }
+        html, body { background: #fff !important; }
+        .rb-tab-ext { overflow: visible; }                                /* rien n'est coupé à droite */
+        .rb-itt { font-size: 7.6pt; }
+        .rb-itt th { font-size: 6.8pt; padding: 4px 4px; }
+        .rb-itt td { padding: 3px 4px; }
+        .rb-itt tr.g-obj td { font-size: 7.6pt; }
+        .rb-itt td.ind, .rb-tab td.com { min-width: 0; }
+        .rb-itt td.com { width: 20%; }
+    }
+    .rb-sans-texte { display: none; color: var(--doux); font-style: italic; font-size: 9pt; }
+    @media (prefers-reduced-motion: reduce) { .rb-edit, .rb-btn { transition: none; } }
+</style>
+
+<div class="rb">
+    {% csrf_token %}
+
+    <div class="rb-barre">
+        <a class="rb-retour" href="/rapports/">‹ Rapports</a>
+        <div class="rb-nom"><b title="{{ modele.nom }}">{{ modele.nom }}</b>
+            <small>{% if modele.bailleur %}{{ modele.bailleur }} · {% endif %}{% if periode_choisie_lib %}fin {{ periode_choisie_court|default:periode_choisie_lib }}{% else %}{{ annee|unlocalize }}{% endif %}</small></div>
+        <div class="rb-btns">
+            <a class="rb-btn" href="/rapports/{{ modele.id }}/modifier/" title="Choisir les sections, les colonnes, le logo…">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span class="txt">Modifier le modèle</span></a>
+            <a class="rb-btn" href="/rapports/{{ modele.id }}/excel/{% if periode_choisie %}?periode={{ periode_choisie.id }}{% endif %}" title="Le tableau des indicateurs en Excel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg><span class="txt">Excel</span></a>
+            <button type="button" class="rb-btn" id="rbWord" title="Le rapport complet en Word, avec vos textes">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5M9 13l1.5 5 1.5-4 1.5 4 1.5-5"/></svg><span class="txt">Word</span></button>
+            <button type="button" class="rb-btn principal" onclick="window.print()" title="Imprimer, ou choisir « Enregistrer au format PDF »">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg><span class="txt">PDF / Imprimer</span></button>
+        </div>
+        <div class="rb-etat" id="rbEtat" aria-live="polite"><i aria-hidden="true"></i>
+            <span>{% if periode_choisie %}Cliquez dans les zones en pointillés pour écrire : vos textes s'enregistrent tout seuls pour {{ periode_choisie_court|default:periode_choisie_lib }}.{% else %}Aucune période de suivi : les textes ne peuvent pas être enregistrés.{% endif %}</span></div>
+    </div>
+
+    {% if periodes_suivi %}
+    <nav class="rb-per" aria-label="Période du rapport">
+        <span>Période</span>
+        <ol id="rbPer">
+            {% for p in periodes_suivi %}
+            <li><a href="?periode={{ p.id }}" class="{% if p.choisie %}choisie{% endif %}"{% if p.choisie %} aria-current="true"{% endif %} title="Situation à la fin de {{ p.lib }}">
+                <b>{{ p.court|default:p.lib }}</b>{% if p.plage %}<small>{{ p.plage }}</small>{% endif %}</a></li>
+            {% endfor %}
+        </ol>
+    </nav>
+    {% endif %}
+
+    <div class="rb-table-fond">
+    <article class="rb-doc" id="rbDoc">
+        {% if 'page_garde' not in r_sections %}
+        <header class="rb-entete">
+            <div><h1>{{ modele.titre_rapport }}</h1>
+                <p>{{ actual_institution.nom|default:actual_institution }}{% if modele.bailleur %} · {{ modele.bailleur }}{% endif %}</p>
+                <p>Situation à la fin de {{ periode_choisie_lib|default:annee }} (au {{ date_situation|date:"d/m/Y" }})</p></div>
+            {% if modele.logo %}<img src="{{ modele.logo.url }}" alt="Logo {{ modele.bailleur }}">{% endif %}
+        </header>
+        {% endif %}
+
+        {% for s in r_sections %}
+        {% if s == 'page_garde' %}
+        <section class="rb-garde">
+            <div class="rb-garde-haut"><span>{{ actual_institution.nom|default:actual_institution }}</span>{% if modele.logo %}<img src="{{ modele.logo.url }}" alt="Logo {{ modele.bailleur }}">{% endif %}</div>
+            <div class="rb-garde-centre">
+                <div class="bande"></div>
+                <h1>{{ modele.titre_rapport }}</h1>
+                <div class="inst">{{ actual_institution.nom|default:actual_institution }}</div>
+                <div class="per">{{ periode_choisie_lib|default:annee }}</div>
+            </div>
+            <dl class="rb-garde-infos">
+                <div><dt>Bailleur</dt><dd>{{ modele.bailleur|default:"—" }}</dd></div>
+                <div><dt>Situation au</dt><dd>{{ date_situation|date:"d/m/Y" }}</dd></div>
+                <div><dt>Rapport produit le</dt><dd>{{ aujourd_hui|date:"d/m/Y" }}</dd></div>
+            </dl>
+        </section>
+
+        {% elif s == 'resume' %}
+        <section class="rb-sec">
+            <h2>{{ r_titres.resume }}</h2>
+            <div class="rb-kpis">
+                <div class="rb-kpi"><b>{% if r_tet is not None %}{{ r_tet|floatformat:"-1" }} %{% else %}—{% endif %}</b><span>Taux d'exécution à date</span></div>
+                <div class="rb-kpi"><b>{{ r_nb }}</b><span>indicateur{{ r_nb|pluralize }} suivi{{ r_nb|pluralize }}, dont {{ r_nb_cible }} avec cible</span></div>
+                <div class="rb-kpi vert"><b>{{ r_statuts.atteint|add:r_statuts.voie }}</b><span>atteint{{ r_statuts.atteint|add:r_statuts.voie|pluralize }} ou en bonne voie</span></div>
+                <div class="rb-kpi rouge"><b>{{ r_statuts.retard }}</b><span>en retard (moins de 50 %)</span></div>
+            </div>
+            <p class="rb-phrase">À la fin de {{ periode_choisie_lib|default:annee }}, le programme a réalisé en moyenne
+                <b>{% if r_tet is not None %}{{ r_tet|floatformat:"-1" }} %{% else %}—{% endif %}</b> de ce qui était prévu à cette date{% if r_tet_annuel is not None %}, soit <b>{{ r_tet_annuel|floatformat:"-1" }} %</b> des cibles de l'année{% endif %}.{% if r_projection is not None %}
+                Au rythme actuel, il atteindrait environ <b>{{ r_projection|floatformat:"-1" }} %</b> des cibles en fin d'année.{% endif %}{% if completude is not None %}
+                Les chiffres reposent sur <b>{{ completude|floatformat:"-1" }} %</b> des données attendues.{% endif %}</p>
+            <span class="rb-edit-l">Synthèse</span>
+            <div class="rb-edit" contenteditable="{% if periode_choisie %}true{% else %}false{% endif %}" data-cle="resume" data-vide="Écrivez ici la synthèse : les faits marquants de la période, les principaux résultats, les difficultés.">{{ r_resume }}</div>
+        </section>
+
+        {% elif s == 'chaine' %}
+        <section class="rb-sec">
+            <h2>{{ r_titres.chaine }}</h2>
+            <p class="rb-p">Taux moyen de réalisation à date, pour chaque niveau de la chaîne des résultats.</p>
+            {% if r_par_niveau %}
+            <div class="rb-tab-ext"><table class="rb-tab">
+                <thead><tr><th>Niveau</th><th class="num">Indicateurs</th><th style="width:38%">Taux à date</th><th class="num">Atteints</th><th class="num">En retard</th></tr></thead>
+                <tbody>{% for p in r_par_niveau %}
+                    <tr><td><b>{{ p.niveau }}</b></td><td class="num">{{ p.nb }}</td>
+                        <td>{% if p.tet is not None %}<div class="rb-barre-t" data-taux="{{ p.tet|unlocalize }}"><i></i><span>{{ p.tet|floatformat:"-1" }} %</span></div>{% else %}—{% endif %}</td>
+                        <td class="num">{{ p.atteint }}</td><td class="num">{{ p.retard }}</td></tr>
+                {% endfor %}</tbody></table></div>
+            {% else %}<div class="rb-vide">Aucun indicateur pour les niveaux choisis.</div>{% endif %}
+        </section>
+
+        {% elif s == 'composantes' %}
+        <section class="rb-sec">
+            <h2>{{ r_titres.composantes }}</h2>
+            {% if r_composantes %}
+            <div class="rb-tab-ext"><table class="rb-tab">
+                <thead><tr><th>Composante / objectif</th><th class="num">Indicateurs</th><th style="width:38%">Taux à date</th></tr></thead>
+                <tbody>{% for c in r_composantes %}
+                    <tr class="g-compo"><td>{{ c.nom }}</td><td class="num">{{ c.nb }}</td>
+                        <td>{% if c.tet is not None %}<div class="rb-barre-t" data-taux="{{ c.tet|unlocalize }}"><i></i><span>{{ c.tet|floatformat:"-1" }} %</span></div>{% else %}—{% endif %}</td></tr>
+                    {% for o in c.objectifs %}{% if o.nom != c.nom %}
+                    <tr><td style="padding-left:18px">{{ o.nom }}</td><td class="num">{{ o.indicateurs|length }}</td>
+                        <td>{% if o.tet is not None %}<div class="rb-barre-t" data-taux="{{ o.tet|unlocalize }}"><i></i><span>{{ o.tet|floatformat:"-1" }} %</span></div>{% else %}—{% endif %}</td></tr>
+                    {% endif %}{% endfor %}
+                {% endfor %}</tbody></table></div>
+            {% else %}<div class="rb-vide">Aucun indicateur.</div>{% endif %}
+        </section>
+
+        {% elif s == 'indicateurs' %}
+        <section class="rb-sec">
+            <h2>{{ r_titres.indicateurs }}</h2>
+            <p class="rb-p">Taux = réalisé / cible. « À date » : comparé aux cibles des périodes déjà commencées à la fin de {{ periode_choisie_lib|default:annee }}.</p>
+            {% if r_composantes %}
+            <div class="rb-tab-ext"><table class="rb-tab rb-itt">
+                <thead><tr><th>Indicateur</th>{% for k, t in r_colonnes %}<th{% if k != 'commentaire' and k != 'statut' and k != 'code' and k != 'niveau' and k != 'frequence' %} class="num"{% endif %}>{{ t }}</th>{% endfor %}</tr></thead>
+                <tbody>{% for c in r_composantes %}
+                    <tr class="g-compo"><td colspan="{{ r_colonnes|length|add:1 }}">{{ c.nom }}</td></tr>
+                    {% for o in c.objectifs %}
+                    {% if o.nom != c.nom %}<tr class="g-obj"><td colspan="{{ r_colonnes|length|add:1 }}">{{ o.nom }}</td></tr>{% endif %}
+                    {% for x in o.indicateurs %}
+                    <tr><td class="ind">{{ x.nom }}</td>
+                        {% for k, v, cl in x.cellules %}
+                        {% if k == 'commentaire' %}<td class="com"><div class="rb-edit" contenteditable="{% if periode_choisie %}true{% else %}false{% endif %}" data-cle="com_{{ x.id }}" data-vide="…">{{ v }}</div></td>
+                        {% elif k == 'statut' %}<td class="{{ cl }}"><span class="rb-pill">{{ v }}</span></td>
+                        {% else %}<td class="{{ cl }}">{{ v|default:"—" }}</td>{% endif %}
+                        {% endfor %}</tr>
+                    {% endfor %}
+                    {% endfor %}
+                {% endfor %}</tbody></table></div>
+            {% else %}<div class="rb-vide">Aucun indicateur pour les niveaux choisis.</div>{% endif %}
+        </section>
+
+        {% elif s == 'ecarts' %}
+        <section class="rb-sec">
+            <h2>{{ r_titres.ecarts }}</h2>
+            <p class="rb-p">Indicateurs réalisés à moins de 75 % de leur cible à date, du plus faible au moins faible. Expliquez la cause de chaque écart.</p>
+            {% for x in r_ecarts %}
+            <div class="rb-ecart s-{{ x.statut }}" data-taux="{{ x.taux_date|unlocalize }}">
+                <div class="rb-ecart-h">
+                    <div><b>{{ x.nom }}</b><small>{{ x.niveau }} · {{ x.objectif }} · réalisé {{ x.realise|default_if_none:0|floatformat:"-1" }} sur {{ x.cible_date|floatformat:"-1" }} attendus</small></div>
+                    <span class="rb-ecart-t">{{ x.taux_date|floatformat:"-1" }} %</span>
+                </div>
+                <span class="rb-edit-l">Explication de l'écart</span>
+                <div class="rb-edit" contenteditable="{% if periode_choisie %}true{% else %}false{% endif %}" data-cle="ecart_{{ x.id }}" data-vide="Pourquoi cet écart ? (retard de financement, rupture de stock, saison des pluies, données manquantes…)">{{ x.explication }}</div>
+                <span class="rb-sans-texte">Explication à compléter.</span>
+                <span class="rb-edit-l">Mesures en cours</span>
+                {% if x.actions %}<ul>{% for a in x.actions %}<li>{{ a.obj.titre }}{% if a.responsable %} — {{ a.responsable }}{% endif %}{% if a.obj.echeance %}, avant le {{ a.obj.echeance|date:"d/m/Y" }}{% endif %}{% if a.en_retard %} <b style="color:var(--retard)">(en retard)</b>{% endif %}</li>{% endfor %}</ul>
+                {% else %}<p class="rb-p" style="margin:0">Aucune action corrective ouverte pour cet indicateur.</p>{% endif %}
+            </div>
+            {% empty %}
+            <div class="rb-vide">Aucun écart important : tous les indicateurs avec cible sont à 75 % ou plus.</div>
+            {% endfor %}
+        </section>
+
+        {% elif s == 'structures' %}
+        <section class="rb-sec">
+            <h2>{{ r_titres.structures }}</h2>
+            {% if structures_tet %}
+            <div class="rb-tab-ext"><table class="rb-tab">
+                <thead><tr><th>Structure</th><th class="num">Indicateurs ciblés</th><th style="width:42%">Taux</th></tr></thead>
+                <tbody>{% for st in structures_tet %}
+                    <tr><td>{{ st.nom }}</td><td class="num">{{ st.nb }}</td>
+                        <td><div class="rb-barre-t" data-taux="{{ st.tet|unlocalize }}"><i></i><span>{{ st.tet|floatformat:"-1" }} %</span></div></td></tr>
+                {% endfor %}</tbody></table></div>
+            {% else %}<div class="rb-vide">Aucune cible par structure.</div>{% endif %}
+        </section>
+
+        {% elif s == 'qualite' %}
+        <section class="rb-sec">
+            <h2>{{ r_titres.qualite }}</h2>
+            <div class="rb-kpis">
+                <div class="rb-kpi"><b>{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span>données reçues ({{ nb_recus }} sur {{ nb_attendus }})</span></div>
+                <div class="rb-kpi"><b>{% if pct_valide is not None %}{{ pct_valide }} %{% else %}—{% endif %}</b><span>déclarations validées</span></div>
+                <div class="rb-kpi"><b>{{ nb_declarations }}</b><span>déclarations</span></div>
+                <div class="rb-kpi{% if aberrantes %} rouge{% endif %}"><b>{{ aberrantes|length }}</b><span>valeur{{ aberrantes|length|pluralize }} anormale{{ aberrantes|length|pluralize }} à vérifier</span></div>
+            </div>
+            {% if qualite_tet %}
+            <div class="rb-tab-ext"><table class="rb-tab">
+                <thead><tr><th>Structure</th><th class="num">Reçues / attendues</th><th class="num">Complétude</th><th class="num">Validées</th><th class="num">Anormales</th><th class="num">Score</th></tr></thead>
+                <tbody>{% for q in qualite_tet %}
+                    <tr><td>{{ q.nom }}</td><td class="num">{{ q.recus }} / {{ q.attendus }}</td>
+                        <td class="num">{% if q.completude is not None %}{{ q.completude|floatformat:"-1" }} %{% else %}—{% endif %}</td>
+                        <td class="num">{% if q.validation is not None %}{{ q.validation|floatformat:"-1" }} %{% else %}—{% endif %}</td>
+                        <td class="num">{{ q.aberrantes }}</td><td class="num"><b>{{ q.score|default_if_none:"—" }}</b></td></tr>
+                {% endfor %}</tbody></table></div>
+            {% endif %}
+        </section>
+
+        {% elif s == 'actions' %}
+        <section class="rb-sec">
+            <h2>{{ r_titres.actions }}</h2>
+            {% if actions %}
+            <div class="rb-tab-ext"><table class="rb-tab">
+                <thead><tr><th>Action</th><th>Indicateur</th><th>Responsable</th><th>Échéance</th><th>Statut</th></tr></thead>
+                <tbody>{% for a in actions %}
+                    <tr><td><b>{{ a.obj.titre }}</b></td><td>{% if a.obj.indicateur %}{{ a.obj.indicateur.nicename|default:a.obj.indicateur.m_name }}{% else %}—{% endif %}</td>
+                        <td>{{ a.responsable|default:"—" }}</td>
+                        <td class="num">{{ a.obj.echeance|date:"d/m/Y"|default:"—" }}{% if a.en_retard %} <b style="color:var(--retard)">dépassée</b>{% endif %}</td>
+                        <td><span class="rb-pill {% if a.obj.statut == 'terminee' %}s-atteint{% elif a.en_retard %}s-retard{% elif a.obj.statut == 'en_cours' %}s-voie{% elif a.obj.statut == 'a_faire' %}s-surveiller{% endif %}">{{ a.obj.get_statut_display }}</span></td></tr>
+                {% endfor %}</tbody></table></div>
+            {% else %}<div class="rb-vide">Aucune action corrective enregistrée.</div>{% endif %}
+        </section>
+
+        {% elif s == 'evolution' %}
+        <section class="rb-sec">
+            <h2>{{ r_titres.evolution }}</h2>
+            {% if evolution_tet %}
+            <div class="rb-tab-ext"><table class="rb-tab">
+                <thead><tr><th>Période</th><th class="num">Indicateurs ciblés</th><th style="width:50%">Taux de la période</th></tr></thead>
+                <tbody>{% for e in evolution_tet %}
+                    <tr><td>{{ e.court|default:e.periode }}{% if not e.commencee %} <span class="rb-p">(à venir)</span>{% endif %}</td><td class="num">{{ e.nb }}</td>
+                        <td>{% if e.tet is not None %}<div class="rb-barre-t" data-taux="{{ e.tet|unlocalize }}"><i></i><span>{{ e.tet|floatformat:"-1" }} %</span></div>{% else %}—{% endif %}</td></tr>
+                {% endfor %}</tbody></table></div>
+            {% else %}<div class="rb-vide">Aucune cible par période.</div>{% endif %}
+        </section>
+
+        {% elif s == 'perspectives' %}
+        <section class="rb-sec">
+            <h2>{{ r_titres.perspectives }}</h2>
+            <div class="rb-edit" contenteditable="{% if periode_choisie %}true{% else %}false{% endif %}" data-cle="perspectives" data-vide="Les difficultés rencontrées, les leçons apprises et ce qui est prévu pour la prochaine période.">{{ r_perspectives }}</div>
+            <span class="rb-sans-texte">À compléter.</span>
+        </section>
+        {% endif %}
+        {% endfor %}
+
+        <footer class="rb-pied"><span>{{ modele.mention_pied }}</span><span>{{ actual_institution.nom|default:actual_institution }} · produit avec OPERAPLUS le {{ aujourd_hui|date:"d/m/Y" }}</span></footer>
+    </article>
+    </div>
+</div>
+
+<script>
+(function () {
+    var doc = document.getElementById('rbDoc');
+    if (!doc) return;
+
+    /* barres : longueur et couleur selon le taux */
+    function couleur(t) { return t >= 100 ? 'var(--atteint)' : t >= 75 ? 'var(--voie)' : t >= 50 ? 'var(--surveiller)' : 'var(--retard)'; }
+    doc.querySelectorAll('[data-taux]').forEach(function (el) {
+        var t = parseFloat(el.getAttribute('data-taux'));
+        if (isNaN(t)) return;
+        el.style.setProperty('--l', Math.min(t, 100) + '%');
+        el.style.setProperty('--c', couleur(t));
+    });
+
+    /* période choisie visible dans la liste */
+    var per = document.getElementById('rbPer'), chx = per && per.querySelector('a.choisie');
+    if (chx) per.scrollLeft = Math.max(0, chx.parentNode.offsetLeft - per.clientWidth / 2 + chx.parentNode.offsetWidth / 2);
+
+    /* ---- enregistrement automatique des textes ---- */
+    var etat = document.getElementById('rbEtat'), etatTxt = etat.querySelector('span');
+    var jeton = document.querySelector('.rb input[name=csrfmiddlewaretoken]');
+    var periode = '{{ periode_choisie.id|default:"" }}', minuterie = null;
+    function montrer(classe, texte) { etat.className = 'rb-etat ' + classe; etatTxt.textContent = texte; }
+    function enregistrer() {
+        if (!periode) return;
+        var textes = {};
+        doc.querySelectorAll('.rb-edit[data-cle]').forEach(function (el) { textes[el.getAttribute('data-cle')] = el.innerText.replace(/\n$/, ''); });
+        var f = new FormData();
+        f.append('csrfmiddlewaretoken', jeton ? jeton.value : '');
+        f.append('periode', periode);
+        f.append('textes', JSON.stringify(textes));
+        montrer('attente', 'Enregistrement…');
+        fetch('/rapports/{{ modele.id }}/textes/', { method: 'POST', body: f, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { if (d.ok) montrer('', 'Textes enregistrés à ' + d.heure + '.'); else montrer('erreur', d.erreur || "Échec de l'enregistrement."); })
+            .catch(function () { montrer('erreur', "Échec de l'enregistrement : vérifiez la connexion, puis écrivez à nouveau."); });
+    }
+    doc.addEventListener('input', function (e) {
+        if (!e.target.closest('.rb-edit')) return;
+        montrer('attente', 'Modifications non enregistrées…');
+        clearTimeout(minuterie);
+        minuterie = setTimeout(enregistrer, 1200);
+    });
+    doc.addEventListener('focusout', function (e) { if (e.target.closest('.rb-edit') && minuterie) { clearTimeout(minuterie); minuterie = null; enregistrer(); } });
+    /* coller du texte brut (pas la mise en forme d'un autre logiciel) */
+    doc.addEventListener('paste', function (e) {
+        if (!e.target.closest('.rb-edit')) return;
+        e.preventDefault();
+        var t = (e.clipboardData || window.clipboardData).getData('text');
+        document.execCommand('insertText', false, t);
+    });
+
+    /* ---- export Word : le rapport tel qu'il est à l'écran, avec vos textes ---- */
+    var hd = getComputedStyle(document.querySelector('.rb')).getPropertyValue('--hd').trim() || '#123A37';
+    var ac = getComputedStyle(document.querySelector('.rb')).getPropertyValue('--ac').trim() || '#E48B0C';
+    document.getElementById('rbWord').addEventListener('click', function () {
+        var copie = doc.cloneNode(true);
+        copie.querySelectorAll('[contenteditable]').forEach(function (el) {
+            el.removeAttribute('contenteditable');
+            if (!el.textContent.trim()) el.textContent = el.classList.contains('rb-edit') && el.closest('td') ? '' : 'À compléter.';
+        });
+        copie.querySelectorAll('.rb-sans-texte').forEach(function (el) { el.remove(); });
+        copie.querySelectorAll('img').forEach(function (el) { el.setAttribute('src', el.src); });   /* adresse complète du logo */
+        copie.querySelectorAll('.rb-barre-t').forEach(function (el) { el.outerHTML = '<b>' + el.textContent.trim() + '</b>'; });
+        /* Word ne connaît pas les grilles : chiffres clés en tableau, retours à la ligne explicites */
+        copie.querySelectorAll('.rb-kpis').forEach(function (k) {
+            var cases = Array.prototype.map.call(k.querySelectorAll('.rb-kpi'), function (c) {
+                var b = c.querySelector('b'), s = c.querySelector('span');
+                return '<td class="rb-kpi-w"><b style="font-size:16pt;color:' + hd + '">' + (b ? b.textContent : '') + '</b><br><span style="font-size:8pt;color:#6b7280">' + (s ? s.textContent : '') + '</span></td>';
+            });
+            k.outerHTML = '<table class="rb-kpis-w"><tr>' + cases.join('') + '</tr></table>';
+        });
+        copie.querySelectorAll('.rb-garde').forEach(function (g) { g.insertAdjacentHTML('afterend', '<br clear="all" style="page-break-before:always">'); });
+        copie.querySelectorAll('.rb-ecart-h small, .rb-ecart-t').forEach(function (el) { el.insertAdjacentHTML('beforebegin', '<br>'); });
+        var n = 0;
+        copie.querySelectorAll('.rb-sec > h2').forEach(function (h) { n += 1; h.textContent = n + '. ' + h.textContent.trim(); });
+        var css = 'body{font-family:Calibri,Arial,sans-serif;font-size:10.5pt;color:#1f2937}'
+            + 'h1{color:' + hd + ';font-size:22pt;margin:0 0 6pt}h2{color:' + hd + ';font-size:14pt;border-bottom:2pt solid ' + hd + ';padding-bottom:3pt;margin:18pt 0 8pt}'
+            + 'table{border-collapse:collapse;width:100%;margin:4pt 0}th{background:' + hd + ';color:#fff;font-size:8.5pt;text-align:left;padding:4pt}'
+            + 'td{border-bottom:1px solid #d1d5db;padding:4pt;font-size:9pt;vertical-align:top}.num{text-align:right}'
+            + 'tr.g-compo td{background:#e8eeed;font-weight:bold;color:' + hd + '}tr.g-obj td{background:#f3f4f6;font-weight:bold}'
+            + '.rb-pill{font-weight:bold}.s-atteint .rb-pill,.rb-pill.s-atteint{color:#047857}.s-voie .rb-pill,.rb-pill.s-voie{color:#16a34a}'
+            + '.s-surveiller .rb-pill,.rb-pill.s-surveiller{color:#d97706}.s-retard .rb-pill,.rb-pill.s-retard{color:#dc2626}'
+            + '.rb-kpis{margin:6pt 0}.rb-kpi{display:inline-block;width:23%;border:1px solid #d1d5db;padding:5pt;margin:0 1% 4pt 0;vertical-align:top}'
+            + '.rb-kpi b{display:block;font-size:16pt;color:' + hd + '}.rb-kpi span{font-size:8pt;color:#6b7280}'
+            + '.rb-phrase{border-left:3pt solid ' + ac + ';padding:5pt 8pt;background:#f8fafc}.rb-p{color:#6b7280;font-size:9pt}'
+            + '.rb-edit-l{display:block;font-size:8pt;font-weight:bold;color:#6b7280;text-transform:uppercase;margin-top:6pt}'
+            + '.rb-ecart{border:1px solid #d1d5db;border-left:4pt solid ' + ac + ';padding:6pt;margin:0 0 8pt}.rb-ecart-t{font-size:14pt;font-weight:bold}'
+            + '.rb-garde{page-break-after:always}.rb-garde-centre{padding:120pt 0}.rb-garde-centre .per{font-weight:bold;color:' + hd + ';font-size:13pt}'
+            + '.rb-garde-centre .inst{font-size:13pt;font-weight:bold}.rb-garde-infos dt{font-size:8pt;color:#6b7280}.rb-garde-infos dd{margin:0 0 6pt;font-weight:bold}'
+            + '.rb-pied{border-top:1px solid #d1d5db;margin-top:18pt;padding-top:4pt;font-size:8pt;color:#6b7280}img{max-height:60pt}'
+            + '.rb-kpis-w td{border:1px solid #d1d5db;padding:6pt;width:25%;vertical-align:top}'
+            + '@page Section1{size:21cm 29.7cm;margin:2cm 1.8cm}div.Section1{page:Section1}';
+        var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
+            + '<head><meta charset="utf-8"><title>' + document.title + '</title><style>' + css + '</style></head>'
+            + '<body><div class="Section1">' + copie.innerHTML + '</div></body></html>';
+        var blob = new Blob(['﻿', html], { type: 'application/msword' });
+        var a = document.createElement('a');
+        var nom = ('{{ modele.nom|escapejs }} - {{ periode_choisie_court|default:annee|escapejs }}').replace(/[\\/:*?"<>|]+/g, '_');
+        a.href = URL.createObjectURL(blob);
+        a.download = nom + '.doc';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    });
+})();
+</script>
+{%endblock%}

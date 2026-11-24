@@ -374,6 +374,15 @@ gestionnaire_url_patterns = [
    
    path('actions-correctives/<int:id>/statut/', views.action_statut, name='action_statut'),
 
+   path('rapports/', views.rapports_liste, name='rapports_liste'),
+   path('rapports/nouveau/', views.rapport_modele, name='rapport_nouveau'),
+   path('rapports/prets/', views.rapport_pret, name='rapport_pret'),
+   path('rapports/<int:id>/', views.rapport_bailleur, name='rapport_bailleur'),
+   path('rapports/<int:id>/modifier/', views.rapport_modele, name='rapport_modifier'),
+   path('rapports/<int:id>/textes/', views.rapport_textes, name='rapport_textes'),
+   path('rapports/<int:id>/excel/', views.rapport_excel, name='rapport_excel'),
+   path('rapports/<int:id>/supprimer/', views.rapport_supprimer, name='rapport_supprimer'),
+
 
    path('forms/',views.forms_data,name='forms'),
    # path('set_language/', views.set_language, name='set_language'),

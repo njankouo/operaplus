@@ -3825,3 +3825,36 @@ class ActionCorrective(models.Model):
 
      def __str__(self):
          return self.titre
+
+
+
+class ModeleRapport(models.Model):
+     institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='modeles_rapport')
+     nom = models.CharField(max_length=150)                                  # ex. « Rapport trimestriel UE »
+     bailleur = models.CharField(max_length=150, blank=True, default='')
+     titre_rapport = models.CharField(max_length=200, blank=True, default="Rapport d'avancement")
+     sections = models.JSONField(default=list, blank=True)                   # clés de RAPPORT_SECTIONS, dans l'ordre
+     colonnes = models.JSONField(default=list, blank=True)                   # clés de RAPPORT_COLONNES
+     niveaux = models.JSONField(default=list, blank=True)                    # vide = tous les niveaux
+     texte_resume = models.TextField(blank=True, default='')                 # texte proposé par défaut chaque période
+     texte_perspectives = models.TextField(blank=True, default='')
+     mention_pied = models.CharField(max_length=255, blank=True, default='') # ex. « Projet financé par … »
+     logo = models.ImageField(upload_to='rapports/logos/', null=True, blank=True)   # logo du bailleur (facultatif)
+     cree_par = models.ForeignKey(Personnel, on_delete=models.SET_NULL, null=True, blank=True, related_name='modeles_rapport')
+     date_maj = models.DateTimeField(auto_now=True)
+
+     class Meta:
+         ordering = ['nom']
+
+     def __str__(self):
+         return self.nom
+
+class RapportTexte(models.Model):
+     modele = models.ForeignKey(ModeleRapport, on_delete=models.CASCADE, related_name='textes')
+     periode = models.ForeignKey(PeriodeOk, on_delete=models.CASCADE, related_name='textes_rapport')
+     textes = models.JSONField(default=dict, blank=True)                     # {'resume': …, 'ecart_12': …, 'com_12': …}
+     maj_par = models.ForeignKey(Personnel, on_delete=models.SET_NULL, null=True, blank=True, related_name='textes_rapport')
+     date_maj = models.DateTimeField(auto_now=True)
+
+     class Meta:
+         unique_together = ('modele', 'periode')

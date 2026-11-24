@@ -30277,7 +30277,6 @@ def add_transaction(request):
             
             return JsonResponse({"erreur survenue  au cour de l'enregistrement": str(e)}, status=500)
     return redirect(request.META.get('HTTP_REFERER','/'))
-        
 # =====================================================================
 #  OperaPlus — Tableau de bord TET (taux d'exécution technique)
 #  VOS vues gest_dashboard_data et technics_dashboard, corrigées et complétées.
@@ -30456,10 +30455,20 @@ def technics_dashboard(request):
     template = 'dashboard-technics.html'
     if request.method == 'POST':                                       # ← ajout (v93) : sélecteur Processus / Financier / Technique du bandeau
         return gest_dashboard_data(request)
+    context = _tet_contexte(request)                                   # ← corrigé (v103) : calcul déplacé dans _tet_contexte
+    if context is None:
+        return redirect('/')
+    return render(request, template, context)
+
+
+def _tet_contexte(request):
+    """← ajout (v103) : TOUS les chiffres du tableau de bord technique, pour la période ?periode=…
+    Utilisé par technics_dashboard ET par les rapports bailleurs (mêmes chiffres partout).
+    Renvoie None si l'utilisateur n'a pas d'institution active."""
     context = basis(request)
     inst = context.get('actual_institution')
     if not inst:
-        return redirect('/')
+        return None
     aujourd_hui = datetime.date.today()
 
     # --- ← corrigé (v98) : PÉRIODES DE SUIVI de la mise en œuvre (au lieu de l'année) ---
@@ -30913,8 +30922,10 @@ def technics_dashboard(request):
                             'en_cours': bool(p.date_debut and p.date_fin and _tet_date(p.date_debut) <= aujourd_hui <= _tet_date(p.date_fin))}
                            for p in periodes_suivi],
         'stats_types': stats_types, 'croisement': croisement,
+        # ← ajout (v103) : pour les rapports bailleurs
+        'par_niveau_tet': par_niveau, 'qualite_tet': qualite, 'evolution_tet': evolution,
     })
-    return render(request, template, context)
+    return context
 
 # =====================================================================
 #  OperaPlus — ACTIONS CORRECTIVES (v92)
@@ -38448,3 +38459,470 @@ def flux_transfert_institution(request):
         "parent_filtre_id": int(parent_id) if (parent_id and parent_id.isdigit()) else None,
     })
     return render(request, "flux_transfert.html", context)
+
+
+
+
+
+
+
+
+
+# =====================================================================
+#  OperaPlus — RAPPORTS BAILLEURS (v103)
+#  Des modèles de rapport configurables, remplis automatiquement avec les chiffres du tableau de bord technique.
+#  Chaque modèle choisit : ses sections, l'ordre des sections, les colonnes du tableau des indicateurs,
+#  les niveaux de résultats (Impact, Effet…), le titre, le bailleur, le logo, les textes par défaut.
+#  Exports : PDF (impression du navigateur), Word (.doc, fait dans le navigateur avec vos textes), Excel (.xlsx ou .csv).
+#  Les textes écrits dans le rapport (résumé, explications des écarts, commentaires) sont enregistrés par période.
+#
+#  Les chiffres viennent de _tet_contexte (dashboard_technics.py, v103) : rapport et tableau de bord sont identiques.
+#
+#  1) MODÈLES — à coller dans models.py (après Institution, PeriodeOk et Personnel), puis :
+#        python manage.py makemigrations
+#        python manage.py migrate
+#
+#  class ModeleRapport(models.Model):
+#      institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name='modeles_rapport')
+#      nom = models.CharField(max_length=150)                                  # ex. « Rapport trimestriel UE »
+#      bailleur = models.CharField(max_length=150, blank=True, default='')
+#      titre_rapport = models.CharField(max_length=200, blank=True, default="Rapport d'avancement")
+#      sections = models.JSONField(default=list, blank=True)                   # clés de RAPPORT_SECTIONS, dans l'ordre
+#      colonnes = models.JSONField(default=list, blank=True)                   # clés de RAPPORT_COLONNES
+#      niveaux = models.JSONField(default=list, blank=True)                    # vide = tous les niveaux
+#      texte_resume = models.TextField(blank=True, default='')                 # texte proposé par défaut chaque période
+#      texte_perspectives = models.TextField(blank=True, default='')
+#      mention_pied = models.CharField(max_length=255, blank=True, default='') # ex. « Projet financé par … »
+#      logo = models.ImageField(upload_to='rapports/logos/', null=True, blank=True)   # logo du bailleur (facultatif)
+#      cree_par = models.ForeignKey(Personnel, on_delete=models.SET_NULL, null=True, blank=True, related_name='modeles_rapport')
+#      date_maj = models.DateTimeField(auto_now=True)
+#
+#      class Meta:
+#          ordering = ['nom']
+#
+#      def __str__(self):
+#          return self.nom
+#
+#  class RapportTexte(models.Model):
+#      modele = models.ForeignKey(ModeleRapport, on_delete=models.CASCADE, related_name='textes')
+#      periode = models.ForeignKey(PeriodeOk, on_delete=models.CASCADE, related_name='textes_rapport')
+#      textes = models.JSONField(default=dict, blank=True)                     # {'resume': …, 'ecart_12': …, 'com_12': …}
+#      maj_par = models.ForeignKey(Personnel, on_delete=models.SET_NULL, null=True, blank=True, related_name='textes_rapport')
+#      date_maj = models.DateTimeField(auto_now=True)
+#
+#      class Meta:
+#          unique_together = ('modele', 'periode')
+#
+#  (le logo utilise Pillow, déjà installé si vos personnels ont une photo ; MEDIA_URL / MEDIA_ROOT doivent être réglés)
+#
+#  2) URLS — à ajouter dans urls.py :
+#        path('rapports/', views.rapports_liste, name='rapports_liste'),
+#        path('rapports/nouveau/', views.rapport_modele, name='rapport_nouveau'),
+#        path('rapports/prets/', views.rapport_pret, name='rapport_pret'),
+#        path('rapports/<int:id>/', views.rapport_bailleur, name='rapport_bailleur'),
+#        path('rapports/<int:id>/modifier/', views.rapport_modele, name='rapport_modifier'),
+#        path('rapports/<int:id>/textes/', views.rapport_textes, name='rapport_textes'),
+#        path('rapports/<int:id>/excel/', views.rapport_excel, name='rapport_excel'),
+#        path('rapports/<int:id>/supprimer/', views.rapport_supprimer, name='rapport_supprimer'),
+#
+#  3) VUES — ci-dessous, à coller dans views.py, APRÈS le code du tableau de bord technique (dashboard_technics.py).
+#     Imports (à fusionner) :
+#        import csv, datetime, io, json
+#        from django.contrib import messages
+#        from django.contrib.auth.decorators import login_required
+#        from django.http import HttpResponse, JsonResponse
+#        from django.shortcuts import redirect, render
+#        from django.views.decorators.http import require_POST
+#
+#  4) TEMPLATES — rapports-liste.html, rapport-modele.html, rapport-bailleur.html (même dossier que index.html).
+# =====================================================================
+
+# (clé, titre, explication) — l'ordre ici est l'ordre proposé par défaut
+RAPPORT_SECTIONS = (
+    ('page_garde', 'Page de garde', 'Titre, bailleur, période, date et logo'),
+    ('resume', 'Résumé', 'Les chiffres clés et votre texte de synthèse'),
+    ('chaine', 'Résultats par niveau', 'Impact, Effet, Produit, Activité'),
+    ('composantes', 'Résultats par composante', 'Chaque composante et ses objectifs'),
+    ('indicateurs', 'Tableau de suivi des indicateurs', 'Avec les colonnes choisies plus bas'),
+    ('ecarts', 'Analyse des écarts', 'Les indicateurs sous 75 %, avec votre explication pour chacun'),
+    ('structures', 'Résultats par structure', 'Le taux de chaque structure'),
+    ('qualite', 'Qualité des données', 'Complétude, validation, valeurs anormales'),
+    ('actions', 'Actions correctives', 'Qui fait quoi, pour quand'),
+    ('evolution', 'Évolution par période', 'Le taux de chaque période de l\'année'),
+    ('perspectives', 'Difficultés et perspectives', 'Votre texte'),
+)
+
+# (clé, titre de colonne) — clés = celles de indicateurs_tet (sauf « commentaire », écrit dans le rapport)
+RAPPORT_COLONNES = (
+    ('code', 'Code'),
+    ('niveau', 'Niveau'),
+    ('frequence', 'Fréquence'),
+    ('base', 'Référence'),
+    ('cible', 'Cible annuelle'),
+    ('cible_date', 'Cible à date'),
+    ('realise', 'Réalisé'),
+    ('taux_date', 'Taux à date'),
+    ('taux', 'Taux annuel'),
+    ('statut', 'Appréciation'),
+    ('taux_proj', 'Projection fin d\'année'),
+    ('realise_n1', 'Réalisé année précédente'),
+    ('commentaire', 'Commentaire'),
+)
+
+RAPPORT_STATUTS = {'atteint': 'Atteint', 'voie': 'En bonne voie', 'surveiller': 'À surveiller', 'retard': 'En retard', 'sans': 'Sans cible'}
+
+# modèles prêts à l'emploi (on les copie, puis chacun les adapte)
+RAPPORT_PRETS = {
+    'complet': {
+        'nom': "Rapport d'avancement complet", 'titre_rapport': "Rapport d'avancement",
+        'description': "Toutes les sections : pour le rapport trimestriel ou semestriel au bailleur.",
+        'sections': [k for k, _, _ in RAPPORT_SECTIONS if k != 'evolution'],
+        'colonnes': ['niveau', 'base', 'cible', 'cible_date', 'realise', 'taux_date', 'statut', 'commentaire'],
+    },
+    'itt': {
+        'nom': 'Tableau de suivi des indicateurs', 'titre_rapport': 'Tableau de suivi des indicateurs',
+        'description': "Le tableau des indicateurs seul, avec un commentaire par ligne : l'annexe classique des rapports.",
+        'sections': ['page_garde', 'indicateurs'],
+        'colonnes': ['code', 'niveau', 'frequence', 'base', 'cible', 'cible_date', 'realise', 'taux_date', 'taux', 'statut', 'commentaire'],
+    },
+    'synthese': {
+        'nom': 'Note de synthèse', 'titre_rapport': 'Note de synthèse',
+        'description': "Deux pages pour la direction ou le comité de pilotage : l'essentiel, les écarts, les actions.",
+        'sections': ['resume', 'chaine', 'ecarts', 'actions'],
+        'colonnes': ['cible_date', 'realise', 'taux_date', 'statut'],
+    },
+}
+
+
+def _rapport_modele_de(request, id):
+    """Le modèle demandé, s'il appartient à l'institution active (sinon None)."""
+    context = basis(request)
+    inst = context.get('actual_institution')
+    if not inst:
+        return context, None, None
+    return context, inst, ModeleRapport.objects.filter(id=int(id), institution=inst).first()
+
+
+def _rapport_nettoyer(liste, autorisees):
+    """Garde seulement les clés connues, sans doublon, dans l'ordre reçu."""
+    vues, propre = set(), []
+    for k in liste or []:
+        if k in autorisees and k not in vues:
+            vues.add(k)
+            propre.append(k)
+    return propre
+
+
+def _rapport_nombre(v, suffixe=''):
+    """12345.67 → « 12 345,7 » ; 73.0 → « 73 » (affichage français, vide si inconnu)."""
+    if v is None or v == '':
+        return ''
+    if not isinstance(v, (int, float)):
+        return str(v)
+    txt = f'{v:,.1f}'.replace(',', '\u202f').replace('.', ',')
+    if txt.endswith(',0'):
+        txt = txt[:-2]
+    return txt + suffixe
+
+
+def _rapport_cellules(x, colonnes, textes):
+    """Les cases d'une ligne du tableau des indicateurs, déjà mises en forme : [(clé, texte, classe)]."""
+    cases = []
+    for k, _ in colonnes:
+        if k == 'commentaire':
+            cases.append((k, textes.get(f"com_{x['id']}", ''), 'com'))
+        elif k == 'statut':
+            cases.append((k, RAPPORT_STATUTS.get(x['statut'], ''), 's-' + x['statut']))
+        elif k in ('taux_date', 'taux', 'taux_proj'):
+            cases.append((k, _rapport_nombre(x.get(k), '\u00a0%'), 'num'))
+        elif k in ('base', 'cible', 'cible_date', 'realise', 'realise_n1'):
+            cases.append((k, _rapport_nombre(x.get(k)), 'num'))
+        else:
+            cases.append((k, x.get(k) or '', ''))
+    return cases
+
+
+def _rapport_donnees(ctx, modele, textes):
+    """Prépare tout ce que le template du rapport affiche, à partir des chiffres du tableau de bord."""
+    niveaux = modele.niveaux or []
+    noms_col = dict(RAPPORT_COLONNES)
+    colonnes = [(k, noms_col[k]) for k in modele.colonnes if k in noms_col]
+    inds = [x for x in ctx.get('indicateurs_tet', []) if not niveaux or x['niveau'] in niveaux]
+    avec_cible = [x for x in inds if x['taux_date'] is not None]
+    statuts = {k: sum(1 for x in inds if x['statut'] == k) for k in RAPPORT_STATUTS}
+
+    # indicateurs regroupés par composante (1er niveau de l'arbre), puis par objectif (dernier niveau)
+    groupes = {}
+    for x in sorted(inds, key=lambda x: (x['chemin'][0][1] if x['chemin'] else 'zzz', x['objectif'], x['nom'])):
+        compo = x['chemin'][0][1] if x['chemin'] else 'Sans composante'
+        g = groupes.setdefault(compo, {'nom': compo, 'objectifs': {}, 'taux': []})
+        g['objectifs'].setdefault(x['objectif'], []).append(dict(x, commentaire=textes.get(f"com_{x['id']}", ''),
+                                                                 statut_lib=RAPPORT_STATUTS.get(x['statut'], ''),
+                                                                 cellules=_rapport_cellules(x, colonnes, textes)))
+        g['taux'].append(x['taux_date'])
+    composantes = [{'nom': g['nom'], 'tet': _tet_moyenne(g['taux']), 'nb': len(g['taux']),
+                    'objectifs': [{'nom': o, 'indicateurs': xs, 'tet': _tet_moyenne([y['taux_date'] for y in xs])}
+                                  for o, xs in g['objectifs'].items()]}
+                   for g in groupes.values()]
+
+    # écarts : indicateurs avec cible et taux à date sous 75 %, du plus faible au moins faible
+    actions_par_ind = defaultdict(list)
+    for a in ctx.get('actions', []):
+        if a['obj'].indicateur_id and a['ouverte']:
+            actions_par_ind[a['obj'].indicateur_id].append(a)
+    ecarts = [dict(x, explication=textes.get(f"ecart_{x['id']}", ''), actions=actions_par_ind.get(x['id'], []),
+                   statut_lib=RAPPORT_STATUTS.get(x['statut'], ''))
+              for x in sorted(avec_cible, key=lambda x: x['taux_date']) if x['taux_date'] < 75]
+
+    return {
+        'r_inds': inds, 'r_composantes': composantes, 'r_ecarts': ecarts,
+        'r_tet': _tet_moyenne([x['taux_date'] for x in avec_cible]),
+        'r_tet_annuel': _tet_moyenne([x['taux'] for x in avec_cible]),
+        'r_nb': len(inds), 'r_nb_cible': len(avec_cible), 'r_statuts': statuts,
+        'r_projection': _tet_moyenne([x['taux_proj'] for x in inds if x['taux_proj'] is not None]),
+        'r_par_niveau': [p for p in ctx.get('par_niveau_tet', []) if not niveaux or p['niveau'] in niveaux],
+        'r_colonnes': colonnes,
+        'r_sections': [k for k in modele.sections if k in {c for c, _, _ in RAPPORT_SECTIONS}],
+        'r_titres': {k: t for k, t, _ in RAPPORT_SECTIONS},
+        'r_resume': textes.get('resume', modele.texte_resume),
+        'r_perspectives': textes.get('perspectives', modele.texte_perspectives),
+    }
+
+
+@login_required(login_url='/log_account')
+def rapports_liste(request):
+    context = basis(request)
+    inst = context.get('actual_institution')
+    if not inst:
+        return redirect('/')
+    context.update({
+        'modeles': ModeleRapport.objects.filter(institution=inst),
+        'prets': [dict(v, cle=k, nb_sections=len(v['sections'])) for k, v in RAPPORT_PRETS.items()],
+        'titres_sections': {k: t for k, t, _ in RAPPORT_SECTIONS},
+    })
+    return render(request, 'rapports-liste.html', context)
+
+
+@login_required(login_url='/log_account')
+@require_POST
+def rapport_pret(request):
+    """Copie un modèle prêt à l'emploi dans l'institution, puis ouvre le rapport."""
+    context = basis(request)
+    inst = context.get('actual_institution')
+    pret = RAPPORT_PRETS.get(request.POST.get('cle', ''))
+    if not inst or not pret:
+        messages.error(request, "Modèle introuvable.")
+        return redirect('/rapports/')
+    m = ModeleRapport.objects.create(
+        institution=inst, nom=pret['nom'], titre_rapport=pret['titre_rapport'],
+        sections=list(pret['sections']), colonnes=list(pret['colonnes']), niveaux=[],
+        cree_par=getattr(request.user, 'personnel', None))
+    messages.success(request, f"Modèle « {m.nom} » créé. Vous pouvez l'adapter avec « Modifier le modèle ».")
+    return redirect(f'/rapports/{m.id}/')
+
+
+@login_required(login_url='/log_account')
+def rapport_modele(request, id=None):
+    """Créer (id=None) ou modifier un modèle de rapport."""
+    context = basis(request)
+    inst = context.get('actual_institution')
+    if not inst:
+        return redirect('/')
+    modele = None
+    if id is not None:
+        modele = ModeleRapport.objects.filter(id=int(id), institution=inst).first()
+        if modele is None:
+            messages.error(request, "Ce modèle n'existe pas dans votre institution.")
+            return redirect('/rapports/')
+
+    if request.method == 'POST':
+        nom = (request.POST.get('nom') or '').strip()
+        cles_sections = [k for k, _, _ in RAPPORT_SECTIONS]
+        # ordre des sections : chaque case cochée a un champ « ordre_<clé> » (1, 2, 3…)
+        cochees = _rapport_nettoyer(request.POST.getlist('sections'), cles_sections)
+
+        def rang(k):
+            v = request.POST.get(f'ordre_{k}', '')
+            return (int(v) if v.isdigit() else 99, cles_sections.index(k))
+        sections = sorted(cochees, key=rang)
+        colonnes = _rapport_nettoyer(request.POST.getlist('colonnes'), [k for k, _ in RAPPORT_COLONNES])
+        niveaux = _rapport_nettoyer(request.POST.getlist('niveaux'), list(TET_NIVEAUX) + ['Non précisé'])
+        if not nom or not sections:
+            messages.error(request, "Donnez un nom au modèle et cochez au moins une section.")
+        else:
+            if modele is None:
+                modele = ModeleRapport(institution=inst, cree_par=getattr(request.user, 'personnel', None))
+            modele.nom = nom[:150]
+            modele.bailleur = (request.POST.get('bailleur') or '').strip()[:150]
+            modele.titre_rapport = (request.POST.get('titre_rapport') or '').strip()[:200] or "Rapport d'avancement"
+            modele.sections, modele.colonnes, modele.niveaux = sections, colonnes, niveaux
+            modele.texte_resume = (request.POST.get('texte_resume') or '').strip()
+            modele.texte_perspectives = (request.POST.get('texte_perspectives') or '').strip()
+            modele.mention_pied = (request.POST.get('mention_pied') or '').strip()[:255]
+            if request.POST.get('retirer_logo'):
+                modele.logo = None
+            elif request.FILES.get('logo'):
+                f = request.FILES['logo']
+                if f.size > 2 * 1024 * 1024 or not (f.content_type or '').startswith('image/'):
+                    messages.warning(request, "Logo ignoré : il faut une image de moins de 2 Mo.")
+                else:
+                    modele.logo = f
+            modele.save()
+            messages.success(request, f"Modèle « {modele.nom} » enregistré.")
+            return redirect(f'/rapports/{modele.id}/')
+
+    choisies = modele.sections if modele else RAPPORT_PRETS['complet']['sections']
+    context.update({
+        'modele': modele,
+        # sections : d'abord celles du modèle dans leur ordre, puis les autres
+        'sections_form': [{'cle': k, 'titre': t, 'aide': a, 'cochee': k in choisies,
+                           'ordre': choisies.index(k) + 1 if k in choisies else ''}
+                          for k, t, a in sorted(RAPPORT_SECTIONS, key=lambda s: (s[0] not in choisies,
+                                                                                choisies.index(s[0]) if s[0] in choisies else 0))],
+        'colonnes_form': [{'cle': k, 'titre': t, 'cochee': k in (modele.colonnes if modele else RAPPORT_PRETS['complet']['colonnes'])}
+                          for k, t in RAPPORT_COLONNES],
+        'niveaux_form': [{'nom': n, 'coche': n in (modele.niveaux if modele else [])} for n in list(TET_NIVEAUX) + ['Non précisé']],
+    })
+    return render(request, 'rapport-modele.html', context)
+
+
+@login_required(login_url='/log_account')
+def rapport_bailleur(request, id):
+    """Le rapport rempli pour la période ?periode=… (par défaut : celle du tableau de bord)."""
+    _, inst, modele = _rapport_modele_de(request, id)
+    if inst is None:
+        return redirect('/')
+    if modele is None:
+        messages.error(request, "Ce modèle n'existe pas dans votre institution.")
+        return redirect('/rapports/')
+    ctx = _tet_contexte(request)
+    if ctx is None:
+        return redirect('/')
+    periode = ctx.get('periode_choisie')
+    textes = {}
+    if periode is not None:
+        rt = RapportTexte.objects.filter(modele=modele, periode=periode).first()
+        textes = rt.textes if rt else {}
+    ctx.update(_rapport_donnees(ctx, modele, textes))
+    ctx.update({'modele': modele, 'textes_enregistres': bool(textes)})
+    return render(request, 'rapport-bailleur.html', ctx)
+
+
+@login_required(login_url='/log_account')
+@require_POST
+def rapport_textes(request, id):
+    """Enregistre les textes écrits dans le rapport (appelé par le navigateur, réponse JSON)."""
+    _, inst, modele = _rapport_modele_de(request, id)
+    pid = request.POST.get('periode', '')
+    periode = PeriodeOk.objects.filter(id=int(pid)).first() if pid.isdigit() else None
+    if modele is None or periode is None:
+        return JsonResponse({'ok': False, 'erreur': "Rapport ou période introuvable."}, status=404)
+    try:
+        recus = json.loads(request.POST.get('textes') or '{}')
+    except ValueError:
+        return JsonResponse({'ok': False, 'erreur': "Textes illisibles."}, status=400)
+    if not isinstance(recus, dict):
+        return JsonResponse({'ok': False, 'erreur': "Textes illisibles."}, status=400)
+    # seulement des clés attendues, textes limités à 5 000 caractères
+    propres = {}
+    for k, v in recus.items():
+        k = str(k)
+        if k in ('resume', 'perspectives') or (k.split('_')[0] in ('com', 'ecart') and k.split('_')[-1].isdigit()):
+            propres[k[:40]] = str(v)[:5000].strip()
+    rt, _ = RapportTexte.objects.get_or_create(modele=modele, periode=periode)
+    rt.textes = {**(rt.textes or {}), **propres}
+    rt.maj_par = getattr(request.user, 'personnel', None)
+    rt.save()
+    return JsonResponse({'ok': True, 'heure': datetime.datetime.now().strftime('%H:%M')})
+
+
+@login_required(login_url='/log_account')
+def rapport_excel(request, id):
+    """Le tableau de suivi des indicateurs en Excel (.xlsx si openpyxl est installé, sinon .csv)."""
+    _, inst, modele = _rapport_modele_de(request, id)
+    if modele is None:
+        return redirect('/rapports/')
+    ctx = _tet_contexte(request)
+    if ctx is None:
+        return redirect('/')
+    periode = ctx.get('periode_choisie')
+    rt = RapportTexte.objects.filter(modele=modele, periode=periode).first() if periode else None
+    d = _rapport_donnees(ctx, modele, rt.textes if rt else {})
+    colonnes = d['r_colonnes'] or [(k, t) for k, t in RAPPORT_COLONNES]
+    entete = ['Composante', 'Objectif', 'Indicateur'] + [t for _, t in colonnes]
+    lignes = []
+    for c in d['r_composantes']:
+        for o in c['objectifs']:
+            for x in o['indicateurs']:
+                ligne = [c['nom'], o['nom'], x['nom']]
+                for k, _ in colonnes:
+                    v = x.get('statut_lib') if k == 'statut' else x.get(k)
+                    if k in ('taux_date', 'taux', 'taux_proj') and v is not None:
+                        v = round(v / 100, 4)                          # en % dans Excel
+                    ligne.append('' if v is None else v)
+                lignes.append(ligne)
+    base = f"{modele.nom} - {ctx.get('periode_choisie_court') or ctx.get('annee')}"
+    nom_fichier = ''.join(ch if ch.isalnum() or ch in ' -_' else '_' for ch in base).strip()[:80] or 'rapport'
+
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Alignment, Font, PatternFill
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        Workbook = None
+    if Workbook is None:                                               # sans openpyxl : CSV lisible par Excel (UTF-8, « ; »)
+        sortie = io.StringIO()
+        sortie.write('﻿')
+        w = csv.writer(sortie, delimiter=';')
+        w.writerow(entete)
+        for l in lignes:
+            w.writerow([str(v).replace('.', ',') if isinstance(v, float) else v for v in l])
+        rep = HttpResponse(sortie.getvalue(), content_type='text/csv; charset=utf-8')
+        rep['Content-Disposition'] = f'attachment; filename="{nom_fichier}.csv"'
+        return rep
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Indicateurs'
+    ws.append([f"{modele.titre_rapport} — {_tet_lib(inst)}"])
+    ws.append([f"Situation à la fin de {ctx.get('periode_choisie_lib') or ctx.get('annee')}"
+               + (f" · {modele.bailleur}" if modele.bailleur else '')])
+    ws.append([])
+    ws.append(entete)
+    ws['A1'].font = Font(bold=True, size=14)
+    ligne_entete = 4
+    for cell in ws[ligne_entete]:
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill('solid', fgColor='123A37')
+        cell.alignment = Alignment(wrap_text=True, vertical='center')
+    for l in lignes:
+        ws.append(l)
+    for i, (k, _) in enumerate(colonnes, start=4):
+        if k in ('taux_date', 'taux', 'taux_proj'):
+            for row in ws.iter_rows(min_row=ligne_entete + 1, min_col=i, max_col=i):
+                row[0].number_format = '0.0%'
+    largeurs = [28, 32, 46] + [40 if k == 'commentaire' else 14 for k, _ in colonnes]
+    for i, larg in enumerate(largeurs, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = larg
+    for row in ws.iter_rows(min_row=ligne_entete + 1):
+        for cell in row:
+            cell.alignment = Alignment(wrap_text=True, vertical='top')
+    ws.freeze_panes = ws.cell(row=ligne_entete + 1, column=4)
+    sortie = io.BytesIO()
+    wb.save(sortie)
+    rep = HttpResponse(sortie.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    rep['Content-Disposition'] = f'attachment; filename="{nom_fichier}.xlsx"'
+    return rep
+
+
+@login_required(login_url='/log_account')
+@require_POST
+def rapport_supprimer(request, id):
+    _, inst, modele = _rapport_modele_de(request, id)
+    if modele is None:
+        messages.error(request, "Ce modèle n'existe pas dans votre institution.")
+    else:
+        nom = modele.nom
+        modele.delete()
+        messages.success(request, f"Modèle « {nom} » supprimé.")
+    return redirect('/rapports/')
