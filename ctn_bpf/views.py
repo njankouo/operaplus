@@ -34590,6 +34590,15 @@ def check_import_status(request, task_id):
 #  Imports (déjà chez vous en principe) :  from django.db.models import Q  ·  from django.shortcuts import get_object_or_404
 # =====================================================================
 
+# =====================================================================
+#  OperaPlus — VOTRE vue dynamic_cible, corrigée.
+#  Les structures affichées sont maintenant celles choisies sur la page « structures applicables »
+#  (modèle IndicateurStructure). Template : indicateurs/dynamic-cible.html
+#  v107 : le modèle de progression de chaque ligne est enregistré (champ IndicateurStructure.modele_progression) et retrouvé.
+#  v106 : plus de choix d'année — toutes les périodes du projet (début → fin) pour la fréquence de l'indicateur.
+#  Imports (déjà chez vous en principe) :  from django.db.models import Q  ·  from django.shortcuts import get_object_or_404
+# =====================================================================
+
 
 def dynamic_cible(request, id):
     context = basis(request)
@@ -34613,21 +34622,27 @@ def dynamic_cible(request, id):
                 .filter(Q(institution=actual_institution) | Q(institution__isnull=True))      # ← ajout : périodes de l'institution
                 .order_by('annee', 'numero_ordre', 'date_debut', 'id'))                       # ← ajout : ordre chronologique
 
-    # ← ajout : choix de l'année applicable (?annee=2026). Par défaut : l'année en cours si elle existe, sinon la plus récente.
-    annees = sorted({a for a in periodes.values_list('annee', flat=True) if a}, reverse=True)
-    annee = request.GET.get('annee', '')
-    if not annee.isdigit() or int(annee) not in annees:
-        annee_courante = datetime.datetime.now().year       # views.py importe le module datetime
-        annee = annee_courante if annee_courante in annees else (annees[0] if annees else None)
-    else:
-        annee = int(annee)
-    if annee:
-        periodes = periodes.filter(annee=annee)
+    # ← corrigé (v106) : plus de choix d'année. On prend TOUTES les périodes du projet pour la fréquence de l'indicateur,
+    #   de la date de début à la date de fin du projet (si ces dates sont renseignées sur l'institution).
+    projet_debut, projet_fin = _dates_du_projet(actual_institution)
+    #   Une période est gardée dès qu'elle chevauche le projet (ex. une période annuelle 2025 pour un projet commencé en avril 2025).
+    if projet_debut:
+        periodes = periodes.filter(Q(date_fin__gte=projet_debut) | Q(date_fin__isnull=True))
+    if projet_fin:
+        periodes = periodes.filter(Q(date_debut__lte=projet_fin) | Q(date_debut__isnull=True))
+    periodes = list(periodes)
+    # bandeau des années au-dessus des colonnes : [(2025, 4), (2026, 4), …] (périodes consécutives de la même année)
+    annees_colonnes = []
+    for p in periodes:
+        if annees_colonnes and annees_colonnes[-1][0] == p.annee:
+            annees_colonnes[-1][1] += 1
+        else:
+            annees_colonnes.append([p.annee, 1])
 
     valeurs_existantes = IndicateurValeur.objects.filter(
         indicateur=indicateur, type_donnee="valeur",
         structure__in=structures).filter(
-        Q(periode_ok__in=periodes) | Q(periode_ok__isnull=True))                              # ← ajout : l'année choisie + le départ
+        Q(periode_ok__in=periodes) | Q(periode_ok__isnull=True))                              # ← corrigé (v106) : toutes les périodes du projet + le départ
 
     # On crée un dictionnaire : {(structure_id, periode_id): valeur}
     # ← corrigé : une valeur sans période (situation de départ) faisait planter int(None) ; elle devient la clé « baseline »
@@ -34642,11 +34657,73 @@ def dynamic_cible(request, id):
     context['structures'] = structures
     context['indicateur'] = indicateur
     context['mapping_valeurs'] = mapping_valeurs
-    context['annees'] = annees                                                                # ← ajout
-    context['annee'] = annee
+    # ← ajout (v107) : modèle de progression enregistré pour chaque structure (linéaire, exponentiel, courbe S)
+    context['modeles_progression'] = {
+        str(sid): m for sid, m in IndicateurStructure.objects
+        .filter(indicateur=indicateur, structure__in=structures)
+        .values_list('structure_id', 'modele_progression') if m}
+    # ← ajout (v106) : étendue du projet
+    context['annees_colonnes'] = annees_colonnes
+    context['projet_debut'] = projet_debut or (periodes[0].date_debut if periodes else None)
+    context['projet_fin'] = projet_fin or (periodes[-1].date_fin if periodes else None)
+    context['dates_projet_connues'] = bool(projet_debut or projet_fin)
 
     return render(request, template, context)
 
+
+# ← ajout (v106) : dates de début et de fin du projet, lues sur l'institution active.
+#   Adaptez les noms ci-dessous à VOS champs (le premier nom trouvé est utilisé).
+#   Si aucun champ n'existe, toutes les périodes de la fréquence sont affichées (de la première à la dernière créée).
+CHAMPS_DEBUT_PROJET = ('date_debut_projet', 'date_debut', 'debut_projet', 'date_demarrage')
+CHAMPS_FIN_PROJET = ('date_fin_projet', 'date_fin', 'fin_projet', 'date_cloture')
+
+
+def _dates_du_projet(institution):
+    def lire(noms):
+        for nom in noms:
+            v = getattr(institution, nom, None)
+            if v:
+                return v.date() if hasattr(v, 'date') and callable(v.date) else v
+        return None
+    if institution is None:
+        return None, None
+    return lire(CHAMPS_DEBUT_PROJET), lire(CHAMPS_FIN_PROJET)
+
+
+# =====================================================================
+#  ← ajout (v107) : ENREGISTRER LE MODÈLE DE PROGRESSION de chaque structure pour un indicateur.
+#  1) models.py — dans la classe IndicateurStructure, ajoutez :
+#         modele_progression = models.CharField(max_length=20, blank=True, default='')   # linear / exponential / sigmoide
+#     puis : python manage.py makemigrations  et  python manage.py migrate
+#  2) urls.py :
+#         path('dynamic-cible/modeles/', views.save_modeles_progression, name='save_modeles_progression'),
+#  3) Imports (à fusionner) :  import json  ·  from django.http import JsonResponse
+#                               from django.views.decorators.http import require_POST
+# =====================================================================
+MODELES_PROGRESSION = ('linear', 'exponential', 'sigmoide')
+
+
+@login_required(login_url='/log_account')
+@require_POST
+def save_modeles_progression(request):
+    context = basis(request)
+    inst = context.get('actual_institution')
+    try:
+        donnees = json.loads(request.body or b'{}')
+        indicateur_id = int(donnees.get('indicateur_id'))
+        modeles = donnees.get('modeles') or {}
+    except (ValueError, TypeError):
+        return JsonResponse({'ok': False, 'erreur': 'Données illisibles.'}, status=400)
+    indicateur = Indicateur.objects.filter(Q(m_institution=inst) | Q(m_institution__isnull=True), id=indicateur_id).first()
+    if indicateur is None or not isinstance(modeles, dict):
+        return JsonResponse({'ok': False, 'erreur': 'Indicateur introuvable.'}, status=404)
+    nb = 0
+    for sid, mode in modeles.items():
+        if str(sid).isdigit() and mode in MODELES_PROGRESSION:
+            # uniquement les structures de l'institution active déjà rattachées à l'indicateur
+            nb += IndicateurStructure.objects.filter(indicateur=indicateur, structure_id=int(sid),
+                                                     structure__institution=inst).update(modele_progression=mode)
+    return JsonResponse({'ok': True, 'nb': nb})
 import json
 from django.http import JsonResponse
 from .models import IndicateurValeur, Structure, Periode

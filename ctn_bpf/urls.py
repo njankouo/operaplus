@@ -382,6 +382,7 @@ gestionnaire_url_patterns = [
    path('rapports/<int:id>/textes/', views.rapport_textes, name='rapport_textes'),
    path('rapports/<int:id>/excel/', views.rapport_excel, name='rapport_excel'),
    path('rapports/<int:id>/supprimer/', views.rapport_supprimer, name='rapport_supprimer'),
+   path('dynamic-cible/modeles/', views.save_modeles_progression, name='save_modeles_progression'),
 
 
    path('forms/',views.forms_data,name='forms'),

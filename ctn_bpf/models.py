@@ -3802,6 +3802,7 @@ class HeritageInstitution(models.Model):
 class IndicateurStructure(models.Model):
     structure=models.ForeignKey(Structure,on_delete=models.SET_NULL,null=True,related_name='structures')
     indicateur=models.ForeignKey(Indicateur,on_delete=models.SET_NULL,null=True,related_name='indicateur')
+    modele_progression = models.CharField(max_length=20, blank=True, default='')
 
 
 
