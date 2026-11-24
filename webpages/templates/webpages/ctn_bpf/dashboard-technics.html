@@ -4,6 +4,7 @@
 {% comment %}
     TABLEAU DE BORD TECHNIQUE (TET) — v91 : mise en page de type ERP.
     v92 : ligne de base, projection fin d'année, comparaison N-1, qualité des données, actions correctives.
+    v97 : icônes SVG intégrées (plus de dépendance à Boxicons), anneaux de progression, icônes et alertes animées.
     v96 : nouveau baromètre (arc segmenté, valeur au centre, repères 75 % et projection).
     v95 : fiche détaillée en panneau latéral (clic sur un indicateur) + comparaison entre structures.
     v94 : design vivant — bandeau en dégradé avec TET et courbe, chiffres qui défilent, aiguille et barres animées,
@@ -280,9 +281,31 @@
     /* chiffres clés : icône, survol */
     .tb-kpi { position: relative; --k: var(--hd); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
     .tb-kpi.ok { --k: var(--atteint); } .tb-kpi.ko { --k: var(--retard); }
-    .tb-kpi .ico { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-size: 18px;
-                   background: color-mix(in srgb, var(--k) 12%, #fff); color: var(--k); }
-    .tb-kpi small { padding-right: 38px; }
+    .tb-kpi .ico { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+                   background: color-mix(in srgb, var(--k) 11%, #fff); color: var(--k); }
+    /* ← v97 : icônes SVG */
+    .tb svg.i, .tb svg.bi, .tb-fiche svg.bi { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .tb-kpi .ico svg.i { width: 20px; height: 20px; transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+    .tb svg.bi, .tb-fiche svg.bi { width: 16px; height: 16px; flex: none; }
+    .tb-kpi:hover .ico svg.i { transform: scale(1.15) rotate(-8deg); }
+    /* anneau de progression autour de l'icône (chiffres en %) */
+    .tb-kpi .ico[data-anneau] { background: transparent; }
+    .tb-kpi .ico svg.anneau { position: absolute; inset: 0; width: 40px; height: 40px; transform: rotate(-90deg); }
+    .tb-kpi .ico svg.anneau circle { fill: none; stroke-width: 3.2; }
+    .tb-kpi .ico svg.anneau .fond { stroke: color-mix(in srgb, var(--k) 14%, #fff); }
+    .tb-kpi .ico svg.anneau .val { stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 1.1s cubic-bezier(.22,1,.36,1) .15s; }
+    .tb-kpi .ico[data-anneau] svg.i { width: 17px; height: 17px; }
+    /* apparition des icônes, des alertes, des compteurs d'onglets */
+    @keyframes tbIco { 0% { opacity: 0; transform: scale(.4) rotate(-20deg); } 70% { transform: scale(1.12) rotate(4deg); } 100% { opacity: 1; transform: none; } }
+    @keyframes tbGlisse { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+    @keyframes tbBadge { 0% { transform: scale(0); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+    .tb-pane.anim .tb-kpi .ico { animation: tbIco .6s cubic-bezier(.22,1,.36,1) both; animation-delay: calc(120ms + var(--i, 0) * 70ms); }
+    .tb-pane.anim .tb-alertes li { animation: tbGlisse .45s cubic-bezier(.22,1,.36,1) both; animation-delay: calc(250ms + var(--j, 0) * 70ms); }
+    .tb-tabs em { animation: tbBadge .5s cubic-bezier(.22,1,.36,1) both; animation-delay: .35s; display: inline-block; }
+    .tb-tabs em.ko { animation-delay: .5s; }
+    .tb-chaine li { transition: transform .2s ease; } .tb-chaine li:hover { transform: translateX(3px); }
+    .tb-mat td { transition: transform .15s ease, box-shadow .15s ease; } .tb-mat td:hover { transform: translateY(-1px); box-shadow: 0 6px 14px -10px rgba(15,23,42,.4); }
+    .tb-kpi small { padding-right: 46px; }
     .tb-kpi:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -18px rgba(15,23,42,.45); }
     .tb-card { transition: box-shadow .2s ease, border-color .2s ease; }
     .tb-card:hover { border-color: #d6dae1; box-shadow: 0 10px 26px -20px rgba(15,23,42,.4); }
@@ -397,6 +420,21 @@
 </style>
 
 <div class="tb" id="tb">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">{% comment %} ← v97 : icônes SVG intégrées {% endcomment %}
+    <defs>
+        <symbol id="tbi-liste" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/></symbol>
+        <symbol id="tbi-jauge" viewBox="0 0 24 24"><path d="M4.9 18A9 9 0 1 1 19.1 18"/><path d="m12 13 3.5-4.5"/><circle cx="12" cy="13.5" r="1.4"/></symbol>
+        <symbol id="tbi-tendance" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+        <symbol id="tbi-cible" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.7 2.7L16.5 9.5"/></symbol>
+        <symbol id="tbi-alerte" viewBox="0 0 24 24"><path d="M10.3 3.9 2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4.5M12 17h.01"/></symbol>
+        <symbol id="tbi-donnees" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="8" ry="2.8"/><path d="M4 5.5v6.5c0 1.5 3.6 2.8 8 2.8s8-1.3 8-2.8V5.5"/><path d="M4 12v6.5c0 1.5 3.6 2.8 8 2.8s8-1.3 8-2.8V12"/></symbol>
+        <symbol id="tbi-bouclier" viewBox="0 0 24 24"><path d="M12 21s7.5-3.5 7.5-9.5V5.5L12 3 4.5 5.5v6C4.5 17.5 12 21 12 21Z"/><path d="m9 12 2 2 4-4"/></symbol>
+        <symbol id="tbi-valide" viewBox="0 0 24 24"><path d="M12 2.8 14.4 4.6l3 .1.9 2.9 2.4 1.8-.9 2.9.9 2.9-2.4 1.8-.9 2.9-3 .1L12 21.2l-2.4-1.8-3-.1-.9-2.9-2.4-1.8.9-2.9-.9-2.9 2.4-1.8.9-2.9 3-.1Z"/><path d="m8.8 12 2.2 2.2 4.3-4.4"/></symbol>
+        <symbol id="tbi-anomalie" viewBox="0 0 24 24"><path d="M8.6 2.8h6.8l4.8 4.8v6.8l-4.8 4.8H8.6l-4.8-4.8V7.6Z"/><path d="M12 8v4.5M12 16h.01"/></symbol>
+        <symbol id="tbi-imprimer" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></symbol>
+        <symbol id="tbi-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    </defs>
+</svg>
 
     <!-- ===== Bandeau ===== -->
     <header class="tb-hd">
@@ -427,8 +465,8 @@
                 <select id="tbAnnee" name="annee" class="tb-ctl" onchange="this.form.submit()">
                     {% for a in annees %}<option value="{{ a|unlocalize }}"{% if a == annee %} selected{% endif %}>{{ a|unlocalize }}</option>{% endfor %}
                 </select></form>
-            <button type="button" class="tb-ctl" onclick="window.print()"><i class="bx bx-printer"></i> Imprimer</button>
-            {% if actions_actives %}<button type="button" class="tb-ctl prim" data-action-ind=""><i class="bx bx-plus"></i> Action corrective</button>{% endif %}
+            <button type="button" class="tb-ctl" onclick="window.print()"><svg class="bi" aria-hidden="true"><use href="#tbi-imprimer"/></svg> Imprimer</button>
+            {% if actions_actives %}<button type="button" class="tb-ctl prim" data-action-ind=""><svg class="bi" aria-hidden="true"><use href="#tbi-plus"/></svg> Action corrective</button>{% endif %}
         </div>
     </header>
 
@@ -450,12 +488,12 @@
     <!-- ========== SYNTHÈSE ========== -->
     <section class="tb-pane" data-pane="synthese" role="tabpanel">
         <div class="tb-kpis">
-            <div class="tb-kpi"><i class="ico bx bx-list-check" aria-hidden="true"></i><small>Indicateurs suivis</small><b class="num">{{ nb_indicateurs }}</b><span>{{ nb_avec_cible }} avec cible en {{ annee|unlocalize }}</span></div>
-            <div class="tb-kpi"><i class="ico bx bx-tachometer" aria-hidden="true"></i><small>Taux moyen de réalisation</small><b class="num" data-couleur-taux="{{ tet|default_if_none:''|unlocalize }}">{% if tet is not None %}{{ tet|floatformat:"-1" }} %{% else %}—{% endif %}</b><div class="tb-jauge seuil"><i data-taux="{{ tet|default_if_none:''|unlocalize }}"></i></div></div>
-            <div class="tb-kpi"><i class="ico bx bx-trending-up" aria-hidden="true"></i><small>Projection fin d'année</small><b class="num" data-couleur-taux="{{ tet_projection|default_if_none:''|unlocalize }}">{% if tet_projection is not None %}≈ {{ tet_projection|floatformat:"0" }} %{% else %}—{% endif %}</b><span>{% if nb_hors %}{{ nb_hors }} hors d'atteinte{% if nb_risque %} · {{ nb_risque }} à risque{% endif %}{% elif nb_risque %}{{ nb_risque }} à risque{% else %}au rythme actuel{% endif %}</span></div>
-            <div class="tb-kpi ok"><i class="ico bx bx-check-circle" aria-hidden="true"></i><small>Indicateurs atteints</small><b class="num">{{ statuts.atteint|default:0 }}</b><span>réalisé ≥ cible à date</span></div>
-            <div class="tb-kpi ko"><i class="ico bx bx-error-circle" aria-hidden="true"></i><small>Indicateurs en retard</small><b class="num">{{ statuts.retard|default:0 }}</b><span>moins de 50 % de la cible</span></div>
-            <div class="tb-kpi"><i class="ico bx bx-data" aria-hidden="true"></i><small>Complétude des données</small><b class="num" data-couleur-taux="{{ completude|default_if_none:''|unlocalize }}">{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span class="num">{{ nb_recus }} / {{ nb_attendus }} saisies reçues</span></div>
+            <div class="tb-kpi"><span class="ico" aria-hidden="true"><svg class="i"><use href="#tbi-liste"/></svg></span><small>Indicateurs suivis</small><b class="num">{{ nb_indicateurs }}</b><span>{{ nb_avec_cible }} avec cible en {{ annee|unlocalize }}</span></div>
+            <div class="tb-kpi"><span class="ico" data-anneau="{{ tet|default_if_none:''|unlocalize }}" aria-hidden="true"><svg class="i"><use href="#tbi-jauge"/></svg></span><small>Taux moyen de réalisation</small><b class="num" data-couleur-taux="{{ tet|default_if_none:''|unlocalize }}">{% if tet is not None %}{{ tet|floatformat:"-1" }} %{% else %}—{% endif %}</b><div class="tb-jauge seuil"><i data-taux="{{ tet|default_if_none:''|unlocalize }}"></i></div></div>
+            <div class="tb-kpi"><span class="ico" data-anneau="{{ tet_projection|default_if_none:''|unlocalize }}" aria-hidden="true"><svg class="i"><use href="#tbi-tendance"/></svg></span><small>Projection fin d'année</small><b class="num" data-couleur-taux="{{ tet_projection|default_if_none:''|unlocalize }}">{% if tet_projection is not None %}≈ {{ tet_projection|floatformat:"0" }} %{% else %}—{% endif %}</b><span>{% if nb_hors %}{{ nb_hors }} hors d'atteinte{% if nb_risque %} · {{ nb_risque }} à risque{% endif %}{% elif nb_risque %}{{ nb_risque }} à risque{% else %}au rythme actuel{% endif %}</span></div>
+            <div class="tb-kpi ok"><span class="ico" aria-hidden="true"><svg class="i"><use href="#tbi-cible"/></svg></span><small>Indicateurs atteints</small><b class="num">{{ statuts.atteint|default:0 }}</b><span>réalisé ≥ cible à date</span></div>
+            <div class="tb-kpi ko"><span class="ico" aria-hidden="true"><svg class="i"><use href="#tbi-alerte"/></svg></span><small>Indicateurs en retard</small><b class="num">{{ statuts.retard|default:0 }}</b><span>moins de 50 % de la cible</span></div>
+            <div class="tb-kpi"><span class="ico" data-anneau="{{ completude|default_if_none:''|unlocalize }}" aria-hidden="true"><svg class="i"><use href="#tbi-donnees"/></svg></span><small>Complétude des données</small><b class="num" data-couleur-taux="{{ completude|default_if_none:''|unlocalize }}">{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span class="num">{{ nb_recus }} / {{ nb_attendus }} saisies reçues</span></div>
         </div>
 
         <div class="tb-row">
@@ -619,10 +657,10 @@
     <!-- ========== QUALITÉ DES DONNÉES (v92) ========== -->
     <section class="tb-pane" data-pane="qualite" role="tabpanel" hidden>
         <div class="tb-kpis tb-kpis4">
-            <div class="tb-kpi"><i class="ico bx bx-shield-quarter" aria-hidden="true"></i><small>Score de qualité</small><b class="num" data-couleur-taux="{{ score_qualite|default_if_none:''|unlocalize }}">{% if score_qualite is not None %}{{ score_qualite }}/100{% else %}—{% endif %}</b><span>complétude, validation, cohérence</span></div>
-            <div class="tb-kpi"><i class="ico bx bx-data" aria-hidden="true"></i><small>Complétude</small><b class="num" data-couleur-taux="{{ completude|default_if_none:''|unlocalize }}">{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span class="num">{{ nb_recus }} / {{ nb_attendus }} saisies attendues</span></div>
-            <div class="tb-kpi"><i class="ico bx bx-badge-check" aria-hidden="true"></i><small>Déclarations validées</small><b class="num" data-couleur-taux="{{ pct_valide|default_if_none:''|unlocalize }}">{% if pct_valide is not None %}{{ pct_valide }} %{% else %}—{% endif %}</b><span class="num">sur {{ nb_declarations }} déclarations</span></div>
-            <div class="tb-kpi {% if aberrantes %}ko{% else %}ok{% endif %}"><i class="ico bx bx-error" aria-hidden="true"></i><small>Valeurs anormales</small><b class="num">{{ aberrantes|length }}</b><span>négatives ou plus de 4 × la médiane</span></div>
+            <div class="tb-kpi"><span class="ico" data-anneau="{{ score_qualite|default_if_none:'' }}" aria-hidden="true"><svg class="i"><use href="#tbi-bouclier"/></svg></span><small>Score de qualité</small><b class="num" data-couleur-taux="{{ score_qualite|default_if_none:''|unlocalize }}">{% if score_qualite is not None %}{{ score_qualite }}/100{% else %}—{% endif %}</b><span>complétude, validation, cohérence</span></div>
+            <div class="tb-kpi"><span class="ico" data-anneau="{{ completude|default_if_none:''|unlocalize }}" aria-hidden="true"><svg class="i"><use href="#tbi-donnees"/></svg></span><small>Complétude</small><b class="num" data-couleur-taux="{{ completude|default_if_none:''|unlocalize }}">{% if completude is not None %}{{ completude|floatformat:"-1" }} %{% else %}—{% endif %}</b><span class="num">{{ nb_recus }} / {{ nb_attendus }} saisies attendues</span></div>
+            <div class="tb-kpi"><span class="ico" data-anneau="{{ pct_valide|default_if_none:'' }}" aria-hidden="true"><svg class="i"><use href="#tbi-valide"/></svg></span><small>Déclarations validées</small><b class="num" data-couleur-taux="{{ pct_valide|default_if_none:''|unlocalize }}">{% if pct_valide is not None %}{{ pct_valide }} %{% else %}—{% endif %}</b><span class="num">sur {{ nb_declarations }} déclarations</span></div>
+            <div class="tb-kpi {% if aberrantes %}ko{% else %}ok{% endif %}"><span class="ico" aria-hidden="true"><svg class="i"><use href="#tbi-anomalie"/></svg></span><small>Valeurs anormales</small><b class="num">{{ aberrantes|length }}</b><span>négatives ou plus de 4 × la médiane</span></div>
         </div>
         <div class="tb-row">
             <div class="tb-card c12">
@@ -693,7 +731,7 @@
         <div class="tb-row">
             <div class="tb-card c12">
                 <div class="tb-card-h"><div><h2 class="tb-t">Actions correctives</h2><p class="tb-s">Chaque écart important doit déboucher sur une action, un responsable et une échéance · les actions en retard en premier</p></div>
-                    {% if actions_actives %}<button type="button" class="tb-ctl prim" data-action-ind=""><i class="bx bx-plus"></i> Nouvelle action</button>{% endif %}</div>
+                    {% if actions_actives %}<button type="button" class="tb-ctl prim" data-action-ind=""><svg class="bi" aria-hidden="true"><use href="#tbi-plus"/></svg> Nouvelle action</button>{% endif %}</div>
                 {% if not actions_actives %}
                 <p class="tb-note">Le suivi des actions correctives n'est pas encore activé. Ajoutez le modèle <code>ActionCorrective</code> à votre <code>models.py</code> (voir <code>backend/actions_correctives.py</code>), lancez <code>makemigrations</code> puis <code>migrate</code>, et ajoutez les deux URL indiquées.</p>
                 {% elif actions %}
@@ -753,7 +791,7 @@
             </section>
             <section class="tf-sec">
                 <div class="tf-sec-h"><div><h3 class="tb-t">Actions correctives</h3><p class="tb-s">Décisions prises pour cet indicateur</p></div>
-                    {% if actions_actives %}<button type="button" class="tb-ctl prim" id="tbFAction"><i class="bx bx-plus"></i> Action</button>{% endif %}</div>
+                    {% if actions_actives %}<button type="button" class="tb-ctl prim" id="tbFAction"><svg class="bi" aria-hidden="true"><use href="#tbi-plus"/></svg> Action</button>{% endif %}</div>
                 <ul class="tf-actions" id="tbFActions"></ul>
             </section>
         </div>
@@ -968,8 +1006,24 @@
             if (f < 1) requestAnimationFrame(pas); else el.textContent = texte;
         })(debut);
     }
+    /* ← v97 : anneau de progression autour de l'icône des chiffres en % */
+    root.querySelectorAll('.tb-kpi .ico[data-anneau]').forEach(function (ic) {
+        var t = parseFloat(ic.dataset.anneau);
+        if (!isFinite(t)) { ic.removeAttribute('data-anneau'); return; }
+        ic.insertAdjacentHTML('afterbegin', '<svg class="anneau" viewBox="0 0 40 40"><circle class="fond" cx="20" cy="20" r="17"/><circle class="val" cx="20" cy="20" r="17" pathLength="100" style="stroke:' + couleurTaux(t) + '"/></svg>');
+        ic.style.color = couleurTaux(t);
+    });
+    function animerAnneaux(pane) {
+        var vals = pane.querySelectorAll('.ico[data-anneau] .val');
+        vals.forEach(function (c) { c.style.strokeDashoffset = 100; });
+        requestAnimationFrame(function () { requestAnimationFrame(function () {
+            vals.forEach(function (c) { var t = parseFloat(c.closest('.ico').dataset.anneau); c.style.strokeDashoffset = 100 - Math.min(100, Math.max(0, t)); });
+        }); });
+    }
     function animerOnglet(nom) {
         var pane = root.querySelector('[data-pane="' + nom + '"]'); if (!pane) return;
+        pane.querySelectorAll('.tb-alertes li').forEach(function (li, k) { li.style.setProperty('--j', k); });
+        animerAnneaux(pane);
         placerIndicateur();
         pane.querySelectorAll('.tb-kpi, .tb-card').forEach(function (c, k) { c.style.setProperty('--i', k); });
         pane.querySelectorAll('.tb-mat td, .tb-grille td, .tb-tab tbody tr').forEach(function (c, k) { c.style.setProperty('--j', Math.min(k, 30)); });
