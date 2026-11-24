@@ -30355,6 +30355,31 @@ def _tet_lib(obj, *champs):
     return str(obj) if obj else ''
 
 
+
+# ← ajout (v102) : libellés courts pour la frise (« Semaine 43 (Jeudi 22 Octobre 2026 au …) » → « Sem. 43 »)
+TET_MOIS = ('janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.')
+
+
+def _tet_court(p):
+    import re
+    lib = _tet_lib(p)
+    m = re.match(r'\s*semaine\s*n?°?\s*(\d+)', lib, re.IGNORECASE)
+    if m:
+        return 'Sem. ' + m.group(1)
+    court = lib.split('(')[0].strip() or lib          # on enlève la parenthèse des dates
+    return court if len(court) <= 16 else court[:15].rstrip() + '…'
+
+
+def _tet_plage(p):
+    """« 22–28 oct. » ou « 29 oct. – 4 nov. » (vide si les dates manquent)."""
+    d, f = _tet_date(getattr(p, 'date_debut', None)), _tet_date(getattr(p, 'date_fin', None))
+    if not d or not f:
+        return ''
+    if (d.year, d.month) == (f.year, f.month):
+        return f'{d.day}–{f.day} {TET_MOIS[f.month - 1]}'
+    return f'{d.day} {TET_MOIS[d.month - 1]} – {f.day} {TET_MOIS[f.month - 1]}'
+
+
 def _tet_agreger(valeurs, mode):
     """valeurs = [(ordre_periode, nombre), …] → un total selon type_aggregation de l'indicateur."""
     if not valeurs:
@@ -30437,20 +30462,45 @@ def technics_dashboard(request):
         return redirect('/')
     aujourd_hui = datetime.date.today()
 
-    # --- année ---
+    # --- ← corrigé (v98) : PÉRIODES DE SUIVI de la mise en œuvre (au lieu de l'année) ---
+    #   Toutes les périodes qui ont des cibles ou des déclarations pour l'institution, dans l'ordre chronologique.
+    #   ?periode=<id> : la situation est calculée « à la fin de » cette période (son année, ses périodes jusqu'à elle).
+    #   Sans choix : la période en cours aujourd'hui, sinon la dernière commencée.  ?annee= reste accepté.
     valeurs_inst = IndicateurValeur.objects.filter(institution=inst, periode_ok__isnull=False,
                                                    type_donnee__in=('valeur', 'valeur_form'))
-    annees = sorted({a for a in valeurs_inst.values_list('periode_ok__annee', flat=True).distinct() if a}, reverse=True)
-    annee = request.GET.get('annee', '')
-    annee = int(annee) if annee.isdigit() and int(annee) in annees else (
-        aujourd_hui.year if aujourd_hui.year in annees else (annees[0] if annees else aujourd_hui.year))
+    ids_suivi = set(valeurs_inst.values_list('periode_ok_id', flat=True).distinct())
+    cle_chrono = lambda p: (p.annee or 0, _tet_date(p.date_debut) or datetime.date.min, p.numero_ordre or 0, p.id)
+    periodes_suivi = sorted(PeriodeOk.objects.filter(id__in=ids_suivi), key=cle_chrono)
+    choix = request.GET.get('periode', '')
+    borne = next((p for p in periodes_suivi if choix.isdigit() and p.id == int(choix)), None)
+    if borne is None and request.GET.get('annee', '').isdigit():
+        dans_annee = [p for p in periodes_suivi if p.annee == int(request.GET['annee'])]
+        commencees_a = [p for p in dans_annee if (_tet_date(p.date_debut) or datetime.date.min) <= aujourd_hui]
+        borne = (commencees_a or dans_annee or [None])[-1]
+    if borne is None:
+        en_cours = [p for p in periodes_suivi if p.date_debut and p.date_fin
+                    and _tet_date(p.date_debut) <= aujourd_hui <= _tet_date(p.date_fin)]
+        commencees_t = [p for p in periodes_suivi if (_tet_date(p.date_debut) or datetime.date.min) <= aujourd_hui]
+        borne = (en_cours or commencees_t or periodes_suivi or [None])[-1 if not en_cours else 0]
+    annee = borne.annee if borne else aujourd_hui.year
+    annees = sorted({p.annee for p in periodes_suivi if p.annee}, reverse=True)
+    # date de situation = fin de la période choisie (ou aujourd'hui si elle n'est pas finie)
+    fin_borne = _tet_date(borne.date_fin) if borne and borne.date_fin else None
+    date_situation = min(fin_borne, aujourd_hui) if fin_borne and fin_borne <= aujourd_hui else (fin_borne or aujourd_hui)
 
     # --- données de l'année (une seule requête) ---
     lignes = (valeurs_inst.filter(periode_ok__annee=annee, valeur__isnull=False)
               .values('indicateur_id', 'structure_id', 'periode_ok_id', 'type_donnee', 'valeur', 'reference_cible', 'etat_validation'))
     periodes = {p.id: p for p in PeriodeOk.objects.filter(id__in={l['periode_ok_id'] for l in lignes})}
     ordre = {pid: (p.numero_ordre or 0, _tet_date(p.date_debut) or datetime.date.min, pid) for pid, p in periodes.items()}
-    commencee = {pid: (_tet_date(p.date_debut) or datetime.date.min) <= aujourd_hui for pid, p in periodes.items()}
+    # ← corrigé (v98) : une période compte « à date » si elle commence au plus tard à la fin de la période choisie
+    #   (comparaison par dates : fonctionne même si mois et trimestres coexistent ; sinon par numéro d'ordre)
+    if borne is not None and borne.date_fin:
+        commencee = {pid: (_tet_date(p.date_debut) or datetime.date.min) <= _tet_date(borne.date_fin) for pid, p in periodes.items()}
+    elif borne is not None:
+        commencee = {pid: (p.numero_ordre or 0) <= (borne.numero_ordre or 0) for pid, p in periodes.items()}
+    else:
+        commencee = {pid: (_tet_date(p.date_debut) or datetime.date.min) <= aujourd_hui for pid, p in periodes.items()}
 
     indicateurs = {i.id: i for i in Indicateur.objects.filter(m_institution=inst).select_related('m_enti')}
     structures = {s.id: s for s in Structure.objects.filter(institution=inst)}
@@ -30570,7 +30620,7 @@ def technics_dashboard(request):
     evolution = []
     for pid in sorted(periodes, key=lambda p: ordre[p]):
         taux = [reel_p.get((iid, pid), 0) * 100 / cible_p[(iid, pid)] for iid in indicateurs if cible_p.get((iid, pid))]
-        evolution.append({'periode': _tet_lib(periodes[pid]), 'tet': _tet_moyenne(taux), 'nb': len(taux),
+        evolution.append({'periode': _tet_lib(periodes[pid]), 'court': _tet_court(periodes[pid]), 'tet': _tet_moyenne(taux), 'nb': len(taux),
                           'commencee': commencee[pid]})
 
     # --- par structure ---
@@ -30740,6 +30790,40 @@ def technics_dashboard(request):
                         for a in actions if a['obj'].indicateur_id == iid],
         }
 
+    # 4 quinquies. ← ajout (v98) : STATISTIQUES PAR TYPE D'INDICATEUR (Impact, Effet, Produit, Activité)
+    niveau_de = {x['id']: x['niveau'] for x in lignes_ind}
+    stats_types = []
+    for n in niveaux_presents:
+        xs = [x for x in lignes_ind if x['niveau'] == n]
+        att_n = {a for a in attendus if niveau_de.get(a[0]) == n}
+        stats_types.append({
+            'niveau': n, 'nb': len(xs), 'part': round(len(xs) * 100 / len(lignes_ind), 1) if lignes_ind else 0,
+            'avec_cible': sum(1 for x in xs if x['taux_date'] is not None),
+            'atteint': sum(1 for x in xs if x['statut'] == 'atteint'), 'voie': sum(1 for x in xs if x['statut'] == 'voie'),
+            'surveiller': sum(1 for x in xs if x['statut'] == 'surveiller'), 'retard': sum(1 for x in xs if x['statut'] == 'retard'),
+            'sans': sum(1 for x in xs if x['statut'] == 'sans'), 'hors': sum(1 for x in xs if x['statut_proj'] == 'hors'),
+            'tet': _tet_moyenne([x['taux_date'] for x in xs]), 'projection': _tet_moyenne([x['taux_proj'] for x in xs]),
+            'completude': round(len(att_n & recus) * 100 / len(att_n), 1) if att_n else None,
+        })
+
+    # 4 sexies. ← ajout (v98) : CROISEMENT ENTITÉS × TYPES D'INDICATEURS
+    #   une ligne par entité du cadre logique à laquelle des indicateurs sont rattachés, regroupée sous sa composante
+    par_entite = defaultdict(list)
+    for x in lignes_ind:
+        ch = x['chemin'] or [(0, 'Sans objectif')]
+        par_entite[(ch[0], ch[-1], len(ch))].append(x)
+    croisement = []
+    for compo_cle in sorted({k[0] for k in par_entite}, key=lambda c: c[1]):
+        lignes_c = sorted(((k, xs) for k, xs in par_entite.items() if k[0] == compo_cle), key=lambda kv: kv[0][1][1])
+        tous = [x for _, xs in lignes_c for x in xs]
+        def cellules(xs):
+            return [{'nb': sum(1 for x in xs if x['niveau'] == n), 'tet': _tet_moyenne([x['taux_date'] for x in xs if x['niveau'] == n])}
+                    for n in niveaux_presents]
+        croisement.append({'composante': compo_cle[1], 'cellules': cellules(tous), 'nb': len(tous),
+                           'tet': _tet_moyenne([x['taux_date'] for x in tous]),
+                           'entites': [{'nom': k[1][1], 'est_composante': k[1] == k[0], 'cellules': cellules(xs), 'nb': len(xs),
+                                        'tet': _tet_moyenne([x['taux_date'] for x in xs])} for k, xs in lignes_c]})
+
     # 5. Points d'attention (calculés à partir des chiffres ci-dessus)
     alertes = []
     retards = [x for x in lignes_ind if x['statut'] == 'retard']
@@ -30753,17 +30837,17 @@ def technics_dashboard(request):
                         'texte': ', '.join(x['nom'] for x in sans_donnees[:3]) + ('…' if len(sans_donnees) > 3 else '')})
     if completude is not None and completude < 80:
         pire = max(manquants_p, key=manquants_p.get) if manquants_p else None
-        alertes.append({'niveau': 'warn', 'titre': f"Complétude des données à {_tet_fr(completude)} %",
-                        'texte': f"{len(attendus - recus)} saisie(s) attendue(s) manquante(s)"
+        alertes.append({'niveau': 'warn', 'titre': f"Seulement {_tet_fr(completude)} % des données attendues ont été reçues",
+                        'texte': f"{len(attendus - recus)} saisie(s) manquante(s), les chiffres sont donc incomplets"
                                  + (f", surtout sur {_tet_lib(periodes[pire])} ({manquants_p[pire]})" if pire else '') + '.'})
     hauts = [p for p in par_niveau if p['niveau'] in ('Activité', 'Produit') and p['tet'] is not None]
     bas = [p for p in par_niveau if p['niveau'] in ('Effet', 'Impact') and p['tet'] is not None]
     if hauts and bas:
         h, b = max(hauts, key=lambda p: p['tet']), min(bas, key=lambda p: p['tet'])
         if h['tet'] - b['tet'] >= 25:
-            alertes.append({'niveau': 'warn', 'titre': "Les réalisations ne se traduisent pas encore en résultats",
+            alertes.append({'niveau': 'warn', 'titre': "Les actions avancent, mais les résultats ne suivent pas encore",
                             'texte': f"{h['niveau']} : {_tet_fr(h['tet'])} % contre {b['niveau']} : {_tet_fr(b['tet'])} %. "
-                                     f"Vérifiez la logique d'intervention ou le calendrier des effets attendus."})
+                                     f"Vérifiez que les actions mènent bien aux changements attendus, ou que ces changements sont simplement plus lents à venir."})
     faibles = [s for s in par_struct if s['tet'] < 50]
     if faibles:
         alertes.append({'niveau': 'warn', 'titre': f"{len(faibles)} structure{'s' if len(faibles) > 1 else ''} sous 50 %",
@@ -30771,14 +30855,14 @@ def technics_dashboard(request):
     sans_cible = [x for x in lignes_ind if x['statut'] == 'sans']
     if sans_cible:
         alertes.append({'niveau': 'info', 'titre': f"{len(sans_cible)} indicateur{'s' if len(sans_cible) > 1 else ''} sans cible pour {annee}",
-                        'texte': "Ils ne comptent pas dans le TET. Définissez leurs cibles depuis le registre des indicateurs.", 'filtre': 'sans'})
+                        'texte': "Sans cible, on ne peut pas savoir s'ils avancent. Ajoutez leurs cibles depuis le registre des indicateurs.", 'filtre': 'sans'})
     if nb_decl and nb_valid * 100 / nb_decl < 70:
         alertes.append({'niveau': 'info', 'titre': f"{round(100 - nb_valid * 100 / nb_decl)} % des déclarations ne sont pas validées",
-                        'texte': "Le TET les inclut ; faites-les valider pour fiabiliser le chiffre."})
+                        'texte': "Des chiffres non vérifiés sont comptés dans le taux : faites-les valider."})
     hors = [x for x in lignes_ind if x['statut_proj'] == 'hors']           # ← ajout (v92)
     if hors:
-        alertes.insert(1, {'niveau': 'danger', 'titre': f"{len(hors)} indicateur{'s' if len(hors) > 1 else ''} hors d'atteinte d'ici la fin de l'année",
-                           'texte': "Au rythme actuel : " + ', '.join(f"{x['nom']} (≈ {_tet_fr(x['taux_proj'])} %)" for x in sorted(hors, key=lambda x: x['taux_proj'])[:3]) + ('…' if len(hors) > 3 else ''),
+        alertes.insert(1, {'niveau': 'danger', 'titre': f"{len(hors)} indicateur{'s' if len(hors) > 1 else ''} risque{'nt' if len(hors) > 1 else ''} de ne pas atteindre {'leur' if len(hors) > 1 else 'sa'} cible cette année",
+                           'texte': "Si le rythme continue : " + ', '.join(f"{x['nom']} (≈ {_tet_fr(x['taux_proj'])} %)" for x in sorted(hors, key=lambda x: x['taux_proj'])[:3]) + ('…' if len(hors) > 3 else ''),
                            'filtre': 'hors'})
     if nb_actions_retard:
         alertes.insert(0, {'niveau': 'danger', 'titre': f"{nb_actions_retard} action{'s' if nb_actions_retard > 1 else ''} corrective{'s' if nb_actions_retard > 1 else ''} en retard",
@@ -30819,7 +30903,16 @@ def technics_dashboard(request):
         'actions_actives': Modele is not None, 'personnels': personnels,
         'structures_choix': [{'id': sid, 'nom': _tet_lib(s)} for sid, s in sorted(structures.items(), key=lambda kv: _tet_lib(kv[1]))],
         'aujourd_hui': aujourd_hui,
-        'date_situation': aujourd_hui,
+        'date_situation': date_situation,
+        # ← ajout (v98) : frise des périodes de suivi
+        'periode_choisie': borne, 'periode_choisie_lib': _tet_lib(borne) if borne else '',
+        'periode_choisie_court': _tet_court(borne) if borne else '',          # ← ajout (v102)
+        'periodes_suivi': [{'id': p.id, 'lib': _tet_lib(p), 'court': _tet_court(p), 'plage': _tet_plage(p), 'a_venir': bool(p.date_debut and _tet_date(p.date_debut) > aujourd_hui),   # ← ajout (v102)
+                            'annee': p.annee, 'choisie': borne is not None and p.id == borne.id,
+                            'passee': borne is not None and cle_chrono(p) <= cle_chrono(borne),
+                            'en_cours': bool(p.date_debut and p.date_fin and _tet_date(p.date_debut) <= aujourd_hui <= _tet_date(p.date_fin))}
+                           for p in periodes_suivi],
+        'stats_types': stats_types, 'croisement': croisement,
     })
     return render(request, template, context)
 
