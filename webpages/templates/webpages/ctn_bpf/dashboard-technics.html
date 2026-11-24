@@ -4,6 +4,8 @@
 {% comment %}
     TABLEAU DE BORD TECHNIQUE (TET) — v91 : mise en page de type ERP.
     v92 : ligne de base, projection fin d'année, comparaison N-1, qualité des données, actions correctives.
+    v96 : nouveau baromètre (arc segmenté, valeur au centre, repères 75 % et projection).
+    v95 : fiche détaillée en panneau latéral (clic sur un indicateur) + comparaison entre structures.
     v94 : design vivant — bandeau en dégradé avec TET et courbe, chiffres qui défilent, aiguille et barres animées,
           onglets à soulignement glissant, cartes qui apparaissent en cascade (tout est coupé si « réduire les animations »).
     - Bandeau compact + barre d'onglets fixe : Synthèse · Programme · Indicateurs · Structures (rien n'est empilé sur 3 écrans).
@@ -86,7 +88,8 @@
     /* ---------- Baromètre ---------- */
     .tb-baro svg { width: 100%; max-width: 290px; height: auto; display: block; margin: 0 auto; }
     .tb-verdict { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 800; }
-    .tb-baro-pied { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .tb-baro-pied { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+    .tb-baro-v { text-align: center; margin-top: 2px; }
     .tb-baro-pied div { padding: 7px 10px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line2); }
     .tb-baro-pied small { display: block; font-size: 11px; color: var(--mut); }
     .tb-baro-pied b { font-size: 15px; color: var(--ink); }
@@ -301,11 +304,94 @@
     .al-danger > i { animation: tbPouls 2.2s ease-out infinite; }
 
     /* baromètre animé */
-    #tbBaro .arc-val { transition: stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1); }
-    #tbBaro .aiguille { transform-box: view-box; transform-origin: 160px 160px; transition: transform 1.2s cubic-bezier(.34,1.3,.5,1); }
+    /* ← v96 : baromètre segmenté */
+    .tb-baro svg { max-width: 330px; }
+    #tbBaro .seg { fill: #eceef2; transition: fill .25s ease; }
+    #tbBaro text { font-family: inherit; }
+    #tbBaro .val { font-size: 48px; font-weight: 800; letter-spacing: -.03em; fill: #111827; }
+    #tbBaro .val .pct { font-size: 22px; font-weight: 700; fill: #6b7280; }
+    #tbBaro .lib { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; fill: #6b7280; }
+    #tbBaro .sous { font-size: 11px; font-weight: 500; fill: #9ca3af; }
+    #tbBaro .grad { font-size: 10.5px; font-weight: 600; fill: #9ca3af; }
+    #tbBaro .rep-t { font-size: 10px; font-weight: 700; }
+    .tb-baro-pied i.pt { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; border: 2px solid #fff; box-shadow: 0 0 0 1px #d1d5db; }
+    #tbBaro .proj { transition: transform 1.1s cubic-bezier(.22,1,.36,1), opacity .4s ease .6s; transform-box: view-box; transform-origin: 160px 168px; }
+
+    /* ===================== v95 : fiche détaillée ← ajout ===================== */
+    /* le panneau est déplacé à la fin de <body> : il reprend les couleurs du profil */
+    .tb-fiche, .tb-voile { --hd: {{ request.user.personnel.color_fond|default:'#123A37' }}; --ac: {{ request.user.personnel.color|default:'#E48B0C' }};
+          --ink: #111827; --txt: #374151; --mut: #6b7280; --line: #e5e7eb; --line2: #f0f2f5; --soft: #f8fafc;
+          --atteint: #047857; --voie: #16a34a; --surveiller: #d97706; --retard: #dc2626; --sans: #9ca3af; line-height: 1.45; }
+    .tb-fiche .clamp1 { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tb-fiche .clamp2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+    .tb-tab tr.tb-cliq { cursor: pointer; }
+    .tb-tab tr.tb-cliq.sel td { background: color-mix(in srgb, var(--hd) 6%, #fff); }
+    .tb-tab tr.tb-cliq.sel td:first-child { box-shadow: inset 3px 0 0 var(--hd); }
+    .tb-voile { position: fixed; inset: 0; z-index: 10990; background: rgba(15,23,42,.35); opacity: 0; transition: opacity .25s ease; }
+    .tb-voile.on { opacity: 1; }
+    .tb-fiche { position: fixed; top: 0; right: 0; bottom: 0; z-index: 11000; width: min(720px, 100vw); display: flex; flex-direction: column; background: #fff; color: var(--txt);
+                box-shadow: -24px 0 60px -30px rgba(15,23,42,.5); transform: translateX(104%); transition: transform .38s cubic-bezier(.22,1,.36,1); font-size: 13px; }
+    .tb-fiche.on { transform: none; }
+    .tb-fiche *, .tb-fiche *::before { box-sizing: border-box; }
+    .tf-tete { display: flex; gap: 12px; align-items: flex-start; padding: 16px 18px 14px; color: #fff;
+               background: radial-gradient(120% 160% at 100% 0%, rgba(255,255,255,.14) 0%, transparent 55%), linear-gradient(120deg, var(--hd), color-mix(in srgb, var(--hd) 72%, #000)); }
+    .tf-t { flex: 1; min-width: 0; }
+    .tf-t small { font-size: 11.5px; font-weight: 600; color: rgba(255,255,255,.75); }
+    .tf-t h2 { margin: 3px 0 0; font-size: 18px; font-weight: 800; line-height: 1.3; color: #fff; }
+    .tf-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .tf-badges span { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,.16); color: #fff; }
+    .tf-badges .tb-chip { background: #fff; }
+    .tf-badges .s-atteint { color: var(--atteint); } .tf-badges .s-voie { color: var(--voie); } .tf-badges .s-surveiller { color: var(--surveiller); }
+    .tf-badges .s-retard { color: var(--retard); } .tf-badges .s-sans { color: #6b7280; }
+    .tf-nav { display: flex; gap: 6px; }
+    .tf-nav .tb-mini { width: 32px; height: 32px; background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.25); color: #fff; font-size: 17px; }
+    .tf-nav .tb-mini:hover:not(:disabled) { background: rgba(255,255,255,.22); color: #fff; }
+    .tf-nav .tb-mini:disabled { opacity: .35; cursor: default; }
+    .tf-corps { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 8px; }
+    .tf-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+    .tf-kpis > div { padding: 12px 16px; border-right: 1px solid var(--line2); border-bottom: 1px solid var(--line2); min-width: 0; }
+    .tf-kpis > div:nth-child(3n) { border-right: 0; }
+    .tf-kpis small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--mut); }
+    .tf-kpis b { display: block; margin-top: 2px; font-size: 20px; font-weight: 800; color: var(--ink); line-height: 1.15; font-variant-numeric: tabular-nums; }
+    .tf-kpis span { display: block; font-size: 11.5px; color: var(--mut); }
+    .tf-sec { padding: 16px 18px 6px; }
+    .tf-sec + .tf-sec { border-top: 1px solid var(--line2); }
+    .tf-sec .tb-s { margin-bottom: 10px; }
+    .tf-sec-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .tf-graph { min-height: 230px; }
+    .tf-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .tf-podium > div { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); border-top: 3px solid var(--sans); min-width: 0; }
+    .tf-podium .best { border-top-color: var(--atteint); } .tf-podium .med { border-top-color: var(--hd); } .tf-podium .low { border-top-color: var(--retard); }
+    .tf-podium small { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--mut); }
+    .tf-podium b { display: block; font-size: 19px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .tf-podium span { display: block; font-size: 12px; color: var(--txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tf-ecart { margin: -4px 0 12px; font-size: 12px; color: var(--txt); padding: 8px 10px; border-radius: 6px; background: var(--soft); }
+    .tf-ecart b { color: var(--ink); }
+    .tf-structs { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+    .tf-structs li { display: grid; grid-template-columns: 22px minmax(0, 1fr) 54px; gap: 8px; align-items: center; }
+    .tf-structs .rg { font-size: 11px; font-weight: 800; color: var(--mut); text-align: right; }
+    .tf-structs .nm { font-size: 12.5px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tf-structs .vl { font-size: 11px; color: var(--mut); }
+    .tf-structs .tx { text-align: right; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .tf-barre { position: relative; height: 8px; margin-top: 3px; border-radius: 8px; background: #eef0f3; }
+    .tf-barre i { position: absolute; inset: 0 auto 0 0; border-radius: 8px; width: 0; transition: width .8s cubic-bezier(.22,1,.36,1); }
+    .tf-barre em { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); border-radius: 2px; }
+    .tf-actions { list-style: none; margin: 0 0 10px; padding: 0; }
+    .tf-actions li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 9px 0; border-bottom: 1px solid var(--line2); }
+    .tf-actions li:last-child { border-bottom: 0; }
+    .tf-actions b { font-size: 12.5px; color: var(--ink); }
+    .tf-actions span { font-size: 11.5px; color: var(--mut); }
+    .tf-actions .st { align-self: start; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: #f3f4f6; color: var(--txt); white-space: nowrap; }
+    .tf-actions .st.retard { background: #fef2f2; color: var(--retard); } .tf-actions .st.fini { background: #ecfdf5; color: var(--atteint); }
+    .tf-vide { padding: 14px 0; font-size: 12.5px; color: var(--mut); }
+    .tf-pied { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 18px; border-top: 1px solid var(--line); background: var(--soft); }
+    .tf-pied span { font: 600 11.5px/1 ui-monospace, monospace; color: var(--mut); min-width: 0; }
+    body.tb-fiche-ouverte { overflow: hidden; }
+    @media (max-width: 560px) { .tf-kpis { grid-template-columns: 1fr 1fr; } .tf-kpis > div:nth-child(3n) { border-right: 1px solid var(--line2); } .tf-kpis > div:nth-child(2n) { border-right: 0; }
+                                .tf-podium { grid-template-columns: 1fr; } .tf-t h2 { font-size: 16px; } }
 
     @media (prefers-reduced-motion: reduce) {
-        .tb *, .tb *::before, .tb *::after { animation: none !important; transition: none !important; }
+        .tb *, .tb *::before, .tb *::after, .tb-fiche, .tb-fiche *, .tb-voile { animation: none !important; transition: none !important; }
     }
     @media print { .tb-tabs, .tb-hd-a { display: none; } .tb-pane[hidden] { display: block; } .tb-hd { color: #000; background: #fff; box-shadow: none; } }
 </style>
@@ -376,11 +462,12 @@
             <div class="tb-card c4">
                 <div class="tb-card-h"><div><h2 class="tb-t">Taux d'exécution technique</h2><p class="tb-s">Chaque indicateur compte au plus pour 100 %</p></div></div>
                 <div class="tb-card-b tb-baro">
-                    <svg id="tbBaro" viewBox="0 0 320 236" role="img" aria-label="TET {{ tet|default_if_none:'non calculable' }} %"></svg>
-                    <div style="text-align:center"><span class="tb-verdict" id="tbVerdict"></span></div>
-                    <div class="tb-baro-pied">
-                        <div><small>À date</small><b class="num">{% if tet is not None %}{{ tet|floatformat:"-1" }} %{% else %}—{% endif %}</b></div>
+                    <svg id="tbBaro" viewBox="0 0 320 196" role="img" aria-label="TET à date {{ tet|default_if_none:'non calculable' }} %"></svg>
+                    <div class="tb-baro-v"><span class="tb-verdict" id="tbVerdict"></span></div>
+                    <div class="tb-baro-pied">{% comment %} ← v96 : 3 tuiles {% endcomment %}
+                        <div><small>À date</small><b class="num" data-couleur-taux="{{ tet|default_if_none:''|unlocalize }}">{% if tet is not None %}{{ tet|floatformat:"-1" }} %{% else %}—{% endif %}</b></div>
                         <div><small>Sur l'année</small><b class="num">{% if tet_annuel is not None %}{{ tet_annuel|floatformat:"-1" }} %{% else %}—{% endif %}</b></div>
+                        <div><small>Projection</small><b class="num" data-couleur-taux="{{ tet_projection|default_if_none:''|unlocalize }}">{% if tet_projection is not None %}≈ {{ tet_projection|floatformat:"0" }} %{% else %}—{% endif %}</b></div>
                     </div>
                 </div>
             </div>
@@ -478,7 +565,7 @@
                         <thead><tr><th>Indicateur</th><th>Niveau</th><th class="n" title="Ligne de base (valeur de départ)">Base</th><th class="n">Cible à date</th><th class="n">Réalisé</th><th>Atteinte</th><th title="Au rythme actuel, en fin d'année">Projection</th><th class="n" title="Réalisé comparé aux mêmes périodes de l'année précédente">vs N-1</th><th>État</th><th></th></tr></thead>
                         <tbody>
                         {% for x in indicateurs_tet %}
-                        <tr data-s="{{ x.statut }}" data-p="{{ x.statut_proj|default:'' }}" data-q="{{ x.nom|lower }} {{ x.code|lower }} {{ x.objectif|lower }} {{ x.niveau|lower }}">
+                        <tr class="tb-cliq" data-fiche="{{ x.id }}" data-s="{{ x.statut }}" data-p="{{ x.statut_proj|default:'' }}" data-q="{{ x.nom|lower }} {{ x.code|lower }} {{ x.objectif|lower }} {{ x.niveau|lower }}">
                             <td><a href="/analyse_data_indicateur/{{ x.id }}/" class="clamp2" title="{{ x.nom }}">{{ x.nom }}</a><span class="sub clamp1" title="{{ x.objectif }}">{{ x.objectif }} · {{ x.frequence|default:"fréquence non définie" }}</span></td>
                             <td><span class="tb-niv" title="{{ x.niveau }}">{{ x.niveau }}</span></td>
                             <td class="n num">{% if x.base is not None %}{{ x.base|floatformat:"-2" }}{% else %}<span class="sub">—</span>{% endif %}</td>
@@ -638,6 +725,41 @@
         </div>
     </section>
 
+    <!-- ========== FICHE DÉTAILLÉE (panneau latéral, v95) ========== -->
+    <div class="tb-voile" id="tbVoile" hidden></div>
+    <aside class="tb-fiche" id="tbFiche" role="dialog" aria-modal="true" aria-labelledby="tbFTitre" aria-hidden="true">
+        <header class="tf-tete">
+            <div class="tf-t">
+                <small id="tbFObj" class="clamp1"></small>
+                <h2 id="tbFTitre" class="clamp2"></h2>
+                <div class="tf-badges" id="tbFBadges"></div>
+            </div>
+            <div class="tf-nav">
+                <button type="button" class="tb-mini" data-pas="-1" aria-label="Indicateur précédent">‹</button>
+                <button type="button" class="tb-mini" data-pas="1" aria-label="Indicateur suivant">›</button>
+                <button type="button" class="tb-mini" data-fermer-fiche aria-label="Fermer la fiche">×</button>
+            </div>
+        </header>
+        <div class="tf-corps" id="tbFCorps">
+            <div class="tf-kpis" id="tbFKpis"></div>
+            <section class="tf-sec">
+                <h3 class="tb-t">Évolution par période</h3><p class="tb-s">Réalisé (colonnes) et cible (ligne) de chaque période · ligne de base en pointillés</p>
+                <div id="tbFSerie" class="tf-graph"></div>
+            </section>
+            <section class="tf-sec">
+                <h3 class="tb-t">Comparaison entre structures</h3><p class="tb-s">Taux d'atteinte à date de chaque structure · le trait marque la médiane</p>
+                <div class="tf-podium" id="tbFPodium"></div>
+                <ul class="tf-structs" id="tbFStructs"></ul>
+            </section>
+            <section class="tf-sec">
+                <div class="tf-sec-h"><div><h3 class="tb-t">Actions correctives</h3><p class="tb-s">Décisions prises pour cet indicateur</p></div>
+                    {% if actions_actives %}<button type="button" class="tb-ctl prim" id="tbFAction"><i class="bx bx-plus"></i> Action</button>{% endif %}</div>
+                <ul class="tf-actions" id="tbFActions"></ul>
+            </section>
+        </div>
+        <footer class="tf-pied"><span id="tbFCode" class="clamp1"></span><a id="tbFLien" class="tb-ctl" href="#">Analyse complète ›</a></footer>
+    </aside>
+
     {% if actions_actives %}
     <!-- Fenêtre : nouvelle action corrective -->
     <dialog class="tb-dlg" id="tbDlg" aria-labelledby="tbDlgT">
@@ -659,6 +781,7 @@
 </div>
 
 {{ tet|json_script:"tbTet" }}
+{{ tet_projection|json_script:"tbProj" }}
 {{ tet_json|json_script:"tbData" }}
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js"></script>
 <script>
@@ -684,40 +807,67 @@
         var c = couleurTaux(t); td.style.background = 'color-mix(in srgb, ' + c + ' 12%, #fff)'; var b = td.querySelector('b'); if (b) b.style.color = c;
     });
 
-    /* --- Baromètre --- */
+    /* --- Baromètre (v96) : arc de 40 segments qui s'allument jusqu'à la valeur, valeur au centre,
+           repère « bonne voie » à 75 % et repère de la projection de fin d'année --- */
     var svg = document.getElementById('tbBaro');
+    var projection = lire('tbProj');
     if (svg) {
-        var NS = 'http://www.w3.org/2000/svg', cx = 160, cy = 160, R = 120;
-        var pt = function (p, r) { var a = Math.PI * (1 - p / 100); return [cx + r * Math.cos(a), cy - r * Math.sin(a)]; };
-        var arc = function (p1, p2, r) { var a = pt(p1, r), b = pt(p2, r); return 'M' + a[0] + ' ' + a[1] + ' A' + r + ' ' + r + ' 0 0 1 ' + b[0] + ' ' + b[1]; };
-        var el = function (n, at) { var x = document.createElementNS(NS, n); for (var k in at) x.setAttribute(k, at[k]); svg.appendChild(x); return x; };
-        [[0, 50, COUL.retard], [50, 75, COUL.surveiller], [75, 100, COUL.voie]].forEach(function (z) { el('path', { d: arc(z[0], z[1], R), fill: 'none', stroke: z[2], 'stroke-width': 18, 'stroke-opacity': .2 }); });
-        var arcVal = null, aiguille = null;
-        if (tet !== null) {                                                             /* ← v94 : l'arc se dessine progressivement */
-            el('defs', {}).innerHTML = '<linearGradient id="tbGradArc" x1="0" x2="1"><stop offset="0" stop-color="' + COUL.retard + '"/><stop offset=".55" stop-color="' + COUL.surveiller + '"/><stop offset="1" stop-color="' + COUL.voie + '"/></linearGradient>';
-            arcVal = el('path', { d: arc(0, 100, R), fill: 'none', stroke: 'url(#tbGradArc)', 'stroke-width': 18, 'stroke-linecap': 'round', pathLength: 100, 'class': 'arc-val' });
-            arcVal.style.strokeDasharray = '100 200'; arcVal.style.strokeDashoffset = 100;
-        }
-        [0, 25, 50, 75, 100].forEach(function (p) {
-            var a = pt(p, R - 22), b = pt(p, R - 14), t = pt(p, R + 22);
-            el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: '#9ca3af', 'stroke-width': 2 });
-            el('text', { x: t[0], y: t[1] + 4, 'text-anchor': 'middle', 'font-size': 11, fill: '#6b7280', 'font-weight': 600 }).textContent = p;
-        });
-        if (tet !== null) {                                                             /* ← v94 : l'aiguille part de 0 et balaie le cadran */
-            aiguille = el('g', { 'class': 'aiguille' });
-            var bout = pt(0, R - 30), ligne = document.createElementNS(NS, 'line');
-            [['x1', cx], ['y1', cy], ['x2', bout[0]], ['y2', bout[1]], ['stroke', '#111827'], ['stroke-width', 3], ['stroke-linecap', 'round']].forEach(function (a) { ligne.setAttribute(a[0], a[1]); });
-            aiguille.appendChild(ligne);
-        }
-        el('circle', { cx: cx, cy: cy, r: 7, fill: '#111827' });
-        var valeurBaro = el('text', { x: cx, y: cy + 46, 'text-anchor': 'middle', 'font-size': 36, 'font-weight': 800, fill: '#111827' });
-        valeurBaro.textContent = tet === null ? '—' : fr(tet) + ' %';
-        if (tet !== null) valeurBaro.setAttribute('data-compte', '');
-        svg._animer = function () {
-            if (arcVal) { arcVal.style.strokeDashoffset = 100; requestAnimationFrame(function () { requestAnimationFrame(function () { arcVal.style.strokeDashoffset = 100 - Math.max(.5, Math.min(100, tet)); }); }); }
-            if (aiguille) { aiguille.style.transform = 'rotate(0deg)'; requestAnimationFrame(function () { requestAnimationFrame(function () { aiguille.style.transform = 'rotate(' + (1.8 * Math.min(100, Math.max(0, tet))) + 'deg)'; }); }); }
+        var NS = 'http://www.w3.org/2000/svg', cx = 160, cy = 168, R1 = 104, R2 = 136, N = 40, ECART = 1.6;   /* ECART : vide entre segments (degrés) */
+        var el = function (n, at, parent) { var x = document.createElementNS(NS, n); for (var k in at) x.setAttribute(k, at[k]); (parent || svg).appendChild(x); return x; };
+        var pt = function (deg, r) { var a = Math.PI * (1 - deg / 180); return [cx + r * Math.cos(a), cy - r * Math.sin(a)]; };   /* 0° = gauche, 180° = droite */
+        var segment = function (d1, d2) {
+            var a = pt(d1, R2), b = pt(d2, R2), c = pt(d2, R1), d = pt(d1, R1);
+            return 'M' + a + ' A' + R2 + ' ' + R2 + ' 0 0 1 ' + b + ' L' + c + ' A' + R1 + ' ' + R1 + ' 0 0 0 ' + d + ' Z';
         };
-        el('text', { x: cx, y: cy + 66, 'text-anchor': 'middle', 'font-size': 11.5, fill: '#6b7280', 'font-weight': 600 }).textContent = 'TET à date';
+        var pas = 180 / N, segs = [];
+        for (var k = 0; k < N; k++) {
+            var d1 = k * pas + ECART / 2, d2 = (k + 1) * pas - ECART / 2;
+            segs.push(el('path', { d: segment(d1, d2), 'class': 'seg' }));
+        }
+        /* graduations */
+        [[0, '0'], [50, '50'], [100, '100']].forEach(function (g) {
+            var p = pt(g[0] * 1.8, R1 - 14);
+            el('text', { x: p[0], y: p[1] + 4, 'text-anchor': g[0] === 0 ? 'start' : (g[0] === 100 ? 'end' : 'middle'), 'class': 'grad' }).textContent = g[1];
+        });
+        /* repère 75 % (bonne voie) */
+        var r75a = pt(135, R2 + 3), r75b = pt(135, R2 + 12), r75t = pt(135, R2 + 22);
+        el('line', { x1: r75a[0], y1: r75a[1], x2: r75b[0], y2: r75b[1], stroke: COUL.voie, 'stroke-width': 2.5, 'stroke-linecap': 'round' });
+        el('text', { x: r75t[0] + 2, y: r75t[1], 'text-anchor': 'start', 'class': 'rep-t', fill: COUL.voie }).textContent = '75 %';
+        /* valeur au centre */
+        var v = el('text', { x: cx, y: cy - 22, 'text-anchor': 'middle', 'class': 'val' });
+        var vNum = document.createElementNS(NS, 'tspan');
+        var vPct = document.createElementNS(NS, 'tspan'); vPct.setAttribute('dx', '4'); vPct.setAttribute('class', 'pct'); vPct.textContent = '%';
+        vNum.textContent = tet === null ? '—' : fr(tet); v.appendChild(vNum); if (tet !== null) v.appendChild(vPct);
+        el('text', { x: cx, y: cy - 2, 'text-anchor': 'middle', 'class': 'lib' }).textContent = 'TET À DATE';
+        if (tet !== null) vNum.setAttribute('data-compte', '');
+        /* repère de la projection (petit triangle sur le bord extérieur) */
+        var proj = null;
+        if (projection !== null && tet !== null) {
+            proj = el('g', { 'class': 'proj', opacity: 0 });
+            var pc = couleurTaux(projection), b0 = pt(0, R2 + 9);                       /* pastille sur le bord extérieur */
+            el('circle', { cx: b0[0], cy: b0[1], r: 6, fill: pc, stroke: '#fff', 'stroke-width': 2.5 }, proj);
+            var pj = document.querySelector('.tb-baro-pied div:nth-child(3) small');
+            if (pj) pj.insertAdjacentHTML('afterbegin', '<i class="pt" style="background:' + pc + '"></i>');
+            el('title', {}, proj).textContent = 'Projection en fin d\'année : ≈ ' + fr(projection) + ' %';
+        }
+        svg._animer = function () {
+            var plein = tet === null ? 0 : Math.round(Math.min(100, Math.max(0, tet)) * N / 100);
+            segs.forEach(function (sg, k) {
+                sg.style.transitionDelay = calme ? '0ms' : (k * 22) + 'ms';
+                sg.style.fill = '#eceef2';
+            });
+            requestAnimationFrame(function () { requestAnimationFrame(function () {
+                segs.forEach(function (sg, k) {
+                    if (k < plein) { var t = (k + .5) * 100 / N; sg.style.fill = couleurTaux(t); }
+                });
+            }); });
+            if (proj) {
+                proj.style.transform = 'rotate(0deg)'; proj.style.opacity = 0;
+                requestAnimationFrame(function () { requestAnimationFrame(function () {
+                    proj.style.transform = 'rotate(' + (1.8 * Math.min(100, Math.max(0, projection))) + 'deg)'; proj.style.opacity = 1;
+                }); });
+            }
+        };
     }
     var verdict = document.getElementById('tbVerdict');
     if (verdict) {
@@ -924,6 +1074,147 @@
             });
         });
         dlg.addEventListener('click', function (e) { if (e.target.closest('[data-fermer]') || e.target === dlg) dlg.close(); });
+    }
+
+    /* ===================== v95 : fiche détaillée ← ajout ===================== */
+    var fiche = document.getElementById('tbFiche'), voile = document.getElementById('tbVoile'), fiches = data.fiches || {};
+    var ficheCourante = null, retourFocus = null, grapheFiche = null;
+    if (fiche) { document.body.appendChild(voile); document.body.appendChild(fiche); }          /* au-dessus de la barre de navigation */
+    var nb = function (v, d) { return v == null ? '—' : Number(v).toLocaleString('fr-FR', { maximumFractionDigits: d == null ? 2 : d }); };
+    var STAT_LIB = { atteint: 'Atteint', voie: 'Bonne voie', surveiller: 'À surveiller', retard: 'En retard', sans: 'Sans cible' };
+    var PROJ_LIB = { ok: 'atteignable', risque: 'à risque', hors: "hors d'atteinte" };
+    function lignesVisibles() { return lignes.filter(function (tr) { return !tr.hidden; }); }
+    function ouvrirFiche(id, depuis) {
+        var f = fiches[String(id)]; if (!f || !fiche) return;
+        ficheCourante = String(id);
+        lignes.forEach(function (tr) { tr.classList.toggle('sel', tr.dataset.fiche === ficheCourante); });
+        document.getElementById('tbFObj').textContent = f.objectif;
+        document.getElementById('tbFTitre').textContent = f.nom;
+        document.getElementById('tbFCode').textContent = f.code + (f.frequence ? ' · ' + f.frequence : '');
+        document.getElementById('tbFLien').href = '/analyse_data_indicateur/' + f.id + '/';
+        document.getElementById('tbFBadges').innerHTML = '<span>' + esc(f.niveau) + '</span><span class="tb-chip s-' + f.statut + '">' + STAT_LIB[f.statut] + '</span>'
+            + (f.taux_proj != null ? '<span>Projection ' + PROJ_LIB[f.statut_proj] + '</span>' : '');
+        /* 6 chiffres */
+        var k = [
+            ['Ligne de base', nb(f.base), f.progres != null && f.base ? nb(f.progres, 0) + ' % du chemin parcouru' : 'valeur de départ'],
+            ['Cible à date', nb(f.cible_date), 'cible annuelle : ' + nb(f.cible)],
+            ['Réalisé', nb(f.realise == null ? 0 : f.realise), f.realise_n1 != null ? 'N-1 : ' + nb(f.realise_n1) : 'pas de donnée N-1'],
+            ['Atteinte à date', f.taux == null ? '—' : nb(f.taux, 1) + ' %', f.taux_an != null ? nb(f.taux_an, 1) + ' % de la cible annuelle' : 'pas de cible'],
+            ['Projection fin d\'année', f.taux_proj == null ? '—' : '≈ ' + nb(f.taux_proj, 0) + ' %', f.statut_proj ? 'cible ' + PROJ_LIB[f.statut_proj] : 'au rythme actuel'],
+            ['Évolution vs N-1', f.evol_n1 == null ? '—' : (f.evol_n1 >= 0 ? '+' : '') + nb(f.evol_n1, 0) + ' %', 'mêmes périodes']
+        ];
+        document.getElementById('tbFKpis').innerHTML = k.map(function (x) { return '<div><small>' + x[0] + '</small><b>' + x[1] + '</b><span>' + esc(x[2]) + '</span></div>'; }).join('');
+        var kb = document.querySelectorAll('#tbFKpis b');
+        if (f.taux != null) kb[3].style.color = couleurTaux(f.taux);
+        if (f.taux_proj != null) kb[4].style.color = couleurTaux(f.taux_proj);
+        if (f.evol_n1 != null) kb[5].style.color = f.evol_n1 >= 0 ? COUL.atteint : COUL.retard;
+        /* courbe */
+        var zone = document.getElementById('tbFSerie');
+        if (grapheFiche) { try { grapheFiche.destroy(); } catch (e) {} grapheFiche = null; }
+        zone.innerHTML = '';
+        if (!f.serie.length) zone.innerHTML = '<p class="tf-vide">Aucune cible ni donnée par période pour cette année.</p>';
+        else if (window.ApexCharts) {
+            var opts = {
+                chart: { type: 'line', height: 240, toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: !calme, speed: 700 } },
+                series: [{ name: 'Réalisé', type: 'column', data: f.serie.map(function (p) { return p.r; }) },
+                         { name: 'Cible', type: 'line', data: f.serie.map(function (p) { return p.c; }) }],
+                xaxis: { categories: f.serie.map(function (p) { return p.p; }), labels: { rotate: -30, hideOverlappingLabels: true, style: { fontSize: '11px' } } },
+                yaxis: { labels: { formatter: function (v) { return nb(v, 0); } } },
+                colors: [V('--hd') || '#123A37', V('--ac') || '#E48B0C'], stroke: { width: [0, 3], curve: 'smooth' }, markers: { size: [0, 4] },
+                plotOptions: { bar: { columnWidth: f.serie.length > 12 ? '75%' : '45%', borderRadius: 4, borderRadiusApplication: 'end' } },
+                dataLabels: { enabled: false }, legend: { position: 'top', horizontalAlign: 'left', fontSize: '12px' }, grid: { borderColor: '#f0f2f5' },
+                tooltip: { shared: true, intersect: false, y: { formatter: function (v) { return v == null ? 'non déclaré' : nb(v); } } }
+            };
+            if (f.base) opts.annotations = { yaxis: [{ y: f.base, borderColor: '#6b7280', strokeDashArray: 4, label: { text: 'Base ' + nb(f.base), style: { background: '#6b7280', color: '#fff', fontSize: '10px' } } }] };
+            grapheFiche = new ApexCharts(zone, opts); grapheFiche.render();
+        }
+        /* comparaison entre structures */
+        var pod = document.getElementById('tbFPodium'), ul = document.getElementById('tbFStructs');
+        var tuile = function (cls, titre, s, val) { return '<div class="' + cls + '"><small>' + titre + '</small><b>' + val + '</b><span title="' + esc(s || '') + '">' + esc(s || '—') + '</span></div>'; };
+        if (f.meilleure) {
+            pod.innerHTML = tuile('best', 'Meilleure', f.meilleure.nom, nb(f.meilleure.taux, 0) + ' %')
+                + tuile('med', 'Médiane', (f.au_dessus || 0) + ' structure' + ((f.au_dessus || 0) > 1 ? 's' : '') + ' au-dessus ou égale', f.mediane == null ? '—' : nb(f.mediane, 0) + ' %')
+                + tuile('low', 'Plus faible', f.plus_faible ? f.plus_faible.nom : '—', f.plus_faible ? nb(f.plus_faible.taux, 0) + ' %' : '—');
+        } else pod.innerHTML = '';
+        var ec = fiche.querySelector('.tf-ecart'); if (ec) ec.remove();
+        if (f.ecart != null && f.meilleure && f.plus_faible) {
+            pod.insertAdjacentHTML('afterend', '<p class="tf-ecart">Écart de <b>' + nb(f.ecart, 0) + ' points</b> entre « ' + esc(f.meilleure.nom) + ' » et « ' + esc(f.plus_faible.nom) + ' »'
+                + (f.ecart >= 30 ? ' : les pratiques de la meilleure structure sont à documenter et à partager.' : '.') + '</p>');
+        }
+        var maxT = Math.max(100, Math.max.apply(null, f.structures.map(function (s) { return s.taux || 0; })));
+        ul.innerHTML = f.structures.length ? f.structures.map(function (s, k) {
+            return '<li><span class="rg">' + (s.taux != null ? k + 1 : '–') + '</span><div style="min-width:0"><div class="nm" title="' + esc(s.nom) + '">' + esc(s.nom) + '</div>'
+                + '<div class="tf-barre"><i data-l="' + (s.taux == null ? 0 : Math.min(100, s.taux * 100 / maxT)) + '" style="background:' + (s.taux == null ? 'transparent' : couleurTaux(s.taux)) + '"></i>'
+                + (f.mediane != null ? '<em style="left:calc(' + (f.mediane * 100 / maxT) + '% - 1px)" title="Médiane ' + nb(f.mediane, 0) + ' %"></em>' : '') + '</div>'
+                + '<span class="vl">' + nb(s.r == null ? 0 : s.r) + ' / ' + nb(s.c) + '</span></div><span class="tx">' + (s.taux == null ? '—' : nb(s.taux, 0) + ' %') + '</span></li>';
+        }).join('') : '<li class="tf-vide">Aucune cible par structure pour cet indicateur.</li>';
+        requestAnimationFrame(function () { requestAnimationFrame(function () { ul.querySelectorAll('.tf-barre i').forEach(function (i) { i.style.width = i.dataset.l + '%'; }); }); });
+        /* actions */
+        document.getElementById('tbFActions').innerHTML = f.actions.length ? f.actions.map(function (a) {
+            return '<li><div style="min-width:0"><b class="clamp2" title="' + esc(a.titre) + '">' + esc(a.titre) + '</b><span>' + esc(a.responsable || 'Responsable à désigner') + (a.echeance ? ' · échéance ' + a.echeance : '') + '</span></div>'
+                + '<span class="st ' + (a.retard ? 'retard' : (!a.ouverte ? 'fini' : '')) + '">' + (a.retard ? 'En retard' : esc(a.statut)) + '</span></li>';
+        }).join('') : '<li class="tf-vide">Aucune action corrective pour cet indicateur.</li>';
+        /* navigation précédent / suivant (dans la liste filtrée) */
+        var v = lignesVisibles(), i = v.findIndex(function (tr) { return tr.dataset.fiche === ficheCourante; });
+        fiche.querySelector('[data-pas="-1"]').disabled = i <= 0;
+        fiche.querySelector('[data-pas="1"]').disabled = i < 0 || i >= v.length - 1;
+        document.getElementById('tbFCorps').scrollTop = 0;
+        if (!fiche.classList.contains('on')) {
+            retourFocus = depuis || document.activeElement;
+            voile.hidden = false; requestAnimationFrame(function () { voile.classList.add('on'); fiche.classList.add('on'); });
+            fiche.setAttribute('aria-hidden', 'false'); document.body.classList.add('tb-fiche-ouverte');
+            setTimeout(function () { var b = fiche.querySelector('[data-fermer-fiche]'); if (b) b.focus(); }, 60);
+        }
+    }
+    function fermerFiche() {
+        if (!fiche || !fiche.classList.contains('on')) return;
+        fiche.classList.remove('on'); voile.classList.remove('on'); fiche.setAttribute('aria-hidden', 'true'); document.body.classList.remove('tb-fiche-ouverte');
+        setTimeout(function () { voile.hidden = true; }, 260);
+        lignes.forEach(function (tr) { tr.classList.remove('sel'); });
+        if (retourFocus && retourFocus.focus) retourFocus.focus();
+        ficheCourante = null;
+    }
+    if (fiche) {
+        /* clic sur une ligne du tableau (sauf les boutons) ; le nom reste un lien utilisable en Ctrl+clic */
+        lignes.forEach(function (tr) {
+            tr.setAttribute('tabindex', '0');
+            tr.addEventListener('click', function (e) {
+                if (e.target.closest('button, select, input, form')) return;
+                var a = e.target.closest('a'); if (a && (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1)) return;
+                e.preventDefault(); ouvrirFiche(tr.dataset.fiche, tr);
+            });
+            tr.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target === tr) { e.preventDefault(); ouvrirFiche(tr.dataset.fiche, tr); } });
+        });
+        /* arbre du programme : les indicateurs ouvrent aussi la fiche */
+        if (arbreEl) arbreEl.addEventListener('click', function (e) {
+            var a = e.target.closest('.ind a'); if (!a || e.ctrlKey || e.metaKey) return;
+            var m = a.getAttribute('href').match(/(\d+)\/?$/); if (m && fiches[m[1]]) { e.preventDefault(); ouvrirFiche(m[1], a); }
+        });
+        voile.addEventListener('click', fermerFiche);
+        fiche.addEventListener('click', function (e) {
+            if (e.target.closest('[data-fermer-fiche]')) { fermerFiche(); return; }
+            var n = e.target.closest('[data-pas]');
+            if (n && ficheCourante) { var v = lignesVisibles(), i = v.findIndex(function (tr) { return tr.dataset.fiche === ficheCourante; }) + (+n.dataset.pas); if (v[i]) ouvrirFiche(v[i].dataset.fiche); }
+        });
+        var bAct = document.getElementById('tbFAction');
+        if (bAct) bAct.addEventListener('click', function () {
+            var cible = document.querySelector('[data-action-ind="' + ficheCourante + '"]');
+            fermerFiche(); if (cible) cible.click();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (!fiche.classList.contains('on')) return;
+            if (e.key === 'Escape') { e.preventDefault(); fermerFiche(); }
+            else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                if (e.target.closest('input, select, textarea')) return;
+                var b = fiche.querySelector('[data-pas="' + (e.key === 'ArrowDown' ? 1 : -1) + '"]'); if (b && !b.disabled) { e.preventDefault(); b.click(); }
+            }
+            else if (e.key === 'Tab') {
+                var f = [].slice.call(fiche.querySelectorAll('button:not([disabled]), a[href]')).filter(function (x) { return x.offsetParent !== null; });
+                if (!f.length) return;
+                if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+                else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+            }
+        });
     }
 
     appliquer();

@@ -30462,6 +30462,9 @@ def technics_dashboard(request):
     reel_p = defaultdict(float)
     cible_s = defaultdict(float)       # (ind, structure) → v
     reel_s = defaultdict(float)
+    # ← ajout (v95) : valeurs détaillées pour la fiche latérale (agrégées ensuite selon type_aggregation)
+    cible_pl, reel_pl = defaultdict(list), defaultdict(list)          # (ind, période) → [(structure, v)]
+    cible_sl, reel_sl = defaultdict(list), defaultdict(list)          # (ind, structure) → [(ordre, v)]
     nb_decl, nb_valid = 0, 0
     attendus, recus = set(), set()     # ← ajout (v90) : complétude = (indicateur, structure, période échue) ciblés et déclarés
     decl_s = defaultdict(lambda: [0, 0])                               # ← ajout (v92) : structure → [déclarations, validées]
@@ -30474,10 +30477,14 @@ def technics_dashboard(request):
         if l['type_donnee'] == 'valeur':
             cible[iid].append((ordre[pid], v, pid)); cible_p[(iid, pid)] += v
             if l['structure_id']: cible_s[(iid, l['structure_id'])] += v
+            cible_pl[(iid, pid)].append((l['structure_id'] or 0, v))
+            if commencee[pid]: cible_sl[(iid, l['structure_id'] or 0)].append((ordre[pid], v))
             if commencee[pid]: attendus.add((iid, l['structure_id'], pid))
         elif not l['reference_cible']:
             reel[iid].append((ordre[pid], v, pid)); reel_p[(iid, pid)] += v
             if l['structure_id']: reel_s[(iid, l['structure_id'])] += v
+            reel_pl[(iid, pid)].append((l['structure_id'] or 0, v))
+            reel_sl[(iid, l['structure_id'] or 0)].append((ordre[pid], v))
             nb_decl += 1
             nb_valid += 1 if l['etat_validation'] else 0
             recus.add((iid, l['structure_id'], pid))
@@ -30686,6 +30693,53 @@ def technics_dashboard(request):
         except Exception:
             personnels = []
 
+    # 4 quater. ← ajout (v95) : FICHE DÉTAILLÉE de chaque indicateur (panneau latéral) + COMPARAISON ENTRE STRUCTURES
+    ordre_periodes = sorted(periodes, key=lambda p: ordre[p])
+    noms_struct = {sid: _tet_lib(st) for sid, st in structures.items()}
+    statut_lib = {'a_faire': 'À faire', 'en_cours': 'En cours', 'terminee': 'Terminée', 'abandonnee': 'Abandonnée'}
+    fiches = {}
+    for x in lignes_ind:
+        iid = x['id']
+        mode = getattr(indicateurs[iid], 'type_aggregation', '')
+        par_periode = 'Somme' if not any(k in (mode or '').lower() for k in ('moy', 'avg')) else 'Moyenne'   # plusieurs structures, une période
+        serie = []
+        for pid in ordre_periodes:
+            c = _tet_agreger(cible_pl.get((iid, pid), []), par_periode)
+            r_ = _tet_agreger(reel_pl.get((iid, pid), []), par_periode) if (iid, pid) in reel_pl else None
+            if c is None and r_ is None:
+                continue
+            serie.append({'p': _tet_lib(periodes[pid]), 'c': c, 'r': r_, 'ok': commencee[pid]})
+        # comparaison entre structures : taux à date de chaque structure ciblée
+        comp = []
+        for sid in {s_ for (i, s_) in cible_sl if i == iid} | {s_ for (i, s_) in reel_sl if i == iid}:
+            c = _tet_agreger(cible_sl.get((iid, sid), []), mode)
+            r_ = _tet_agreger(reel_sl.get((iid, sid), []), mode)
+            comp.append({'nom': noms_struct.get(sid, 'Sans structure'), 'c': c, 'r': r_,
+                         'taux': round((r_ or 0) * 100 / c, 1) if c else None})
+        avec_taux = sorted((s_ for s_ in comp if s_['taux'] is not None), key=lambda s_: -s_['taux'])
+        comp = avec_taux + sorted((s_ for s_ in comp if s_['taux'] is None), key=lambda s_: s_['nom'])
+        taux_s = [s_['taux'] for s_ in avec_taux]
+        mediane = None
+        if taux_s:
+            t = sorted(taux_s); n = len(t)
+            mediane = round(t[n // 2] if n % 2 else (t[n // 2 - 1] + t[n // 2]) / 2, 1)
+        fiches[str(iid)] = {
+            'id': iid, 'nom': x['nom'], 'code': x['code'], 'objectif': x['objectif'], 'niveau': x['niveau'],
+            'frequence': x['frequence'], 'statut': x['statut'], 'base': x['base'], 'progres': x['progres'],
+            'cible': x['cible'], 'cible_date': x['cible_date'], 'realise': x['realise'], 'taux': x['taux_date'],
+            'taux_an': x['taux'], 'taux_proj': x['taux_proj'], 'statut_proj': x['statut_proj'],
+            'realise_n1': x['realise_n1'], 'evol_n1': x['evol_n1'],
+            'serie': serie, 'structures': comp,
+            'meilleure': avec_taux[0] if avec_taux else None,
+            'plus_faible': avec_taux[-1] if len(avec_taux) > 1 else None,
+            'mediane': mediane, 'ecart': round(taux_s[0] - taux_s[-1], 1) if len(taux_s) > 1 else None,
+            'au_dessus': sum(1 for t in taux_s if mediane is not None and t >= mediane),
+            'actions': [{'titre': a['obj'].titre, 'statut': statut_lib.get(a['obj'].statut, a['obj'].statut),
+                         'echeance': a['obj'].echeance.strftime('%d/%m/%Y') if a['obj'].echeance else '',
+                         'retard': a['en_retard'], 'ouverte': a['ouverte'], 'responsable': a['responsable']}
+                        for a in actions if a['obj'].indicateur_id == iid],
+        }
+
     # 5. Points d'attention (calculés à partir des chiffres ci-dessus)
     alertes = []
     retards = [x for x in lignes_ind if x['statut'] == 'retard']
@@ -30748,7 +30802,7 @@ def technics_dashboard(request):
         'statuts': dict(statuts),
         'nb_declarations': nb_decl, 'pct_valide': round(nb_valid * 100 / nb_decl) if nb_decl else None,
         'indicateurs_tet': lignes_ind, 'objectifs_tet': objectifs, 'structures_tet': par_struct,
-        'tet_json': {'evolution': evolution, 'statuts': dict(statuts),
+        'tet_json': {'evolution': evolution, 'statuts': dict(statuts), 'fiches': fiches,       # ← ajout (v95) : fiches
                      'structures': par_struct[:12], 'objectifs': objectifs,
                      'arbre': arbre, 'cibles_real': cibles_real},                 # ← ajout (v90)
         'par_niveau': par_niveau, 'niveaux_presents': niveaux_presents,         # ← ajout (v90)
@@ -30768,7 +30822,6 @@ def technics_dashboard(request):
         'date_situation': aujourd_hui,
     })
     return render(request, template, context)
-
 
 # =====================================================================
 #  OperaPlus — ACTIONS CORRECTIVES (v92)
