@@ -245,10 +245,17 @@ body {
 </div>
 
 <div id="theme-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900 bg-opacity-40 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm m-4 transform transition-all">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-bold text-slate-800">Interface Visuelle</h2>
-            <button onclick="closeModal('theme-modal')" class="text-slate-400 hover:text-slate-600">
+    {% comment %} ← corrigé (v112) : fenêtre « Interface Visuelle » en style ERP — plus grande, en 3 zones (rubriques · réglages · aperçu).
+        Tous les champs, ids, classes et fonctions d'origine sont conservés ; seule la disposition change. {% endcomment %}
+    <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm m-4 transform transition-all sbxv-boite" role="dialog" aria-modal="true" aria-labelledby="sbxvTitre">
+        <div class="flex items-center justify-between mb-6 sbxv-titre">
+            <span class="sbxv-logo" aria-hidden="true"><i class="fas fa-palette"></i></span>
+            <div class="sbxv-titre-t">
+                <nav class="sbxv-ariane" aria-label="Fil d'Ariane">Paramètres<span>›</span>Personnalisation</nav>
+                <h2 class="text-xl font-bold text-slate-800" id="sbxvTitre">Interface Visuelle</h2>
+            </div>
+            <span class="sbxv-qui"><i class="fas fa-user"></i>{{ request.user.personnel.prenom|default:'' }} {{ request.user.personnel.nom|default:request.user.username }}</span>
+            <button onclick="closeModal('theme-modal')" class="text-slate-400 hover:text-slate-600" type="button" aria-label="Fermer">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -256,99 +263,155 @@ body {
         <form action="/color/" method="POST" id="settingsForm" class="space-y-6">
             {% csrf_token %}
             <input type="hidden" name="personnel_id" value="{{ request.user.personnel.id }}">
-            
-            <!-- ===== Thème de l'institution (ajout) ===== -->
-            <div class="sbx-inst">
-                <label><input type="checkbox" name="follow_institution" value="1" id="sbxFollow" {% if request.user.personnel.follow_institution %}checked{% endif %}> Suivre le thème de l'institution</label>
-                {% if request.user.is_superuser %}
-                <label><input type="checkbox" name="apply_institution" value="1"> Imposer ce thème à toute l'institution</label>
-                {% endif %}
-                <span hidden id="sbxInstTheme" data-fond="{{ actual_institution.theme_fond|default:'' }}" data-accent="{{ actual_institution.theme_accent|default:'' }}" data-tiers="{{ actual_institution.theme_tiers|default:'' }}"></span>
-            </div>
 
-            <!-- ===== Associations de couleurs (ajout) ===== -->
-            <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Associations</label>
-                <div class="sbx-roles" aria-hidden="true">
-                    <span class="sbx-role"><i style="background:var(--nav-bg-color)"></i>Dominante 60 % · Navigation</span>
-                    <span class="sbx-role"><i style="background:var(--primary-color)"></i>Accent 30 %</span>
-                    <span class="sbx-role"><i style="background:var(--tertiary-color)"></i>Touche 10 %</span>
-                </div>
-                <div id="sbxPresets" class="sbx-presets"></div>
-                <p class="text-xs text-slate-400">Choisissez une association, ou ajustez chaque couleur ci-dessous. Aperçu immédiat.</p>
-            </div>
-            <!-- ===== Fin associations ===== -->
+            <div class="sbxv-corps">
+                <!-- Rubriques (colonne de gauche) -->
+                <nav class="sbxv-nav" role="tablist" aria-label="Rubriques de personnalisation">
+                    <button type="button" role="tab" data-sbxv="themes" aria-selected="true"><i class="fas fa-swatchbook"></i><span><b>Thèmes prêts</b><small>Associations de 3 couleurs</small></span></button>
+                    <button type="button" role="tab" data-sbxv="couleurs" aria-selected="false"><i class="fas fa-sliders"></i><span><b>Couleurs</b><small>Accent, navigation, touche</small></span></button>
+                    <button type="button" role="tab" data-sbxv="texte" aria-selected="false"><i class="fas fa-font"></i><span><b>Style de texte</b><small>Police, taille, interligne</small></span></button>
+                    <button type="button" role="tab" data-sbxv="institution" aria-selected="false"><i class="fas fa-building"></i><span><b>Institution</b><small>Thème commun</small></span></button>
+                    <div class="sbxv-nav-note"><i class="fas fa-circle-info"></i> Aperçu immédiat : rien n'est enregistré avant « Enregistrer ».</div>
+                </nav>
 
-            <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Couleur Accent</label>
-                <div class="flex items-center gap-3">
-                    <input type="color" name="color" class="h-10 w-10 border-0 rounded-lg cursor-pointer" value="{{ request.user.personnel.color|default:'#4361ee' }}">
-                    <span class="text-sm text-slate-600 font-mono">{{ request.user.personnel.color|default:'#4361ee' }}</span>
-                </div>
-                <div class="sbx-swatches" data-target="color" aria-label="Couleurs d'accent proposées"></div>
-            </div>
-            
-            <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Navigation</label>
-                <div class="flex items-center gap-3">
-                    <input type="color" name="color_fond" class="h-10 w-10 border-0 rounded-lg cursor-pointer" value="{{ request.user.personnel.color_fond|default:'#1e293b' }}">
-                    <span class="text-sm text-slate-600 font-mono">{{ request.user.personnel.color_fond|default:'#1e293b' }}</span>
-                </div>
-                <div class="sbx-swatches" data-target="color_fond" aria-label="Couleurs de navigation proposées"></div>
-            </div>
+                <!-- Réglages (colonne centrale) -->
+                <div class="sbxv-reglages">
+                    <section class="sbxv-panneau" data-sbxv-panneau="themes" role="tabpanel">
+                        <header class="sbxv-ph"><h3>Thèmes prêts</h3><p>Une association = une dominante (60 %, la navigation), un accent (30 %, boutons et liens) et une touche (10 %, filets et repères).</p></header>
+                        <!-- ===== Associations de couleurs (ajout) ===== -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Associations</label>
+                            <div class="sbx-roles" aria-hidden="true">
+                                <span class="sbx-role"><i style="background:var(--nav-bg-color)"></i>Dominante 60 % · Navigation</span>
+                                <span class="sbx-role"><i style="background:var(--primary-color)"></i>Accent 30 %</span>
+                                <span class="sbx-role"><i style="background:var(--tertiary-color)"></i>Touche 10 %</span>
+                            </div>
+                            <div id="sbxPresets" class="sbx-presets"></div>
+                            <p class="text-xs text-slate-400">Choisissez une association, ou ajustez chaque couleur dans « Couleurs ». Aperçu immédiat.</p>
+                        </div>
+                        <!-- ===== Fin associations ===== -->
+                    </section>
 
-            <!-- ===== Couleur secondaire, 3e couleur de l'association (ajout) ===== -->
-            <div class="space-y-2">
-                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Couleur de touche (10 %)</label>
-                <div class="flex items-center gap-3">
-                    <input type="color" name="color_tiers" class="h-10 w-10 border-0 rounded-lg cursor-pointer" value="{{ request.user.personnel.color_tiers|default:'#FACC15' }}">
-                    <span class="text-sm text-slate-600 font-mono">{{ request.user.personnel.color_tiers|default:'#FACC15' }}</span>
-                </div>
-                <div class="sbx-swatches" data-target="color_tiers" aria-label="Couleurs secondaires proposées"></div>
-            </div>
+                    <section class="sbxv-panneau" data-sbxv-panneau="couleurs" role="tabpanel" hidden>
+                        <header class="sbxv-ph"><h3>Couleurs</h3><p>Réglez chaque couleur à la main, ou piochez dans le nuancier.</p></header>
+                        <div class="space-y-2 sbxv-ligne">
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Couleur Accent</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" name="color" class="h-10 w-10 border-0 rounded-lg cursor-pointer" value="{{ request.user.personnel.color|default:'#4361ee' }}">
+                                <span class="text-sm text-slate-600 font-mono">{{ request.user.personnel.color|default:'#4361ee' }}</span>
+                                <em class="sbxv-role-txt">Boutons, liens, élément actif</em>
+                            </div>
+                            <div class="sbx-swatches" data-target="color" aria-label="Couleurs d'accent proposées"></div>
+                        </div>
+                        
+                        <div class="space-y-2 sbxv-ligne">
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Navigation</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" name="color_fond" class="h-10 w-10 border-0 rounded-lg cursor-pointer" value="{{ request.user.personnel.color_fond|default:'#1e293b' }}">
+                                <span class="text-sm text-slate-600 font-mono">{{ request.user.personnel.color_fond|default:'#1e293b' }}</span>
+                                <em class="sbxv-role-txt">Barre latérale, en-têtes</em>
+                            </div>
+                            <div class="sbx-swatches" data-target="color_fond" aria-label="Couleurs de navigation proposées"></div>
+                        </div>
 
+                        <!-- ===== Couleur secondaire, 3e couleur de l'association (ajout) ===== -->
+                        <div class="space-y-2 sbxv-ligne">
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Couleur de touche (10 %)</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" name="color_tiers" class="h-10 w-10 border-0 rounded-lg cursor-pointer" value="{{ request.user.personnel.color_tiers|default:'#FACC15' }}">
+                                <span class="text-sm text-slate-600 font-mono">{{ request.user.personnel.color_tiers|default:'#FACC15' }}</span>
+                                <em class="sbxv-role-txt">Filets, badges, repères</em>
+                            </div>
+                            <div class="sbx-swatches" data-target="color_tiers" aria-label="Couleurs secondaires proposées"></div>
+                        </div>
+                    </section>
 
-            <!-- ===== Style de texte (ajout) ===== -->
-            <div class="space-y-2 sbx-texte">
-                <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Style de texte</label>
-                <div class="sbx-polices" role="radiogroup" aria-label="Police de caractères">
-                    <button type="button" role="radio" data-font="systeme" style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif"><b>Aa</b><span>Système</span></button>
-                    <button type="button" role="radio" data-font="inter" style="font-family:'Inter',sans-serif"><b>Aa</b><span>Inter</span></button>
-                    <button type="button" role="radio" data-font="source" style="font-family:'Source Sans 3',sans-serif"><b>Aa</b><span>Source Sans</span></button>
-                    <button type="button" role="radio" data-font="nunito" style="font-family:'Nunito Sans',sans-serif"><b>Aa</b><span>Nunito</span></button>
-                    <button type="button" role="radio" data-font="poppins" style="font-family:'Poppins',sans-serif"><b>Aa</b><span>Poppins</span></button>
-                    <button type="button" role="radio" data-font="lexend" style="font-family:'Lexend',sans-serif"><b>Aa</b><span>Lexend</span></button>
+                    <section class="sbxv-panneau" data-sbxv-panneau="texte" role="tabpanel" hidden>
+                        <header class="sbxv-ph"><h3>Style de texte</h3><p>Pour le confort de lecture : sur les petits écrans, préférez une taille « L » et un interligne aéré.</p></header>
+                        <!-- ===== Style de texte (ajout) ===== -->
+                        <div class="space-y-2 sbx-texte">
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Style de texte</label>
+                            <div class="sbx-polices" role="radiogroup" aria-label="Police de caractères">
+                                <button type="button" role="radio" data-font="systeme" style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif"><b>Aa</b><span>Système</span></button>
+                                <button type="button" role="radio" data-font="inter" style="font-family:'Inter',sans-serif"><b>Aa</b><span>Inter</span></button>
+                                <button type="button" role="radio" data-font="source" style="font-family:'Source Sans 3',sans-serif"><b>Aa</b><span>Source Sans</span></button>
+                                <button type="button" role="radio" data-font="nunito" style="font-family:'Nunito Sans',sans-serif"><b>Aa</b><span>Nunito</span></button>
+                                <button type="button" role="radio" data-font="poppins" style="font-family:'Poppins',sans-serif"><b>Aa</b><span>Poppins</span></button>
+                                <button type="button" role="radio" data-font="lexend" style="font-family:'Lexend',sans-serif"><b>Aa</b><span>Lexend</span></button>
+                            </div>
+                            <div class="sbx-trow"><span>Taille du texte</span>
+                                <div class="sbx-tseg" data-k="taille" role="radiogroup" aria-label="Taille du texte">
+                                    <button type="button" role="radio" data-v="s" style="font-size:12px">A</button><button type="button" role="radio" data-v="m" style="font-size:14px">A</button><button type="button" role="radio" data-v="l" style="font-size:16px">A</button><button type="button" role="radio" data-v="xl" style="font-size:18px">A</button>
+                                </div>
+                            </div>
+                            <div class="sbx-trow"><span>Titres</span>
+                                <div class="sbx-tseg" data-k="titres" role="radiogroup" aria-label="Épaisseur des titres">
+                                    <button type="button" role="radio" data-v="fin" style="font-weight:500">Fins</button><button type="button" role="radio" data-v="normal" style="font-weight:700">Normaux</button><button type="button" role="radio" data-v="gras" style="font-weight:900">Gras</button>
+                                </div>
+                            </div>
+                            <div class="sbx-trow"><span>Interligne</span>
+                                <div class="sbx-tseg" data-k="interligne" role="radiogroup" aria-label="Interligne">
+                                    <button type="button" role="radio" data-v="serre">Serré</button><button type="button" role="radio" data-v="normal">Normal</button><button type="button" role="radio" data-v="aere">Aéré</button>
+                                </div>
+                            </div>
+                            <div class="sbx-tapercu" aria-live="polite"><b>Rapport trimestriel · T3 2026</b><span>12 opérations validées sur 15, dont 3 en attente de justificatifs.</span></div>
+                            <input type="hidden" name="font_family" id="sbxFontField">
+                            <input type="hidden" name="font_size" id="sbxSizeField">
+                            <input type="hidden" name="heading_weight" id="sbxTitreField">
+                            <input type="hidden" name="line_height" id="sbxInterField">
+                            <button type="button" class="sbx-treset" id="sbxTexteReset">Rétablir le style par défaut</button>
+                        </div>
+                        <!-- ===== Fin style de texte ===== -->
+                    </section>
+
+                    <section class="sbxv-panneau" data-sbxv-panneau="institution" role="tabpanel" hidden>
+                        <header class="sbxv-ph"><h3>Thème de l'institution</h3><p>Suivez le thème commun de {{ actual_institution }}, ou imposez le vôtre à tous (administrateurs).</p></header>
+                        <!-- ===== Thème de l'institution (ajout) ===== -->
+                        <div class="sbx-inst">
+                            <label><input type="checkbox" name="follow_institution" value="1" id="sbxFollow" {% if request.user.personnel.follow_institution %}checked{% endif %}> Suivre le thème de l'institution</label>
+                            {% if request.user.is_superuser %}
+                            <label><input type="checkbox" name="apply_institution" value="1"> Imposer ce thème à toute l'institution</label>
+                            {% endif %}
+                            <span hidden id="sbxInstTheme" data-fond="{{ actual_institution.theme_fond|default:'' }}" data-accent="{{ actual_institution.theme_accent|default:'' }}" data-tiers="{{ actual_institution.theme_tiers|default:'' }}"></span>
+                        </div>
+                    </section>
                 </div>
-                <div class="sbx-trow"><span>Taille du texte</span>
-                    <div class="sbx-tseg" data-k="taille" role="radiogroup" aria-label="Taille du texte">
-                        <button type="button" role="radio" data-v="s" style="font-size:12px">A</button><button type="button" role="radio" data-v="m" style="font-size:14px">A</button><button type="button" role="radio" data-v="l" style="font-size:16px">A</button><button type="button" role="radio" data-v="xl" style="font-size:18px">A</button>
+
+                <!-- Aperçu en direct (colonne de droite) -->
+                <aside class="sbxv-apercu" aria-label="Aperçu de l'interface">
+                    <div class="sbxv-ap-h"><span>Aperçu en direct</span><em id="sbxvNom">Personnalisé</em></div>
+                    <div class="sbxv-ecran" aria-hidden="true">
+                        <div class="sbxv-e-side"><i class="logo"></i><i class="on"></i><i></i><i></i><i></i></div>
+                        <div class="sbxv-e-main">
+                            <div class="sbxv-e-top"><b>Tableau de bord</b><span class="sbxv-e-chip">T3 2026</span></div>
+                            <div class="sbxv-e-kpis">
+                                <div><small>Taux d'exécution</small><b>78 %</b><i><u style="width:78%"></u></i></div>
+                                <div><small>Indicateurs</small><b>42</b><i><u style="width:55%"></u></i></div>
+                            </div>
+                            <div class="sbxv-e-table">
+                                <div class="th"><span>Indicateur</span><span>Statut</span></div>
+                                <div><span>Femmes suivies en CPN</span><span class="ok">Atteint</span></div>
+                                <div><span>Agents formés</span><span class="moy">À surveiller</span></div>
+                                <div><span>Kits distribués</span><span class="ko">En retard</span></div>
+                            </div>
+                            <div class="sbxv-e-actions"><span class="btn">Valider</span><span class="btn2">Exporter</span><span class="tag">Nouveau</span></div>
+                        </div>
                     </div>
-                </div>
-                <div class="sbx-trow"><span>Titres</span>
-                    <div class="sbx-tseg" data-k="titres" role="radiogroup" aria-label="Épaisseur des titres">
-                        <button type="button" role="radio" data-v="fin" style="font-weight:500">Fins</button><button type="button" role="radio" data-v="normal" style="font-weight:700">Normaux</button><button type="button" role="radio" data-v="gras" style="font-weight:900">Gras</button>
-                    </div>
-                </div>
-                <div class="sbx-trow"><span>Interligne</span>
-                    <div class="sbx-tseg" data-k="interligne" role="radiogroup" aria-label="Interligne">
-                        <button type="button" role="radio" data-v="serre">Serré</button><button type="button" role="radio" data-v="normal">Normal</button><button type="button" role="radio" data-v="aere">Aéré</button>
-                    </div>
-                </div>
-                <div class="sbx-tapercu" aria-live="polite"><b>Rapport trimestriel · T3 2026</b><span>12 opérations validées sur 15, dont 3 en attente de justificatifs.</span></div>
-                <input type="hidden" name="font_family" id="sbxFontField">
-                <input type="hidden" name="font_size" id="sbxSizeField">
-                <input type="hidden" name="heading_weight" id="sbxTitreField">
-                <input type="hidden" name="line_height" id="sbxInterField">
-                <button type="button" class="sbx-treset" id="sbxTexteReset">Rétablir le style par défaut</button>
+                    <dl class="sbxv-trio">
+                        <div><dt><i style="background:var(--nav-bg-color)"></i>Dominante</dt><dd id="sbxvF">—</dd></div>
+                        <div><dt><i style="background:var(--primary-color)"></i>Accent</dt><dd id="sbxvA">—</dd></div>
+                        <div><dt><i style="background:var(--tertiary-color)"></i>Touche</dt><dd id="sbxvT">—</dd></div>
+                    </dl>
+                </aside>
             </div>
-            <!-- ===== Fin style de texte ===== -->
 
-            <div class="flex flex-col gap-2 pt-4">
-                <button type="submit" class="w-full bg-erp-primary text-white py-3 rounded-xl font-semibold hover:opacity-90 shadow-lg transition-all">
-                    Enregistrer les modifications
-                </button>
+            <div class="flex flex-col gap-2 pt-4 sbxv-pied">
+                <span class="sbxv-pied-info"><i class="fas fa-eye"></i> Les changements s'affichent tout de suite ; ils ne sont gardés qu'après « Enregistrer ».</span>
                 <button type="button" onclick="closeModal('theme-modal')" class="w-full text-slate-400 py-2 text-sm hover:text-slate-600">
                     Annuler
+                </button>
+                <button type="submit" class="w-full bg-erp-primary text-white py-3 rounded-xl font-semibold hover:opacity-90 shadow-lg transition-all">
+                    Enregistrer les modifications
                 </button>
             </div>
         </form>
@@ -1536,6 +1599,167 @@ body {
         else { chargerPolices(); enreg = lire(); cur = Object.assign({}, enreg); appliquer(cur); }
     }).observe(tm, { attributes: true, attributeFilter: ['class'] });
     appliquer(cur);
+})();
+</script>
+<style>
+/* ===================== ← ajout (v112) : FENÊTRE « INTERFACE VISUELLE » EN STYLE ERP ===================== */
+#theme-modal { padding: 12px; }
+#theme-modal:not(.hidden) { position: fixed; inset: 0; z-index: 12000; display: flex; align-items: center; justify-content: center; }   /* au-dessus de la barre latérale */
+#theme-modal > div.sbxv-boite {
+    --sv-bord: #e2e8f0; --sv-fond: #f1f5f9; --sv-encre: #0f172a; --sv-doux: #64748b; --sv-panneau: #ffffff;
+    width: min(1280px, 100%) !important; max-width: none !important; height: min(860px, calc(100vh - 24px)); max-height: none !important; margin: 0 !important;
+    padding: 0 !important; display: flex; flex-direction: column; overflow: hidden !important;
+    background: var(--sv-panneau) !important; border: 0 !important; border-radius: 14px !important; box-shadow: 0 40px 90px -25px rgba(0,0,0,.55) !important;
+    -webkit-backdrop-filter: none !important; backdrop-filter: none !important; color: var(--sv-encre); }
+/* barre de titre : neutre foncé + liseré d'accent */
+#theme-modal .sbxv-titre { position: relative; display: flex; align-items: center; gap: 12px; margin: 0 !important; padding: 12px 14px 12px 18px; background: #0f172a; color: #fff; flex: none; }
+#theme-modal .sbxv-titre::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+    background: linear-gradient(90deg, var(--nav-bg-color) 0 60%, var(--primary-color) 60% 90%, var(--tertiary-color, #FACC15) 90%); }
+#theme-modal .sbxv-logo { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; background: var(--primary-color); color: var(--accent-ink, #fff); font-size: 16px; flex: none; }
+#theme-modal .sbxv-titre-t { flex: 1; min-width: 0; }
+#theme-modal .sbxv-ariane { font-size: 11px; color: #94a3b8; } #theme-modal .sbxv-ariane span { margin: 0 6px; color: #475569; }
+#theme-modal .sbxv-titre h2 { margin: 1px 0 0; font-size: 16px !important; font-weight: 800; color: #fff !important; line-height: 1.25; }
+#theme-modal .sbxv-qui { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 8px; background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12); font-size: 12px; font-weight: 600; color: #e2e8f0; white-space: nowrap; }
+#theme-modal .sbxv-titre > button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,.18); color: #e2e8f0 !important; background: transparent; flex: none; }
+#theme-modal .sbxv-titre > button:hover { background: #dc2626; border-color: #dc2626; color: #fff !important; }
+/* le formulaire occupe le reste */
+#theme-modal #settingsForm { flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 0; }
+#theme-modal #settingsForm > * + * { margin-top: 0 !important; }
+#theme-modal .sbxv-corps { flex: 1; min-height: 0; display: grid; grid-template-columns: 250px minmax(0, 1fr) 340px; background: var(--sv-fond); }
+/* rubriques */
+#theme-modal .sbxv-nav { display: flex; flex-direction: column; gap: 4px; padding: 14px 10px; background: #fff; border-right: 1px solid var(--sv-bord); overflow-y: auto; }
+#theme-modal .sbxv-nav button { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 0; border-radius: 9px; background: transparent;
+    text-align: left; cursor: pointer; color: #334155; font: inherit; }
+#theme-modal .sbxv-nav button i { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: #f1f5f9; color: #475569; font-size: 13px; flex: none; }
+#theme-modal .sbxv-nav button b { display: block; font-size: 13px; font-weight: 700; }
+#theme-modal .sbxv-nav button small { display: block; font-size: 11px; color: var(--sv-doux); }
+#theme-modal .sbxv-nav button:hover { background: #f8fafc; }
+#theme-modal .sbxv-nav button[aria-selected="true"] { background: color-mix(in srgb, var(--primary-color) 9%, #fff); color: var(--sv-encre); }
+#theme-modal .sbxv-nav button[aria-selected="true"]::before { content: ""; position: absolute; left: -10px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--primary-color); }
+#theme-modal .sbxv-nav button[aria-selected="true"] i { background: var(--primary-color); color: var(--accent-ink, #fff); }
+#theme-modal .sbxv-nav-note { margin-top: auto; padding: 10px 12px; border-radius: 9px; background: #f8fafc; border: 1px dashed var(--sv-bord); font-size: 11.5px; color: var(--sv-doux); line-height: 1.45; }
+/* réglages */
+#theme-modal .sbxv-reglages { min-height: 0; overflow-y: auto; padding: 18px 22px 22px; }
+#theme-modal .sbxv-panneau[hidden] { display: none !important; }
+#theme-modal .sbxv-panneau { display: flex; flex-direction: column; gap: 14px; }
+#theme-modal .sbxv-panneau > * + * { margin-top: 0 !important; }
+#theme-modal .sbxv-ph h3 { margin: 0; font-size: 17px; font-weight: 800; color: var(--sv-encre); }
+#theme-modal .sbxv-ph p { margin: 4px 0 0; font-size: 12.5px; color: var(--sv-doux); max-width: 640px; }
+#theme-modal .sbxv-panneau > .space-y-2, #theme-modal .sbx-texte, #theme-modal .sbx-inst { background: #fff; border: 1px solid var(--sv-bord); border-radius: 12px; padding: 14px 16px; }
+#theme-modal .sbx-presets { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important; max-height: none !important; overflow: visible !important; gap: 10px; }
+#theme-modal .sbx-preset { border-width: 1.5px; border-radius: 10px; padding: 8px; align-items: stretch; }
+#theme-modal .sbx-preset-swatch { height: 44px !important; border-radius: 7px; }
+#theme-modal .sbx-preset-name { text-align: left; font-size: 11.5px; }
+#theme-modal .sbx-preset.is-on { border-color: var(--primary-color); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 22%, transparent); }
+#theme-modal .sbx-fams { padding-bottom: 4px; }
+#theme-modal .sbx-fam { border-radius: 7px; }
+#theme-modal .sbx-fam.is-on { background: var(--sv-encre); }
+#theme-modal .sbxv-ligne .flex { flex-wrap: wrap; }
+#theme-modal .sbxv-ligne input[type=color] { width: 46px !important; height: 46px !important; padding: 2px; border: 1px solid var(--sv-bord) !important; border-radius: 10px !important; background: #fff; }
+#theme-modal .sbxv-ligne .font-mono { min-width: 84px; padding: 6px 10px; border-radius: 7px; background: #f1f5f9; font-size: 12.5px; color: var(--sv-encre) !important; text-transform: uppercase; }
+#theme-modal .sbxv-role-txt { font-style: normal; font-size: 12px; color: var(--sv-doux); }
+#theme-modal .sbx-swatch { width: 26px; height: 26px; }
+#theme-modal .sbx-polices { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important; }
+#theme-modal .sbx-polices button { border-radius: 10px; border-width: 1.5px; }
+#theme-modal .sbx-polices button[aria-checked="true"] { border-color: var(--primary-color); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, transparent); }
+#theme-modal .sbx-trow { padding: 8px 0; border-top: 1px dashed var(--sv-bord); }
+#theme-modal .sbx-tseg { border-radius: 9px; } #theme-modal .sbx-tseg button { border-radius: 7px; }
+#theme-modal .sbx-tapercu { border-radius: 10px; }
+#theme-modal .sbx-inst label { padding: 10px 12px; border: 1px solid var(--sv-bord); border-radius: 9px; background: #f8fafc; }
+#theme-modal .sbx-warn p { margin: 6px 0 0; padding: 8px 10px; border-radius: 8px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-size: 12px; }
+/* aperçu en direct */
+#theme-modal .sbxv-apercu { min-height: 0; overflow-y: auto; padding: 16px; background: #fff; border-left: 1px solid var(--sv-bord); display: flex; flex-direction: column; gap: 12px; }
+#theme-modal .sbxv-ap-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--sv-doux); }
+#theme-modal .sbxv-ap-h em { font-style: normal; text-transform: none; letter-spacing: 0; font-size: 11.5px; color: var(--sv-encre); max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#theme-modal .sbxv-ecran { display: flex; height: 300px; border-radius: 10px; overflow: hidden; border: 1px solid var(--sv-bord); background: #f8fafc; box-shadow: 0 10px 24px -16px rgba(15,23,42,.35); }
+#theme-modal .sbxv-e-side { width: 44px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 9px; padding-top: 10px; background: var(--nav-bg-color); }
+#theme-modal .sbxv-e-side i { width: 24px; height: 24px; border-radius: 7px; background: color-mix(in srgb, var(--nav-ink, #fff) 16%, transparent); }
+#theme-modal .sbxv-e-side i.logo { background: var(--tertiary-color, #FACC15); border-radius: 50%; }
+#theme-modal .sbxv-e-side i.on { background: var(--primary-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--nav-ink, #fff) 30%, transparent); }
+#theme-modal .sbxv-e-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px; font-size: 10.5px; color: #334155; }
+#theme-modal .sbxv-e-top { display: flex; align-items: center; justify-content: space-between; padding-bottom: 7px; border-bottom: 2px solid var(--tertiary-color, #FACC15); }
+#theme-modal .sbxv-e-top b { font-size: 12px; color: var(--sv-encre); }
+#theme-modal .sbxv-e-chip { padding: 2px 7px; border-radius: 99px; background: color-mix(in srgb, var(--primary-color) 12%, #fff); color: var(--primary-color); font-weight: 800; }
+#theme-modal .sbxv-e-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+#theme-modal .sbxv-e-kpis > div { padding: 7px 8px; border-radius: 7px; background: #fff; border: 1px solid var(--sv-bord); }
+#theme-modal .sbxv-e-kpis small { display: block; color: var(--sv-doux); font-size: 9.5px; }
+#theme-modal .sbxv-e-kpis b { display: block; font-size: 15px; color: var(--sv-encre); }
+#theme-modal .sbxv-e-kpis i { display: block; height: 4px; margin-top: 4px; border-radius: 3px; background: #eef1f5; overflow: hidden; }
+#theme-modal .sbxv-e-kpis u { display: block; height: 100%; background: var(--primary-color); text-decoration: none; }
+#theme-modal .sbxv-e-table { border: 1px solid var(--sv-bord); border-radius: 7px; overflow: hidden; background: #fff; }
+#theme-modal .sbxv-e-table > div { display: flex; justify-content: space-between; gap: 6px; padding: 5px 8px; border-top: 1px solid #f1f5f9; }
+#theme-modal .sbxv-e-table > div.th { border-top: 0; background: var(--nav-bg-color); color: var(--nav-ink, #fff); font-weight: 800; font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em; }
+#theme-modal .sbxv-e-table .ok, #theme-modal .sbxv-e-table .moy, #theme-modal .sbxv-e-table .ko { padding: 0 6px; border-radius: 99px; font-weight: 800; font-size: 9.5px; }
+#theme-modal .sbxv-e-table .ok { background: #dcfce7; color: #047857; } #theme-modal .sbxv-e-table .moy { background: #fef3c7; color: #b45309; } #theme-modal .sbxv-e-table .ko { background: #fee2e2; color: #b91c1c; }
+#theme-modal .sbxv-e-actions { display: flex; align-items: center; gap: 6px; margin-top: auto; }
+#theme-modal .sbxv-e-actions .btn { padding: 5px 10px; border-radius: 6px; background: var(--primary-color); color: var(--accent-ink, #fff); font-weight: 800; }
+#theme-modal .sbxv-e-actions .btn2 { padding: 4px 9px; border-radius: 6px; border: 1px solid var(--primary-color); color: var(--primary-color); font-weight: 700; }
+#theme-modal .sbxv-e-actions .tag { margin-left: auto; padding: 2px 7px; border-radius: 4px; background: var(--tertiary-color, #FACC15); color: #111; font-weight: 800; font-size: 9.5px; }
+#theme-modal .sbxv-trio { display: grid; gap: 0; margin: 0; border: 1px solid var(--sv-bord); border-radius: 10px; overflow: hidden; }
+#theme-modal .sbxv-trio > div { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-top: 1px solid var(--sv-bord); font-size: 12.5px; }
+#theme-modal .sbxv-trio > div:first-child { border-top: 0; }
+#theme-modal .sbxv-trio dt { display: flex; align-items: center; gap: 8px; color: var(--sv-doux); }
+#theme-modal .sbxv-trio dt i { width: 14px; height: 14px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+#theme-modal .sbxv-trio dd { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; text-transform: uppercase; }
+/* pied : barre d'actions */
+#theme-modal .sbxv-pied { flex: none; display: flex !important; flex-direction: row !important; align-items: center; justify-content: flex-end; gap: 10px !important; padding: 12px 18px !important;
+    border-top: 1px solid var(--sv-bord); background: #f8fafc; }
+#theme-modal .sbxv-pied-info { margin-right: auto; font-size: 12px; color: var(--sv-doux); display: inline-flex; align-items: center; gap: 8px; }
+#theme-modal .sbxv-pied > button { width: auto !important; padding: 0 18px !important; height: 40px; border-radius: 9px !important; font-size: 13.5px !important; font-weight: 700 !important; }
+#theme-modal .sbxv-pied > button[type=button] { border: 1px solid var(--sv-bord); background: #fff; color: #334155 !important; }
+#theme-modal .sbxv-pied > button[type=button]:hover { border-color: #94a3b8; }
+#theme-modal .sbxv-pied > button[type=submit] { box-shadow: 0 8px 18px -10px var(--primary-color) !important; color: var(--accent-ink, #fff) !important; }
+/* tablette / téléphone */
+@media (max-width: 1100px) { #theme-modal .sbxv-corps { grid-template-columns: 220px minmax(0, 1fr); } #theme-modal .sbxv-apercu { display: none; } #theme-modal .sbxv-qui { display: none; } }
+@media (max-width: 720px) {
+    #theme-modal { padding: 0; }
+    #theme-modal > div.sbxv-boite { height: 100vh; border-radius: 0 !important; }
+    #theme-modal .sbxv-corps { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+    #theme-modal .sbxv-nav { flex-direction: row; overflow-x: auto; padding: 8px; border-right: 0; border-bottom: 1px solid var(--sv-bord); scrollbar-width: none; }
+    #theme-modal .sbxv-nav button { width: auto; flex: none; padding: 8px 10px; gap: 8px; }
+    #theme-modal .sbxv-nav button small, #theme-modal .sbxv-nav-note, #theme-modal .sbxv-ariane, #theme-modal .sbxv-pied-info { display: none; }
+    #theme-modal .sbxv-nav button[aria-selected="true"]::before { left: 10px; right: 10px; top: auto; bottom: -8px; width: auto; height: 3px; border-radius: 3px 3px 0 0; }
+    #theme-modal .sbxv-reglages { padding: 14px; }
+    #theme-modal .sbxv-pied > button { flex: 1; }
+}
+/* thème sombre de l'application */
+html.sbx-dark #theme-modal > div.sbxv-boite { --sv-bord: #2a303c; --sv-fond: #10131a; --sv-encre: #e5e7eb; --sv-doux: #9aa4b2; --sv-panneau: #161a22; background: #161a22 !important; }
+html.sbx-dark #theme-modal .sbxv-nav, html.sbx-dark #theme-modal .sbxv-apercu, html.sbx-dark #theme-modal .sbxv-panneau > .space-y-2,
+html.sbx-dark #theme-modal .sbx-texte, html.sbx-dark #theme-modal .sbx-inst, html.sbx-dark #theme-modal .sbxv-e-kpis > div, html.sbx-dark #theme-modal .sbxv-e-table { background: #161a22 !important; }
+html.sbx-dark #theme-modal .sbxv-nav button { color: #cbd5e1; } html.sbx-dark #theme-modal .sbxv-nav button i { background: #232936; color: #cbd5e1; }
+html.sbx-dark #theme-modal .sbxv-pied, html.sbx-dark #theme-modal .sbxv-nav-note, html.sbx-dark #theme-modal .sbx-inst label, html.sbx-dark #theme-modal .sbxv-ecran { background: #1b202a !important; }
+html.sbx-dark #theme-modal .sbxv-pied > button[type=button] { background: #232936; color: #e5e7eb !important; }
+html.sbx-dark #theme-modal .sbxv-ligne .font-mono { background: #232936; }
+@media (prefers-reduced-motion: reduce) { #theme-modal .sbx-preset { transition: none; } }
+</style>
+<script>
+/* ← ajout (v112) : rubriques de la fenêtre « Interface Visuelle » et aperçu des 3 couleurs */
+(function () {
+    var tm = document.getElementById('theme-modal'), form = document.getElementById('settingsForm');
+    if (!tm || !form || !tm.querySelector('.sbxv-nav')) return;
+    function montrer(cle) {
+        tm.querySelectorAll('[data-sbxv]').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.sbxv === cle ? 'true' : 'false'); });
+        tm.querySelectorAll('[data-sbxv-panneau]').forEach(function (p) { p.hidden = p.dataset.sbxvPanneau !== cle; });
+        var r = tm.querySelector('.sbxv-reglages'); if (r) r.scrollTop = 0;
+    }
+    tm.querySelector('.sbxv-nav').addEventListener('click', function (e) { var b = e.target.closest('[data-sbxv]'); if (b) montrer(b.dataset.sbxv); });
+    tm.querySelector('.sbxv-nav').addEventListener('keydown', function (e) {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) < 0) return;
+        var bs = [].slice.call(tm.querySelectorAll('[data-sbxv]')), i = bs.indexOf(document.activeElement); if (i < 0) return;
+        var nx = bs[(i + ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') ? -1 : 1) + bs.length) % bs.length]; e.preventDefault(); nx.focus(); montrer(nx.dataset.sbxv);
+    });
+    function maj() {
+        var v = function (n) { var x = form.querySelector('input[name="' + n + '"]'); return x ? x.value : ''; };
+        var f = document.getElementById('sbxvF'), a = document.getElementById('sbxvA'), t = document.getElementById('sbxvT'), nom = document.getElementById('sbxvNom');
+        if (f) f.textContent = v('color_fond'); if (a) a.textContent = v('color'); if (t) t.textContent = v('color_tiers');
+        var on = form.querySelector('.sbx-preset.is-on');
+        if (nom) nom.textContent = on ? on.getAttribute('aria-label') : 'Personnalisé';
+    }
+    form.addEventListener('input', maj);
+    form.addEventListener('click', function () { setTimeout(maj, 0); });
+    new MutationObserver(function () { if (!tm.classList.contains('hidden')) setTimeout(maj, 30); }).observe(tm, { attributes: true, attributeFilter: ['class'] });
+    maj();
 })();
 </script>
 <!-- ===================== FIN EXTRAS ===================== -->
@@ -3547,8 +3771,16 @@ window.changeView = function(unit) {
     </div>
 
     <div class="bg-white border border-gray-900 rounded-xl shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-700"   style="background-color: {{request.user.personnel.color_fond}};">
+        <div class="px-6 py-4 border-b border-slate-700 cdr-tete"   style="background-color: {{request.user.personnel.color_fond}};">
             <h4 class="text-white font-semibold text-lg m-0">Chaine De Resultats</h4>
+            {% comment %} ← ajout (v109) : légende, zoom et plein écran (la disposition de la carte ne change pas) {% endcomment %}
+            <div class="cdr-outils">
+                <span class="cdr-leg"><i style="background:#ef4444"></i>&lt; 50 %<i style="background:#f59e0b"></i>50–79 %<i style="background:#10b981"></i>≥ 80 %</span>
+                <button type="button" class="cdr-btn" data-cdr-zoom="-1" aria-label="Réduire">−</button>
+                <button type="button" class="cdr-btn" data-cdr-zoom="0" aria-label="Voir tout l'arbre" title="Voir tout l'arbre">⤢</button>
+                <button type="button" class="cdr-btn" data-cdr-zoom="1" aria-label="Agrandir">+</button>
+                <button type="button" class="cdr-btn large" data-cdr-ouvrir aria-label="Ouvrir la chaîne complète dans une fenêtre">Plein écran</button>
+            </div>
         </div>
 
         <div class="p-6">
@@ -3556,6 +3788,70 @@ window.changeView = function(unit) {
                  class="w-full h-[500px] mt-4 bg-white border-[3px] relative rounded-lg" 
                  style="border-color: {{request.user.personnel.color_fond}};">
                 </div>
+            <p class="cdr-aide">Cliquez sur un élément pour l'ouvrir dans la chaîne complète, avec son détail. Les boutons <b>+</b> / <b>−</b> sous chaque élément plient ou déplient ses sous-éléments.</p>
+        </div>
+    </div>
+
+    {% comment %} ← ajout (v109, style ERP en v111) : FENÊTRE « chaîne complète » — toute la chaîne (tous les éléments, toutes les liaisons) + le détail de l'élément choisi {% endcomment %}
+    <div class="cdr-fenetre" id="cdrFenetre" role="dialog" aria-modal="true" aria-labelledby="cdrFenTitre" hidden style="--cdr-hd: {{request.user.personnel.color_fond|default:'#2563eb'}};">
+        <div class="cdr-boite">
+            <header class="cdr-titre">
+                <span class="cdr-logo" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="6" height="5" rx="1.2"/><rect x="15.5" y="16.5" width="6" height="5" rx="1.2"/><path d="M12 7.5v4.5M5.5 16.5V14h13v2.5"/></svg></span>
+                <div class="cdr-titre-t">
+                    <nav class="cdr-ariane" aria-label="Fil d'Ariane">Accueil<span>›</span>Suivi-évaluation<span>›</span><b>Chaîne de résultats</b></nav>
+                    <h4 id="cdrFenTitre">Chaîne de résultats complète</h4>
+                </div>
+                <span class="cdr-inst" title="Institution active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>{{ actual_institution }}</span>
+                <button type="button" class="cdr-t-fermer" data-cdr-fermer aria-label="Fermer la fenêtre (Échap)">×</button>
+            </header>
+
+            <div class="cdr-outils2" role="toolbar" aria-label="Outils du diagramme">
+                <div class="cdr-groupe" aria-label="Zoom">
+                    <button type="button" data-cdr-fzoom="-1" aria-label="Réduire" title="Réduire"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M20 20l-3.5-3.5"/></svg></button>
+                    <span class="cdr-zoom-lib" id="cdrZoomLib">100 %</span>
+                    <button type="button" data-cdr-fzoom="1" aria-label="Agrandir" title="Agrandir"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M20 20l-3.5-3.5"/></svg></button>
+                    <button type="button" data-cdr-fzoom="0" title="Voir toute la chaîne"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span>Ajuster</span></button>
+                </div>
+                <div class="cdr-groupe" aria-label="Plier et déplier">
+                    <button type="button" data-cdr-tout title="Déplier tous les éléments"><svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg><span>Tout déplier</span></button>
+                    <button type="button" data-cdr-replier title="N'afficher que le premier niveau"><svg viewBox="0 0 24 24"><path d="m7 14 5-5 5 5"/></svg><span>Tout replier</span></button>
+                </div>
+                <div class="cdr-groupe cdr-leg2" aria-label="Légende">
+                    <span><i style="background:#ef4444"></i>&lt; 50 %</span><span><i style="background:#f59e0b"></i>50–79 %</span><span><i style="background:#10b981"></i>≥ 80 %</span>
+                </div>
+                <label class="cdr-cherche2"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                    <input type="search" id="cdrQ" placeholder="Rechercher un élément…" aria-label="Rechercher un élément de la chaîne"><em id="cdrQnb" aria-live="polite"></em></label>
+            </div>
+
+            <div class="cdr-kpis2" id="cdrKpis" aria-live="polite"></div>
+
+            <div class="cdr-fen-corps">
+                <div class="cdr-zone" id="cdrZone">
+                    {% comment %} ← ajout (v110) : mini-carte pour se repérer dans un grand arbre {% endcomment %}
+                    <div class="cdr-mini" id="cdrMiniCadre">
+                        <div class="cdr-mini-h"><span>Vue d'ensemble</span><button type="button" data-cdr-mini aria-expanded="true" aria-label="Masquer la mini-carte">−</button></div>
+                        <div id="cdrMini" aria-label="Mini-carte : cliquez ou glissez le cadre pour vous déplacer"></div>
+                    </div>
+                </div>{% comment %} #sample / #myDiagramDiv y sont déplacés à l'ouverture {% endcomment %}
+                <aside class="cdr-panneau" aria-label="Détail de l'élément choisi">
+                    <div class="cdr-d-entete" id="cdrDetTete"></div>
+                    <div class="cdr-onglets" role="tablist" aria-label="Rubriques du détail">
+                        <button type="button" role="tab" data-cdr-onglet="synthese" aria-selected="true">Synthèse</button>
+                        <button type="button" role="tab" data-cdr-onglet="budget" aria-selected="false">Budget</button>
+                        <button type="button" role="tab" data-cdr-onglet="raci" aria-selected="false">RACI</button>
+                        <button type="button" role="tab" data-cdr-onglet="sous" aria-selected="false">Sous-éléments <em id="cdrNbSous"></em></button>
+                    </div>
+                    <div class="cdr-detail" id="cdrDetail" role="tabpanel" aria-live="polite"></div>
+                    <div class="cdr-d-pied" id="cdrDetPied"></div>
+                </aside>
+            </div>
+
+            <footer class="cdr-statut">
+                <span id="cdrStatSel">Sélection : —</span>
+                <span id="cdrStatNb"></span>
+                <span id="cdrStatZoom"></span>
+                <span class="droite">Échap : fermer · Glisser : se déplacer · Ctrl + molette : zoomer</span>
+            </footer>
         </div>
     </div>
 </div>
@@ -3584,6 +3880,164 @@ window.changeView = function(unit) {
     background: #cbd5e1;
     border-radius: 3px;
 }
+/* ===== ← ajout (v109) : chaîne de résultats — design (même disposition) ===== */
+.cdr-tete { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.cdr-outils { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cdr-leg { display: inline-flex; align-items: center; gap: 6px; margin-right: 6px; font-size: 12px; color: rgba(255,255,255,.85); }
+.cdr-leg i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-left: 6px; }
+.cdr-btn { height: 32px; min-width: 32px; padding: 0 10px; border-radius: 9px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12); color: #fff;
+           font: inherit; font-size: 14px; font-weight: 700; line-height: 1; cursor: pointer; transition: background .15s; }
+.cdr-btn:hover { background: rgba(255,255,255,.25); }
+.cdr-btn.large { background: #fff; color: #0f172a; border-color: #fff; font-size: 13px; }
+.cdr-btn.large:hover { background: #f1f5f9; }
+#localDiagram { background: radial-gradient(circle at 1px 1px, rgba(15,23,42,.07) 1px, transparent 0) 0 0 / 20px 20px, #fff !important; }
+.cdr-aide { margin: 10px 0 0; font-size: 12.5px; color: #64748b; }
+/* ===== ← corrigé (v111) : fenêtre en style ERP — plein écran, couleurs neutres, accent de l'institution ===== */
+.cdr-fenetre { --cdr-bord: #e2e8f0; --cdr-fond: #f1f5f9; --cdr-encre: #0f172a; --cdr-doux: #64748b; --cdr-panneau: #ffffff;
+               position: fixed; inset: 0; z-index: 13000; display: flex; padding: 10px; background: rgba(15,23,42,.6); backdrop-filter: blur(3px);
+               font-family: Inter, 'Segoe UI', system-ui, sans-serif; color: var(--cdr-encre); }
+.cdr-fenetre[hidden] { display: none; }
+.cdr-fenetre * { box-sizing: border-box; }
+.cdr-fenetre svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.cdr-boite { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--cdr-panneau); border-radius: 12px; overflow: hidden;
+             box-shadow: 0 30px 70px -20px rgba(0,0,0,.55); animation: cdrIn .22s cubic-bezier(.2,.8,.2,1); }
+/* barre de titre */
+.cdr-titre { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 16px; background: #0f172a; color: #fff; }
+.cdr-titre::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--cdr-hd); }
+.cdr-logo { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--cdr-hd); color: #fff; }
+.cdr-logo svg { width: 19px; height: 19px; }
+.cdr-titre-t { flex: 1; min-width: 0; }
+.cdr-ariane { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdr-ariane span { margin: 0 6px; color: #475569; } .cdr-ariane b { color: #cbd5e1; font-weight: 600; }
+.cdr-titre h4 { margin: 1px 0 0; font-size: 15.5px; font-weight: 800; color: #fff; line-height: 1.25; }
+.cdr-inst { display: inline-flex; align-items: center; gap: 7px; max-width: 360px; height: 30px; padding: 0 12px; border-radius: 8px; background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.12); font-size: 12px; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdr-t-fermer { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,.18); background: transparent; color: #e2e8f0; font-size: 20px; line-height: 1; cursor: pointer; }
+.cdr-t-fermer:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
+/* barre d'outils */
+.cdr-outils2 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 14px; background: #fff; border-bottom: 1px solid var(--cdr-bord); }
+.cdr-groupe { display: inline-flex; align-items: center; border: 1px solid var(--cdr-bord); border-radius: 8px; background: #f8fafc; overflow: hidden; }
+.cdr-groupe > button { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 0; border-right: 1px solid var(--cdr-bord); background: transparent;
+                       font: inherit; font-size: 12.5px; font-weight: 600; color: #334155; cursor: pointer; }
+.cdr-groupe > :last-child { border-right: 0; }
+.cdr-groupe > button:hover { background: #fff; color: var(--cdr-hd); }
+.cdr-groupe > button:active { background: color-mix(in srgb, var(--cdr-hd) 10%, #fff); }
+.cdr-zoom-lib { min-width: 56px; height: 32px; display: grid; place-items: center; padding: 0 6px; border-right: 1px solid var(--cdr-bord); font-size: 12px; font-weight: 800;
+                color: var(--cdr-encre); background: #fff; font-variant-numeric: tabular-nums; }
+.cdr-leg2 { gap: 0; } .cdr-leg2 span { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; font-size: 12px; color: #475569; border-right: 1px solid var(--cdr-bord); }
+.cdr-leg2 span:last-child { border-right: 0; } .cdr-leg2 i { width: 9px; height: 9px; border-radius: 2px; }
+.cdr-cherche2 { flex: 1 1 220px; max-width: 360px; margin-left: auto; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border: 1px solid var(--cdr-bord);
+                border-radius: 8px; background: #fff; color: var(--cdr-doux); }
+.cdr-cherche2:focus-within { border-color: var(--cdr-hd); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cdr-hd) 15%, transparent); }
+.cdr-cherche2 input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; font-size: 13px; color: var(--cdr-encre); }
+.cdr-cherche2 em { font-style: normal; font-size: 11px; font-weight: 700; color: var(--cdr-doux); white-space: nowrap; }
+/* chiffres clés */
+.cdr-kpis2 { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--cdr-bord); gap: 1px; border-bottom: 1px solid var(--cdr-bord); }
+.cdr-k { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; min-width: 0; }
+.cdr-k > span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; color: var(--c); background: color-mix(in srgb, var(--c) 12%, #fff); flex: none; }
+.cdr-k b { display: block; font-size: 17px; font-weight: 800; line-height: 1.15; color: var(--cdr-encre); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cdr-k small { display: block; font-size: 11px; color: var(--cdr-doux); line-height: 1.25; }
+/* corps : espace de travail + panneau */
+.cdr-fen-corps { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 420px; }
+.cdr-zone { position: relative; min-height: 0; background: radial-gradient(circle at 1px 1px, rgba(15,23,42,.08) 1px, transparent 0) 0 0 / 20px 20px, var(--cdr-fond); }
+.cdr-zone #sample { display: block !important; position: absolute; inset: 0; }
+.cdr-zone #myDiagramDiv { width: 100% !important; height: 100% !important; border: 0 !important; background: transparent !important; }
+.cdr-panneau { min-height: 0; display: flex; flex-direction: column; border-left: 1px solid var(--cdr-bord); background: #fff; }
+.cdr-d-entete { padding: 14px 16px 10px; border-bottom: 1px solid var(--cdr-bord); }
+.cdr-d-entete .ligne { display: flex; align-items: center; gap: 8px; }
+.cdr-d-entete small { font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--cdr-doux); }
+.cdr-statut-pill { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 800; color: #fff; }
+.cdr-d-entete h5 { margin: 4px 0 0; font-size: 15.5px; font-weight: 800; line-height: 1.3; color: var(--cdr-encre); }
+.cdr-d-chemin { margin-top: 6px; font-size: 11.5px; color: var(--cdr-doux); line-height: 1.45; }
+.cdr-onglets { display: flex; gap: 2px; padding: 0 10px; border-bottom: 1px solid var(--cdr-bord); background: #f8fafc; }
+.cdr-onglets button { position: relative; height: 38px; padding: 0 10px; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--cdr-doux); cursor: pointer; }
+.cdr-onglets button:hover { color: var(--cdr-encre); }
+.cdr-onglets button[aria-selected="true"] { color: var(--cdr-hd); }
+.cdr-onglets button[aria-selected="true"]::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: var(--cdr-hd); }
+.cdr-onglets button:disabled { opacity: .4; cursor: default; }
+.cdr-onglets em:empty { display: none; }
+.cdr-onglets em { font-style: normal; display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 3px; border-radius: 99px; font-size: 10.5px;
+                  background: #e2e8f0; color: #334155; }
+.cdr-detail { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px; display: grid; gap: 12px; align-content: start; font-size: 13px; }
+.cdr-d-pied { padding: 12px 16px; border-top: 1px solid var(--cdr-bord); background: #f8fafc; }
+.cdr-d-pied:empty { display: none; }
+/* barre d'état */
+.cdr-statut { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; min-height: 28px; padding: 4px 14px; border-top: 1px solid var(--cdr-bord); background: #f8fafc;
+              font-size: 11.5px; color: var(--cdr-doux); }
+.cdr-statut b { color: var(--cdr-encre); }
+.cdr-statut .droite { margin-left: auto; }
+/* ← ajout (v110) : mini-carte */
+.cdr-mini { position: absolute; left: 14px; bottom: 14px; z-index: 5; width: 230px; border-radius: 12px; overflow: hidden; background: rgba(255,255,255,.96);
+            border: 1px solid #e2e8f0; box-shadow: 0 12px 28px -14px rgba(15,23,42,.45); }
+.cdr-mini-h { display: flex; align-items: center; justify-content: space-between; height: 30px; padding: 0 6px 0 10px; font-size: 10.5px; font-weight: 800;
+              letter-spacing: .06em; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #eef1f5; }
+.cdr-mini-h button { width: 22px; height: 22px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; color: #334155; font: inherit; font-size: 14px; line-height: 1; cursor: pointer; }
+.cdr-mini-h button:hover { border-color: var(--cdr-hd); color: var(--cdr-hd); }
+#cdrMini { width: 100%; height: 150px; background: #f8fafc; cursor: pointer; }
+.cdr-mini.replie #cdrMini { display: none; }
+.cdr-mini.replie { width: auto; }
+.cdr-mini.replie .cdr-mini-h { border-bottom: 0; gap: 10px; }
+html.sbx-dark .cdr-mini { background: rgba(22,26,34,.96); border-color: #2a303c; }
+html.sbx-dark #cdrMini { background: #10131a; }
+html.sbx-dark .cdr-mini-h { border-color: #2a303c; } html.sbx-dark .cdr-mini-h button { background: #1b202a; color: #e5e7eb; border-color: #2a303c; }
+@media (max-width: 900px) { .cdr-mini { width: 150px; left: 8px; bottom: 8px; } #cdrMini { height: 100px; } }
+/* contenu du panneau */
+.cdr-d-bloc { border: 1px solid var(--cdr-bord); border-radius: 10px; padding: 12px; }
+.cdr-d-bloc h6 { margin: 0 0 8px; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--cdr-doux); }
+.cdr-d-jauge { display: grid; grid-template-columns: 76px 1fr 52px; align-items: center; gap: 8px; margin: 7px 0; font-size: 12.5px; }
+.cdr-d-jauge i { height: 9px; border-radius: 5px; background: #eef1f5; overflow: hidden; }
+.cdr-d-jauge i b { display: block; height: 100%; border-radius: 5px; }
+.cdr-d-jauge em { font-style: normal; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.cdr-d-note { margin: -2px 0 4px 84px; font-size: 11.5px; color: #b45309; font-weight: 600; }
+.cdr-d-lignes { display: grid; gap: 0; margin: 0; }
+.cdr-d-lignes div { display: flex; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--cdr-bord); font-size: 12.5px; }
+.cdr-d-lignes div:last-child { border-bottom: 0; }
+.cdr-d-lignes dt { color: var(--cdr-doux); } .cdr-d-lignes dd { margin: 0; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+.cdr-d-pile { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #eef1f5; margin: 2px 0 8px; }
+.cdr-d-pile i { display: block; height: 100%; }
+.cdr-d-leg { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11.5px; color: var(--cdr-doux); margin-bottom: 4px; }
+.cdr-d-leg span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; background: var(--c); }
+.cdr-d-raci div { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--cdr-bord); font-size: 13px; }
+.cdr-d-raci div:last-child { border-bottom: 0; }
+.cdr-d-raci b { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: #fff; font-size: 12px; }
+.cdr-d-raci small { display: block; font-size: 11px; color: var(--cdr-doux); }
+.cdr-d-raci span.vide { color: #94a3b8; font-style: italic; }
+.cdr-d-texte { margin: 0; white-space: pre-wrap; font-size: 13px; line-height: 1.55; }
+.cdr-d-enfants button { display: grid; grid-template-columns: 9px 1fr auto; gap: 10px; align-items: center; width: 100%; margin: 0 0 6px; padding: 9px 10px; border: 1px solid var(--cdr-bord);
+                        border-radius: 8px; background: #fff; font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; color: var(--cdr-encre); }
+.cdr-d-enfants button:hover { border-color: var(--cdr-hd); background: color-mix(in srgb, var(--cdr-hd) 4%, #fff); }
+.cdr-d-enfants i { width: 9px; height: 9px; border-radius: 50%; }
+.cdr-d-enfants em { font-style: normal; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cdr-d-lien { display: flex; align-items: center; justify-content: center; gap: 8px; height: 38px; border-radius: 8px; background: var(--cdr-hd); color: #fff !important;
+              font-weight: 700; font-size: 13px; text-decoration: none; }
+.cdr-d-lien:hover { filter: brightness(1.08); }
+.cdr-d-alerte { display: flex; gap: 8px; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+.cdr-d-vide { padding: 24px 12px; text-align: center; font-size: 12.5px; color: var(--cdr-doux); border: 1px dashed var(--cdr-bord); border-radius: 10px; }
+@keyframes cdrIn { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
+@media (max-width: 1200px) { .cdr-kpis2 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cdr-fen-corps { grid-template-columns: minmax(0, 1fr) 360px; } .cdr-inst { display: none; } }
+@media (max-width: 900px) {
+    .cdr-fenetre { padding: 0; }
+    .cdr-boite { border-radius: 0; }
+    .cdr-ariane, .cdr-leg2, .cdr-statut .droite { display: none; }
+    .cdr-kpis2 { display: flex; overflow-x: auto; scrollbar-width: none; }          /* chiffres clés sur une ligne qui défile */
+    .cdr-kpis2::-webkit-scrollbar { display: none; }
+    .cdr-k { flex: 0 0 auto; min-width: 150px; padding: 8px 10px; gap: 8px; }
+    .cdr-k > span { width: 26px; height: 26px; } .cdr-k b { font-size: 14px; } .cdr-k small { font-size: 10.5px; white-space: nowrap; }
+    .cdr-statut { font-size: 10.5px; } #cdrStatSel { display: none; }
+    .cdr-fen-corps { grid-template-columns: 1fr; grid-template-rows: minmax(260px, 1fr) auto; }
+    .cdr-panneau { max-height: 46vh; border-left: 0; border-top: 1px solid var(--cdr-bord); }
+    .cdr-cherche2 { max-width: none; flex-basis: 100%; margin-left: 0; order: -1; }
+    .cdr-groupe > button span { display: none; }
+}
+/* thème sombre de l'application */
+html.sbx-dark .cdr-fenetre { --cdr-bord: #2a303c; --cdr-fond: #10131a; --cdr-encre: #e5e7eb; --cdr-doux: #9aa4b2; --cdr-panneau: #161a22; }
+html.sbx-dark .cdr-outils2, html.sbx-dark .cdr-k, html.sbx-dark .cdr-panneau, html.sbx-dark .cdr-cherche2, html.sbx-dark .cdr-zoom-lib, html.sbx-dark .cdr-d-enfants button { background: #161a22; }
+html.sbx-dark .cdr-groupe, html.sbx-dark .cdr-onglets, html.sbx-dark .cdr-statut, html.sbx-dark .cdr-d-pied { background: #1b202a; }
+html.sbx-dark .cdr-groupe > button { color: #cbd5e1; } html.sbx-dark .cdr-groupe > button:hover { background: #232936; }
+html.sbx-dark .cdr-zone { background: radial-gradient(circle at 1px 1px, rgba(255,255,255,.06) 1px, transparent 0) 0 0 / 20px 20px, #10131a; }
+html.sbx-dark .cdr-d-jauge i, html.sbx-dark .cdr-d-pile { background: #2a303c; } html.sbx-dark .cdr-onglets em { background: #2a303c; color: #e5e7eb; }
+html.sbx-dark .cdr-d-alerte { background: rgba(249,115,22,.12); color: #fdba74; border-color: rgba(249,115,22,.3); }
+@media (prefers-reduced-motion: reduce) { .cdr-boite { animation: none; } }
 </style>
 
     </div>
@@ -4233,13 +4687,19 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <script src="https://unpkg.com/gojs@2.2.14/release/go.js"></script>
 <script>
+    /* ← corrigé (v109) : même diagramme GoJS et même disposition (arbre vertical), avec :
+       - un nouveau design des éléments et des liaisons ;
+       - TOUTES les liaisons représentées (arbre complet, cadrage qui ne coupe plus rien, éléments orphelins rattachés à la racine) ;
+       - un clic sur un élément ouvre une fenêtre avec la chaîne complète et le détail de l'élément. */
     (function() {
         const $ = go.GraphObject.make;
+        let myFullDiagram = null, myLocalDiagram = null, myOverview = null, donneesParCle = {}, ongletActif = 'synthese';
 
         function init() {
             // --- 0. FONCTIONS DE COULEURS DYNAMIQUES ---
             // On récupère la couleur de base de l'utilisateur pour le nœud racine
             const baseColor = "{{request.user.personnel.color_fond|default:'#2563eb'}}";
+            const FINANCE = {% if request.user.personnel.is_finance %}true{% else %}false{% endif %};
 
             function getStrokeColor(rate) {
                 if (rate === null || rate === undefined) return baseColor; // Nœud racine
@@ -4261,75 +4721,132 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (rate < 80) return "#d97706"; // Texte jaune foncé
                 return "#059669";                // Texte vert foncé
             }
+            // ← ajout (v109) : couleur des liaisons (plus douce que la bordure)
+            function getLinkColor(rate) {
+                if (rate === null || rate === undefined) return "#cbd5e1";
+                if (rate < 50) return "#fca5a5";
+                if (rate < 80) return "#fcd34d";
+                return "#6ee7b7";
+            }
+            const POLICE = "Inter, 'Segoe UI', system-ui, sans-serif";
 
             // --- 1. CONFIGURATION ERP MODERNE ---
             const diagramConfig = {
-                initialAutoScale: go.Diagram.UniformToFill,
+                initialAutoScale: go.Diagram.Uniform,                      // ← corrigé (v109) : UniformToFill coupait une partie de l'arbre
+                initialContentAlignment: go.Spot.Center,
                 isReadOnly: true,
                 "animationManager.isEnabled": false,
-                layout: $(go.TreeLayout, { 
-                    angle: 90, 
+                padding: 30,
+                layout: $(go.TreeLayout, {
+                    angle: 90,
                     layerSpacing: 60,
-                    sorting: go.TreeLayout.SortingAscending 
+                    nodeSpacing: 22,
+                    sorting: go.TreeLayout.SortingAscending
                 })
             };
 
-            const myFullDiagram = $(go.Diagram, "myDiagramDiv", { ...diagramConfig, maxScale: 0.3 });
-            const myLocalDiagram = $(go.Diagram, "localDiagram", { ...diagramConfig, autoScale: go.Diagram.UniformToFill });
+            myFullDiagram = $(go.Diagram, "myDiagramDiv", { ...diagramConfig, minScale: 0.1, maxScale: 2 });   // ← corrigé (v109) : maxScale 0.3 rendait le texte illisible
+            myLocalDiagram = $(go.Diagram, "localDiagram", { ...diagramConfig, minScale: 0.1, maxScale: 1.5 });
+            // ← ajout (v110) : mini-carte de la chaîne complète (le cadre montre la partie visible ; on le glisse pour se déplacer)
+            if (document.getElementById('cdrMini')) {
+                myOverview = $(go.Overview, "cdrMini", { observed: myFullDiagram, contentAlignment: go.Spot.Center, drawsTemporaryLayers: false });
+                myOverview.box.elt(0).stroke = baseColor;
+                myOverview.box.elt(0).strokeWidth = 2.5;
+                myOverview.box.elt(0).fill = "rgba(37,99,235,0.08)";
+                const bMini = document.querySelector('[data-cdr-mini]');
+                if (bMini) bMini.addEventListener('click', () => {
+                    const cadre = document.getElementById('cdrMiniCadre'), replie = cadre.classList.toggle('replie');
+                    bMini.textContent = replie ? '+' : '−';
+                    bMini.setAttribute('aria-expanded', replie ? 'false' : 'true');
+                    bMini.setAttribute('aria-label', replie ? 'Afficher la mini-carte' : 'Masquer la mini-carte');
+                    if (!replie) myOverview.requestUpdate();
+                });
+                if (bMini && window.matchMedia && matchMedia('(max-width: 900px)').matches) bMini.click();   // sur téléphone : repliée au départ
+            }
 
-            // --- 2. TEMPLATES DESIGN MEAL (ERP STYLE) ---
-            const nodeStyle = { shadowOffset: new go.Point(0, 2), shadowBlur: 4, shadowColor: "rgba(0,0,0,0.1)" };
+            // --- 2. TEMPLATES DESIGN MEAL (ERP STYLE) --- ← corrigé (v109) : nouveau design, mêmes informations
+            const nodeStyle = { isShadowed: true, shadowOffset: new go.Point(0, 4), shadowBlur: 14, shadowColor: "rgba(15,23,42,0.12)" };
+            const estRacine = r => r === null || r === undefined;
 
-            // Template Global (Vue d'ensemble)
-            myFullDiagram.nodeTemplate = $(go.Node, "Auto", nodeStyle,
-                $(go.Shape, "RoundedRectangle", { 
-                    strokeWidth: 2, parameter1: 8 
-                },
-                // Bindings dynamiques pour le fond et la bordure
-                new go.Binding("stroke", "rate", getStrokeColor),
-                new go.Binding("fill", "rate", getFillColor)),
-                
-                $(go.Panel, "Vertical", { margin: 12 },
-                    $(go.TextBlock, { font: "bold 13px sans-serif", stroke: "#1e293b" }, new go.Binding("text", "name")),
-                    $(go.TextBlock, { font: "11px sans-serif", margin: new go.Margin(4, 0, 0, 0) }, 
-                        new go.Binding("text", "objectif"),
-                        // Binding dynamique pour la couleur du texte de progression
-                        new go.Binding("stroke", "rate", getTextColor)
-                    )
-                )
-            );
-
-            // Template Local (Vue opérationnelle détaillée)
-            myLocalDiagram.nodeTemplate = $(go.Node, "Auto", nodeStyle,
-                $(go.Shape, "RoundedRectangle", { 
-                    strokeWidth: 3, parameter1: 12 
-                },
-                new go.Binding("stroke", "rate", getStrokeColor),
-                new go.Binding("fill", "rate", getFillColor)),
-
-                $(go.Panel, "Vertical", { margin: 15, maxSize: new go.Size(250, 300) },
-                    $(go.TextBlock, { font: "bold 14px sans-serif", stroke: "#1e293b" }, new go.Binding("text", "name")),
-                    $(go.TextBlock, { font: "bold 12px sans-serif", margin: 5 }, 
-                        new go.Binding("text", "objectif"),
-                        new go.Binding("stroke", "rate", getTextColor)
+            function nodeTemplate(clicNoeud) {
+                return $(go.Node, "Vertical", nodeStyle, { selectionAdorned: false, cursor: "pointer", click: clicNoeud },
+                    // élément trouvé par la recherche : halo jaune
+                    new go.Binding("shadowColor", "isHighlighted", h => h ? "rgba(234,179,8,0.95)" : "rgba(15,23,42,0.12)").ofObject(),
+                    new go.Binding("shadowBlur", "isHighlighted", h => h ? 26 : 14).ofObject(),
+                    new go.Binding("isTreeExpanded", "ouvert"),
+                    $(go.Panel, "Auto",
+                        $(go.Shape, "RoundedRectangle", { parameter1: 14, strokeWidth: 1.5, stroke: "#e2e8f0", fill: "#ffffff" },
+                            new go.Binding("fill", "rate", r => estRacine(r) ? baseColor : "#ffffff"),
+                            new go.Binding("stroke", "isSelected", (sel, forme) => sel ? baseColor : (estRacine(forme.part.data.rate) ? baseColor : "#e2e8f0")).ofObject(),
+                            new go.Binding("strokeWidth", "isSelected", sel => sel ? 3.5 : 1.5).ofObject()),
+                        $(go.Panel, "Horizontal", { alignment: go.Spot.Left },
+                            // bande de couleur à gauche (zone de l'avancement)
+                            $(go.Shape, "RoundedRectangle", { width: 5, stretch: go.GraphObject.Vertical, strokeWidth: 0, parameter1: 3, margin: new go.Margin(12, 0, 12, 10) },
+                                new go.Binding("fill", "rate", getStrokeColor), new go.Binding("visible", "rate", r => !estRacine(r))),
+                            $(go.Panel, "Vertical", { margin: new go.Margin(12, 14, 10, 10), defaultAlignment: go.Spot.Left, width: 236 },
+                                $(go.TextBlock, { font: `800 9.5px ${POLICE}`, stroke: "#64748b" },
+                                    new go.Binding("text", "type", t => (t || "").toUpperCase()),
+                                    new go.Binding("stroke", "rate", r => estRacine(r) ? "rgba(255,255,255,.75)" : "#64748b")),
+                                $(go.TextBlock, { font: `700 13px ${POLICE}`, stroke: "#0f172a", width: 222, wrap: go.TextBlock.WrapFit, maxLines: 3,
+                                                  overflow: go.TextBlock.OverflowEllipsis, margin: new go.Margin(3, 0, 8, 0) },
+                                    new go.Binding("text", "name"),
+                                    new go.Binding("stroke", "rate", r => estRacine(r) ? "#ffffff" : "#0f172a")),
+                                // barre d'avancement + pourcentage
+                                $(go.Panel, "Horizontal", new go.Binding("visible", "rate", r => !estRacine(r)),
+                                    $(go.Panel, "Spot",
+                                        $(go.Shape, "RoundedRectangle", { width: 160, height: 8, parameter1: 4, fill: "#eef1f5", strokeWidth: 0 }),
+                                        $(go.Shape, "RoundedRectangle", { height: 8, parameter1: 4, strokeWidth: 0, alignment: go.Spot.Left, alignmentFocus: go.Spot.Left },
+                                            new go.Binding("width", "rate", r => Math.max(3, Math.min(r || 0, 100) * 1.6)),
+                                            new go.Binding("fill", "rate", getStrokeColor))),
+                                    $(go.TextBlock, { font: `800 13px ${POLICE}`, margin: new go.Margin(0, 0, 0, 8) },
+                                        new go.Binding("text", "rate", r => (Math.round((r || 0) * 10) / 10).toString().replace('.', ',') + " %"),
+                                        new go.Binding("stroke", "rate", getTextColor))),
+                                $(go.TextBlock, { font: `600 11px ${POLICE}`, stroke: "#64748b", margin: new go.Margin(4, 0, 0, 0) },
+                                    new go.Binding("text", "objectif"),
+                                    new go.Binding("stroke", "rate", r => estRacine(r) ? "rgba(255,255,255,.85)" : "#64748b")),
+                                $(go.TextBlock, { font: `800 10px ${POLICE}`, stroke: "#b45309", margin: new go.Margin(4, 0, 0, 0), visible: false },
+                                    new go.Binding("visible", "aValider"), new go.Binding("text", "aValiderTexte")),
+                                $(go.TextBlock, {
+                                    text: "VOIR LES FICHES INDICATEURS ›",
+                                    font: `800 10px ${POLICE}`,
+                                    cursor: "pointer", margin: new go.Margin(8, 0, 0, 0),
+                                    click: (e, obj) => { e.handled = true; window.location = obj.part.data.link; }
+                                },
+                                new go.Binding("stroke", "rate", getStrokeColor), // Le lien prend la couleur de la bordure
+                                new go.Binding("visible", "link", l => !!l))
+                            )
+                        )
                     ),
-                    $(go.TextBlock, { 
-                        text: "VOIR LES FICHES INDICATEURS", 
-                        font: "bold 10px sans-serif", 
-                        cursor: "pointer", 
-                        isUnderline: true 
-                    }, 
-                    new go.Binding("stroke", "rate", getStrokeColor), // Le lien prend la couleur de la bordure
-                    { click: (e, obj) => window.location = obj.part.data.link })
-                )
-            );
+                    // bouton + / − pour plier ou déplier les sous-éléments
+                    $("TreeExpanderButton", { margin: new go.Margin(5, 0, 0, 0), width: 18, height: 18,
+                                              "ButtonBorder.fill": "#ffffff", "ButtonBorder.stroke": "#cbd5e1", "ButtonIcon.stroke": "#475569",
+                                              "_buttonFillOver": "#f1f5f9", "_buttonStrokeOver": baseColor })
+                );
+            }
+            // ← ajout (v109) : liaisons arrondies, colorées selon l'avancement de l'élément qu'elles rejoignent
+            function linkTemplate() {
+                return $(go.Link, { routing: go.Link.Orthogonal, corner: 12, selectable: false, layerName: "Background" },
+                    $(go.Shape, { strokeWidth: 2.2 },
+                        new go.Binding("stroke", "isHighlighted", (h, f) => h ? getStrokeColor(f.part.data.rate) : getLinkColor(f.part.data.rate)).ofObject(),
+                        new go.Binding("strokeWidth", "isHighlighted", h => h ? 4 : 2.2).ofObject()),
+                    $(go.Shape, { toArrow: "Triangle", scale: 0.9, strokeWidth: 0 },
+                        new go.Binding("fill", "isHighlighted", (h, f) => h ? getStrokeColor(f.part.data.rate) : getLinkColor(f.part.data.rate)).ofObject()));
+            }
+
+            // Template Global (Vue d'ensemble, dans la fenêtre)
+            myFullDiagram.nodeTemplate = nodeTemplate((e, node) => choisirDansFenetre(node.data.key));
+            myFullDiagram.linkTemplate = linkTemplate();
+            // Template Local (Vue de la page) : un clic ouvre la fenêtre sur cet élément
+            myLocalDiagram.nodeTemplate = nodeTemplate((e, node) => ouvrirFenetre(node.data.key));
+            myLocalDiagram.linkTemplate = linkTemplate();
 
             // --- 3. CHARGEMENT DES DONNÉES (MODELE MEAL) ---
             const nodeDataArray = [
-                { 
-                    key: 0, 
-                    name: "{{ actual_institution|escapejs }}", 
+                {
+                    key: 0,
+                    name: "{{ actual_institution|escapejs }}",
                     objectif: "Chaîne de résultats institutionnelle",
+                    type: "Programme",
                     rate: null // La racine n'a pas de taux, elle prendra les couleurs par défaut
                 },
                 {% for enti in this_entities %}
@@ -4340,42 +4857,262 @@ document.addEventListener('DOMContentLoaded', () => {
                         link: "/indic/{{ line.id }}",
                         // Extraction et conversion propre de la valeur numérique (gestion des virgules éventuelles)
                         rate: parseFloat("{% if request.user.personnel.is_finance %}{{ line.taux_financier_valide|default:'0' }}{% else %}{{ line.resultat_niveau_execution_valide|default:'0' }}{% endif %}".replace(',', '.')) || 0,
-                        parent: {% if line.sup_entity %}{{ line.sup_entity.id }}{% else %}0{% endif %}
+                        parent: {% if line.sup_entity %}{{ line.sup_entity.id }}{% else %}0{% endif %},
+                        // ← ajout (v109) : pour la fenêtre de détail (vos champs Entity)
+                        type: "{{ enti.m_entity_type.m_nom|default:''|escapejs }}",
+                        tech: "{{ line.resultat_niveau_execution_valide|default:'0' }}", techD: "{{ line.resultat_niveau_execution|default:'0' }}",
+                        fin: "{{ line.taux_financier_valide|default:'0' }}", finD: "{{ line.taux_financier|default:'0' }}",
+                        mP: "{{ line.montant_planifiee|default:'0' }}", mD: "{{ line.montant_declare|default:'0' }}", mV: "{{ line.montant_valide|default:'0' }}",
+                        R: "{{ line.structure_responsable.nom|default:''|escapejs }}", A: "{{ line.structure_accountable.nom|default:''|escapejs }}",
+                        C: "{{ line.structure_consulted.nom|default:''|escapejs }}", I: "{{ line.structure_informed.nom|default:''|escapejs }}",
+                        objectifTexte: "{{ line.objectif|default:''|escapejs }}", observation: "{{ line.observation|default:''|escapejs }}"
                     },
                     {% endfor %}
                 {% endfor %}
             ];
 
+            // ← ajout (v109) : nettoyage — doublons retirés, chiffres lus, éléments dont le parent est introuvable rattachés à la racine
+            const nombre = v => { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : 0; };
+            const vus = {};
+            const donnees = nodeDataArray.filter(d => (vus[d.key] ? false : (vus[d.key] = true)));
+            donnees.forEach(d => {
+                if (d.key === 0) return;
+                ['tech', 'techD', 'fin', 'finD', 'mP', 'mD', 'mV'].forEach(k => d[k] = nombre(d[k]));
+                if (!vus[d.parent] || d.parent === d.key) d.parent = 0;
+            });
+            // profondeur de chaque élément et nombre de sous-éléments
+            const enfants = {};
+            donnees.forEach(d => { if (d.key !== 0) (enfants[d.parent] = enfants[d.parent] || []).push(d); });
+            (function prof(cle, p) { const d = donnees.find(x => x.key === cle); if (d) d.niveau = p; (enfants[cle] || []).forEach(e => prof(e.key, p + 1)); })(0, 0);
+
             // On formate le texte à afficher une fois que le tableau est créé
-            nodeDataArray.forEach(node => {
+            const moyenne = (enfants[0] || []).length ? (enfants[0].reduce((s, d) => s + d.rate, 0) / enfants[0].length) : 0;
+            donnees.forEach(node => {
+                donneesParCle[node.key] = node;
                 if (node.rate !== null) {
-                    node.objectif = "Progression : " + node.rate.toFixed(2) + "%";
+                    const autre = FINANCE ? node.tech : node.fin;
+                    node.objectif = (FINANCE ? "Technique : " : "Financier : ") + Math.round(autre) + " %";
+                    const att = (node.techD - node.tech) >= 0.5 || (node.finD - node.fin) >= 0.5;
+                    node.aValider = att;
+                    node.aValiderTexte = att ? "● Données déclarées à valider" : "";
+                } else {
+                    node.objectif = (donnees.length - 1) + " éléments · moyenne " + Math.round(moyenne) + " %";
                 }
             });
+            const ouvrirTout = donnees.length <= 30;
 
-            myFullDiagram.model = new go.TreeModel(nodeDataArray);
-            
+            myFullDiagram.model = new go.TreeModel(donnees.map(d => Object.assign({}, d, { ouvert: true })));
+            myLocalDiagram.model = new go.TreeModel(donnees.map(d => Object.assign({}, d, { ouvert: ouvrirTout || d.niveau < 2 })));   // ← corrigé (v109) : tout l'arbre, pas seulement 3 niveaux
+
             // --- 4. ÉCOUTEURS ET NAVIGATION ---
             myFullDiagram.addDiagramListener("InitialLayoutCompleted", () => {
                 const root = myFullDiagram.findPartForKey(0);
                 if (root) root.isSelected = true;
                 showLocalDetails(myFullDiagram, myLocalDiagram);
             });
-            
+
             myFullDiagram.addDiagramListener("ChangedSelection", () => showLocalDetails(myFullDiagram, myLocalDiagram));
+            // ← ajout (v109) : la vue de la page montre toujours l'arbre en entier dans son cadre
+            myLocalDiagram.addDiagramListener("LayoutCompleted", () => setTimeout(() => myLocalDiagram.zoomToFit(), 0));
+            window.addEventListener('resize', () => myLocalDiagram.zoomToFit());
+
+            // ← ajout (v109) : boutons de la carte et de la fenêtre
+            document.querySelectorAll('[data-cdr-zoom]').forEach(b => b.addEventListener('click', () => zoomer(myLocalDiagram, +b.dataset.cdrZoom)));
+            document.querySelectorAll('[data-cdr-fzoom]').forEach(b => b.addEventListener('click', () => zoomer(myFullDiagram, +b.dataset.cdrFzoom)));
+            const bOuvrir = document.querySelector('[data-cdr-ouvrir]');
+            if (bOuvrir) bOuvrir.addEventListener('click', () => ouvrirFenetre(0));
+            const fen = document.getElementById('cdrFenetre');
+            if (fen) {
+                document.body.appendChild(fen);                       // hors de la page : rien ne la coupe
+                fen.addEventListener('click', e => {
+                    if (e.target === fen || e.target.closest('[data-cdr-fermer]')) fermerFenetre();
+                    const b = e.target.closest('[data-cdr-aller]');
+                    if (b) choisirDansFenetre(+b.dataset.cdrAller, true);
+                    if (e.target.closest('[data-cdr-tout]')) {
+                        myFullDiagram.commit(d => d.nodes.each(n => { n.isTreeExpanded = true; }), 'tout déplier');
+                        setTimeout(() => myFullDiagram.zoomToFit(), 50);
+                    }
+                    // ← ajout (v111) : tout replier (premier niveau seulement) et onglets du détail
+                    if (e.target.closest('[data-cdr-replier]')) {
+                        myFullDiagram.commit(d => d.nodes.each(n => { n.isTreeExpanded = n.data.key === 0; }), 'tout replier');
+                        setTimeout(() => myFullDiagram.zoomToFit(), 50);
+                    }
+                    const o = e.target.closest('[data-cdr-onglet]');
+                    if (o && !o.disabled) { ongletActif = o.dataset.cdrOnglet; const sel = myFullDiagram.selection.first(); if (sel) window.cdrDetail(sel.data.key); }
+                });
+                document.addEventListener('keydown', e => { if (e.key === 'Escape' && !fen.hidden) fermerFenetre(); });
+                let minQ;
+                document.getElementById('cdrQ').addEventListener('input', e => {
+                    clearTimeout(minQ);
+                    minQ = setTimeout(() => {
+                        const nb = chercher(e.target.value);
+                        document.getElementById('cdrQnb').textContent = e.target.value.trim() ? (nb ? nb + ' trouvé' + (nb > 1 ? 's' : '') : 'aucun') : '';
+                    }, 200);
+                });
+            }
+
+            // ---------- panneau de détail ----------
+            const echap = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const pc = v => (Math.round(v * 10) / 10).toString().replace('.', ',') + ' %';
+            const fcfa = v => Math.round(v).toLocaleString('fr-FR') + ' FCFA';
+            function jauge(lib, valide, declare) {
+                return `<div class="cdr-d-jauge"><span>${lib}</span><i><b style="width:${Math.min(valide, 100)}%;background:${getStrokeColor(valide)}"></b></i><em style="color:${getTextColor(valide)}">${pc(valide)}</em></div>` +
+                       ((declare - valide) >= 0.5 ? `<div class="cdr-d-note">Déclaré : ${pc(declare)} · ${Math.round(declare - valide)} pts en attente de validation</div>` : '');
+            }
+            // ← corrigé (v111) : détail en onglets (Synthèse, Budget, RACI, Sous-éléments), style ERP
+            const zoneLib = r => r < 50 ? 'En difficulté' : r < 80 ? 'À surveiller' : 'Bon';
+            window.cdrDetail = function (cle) {
+                const d = donneesParCle[cle], zone = document.getElementById('cdrDetail');
+                if (!d || !zone) return;
+                const racine = d.key === 0, sous = enfants[cle] || [];
+                const aBudget = !racine && (d.mP || d.mD || d.mV);
+                // en-tête
+                const chemin = []; for (let p = donneesParCle[d.parent]; p && p.key !== 0; p = donneesParCle[p.parent]) chemin.unshift(p.name);
+                document.getElementById('cdrDetTete').innerHTML =
+                    `<div class="ligne"><small>${echap(d.type || 'Élément')}</small>` +
+                    (racine ? '' : `<span class="cdr-statut-pill" style="background:${getStrokeColor(d.rate)}">${zoneLib(d.rate)} · ${Math.round(d.rate)} %</span>`) + `</div>` +
+                    `<h5>${echap(d.name)}</h5>` + (chemin.length ? `<div class="cdr-d-chemin">${chemin.map(echap).join(' › ')}</div>` : '');
+                // onglets disponibles
+                const dispo = { synthese: true, budget: !!aBudget, raci: !racine, sous: sous.length > 0 };
+                if (!dispo[ongletActif]) ongletActif = 'synthese';
+                document.querySelectorAll('[data-cdr-onglet]').forEach(b => {
+                    const k = b.dataset.cdrOnglet;
+                    b.disabled = !dispo[k];
+                    b.setAttribute('aria-selected', k === ongletActif ? 'true' : 'false');
+                });
+                document.getElementById('cdrNbSous').textContent = sous.length || '';
+                let h = '';
+                if (ongletActif === 'synthese') {
+                    if (racine) {
+                        const tous = donnees.filter(x => x.key !== 0);
+                        h += `<div class="cdr-d-bloc"><h6>Vue d'ensemble</h6><dl class="cdr-d-lignes"><div><dt>Éléments</dt><dd>${tous.length}</dd></div>` +
+                             `<div><dt>Moyenne du premier niveau</dt><dd>${pc(moyenne)}</dd></div>` +
+                             `<div><dt>Bon (80 % et plus)</dt><dd style="color:#059669">${tous.filter(x => x.rate >= 80).length}</dd></div>` +
+                             `<div><dt>À surveiller (50 à 79 %)</dt><dd style="color:#d97706">${tous.filter(x => x.rate >= 50 && x.rate < 80).length}</dd></div>` +
+                             `<div><dt>En difficulté (moins de 50 %)</dt><dd style="color:#dc2626">${tous.filter(x => x.rate < 50).length}</dd></div></dl></div>`;
+                    } else {
+                        if (Math.abs(d.fin - d.tech) >= 20) h += `<div class="cdr-d-alerte"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span>${d.fin > d.tech ? 'Les dépenses (' + Math.round(d.fin) + ' %) avancent plus vite que les résultats (' + Math.round(d.tech) + ' %).' : 'Les résultats (' + Math.round(d.tech) + ' %) avancent plus vite que les dépenses (' + Math.round(d.fin) + ' %).'}</span></div>`;
+                        h += `<div class="cdr-d-bloc"><h6>Avancement validé</h6>${jauge('Technique', d.tech, d.techD)}${jauge('Financier', d.fin, d.finD)}</div>`;
+                        if (d.objectifTexte) h += `<div class="cdr-d-bloc"><h6>Objectif</h6><p class="cdr-d-texte">${echap(d.objectifTexte)}</p></div>`;
+                        if (d.observation) h += `<div class="cdr-d-bloc"><h6>Observation</h6><p class="cdr-d-texte">${echap(d.observation)}</p></div>`;
+                        if (!d.objectifTexte && !d.observation) h += `<div class="cdr-d-vide">Aucun objectif ni observation renseigné pour cet élément.</div>`;
+                    }
+                } else if (ongletActif === 'budget') {
+                    const base = Math.max(d.mP, d.mD, d.mV) || 1, pv = d.mV / base * 100, pd = Math.max(0, d.mD - d.mV) / base * 100;
+                    h += `<div class="cdr-d-bloc"><h6>Exécution budgétaire</h6><div class="cdr-d-pile" role="img" aria-label="Validé ${Math.round(pv)} %, à valider ${Math.round(pd)} %"><i style="width:${pv}%;background:#10b981"></i><i style="width:${pd}%;background:#f59e0b"></i></div>` +
+                         `<div class="cdr-d-leg"><span style="--c:#10b981">Validé</span><span style="--c:#f59e0b">Déclaré, à valider</span><span style="--c:#e2e8f0">Reste</span></div>` +
+                         `<dl class="cdr-d-lignes"><div><dt>Planifié</dt><dd>${fcfa(d.mP)}</dd></div><div><dt>Déclaré</dt><dd>${fcfa(d.mD)}</dd></div><div><dt>Validé</dt><dd>${fcfa(d.mV)}</dd></div>` +
+                         (d.mD > d.mV ? `<div><dt>En attente de validation</dt><dd style="color:#b45309">${fcfa(d.mD - d.mV)}</dd></div>` : '') +
+                         (d.mP ? `<div><dt>Reste à dépenser</dt><dd>${fcfa(Math.max(0, d.mP - d.mV))}</dd></div><div><dt>Taux d'exécution</dt><dd>${pc(d.mV / d.mP * 100)}</dd></div>` : '') + `</dl></div>`;
+                } else if (ongletActif === 'raci') {
+                    const raci = [['R', 'Responsable', 'réalise le travail', '#0f766e', d.R], ['A', 'Approbateur', 'rend des comptes', '#7c3aed', d.A], ['C', 'Consulté', 'donne son avis', '#2563eb', d.C], ['I', 'Informé', 'est tenu au courant', '#64748b', d.I]];
+                    h += `<div class="cdr-d-bloc cdr-d-raci"><h6>Qui fait quoi</h6>${raci.map(r => `<div><b style="background:${r[3]}">${r[0]}</b><span>${r[4] ? echap(r[4]) : '<span class="vide">non renseigné</span>'}<small>${r[1]} · ${r[2]}</small></span></div>`).join('')}</div>`;
+                } else if (ongletActif === 'sous') {
+                    h += `<div class="cdr-d-enfants">${sous.map(e => `<button type="button" data-cdr-aller="${e.key}"><i style="background:${getStrokeColor(e.rate)}"></i><span>${echap(e.name)}</span><em style="color:${getTextColor(e.rate)}">${Math.round(e.rate)} %</em></button>`).join('')}</div>`;
+                }
+                zone.innerHTML = h;
+                zone.scrollTop = 0;
+                document.getElementById('cdrDetPied').innerHTML = d.link ? `<a class="cdr-d-lien" href="${d.link}">Voir les fiches indicateurs <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>` : '';
+                const st = document.getElementById('cdrStatSel');
+                if (st) st.innerHTML = 'Sélection : <b>' + echap(d.name.length > 60 ? d.name.slice(0, 58) + '…' : d.name) + '</b>';
+            };
+
+            // ← ajout (v111) : chiffres clés de la fenêtre
+            (function () {
+                const k = document.getElementById('cdrKpis');
+                if (!k) return;
+                const tous = donnees.filter(x => x.key !== 0), feuilles = tous.filter(x => !(enfants[x.key] || []).length);
+                const somme = (xs, c) => xs.reduce((s, x) => s + (x[c] || 0), 0);
+                const premier = enfants[0] || [];
+                const mP = somme(feuilles, 'mP') || somme(premier, 'mP'), mV = somme(feuilles, 'mV') || somme(premier, 'mV');
+                const moyT = premier.length ? somme(premier, 'tech') / premier.length : 0, moyF = premier.length ? somme(premier, 'fin') / premier.length : 0;
+                const court = v => { const a = Math.abs(v); return (a >= 1e9 ? (v / 1e9).toFixed(1) + ' Md' : a >= 1e6 ? (v / 1e6).toFixed(1) + ' M' : a >= 1e3 ? Math.round(v / 1e3) + ' k' : Math.round(v)).toString().replace('.', ','); };
+                const ico = {
+                    el: '<rect x="9" y="2.5" width="6" height="5" rx="1.2"/><rect x="2.5" y="16.5" width="6" height="5" rx="1.2"/><rect x="15.5" y="16.5" width="6" height="5" rx="1.2"/><path d="M12 7.5v4.5M5.5 16.5V14h13v2.5"/>',
+                    t: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>', f: '<rect x="2.5" y="6" width="19" height="13" rx="2"/><path d="M2.5 10.5h19M7 15h3"/>',
+                    ko: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+                    v: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', b: '<path d="M3 7h18v12H3z"/><path d="M3 7l3-4h12l3 4M12 11v4M10 13h4"/>'
+                };
+                const tuile = (i, c, v, t) => `<div class="cdr-k" style="--c:${c}"><span><svg viewBox="0 0 24 24">${ico[i]}</svg></span><div><b>${v}</b><small>${t}</small></div></div>`;
+                k.innerHTML = tuile('el', baseColor, tous.length, 'éléments de la chaîne') +
+                    tuile('t', getStrokeColor(moyT), pc(moyT), 'avancement technique moyen') +
+                    tuile('f', getStrokeColor(moyF), pc(moyF), 'avancement financier moyen') +
+                    tuile('ko', '#dc2626', tous.filter(x => x.rate < 50).length, 'éléments en difficulté') +
+                    tuile('v', '#d97706', tous.filter(x => x.aValider).length, 'avec données à valider') +
+                    tuile('b', '#0f766e', court(mV) + ' / ' + court(mP), 'FCFA validés / planifiés' + (mP ? ' (' + Math.round(mV / mP * 100) + ' %)' : ''));
+                const nb = document.getElementById('cdrStatNb');
+                if (nb) nb.innerHTML = '<b>' + tous.length + '</b> éléments · <b>' + myFullDiagram.links.count + '</b> liaisons';
+            })();
+            // ← ajout (v111) : niveau de zoom affiché
+            myFullDiagram.addDiagramListener('ViewportBoundsChanged', () => {
+                const z = Math.round(myFullDiagram.scale * 100) + ' %';
+                const l = document.getElementById('cdrZoomLib'); if (l) l.textContent = z;
+                const s2 = document.getElementById('cdrStatZoom'); if (s2) s2.innerHTML = 'Zoom : <b>' + z + '</b>';
+            });
         }
 
+        // ← corrigé (v109) : la vue de la page garde TOUT l'arbre (toutes les liaisons) ; on y met seulement en avant l'élément choisi.
         function showLocalDetails(fullDiag, localDiag) {
             const node = fullDiag.selection.first();
             if (!node) return;
+            surligner(fullDiag, node);
+            if (window.cdrDetail) window.cdrDetail(node.data.key);
+            const local = localDiag.findNodeForKey(node.data.key);
+            if (local) localDiag.select(local);
+        }
 
-            const model = new go.TreeModel();
-            const nearby = node.findTreeParts(3);
-            const parent = node.findTreeParentNode();
-            if (parent) nearby.add(parent);
-
-            nearby.each(n => { if (n instanceof go.Node) model.addNodeData(n.data); });
-            localDiag.model = model;
+        // ← ajout (v109) : chemin de l'élément jusqu'à la racine surligné
+        function surligner(diag, node) {
+            diag.commit(d => {
+                d.clearHighlighteds();
+                let n = node;
+                while (n) { const l = n.findTreeParentLink(); if (l) l.isHighlighted = true; n = n.findTreeParentNode(); }
+            }, null);
+        }
+        function zoomer(diag, sens) {
+            if (!diag) return;
+            if (sens === 0) diag.zoomToFit();
+            else if (sens > 0) diag.commandHandler.increaseZoom(1.25);
+            else diag.commandHandler.decreaseZoom(0.8);
+        }
+        function ouvrirFenetre(cle) {
+            const fen = document.getElementById('cdrFenetre'), zone = document.getElementById('cdrZone'), sample = document.getElementById('sample');
+            if (!fen || !myFullDiagram) return;
+            if (sample && sample.parentNode !== zone) zone.appendChild(sample);   // le diagramme complet (#myDiagramDiv) s'affiche dans la fenêtre
+            fen.hidden = false;
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => {
+                myFullDiagram.requestUpdate();
+                if (myOverview) myOverview.requestUpdate();                   // ← ajout (v110)
+                myFullDiagram.zoomToFit();
+                choisirDansFenetre(cle, cle !== 0);
+                fen.querySelector('[data-cdr-fermer]').focus();
+            }, 30);
+        }
+        function fermerFenetre() {
+            const fen = document.getElementById('cdrFenetre');
+            if (fen) fen.hidden = true;
+            document.body.style.overflow = '';
+        }
+        function choisirDansFenetre(cle, centrer) {
+            const n = myFullDiagram.findNodeForKey(cle);
+            if (!n) return;
+            myFullDiagram.commit(d => { for (let p = n.findTreeParentNode(); p; p = p.findTreeParentNode()) p.isTreeExpanded = true; }, null);
+            myFullDiagram.select(n);                                    // déclenche showLocalDetails (détail + chemin)
+            if (centrer) { if (myFullDiagram.scale < 0.7) myFullDiagram.scale = 0.9; myFullDiagram.centerRect(n.actualBounds); }
+        }
+        function chercher(texte) {
+            const q = String(texte || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+            let premier = null, nb = 0;
+            myFullDiagram.commit(d => {
+                d.nodes.each(n => {
+                    const ok = !!q && (n.data.name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').indexOf(q) > -1;
+                    n.isHighlighted = ok;
+                    if (ok) { nb++; if (!premier) premier = n; }
+                });
+            }, null);
+            if (premier) { myFullDiagram.scale = Math.max(myFullDiagram.scale, 0.8); myFullDiagram.centerRect(premier.actualBounds); }
+            return nb;
         }
 
         window.addEventListener('DOMContentLoaded', init);
