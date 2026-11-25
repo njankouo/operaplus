@@ -1,0 +1,24 @@
+<title>{{ titre }}</title>
+<meta name="description" content="{{ description }}">
+<meta name="robots" content="{{ robots }}">
+<link rel="canonical" href="{{ url }}">
+{% for code, lien in alternatives.items %}<link rel="alternate" hreflang="{{ code }}" href="{{ lien }}">
+{% endfor %}{% if flux %}<link rel="alternate" type="application/rss+xml" title="{{ nom }}" href="{{ flux }}">
+{% endif %}<meta property="og:site_name" content="{{ nom }}">
+<meta property="og:locale" content="{{ region }}">
+{% for r in regions_alt %}<meta property="og:locale:alternate" content="{{ r }}">
+{% endfor %}<meta property="og:type" content="{{ type }}">
+<meta property="og:title" content="{{ titre_court }}">
+<meta property="og:description" content="{{ description }}">
+<meta property="og:url" content="{{ url }}">
+{% if image %}<meta property="og:image" content="{{ image }}">
+<meta property="og:image:alt" content="{{ titre_court }}">{% endif %}
+{% if date_publication %}<meta property="article:published_time" content="{{ date_publication|date:'c' }}">{% endif %}
+{% if date_modification %}<meta property="article:modified_time" content="{{ date_modification|date:'c' }}">{% endif %}
+{% if auteur %}<meta name="author" content="{{ auteur }}">{% endif %}
+<meta name="twitter:card" content="{% if image %}summary_large_image{% else %}summary{% endif %}">
+{% if twitter %}<meta name="twitter:site" content="{{ twitter }}">{% endif %}
+<meta name="twitter:title" content="{{ titre_court }}">
+<meta name="twitter:description" content="{{ description }}">
+{% if image %}<meta name="twitter:image" content="{{ image }}">{% endif %}
+{{ jsonld }}

@@ -1,4 +1,4 @@
-{% load pwa %}{% load opera_stats vitrine %}
+{% load pwa %}{% load opera_stats vitrine %}{% load referencement %}
 <!DOCTYPE html>
 <html lang="{% block lang %}fr{% endblock %}" class="scroll-smooth">
 <head>
@@ -20,74 +20,32 @@
     </style>
 
     {% load static %}
-    {# ===== RÉFÉRENCEMENT NATUREL (ajout) — blocs remplaçables dans les pages enfants : title, meta_description, og_title, og_image, robots, extra_seo ===== #}
-    <title>{% block title %}OperaPlus · Logiciel MEAL de suivi-évaluation des projets{% endblock %}</title>
-    <meta name="description" content="{% block meta_description %}Planifiez, collectez sur le terrain même hors-ligne, calculez vos indicateurs et rendez compte : OperaPlus réunit tout le cycle MEAL des ONG et projets.{% endblock %}">
-    <meta name="robots" content="{% block robots %}index, follow, max-image-preview:large, max-snippet:-1{% endblock %}">
-    <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
-    {% block hreflang %}{% if request.path == "/" %}
+    {% comment %} ===== RÉFÉRENCEMENT NATUREL : un seul endroit, via le module « referencement ».
+         Les blocs des pages enfants restent les mêmes : lang, title, meta_description, robots, og_locale, og_title, og_image, hreflang, extra_seo.
+         seo_capture lit ces blocs sans rien afficher, puis seo écrit toutes les balises une seule fois. ===== {% endcomment %}
+    {% seo_capture "seo_titre" %}{% block title %}OperaPlus · Logiciel MEAL de suivi-évaluation des projets{% endblock %}{% fin_seo_capture %}
+    {% seo_capture "seo_description" %}{% block meta_description %}Planifiez, collectez sur le terrain même hors-ligne, calculez vos indicateurs et rendez compte : OperaPlus réunit tout le cycle MEAL des ONG et projets.{% endblock %}{% fin_seo_capture %}
+    {% seo_capture "seo_robots" %}{% block robots %}index, follow{% endblock %}{% fin_seo_capture %}
+    {% seo_capture "seo_locale" %}{% block og_locale %}fr_FR{% endblock %}{% fin_seo_capture %}
+    {% seo_capture "seo_titre_partage" %}{% block og_title %}OperaPlus · Le cycle MEAL complet dans un seul outil{% endblock %}{% fin_seo_capture %}
+    {% seo_capture "seo_image" %}{% block og_image %}{% static 'og-operaplus.png' %}{% endblock %}{% fin_seo_capture %}
+    {% seo titre_exact=seo_titre description=seo_description robots=seo_robots locale=seo_locale titre_partage=seo_titre_partage image=seo_image %}
+    {% seo_logiciel "OperaPlus" "Plateforme MEAL : planification, collecte terrain hors-ligne, calcul des indicateurs, tableaux de bord et redevabilité." systemes="Web, Android, iOS" sous_categorie="Suivi-évaluation (MEAL)" %}
+    {% block hreflang %}{% if request.path == "/" or request.path == "/en/" %}
     <link rel="alternate" hreflang="fr" href="{{ request.scheme }}://{{ request.get_host }}/">
     <link rel="alternate" hreflang="en" href="{{ request.scheme }}://{{ request.get_host }}/en/">
     <link rel="alternate" hreflang="x-default" href="{{ request.scheme }}://{{ request.get_host }}/">{% endif %}{% endblock %}
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta name="author" content="OperaPlus">
     <meta name="application-name" content="OperaPlus">
     <meta name="theme-color" content="#0F1B2D">
     <meta name="format-detection" content="telephone=no">
-    <!-- Partage sur les réseaux (Facebook, LinkedIn, WhatsApp) -->
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="OperaPlus">
-    <meta property="og:locale" content="{% block og_locale %}fr_FR{% endblock %}">
-    <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
-    <meta property="og:title" content="{% block og_title %}OperaPlus · Le cycle MEAL complet dans un seul outil{% endblock %}">
-    <meta property="og:description" content="Planification, collecte terrain hors-ligne, indicateurs calculés et redevabilité pour les ONG, projets et ministères.">
-    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% block og_image %}{% static 'og-operaplus.png' %}{% endblock %}">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="OperaPlus, plateforme MEAL de suivi-évaluation">
-    <!-- X / Twitter -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="OperaPlus · Le cycle MEAL complet dans un seul outil">
-    <meta name="twitter:description" content="Planification, collecte hors-ligne, indicateurs et redevabilité pour les ONG et projets.">
-    <meta name="twitter:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'og-operaplus.png' %}">
     <!-- Connexions anticipées vers les CDN (chargement plus rapide) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <!-- Données structurées : organisation, site et logiciel -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "Organization",
-          "@id": "{{ request.scheme }}://{{ request.get_host }}/#organisation",
-          "name": "OperaPlus",
-          "url": "{{ request.scheme }}://{{ request.get_host }}/",
-          "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'og-operaplus.png' %}"
-        },
-        {
-          "@type": "WebSite",
-          "@id": "{{ request.scheme }}://{{ request.get_host }}/#site",
-          "url": "{{ request.scheme }}://{{ request.get_host }}/",
-          "name": "OperaPlus",
-          "inLanguage": "fr",
-          "publisher": { "@id": "{{ request.scheme }}://{{ request.get_host }}/#organisation" }
-        },
-        {
-          "@type": "SoftwareApplication",
-          "name": "OperaPlus",
-          "applicationCategory": "BusinessApplication",
-          "applicationSubCategory": "Suivi-évaluation (MEAL)",
-          "operatingSystem": "Web, Android, iOS",
-          "description": "Plateforme MEAL : planification, collecte terrain hors-ligne, calcul des indicateurs, tableaux de bord et redevabilité.",
-          "url": "{{ request.scheme }}://{{ request.get_host }}/",
-          "inLanguage": "fr",
-          "publisher": { "@id": "{{ request.scheme }}://{{ request.get_host }}/#organisation" }
-        }
-      ]
-    }
-    </script>
     {% block extra_seo %}{% endblock %}
     {% progressive_web_app_meta %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

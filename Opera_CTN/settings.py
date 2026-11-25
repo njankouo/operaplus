@@ -107,7 +107,10 @@ INSTALLED_APPS = [
     "saisie_plus",
     'guardian',
     'archive',
-    'collecte'
+    'collecte',
+    'django.contrib.sitemaps',
+    'referencement',
+
 ]
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',  # Backend natif (RBAC global)
@@ -184,9 +187,33 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
     'archive.middleware.RequeteCouranteMiddleware',
     'ctn_bpf.tableau_de_bord_prefere.TableauDeBordPrefereMiddleware',
+    'referencement.middleware.NonIndexationMiddleware',
+
+    'referencement.middleware.RedirectionMiddleware',
   
 ]
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
 
+REFERENCEMENT = {
+    'NOM': 'OperaPlus',
+    'URL': 'https://operaplus.org',          # ton vrai domaine, sans « / » à la fin
+    'DESCRIPTION': 'OperaPlus, la plateforme de suivi-évaluation (MEAL) pour les projets et programmes : planification, indicateurs, collecte hors ligne, tableaux de bord.',
+    'LANGUE': 'fr',
+    'REGION': 'fr_CM',
+    'IMAGE': '/static/img/114.png',   # image de 1200 × 630 px, à créer
+    'LOGO': '/static/img/logov1.png',
+    'SITES_LIES': [{'nom': 'MEAL Afrique', 'url': 'https://meal-afrique.operaplus.org', 'description': 'Le journal du suivi-évaluation'}],
+    # Tout ce qui est l'application elle-même ne doit pas être indexé :
+    'PUBLIC': [
+    '/', '/en/',
+    '/packages/', '/a-propos/', '/annonces/', '/demos/', '/contact/',
+    '/documentation/', '/assistance/',
+    '/fonctionnalites/*',          # « * » = l'adresse et tout ce qui est en dessous
+],
+    'PRIVE': ['/admin/', '/accounts/', '/api/', '/grub_form/', '/send-transaction/'],
+    'SITEMAPS': {'vitrine': {'urls': ['/', '/en/', '/packages/', '/a-propos/', '/demos/', '/contact/'], 'priorite': 1.0}},
+}
 #SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'

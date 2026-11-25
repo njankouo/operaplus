@@ -18,6 +18,7 @@ router.register('indicateur', views.IndicateurViewSet, basename='indicateur')
 router.register('institution', views.InstitutionViewSet, basename='institution')
 
 urlpatterns = [
+   path('', include('referencement.urls')),
    path('terrain/', include('collecte.urls')),
    path('archivage/', include('archive.urls')),
    path('', include('pwa.urls')), 

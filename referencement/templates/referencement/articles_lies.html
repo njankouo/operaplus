@@ -1,0 +1,29 @@
+{% comment %} Bloc « À lire aussi ». Pour l'adapter à ton design : copie ce fichier dans
+   templates/referencement/articles_lies.html de ton projet (il sera prioritaire) et garde les mêmes variables. {% endcomment %}
+{% if elements %}
+<aside class="ref-lies" aria-labelledby="refLiesTitre">
+    <h2 id="refLiesTitre">{{ titre }}</h2>
+    <ul>
+        {% for e in elements %}
+        <li>
+            <a href="{{ e.url }}">
+                {% if e.image %}<img src="{{ e.image }}" alt="" loading="lazy" width="320" height="180">{% endif %}
+                <strong>{{ e.titre }}</strong>
+                {% if e.resume %}<span>{{ e.resume }}</span>{% endif %}
+                {% if e.date %}<time datetime="{{ e.date|date:'c' }}">{{ e.date|date:"j F Y" }}</time>{% endif %}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</aside>
+<style>
+    .ref-lies { margin: 40px 0 0; padding-top: 24px; border-top: 1px solid rgba(15,23,42,.1); }
+    .ref-lies h2 { margin: 0 0 14px; font-size: 1.15rem; }
+    .ref-lies ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .ref-lies a { display: flex; flex-direction: column; gap: 6px; color: inherit; text-decoration: none; }
+    .ref-lies a:hover strong { text-decoration: underline; }
+    .ref-lies img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; }
+    .ref-lies span { font-size: .9em; opacity: .75; }
+    .ref-lies time { font-size: .8em; opacity: .6; }
+</style>
+{% endif %}
